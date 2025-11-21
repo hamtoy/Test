@@ -1,6 +1,5 @@
 from scripts.latency_baseline import percentile, summarise
 from scripts.latency_baseline import extract_latencies
-from pathlib import Path
 
 
 def test_percentile_interpolation():
