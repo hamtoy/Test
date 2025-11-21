@@ -4,7 +4,7 @@ Google Gemini AI를 활용한 Q&A 응답 평가 및 재작성 워크플로우 �
 
 ## 주요 기능
 
-- 🤖 **질의 생성**: OCR 텍스트에서 질의 자동 생성
+- 🤖 **질의 생성**: OCR 텍스트에서 질의 자동생성
 - 📊 **후보 평가**: 여러 답변 후보 평가 및 점수 부여
 - ✍️ **답변 재작성**: 선택된 답변의 품질 개선
 - 💰 **비용 추적**: 토큰 사용량 및 비용 추적
@@ -54,20 +54,9 @@ project_root/
     └── test_utils.py
 ```
 
-<<<<<<< HEAD
-
 ## 시스템 개요
 
-# 이 시스템은 다음 작업을 수행합니다:
-
-## 🌐 Workflow
-
-- Generate queries that reflect user intent from OCR text
-- Evaluate multiple candidate answers against the OCR context
-- Rewrite the top-scoring answer for clarity and safety
-- Track token usage and guard against hallucinations and rate limits
-
-  > > > > > > > f66080f (Enhance repo: Performance, Security, UX, and Docs)
+이 시스템은 다음 작업을 수행합니다:
 
 - OCR 텍스트를 기반으로 검색 질의 생성
 - 여러 후보 답변을 평가하고 점수 부여
@@ -76,8 +65,6 @@ project_root/
 - 입력 검증 및 환각 감지
 
 ## 시작하기
-
-<<<<<<< HEAD
 
 ### 필수 요구사항
 
@@ -104,11 +91,6 @@ uv sync --extra dev  # 개발 의존성 포함
 uv pip install -r requirements.txt
 ```
 
-=======
-
-````
->>>>>>> f66080f (Enhance repo: Performance, Security, UX, and Docs)
-
 자세한 내용은 [UV_GUIDE.md](UV_GUIDE.md)를 참조하세요.
 
 ### 환경 설정
@@ -117,7 +99,7 @@ uv pip install -r requirements.txt
 
 ```bash
 cp .env.example .env
-````
+```
 
 `.env` 파일 편집:
 
@@ -125,13 +107,8 @@ cp .env.example .env
 # 필수
 GEMINI_API_KEY=your_api_key_here
 
-<<<<<<< HEAD
 # 선택 사항 (기본값 제공)
 GEMINI_MODEL_NAME=gemini-3-pro-preview
-=======
-# Optional (with defaults)
-GEMINI_MODEL_NAME=gemini-3-pro-preview  # Fixed model; other values are rejected
->>>>>>> f66080f (Enhance repo: Performance, Security, UX, and Docs)
 GEMINI_MAX_OUTPUT_TOKENS=8192
 GEMINI_TIMEOUT=120
 GEMINI_MAX_CONCURRENCY=5
@@ -186,6 +163,7 @@ python -m src.main --help
 - `--ocr-file`: OCR 입력 파일 경로 (`data/inputs/` 기준)
 - `--cand-file`: 후보 답변 파일 경로 (`data/inputs/` 기준)
 - `--intent`: 추가 사용자 의도
+- `--interactive`: 확인 프롬프트 활성화 (AUTO 모드에서도 적용)
 
 ## 출력 및 로그
 
@@ -223,6 +201,7 @@ INFO     Token Usage - Prompt: 3,681, Response: 867, Total: 6,316
 ╭─ 비용 요약 ───────────────────────────────╮
 │ 💰 총 비용: $0.0534 USD                   │
 │ 📊 토큰: 11,684 입력 / 1,194 출력         │
+│ 📈 캐시: 5 hit / 2 miss                   │
 ╰────────────────────────────────────────────╯
 ```
 
@@ -246,7 +225,7 @@ pytest tests/ --cov=src --cov-report=html
 - `src/agent.py`: Gemini API 호출, 재시도, rate limiting, 비용 추적
 - `src/models.py`: 환각 감지 기능이 포함된 Pydantic 모델
 - `src/config.py`: 환경 변수 기반 설정 관리
-- `src/logging_setup.py`: 콘솔/파일 로깅 분리
+- `src/logging_setup.py`: 콘솔/파일 로깅 분리, 민감 데이터 마스킹
 - `src/data_loader.py`: 타입 검증을 포함한 데이터 로딩
 - `src/utils.py`: 파일 처리 및 파싱 유틸리티
 
@@ -283,68 +262,53 @@ agent = GeminiAgent(config, jinja_env=real_env)
 agent = GeminiAgent(config, jinja_env=mock_env)
 ```
 
+#### 병렬 처리
+
+여러 질의를 동시에 처리하여 성능 향상:
+
+```python
+# asyncio.gather를 사용한 병렬 쿼리 처리
+results = await asyncio.gather(*[
+    process_single_query(agent, query, ocr_text, candidates)
+    for query in queries
+])
+```
+
 ## 환경 변수
 
-<<<<<<< HEAD
-| 변수 | 기본값 | 설명 |
+| 변수                       | 기본값                 | 설명               |
 | -------------------------- | ---------------------- | ------------------ |
-| `GEMINI_API_KEY` | 필수 | Gemini API 키 |
-| `GEMINI_MODEL_NAME` | `gemini-3-pro-preview` | 사용할 모델 |
-| `GEMINI_MAX_OUTPUT_TOKENS` | `8192` | 최대 출력 토큰 수 |
-| `GEMINI_TIMEOUT` | `120` | API 타임아웃 (초) |
-| `GEMINI_MAX_CONCURRENCY` | `5` | 최대 동시 요청 수 |
-| `GEMINI_TEMPERATURE` | `0.2` | 샘플링 온도 |
-| `GEMINI_CACHE_SIZE` | `50` | 컨텍스트 캐시 크기 |
-| `GEMINI_CACHE_TTL_MINUTES` | `10` | 캐시 TTL (분) |
-| `LOG_LEVEL` | `INFO` | 로그 레벨 |
-| `PROJECT_ROOT` | 자동 감지 | 프로젝트 루트 경로 |
-=======
-| Variable | Default | Description |
-| -------------------------- | ---------------------- | --------------------------------------- |
-| `GEMINI_API_KEY` | _Required_ | Your Gemini API key |
-| `GEMINI_MODEL_NAME` | `gemini-3-pro-preview` | Fixed model (do not change) |
-| `GEMINI_MAX_OUTPUT_TOKENS` | `8192` | Maximum output tokens |
-| `GEMINI_TIMEOUT` | `120` | API timeout in seconds |
-| `GEMINI_MAX_CONCURRENCY` | `5` | Max concurrent requests |
-| `GEMINI_TEMPERATURE` | `0.2` | Sampling temperature |
-| `GEMINI_CACHE_SIZE` | `50` | Context cache size |
-| `GEMINI_CACHE_TTL_MINUTES` | `10` | Context cache TTL in minutes |
-| `LOG_LEVEL` | `INFO` | Logging verbosity |
-| `PROJECT_ROOT` | _Auto_ | Project root (overrides auto-detection) |
-
-> > > > > > > f66080f (Enhance repo: Performance, Security, UX, and Docs)
+| `GEMINI_API_KEY`           | 필수                   | Gemini API 키      |
+| `GEMINI_MODEL_NAME`        | `gemini-3-pro-preview` | 사용할 모델        |
+| `GEMINI_MAX_OUTPUT_TOKENS` | `8192`                 | 최대 출력 토큰 수  |
+| `GEMINI_TIMEOUT`           | `120`                  | API 타임아웃 (초)  |
+| `GEMINI_MAX_CONCURRENCY`   | `5`                    | 최대 동시 요청 수  |
+| `GEMINI_TEMPERATURE`       | `0.2`                  | 샘플링 온도        |
+| `GEMINI_CACHE_SIZE`        | `50`                   | 컨텍스트 캐시 크기 |
+| `GEMINI_CACHE_TTL_MINUTES` | `10`                   | 캐시 TTL (분)      |
+| `LOG_LEVEL`                | `INFO`                 | 로그 레벨          |
+| `PROJECT_ROOT`             | 자동 감지              | 프로젝트 루트 경로 |
 
 자동 감지는 `.git`, `templates`, `data` 폴더를 기준으로 수행됩니다.
 
-<<<<<<< HEAD
-
 ## 구현된 기능
 
-=======
-
-## Model Policy
-
-- Single model: `gemini-3-pro-preview` only (other values raise a startup error)
-- Pricing guidance: ≤200K tokens — input $2.00/m, output $12.00/m; >200K tokens — input $4.00/m, output $18.00/m
-- Knowledge cutoff: January 2025
-
-## 🔒 Production Features
-
-> > > > > > > f66080f (Enhance repo: Performance, Security, UX, and Docs)
-
-- 타입 안정성 (Pydantic Literal 사용)
-- 예외 처리 (다중 레이어)
-- Rate Limiting (동시성 및 RPM 제어)
-- 비용 추적 (실시간 토큰 사용량 계산)
-- 로깅 (콘솔 및 파일 분리)
-- 테스트 (DI 지원)
-- 검증 (입력 유효성 검사 및 환각 감지)
+- **타입 안정성**: Pydantic Literal 사용
+- **예외 처리**: 다중 레이어 에러 핸들링
+- **Rate Limiting**: 동시성 및 RPM 제어
+- **비용 추적**: 실시간 토큰 사용량 계산
+- **로깅**: 콘솔 및 파일 분리, API 키 마스킹
+- **테스트**: Dependency Injection 지원
+- **검증**: 입력 유효성 검사 및 환각 감지
+- **병렬 처리**: 여러 쿼리 동시 처리
+- **캐시 모니터링**: 캐시 hit/miss 추적
 
 ## 문서
 
-- **UV_GUIDE.md**: UV 패키지 매니저 사용 가이드
-- **DEPLOYMENT_VERIFIED.md**: 배포 검증 내역
-- `list_models.py`: Gemini 모델 조회 스크립트
+- **[UV_GUIDE.md](UV_GUIDE.md)**: UV 패키지 매니저 사용 가이드
+- **[CONTRIBUTING.md](CONTRIBUTING.md)**: 기여 가이드라인
+- **[DEPLOYMENT_VERIFIED.md](DEPLOYMENT_VERIFIED.md)**: 배포 검증 내역
+- **Sphinx 문서**: `docs/` 디렉토리에서 `make html` 실행
 
 ## 라이선스
 
