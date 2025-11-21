@@ -108,6 +108,18 @@ python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_ca
 python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --resume
 ```
 
+### 성능/관측 도구
+
+```bash
+# 캐시 통계 요약 (CACHE_STATS_FILE 기반)
+python -m src.main --analyze-cache
+make -C docs cache-report  # make 도움말 위치: docs/Makefile
+
+# 로그에서 API latency p50/p90/p99 집계
+python scripts/latency_baseline.py --log-file app.log
+make -C docs latency
+```
+
 3) 결과는 `data/outputs/`에 저장됩니다.
 
 ### 개발 환경 (권장)
@@ -206,6 +218,38 @@ python -m src.main --help
 - 캐시 통계: `cache_stats.jsonl`(기본)로 누적 저장, `CACHE_STATS_FILE`, `CACHE_STATS_MAX_ENTRIES`로 경로/보존 개수 조정
 - 로그 분리: INFO+ → `app.log`, ERROR+ → `error.log` (JSON 포맷은 production 모드에서 자동 적용)
 - 체크포인트: `--resume` 사용 시 `checkpoint.jsonl`(기본)에서 완료된 질의를 건너뜀. `--checkpoint-file`로 경로 지정 가능
+
+## 성능 분석
+
+### API Latency 통계
+
+로그 파일에서 API 호출 레이턴시를 분석하여 백분위수 통계를 확인할 수 있습니다:
+
+```bash
+# 기본 로그 파일 분석 (app.log)
+python scripts/latency_baseline.py
+
+# 사용자 지정 로그 파일
+python scripts/latency_baseline.py --log-file custom.log
+
+# 여러 로그 파일 통합 분석
+python scripts/latency_baseline.py --log-file run1.log --log-file run2.log
+```
+
+출력 예시:
+```
+┏━━━━━━━━┳━━━━━━━━┓
+┃ Metric ┃ Value  ┃
+┡━━━━━━━━╇━━━━━━━━┩
+│ Count  │ 150    │
+│ Min    │ 45.23  │
+│ Mean   │ 234.56 │
+│ Max    │ 892.10 │
+│ p50    │ 210.34 │
+│ p90    │ 356.78 │
+│ p99    │ 678.90 │
+└────────┴────────┘
+```
 
 ## 출력 예시
 

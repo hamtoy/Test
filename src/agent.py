@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import hashlib
+import time
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
@@ -262,10 +263,13 @@ class GeminiAgent:
         self.logger.debug(
             f"API Call - Model: {self.config.model_name}, Prompt Length: {len(prompt_text)}"
         )
+        start = time.perf_counter()
         response = await model.generate_content_async(
             prompt_text, 
             request_options={'timeout': self.config.timeout}
         )
+        latency_ms = (time.perf_counter() - start) * 1000
+        self.logger.info(f"API latency: {latency_ms:.2f} ms")
         
         # [Cost Observability] 토큰 사용량 로깅 및 누적
         if hasattr(response, 'usage_metadata') and response.usage_metadata:

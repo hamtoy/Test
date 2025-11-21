@@ -18,3 +18,11 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+.PHONY: cache-report latency
+
+cache-report:
+	@python -m src.main --analyze-cache
+
+latency:
+	@python scripts/latency_baseline.py --log-file app.log
