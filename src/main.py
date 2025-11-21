@@ -5,9 +5,9 @@ import logging
 import asyncio
 import argparse
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, Any, List
-from datetime import datetime
 
 # pip install python-dotenv google-generativeai aiofiles pydantic tenacity pydantic-settings jinja2 rich
 from dotenv import load_dotenv
@@ -25,12 +25,40 @@ from src.agent import GeminiAgent
 from src.models import WorkflowResult
 from src.data_loader import load_input_data
 from src.logging_setup import setup_logging
-from src.utils import safe_json_parse
+from src.utils import safe_json_parse, write_cache_stats
 from src.exceptions import ValidationFailedError, CacheCreationError
 
 # [Global Console] Rich Console은 전역에서 재사용
 # [Global Console] Rich Console은 전역에서 재사용
 console = Console()
+
+def load_checkpoint(path: Path) -> Dict[str, WorkflowResult]:
+    """Load checkpoint entries indexed by query string."""
+    if not path.exists():
+        return {}
+    records: Dict[str, WorkflowResult] = {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                try:
+                    payload = json.loads(line)
+                    wf = WorkflowResult(**payload)
+                    records[wf.query] = wf
+                except Exception:
+                    continue
+    except Exception:
+        return {}
+    return records
+
+
+def append_checkpoint(path: Path, result: WorkflowResult) -> None:
+    """Append a single WorkflowResult to checkpoint JSONL."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(result.model_dump(), ensure_ascii=False) + "\n")
+
 
 async def reload_data_if_needed(config: AppConfig, ocr_filename: str, cand_filename: str, interactive: bool = False) -> tuple[str, Dict[str, str]]:
     """
@@ -122,6 +150,7 @@ async def process_single_query(
     total_turns: int,
     logger: logging.Logger,
     config: AppConfig,
+    checkpoint_path: Optional[Path] = None,
     progress: Optional[Progress] = None,  # Add progress argument
     task_id: Optional[Any] = None,        # Add task_id argument
 ) -> Optional[WorkflowResult]:
@@ -147,6 +176,8 @@ async def process_single_query(
         if result:
             # 결과 저장 (Config injection)
             save_result_to_file(result, config)
+            if checkpoint_path:
+                append_checkpoint(checkpoint_path, result)
             
             # [Rich UI] 턴 결과 출력 (Thread-safe way needed for real app, but Rich handles it reasonably well)
             console.print(Panel(
@@ -171,7 +202,17 @@ async def process_single_query(
     return None
 
 
-async def execute_workflow(agent: GeminiAgent, ocr_text: str, user_intent: Optional[str], logger: logging.Logger, ocr_filename: str, cand_filename: str, is_interactive: bool = True) -> List[WorkflowResult]:
+async def execute_workflow(
+    agent: GeminiAgent,
+    ocr_text: str,
+    user_intent: Optional[str],
+    logger: logging.Logger,
+    ocr_filename: str,
+    cand_filename: str,
+    is_interactive: bool = True,
+    resume: bool = False,
+    checkpoint_path: Optional[Path] = None,
+) -> List[WorkflowResult]:
     """
     [Orchestration] 전체 워크플로우 실행 (Iterative & Human-in-the-Loop)
     """
@@ -194,6 +235,13 @@ async def execute_workflow(agent: GeminiAgent, ocr_text: str, user_intent: Optio
     # [Conditional Interactivity] AUTO 모드에서는 프롬프트 건너뛰기
     config = AppConfig()
     candidates = {}  # Initialize candidates
+    if checkpoint_path is None:
+        checkpoint_path = config.output_dir / "checkpoint.jsonl"
+    checkpoint_records: Dict[str, WorkflowResult] = {}
+    if resume:
+        checkpoint_records = load_checkpoint(checkpoint_path)
+        if checkpoint_records:
+            logger.info(f"Resume enabled: {len(checkpoint_records)} completed turn(s) preloaded from {checkpoint_path}")
     
     if is_interactive:
         # [Breakpoint & Hot Reload] 사용자 개입
@@ -244,6 +292,14 @@ async def execute_workflow(agent: GeminiAgent, ocr_text: str, user_intent: Optio
             turn_id = i + 1
             # 각 쿼리별 태스크 생성 (초기 상태: Waiting)
             task_id = progress.add_task(f"[cyan]Turn {turn_id}: Waiting...", total=1)
+
+            if resume and query in checkpoint_records:
+                restored = checkpoint_records[query]
+                restored.turn_id = turn_id
+                results.append(restored)
+                if progress and task_id:
+                    progress.update(task_id, advance=1, description=f"[green]Turn {turn_id}: Restored[/green]")
+                continue
             
             tasks.append(
                 process_single_query(
@@ -256,16 +312,17 @@ async def execute_workflow(agent: GeminiAgent, ocr_text: str, user_intent: Optio
                     total_turns=len(queries),
                     logger=logger,
                     config=config,
+                    checkpoint_path=checkpoint_path,
                     progress=progress,
                     task_id=task_id
                 )
             )
         
         # [Concurrency] 모든 태스크 동시 실행
-        processed_results = await asyncio.gather(*tasks)
+        processed_results = await asyncio.gather(*tasks) if tasks else []
         
         # None 제거 (실패한 경우)
-        results = [r for r in processed_results if r is not None]
+        results.extend([r for r in processed_results if r is not None])
         
         # 순서 보장을 위해 turn_id로 정렬 (병렬 처리로 순서가 섞일 수 있음)
         results.sort(key=lambda x: x.turn_id)
@@ -300,6 +357,37 @@ async def main():
         "--interactive",
         action="store_true",
         help="Force interactive mode (ask for confirmation) even in AUTO mode"
+    )
+
+    io_group = parser.add_argument_group("Input/Output")
+    io_group.add_argument(
+        "--ocr-file",
+        type=str,
+        default="input_ocr.txt",
+        help="OCR input filename (relative to data/inputs by default)",
+    )
+    io_group.add_argument(
+        "--cand-file",
+        type=str,
+        default="input_candidates.json",
+        help="Candidate answers filename (relative to data/inputs by default)",
+    )
+    core_group.add_argument(
+        "--intent",
+        type=str,
+        default=None,
+        help="Optional user intent to guide query generation",
+    )
+    io_group.add_argument(
+        "--checkpoint-file",
+        type=str,
+        default="checkpoint.jsonl",
+        help="Checkpoint JSONL path (relative paths resolve under data/outputs)",
+    )
+    core_group.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume workflow using checkpoint file (skips completed queries)",
     )
 
     # ... (rest of arguments)
@@ -339,7 +427,21 @@ async def main():
         # [Separation of Concerns] 워크플로우 실행 (모드에 따라 interactive 설정)
         # CHAT 모드이거나 --interactive 플래그가 있으면 대화형 모드
         is_interactive = (args.mode == "CHAT") or args.interactive
-        results = await execute_workflow(agent, ocr_text, user_intent, logger, args.ocr_file, args.cand_file, is_interactive)
+        checkpoint_path = Path(args.checkpoint_file)
+        if not checkpoint_path.is_absolute():
+            checkpoint_path = config.output_dir / checkpoint_path
+
+        results = await execute_workflow(
+            agent,
+            ocr_text,
+            user_intent,
+            logger,
+            args.ocr_file,
+            args.cand_file,
+            is_interactive,
+            resume=args.resume,
+            checkpoint_path=checkpoint_path,
+        )
         
         # ... (rest of main)
         
@@ -351,6 +453,21 @@ async def main():
         
         console.print()
         console.print(Panel(cost_info, title="[bold blue]Cost Summary[/bold blue]", border_style="blue"))
+
+        # [Cache Stats Persistence] append JSONL entry with small retention window
+        try:
+            cache_entry = {
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "model": config.model_name,
+                "input_tokens": agent.total_input_tokens,
+                "output_tokens": agent.total_output_tokens,
+                "cache_hits": agent.cache_hits,
+                "cache_misses": agent.cache_misses,
+            }
+            write_cache_stats(config.cache_stats_path, config.cache_stats_max_entries, cache_entry)
+            logger.info(f"Cache stats saved to {config.cache_stats_path}")
+        except Exception as e:
+            logger.warning(f"Cache stats write skipped: {e}")
             
     except Exception as e:
         logger.exception(f"Workflow Failed: {e}")

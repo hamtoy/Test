@@ -35,6 +35,8 @@ project_root/
 │   └── rewrite_user.j2
 ├── data/
 │   ├── inputs/             # 입력 파일 (OCR, 후보)
+│   │   ├── example_ocr.txt
+│   │   └── example_candidates.json
 │   └── outputs/            # 출력 파일 (Markdown)
 ├── src/                    # 소스 코드
 │   ├── __init__.py
@@ -94,6 +96,17 @@ uv sync --extra dev    # 개발/테스트/문서 의존성 포함
 ```
 
 자세한 내용은 [UV_GUIDE.md](UV_GUIDE.md)를 참조하세요.
+
+## ⚡️ Quick Start (샘플 데이터)
+
+1) `.env`에서 `GEMINI_API_KEY` 설정  
+2) 샘플 입력 사용:
+
+```bash
+python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --intent "요약"
+```
+
+3) 결과는 `data/outputs/`에 저장됩니다.
 
 ### 개발 환경 (권장)
 
@@ -184,6 +197,9 @@ python -m src.main --help
 - 콘솔: Rich 포맷 출력
 - 로그 파일: `app.log`
 - 캐싱: 프롬프트 토큰이 2000개 이상일 때만 활성화
+- 캐시 통계: `cache_stats.jsonl`(기본)로 누적 저장, `CACHE_STATS_FILE`, `CACHE_STATS_MAX_ENTRIES`로 경로/보존 개수 조정
+- 로그 분리: INFO+ → `app.log`, ERROR+ → `error.log` (JSON 포맷은 production 모드에서 자동 적용)
+- 체크포인트: `--resume` 사용 시 `checkpoint.jsonl`(기본)에서 완료된 질의를 건너뜀. `--checkpoint-file`로 경로 지정 가능
 
 ## 출력 예시
 
@@ -300,9 +316,20 @@ results = await asyncio.gather(*[
 | `GEMINI_CACHE_SIZE`        | `50`                   | 컨텍스트 캐시 크기 |
 | `GEMINI_CACHE_TTL_MINUTES` | `10`                   | 캐시 TTL (분)      |
 | `LOG_LEVEL`                | `INFO`                 | 로그 레벨          |
+| `CACHE_STATS_FILE`         | `cache_stats.jsonl`    | 캐시/토큰 통계 파일 경로 |
+| `CACHE_STATS_MAX_ENTRIES`  | `100`                  | 통계 파일 보존 개수 |
+| `LOCAL_CACHE_DIR`          | `.cache`               | 로컬 캐시 메타 저장 폴더 |
+| `LOG_FILE`                 | `app.log`              | INFO+ 로그 파일 경로 |
+| `ERROR_LOG_FILE`           | `error.log`            | ERROR+ 로그 파일 경로 |
 | `PROJECT_ROOT`             | 자동 감지              | 프로젝트 루트 경로 |
 
 자동 감지는 `.git`, `templates`, `data` 폴더를 기준으로 수행됩니다.
+
+## FAQ
+
+- **GEMINI_API_KEY 형식 오류가 뜹니다.** → `AIza`로 시작하고 총 39자여야 합니다. `.env`에서 공백/따옴표가 섞여 있지 않은지 확인하세요.
+- **커버리지 기준은 얼마인가요?** → CI에서 `--cov-fail-under=80`을 사용합니다. 로컬에서도 동일하게 실행됩니다.
+- **캐시 통계 파일은 어디에 저장되나요?** → 기본 `cache_stats.jsonl`이며, `CACHE_STATS_FILE`로 경로를, `CACHE_STATS_MAX_ENTRIES`로 보존 개수를 설정할 수 있습니다.
 
 ## 구현된 기능
 

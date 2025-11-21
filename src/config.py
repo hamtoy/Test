@@ -16,6 +16,9 @@ class AppConfig(BaseSettings):
     temperature: float = Field(0.2, alias="GEMINI_TEMPERATURE")
     cache_ttl_minutes: int = Field(10, alias="GEMINI_CACHE_TTL_MINUTES")
     log_level: str = Field("INFO", alias="LOG_LEVEL")
+    cache_stats_file: str = Field("cache_stats.jsonl", alias="CACHE_STATS_FILE")
+    cache_stats_max_entries: int = Field(100, alias="CACHE_STATS_MAX_ENTRIES")
+    local_cache_dir: str = Field(".cache", alias="LOCAL_CACHE_DIR")
 
     # [Typo Prevention] extra="forbid"로 변경하여 오타를 즉시 감지
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="forbid")
@@ -81,6 +84,13 @@ class AppConfig(BaseSettings):
             raise ValueError(f"log_level must be one of {allowed}")
         return upper
 
+    @field_validator("cache_stats_max_entries")
+    @classmethod
+    def validate_cache_stats_max_entries(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("cache_stats_max_entries must be >= 1")
+        return v
+
     def model_post_init(self, __context: Any) -> None:
         """Ensure required directories exist after settings load."""
         self._ensure_directories()
@@ -135,3 +145,11 @@ class AppConfig(BaseSettings):
         ]
         for dir_path in required_dirs:
             dir_path.mkdir(parents=True, exist_ok=True)
+
+    @property
+    def cache_stats_path(self) -> Path:
+        """Cache stats file path resolved relative to project root if needed."""
+        path = Path(self.cache_stats_file)
+        if not path.is_absolute():
+            path = self.base_dir / path
+        return path

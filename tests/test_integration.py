@@ -61,3 +61,60 @@ async def test_execute_workflow_e2e(monkeypatch, tmp_path):
     assert result.rewritten_answer == "rewritten: Best answer"
     assert result.success is True
     assert result.cost == pytest.approx(0.123)
+
+
+class NoCallAgent(DummyAgent):
+    async def generate_query(self, ocr_text, user_intent):
+        return ["strategic query"]
+
+    async def evaluate_responses(self, *args, **kwargs):
+        raise AssertionError("Should not evaluate when resuming")
+
+    async def rewrite_best_answer(self, *args, **kwargs):
+        raise AssertionError("Should not rewrite when resuming")
+
+
+@pytest.mark.asyncio
+async def test_execute_workflow_resume(monkeypatch, tmp_path):
+    monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
+    monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
+
+    async def fake_reload_data(config, ocr_filename, cand_filename, interactive=False):
+        return "ocr text", {"A": '{"A": "Best answer"}'}
+
+    monkeypatch.setattr("src.main.reload_data_if_needed", fake_reload_data)
+
+    checkpoint_path = tmp_path / "data" / "outputs" / "checkpoint.jsonl"
+    checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Preload checkpoint entry
+    from src.models import WorkflowResult
+
+    existing = WorkflowResult(
+        turn_id=1,
+        query="strategic query",
+        evaluation=None,
+        best_answer="Cached answer",
+        rewritten_answer="Cached rewritten",
+        cost=0.0,
+        success=True,
+    )
+    checkpoint_path.write_text(existing.model_dump_json(ensure_ascii=False) + "\n", encoding="utf-8")
+
+    agent = NoCallAgent()
+    logger = logging.getLogger("GeminiWorkflow")
+
+    results = await execute_workflow(
+        agent,
+        ocr_text="ocr body",
+        user_intent="intent",
+        logger=logger,
+        ocr_filename="ocr.txt",
+        cand_filename="cand.json",
+        is_interactive=False,
+        resume=True,
+        checkpoint_path=checkpoint_path,
+    )
+
+    assert len(results) == 1
+    assert results[0].rewritten_answer == "Cached rewritten"

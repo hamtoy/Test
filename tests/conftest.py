@@ -3,6 +3,10 @@ import pytest
 
 
 @pytest.fixture(autouse=True)
-def _set_dummy_api_key(monkeypatch):
-    """Ensure AppConfig validation passes without a real API key."""
-    monkeypatch.setenv("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", "AIzaSyDUMMYKEY1234567890"))
+def mock_env(monkeypatch):
+    """Ensure AppConfig validation passes with valid mock values."""
+    # AIza + 35 characters = 39 characters total
+    mock_key = "AIza" + "0" * 35
+    monkeypatch.setenv("GEMINI_API_KEY", mock_key)
+    monkeypatch.setenv("GEMINI_MODEL_NAME", "gemini-3-pro-preview")
+

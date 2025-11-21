@@ -40,11 +40,15 @@ class SensitiveDataFilter(logging.Filter):
 
         return True
 
-def _build_file_handler(log_level: int, use_json: bool, sensitive_filter: logging.Filter) -> logging.Handler:
+def _build_file_handler(
+    log_level: int,
+    use_json: bool,
+    sensitive_filter: logging.Filter,
+    filename: str,
+) -> logging.Handler:
     """Create RotatingFileHandler with optional JSON formatting."""
-    log_file = os.getenv("LOG_FILE", "app.log")
     file_handler = logging.handlers.RotatingFileHandler(
-        log_file,
+        filename,
         maxBytes=10 * 1024 * 1024,  # 10MB
         backupCount=5,
         encoding="utf-8",
@@ -89,12 +93,24 @@ def setup_logging(env: str | None = None) -> Tuple[logging.Logger, logging.handl
 
     handlers = []
 
+    info_log = os.getenv("LOG_FILE", "app.log")
+    error_log = os.getenv("ERROR_LOG_FILE", "error.log")
+
     file_handler = _build_file_handler(
         log_level=log_level,
         use_json=is_production,
         sensitive_filter=sensitive_filter,
+        filename=info_log,
     )
     handlers.append(file_handler)
+
+    error_handler = _build_file_handler(
+        log_level=logging.ERROR,
+        use_json=is_production,
+        sensitive_filter=sensitive_filter,
+        filename=error_log,
+    )
+    handlers.append(error_handler)
 
     if not is_production:
         handlers.append(_build_console_handler(log_level, sensitive_filter))

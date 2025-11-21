@@ -135,3 +135,30 @@ def safe_json_parse(text: str, target_key: Optional[str] = None, raise_on_error:
             raise
         logger.error(message)
         return None
+
+
+def write_cache_stats(path: Path, max_entries: int, entry: Dict[str, Any]) -> None:
+    """
+    Append cache/tokens stats to a JSONL file, trimming to max_entries.
+    """
+    max_entries = max(1, min(max_entries, 1000))
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    existing = []
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    existing.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+
+    existing.append(entry)
+    trimmed = existing[-max_entries:]
+
+    with open(path, "w", encoding="utf-8") as f:
+        for item in trimmed:
+            f.write(json.dumps(item, ensure_ascii=False) + "\n")

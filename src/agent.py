@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import hashlib
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
@@ -119,6 +120,57 @@ class GeminiAgent:
             safety_settings=self.safety_settings
         )
 
+    def _local_cache_manifest_path(self) -> Path:
+        base = Path(self.config.local_cache_dir)
+        if not base.is_absolute():
+            base = self.config.base_dir / base
+        return base / "context_cache.json"
+
+    def _load_local_cache(self, fingerprint: str, ttl_minutes: int):
+        manifest_path = self._local_cache_manifest_path()
+        if not manifest_path.exists():
+            return None
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            entry = data.get(fingerprint)
+            if not entry:
+                return None
+            created_raw = entry.get("created")
+            created = datetime.datetime.fromisoformat(created_raw) if created_raw else None
+            if created is None:
+                return None
+            ttl = entry.get("ttl_minutes", ttl_minutes)
+            now = datetime.datetime.now(datetime.timezone.utc)
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=datetime.timezone.utc)
+            if now - created > datetime.timedelta(minutes=ttl):
+                return None
+            cache_name = entry.get("name")
+            if cache_name:
+                return caching.CachedContent.get(name=cache_name)
+        except Exception as e:
+            self.logger.debug(f"Local cache load skipped: {e}")
+        return None
+
+    def _store_local_cache(self, fingerprint: str, cache_name: str, ttl_minutes: int) -> None:
+        manifest_path = self._local_cache_manifest_path()
+        manifest_path.parent.mkdir(parents=True, exist_ok=True)
+        data = {}
+        if manifest_path.exists():
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                data = {}
+        data[fingerprint] = {
+            "name": cache_name,
+            "created": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "ttl_minutes": ttl_minutes,
+        }
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
     def _unwrap_json_response(self, response_text: str, target_key: str) -> Optional[str]:
         """
         Recursively search JSON responses for a target key (supports nested dict/list).
@@ -134,6 +186,14 @@ class GeminiAgent:
         # 1. 시스템 프롬프트 렌더링 (평가용 기준)
         system_prompt = self.jinja_env.get_template("prompt_eval.j2").render()
         combined_content = system_prompt + "\n\n" + ocr_text
+        fingerprint = hashlib.sha256(combined_content.encode("utf-8")).hexdigest()
+        ttl_minutes = self.config.cache_ttl_minutes
+
+        # [Local Disk Cache] 재사용 가능한 캐시가 있으면 반환
+        local_cached = self._load_local_cache(fingerprint, ttl_minutes)
+        if local_cached:
+            self.logger.info(f"Reusing context cache from disk: {local_cached.name}")
+            return local_cached
 
         loop = asyncio.get_running_loop()
 
@@ -150,8 +210,6 @@ class GeminiAgent:
             return None
             
         try:
-            ttl_minutes = self.config.cache_ttl_minutes
-
             # 3. 캐시 생성 (Configurable TTL) - 블로킹 호출 오프로드
             def _create_cache():
                 return caching.CachedContent.create(
@@ -164,6 +222,10 @@ class GeminiAgent:
 
             cache = await loop.run_in_executor(None, _create_cache)
             self.logger.info(f"Context Cache Created: {cache.name} (Expires in {ttl_minutes}m)")
+            try:
+                self._store_local_cache(fingerprint, cache.name, ttl_minutes)
+            except Exception as e:
+                self.logger.debug(f"Local cache manifest write skipped: {e}")
             return cache
         except google_exceptions.ResourceExhausted as e:
             self.logger.error(f"Failed to create cache due to rate limit: {e}")
