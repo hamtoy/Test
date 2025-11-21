@@ -1,0 +1,391 @@
+import logging
+import asyncio
+from typing import Dict, Any, Optional, List
+from pathlib import Path
+from jinja2 import Environment, FileSystemLoader
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from pydantic import ValidationError
+import json
+import datetime
+
+import google.generativeai as genai
+import google.generativeai.caching as caching
+from google.generativeai import protos
+from google.api_core import exceptions as google_exceptions
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
+
+from src.config import AppConfig
+from src.models import EvaluationResultSchema, QueryResult
+from src.utils import clean_markdown_code_block
+
+def _unwrap_json_response(response_text: str, target_key: str, logger: logging.Logger) -> Optional[str]:
+    """
+    [Helper Function] JSON 응답에서 특정 키를 추출하는 헬퍼 함수
+    Single Responsibility Principle (SRP)에 따라 파싱 로직 분리
+    
+    Args:
+        response_text: API 응답 텍스트
+        target_key: 추출할 키 (e.g., "rewritten_answer")
+        logger: 로깅 객체
+    
+    Returns:
+        추출된 텍스트 또는 None (파싱 실패 시)
+    """
+    # Guard: 빈 응답 체크
+    if not response_text or not response_text.strip():
+        logger.warning(f"JSON Unwrap: Empty response for key '{target_key}'")
+        return None
+    
+    cleaned = clean_markdown_code_block(response_text)
+    
+    # Guard: JSON 형식이 아님
+    if not cleaned.strip().startswith('{'):
+        return None
+    
+    try:
+        data = json.loads(cleaned)
+        
+        # Guard: dict가 아님
+        if not isinstance(data, dict):
+            return None
+        
+        # Case 1: 1단계 키 찾기 (정상)
+        if target_key in data:
+            logger.info(f"JSON Unwrap: Found '{target_key}' at top level")
+            return data[target_key]
+        
+        # Case 2: 중첩 구조 탐색 (캐시 충돌 등)
+        for parent_key, parent_value in data.items():
+            if isinstance(parent_value, dict) and target_key in parent_value:
+                logger.warning(
+                    f"JSON Unwrap: Found '{target_key}' nested in '{parent_key}' "
+                    f"(possible cache conflict or schema mismatch)"
+                )
+                return parent_value[target_key]
+        
+        # 키를 찾지 못함
+        logger.warning(f"JSON Unwrap: Key '{target_key}' not found in response")
+        return None
+        
+    except json.JSONDecodeError as e:
+        logger.debug(f"JSON Unwrap: Parse failed for '{target_key}': {e}")
+        return None
+    except Exception as e:
+        logger.warning(f"JSON Unwrap: Unexpected error for '{target_key}': {e}")
+        return None
+
+class GeminiAgent:
+    """Gemini API와의 통신을 담당하는 에이전트."""
+    
+    def __init__(self, config: AppConfig, jinja_env: Optional[Environment] = None):
+        """
+        [Dependency Injection] jinja_env를 외부에서 주입받을 수 있게 하여 테스트 용이성 향상
+        [Rate Limiting] Semaphore(동시성) + RateLimiter(RPM) 이중 제어
+        """
+        self.logger = logging.getLogger("GeminiWorkflow")
+        self.config = config
+        
+        # [Concurrency Control] 동시 실행 개수 제한
+        self._semaphore = asyncio.Semaphore(config.max_concurrency)
+        
+        # [Rate Limiting] RPM(분당 요청 수) 제한 - 429 에러 방지
+        try:
+            from aiolimiter import AsyncLimiter
+            # Gemini API 기본 RPM: 60 (1분에 60개)
+            self._rate_limiter = AsyncLimiter(max_rate=60, time_period=60)
+            self.logger.info("Rate limiter enabled: 60 requests/minute")
+        except ImportError:
+            self._rate_limiter = None
+            self.logger.warning("aiolimiter not installed. Rate limiting disabled.")
+        
+        self.safety_settings = self._get_safety_settings()
+        
+        # [Cost Tracking] 토큰 사용량 누적
+        self.total_input_tokens = 0
+        self.total_output_tokens = 0
+        
+        # [Dependency Injection] 외부에서 주입하거나, 없으면 생성
+        if jinja_env is not None:
+            self.jinja_env = jinja_env
+        else:
+            # [Fail-Fast] 필수 템플릿 파일 존재 확인
+            required_templates = [
+                "prompt_eval.j2",
+                "prompt_query_gen.j2", 
+                "prompt_rewrite.j2",
+                "query_gen_user.j2",
+                "rewrite_user.j2"
+            ]
+            
+            for template_name in required_templates:
+                template_path = config.template_dir / template_name
+                if not template_path.exists():
+                    raise FileNotFoundError(
+                        f"Required template not found: {template_path}\n"
+                        f"Please ensure all .j2 files are in the templates/ directory."
+                    )
+            
+            # [Jinja2] 템플릿 엔진 초기화 (Config에서 경로 참조)
+            self.jinja_env = Environment(loader=FileSystemLoader(config.template_dir), autoescape=True)
+    
+    def _get_safety_settings(self) -> Dict:
+        return {
+            category: HarmBlockThreshold.BLOCK_NONE
+            for category in [
+                HarmCategory.HARM_CATEGORY_HARASSMENT,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            ]
+        }
+
+    def _create_generative_model(self, system_prompt: str, response_schema=None, cached_content=None) -> genai.GenerativeModel:
+        """
+        [Factory Method] GenerativeModel 생성
+        - cached_content가 있으면 이를 사용하여 모델 생성 (Context Caching)
+        """
+        generation_config = {
+            "temperature": self.config.temperature,
+            "max_output_tokens": self.config.max_output_tokens,
+        }
+        
+        if response_schema:
+            generation_config["response_mime_type"] = "application/json"
+            generation_config["response_schema"] = response_schema
+
+        # [Context Caching] 캐시된 컨텐츠가 있으면 이를 기반으로 모델 생성
+        if cached_content:
+            return genai.GenerativeModel.from_cached_content(
+                cached_content=cached_content,
+                generation_config=generation_config,
+                safety_settings=self.safety_settings
+            )
+
+        return genai.GenerativeModel(
+            model_name=self.config.model_name,
+            system_instruction=system_prompt,
+            generation_config=generation_config,
+            safety_settings=self.safety_settings
+        )
+
+    def create_context_cache(self, ocr_text: str) -> Optional[caching.CachedContent]:
+        """
+        [Optimization] OCR 텍스트와 시스템 프롬프트를 결합하여 Context Cache 생성
+        조건: 총 토큰 수가 2048 이상일 때만 생성
+        """
+        # 1. 시스템 프롬프트 렌더링 (평가용 기준)
+        system_prompt = self.jinja_env.get_template("prompt_eval.j2").render()
+        
+        # 2. 토큰 수 계산을 위한 임시 모델
+        model = genai.GenerativeModel(self.config.model_name)
+        combined_content = system_prompt + "\n\n" + ocr_text
+        token_count = model.count_tokens(combined_content).total_tokens
+        
+        self.logger.info(f"Total Tokens for Caching: {token_count}")
+        
+        if token_count < 2048:
+            self.logger.info("Skipping cache creation (Tokens < 2048)")
+            return None
+            
+        try:
+            # 3. 캐시 생성 (TTL 10분)
+            cache = caching.CachedContent.create(
+                model=self.config.model_name,
+                display_name="ocr_context_cache",
+                system_instruction=system_prompt,
+                contents=[ocr_text],
+                ttl=datetime.timedelta(minutes=10),
+            )
+            self.logger.info(f"Context Cache Created: {cache.name} (Expires in 10m)")
+            return cache
+        except Exception as e:
+            self.logger.error(f"Failed to create cache: {e}")
+            return None
+
+    # [Modern Retry] Tenacity 라이브러리 사용
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((
+            google_exceptions.ResourceExhausted, 
+            google_exceptions.ServiceUnavailable, 
+            google_exceptions.DeadlineExceeded,
+            TimeoutError
+        )),
+        reraise=True
+    )
+    async def _call_api_with_retry(self, model: genai.GenerativeModel, prompt_text: str) -> str:
+        """[Tenacity] 재시도 로직이 데코레이터로 추상화됨"""
+        # [Rate Limiting] RPM 제어 (시간 기반)
+        if self._rate_limiter:
+            async with self._rate_limiter:
+                # [Concurrency Control] 동시 실행 개수 제어 (공간 기반)
+                async with self._semaphore:
+                    return await self._execute_api_call(model, prompt_text)
+        else:
+            async with self._semaphore:
+                return await self._execute_api_call(model, prompt_text)
+    
+    async def _execute_api_call(self, model: genai.GenerativeModel, prompt_text: str) -> str:
+        """실제 API 호출 로직"""
+        response = await model.generate_content_async(
+            prompt_text, 
+            request_options={'timeout': self.config.timeout}
+        )
+        
+        # [Cost Observability] 토큰 사용량 로깅 및 누적
+        if hasattr(response, 'usage_metadata') and response.usage_metadata:
+            usage = response.usage_metadata
+            self.total_input_tokens += usage.prompt_token_count
+            self.total_output_tokens += usage.candidates_token_count
+            
+            self.logger.info(
+                f"Token Usage - Prompt: {usage.prompt_token_count}, "
+                f"Response: {usage.candidates_token_count}, "
+                f"Total: {usage.total_token_count}"
+            )
+        
+        # [Enhanced] Finish Reason 및 Safety Filter 상세 검증
+        if response.candidates:
+            candidate = response.candidates[0]
+            finish_reason = candidate.finish_reason
+            
+            if finish_reason not in [protos.Candidate.FinishReason.STOP, protos.Candidate.FinishReason.MAX_TOKENS]:
+                # Safety filter나 기타 이유로 중단됨
+                safety_info = ""
+                if hasattr(response, 'prompt_feedback') and response.prompt_feedback:
+                    safety_info = f" Safety Ratings: {response.prompt_feedback}"
+                
+                self.logger.warning(
+                    f"⚠️ Generation stopped unexpectedly. "
+                    f"Finish Reason: {finish_reason}.{safety_info}"
+                )
+                raise ValueError(f"Blocked by safety filter or other reason: {finish_reason}")
+
+        try:
+            return response.text
+        except ValueError as e:
+            # [Improved Error] Safety filter 정보 포함
+            safety_info = ""
+            if hasattr(response, 'prompt_feedback') and response.prompt_feedback:
+                safety_info = f" Safety Filter: {response.prompt_feedback}"
+            
+            error_msg = f"No text content in response.{safety_info}"
+            self.logger.error(error_msg)
+            
+            # [Null Check] 텍스트 추출 실패 시 수동 추출 시도 (빈 상자 확인)
+            if response.candidates and response.candidates[0].content.parts:
+                parts = response.candidates[0].content.parts
+                if len(parts) > 0 and hasattr(parts[0], 'text'):
+                    return parts[0].text
+            
+            raise ValueError(error_msg)
+
+    async def generate_query(self, ocr_text: str, user_intent: Optional[str] = None) -> List[str]:
+        # [Jinja2] 템플릿 렌더링
+        template = self.jinja_env.get_template("query_gen_user.j2")
+        user_prompt = template.render(ocr_text=ocr_text, user_intent=user_intent)
+        
+        # [Dynamic Schema Injection] Pydantic 스키마 추출 및 주입
+        schema_json = json.dumps(QueryResult.model_json_schema(), indent=2, ensure_ascii=False)
+        
+        # [System Prompt] 템플릿 로드
+        system_prompt = self.jinja_env.get_template("prompt_query_gen.j2").render(
+            response_schema=schema_json
+        )
+        
+        # [Modern Schema] Pydantic 모델 전달 (JSON Mode)
+        model = self._create_generative_model(system_prompt, response_schema=QueryResult)
+        
+        response_text = await self._call_api_with_retry(model, user_prompt)
+        
+        # [Native Parsing] Pydantic Validation 사용 (안전한 파싱)
+        cleaned_response = clean_markdown_code_block(response_text)
+        if not cleaned_response or not cleaned_response.strip():
+            self.logger.error("Query Generation: Empty response received")
+            return []
+        
+        try:
+            result = QueryResult.model_validate_json(cleaned_response)
+            return result.queries if result.queries else []
+        except ValidationError as e:
+            self.logger.error(f"Query Validation Failed: {e}. Response: {cleaned_response[:200]}...")
+            return []
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Query JSON Parse Failed: {e}. Response: {cleaned_response[:200]}...")
+            return []
+        except Exception as e:
+            self.logger.error(f"Unexpected error in query parsing: {e}")
+            return []
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((ValidationError, json.JSONDecodeError)),
+        reraise=True
+    )
+    async def evaluate_responses(self, ocr_text: str, query: str, candidates: Dict[str, str], cached_content=None) -> Optional[EvaluationResultSchema]:
+        """[Type Safety] EvaluationResultSchema 타입을 명시적으로 반환"""
+        if not query:
+            return None
+        
+        input_data = {"ocr_ground_truth": ocr_text, "target_query": query, "candidates": candidates}
+        
+        # [System Prompt] 템플릿 로드
+        system_prompt = self.jinja_env.get_template("prompt_eval.j2").render()
+        
+        # [Modern Schema] Pydantic 모델 전달
+        model = self._create_generative_model(system_prompt, response_schema=EvaluationResultSchema, cached_content=cached_content)
+        response_text = await self._call_api_with_retry(model, json.dumps(input_data, ensure_ascii=False))
+        
+        # [Native Parsing] Pydantic Validation 사용 (안전한 파싱)
+        cleaned_response = clean_markdown_code_block(response_text)
+        
+        if not cleaned_response or not cleaned_response.strip():
+            self.logger.error("Evaluation: Empty response received")
+            raise ValueError("Empty evaluation response")
+        
+        try:
+            # Pydantic을 사용하여 검증 및 파싱 (에러 발생 시 retry 데코레이터가 처리)
+            result = EvaluationResultSchema.model_validate_json(cleaned_response)
+            return result
+        except ValidationError as e:
+            self.logger.error(f"Evaluation Validation Failed: {e}. Response: {cleaned_response[:200]}...")
+            raise
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Evaluation JSON Parse Failed: {e}. Response: {cleaned_response[:200]}...")
+            raise
+
+    async def rewrite_best_answer(self, ocr_text: str, best_answer: str, cached_content=None) -> str:
+        """
+        [Refactored] 중첩 if-else 제거, 헬퍼 함수 사용으로 SRP 준수
+        """
+        # [Jinja2] 템플릿 렌더링
+        template = self.jinja_env.get_template("rewrite_user.j2")
+        payload = template.render(ocr_text=ocr_text, best_answer=best_answer)
+        
+        # [System Prompt] 템플릿 로드
+        system_prompt = self.jinja_env.get_template("prompt_rewrite.j2").render()
+        
+        # [IMPORTANT] rewrite는 순수 텍스트여야 하므로 response_schema=None
+        model = self._create_generative_model(system_prompt, cached_content=cached_content)
+        response_text = await self._call_api_with_retry(model, payload)
+        
+        # [Defensive Programming] 헬퍼 함수로 JSON unwrapping 시도
+        unwrapped = _unwrap_json_response(response_text, "rewritten_answer", self.logger)
+        
+        # Guard: unwrapping 성공 시 반환
+        if unwrapped:
+            return unwrapped
+        
+        # Fallback: 원본 텍스트 반환
+        return response_text if response_text else ""
+
+    def get_total_cost(self) -> float:
+        """
+        [Cost Tracking] 세션의 총 API 비용 계산 (USD)
+        Gemini 1.5 Pro 기준: 입력 $3.50/1M, 출력 $10.50/1M 토큰
+        """
+        input_cost = (self.total_input_tokens / 1_000_000) * 3.50
+        output_cost = (self.total_output_tokens / 1_000_000) * 10.50
+        return input_cost + output_cost
