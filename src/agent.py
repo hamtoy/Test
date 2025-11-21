@@ -251,6 +251,11 @@ class GeminiAgent:
             raise SafetyFilterError(error_msg)
 
     async def generate_query(self, ocr_text: str, user_intent: Optional[str] = None) -> List[str]:
+        """
+        Generate strategic queries based on OCR text and optional user intent.
+
+        Returns an empty list on invalid/empty responses; raises APIRateLimitError on rate limiting.
+        """
         # [Jinja2] 템플릿 렌더링
         template = self.jinja_env.get_template("query_gen_user.j2")
         user_prompt = template.render(ocr_text=ocr_text, user_intent=user_intent)
@@ -297,7 +302,14 @@ class GeminiAgent:
         reraise=True
     )
     async def evaluate_responses(self, ocr_text: str, query: str, candidates: Dict[str, str], cached_content=None) -> Optional[EvaluationResultSchema]:
-        """[Type Safety] EvaluationResultSchema 타입을 명시적으로 반환"""
+        """
+        Evaluate candidates against OCR text and return structured scores.
+
+        Raises:
+            APIRateLimitError: when evaluation hits API rate limits.
+            ValidationFailedError: when schema validation or JSON parsing fails.
+            ValueError: when response is empty.
+        """
         if not query:
             return None
         
@@ -333,12 +345,14 @@ class GeminiAgent:
 
     async def rewrite_best_answer(self, ocr_text: str, best_answer: str, cached_content=None) -> str:
         """
-        [Refactored] 중첩 if-else 제거, 헬퍼 함수 사용으로 SRP 준수
+        Rewrite the best answer with clarity/safety improvements.
+
+        Returns the rewritten answer; falls back to original text on parse failure.
         """
         # [Jinja2] 템플릿 렌더링
         template = self.jinja_env.get_template("rewrite_user.j2")
         payload = template.render(ocr_text=ocr_text, best_answer=best_answer)
-        
+
         # [System Prompt] 템플릿 로드
         system_prompt = self.jinja_env.get_template("prompt_rewrite.j2").render()
         
