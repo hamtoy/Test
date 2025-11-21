@@ -45,3 +45,16 @@ async def test_load_input_data_empty_candidate_content(tmp_path: Path):
 
     with pytest.raises(ValidationFailedError):
         await load_input_data(base_dir, "input_ocr.txt", "input_candidates.json")
+
+
+@pytest.mark.asyncio
+async def test_load_input_data_raw_fallback(tmp_path: Path):
+    base_dir = tmp_path
+    (base_dir / "input_ocr.txt").write_text("ocr text", encoding="utf-8")
+    raw_text = "A: alpha\nB: beta\nC: gamma"
+    (base_dir / "input_candidates.txt").write_text(raw_text, encoding="utf-8")
+
+    ocr_text, candidates = await load_input_data(base_dir, "input_ocr.txt", "input_candidates.txt")
+
+    assert ocr_text == "ocr text"
+    assert candidates == {"A": "alpha", "B": "beta", "C": "gamma"}

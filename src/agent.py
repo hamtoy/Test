@@ -114,6 +114,13 @@ class GeminiAgent:
             safety_settings=self.safety_settings
         )
 
+    def _unwrap_json_response(self, response_text: str, target_key: str) -> Optional[str]:
+        """
+        Recursively search JSON responses for a target key (supports nested dict/list).
+        """
+        value = safe_json_parse(response_text, target_key)
+        return value if isinstance(value, str) else None
+
     async def create_context_cache(self, ocr_text: str) -> Optional[caching.CachedContent]:
         """
         [Optimization] OCR 텍스트와 시스템 프롬프트를 결합하여 Context Cache 생성
@@ -343,7 +350,7 @@ class GeminiAgent:
             raise APIRateLimitError(f"Rate limit exceeded during rewrite: {e}") from e
         
         # [Defensive Programming] utils의 중앙화된 함수 사용 (DRY 원칙)
-        unwrapped = safe_json_parse(response_text, "rewritten_answer")
+        unwrapped = self._unwrap_json_response(response_text, "rewritten_answer")
         
         # Guard: unwrapping 성공 시 반환
         if unwrapped:

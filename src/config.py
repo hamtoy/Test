@@ -45,19 +45,31 @@ class AppConfig(BaseSettings):
             raise ValueError("cache_ttl_minutes must be between 1 and 1440")
         return v
 
+    @staticmethod
+    def _detect_project_root() -> Path:
+        """
+        Detect the project root by checking several hints:
+        1. PROJECT_ROOT env var (highest priority)
+        2. The nearest directory containing `.git`, `templates`, or `data`
+        3. Fallback to the parent of this file (legacy behavior)
+        """
+        project_root_env = os.getenv("PROJECT_ROOT")
+        if project_root_env:
+            return Path(project_root_env)
+
+        current = Path(__file__).resolve().parent
+        markers = {".git", "templates", "data"}
+
+        for parent in [current, *current.parents]:
+            if any((parent / marker).exists() for marker in markers):
+                return parent
+
+        return Path(__file__).parent.parent
+
     @property
     def base_dir(self) -> Path:
-        """
-        [Deployment Flexibility] 프로젝트 루트 디렉토리 반환
-        1순위: PROJECT_ROOT 환경 변수 (Docker/배포 환경)
-        2순위: 상대 경로 계산 (개발 환경)
-        """
-        project_root = os.getenv("PROJECT_ROOT")
-        if project_root:
-            return Path(project_root)
-        
-        # 기존 로직: src/ 디렉토리의 상위 디렉토리
-        return Path(__file__).parent.parent
+        """프로젝트 루트 디렉토리 반환"""
+        return self._detect_project_root()
 
     @property
     def template_dir(self) -> Path:

@@ -1,5 +1,5 @@
-import re
 import json
+import re
 import aiofiles
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -52,6 +52,23 @@ def clean_markdown_code_block(text: str) -> str:
     # No markdown found - return original (likely already clean JSON)
     return text.strip()
 
+def _find_in_nested(obj: Any, target_key: str) -> Optional[Any]:
+    """Recursively search dict/list structures for a key."""
+    if isinstance(obj, dict):
+        if target_key in obj:
+            return obj[target_key]
+        for value in obj.values():
+            found = _find_in_nested(value, target_key)
+            if found is not None:
+                return found
+    elif isinstance(obj, list):
+        for item in obj:
+            found = _find_in_nested(item, target_key)
+            if found is not None:
+                return found
+    return None
+
+
 def safe_json_parse(text: str, target_key: Optional[str] = None) -> Optional[Any]:
     """
     [Centralized JSON Parsing] 안전한 JSON 파싱 헬퍼 함수
@@ -90,15 +107,10 @@ def safe_json_parse(text: str, target_key: Optional[str] = None) -> Optional[Any
         
         # 특정 키 추출
         if target_key:
-            if target_key in data:
-                return data[target_key]
-            # 중첩 구조 탐색 (캐시 충돌 등)
-            for key, value in data.items():
-                if isinstance(value, dict) and target_key in value:
-                    logger.warning(f"safe_json_parse: Found '{target_key}' nested in '{key}'")
-                    return value[target_key]
-            logger.debug(f"safe_json_parse: Key '{target_key}' not found")
-            return None
+            found = _find_in_nested(data, target_key)
+            if found is None:
+                logger.debug(f"safe_json_parse: Key '{target_key}' not found")
+            return found
         
         return data
         

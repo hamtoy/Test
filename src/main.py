@@ -62,6 +62,47 @@ def save_result_to_file(result: WorkflowResult, config: AppConfig):
     
     logging.getLogger("GeminiWorkflow").info(f"결과 파일 저장됨: {filename}")
 
+
+async def _evaluate_and_rewrite_turn(
+    agent: GeminiAgent,
+    ocr_text: str,
+    query: str,
+    candidates: Dict[str, str],
+    cache,
+    turn_id: int,
+    total_turns: int,
+    logger: logging.Logger,
+) -> Optional[WorkflowResult]:
+    logger.info(f"Turn {turn_id}/{total_turns}: '{query}' 실행 중...")
+
+    logger.info("후보 평가 중...")
+    evaluation = await agent.evaluate_responses(ocr_text, query, candidates, cached_content=cache)
+    if not evaluation:
+        logger.warning(f"Turn {turn_id}: 평가 실패")
+        return None
+
+    best_candidate_id = evaluation.get_best_candidate_id()
+    logger.info(f"후보 선정 완료: {best_candidate_id}")
+
+    raw_answer = candidates.get(best_candidate_id, "")
+    parsed = safe_json_parse(raw_answer, best_candidate_id)
+    best_answer = parsed if parsed else raw_answer
+
+    logger.info("답변 재작성 중...")
+    rewritten_answer = await agent.rewrite_best_answer(ocr_text, best_answer, cached_content=None)
+    logger.info("답변 재작성 완료")
+
+    return WorkflowResult(
+        turn_id=turn_id,
+        query=query,
+        evaluation=evaluation,
+        best_answer=best_answer,
+        rewritten_answer=rewritten_answer,
+        cost=agent.get_total_cost(),
+        success=True,
+    )
+
+
 async def execute_workflow(agent: GeminiAgent, ocr_text: str, user_intent: Optional[str], logger: logging.Logger, ocr_filename: str, cand_filename: str, is_interactive: bool = True) -> List[WorkflowResult]:
     """
     [Orchestration] 전체 워크플로우 실행 (Iterative & Human-in-the-Loop)
@@ -122,41 +163,19 @@ async def execute_workflow(agent: GeminiAgent, ocr_text: str, user_intent: Optio
     # [Phase 2: Execution Loop] 순차 실행
     for i, query in enumerate(queries):
         turn_id = i + 1
-        logger.info(f"Turn {turn_id}/{len(queries)}: '{query}' 실행 중...")
-        
         try:
-            # 1. 후보 평가
-            logger.info("후보 평가 중...")
-            evaluation = await agent.evaluate_responses(ocr_text, query, candidates, cached_content=cache)
-            if not evaluation:
-                logger.warning(f"Turn {turn_id}: 평가 실패")
-                continue
-                
-            best_candidate_id = evaluation.get_best_candidate_id()
-            logger.info(f"후보 선정 완료: {best_candidate_id}")
-            
-            # [Centralized Parsing] safe_json_parse 사용
-            raw_answer = candidates.get(best_candidate_id, "")
-            parsed = safe_json_parse(raw_answer, best_candidate_id)
-            best_answer = parsed if parsed else raw_answer
-            
-            # 2. 답변 재작성
-            logger.info("답변 재작성 중...")
-            # [IMPORTANT] 캐시 사용 안함: Rewrite는 다른 System Prompt를 사용하므로 캐시 충돌 방지
-            rewritten_answer = await agent.rewrite_best_answer(ocr_text, best_answer, cached_content=None)
-            logger.info("답변 재작성 완료")
-            
-            
-            # 3. 결과 저장
-            result = WorkflowResult(
-                turn_id=turn_id,
+            result = await _evaluate_and_rewrite_turn(
+                agent=agent,
+                ocr_text=ocr_text,
                 query=query,
-                evaluation=evaluation,
-                best_answer=best_answer,
-                rewritten_answer=rewritten_answer,
-                cost=agent.get_total_cost(),
-                success=True
+                candidates=candidates,
+                cache=cache,
+                turn_id=turn_id,
+                total_turns=len(queries),
+                logger=logger,
             )
+            if not result:
+                continue
             
             results.append(result)
             
@@ -166,8 +185,8 @@ async def execute_workflow(agent: GeminiAgent, ocr_text: str, user_intent: Optio
             # [Rich UI] 턴 결과 출력
             console.print(Panel(
                 f"[bold]Query:[/bold] {query}\\n\\n"
-                f"[bold]Best Candidate:[/bold] {best_candidate_id}\\n"
-                f"[bold]Rewritten:[/bold] {rewritten_answer[:200]}...",
+                f"[bold]Best Candidate:[/bold] {result.evaluation.get_best_candidate_id()}\\n"
+                f"[bold]Rewritten:[/bold] {result.rewritten_answer[:200]}...",
                 title=f"Turn {turn_id} Result",
                 border_style="blue"
             ))

@@ -121,6 +121,7 @@ LOG_LEVEL=INFO
 다른 디렉토리에서 실행할 경우 `PROJECT_ROOT`를 설정할 수 있습니다.
 
 API 키 확인:
+
 ```bash
 python list_models.py
 ```
@@ -151,11 +152,13 @@ python -m src.main --ocr-file input_ocr.txt --cand-file input_candidates.json
 ## 명령줄 옵션
 
 도움말 표시:
+
 ```bash
 python -m src.main --help
 ```
 
 주요 옵션:
+
 - `--mode`: `AUTO` (기본, 완전 자동) 또는 `CHAT` (질의 생성 후 편집 가능)
 - `--ocr-file`: OCR 입력 파일 경로 (`data/inputs/` 기준)
 - `--cand-file`: 후보 답변 파일 경로 (`data/inputs/` 기준)
@@ -259,18 +262,18 @@ agent = GeminiAgent(config, jinja_env=mock_env)
 
 ## 환경 변수
 
-| 변수 | 기본값 | 설명 |
-| --- | --- | --- |
-| `GEMINI_API_KEY` | 필수 | Gemini API 키 |
-| `GEMINI_MODEL_NAME` | `gemini-3-pro-preview` | 사용할 모델 |
-| `GEMINI_MAX_OUTPUT_TOKENS` | `8192` | 최대 출력 토큰 수 |
-| `GEMINI_TIMEOUT` | `120` | API 타임아웃 (초) |
-| `GEMINI_MAX_CONCURRENCY` | `5` | 최대 동시 요청 수 |
-| `GEMINI_TEMPERATURE` | `0.2` | 샘플링 온도 |
-| `GEMINI_CACHE_SIZE` | `50` | 컨텍스트 캐시 크기 |
-| `GEMINI_CACHE_TTL_MINUTES` | `10` | 캐시 TTL (분) |
-| `LOG_LEVEL` | `INFO` | 로그 레벨 |
-| `PROJECT_ROOT` | 자동 감지 | 프로젝트 루트 경로 |
+| 변수                       | 기본값                 | 설명               |
+| -------------------------- | ---------------------- | ------------------ |
+| `GEMINI_API_KEY`           | 필수                   | Gemini API 키      |
+| `GEMINI_MODEL_NAME`        | `gemini-3-pro-preview` | 사용할 모델        |
+| `GEMINI_MAX_OUTPUT_TOKENS` | `8192`                 | 최대 출력 토큰 수  |
+| `GEMINI_TIMEOUT`           | `120`                  | API 타임아웃 (초)  |
+| `GEMINI_MAX_CONCURRENCY`   | `5`                    | 최대 동시 요청 수  |
+| `GEMINI_TEMPERATURE`       | `0.2`                  | 샘플링 온도        |
+| `GEMINI_CACHE_SIZE`        | `50`                   | 컨텍스트 캐시 크기 |
+| `GEMINI_CACHE_TTL_MINUTES` | `10`                   | 캐시 TTL (분)      |
+| `LOG_LEVEL`                | `INFO`                 | 로그 레벨          |
+| `PROJECT_ROOT`             | 자동 감지              | 프로젝트 루트 경로 |
 
 자동 감지는 `.git`, `templates`, `data` 폴더를 기준으로 수행됩니다.
 
