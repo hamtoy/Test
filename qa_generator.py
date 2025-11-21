@@ -20,8 +20,7 @@ if not api_key:
     exit()
 
 client = OpenAI(
-    api_key=api_key,
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+    api_key=api_key, base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
 )
 
 # 파일에서 시스템 프롬프트 로드
@@ -53,13 +52,14 @@ if QUERY_COUNT == 4:
     3. [이미지 내 타겟(단답형)]: 특정 수치나 팩트를 묻는 질문
     4. [이미지 내 타겟(서술형)]: 특정 항목(예: 특징종목)에 대한 상세 기술 요청
     """
-else: # 3개일 때
+else:  # 3개일 때
     type_instruction = """
     다음 3가지 유형의 질의를 순서대로 생성하세요:
     1. [전체 설명]: 전체 맥락을 아우르는 포괄적 설명 요청
     2. [추론]: 텍스트 내 근거를 바탕으로 한 미래 전망이나 논리적 추론
     3. [이미지 내 타겟(서술형)]: 특정 항목에 대한 상세 기술 요청
     """
+
 
 def call_llm(system_prompt, user_prompt):
     """Gemini 3 Pro Preview로 고정된 LLM 호출"""
@@ -68,14 +68,15 @@ def call_llm(system_prompt, user_prompt):
             model="gemini-3-pro-preview",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": user_prompt},
             ],
-            temperature=0
+            temperature=0,
         )
         return response.choices[0].message.content
     except Exception as e:
         print(f"LLM 호출 오류: {e}")
         return ""
+
 
 print(f"--- [Step 1] 질의 생성 시작 ({QUERY_COUNT}개 모드) ---")
 
@@ -98,13 +99,18 @@ if not raw_questions:
 
 # 결과 파싱 (1. 2. 같은 번호 제거하고 리스트로 변환)
 questions = []
-for line in raw_questions.strip().split('\n'):
+for line in raw_questions.strip().split("\n"):
     line = line.strip()
-    if line and not line.startswith('#') and not line.startswith('```') and not line.startswith('<'):
+    if (
+        line
+        and not line.startswith("#")
+        and not line.startswith("```")
+        and not line.startswith("<")
+    ):
         # "1. 질문내용" 형태에서 숫자 제거
-        clean_line = re.sub(r'^\d+\.\s*', '', line)
+        clean_line = re.sub(r"^\d+\.\s*", "", line)
         # 따옴표 제거
-        clean_line = clean_line.replace('"', '').replace("'", "")
+        clean_line = clean_line.replace('"', "").replace("'", "")
         if clean_line.strip():  # Ensure not empty after cleaning
             questions.append(clean_line)
 
@@ -119,8 +125,8 @@ print("\n--- [Step 2] 답변 생성 시작 ---")
 qa_pairs = []
 
 for idx, question in enumerate(questions):
-    print(f"처리 중... ({idx+1}/{len(questions)}): {question}")
-    
+    print(f"처리 중... ({idx + 1}/{len(questions)}): {question}")
+
     answer_user_message = f"""
     <input_text>
     {ocr_text}
@@ -130,14 +136,10 @@ for idx, question in enumerate(questions):
     {question}
     </instruction>
     """
-    
+
     answer = call_llm(SYSTEM_PROMPT_ANSWER, answer_user_message)
-    
-    qa_pairs.append({
-        "id": idx + 1,
-        "question": question,
-        "answer": answer
-    })
+
+    qa_pairs.append({"id": idx + 1, "question": question, "answer": answer})
 
 # ==========================================
 # 3. 결과 저장

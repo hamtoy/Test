@@ -20,7 +20,9 @@ class DummyAgent:
     async def create_context_cache(self, ocr_text):
         return None
 
-    async def evaluate_responses(self, ocr_text, query, candidates, cached_content=None):
+    async def evaluate_responses(
+        self, ocr_text, query, candidates, cached_content=None
+    ):
         return EvaluationResultSchema(
             best_candidate="A",
             evaluations=[EvaluationItem(candidate_id="A", score=10, reason="strong")],
@@ -106,7 +108,9 @@ async def test_execute_workflow_resume(monkeypatch, tmp_path):
         cost=0.0,
         success=True,
     )
-    checkpoint_path.write_text(existing.model_dump_json(ensure_ascii=False) + "\n", encoding="utf-8")
+    checkpoint_path.write_text(
+        existing.model_dump_json(ensure_ascii=False) + "\n", encoding="utf-8"
+    )
 
     agent = NoCallAgent()
     logger = logging.getLogger("GeminiWorkflow")

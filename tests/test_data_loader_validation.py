@@ -16,7 +16,9 @@ async def test_load_input_data_valid_candidates(tmp_path: Path):
         encoding="utf-8",
     )
 
-    ocr_text, candidates = await load_input_data(base_dir, "input_ocr.txt", "input_candidates.json")
+    ocr_text, candidates = await load_input_data(
+        base_dir, "input_ocr.txt", "input_candidates.json"
+    )
 
     assert ocr_text == "sample ocr text"
     assert candidates["A"] == "answer a"
@@ -54,7 +56,9 @@ async def test_load_input_data_raw_fallback(tmp_path: Path):
     raw_text = "A: alpha\nB: beta\nC: gamma"
     (base_dir / "input_candidates.txt").write_text(raw_text, encoding="utf-8")
 
-    ocr_text, candidates = await load_input_data(base_dir, "input_ocr.txt", "input_candidates.txt")
+    ocr_text, candidates = await load_input_data(
+        base_dir, "input_ocr.txt", "input_candidates.txt"
+    )
 
     assert ocr_text == "ocr text"
     assert candidates == {"A": "alpha", "B": "beta", "C": "gamma"}

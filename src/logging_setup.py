@@ -22,6 +22,7 @@ class SensitiveDataFilter(logging.Filter):
     """
     [Security] 로그에서 민감한 정보(API Key 등)를 마스킹하는 필터
     """
+
     sensitive_regex = re.compile(SENSITIVE_PATTERN)
 
     def filter(self, record):
@@ -33,12 +34,15 @@ class SensitiveDataFilter(logging.Filter):
                 new_args = []
                 for arg in record.args:
                     if isinstance(arg, str):
-                        new_args.append(self.sensitive_regex.sub("[FILTERED_API_KEY]", arg))
+                        new_args.append(
+                            self.sensitive_regex.sub("[FILTERED_API_KEY]", arg)
+                        )
                     else:
                         new_args.append(arg)
                 record.args = tuple(new_args)
 
         return True
+
 
 def _build_file_handler(
     log_level: int,
@@ -65,7 +69,9 @@ def _build_file_handler(
     return file_handler
 
 
-def _build_console_handler(log_level: int, sensitive_filter: logging.Filter) -> logging.Handler:
+def _build_console_handler(
+    log_level: int, sensitive_filter: logging.Filter
+) -> logging.Handler:
     """Create Rich console handler."""
     console_handler = RichHandler(
         rich_tracebacks=True,
@@ -77,7 +83,9 @@ def _build_console_handler(log_level: int, sensitive_filter: logging.Filter) -> 
     return console_handler
 
 
-def setup_logging(env: str | None = None, log_level: str | None = None) -> Tuple[logging.Logger, logging.handlers.QueueListener]:
+def setup_logging(
+    env: str | None = None, log_level: str | None = None
+) -> Tuple[logging.Logger, logging.handlers.QueueListener]:
     """
     [Non-Blocking Logging] QueueHandler 패턴 + 환경별 포맷/출력 제어
 

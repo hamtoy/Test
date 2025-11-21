@@ -19,10 +19,15 @@ async def test_create_context_cache_reuses_local(monkeypatch, tmp_path):
     class DummyCache:
         name = "cached-content"
 
-    monkeypatch.setattr("google.generativeai.caching.CachedContent.get", lambda *args, **kwargs: DummyCache())
+    monkeypatch.setattr(
+        "google.generativeai.caching.CachedContent.get",
+        lambda *args, **kwargs: DummyCache(),
+    )
     monkeypatch.setattr(
         "google.generativeai.caching.CachedContent.create",
-        lambda **kwargs: pytest.fail("create should not be called when cache is reused"),
+        lambda **kwargs: pytest.fail(
+            "create should not be called when cache is reused"
+        ),
     )
 
     jinja_env = MagicMock()

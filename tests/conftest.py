@@ -8,4 +8,3 @@ def mock_env(monkeypatch):
     mock_key = "AIza" + "0" * 35
     monkeypatch.setenv("GEMINI_API_KEY", mock_key)
     monkeypatch.setenv("GEMINI_MODEL_NAME", "gemini-3-pro-preview")
-

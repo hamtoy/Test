@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, AsyncMock, patch
 from src.main import execute_workflow, save_result_to_file
 from src.models import WorkflowResult, EvaluationResultSchema, EvaluationItem
 
+
 @pytest.fixture
 def mock_agent():
     agent = MagicMock()
@@ -15,23 +16,25 @@ def mock_agent():
     agent.check_budget = MagicMock(return_value=None)
     return agent
 
+
 @pytest.fixture
 def mock_logger():
     return MagicMock()
+
 
 @pytest.mark.asyncio
 async def test_execute_workflow_success(mock_agent, mock_logger):
     ocr_text = "ocr"
     candidates = {"A": "a", "B": "b", "C": "c"}
-    
+
     # Mock evaluation result
     eval_item = EvaluationItem(candidate_id="A", score=90, reason="Good")
     eval_result = EvaluationResultSchema(best_candidate="A", evaluations=[eval_item])
     mock_agent.evaluate_responses.return_value = eval_result
-    
+
     with patch("src.main.load_input_data", new_callable=AsyncMock) as mock_load:
         mock_load.return_value = (ocr_text, candidates)
-        
+
         # Mock save_result_to_file to avoid file I/O
         with patch("src.main.save_result_to_file") as mock_save:
             results = await execute_workflow(
@@ -41,19 +44,20 @@ async def test_execute_workflow_success(mock_agent, mock_logger):
                 logger=mock_logger,
                 ocr_filename="ocr.txt",
                 cand_filename="cand.json",
-                is_interactive=False
+                is_interactive=False,
             )
-            
+
             assert len(results) == 1
             assert results[0].query == "Query 1"
             assert results[0].best_answer == "a"
             assert results[0].rewritten_answer == "Rewritten Answer"
             mock_save.assert_called_once()
 
+
 @pytest.mark.asyncio
 async def test_execute_workflow_query_gen_fail(mock_agent, mock_logger):
     mock_agent.generate_query.return_value = []
-    
+
     results = await execute_workflow(
         agent=mock_agent,
         ocr_text="ocr",
@@ -61,19 +65,20 @@ async def test_execute_workflow_query_gen_fail(mock_agent, mock_logger):
         logger=mock_logger,
         ocr_filename="ocr.txt",
         cand_filename="cand.json",
-        is_interactive=False
+        is_interactive=False,
     )
-    
+
     assert len(results) == 0
     mock_logger.error.assert_called_with("질의 생성 실패")
+
 
 def test_save_result_to_file(tmp_path):
     config = MagicMock()
     config.output_dir = tmp_path
-    
+
     eval_item = EvaluationItem(candidate_id="A", score=90, reason="Good")
     eval_result = EvaluationResultSchema(best_candidate="A", evaluations=[eval_item])
-    
+
     result = WorkflowResult(
         turn_id=1,
         query="Test Query",
@@ -81,11 +86,11 @@ def test_save_result_to_file(tmp_path):
         best_answer="Best Answer",
         rewritten_answer="Rewritten",
         cost=0.05,
-        success=True
+        success=True,
     )
-    
+
     save_result_to_file(result, config)
-    
+
     # Check if file was created
     files = list(tmp_path.glob("result_turn_1_*.md"))
     assert len(files) == 1

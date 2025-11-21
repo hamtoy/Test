@@ -7,7 +7,9 @@ from typing import Iterable, List, Sequence, Tuple
 from rich.console import Console
 from rich.table import Table
 
-LATENCY_PATTERN = re.compile(r"API latency:\s*([0-9]+(?:\.[0-9]+)?)\s*ms", re.IGNORECASE)
+LATENCY_PATTERN = re.compile(
+    r"API latency:\s*([0-9]+(?:\.[0-9]+)?)\s*ms", re.IGNORECASE
+)
 
 
 def extract_latencies(paths: Iterable[Path]) -> List[float]:
@@ -42,7 +44,9 @@ def percentile(sorted_values: Sequence[float], p: float) -> float:
     return sorted_values[lower] + (sorted_values[upper] - sorted_values[lower]) * frac
 
 
-def summarise(latencies: List[float]) -> Tuple[int, float, float, float, float, float, float]:
+def summarise(
+    latencies: List[float],
+) -> Tuple[int, float, float, float, float, float, float]:
     if not latencies:
         return 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     latencies.sort()
@@ -80,7 +84,9 @@ def print_table(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Compute latency percentiles from log files.")
+    parser = argparse.ArgumentParser(
+        description="Compute latency percentiles from log files."
+    )
     parser.add_argument(
         "--log-file",
         action="append",
@@ -94,7 +100,9 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    log_files = [Path(p) for p in args.log_file] if args.log_file else [Path(args.default_log)]
+    log_files = (
+        [Path(p) for p in args.log_file] if args.log_file else [Path(args.default_log)]
+    )
     latencies = extract_latencies(log_files)
     if not latencies:
         Console().print("[yellow]No latency entries found.[/yellow]")

@@ -5,9 +5,7 @@ from src.utils import write_cache_stats
 
 def test_write_cache_stats_trims_entries(tmp_path):
     path = tmp_path / "cache" / "stats.jsonl"
-    entries = [
-        {"id": i, "cache_hits": i, "cache_misses": 0} for i in range(5)
-    ]
+    entries = [{"id": i, "cache_hits": i, "cache_misses": 0} for i in range(5)]
     for entry in entries:
         write_cache_stats(path, max_entries=3, entry=entry)
 

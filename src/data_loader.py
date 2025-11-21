@@ -10,6 +10,7 @@ from src.exceptions import ValidationFailedError
 
 logger = logging.getLogger("GeminiWorkflow")
 
+
 def validate_candidates(candidates: Dict[str, str]) -> None:
     """Validate candidate structure and content."""
     required_keys: Set[str] = {"A", "B", "C"}
@@ -27,7 +28,9 @@ def validate_candidates(candidates: Dict[str, str]) -> None:
             raise ValidationFailedError(f"Candidate '{key}' has empty content")
 
 
-async def load_input_data(base_dir: Path, ocr_filename: str, cand_filename: str) -> tuple[str, Dict[str, str]]:
+async def load_input_data(
+    base_dir: Path, ocr_filename: str, cand_filename: str
+) -> tuple[str, Dict[str, str]]:
     """
     [Smart Loader] 확장자나 형식을 가리지 않고 최선을 다해 데이터를 로드합니다.
     1. JSON 파싱 시도 -> 성공 시 반환
@@ -49,10 +52,10 @@ async def load_input_data(base_dir: Path, ocr_filename: str, cand_filename: str)
 
     # 3. 후보 답변 로드 (Hybrid Parsing with Safety)
     cand_text = await load_file_async(cand_path)
-    
+
     if not cand_text or not cand_text.strip():
         raise ValueError(f"Candidate file is empty: {cand_path}")
-    
+
     candidates = {}
 
     # [Strategy 1] JSON으로 간주하고 파싱 시도 (안전한 파싱)
@@ -60,11 +63,17 @@ async def load_input_data(base_dir: Path, ocr_filename: str, cand_filename: str)
         data = json.loads(cand_text)
         if isinstance(data, dict) and data:
             candidates = data
-            logger.info(f"Format Detection: Valid JSON detected in '{cand_filename}' ({len(candidates)} candidates)")
+            logger.info(
+                f"Format Detection: Valid JSON detected in '{cand_filename}' ({len(candidates)} candidates)"
+            )
         else:
-            logger.warning(f"Format Detection: JSON parsed but empty or invalid type in '{cand_filename}'")
+            logger.warning(
+                f"Format Detection: JSON parsed but empty or invalid type in '{cand_filename}'"
+            )
     except json.JSONDecodeError as e:
-        logger.info(f"Format Detection: JSON parse failed ({e}). Trying Raw Text format...")
+        logger.info(
+            f"Format Detection: JSON parse failed ({e}). Trying Raw Text format..."
+        )
     except Exception as e:
         logger.warning(f"Format Detection: Unexpected error during JSON parse: {e}")
 
@@ -77,7 +86,7 @@ async def load_input_data(base_dir: Path, ocr_filename: str, cand_filename: str)
     if not candidates:
         raise ValueError(
             f"데이터 파싱 실패: '{cand_filename}'의 형식을 인식할 수 없습니다.\n"
-            f"1. 올바른 JSON 형식을 사용하거나 ({{ \"A\": \"...\" }})\n"
+            f'1. 올바른 JSON 형식을 사용하거나 ({{ "A": "..." }})\n'
             f"2. 텍스트 형식(A: 답변...)을 사용하세요."
         )
 

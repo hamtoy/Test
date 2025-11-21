@@ -5,10 +5,14 @@ from typing import Any, Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class AppConfig(BaseSettings):
     """[Modern Config] Pydantic Settings를 이용한 설정 관리"""
+
     api_key: str = Field(..., alias="GEMINI_API_KEY")
-    model_name: Literal["gemini-3-pro-preview"] = Field("gemini-3-pro-preview", alias="GEMINI_MODEL_NAME")
+    model_name: Literal["gemini-3-pro-preview"] = Field(
+        "gemini-3-pro-preview", alias="GEMINI_MODEL_NAME"
+    )
     max_output_tokens: int = Field(8192, alias="GEMINI_MAX_OUTPUT_TOKENS")
     timeout: int = Field(120, alias="GEMINI_TIMEOUT")
     max_concurrency: int = Field(5, alias="GEMINI_MAX_CONCURRENCY")
@@ -22,7 +26,9 @@ class AppConfig(BaseSettings):
     budget_limit_usd: float | None = Field(None, alias="BUDGET_LIMIT_USD")
 
     # [Typo Prevention] extra="forbid"로 변경하여 오타를 즉시 감지
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="forbid")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="forbid"
+    )
 
     @field_validator("api_key")
     @classmethod
@@ -58,7 +64,9 @@ class AppConfig(BaseSettings):
     @classmethod
     def enforce_single_model(cls, v: str) -> str:
         if v != "gemini-3-pro-preview":
-            raise ValueError("Unsupported model. This system only allows 'gemini-3-pro-preview'.")
+            raise ValueError(
+                "Unsupported model. This system only allows 'gemini-3-pro-preview'."
+            )
         return v
 
     @field_validator("max_concurrency")

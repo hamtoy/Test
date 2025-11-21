@@ -8,7 +8,9 @@ from rich.table import Table
 from src.constants import PRICING_TIERS
 
 
-def calculate_savings(record: Dict[str, Any], cached_portion: float = 0.7, discount: float = 0.9) -> float:
+def calculate_savings(
+    record: Dict[str, Any], cached_portion: float = 0.7, discount: float = 0.9
+) -> float:
     """
     Estimate savings (USD) for a single record given cache hits.
     Assumptions:
@@ -51,7 +53,11 @@ def analyze_cache_stats(path: Path) -> Dict[str, Any]:
     total_hits = sum(int(r.get("cache_hits", 0)) for r in records)
     total_misses = sum(int(r.get("cache_misses", 0)) for r in records)
     total_requests = len(records)
-    hit_rate = (total_hits / (total_hits + total_misses) * 100) if (total_hits + total_misses) > 0 else 0.0
+    hit_rate = (
+        (total_hits / (total_hits + total_misses) * 100)
+        if (total_hits + total_misses) > 0
+        else 0.0
+    )
     savings = sum(calculate_savings(r) for r in records)
 
     return {
