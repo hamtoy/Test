@@ -46,6 +46,6 @@ app.log
 Thumbs.db
 
 # Project specific
-data/outputs/*.md
+data/outputs/*
 !data/outputs/.gitkeep
 *.pyc

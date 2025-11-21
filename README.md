@@ -54,9 +54,20 @@ project_root/
     └── test_utils.py
 ```
 
+<<<<<<< HEAD
+
 ## 시스템 개요
 
-이 시스템은 다음 작업을 수행합니다:
+# 이 시스템은 다음 작업을 수행합니다:
+
+## 🌐 Workflow
+
+- Generate queries that reflect user intent from OCR text
+- Evaluate multiple candidate answers against the OCR context
+- Rewrite the top-scoring answer for clarity and safety
+- Track token usage and guard against hallucinations and rate limits
+
+  > > > > > > > f66080f (Enhance repo: Performance, Security, UX, and Docs)
 
 - OCR 텍스트를 기반으로 검색 질의 생성
 - 여러 후보 답변을 평가하고 점수 부여
@@ -65,6 +76,8 @@ project_root/
 - 입력 검증 및 환각 감지
 
 ## 시작하기
+
+<<<<<<< HEAD
 
 ### 필수 요구사항
 
@@ -91,6 +104,11 @@ uv sync --extra dev  # 개발 의존성 포함
 uv pip install -r requirements.txt
 ```
 
+=======
+
+````
+>>>>>>> f66080f (Enhance repo: Performance, Security, UX, and Docs)
+
 자세한 내용은 [UV_GUIDE.md](UV_GUIDE.md)를 참조하세요.
 
 ### 환경 설정
@@ -99,7 +117,7 @@ uv pip install -r requirements.txt
 
 ```bash
 cp .env.example .env
-```
+````
 
 `.env` 파일 편집:
 
@@ -107,8 +125,13 @@ cp .env.example .env
 # 필수
 GEMINI_API_KEY=your_api_key_here
 
+<<<<<<< HEAD
 # 선택 사항 (기본값 제공)
 GEMINI_MODEL_NAME=gemini-3-pro-preview
+=======
+# Optional (with defaults)
+GEMINI_MODEL_NAME=gemini-3-pro-preview  # Fixed model; other values are rejected
+>>>>>>> f66080f (Enhance repo: Performance, Security, UX, and Docs)
 GEMINI_MAX_OUTPUT_TOKENS=8192
 GEMINI_TIMEOUT=120
 GEMINI_MAX_CONCURRENCY=5
@@ -262,22 +285,52 @@ agent = GeminiAgent(config, jinja_env=mock_env)
 
 ## 환경 변수
 
-| 변수                       | 기본값                 | 설명               |
+<<<<<<< HEAD
+| 변수 | 기본값 | 설명 |
 | -------------------------- | ---------------------- | ------------------ |
-| `GEMINI_API_KEY`           | 필수                   | Gemini API 키      |
-| `GEMINI_MODEL_NAME`        | `gemini-3-pro-preview` | 사용할 모델        |
-| `GEMINI_MAX_OUTPUT_TOKENS` | `8192`                 | 최대 출력 토큰 수  |
-| `GEMINI_TIMEOUT`           | `120`                  | API 타임아웃 (초)  |
-| `GEMINI_MAX_CONCURRENCY`   | `5`                    | 최대 동시 요청 수  |
-| `GEMINI_TEMPERATURE`       | `0.2`                  | 샘플링 온도        |
-| `GEMINI_CACHE_SIZE`        | `50`                   | 컨텍스트 캐시 크기 |
-| `GEMINI_CACHE_TTL_MINUTES` | `10`                   | 캐시 TTL (분)      |
-| `LOG_LEVEL`                | `INFO`                 | 로그 레벨          |
-| `PROJECT_ROOT`             | 자동 감지              | 프로젝트 루트 경로 |
+| `GEMINI_API_KEY` | 필수 | Gemini API 키 |
+| `GEMINI_MODEL_NAME` | `gemini-3-pro-preview` | 사용할 모델 |
+| `GEMINI_MAX_OUTPUT_TOKENS` | `8192` | 최대 출력 토큰 수 |
+| `GEMINI_TIMEOUT` | `120` | API 타임아웃 (초) |
+| `GEMINI_MAX_CONCURRENCY` | `5` | 최대 동시 요청 수 |
+| `GEMINI_TEMPERATURE` | `0.2` | 샘플링 온도 |
+| `GEMINI_CACHE_SIZE` | `50` | 컨텍스트 캐시 크기 |
+| `GEMINI_CACHE_TTL_MINUTES` | `10` | 캐시 TTL (분) |
+| `LOG_LEVEL` | `INFO` | 로그 레벨 |
+| `PROJECT_ROOT` | 자동 감지 | 프로젝트 루트 경로 |
+=======
+| Variable | Default | Description |
+| -------------------------- | ---------------------- | --------------------------------------- |
+| `GEMINI_API_KEY` | _Required_ | Your Gemini API key |
+| `GEMINI_MODEL_NAME` | `gemini-3-pro-preview` | Fixed model (do not change) |
+| `GEMINI_MAX_OUTPUT_TOKENS` | `8192` | Maximum output tokens |
+| `GEMINI_TIMEOUT` | `120` | API timeout in seconds |
+| `GEMINI_MAX_CONCURRENCY` | `5` | Max concurrent requests |
+| `GEMINI_TEMPERATURE` | `0.2` | Sampling temperature |
+| `GEMINI_CACHE_SIZE` | `50` | Context cache size |
+| `GEMINI_CACHE_TTL_MINUTES` | `10` | Context cache TTL in minutes |
+| `LOG_LEVEL` | `INFO` | Logging verbosity |
+| `PROJECT_ROOT` | _Auto_ | Project root (overrides auto-detection) |
+
+> > > > > > > f66080f (Enhance repo: Performance, Security, UX, and Docs)
 
 자동 감지는 `.git`, `templates`, `data` 폴더를 기준으로 수행됩니다.
 
+<<<<<<< HEAD
+
 ## 구현된 기능
+
+=======
+
+## Model Policy
+
+- Single model: `gemini-3-pro-preview` only (other values raise a startup error)
+- Pricing guidance: ≤200K tokens — input $2.00/m, output $12.00/m; >200K tokens — input $4.00/m, output $18.00/m
+- Knowledge cutoff: January 2025
+
+## 🔒 Production Features
+
+> > > > > > > f66080f (Enhance repo: Performance, Security, UX, and Docs)
 
 - 타입 안정성 (Pydantic Literal 사용)
 - 예외 처리 (다중 레이어)

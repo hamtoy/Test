@@ -1,13 +1,14 @@
 import os
 import re
 from pathlib import Path
+from typing import Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class AppConfig(BaseSettings):
     """[Modern Config] Pydantic Settings를 이용한 설정 관리"""
     api_key: str = Field(..., alias="GEMINI_API_KEY")
-    model_name: str = Field("gemini-3-pro-preview", alias="GEMINI_MODEL_NAME")
+    model_name: Literal["gemini-3-pro-preview"] = Field("gemini-3-pro-preview", alias="GEMINI_MODEL_NAME")
     max_output_tokens: int = Field(8192, alias="GEMINI_MAX_OUTPUT_TOKENS")
     timeout: int = Field(120, alias="GEMINI_TIMEOUT")
     max_concurrency: int = Field(5, alias="GEMINI_MAX_CONCURRENCY")
@@ -22,9 +23,19 @@ class AppConfig(BaseSettings):
     @field_validator("api_key")
     @classmethod
     def validate_api_key(cls, v: str) -> str:
+        if not v or v == "your_api_key_here":
+            raise ValueError("GEMINI_API_KEY is not set. Please check your .env file.")
+        
         # Google API 키 형식: AIza + 20+ 안전 문자
         if not re.match(r"^AIza[0-9A-Za-z_\-]{20,}$", v):
             raise ValueError("Invalid GEMINI_API_KEY format (expected Google API key starting with 'AIza')")
+        return v
+
+    @field_validator("model_name")
+    @classmethod
+    def enforce_single_model(cls, v: str) -> str:
+        if v != "gemini-3-pro-preview":
+            raise ValueError("Unsupported model. This system only allows 'gemini-3-pro-preview'.")
         return v
 
     @field_validator("max_concurrency")

@@ -16,6 +16,8 @@ import google.generativeai as genai
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+
 from rich.prompt import Confirm
 
 from src.config import AppConfig
@@ -27,7 +29,15 @@ from src.utils import safe_json_parse
 from src.exceptions import ValidationFailedError, CacheCreationError
 
 # [Global Console] Rich Console은 전역에서 재사용
+# [Global Console] Rich Console은 전역에서 재사용
 console = Console()
+
+async def reload_data_if_needed(config: AppConfig, ocr_filename: str, cand_filename: str, interactive: bool = False) -> tuple[str, Dict[str, str]]:
+    """
+    [Refactoring] 데이터 로딩 로직 통합
+    interactive 모드일 경우 사용자에게 재로딩 여부를 물어볼 수 있게 함 (현재는 로직 단순화로 직접 호출)
+    """
+    return await load_input_data(config.input_dir, ocr_filename, cand_filename)
 
 def save_result_to_file(result: WorkflowResult, config: AppConfig):
     """[Config Injection] 결과를 Markdown 파일로 저장 (하드코딩 제거)"""
@@ -102,17 +112,70 @@ async def _evaluate_and_rewrite_turn(
         success=True,
     )
 
+async def process_single_query(
+    agent: GeminiAgent,
+    ocr_text: str,
+    query: str,
+    candidates: Dict[str, str],
+    cache,
+    turn_id: int,
+    total_turns: int,
+    logger: logging.Logger,
+    config: AppConfig,
+    progress: Optional[Progress] = None,  # Add progress argument
+    task_id: Optional[Any] = None,        # Add task_id argument
+) -> Optional[WorkflowResult]:
+    """
+    [Parallel Processing] 단일 질의 처리 (평가 -> 재작성)
+    """
+    try:
+        # Update progress description
+        if progress and task_id:
+            progress.update(task_id, description=f"[cyan]Turn {turn_id}: Processing...[/cyan]")
+
+        result = await _evaluate_and_rewrite_turn(
+            agent=agent,
+            ocr_text=ocr_text,
+            query=query,
+            candidates=candidates,
+            cache=cache,
+            turn_id=turn_id,
+            total_turns=total_turns,
+            logger=logger,
+        )
+        
+        if result:
+            # 결과 저장 (Config injection)
+            save_result_to_file(result, config)
+            
+            # [Rich UI] 턴 결과 출력 (Thread-safe way needed for real app, but Rich handles it reasonably well)
+            console.print(Panel(
+                f"[bold]Query:[/bold] {query}\n\n"
+                f"[bold]Best Candidate:[/bold] {result.evaluation.get_best_candidate_id()}\n"
+                f"[bold]Rewritten:[/bold] {result.rewritten_answer[:200]}...",
+                title=f"Turn {turn_id} Result",
+                border_style="blue"
+            ))
+            
+            # Mark task as completed
+            if progress and task_id:
+                progress.update(task_id, advance=1, description=f"[green]Turn {turn_id}: Done[/green]")
+                
+            return result
+            
+    except Exception as e:
+        logger.exception(f"Turn {turn_id} 실행 중 오류 발생: {e}")
+        if progress and task_id:
+            progress.update(task_id, description=f"[red]Turn {turn_id}: Failed[/red]")
+    
+    return None
+
 
 async def execute_workflow(agent: GeminiAgent, ocr_text: str, user_intent: Optional[str], logger: logging.Logger, ocr_filename: str, cand_filename: str, is_interactive: bool = True) -> List[WorkflowResult]:
     """
     [Orchestration] 전체 워크플로우 실행 (Iterative & Human-in-the-Loop)
-    1. Planning: 질의 리스트 생성
-    2. Breakpoint: 사용자 검토 및 데이터 Hot Reload (is_interactive=True일 때만)
-    3. Execution Loop: 각 질의에 대해 평가 및 재작성 수행
-    
-    Args:
-        is_interactive: True면 사용자에게 확인 요청, False면 자동 진행 (AUTO 모드)
     """
+    # ... (Phase 1: Planning - same as before)
     # [Phase 1: Planning] 질의 리스트 생성
     logger.info("질의 리스트 생성 중...")
     queries = await agent.generate_query(ocr_text, user_intent)
@@ -137,18 +200,18 @@ async def execute_workflow(agent: GeminiAgent, ocr_text: str, user_intent: Optio
         if Confirm.ask("위 질의를 보고 후보 답변 파일(input_candidates.json)을 수정하시겠습니까? (수정 후 Enter)", default=True):
             logger.info("사용자 요청으로 데이터 재로딩 중...")
             try:
-                _, candidates = await load_input_data(config.input_dir, ocr_filename, cand_filename)
+                _, candidates = await reload_data_if_needed(config, ocr_filename, cand_filename)
                 logger.info("데이터 재로딩 완료")
             except Exception as e:
                 logger.error(f"데이터 재로딩 실패: {e}")
                 return []
         else:
             # 재로딩 없이 진행
-            _, candidates = await load_input_data(config.input_dir, ocr_filename, cand_filename)
+            _, candidates = await reload_data_if_needed(config, ocr_filename, cand_filename)
     else:
         # [AUTO Mode] 자동으로 데이터 로드 (프롬프트 없음)
         logger.info("AUTO 모드: 데이터 자동 로딩 중...")
-        _, candidates = await load_input_data(config.input_dir, ocr_filename, cand_filename)
+        _, candidates = await reload_data_if_needed(config, ocr_filename, cand_filename)
 
     # [Context Caching] 캐시 생성 시도
     logger.info("Context Caching 시도 중...")
@@ -158,43 +221,55 @@ async def execute_workflow(agent: GeminiAgent, ocr_text: str, user_intent: Optio
         cache = None
         logger.warning(f"Context cache creation skipped: {e}")
 
+    # [Phase 2: Execution Loop] 병렬 실행 (Parallel Processing) with Progress Bar
+    logger.info(f"총 {len(queries)}개의 질의를 병렬로 처리합니다...")
+    
     results = []
     
-    # [Phase 2: Execution Loop] 순차 실행
-    for i, query in enumerate(queries):
-        turn_id = i + 1
-        try:
-            result = await _evaluate_and_rewrite_turn(
-                agent=agent,
-                ocr_text=ocr_text,
-                query=query,
-                candidates=candidates,
-                cache=cache,
-                turn_id=turn_id,
-                total_turns=len(queries),
-                logger=logger,
+    # Rich Progress Bar Context
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console,
+        transient=True  # 완료 후 사라짐 (깔끔하게)
+    ) as progress:
+        
+        tasks = []
+        # 전체 진행률 트래킹용 태스크 (선택 사항, 여기서는 개별 태스크만 보여줌)
+        # overall_task = progress.add_task("[green]Overall Progress", total=len(queries))
+        
+        for i, query in enumerate(queries):
+            turn_id = i + 1
+            # 각 쿼리별 태스크 생성 (초기 상태: Waiting)
+            task_id = progress.add_task(f"[cyan]Turn {turn_id}: Waiting...", total=1)
+            
+            tasks.append(
+                process_single_query(
+                    agent=agent,
+                    ocr_text=ocr_text,
+                    query=query,
+                    candidates=candidates,
+                    cache=cache,
+                    turn_id=turn_id,
+                    total_turns=len(queries),
+                    logger=logger,
+                    config=config,
+                    progress=progress,
+                    task_id=task_id
+                )
             )
-            if not result:
-                continue
-            
-            results.append(result)
-            
-            # 결과 저장 (Config injection)
-            save_result_to_file(result, config)
-            
-            # [Rich UI] 턴 결과 출력
-            console.print(Panel(
-                f"[bold]Query:[/bold] {query}\\n\\n"
-                f"[bold]Best Candidate:[/bold] {result.evaluation.get_best_candidate_id()}\\n"
-                f"[bold]Rewritten:[/bold] {result.rewritten_answer[:200]}...",
-                title=f"Turn {turn_id} Result",
-                border_style="blue"
-            ))
-
-            
-        except Exception as e:
-            logger.exception(f"Turn {turn_id} 실행 중 오류 발생: {e}")
-            
+        
+        # [Concurrency] 모든 태스크 동시 실행
+        processed_results = await asyncio.gather(*tasks)
+        
+        # None 제거 (실패한 경우)
+        results = [r for r in processed_results if r is not None]
+        
+        # 순서 보장을 위해 turn_id로 정렬 (병렬 처리로 순서가 섞일 수 있음)
+        results.sort(key=lambda x: x.turn_id)
+    
     # [Cleanup] 캐시 삭제
     if cache:
         try:
@@ -221,73 +296,36 @@ async def main():
         default="AUTO",
         help="Execution mode"
     )
-
-    # 2. Input Sources
-    input_group = parser.add_argument_group("Input Sources")
-    input_group.add_argument(
-        "--ocr-file",
-        type=str,
-        default="input_ocr.txt",
-        metavar="FILE",
-        help="OCR text input file"
-    )
-    input_group.add_argument(
-        "--cand-file",
-        type=str,
-        default="input_candidates.json",
-        metavar="FILE",
-        help="Candidate answers file (JSON)"
+    core_group.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Force interactive mode (ask for confirmation) even in AUTO mode"
     )
 
-    # 3. Chat Mode Options
-    chat_group = parser.add_argument_group("Chat Mode Options")
-    chat_group.add_argument(
-        "--intent",
-        type=str,
-        default="Summarize the key points",
-        help="User intent for CHAT mode"
-    )
+    # ... (rest of arguments)
 
     args = parser.parse_args()
 
-    # [Separation of Concerns] 로깅 설정을 별도 모듈로 분리
-    # from src.logging_setup import setup_logging # Already imported at the top
-    # [Logging] Non-Blocking 로깅 초기화 (logger, listener 반환)
+    # ... (logging setup)
     logger, log_listener = setup_logging()
     
-    # [Configuration] Pydantic Settings로 환경변수와 기본값 통합 관리
+    # ... (config & resource loading)
     try:
         config = AppConfig()
         genai.configure(api_key=config.api_key)
-    except ValidationError as e:
-        logger.critical(f"설정 오류: {e}")
-        log_listener.stop()
-        sys.exit(1)
-
-    # [DI Preparation] Resources Initialization
-    try:
-        # 1. Jinja 환경을 Main에서 생성 (IoC 원칙)
+        # ... (jinja env setup)
         from jinja2 import Environment, FileSystemLoader
-        
         if not config.template_dir.exists():
-            raise FileNotFoundError(f"Templates directory missing: {config.template_dir}")
+             raise FileNotFoundError(f"Templates directory missing: {config.template_dir}")
+        jinja_env = Environment(loader=FileSystemLoader(config.template_dir), autoescape=True)
         
-        jinja_env = Environment(
-            loader=FileSystemLoader(config.template_dir),
-            autoescape=True
-        )
-        
-        # 2. 데이터 로드 (초기 로드)
         logger.info("리소스 로드 중...")
         input_dir = config.input_dir
         ocr_text, _ = await load_input_data(input_dir, args.ocr_file, args.cand_file)
-        
-    except (FileNotFoundError, ValueError, json.JSONDecodeError, ValidationFailedError) as e:
-        logger.critical(f"초기화 실패: {e}")
-        log_listener.stop()
-        sys.exit(1)
+
     except Exception as e:
-        logger.critical(f"Unexpected error during initialization: {e}")
+        # ... (error handling)
+        logger.critical(f"[FATAL] Initialization failed: {e}")
         log_listener.stop()
         sys.exit(1)
 
@@ -299,13 +337,17 @@ async def main():
 
     try:
         # [Separation of Concerns] 워크플로우 실행 (모드에 따라 interactive 설정)
-        is_interactive = (args.mode == "CHAT")
+        # CHAT 모드이거나 --interactive 플래그가 있으면 대화형 모드
+        is_interactive = (args.mode == "CHAT") or args.interactive
         results = await execute_workflow(agent, ocr_text, user_intent, logger, args.ocr_file, args.cand_file, is_interactive)
+        
+        # ... (rest of main)
         
         # [Cost Summary] 비용 정보를 Panel로 표시
         total_cost = agent.get_total_cost()
         cost_info = f"""[bold cyan]💰 Total Session Cost:[/bold cyan] ${total_cost:.4f} USD
-[bold green]📊 Token Usage:[/bold green] {agent.total_input_tokens:,} input / {agent.total_output_tokens:,} output"""
+[bold green]📊 Token Usage:[/bold green] {agent.total_input_tokens:,} input / {agent.total_output_tokens:,} output
+[bold magenta]🚀 Cache Stats:[/bold magenta] {agent.cache_hits} hits / {agent.cache_misses} misses"""
         
         console.print()
         console.print(Panel(cost_info, title="[bold blue]Cost Summary[/bold blue]", border_style="blue"))

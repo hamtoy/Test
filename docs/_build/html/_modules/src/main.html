@@ -1,0 +1,493 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.main &mdash; Shining Quasar 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Shining Quasar
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Shining Quasar Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Shining Quasar</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.main</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.main</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="c1"># pip install python-dotenv google-generativeai aiofiles pydantic tenacity pydantic-settings jinja2 rich</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValidationError</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">google.generativeai</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">genai</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rich.console</span><span class="w"> </span><span class="kn">import</span> <span class="n">Console</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rich.panel</span><span class="w"> </span><span class="kn">import</span> <span class="n">Panel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rich.markdown</span><span class="w"> </span><span class="kn">import</span> <span class="n">Markdown</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rich.progress</span><span class="w"> </span><span class="kn">import</span> <span class="n">Progress</span><span class="p">,</span> <span class="n">SpinnerColumn</span><span class="p">,</span> <span class="n">TextColumn</span><span class="p">,</span> <span class="n">BarColumn</span><span class="p">,</span> <span class="n">TaskProgressColumn</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">rich.prompt</span><span class="w"> </span><span class="kn">import</span> <span class="n">Confirm</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">AppConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">GeminiAgent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">WorkflowResult</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.data_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_input_data</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.logging_setup</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">safe_json_parse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">ValidationFailedError</span><span class="p">,</span> <span class="n">CacheCreationError</span>
+
+<span class="c1"># [Global Console] Rich Console은 전역에서 재사용</span>
+<span class="c1"># [Global Console] Rich Console은 전역에서 재사용</span>
+<span class="n">console</span> <span class="o">=</span> <span class="n">Console</span><span class="p">()</span>
+
+<div class="viewcode-block" id="reload_data_if_needed">
+<a class="viewcode-back" href="../../src.html#src.main.reload_data_if_needed">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">reload_data_if_needed</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">AppConfig</span><span class="p">,</span> <span class="n">ocr_filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cand_filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">interactive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    [Refactoring] 데이터 로딩 로직 통합</span>
+<span class="sd">    interactive 모드일 경우 사용자에게 재로딩 여부를 물어볼 수 있게 함 (현재는 로직 단순화로 직접 호출)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">load_input_data</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">input_dir</span><span class="p">,</span> <span class="n">ocr_filename</span><span class="p">,</span> <span class="n">cand_filename</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="save_result_to_file">
+<a class="viewcode-back" href="../../src.html#src.main.save_result_to_file">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">save_result_to_file</span><span class="p">(</span><span class="n">result</span><span class="p">:</span> <span class="n">WorkflowResult</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">AppConfig</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;[Config Injection] 결과를 Markdown 파일로 저장 (하드코딩 제거)&quot;&quot;&quot;</span>
+    <span class="n">output_dir</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">output_dir</span>
+    <span class="n">output_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">_%H%M%S&quot;</span><span class="p">)</span>
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;result_turn_</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">turn_id</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">.md&quot;</span>
+    
+    <span class="n">content</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;# Turn </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">turn_id</span><span class="si">}</span><span class="s2"> Result</span>
+
+<span class="s2">## Query</span>
+<span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">query</span><span class="si">}</span>
+
+<span class="s2">## Evaluation</span>
+<span class="s2">- **Best Candidate**: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">evaluation</span><span class="o">.</span><span class="n">best_candidate</span><span class="si">}</span>
+<span class="s2">- **Scores**:</span>
+<span class="si">{</span><span class="nb">chr</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;  - </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">candidate_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">)&quot;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">result</span><span class="o">.</span><span class="n">evaluation</span><span class="o">.</span><span class="n">evaluations</span><span class="p">])</span><span class="si">}</span>
+
+<span class="s2">## Best Answer (</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">evaluation</span><span class="o">.</span><span class="n">best_candidate</span><span class="si">}</span><span class="s2">)</span>
+<span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">best_answer</span><span class="si">}</span>
+
+<span class="s2">## Rewritten Answer</span>
+<span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">rewritten_answer</span><span class="si">}</span>
+
+<span class="s2">## Metadata</span>
+<span class="s2">- **Cost**: $</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">cost</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span>
+<span class="s2">- **Timestamp**: </span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+    
+    <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;GeminiWorkflow&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;결과 파일 저장됨: </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_evaluate_and_rewrite_turn</span><span class="p">(</span>
+    <span class="n">agent</span><span class="p">:</span> <span class="n">GeminiAgent</span><span class="p">,</span>
+    <span class="n">ocr_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">candidates</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+    <span class="n">cache</span><span class="p">,</span>
+    <span class="n">turn_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">total_turns</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">WorkflowResult</span><span class="p">]:</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Turn </span><span class="si">{</span><span class="n">turn_id</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total_turns</span><span class="si">}</span><span class="s2">: &#39;</span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">&#39; 실행 중...&quot;</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;후보 평가 중...&quot;</span><span class="p">)</span>
+    <span class="n">evaluation</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">evaluate_responses</span><span class="p">(</span><span class="n">ocr_text</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">candidates</span><span class="p">,</span> <span class="n">cached_content</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">evaluation</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Turn </span><span class="si">{</span><span class="n">turn_id</span><span class="si">}</span><span class="s2">: 평가 실패&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">best_candidate_id</span> <span class="o">=</span> <span class="n">evaluation</span><span class="o">.</span><span class="n">get_best_candidate_id</span><span class="p">()</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;후보 선정 완료: </span><span class="si">{</span><span class="n">best_candidate_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">raw_answer</span> <span class="o">=</span> <span class="n">candidates</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">best_candidate_id</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">parsed</span> <span class="o">=</span> <span class="n">safe_json_parse</span><span class="p">(</span><span class="n">raw_answer</span><span class="p">,</span> <span class="n">best_candidate_id</span><span class="p">)</span>
+    <span class="n">best_answer</span> <span class="o">=</span> <span class="n">parsed</span> <span class="k">if</span> <span class="n">parsed</span> <span class="k">else</span> <span class="n">raw_answer</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;답변 재작성 중...&quot;</span><span class="p">)</span>
+    <span class="n">rewritten_answer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">rewrite_best_answer</span><span class="p">(</span><span class="n">ocr_text</span><span class="p">,</span> <span class="n">best_answer</span><span class="p">,</span> <span class="n">cached_content</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;답변 재작성 완료&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">WorkflowResult</span><span class="p">(</span>
+        <span class="n">turn_id</span><span class="o">=</span><span class="n">turn_id</span><span class="p">,</span>
+        <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
+        <span class="n">evaluation</span><span class="o">=</span><span class="n">evaluation</span><span class="p">,</span>
+        <span class="n">best_answer</span><span class="o">=</span><span class="n">best_answer</span><span class="p">,</span>
+        <span class="n">rewritten_answer</span><span class="o">=</span><span class="n">rewritten_answer</span><span class="p">,</span>
+        <span class="n">cost</span><span class="o">=</span><span class="n">agent</span><span class="o">.</span><span class="n">get_total_cost</span><span class="p">(),</span>
+        <span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="process_single_query">
+<a class="viewcode-back" href="../../src.html#src.main.process_single_query">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process_single_query</span><span class="p">(</span>
+    <span class="n">agent</span><span class="p">:</span> <span class="n">GeminiAgent</span><span class="p">,</span>
+    <span class="n">ocr_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">candidates</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+    <span class="n">cache</span><span class="p">,</span>
+    <span class="n">turn_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">total_turns</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">AppConfig</span><span class="p">,</span>
+    <span class="n">progress</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Progress</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># Add progress argument</span>
+    <span class="n">task_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>        <span class="c1"># Add task_id argument</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">WorkflowResult</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    [Parallel Processing] 단일 질의 처리 (평가 -&gt; 재작성)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Update progress description</span>
+        <span class="k">if</span> <span class="n">progress</span> <span class="ow">and</span> <span class="n">task_id</span><span class="p">:</span>
+            <span class="n">progress</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">task_id</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;[cyan]Turn </span><span class="si">{</span><span class="n">turn_id</span><span class="si">}</span><span class="s2">: Processing...[/cyan]&quot;</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_evaluate_and_rewrite_turn</span><span class="p">(</span>
+            <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+            <span class="n">ocr_text</span><span class="o">=</span><span class="n">ocr_text</span><span class="p">,</span>
+            <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
+            <span class="n">candidates</span><span class="o">=</span><span class="n">candidates</span><span class="p">,</span>
+            <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span>
+            <span class="n">turn_id</span><span class="o">=</span><span class="n">turn_id</span><span class="p">,</span>
+            <span class="n">total_turns</span><span class="o">=</span><span class="n">total_turns</span><span class="p">,</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+            <span class="c1"># 결과 저장 (Config injection)</span>
+            <span class="n">save_result_to_file</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+            
+            <span class="c1"># [Rich UI] 턴 결과 출력 (Thread-safe way needed for real app, but Rich handles it reasonably well)</span>
+            <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">Panel</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;[bold]Query:[/bold] </span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;[bold]Best Candidate:[/bold] </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">evaluation</span><span class="o">.</span><span class="n">get_best_candidate_id</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;[bold]Rewritten:[/bold] </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">rewritten_answer</span><span class="p">[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">,</span>
+                <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Turn </span><span class="si">{</span><span class="n">turn_id</span><span class="si">}</span><span class="s2"> Result&quot;</span><span class="p">,</span>
+                <span class="n">border_style</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span>
+            <span class="p">))</span>
+            
+            <span class="c1"># Mark task as completed</span>
+            <span class="k">if</span> <span class="n">progress</span> <span class="ow">and</span> <span class="n">task_id</span><span class="p">:</span>
+                <span class="n">progress</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">task_id</span><span class="p">,</span> <span class="n">advance</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;[green]Turn </span><span class="si">{</span><span class="n">turn_id</span><span class="si">}</span><span class="s2">: Done[/green]&quot;</span><span class="p">)</span>
+                
+            <span class="k">return</span> <span class="n">result</span>
+            
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Turn </span><span class="si">{</span><span class="n">turn_id</span><span class="si">}</span><span class="s2"> 실행 중 오류 발생: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">progress</span> <span class="ow">and</span> <span class="n">task_id</span><span class="p">:</span>
+            <span class="n">progress</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">task_id</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;[red]Turn </span><span class="si">{</span><span class="n">turn_id</span><span class="si">}</span><span class="s2">: Failed[/red]&quot;</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="execute_workflow">
+<a class="viewcode-back" href="../../src.html#src.main.execute_workflow">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute_workflow</span><span class="p">(</span><span class="n">agent</span><span class="p">:</span> <span class="n">GeminiAgent</span><span class="p">,</span> <span class="n">ocr_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user_intent</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">logger</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">,</span> <span class="n">ocr_filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cand_filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_interactive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">WorkflowResult</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    [Orchestration] 전체 워크플로우 실행 (Iterative &amp; Human-in-the-Loop)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># ... (Phase 1: Planning - same as before)</span>
+    <span class="c1"># [Phase 1: Planning] 질의 리스트 생성</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;질의 리스트 생성 중...&quot;</span><span class="p">)</span>
+    <span class="n">queries</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">generate_query</span><span class="p">(</span><span class="n">ocr_text</span><span class="p">,</span> <span class="n">user_intent</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">queries</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;질의 생성 실패&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="c1"># [Rich UI] 생성된 질의 리스트 출력</span>
+    <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">Panel</span><span class="p">(</span>
+        <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">. </span><span class="si">{</span><span class="n">q</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">q</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">queries</span><span class="p">)]),</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;[bold green]Generated Strategic Queries[/bold green]&quot;</span><span class="p">,</span>
+        <span class="n">border_style</span><span class="o">=</span><span class="s2">&quot;green&quot;</span>
+    <span class="p">))</span>
+
+    <span class="c1"># [Conditional Interactivity] AUTO 모드에서는 프롬프트 건너뛰기</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">AppConfig</span><span class="p">()</span>
+    <span class="n">candidates</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Initialize candidates</span>
+    
+    <span class="k">if</span> <span class="n">is_interactive</span><span class="p">:</span>
+        <span class="c1"># [Breakpoint &amp; Hot Reload] 사용자 개입</span>
+        <span class="k">if</span> <span class="n">Confirm</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="s2">&quot;위 질의를 보고 후보 답변 파일(input_candidates.json)을 수정하시겠습니까? (수정 후 Enter)&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;사용자 요청으로 데이터 재로딩 중...&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">_</span><span class="p">,</span> <span class="n">candidates</span> <span class="o">=</span> <span class="k">await</span> <span class="n">reload_data_if_needed</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">ocr_filename</span><span class="p">,</span> <span class="n">cand_filename</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;데이터 재로딩 완료&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;데이터 재로딩 실패: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># 재로딩 없이 진행</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">candidates</span> <span class="o">=</span> <span class="k">await</span> <span class="n">reload_data_if_needed</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">ocr_filename</span><span class="p">,</span> <span class="n">cand_filename</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># [AUTO Mode] 자동으로 데이터 로드 (프롬프트 없음)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;AUTO 모드: 데이터 자동 로딩 중...&quot;</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">candidates</span> <span class="o">=</span> <span class="k">await</span> <span class="n">reload_data_if_needed</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">ocr_filename</span><span class="p">,</span> <span class="n">cand_filename</span><span class="p">)</span>
+
+    <span class="c1"># [Context Caching] 캐시 생성 시도</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Context Caching 시도 중...&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cache</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">create_context_cache</span><span class="p">(</span><span class="n">ocr_text</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">CacheCreationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">cache</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Context cache creation skipped: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># [Phase 2: Execution Loop] 병렬 실행 (Parallel Processing) with Progress Bar</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;총 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">queries</span><span class="p">)</span><span class="si">}</span><span class="s2">개의 질의를 병렬로 처리합니다...&quot;</span><span class="p">)</span>
+    
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+    
+    <span class="c1"># Rich Progress Bar Context</span>
+    <span class="k">with</span> <span class="n">Progress</span><span class="p">(</span>
+        <span class="n">SpinnerColumn</span><span class="p">(),</span>
+        <span class="n">TextColumn</span><span class="p">(</span><span class="s2">&quot;[progress.description]</span><span class="si">{task.description}</span><span class="s2">&quot;</span><span class="p">),</span>
+        <span class="n">BarColumn</span><span class="p">(),</span>
+        <span class="n">TaskProgressColumn</span><span class="p">(),</span>
+        <span class="n">console</span><span class="o">=</span><span class="n">console</span><span class="p">,</span>
+        <span class="n">transient</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># 완료 후 사라짐 (깔끔하게)</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">progress</span><span class="p">:</span>
+        
+        <span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># 전체 진행률 트래킹용 태스크 (선택 사항, 여기서는 개별 태스크만 보여줌)</span>
+        <span class="c1"># overall_task = progress.add_task(&quot;[green]Overall Progress&quot;, total=len(queries))</span>
+        
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">query</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">queries</span><span class="p">):</span>
+            <span class="n">turn_id</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="c1"># 각 쿼리별 태스크 생성 (초기 상태: Waiting)</span>
+            <span class="n">task_id</span> <span class="o">=</span> <span class="n">progress</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[cyan]Turn </span><span class="si">{</span><span class="n">turn_id</span><span class="si">}</span><span class="s2">: Waiting...&quot;</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            
+            <span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">process_single_query</span><span class="p">(</span>
+                    <span class="n">agent</span><span class="o">=</span><span class="n">agent</span><span class="p">,</span>
+                    <span class="n">ocr_text</span><span class="o">=</span><span class="n">ocr_text</span><span class="p">,</span>
+                    <span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
+                    <span class="n">candidates</span><span class="o">=</span><span class="n">candidates</span><span class="p">,</span>
+                    <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span>
+                    <span class="n">turn_id</span><span class="o">=</span><span class="n">turn_id</span><span class="p">,</span>
+                    <span class="n">total_turns</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">queries</span><span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                    <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+                    <span class="n">progress</span><span class="o">=</span><span class="n">progress</span><span class="p">,</span>
+                    <span class="n">task_id</span><span class="o">=</span><span class="n">task_id</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        
+        <span class="c1"># [Concurrency] 모든 태스크 동시 실행</span>
+        <span class="n">processed_results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">tasks</span><span class="p">)</span>
+        
+        <span class="c1"># None 제거 (실패한 경우)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">processed_results</span> <span class="k">if</span> <span class="n">r</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
+        
+        <span class="c1"># 순서 보장을 위해 turn_id로 정렬 (병렬 처리로 순서가 섞일 수 있음)</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">turn_id</span><span class="p">)</span>
+    
+    <span class="c1"># [Cleanup] 캐시 삭제</span>
+    <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cache</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cache cleaned up: </span><span class="si">{</span><span class="n">cache</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cache cleanup failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">results</span></div>
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../src.html#src.main.main">[docs]</a>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main workflow orchestrator with professional argument parsing&quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;🚀 Advanced Gemini Workflow: AI-powered Q&amp;A Evaluation System&quot;</span><span class="p">,</span>
+        <span class="n">formatter_class</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentDefaultsHelpFormatter</span>  <span class="c1"># Auto-show defaults</span>
+    <span class="p">)</span>
+
+    <span class="c1"># 1. Core Configuration</span>
+    <span class="n">core_group</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_argument_group</span><span class="p">(</span><span class="s2">&quot;Core Configuration&quot;</span><span class="p">)</span>
+    <span class="n">core_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--mode&quot;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;AUTO&quot;</span><span class="p">,</span> <span class="s2">&quot;CHAT&quot;</span><span class="p">],</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;AUTO&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Execution mode&quot;</span>
+    <span class="p">)</span>
+    <span class="n">core_group</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--interactive&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Force interactive mode (ask for confirmation) even in AUTO mode&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># ... (rest of arguments)</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="c1"># ... (logging setup)</span>
+    <span class="n">logger</span><span class="p">,</span> <span class="n">log_listener</span> <span class="o">=</span> <span class="n">setup_logging</span><span class="p">()</span>
+    
+    <span class="c1"># ... (config &amp; resource loading)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">AppConfig</span><span class="p">()</span>
+        <span class="n">genai</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">api_key</span><span class="p">)</span>
+        <span class="c1"># ... (jinja env setup)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">jinja2</span><span class="w"> </span><span class="kn">import</span> <span class="n">Environment</span><span class="p">,</span> <span class="n">FileSystemLoader</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="o">.</span><span class="n">template_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+             <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Templates directory missing: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">template_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">jinja_env</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">(</span><span class="n">loader</span><span class="o">=</span><span class="n">FileSystemLoader</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">template_dir</span><span class="p">),</span> <span class="n">autoescape</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;리소스 로드 중...&quot;</span><span class="p">)</span>
+        <span class="n">input_dir</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">input_dir</span>
+        <span class="n">ocr_text</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="k">await</span> <span class="n">load_input_data</span><span class="p">(</span><span class="n">input_dir</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">ocr_file</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">cand_file</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># ... (error handling)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[FATAL] Initialization failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">log_listener</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># [DI] Agent에 모든 의존성 주입</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">GeminiAgent</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">jinja_env</span><span class="o">=</span><span class="n">jinja_env</span><span class="p">)</span>
+    <span class="n">user_intent</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">intent</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;CHAT&quot;</span> <span class="k">else</span> <span class="kc">None</span>
+    
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;워크플로우 시작 (Mode: </span><span class="si">{</span><span class="n">args</span><span class="o">.</span><span class="n">mode</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># [Separation of Concerns] 워크플로우 실행 (모드에 따라 interactive 설정)</span>
+        <span class="c1"># CHAT 모드이거나 --interactive 플래그가 있으면 대화형 모드</span>
+        <span class="n">is_interactive</span> <span class="o">=</span> <span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;CHAT&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">args</span><span class="o">.</span><span class="n">interactive</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">execute_workflow</span><span class="p">(</span><span class="n">agent</span><span class="p">,</span> <span class="n">ocr_text</span><span class="p">,</span> <span class="n">user_intent</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">ocr_file</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">cand_file</span><span class="p">,</span> <span class="n">is_interactive</span><span class="p">)</span>
+        
+        <span class="c1"># ... (rest of main)</span>
+        
+        <span class="c1"># [Cost Summary] 비용 정보를 Panel로 표시</span>
+        <span class="n">total_cost</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">get_total_cost</span><span class="p">()</span>
+        <span class="n">cost_info</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;[bold cyan]💰 Total Session Cost:[/bold cyan] $</span><span class="si">{</span><span class="n">total_cost</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> USD</span>
+<span class="s2">[bold green]📊 Token Usage:[/bold green] </span><span class="si">{</span><span class="n">agent</span><span class="o">.</span><span class="n">total_input_tokens</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> input / </span><span class="si">{</span><span class="n">agent</span><span class="o">.</span><span class="n">total_output_tokens</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2"> output</span>
+<span class="s2">[bold magenta]🚀 Cache Stats:[/bold magenta] </span><span class="si">{</span><span class="n">agent</span><span class="o">.</span><span class="n">cache_hits</span><span class="si">}</span><span class="s2"> hits / </span><span class="si">{</span><span class="n">agent</span><span class="o">.</span><span class="n">cache_misses</span><span class="si">}</span><span class="s2"> misses&quot;&quot;&quot;</span>
+        
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">()</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">Panel</span><span class="p">(</span><span class="n">cost_info</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;[bold blue]Cost Summary[/bold blue]&quot;</span><span class="p">,</span> <span class="n">border_style</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">))</span>
+            
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Workflow Failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="c1"># [Cleanup] 로그 리스너 종료 (남은 로그 플러시)</span>
+        <span class="n">log_listener</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">load_dotenv</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;nt&#39;</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">asyncio</span><span class="o">.</span><span class="n">set_event_loop_policy</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">WindowsSelectorEventLoopPolicy</span><span class="p">())</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="k">pass</span>
+    
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+    <span class="k">except</span> <span class="ne">KeyboardInterrupt</span><span class="p">:</span>
+        <span class="c1"># from rich.console import Console # Already imported at the top</span>
+        <span class="n">console</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">[bold red][!] 사용자 중단[/bold red]&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">130</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Critical error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Antigravity.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

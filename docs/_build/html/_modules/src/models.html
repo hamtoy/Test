@@ -1,0 +1,197 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>src.models &mdash; Shining Quasar 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=01f34227"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Shining Quasar
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Shining Quasar Modules</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Shining Quasar</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">src.models</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for src.models</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Literal</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">model_validator</span>
+
+<span class="c1"># [Module-Level Logger] 모듈 전체에서 재사용</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;GeminiWorkflow&quot;</span><span class="p">)</span>
+
+<span class="c1"># [Strict Typing] CandidateID는 A, B, C만 허용</span>
+<span class="n">CandidateID</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="EvaluationItem">
+<a class="viewcode-back" href="../../src.html#src.models.EvaluationItem">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EvaluationItem</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">candidate_id</span><span class="p">:</span> <span class="n">CandidateID</span>  <span class="c1"># [Type Safety] Literal로 강제</span>
+    <span class="n">score</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span></div>
+
+
+<div class="viewcode-block" id="EvaluationResultSchema">
+<a class="viewcode-back" href="../../src.html#src.models.EvaluationResultSchema">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EvaluationResultSchema</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">best_candidate</span><span class="p">:</span> <span class="n">CandidateID</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The key of the best candidate (e.g., &#39;A&#39;, &#39;B&#39;, &#39;C&#39;).&quot;</span><span class="p">)</span>
+    <span class="n">evaluations</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">EvaluationItem</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of evaluations for each candidate.&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="EvaluationResultSchema.validate_best_candidate">
+<a class="viewcode-back" href="../../src.html#src.models.EvaluationResultSchema.validate_best_candidate">[docs]</a>
+    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;after&#39;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_best_candidate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        [Hallucination Detection] LLM이 주장한 best_candidate와 실제 점수가 일치하는지 검증</span>
+<span class="sd">        불일치 시 자동 수정하여 downstream 에러 방지</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluations</span><span class="p">:</span>
+            <span class="c1"># 실제 최고 점수 후보 찾기</span>
+            <span class="n">actual_best</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">evaluations</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
+            
+            <span class="c1"># LLM의 주장과 실제가 다르면 경고 후 수정</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_candidate</span> <span class="o">!=</span> <span class="n">actual_best</span><span class="o">.</span><span class="n">candidate_id</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;⚠️ LLM Hallucination Detected: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Claimed &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">best_candidate</span><span class="si">}</span><span class="s2">&#39; but scores show &#39;</span><span class="si">{</span><span class="n">actual_best</span><span class="o">.</span><span class="n">candidate_id</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;(score: </span><span class="si">{</span><span class="n">actual_best</span><span class="o">.</span><span class="n">score</span><span class="si">}</span><span class="s2">). Auto-correcting...&quot;</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">best_candidate</span> <span class="o">=</span> <span class="n">actual_best</span><span class="o">.</span><span class="n">candidate_id</span>
+        
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="EvaluationResultSchema.get_best_candidate_id">
+<a class="viewcode-back" href="../../src.html#src.models.EvaluationResultSchema.get_best_candidate_id">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_best_candidate_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CandidateID</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        [Domain Logic] 점수가 가장 높은 후보의 ID를 반환합니다.</span>
+<span class="sd">        best_candidate 필드를 우선 사용하고, 없으면 evaluations에서 최고점을 찾습니다.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># [Simplified] Literal 타입이 보장하므로 A/B/C 체크 불필요</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_candidate</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">best_candidate</span>
+        
+        <span class="c1"># evaluations에서 최고점 찾기</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluations</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;A&quot;</span>  <span class="c1"># 기본값</span>
+
+        <span class="c1"># 점수 내림차순 정렬</span>
+        <span class="n">sorted_evals</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">evaluations</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">score</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sorted_evals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">candidate_id</span></div>
+</div>
+
+
+<div class="viewcode-block" id="QueryResult">
+<a class="viewcode-back" href="../../src.html#src.models.QueryResult">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">QueryResult</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    [Structured Output] LLM이 생성한 질의 리스트를 구조화하여 받기 위한 모델</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">queries</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Generated list of strategic search queries based on the user intent and OCR text.&quot;</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WorkflowResult">
+<a class="viewcode-back" href="../../src.html#src.models.WorkflowResult">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">WorkflowResult</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    [Data Transfer Object] 워크플로우의 최종 결과를 담는 객체</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">turn_id</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Iteration turn number&quot;</span><span class="p">)</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">evaluation</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EvaluationResultSchema</span><span class="p">]</span>
+    <span class="n">best_answer</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">rewritten_answer</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">cost</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">final_output</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">success</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">error_message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Antigravity.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,10 +1,9 @@
 import pytest
 import asyncio
-from pathlib import Path
+from unittest.mock import MagicMock, AsyncMock
 from src.agent import GeminiAgent
 from src.config import AppConfig
-from src.models import EvaluationResultSchema, QueryResult
-
+from src.models import EvaluationResultSchema
 
 class TestGeminiAgent:
     """기본 Agent 기능 테스트"""
@@ -40,6 +39,21 @@ class TestGeminiAgent:
         # gemini-3-pro-preview 기본 단가 적용: 입력 $4.00 + 출력 $18.00 = $22.00
         assert cost == 22.0
 
+    @pytest.mark.asyncio
+    async def test_cache_monitoring(self, agent):
+        # Mock internal methods to avoid API calls
+        agent._create_generative_model = MagicMock()
+        agent._call_api_with_retry = AsyncMock(return_value='{"best_candidate": "A", "evaluations": []}')
+        
+        # Test with cache
+        await agent.evaluate_responses("ocr", "query", {"A": "a"}, cached_content="cache")
+        assert agent.cache_hits == 1
+        assert agent.cache_misses == 0
+        
+        # Test without cache
+        await agent.evaluate_responses("ocr", "query", {"A": "a"}, cached_content=None)
+        assert agent.cache_hits == 1
+        assert agent.cache_misses == 1
 
 class TestEvaluationModel:
     """평가 모델 검증 테스트"""

@@ -50,6 +50,10 @@ class GeminiAgent:
         self.total_input_tokens = 0
         self.total_output_tokens = 0
         
+        # [Cache Monitoring] 캐시 적중률 추적
+        self.cache_hits = 0
+        self.cache_misses = 0
+        
         # [Dependency Injection] 외부에서 주입하거나, 없으면 생성
         if jinja_env is not None:
             self.jinja_env = jinja_env
@@ -320,12 +324,17 @@ class GeminiAgent:
         
         # [Modern Schema] Pydantic 모델 전달
         model = self._create_generative_model(system_prompt, response_schema=EvaluationResultSchema, cached_content=cached_content)
+        
+        # [Cache Monitoring]
+        if cached_content:
+            self.cache_hits += 1
+        else:
+            self.cache_misses += 1
+
         try:
             response_text = await self._call_api_with_retry(model, json.dumps(input_data, ensure_ascii=False))
         except google_exceptions.ResourceExhausted as e:
             raise APIRateLimitError(f"Rate limit exceeded during evaluation: {e}") from e
-        
-        # [Native Parsing] Pydantic Validation 사용 (안전한 파싱)
         cleaned_response = clean_markdown_code_block(response_text)
         
         if not cleaned_response or not cleaned_response.strip():
@@ -358,6 +367,13 @@ class GeminiAgent:
         
         # [IMPORTANT] rewrite는 순수 텍스트여야 하므로 response_schema=None
         model = self._create_generative_model(system_prompt, cached_content=cached_content)
+        
+        # [Cache Monitoring]
+        if cached_content:
+            self.cache_hits += 1
+        else:
+            self.cache_misses += 1
+
         try:
             response_text = await self._call_api_with_retry(model, payload)
         except google_exceptions.ResourceExhausted as e:
@@ -376,26 +392,16 @@ class GeminiAgent:
     def get_total_cost(self) -> float:
         """
         [Cost Tracking] 세션의 총 API 비용 계산 (USD)
-        모델별 단가를 동적으로 계산 (Gemini 3 Pro Preview는 입력 토큰 기반 티어 적용)
+        Gemini 3 Pro Preview 전용 단가를 적용 (입력 토큰 기반 티어)
         """
         model_name = self.config.model_name.lower()
 
         def _pricing_for_model(total_input_tokens: int) -> tuple[float, float]:
-            # Gemini 3 Pro Preview: tiered pricing based on input token volume
-            if "gemini-3-pro" in model_name:
-                if total_input_tokens > 200_000:
-                    return (4.00, 18.00)  # High Tier
-                return (2.00, 12.00)      # Standard Tier
-
-            # Fallback pricing for older models (kept for compatibility)
-            table = {
-                "gemini-1.5-pro": (3.50, 10.50),
-                "gemini-1.5-pro-latest": (3.50, 10.50),
-                "gemini-1.5-flash": (0.35, 1.05),
-                "gemini-1.5-flash-latest": (0.35, 1.05),
-                "gemini-2.0-flash-exp": (0.60, 2.40),
-            }
-            return table.get(model_name, table["gemini-1.5-pro"])
+            if "gemini-3-pro" not in model_name:
+                raise ValueError(f"Unsupported model for pricing: {model_name}")
+            if total_input_tokens > 200_000:
+                return (4.00, 18.00)  # >200K tokens
+            return (2.00, 12.00)      # ≤200K tokens
 
         input_rate, output_rate = _pricing_for_model(self.total_input_tokens)
 

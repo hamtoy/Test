@@ -61,8 +61,8 @@ else: # 3개일 때
     3. [이미지 내 타겟(서술형)]: 특정 항목에 대한 상세 기술 요청
     """
 
-# LLM 호출 함수
 def call_llm(system_prompt, user_prompt):
+    """Gemini 3 Pro Preview로 고정된 LLM 호출"""
     try:
         response = client.chat.completions.create(
             model="gemini-3-pro-preview",
@@ -70,7 +70,7 @@ def call_llm(system_prompt, user_prompt):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=0  # 정적인 결과를 위해 0 권장
+            temperature=0
         )
         return response.choices[0].message.content
     except Exception as e:
