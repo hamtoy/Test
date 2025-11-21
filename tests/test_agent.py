@@ -37,8 +37,8 @@ class TestGeminiAgent:
         agent.total_output_tokens = 1_000_000  # 1M tokens
         
         cost = agent.get_total_cost()
-        # 입력 $3.50 + 출력 $10.50 = $14.00
-        assert cost == 14.0
+        # gemini-3-pro-preview 기본 단가 적용: 입력 $4.00 + 출력 $18.00 = $22.00
+        assert cost == 22.0
 
 
 class TestEvaluationModel:

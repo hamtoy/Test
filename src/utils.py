@@ -2,7 +2,7 @@ import re
 import json
 import aiofiles
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 async def load_file_async(file_path: Path) -> str:
     """[Async I/O] 파일을 비동기로 읽어옵니다. (Fail Fast: 에러 발생 시 예외 전파)"""
@@ -52,7 +52,7 @@ def clean_markdown_code_block(text: str) -> str:
     # No markdown found - return original (likely already clean JSON)
     return text.strip()
 
-def safe_json_parse(text: str, target_key: Optional[str] = None) -> Optional[Dict]:
+def safe_json_parse(text: str, target_key: Optional[str] = None) -> Optional[Any]:
     """
     [Centralized JSON Parsing] 안전한 JSON 파싱 헬퍼 함수
     Best Practice: try-except, specific error handling, clean error reporting

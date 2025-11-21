@@ -24,6 +24,7 @@ from src.models import WorkflowResult
 from src.data_loader import load_input_data
 from src.logging_setup import setup_logging
 from src.utils import safe_json_parse
+from src.exceptions import ValidationFailedError, CacheCreationError
 
 # [Global Console] Rich Console은 전역에서 재사용
 console = Console()
@@ -61,12 +62,15 @@ def save_result_to_file(result: WorkflowResult, config: AppConfig):
     
     logging.getLogger("GeminiWorkflow").info(f"결과 파일 저장됨: {filename}")
 
-async def execute_workflow(agent: GeminiAgent, ocr_text: str, user_intent: Optional[str], logger: logging.Logger, ocr_filename: str, cand_filename: str) -> List[WorkflowResult]:
+async def execute_workflow(agent: GeminiAgent, ocr_text: str, user_intent: Optional[str], logger: logging.Logger, ocr_filename: str, cand_filename: str, is_interactive: bool = True) -> List[WorkflowResult]:
     """
     [Orchestration] 전체 워크플로우 실행 (Iterative & Human-in-the-Loop)
     1. Planning: 질의 리스트 생성
-    2. Breakpoint: 사용자 검토 및 데이터 Hot Reload
+    2. Breakpoint: 사용자 검토 및 데이터 Hot Reload (is_interactive=True일 때만)
     3. Execution Loop: 각 질의에 대해 평가 및 재작성 수행
+    
+    Args:
+        is_interactive: True면 사용자에게 확인 요청, False면 자동 진행 (AUTO 모드)
     """
     # [Phase 1: Planning] 질의 리스트 생성
     logger.info("질의 리스트 생성 중...")
@@ -83,27 +87,35 @@ async def execute_workflow(agent: GeminiAgent, ocr_text: str, user_intent: Optio
         border_style="green"
     ))
 
-    # [Breakpoint & Hot Reload] 사용자 개입
-    candidates = {} # Initialize candidates
-    if Confirm.ask("위 질의를 보고 후보 답변 파일(input_candidates.json)을 수정하시겠습니까? (수정 후 Enter)", default=True):
-        logger.info("사용자 요청으로 데이터 재로딩 중...")
-        # [Hot Reload] 데이터 다시 로드
-        try:
-            config = AppConfig()
-            # [Fix] 파일명 인자 전달
+    # [Conditional Interactivity] AUTO 모드에서는 프롬프트 건너뛰기
+    config = AppConfig()
+    candidates = {}  # Initialize candidates
+    
+    if is_interactive:
+        # [Breakpoint & Hot Reload] 사용자 개입
+        if Confirm.ask("위 질의를 보고 후보 답변 파일(input_candidates.json)을 수정하시겠습니까? (수정 후 Enter)", default=True):
+            logger.info("사용자 요청으로 데이터 재로딩 중...")
+            try:
+                _, candidates = await load_input_data(config.input_dir, ocr_filename, cand_filename)
+                logger.info("데이터 재로딩 완료")
+            except Exception as e:
+                logger.error(f"데이터 재로딩 실패: {e}")
+                return []
+        else:
+            # 재로딩 없이 진행
             _, candidates = await load_input_data(config.input_dir, ocr_filename, cand_filename)
-            logger.info("데이터 재로딩 완료")
-        except Exception as e:
-            logger.error(f"데이터 재로딩 실패: {e}")
-            return []
     else:
-        # 재로딩 없이 진행할 경우 기존 candidates 사용을 위해 다시 로드
-        config = AppConfig()
+        # [AUTO Mode] 자동으로 데이터 로드 (프롬프트 없음)
+        logger.info("AUTO 모드: 데이터 자동 로딩 중...")
         _, candidates = await load_input_data(config.input_dir, ocr_filename, cand_filename)
 
     # [Context Caching] 캐시 생성 시도
     logger.info("Context Caching 시도 중...")
-    cache = agent.create_context_cache(ocr_text)
+    try:
+        cache = await agent.create_context_cache(ocr_text)
+    except CacheCreationError as e:
+        cache = None
+        logger.warning(f"Context cache creation skipped: {e}")
 
     results = []
     
@@ -164,6 +176,14 @@ async def execute_workflow(agent: GeminiAgent, ocr_text: str, user_intent: Optio
         except Exception as e:
             logger.exception(f"Turn {turn_id} 실행 중 오류 발생: {e}")
             
+    # [Cleanup] 캐시 삭제
+    if cache:
+        try:
+            cache.delete()
+            logger.info(f"Cache cleaned up: {cache.name}")
+        except Exception as e:
+            logger.warning(f"Cache cleanup failed: {e}")
+
     return results
 
 async def main():
@@ -223,7 +243,7 @@ async def main():
     except ValidationError as e:
         logger.critical(f"설정 오류: {e}")
         log_listener.stop()
-        return
+        sys.exit(1)
 
     # [DI Preparation] Resources Initialization
     try:
@@ -243,14 +263,14 @@ async def main():
         input_dir = config.input_dir
         ocr_text, _ = await load_input_data(input_dir, args.ocr_file, args.cand_file)
         
-    except (FileNotFoundError, ValueError, json.JSONDecodeError) as e:
+    except (FileNotFoundError, ValueError, json.JSONDecodeError, ValidationFailedError) as e:
         logger.critical(f"초기화 실패: {e}")
         log_listener.stop()
-        return
+        sys.exit(1)
     except Exception as e:
         logger.critical(f"Unexpected error during initialization: {e}")
         log_listener.stop()
-        return
+        sys.exit(1)
 
     # [DI] Agent에 모든 의존성 주입
     agent = GeminiAgent(config, jinja_env=jinja_env)
@@ -259,8 +279,9 @@ async def main():
     logger.info(f"워크플로우 시작 (Mode: {args.mode})")
 
     try:
-        # [Separation of Concerns] 워크플로우 실행 및 결과 처리
-        results = await execute_workflow(agent, ocr_text, user_intent, logger, args.ocr_file, args.cand_file)
+        # [Separation of Concerns] 워크플로우 실행 (모드에 따라 interactive 설정)
+        is_interactive = (args.mode == "CHAT")
+        results = await execute_workflow(agent, ocr_text, user_intent, logger, args.ocr_file, args.cand_file, is_interactive)
         
         # [Cost Summary] 비용 정보를 Panel로 표시
         total_cost = agent.get_total_cost()

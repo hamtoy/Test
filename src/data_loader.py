@@ -3,11 +3,29 @@
 import json
 import logging
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Set
 
 from src.utils import load_file_async, parse_raw_candidates
+from src.exceptions import ValidationFailedError
 
 logger = logging.getLogger("GeminiWorkflow")
+
+def validate_candidates(candidates: Dict[str, str]) -> None:
+    """Validate candidate structure and content."""
+    required_keys: Set[str] = {"A", "B", "C"}
+    actual_keys = set(candidates.keys())
+
+    if not required_keys.issubset(actual_keys):
+        missing = required_keys - actual_keys
+        raise ValidationFailedError(
+            f"Candidates missing required keys: {missing}. "
+            f"Expected at least {required_keys}, got {actual_keys or 'none'}"
+        )
+
+    for key, value in candidates.items():
+        if not value or not value.strip():
+            raise ValidationFailedError(f"Candidate '{key}' has empty content")
+
 
 async def load_input_data(base_dir: Path, ocr_filename: str, cand_filename: str) -> tuple[str, Dict[str, str]]:
     """
@@ -62,5 +80,8 @@ async def load_input_data(base_dir: Path, ocr_filename: str, cand_filename: str)
             f"1. 올바른 JSON 형식을 사용하거나 ({{ \"A\": \"...\" }})\n"
             f"2. 텍스트 형식(A: 답변...)을 사용하세요."
         )
+
+    # Validate structure and content
+    validate_candidates(candidates)
 
     return ocr_text, candidates

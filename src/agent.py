@@ -16,63 +16,9 @@ from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 from src.config import AppConfig
 from src.models import EvaluationResultSchema, QueryResult
-from src.utils import clean_markdown_code_block
+from src.utils import clean_markdown_code_block, safe_json_parse
+from src.exceptions import APIRateLimitError, ValidationFailedError, CacheCreationError
 
-def _unwrap_json_response(response_text: str, target_key: str, logger: logging.Logger) -> Optional[str]:
-    """
-    [Helper Function] JSON 응답에서 특정 키를 추출하는 헬퍼 함수
-    Single Responsibility Principle (SRP)에 따라 파싱 로직 분리
-    
-    Args:
-        response_text: API 응답 텍스트
-        target_key: 추출할 키 (e.g., "rewritten_answer")
-        logger: 로깅 객체
-    
-    Returns:
-        추출된 텍스트 또는 None (파싱 실패 시)
-    """
-    # Guard: 빈 응답 체크
-    if not response_text or not response_text.strip():
-        logger.warning(f"JSON Unwrap: Empty response for key '{target_key}'")
-        return None
-    
-    cleaned = clean_markdown_code_block(response_text)
-    
-    # Guard: JSON 형식이 아님
-    if not cleaned.strip().startswith('{'):
-        return None
-    
-    try:
-        data = json.loads(cleaned)
-        
-        # Guard: dict가 아님
-        if not isinstance(data, dict):
-            return None
-        
-        # Case 1: 1단계 키 찾기 (정상)
-        if target_key in data:
-            logger.info(f"JSON Unwrap: Found '{target_key}' at top level")
-            return data[target_key]
-        
-        # Case 2: 중첩 구조 탐색 (캐시 충돌 등)
-        for parent_key, parent_value in data.items():
-            if isinstance(parent_value, dict) and target_key in parent_value:
-                logger.warning(
-                    f"JSON Unwrap: Found '{target_key}' nested in '{parent_key}' "
-                    f"(possible cache conflict or schema mismatch)"
-                )
-                return parent_value[target_key]
-        
-        # 키를 찾지 못함
-        logger.warning(f"JSON Unwrap: Key '{target_key}' not found in response")
-        return None
-        
-    except json.JSONDecodeError as e:
-        logger.debug(f"JSON Unwrap: Parse failed for '{target_key}': {e}")
-        return None
-    except Exception as e:
-        logger.warning(f"JSON Unwrap: Unexpected error for '{target_key}': {e}")
-        return None
 
 class GeminiAgent:
     """Gemini API와의 통신을 담당하는 에이전트."""
@@ -128,7 +74,7 @@ class GeminiAgent:
             # [Jinja2] 템플릿 엔진 초기화 (Config에서 경로 참조)
             self.jinja_env = Environment(loader=FileSystemLoader(config.template_dir), autoescape=True)
     
-    def _get_safety_settings(self) -> Dict:
+    def _get_safety_settings(self) -> Dict[HarmCategory, HarmBlockThreshold]:
         return {
             category: HarmBlockThreshold.BLOCK_NONE
             for category in [
@@ -168,19 +114,23 @@ class GeminiAgent:
             safety_settings=self.safety_settings
         )
 
-    def create_context_cache(self, ocr_text: str) -> Optional[caching.CachedContent]:
+    async def create_context_cache(self, ocr_text: str) -> Optional[caching.CachedContent]:
         """
         [Optimization] OCR 텍스트와 시스템 프롬프트를 결합하여 Context Cache 생성
         조건: 총 토큰 수가 2048 이상일 때만 생성
         """
         # 1. 시스템 프롬프트 렌더링 (평가용 기준)
         system_prompt = self.jinja_env.get_template("prompt_eval.j2").render()
-        
-        # 2. 토큰 수 계산을 위한 임시 모델
-        model = genai.GenerativeModel(self.config.model_name)
         combined_content = system_prompt + "\n\n" + ocr_text
-        token_count = model.count_tokens(combined_content).total_tokens
-        
+
+        loop = asyncio.get_running_loop()
+
+        # 2. 토큰 수 계산을 블로킹하지 않도록 오프로드
+        def _count_tokens() -> int:
+            model = genai.GenerativeModel(self.config.model_name)
+            return model.count_tokens(combined_content).total_tokens
+
+        token_count = await loop.run_in_executor(None, _count_tokens)
         self.logger.info(f"Total Tokens for Caching: {token_count}")
         
         if token_count < 2048:
@@ -188,19 +138,27 @@ class GeminiAgent:
             return None
             
         try:
-            # 3. 캐시 생성 (TTL 10분)
-            cache = caching.CachedContent.create(
-                model=self.config.model_name,
-                display_name="ocr_context_cache",
-                system_instruction=system_prompt,
-                contents=[ocr_text],
-                ttl=datetime.timedelta(minutes=10),
-            )
-            self.logger.info(f"Context Cache Created: {cache.name} (Expires in 10m)")
+            ttl_minutes = self.config.cache_ttl_minutes
+
+            # 3. 캐시 생성 (Configurable TTL) - 블로킹 호출 오프로드
+            def _create_cache():
+                return caching.CachedContent.create(
+                    model=self.config.model_name,
+                    display_name="ocr_context_cache",
+                    system_instruction=system_prompt,
+                    contents=[ocr_text],
+                    ttl=datetime.timedelta(minutes=ttl_minutes),
+                )
+
+            cache = await loop.run_in_executor(None, _create_cache)
+            self.logger.info(f"Context Cache Created: {cache.name} (Expires in {ttl_minutes}m)")
             return cache
+        except google_exceptions.ResourceExhausted as e:
+            self.logger.error(f"Failed to create cache due to rate limit: {e}")
+            raise CacheCreationError(f"Rate limit exceeded during cache creation: {e}") from e
         except Exception as e:
             self.logger.error(f"Failed to create cache: {e}")
-            return None
+            raise CacheCreationError(f"Failed to create cache: {e}") from e
 
     # [Modern Retry] Tenacity 라이브러리 사용
     @retry(
@@ -228,6 +186,9 @@ class GeminiAgent:
     
     async def _execute_api_call(self, model: genai.GenerativeModel, prompt_text: str) -> str:
         """실제 API 호출 로직"""
+        self.logger.debug(
+            f"API Call - Model: {self.config.model_name}, Prompt Length: {len(prompt_text)}"
+        )
         response = await model.generate_content_async(
             prompt_text, 
             request_options={'timeout': self.config.timeout}
@@ -249,6 +210,7 @@ class GeminiAgent:
         if response.candidates:
             candidate = response.candidates[0]
             finish_reason = candidate.finish_reason
+            self.logger.debug(f"API Response - Finish Reason: {finish_reason}")
             
             if finish_reason not in [protos.Candidate.FinishReason.STOP, protos.Candidate.FinishReason.MAX_TOKENS]:
                 # Safety filter나 기타 이유로 중단됨
@@ -297,7 +259,10 @@ class GeminiAgent:
         # [Modern Schema] Pydantic 모델 전달 (JSON Mode)
         model = self._create_generative_model(system_prompt, response_schema=QueryResult)
         
-        response_text = await self._call_api_with_retry(model, user_prompt)
+        try:
+            response_text = await self._call_api_with_retry(model, user_prompt)
+        except google_exceptions.ResourceExhausted as e:
+            raise APIRateLimitError(f"Rate limit exceeded during query generation: {e}") from e
         
         # [Native Parsing] Pydantic Validation 사용 (안전한 파싱)
         cleaned_response = clean_markdown_code_block(response_text)
@@ -321,7 +286,7 @@ class GeminiAgent:
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
-        retry=retry_if_exception_type((ValidationError, json.JSONDecodeError)),
+        retry=retry_if_exception_type((ValidationFailedError, ValidationError, json.JSONDecodeError)),
         reraise=True
     )
     async def evaluate_responses(self, ocr_text: str, query: str, candidates: Dict[str, str], cached_content=None) -> Optional[EvaluationResultSchema]:
@@ -336,7 +301,10 @@ class GeminiAgent:
         
         # [Modern Schema] Pydantic 모델 전달
         model = self._create_generative_model(system_prompt, response_schema=EvaluationResultSchema, cached_content=cached_content)
-        response_text = await self._call_api_with_retry(model, json.dumps(input_data, ensure_ascii=False))
+        try:
+            response_text = await self._call_api_with_retry(model, json.dumps(input_data, ensure_ascii=False))
+        except google_exceptions.ResourceExhausted as e:
+            raise APIRateLimitError(f"Rate limit exceeded during evaluation: {e}") from e
         
         # [Native Parsing] Pydantic Validation 사용 (안전한 파싱)
         cleaned_response = clean_markdown_code_block(response_text)
@@ -351,10 +319,10 @@ class GeminiAgent:
             return result
         except ValidationError as e:
             self.logger.error(f"Evaluation Validation Failed: {e}. Response: {cleaned_response[:200]}...")
-            raise
+            raise ValidationFailedError(f"Evaluation validation failed: {e}") from e
         except json.JSONDecodeError as e:
             self.logger.error(f"Evaluation JSON Parse Failed: {e}. Response: {cleaned_response[:200]}...")
-            raise
+            raise ValidationFailedError(f"Evaluation JSON parsing failed: {e}") from e
 
     async def rewrite_best_answer(self, ocr_text: str, best_answer: str, cached_content=None) -> str:
         """
@@ -369,10 +337,13 @@ class GeminiAgent:
         
         # [IMPORTANT] rewrite는 순수 텍스트여야 하므로 response_schema=None
         model = self._create_generative_model(system_prompt, cached_content=cached_content)
-        response_text = await self._call_api_with_retry(model, payload)
+        try:
+            response_text = await self._call_api_with_retry(model, payload)
+        except google_exceptions.ResourceExhausted as e:
+            raise APIRateLimitError(f"Rate limit exceeded during rewrite: {e}") from e
         
-        # [Defensive Programming] 헬퍼 함수로 JSON unwrapping 시도
-        unwrapped = _unwrap_json_response(response_text, "rewritten_answer", self.logger)
+        # [Defensive Programming] utils의 중앙화된 함수 사용 (DRY 원칙)
+        unwrapped = safe_json_parse(response_text, "rewritten_answer")
         
         # Guard: unwrapping 성공 시 반환
         if unwrapped:
@@ -384,8 +355,29 @@ class GeminiAgent:
     def get_total_cost(self) -> float:
         """
         [Cost Tracking] 세션의 총 API 비용 계산 (USD)
-        Gemini 1.5 Pro 기준: 입력 $3.50/1M, 출력 $10.50/1M 토큰
+        모델별 단가를 동적으로 계산 (Gemini 3 Pro Preview는 입력 토큰 기반 티어 적용)
         """
-        input_cost = (self.total_input_tokens / 1_000_000) * 3.50
-        output_cost = (self.total_output_tokens / 1_000_000) * 10.50
+        model_name = self.config.model_name.lower()
+
+        def _pricing_for_model(total_input_tokens: int) -> tuple[float, float]:
+            # Gemini 3 Pro Preview: tiered pricing based on input token volume
+            if "gemini-3-pro" in model_name:
+                if total_input_tokens > 200_000:
+                    return (4.00, 18.00)  # High Tier
+                return (2.00, 12.00)      # Standard Tier
+
+            # Fallback pricing for older models (kept for compatibility)
+            table = {
+                "gemini-1.5-pro": (3.50, 10.50),
+                "gemini-1.5-pro-latest": (3.50, 10.50),
+                "gemini-1.5-flash": (0.35, 1.05),
+                "gemini-1.5-flash-latest": (0.35, 1.05),
+                "gemini-2.0-flash-exp": (0.60, 2.40),
+            }
+            return table.get(model_name, table["gemini-1.5-pro"])
+
+        input_rate, output_rate = _pricing_for_model(self.total_input_tokens)
+
+        input_cost = (self.total_input_tokens / 1_000_000) * input_rate
+        output_cost = (self.total_output_tokens / 1_000_000) * output_rate
         return input_cost + output_cost
