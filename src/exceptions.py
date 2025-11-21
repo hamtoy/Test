@@ -8,3 +8,7 @@ class ValidationFailedError(Exception):
 
 class CacheCreationError(Exception):
     """Raised when context cache creation fails."""
+
+
+class SafetyFilterError(Exception):
+    """Raised when generation is blocked by safety filters or non-STOP finish reasons."""

@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -13,9 +14,18 @@ class AppConfig(BaseSettings):
     cache_size: int = Field(50, alias="GEMINI_CACHE_SIZE")
     temperature: float = Field(0.2, alias="GEMINI_TEMPERATURE")
     cache_ttl_minutes: int = Field(10, alias="GEMINI_CACHE_TTL_MINUTES")
+    log_level: str = Field("INFO", alias="LOG_LEVEL")
 
     # [Typo Prevention] extra="forbid"로 변경하여 오타를 즉시 감지
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="forbid")
+
+    @field_validator("api_key")
+    @classmethod
+    def validate_api_key(cls, v: str) -> str:
+        # Google API 키 형식: AIza + 20+ 안전 문자
+        if not re.match(r"^AIza[0-9A-Za-z_\-]{20,}$", v):
+            raise ValueError("Invalid GEMINI_API_KEY format (expected Google API key starting with 'AIza')")
+        return v
 
     @field_validator("max_concurrency")
     @classmethod
@@ -44,6 +54,15 @@ class AppConfig(BaseSettings):
         if not 1 <= v <= 1440:
             raise ValueError("cache_ttl_minutes must be between 1 and 1440")
         return v
+
+    @field_validator("log_level")
+    @classmethod
+    def validate_log_level(cls, v: str) -> str:
+        allowed = {"CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"}
+        upper = v.upper()
+        if upper not in allowed:
+            raise ValueError(f"log_level must be one of {allowed}")
+        return upper
 
     @staticmethod
     def _detect_project_root() -> Path:

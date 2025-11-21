@@ -17,7 +17,7 @@ from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from src.config import AppConfig
 from src.models import EvaluationResultSchema, QueryResult
 from src.utils import clean_markdown_code_block, safe_json_parse
-from src.exceptions import APIRateLimitError, ValidationFailedError, CacheCreationError
+from src.exceptions import APIRateLimitError, ValidationFailedError, CacheCreationError, SafetyFilterError
 
 
 class GeminiAgent:
@@ -229,7 +229,7 @@ class GeminiAgent:
                     f"⚠️ Generation stopped unexpectedly. "
                     f"Finish Reason: {finish_reason}.{safety_info}"
                 )
-                raise ValueError(f"Blocked by safety filter or other reason: {finish_reason}")
+                raise SafetyFilterError(f"Blocked by safety filter or other reason: {finish_reason}.{safety_info}")
 
         try:
             return response.text
@@ -248,7 +248,7 @@ class GeminiAgent:
                 if len(parts) > 0 and hasattr(parts[0], 'text'):
                     return parts[0].text
             
-            raise ValueError(error_msg)
+            raise SafetyFilterError(error_msg)
 
     async def generate_query(self, ocr_text: str, user_intent: Optional[str] = None) -> List[str]:
         # [Jinja2] 템플릿 렌더링
