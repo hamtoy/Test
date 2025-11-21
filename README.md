@@ -1,190 +1,159 @@
-# Gemini Workflow - Production-Ready Q&A System
+# Test Repository
 
-Enterprise-grade workflow system for evaluating and rewriting Q&A responses using Google Gemini AI.
+개인 테스트 및 실험용 저장소입니다. Google Gemini AI를 활용한 다양한 워크플로우와 스크립트를 포함합니다.
 
-## ✨ Features
-
-- 🤖 **Intelligent Query Generation** - Automatically generates queries from OCR text
-- 📊 **Multi-Candidate Evaluation** - Evaluates multiple answer candidates with scoring
-- ✍️ **Answer Rewriting** - Refines selected answers for optimal quality
-- 💰 **Cost Tracking** - Real-time token usage and cost calculation
-- 🛡️ **Production Hardening** - Rate limiting, type guards, hallucination detection
-- 🎨 **Professional UX** - Rich-based presentation layer with clean output separation
-- 🧪 **Full Test Coverage** - pytest suite with dependency injection support
-
-## 🏗️ Architecture
+## 📂 프로젝트 구조
 
 ```
-project_root/
-├── .env                    # Environment variables (API keys)
-├── requirements.txt        # Python dependencies
-├── README.md              # This file
-├── UV_GUIDE.md            # Fast package manager guide
-├── templates/             # Jinja2 templates
+Test/
+├── .gitignore
+├── README.md
+├── DEPLOYMENT_VERIFIED.md
+├── UV_GUIDE.md
+├── requirements.txt
+├── list_models.py           # Gemini 모델 리스트 조회
+├── qa_generator.py          # Q&A 자동 생성 스크립트
+├── data/                    # 데이터 파일 저장소
+│   ├── inputs/
+│   └── outputs/
+├── src/                     # 소스 코드 패키지
+│   ├── __init__.py
+│   ├── agent.py
+│   ├── config.py
+│   ├── data_loader.py
+│   ├── logging_setup.py
+│   ├── main.py
+│   ├── models.py
+│   └── utils.py
+├── templates/               # Jinja2 템플릿
 │   ├── prompt_eval.j2
 │   ├── prompt_query_gen.j2
 │   ├── prompt_rewrite.j2
 │   ├── query_gen_user.j2
 │   └── rewrite_user.j2
-├── data/
-│   ├── inputs/            # Input files (OCR, candidates)
-│   └── outputs/           # Generated outputs
-├── src/                   # Source code package
-│   ├── __init__.py
-│   ├── agent.py           # Gemini API agent
-│   ├── config.py          # Configuration management
-│   ├── data_loader.py     # Data loading utilities
-│   ├── logging_setup.py   # Logging configuration
-│   ├── main.py            # Main workflow orchestrator
-│   ├── models.py          # Pydantic models
-│   └── utils.py           # Utility functions
-└── tests/                 # Test suite
+└── tests/                   # 테스트 스위트
     ├── __init__.py
     ├── test_agent.py
     └── test_dependency_injection.py
 ```
 
-## 🚀 Quick Start
+## 🚀 주요 기능
 
-### 1. Prerequisites
+### 1. QA Generator (`qa_generator.py`)
+OCR 텍스트를 기반으로 질의와 답변을 자동 생성하는 스크립트입니다.
 
-- Python 3.10 or higher
-- Google Gemini API key ([Get one here](https://makersuite.google.com/app/apikey))
+**특징:**
+- OCR 텍스트에서 자동 질의 생성 (3개 또는 4개 모드)
+- 생성된 질의에 대한 답변 자동 생성
+- JSON 및 Markdown 형식으로 결과 저장
 
-### 2. Installation
-
-#### Option A: Using pip (Standard)
-
+**사용법:**
 ```bash
-# Clone or download the project
-cd shining-quasar
+# 환경 변수 설정
+export GEMINI_API_KEY=your_api_key_here
 
-# Install dependencies
+# 스크립트 실행
+python qa_generator.py
+```
+
+### 2. Gemini Workflow (`src/`)
+Q&A 응답을 평가하고 재작성하는 프로덕션급 워크플로우 시스템입니다.
+
+**특징:**
+- 🤖 지능형 질의 생성
+- 📊 다중 후보 평가
+- ✍️ 답변 재작성
+- 💰 비용 추적
+- 🛡️ Rate limiting, 환각 감지
+
+**사용법:**
+```bash
+# 기본 실행
+python -m src.main
+
+# CHAT 모드 실행
+python -m src.main --mode CHAT --intent "요약해줘"
+
+# 커스텀 입력 파일 지정
+python -m src.main --ocr-file custom.txt --cand-file candidates.json
+```
+
+### 3. Model Utilities (`list_models.py`)
+사용 가능한 Gemini 모델 리스트를 조회합니다.
+
+## ⚙️ 설치 및 설정
+
+### 필수 요구사항
+- Python 3.10 이상
+- Google Gemini API 키 ([여기서 발급](https://makersuite.google.com/app/apikey))
+
+### 설치
+
+#### 방법 A: pip 사용
+```bash
+git clone https://github.com/hamtoy/Test.git
+cd Test
 pip install -r requirements.txt
 ```
 
-#### Option B: Using uv (Recommended - 10-100x faster)
-
+#### 방법 B: uv 사용 (권장 - 10-100배 빠름)
 ```bash
-# Install uv
 pip install uv
-
-# Install dependencies
+cd Test
 uv pip install -r requirements.txt
 ```
 
-See [UV_GUIDE.md](UV_GUIDE.md) for more details.
+자세한 내용은 [UV_GUIDE.md](UV_GUIDE.md)를 참조하세요.
 
-### 3. Configuration
+### 환경 변수 설정
 
-Create a `.env` file in the project root:
+`.env` 파일을 프로젝트 루트에 생성:
 
 ```bash
-# Required
+# 필수
 GEMINI_API_KEY=your_api_key_here
 
-# Optional (with defaults)
+# 선택 (기본값 있음)
 GEMINI_MODEL_NAME=gemini-1.5-pro
 GEMINI_MAX_OUTPUT_TOKENS=8192
 GEMINI_TIMEOUT=120
 GEMINI_MAX_CONCURRENCY=5
-GEMINI_CACHE_SIZE=100
+GEMINI_TEMPERATURE=0.2
+GEMINI_CACHE_SIZE=50
+GEMINI_CACHE_TTL_MINUTES=10
+LOG_LEVEL=INFO
 ```
 
-### 4. Prepare Input Files
+## 📦 의존성
 
-Place your input files in `data/inputs/`:
+주요 라이브러리:
+- `google-generativeai` - Gemini API 클라이언트
+- `pydantic` - 데이터 검증
+- `jinja2` - 템플릿 엔진
+- `rich` - 터미널 UI
+- `tenacity` - 재시도 로직
+- `aiolimiter` - 비동기 rate limiting
+- `pytest` - 테스트 프레임워크
 
-**OCR Text** (`data/inputs/input_ocr.txt`):
+전체 목록은 [`requirements.txt`](requirements.txt)를 참조하세요.
 
-```
-Your OCR extracted text here...
-```
-
-**Candidate Answers** (`data/inputs/input_candidates.json`):
-
-```json
-{
-  "A": "First candidate answer...",
-  "B": "Second candidate answer...",
-  "C": "Third candidate answer..."
-}
-```
-
-### 5. Run the Workflow
+## 🧪 테스트
 
 ```bash
-# Run with default settings
-python -m src.main
-
-# Run in CHAT mode with custom intent
-python -m src.main --mode CHAT --intent "Summarize the key points"
-
-# Specify custom input files
-python -m src.main --ocr-file custom_ocr.txt --cand-file custom_candidates.json
-```
-
-## 📊 Example Output
-
-```
-INFO     리소스 로드 중...
-INFO     Rate limiter enabled: 60 requests/minute
-INFO     워크플로우 시작 (Mode: AUTO)
-INFO     질의 생성 중...
-INFO     Token Usage - Prompt: 3,095, Response: 45, Total: 4,929
-INFO     질의 생성 완료...
-INFO     후보 평가 중...
-INFO     Token Usage - Prompt: 4,908, Response: 282, Total: 7,123
-INFO     후보 선정 완료: A
-INFO     답변 재작성 중...
-INFO     Token Usage - Prompt: 3,681, Response: 867, Total: 6,316
-
-🤖 Query: Summarize the key points...
-📊 Selected Candidate: A
-
-╭─ 📝 Final Output ──────────────────────────╮
-│ # Summary                                  │
-│                                            │
-│ The key points are:                        │
-│ 1. Point one...                            │
-│ 2. Point two...                            │
-╰────────────────────────────────────────────╯
-
-╭─ Cost Summary ─────────────────────────────╮
-│ 💰 Total Session Cost: $0.0534 USD        │
-│ 📊 Token Usage: 11,684 input / 1,194 out  │
-╰────────────────────────────────────────────╯
-```
-
-## 🧪 Running Tests
-
-```bash
-# Run all tests
+# 모든 테스트 실행
 pytest tests/ -v
 
-# Run specific test file
+# 특정 테스트 파일 실행
 pytest tests/test_agent.py -v
 
-# Run with coverage
+# 커버리지 포함 실행
 pytest tests/ --cov=src --cov-report=html
 ```
 
-## 🛠️ Development
+## 📊 주요 기능 상세
 
-### Project Structure
-
-- **`src/agent.py`** - Core Gemini API interaction with retry logic, rate limiting, and cost tracking
-- **`src/models.py`** - Pydantic models with hallucination detection
-- **`src/config.py`** - Environment-based configuration with deployment flexibility
-- **`src/logging_setup.py`** - Separated logging (Rich for console, plain for files)
-- **`src/data_loader.py`** - Input data loading with type guards
-- **`src/utils.py`** - Utility functions for parsing and file I/O
-
-### Key Features
-
-#### 1. Hallucination Detection
-
-Automatically validates that the LLM's claimed "best candidate" matches actual scores:
+### Hallucination Detection
+LLM의 "최선의 후보" 선택이 실제 점수와 일치하는지 자동 검증:
 
 ```python
 @model_validator(mode='after')
@@ -195,63 +164,58 @@ def validate_best_candidate(self):
         self.best_candidate = actual_best.candidate_id
 ```
 
-#### 2. Dual Rate Control
+### Dual Rate Control
+- **Semaphore**: 동시 API 호출 제한 (공간적 제어)
+- **Rate Limiter**: 분당 요청 수 제한 (시간적 제어)
+- `429 Too Many Requests` 에러 방지
 
-- **Semaphore**: Limits concurrent API calls (spatial control)
-- **Rate Limiter**: Limits requests per minute (temporal control)
-- Prevents `429 Too Many Requests` errors
-
-#### 3. Dependency Injection
-
-Fully testable architecture with mock support:
+### Dependency Injection
+테스트 가능한 아키텍처:
 
 ```python
-# Production
+# 프로덕션
 agent = GeminiAgent(config, jinja_env=real_env)
 
-# Testing
+# 테스트
 agent = GeminiAgent(config, jinja_env=mock_env)
 ```
 
-## 📝 Environment Variables
+## 📝 환경 변수
 
-| Variable                   | Default          | Description                   |
-| -------------------------- | ---------------- | ----------------------------- |
-| `GEMINI_API_KEY`           | _Required_       | Your Gemini API key           |
-| `GEMINI_MODEL_NAME`        | `gemini-1.5-pro` | Model to use                  |
-| `GEMINI_MAX_OUTPUT_TOKENS` | `8192`           | Maximum output tokens         |
-| `GEMINI_TIMEOUT`           | `120`            | API timeout in seconds        |
-| `GEMINI_MAX_CONCURRENCY`   | `5`              | Max concurrent requests       |
-| `PROJECT_ROOT`             | _Auto_           | Project root (for deployment) |
+| 변수 | 기본값 | 설명 |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | _필수_ | Gemini API 키 |
+| `GEMINI_MODEL_NAME` | `gemini-1.5-pro` | 사용할 모델 |
+| `GEMINI_MAX_OUTPUT_TOKENS` | `8192` | 최대 출력 토큰 수 |
+| `GEMINI_TIMEOUT` | `120` | API 타임아웃 (초) |
+| `GEMINI_MAX_CONCURRENCY` | `5` | 최대 동시 요청 수 |
+| `GEMINI_TEMPERATURE` | `0.2` | 샘플링 온도 |
+| `GEMINI_CACHE_SIZE` | `50` | 컨텍스트 캐시 크기 |
+| `GEMINI_CACHE_TTL_MINUTES` | `10` | 캐시 TTL (분) |
+| `LOG_LEVEL` | `INFO` | 로깅 레벨 |
+| `PROJECT_ROOT` | _자동_ | 프로젝트 루트 경로 |
 
-## 🔒 Production Features
+## 📚 추가 문서
 
-- ✅ **Type Safety** - Pydantic models with `Literal` types
-- ✅ **Error Handling** - Multi-layer exception handling with graceful degradation
-- ✅ **Rate Limiting** - Dual control (concurrency + RPM)
-- ✅ **Cost Tracking** - Real-time token usage and cost calculation
-- ✅ **Logging** - Separated console (Rich) and file (plain) logging
-- ✅ **Testing** - Full test suite with DI support
-- ✅ **Validation** - Fail-fast input validation and hallucination detection
+- **[DEPLOYMENT_VERIFIED.md](DEPLOYMENT_VERIFIED.md)** - 배포 검증 문서
+- **[UV_GUIDE.md](UV_GUIDE.md)** - UV 패키지 매니저 가이드
 
-## 📚 Documentation
+## 🎯 용도
 
-- **[walkthrough.md](walkthrough.md)** - Detailed implementation walkthrough
-- **[UV_GUIDE.md](UV_GUIDE.md)** - Fast package manager guide
-- **[task.md](task.md)** - Development task checklist
+이 저장소는 다음과 같은 목적으로 사용됩니다:
 
-## 🤝 Contributing
+- Gemini API 실험 및 테스트
+- 워크플로우 프로토타이핑
+- Q&A 시스템 개발
+- Python 코드 학습 및 실습
 
-This is a production-ready template. Feel free to fork and customize for your needs.
+## 📄 라이선스
 
-## 📄 License
+개인 프로젝트 - MIT License
 
-MIT License - Use freely in your projects.
-
-## 🙏 Acknowledgments
+## 🙏 참고
 
 Built with:
-
 - [Google Gemini AI](https://ai.google.dev/)
 - [Pydantic](https://docs.pydantic.dev/)
 - [Rich](https://rich.readthedocs.io/)
@@ -259,4 +223,4 @@ Built with:
 
 ---
 
-**Made with ❤️ for production use**
+**개인 테스트용 저장소입니다**
