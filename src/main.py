@@ -379,10 +379,18 @@ async def execute_workflow(
             )
 
         # [Concurrency] 모든 태스크 동시 실행 (에러 수집)
-        processed_results = await asyncio.gather(*tasks, return_exceptions=True) if tasks else []
+        processed_results = (
+            await asyncio.gather(*tasks, return_exceptions=True) if tasks else []
+        )
 
         # None 제거 (실패한 경우)
-        results.extend([r for r in processed_results if r is not None and not isinstance(r, Exception)])
+        results.extend(
+            [
+                r
+                for r in processed_results
+                if r is not None and not isinstance(r, Exception)
+            ]
+        )
 
         # 예외 로깅
         for exc in processed_results:
