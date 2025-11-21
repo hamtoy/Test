@@ -5,6 +5,7 @@ import logging
 import asyncio
 import argparse
 import json
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, Any, List
@@ -13,6 +14,7 @@ from typing import Dict, Optional, Any, List
 from dotenv import load_dotenv
 from pydantic import ValidationError
 import google.generativeai as genai
+import aiofiles
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
@@ -32,14 +34,27 @@ from src.exceptions import ValidationFailedError, CacheCreationError
 # [Global Console] Rich Console은 전역에서 재사용
 console = Console()
 
-def load_checkpoint(path: Path) -> Dict[str, WorkflowResult]:
-    """Load checkpoint entries indexed by query string."""
+@dataclass
+class WorkflowContext:
+    agent: GeminiAgent
+    config: AppConfig
+    logger: logging.Logger
+    ocr_text: str
+    candidates: Dict[str, str]
+    cache: Any
+    total_turns: int
+    checkpoint_path: Optional[Path]
+    progress: Optional[Progress] = None
+
+
+async def load_checkpoint(path: Path) -> Dict[str, WorkflowResult]:
+    """Load checkpoint entries indexed by query string (async, best-effort)."""
     if not path.exists():
         return {}
     records: Dict[str, WorkflowResult] = {}
     try:
-        with open(path, "r", encoding="utf-8") as f:
-            for line in f:
+        async with aiofiles.open(path, "r", encoding="utf-8") as f:
+            async for line in f:
                 if not line.strip():
                     continue
                 try:
@@ -53,11 +68,15 @@ def load_checkpoint(path: Path) -> Dict[str, WorkflowResult]:
     return records
 
 
-def append_checkpoint(path: Path, result: WorkflowResult) -> None:
-    """Append a single WorkflowResult to checkpoint JSONL."""
+async def append_checkpoint(path: Path, result: WorkflowResult) -> None:
+    """Append a single WorkflowResult to checkpoint JSONL (async, best-effort)."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(result.model_dump(), ensure_ascii=False) + "\n")
+    try:
+        async with aiofiles.open(path, "a", encoding="utf-8") as f:
+            await f.write(json.dumps(result.model_dump(), ensure_ascii=False) + "\n")
+    except Exception:
+        # Non-fatal
+        return
 
 
 async def reload_data_if_needed(config: AppConfig, ocr_filename: str, cand_filename: str, interactive: bool = False) -> tuple[str, Dict[str, str]]:
@@ -102,33 +121,28 @@ def save_result_to_file(result: WorkflowResult, config: AppConfig):
 
 
 async def _evaluate_and_rewrite_turn(
-    agent: GeminiAgent,
-    ocr_text: str,
+    ctx: WorkflowContext,
     query: str,
-    candidates: Dict[str, str],
-    cache,
     turn_id: int,
-    total_turns: int,
-    logger: logging.Logger,
 ) -> Optional[WorkflowResult]:
-    logger.info(f"Turn {turn_id}/{total_turns}: '{query}' 실행 중...")
+    ctx.logger.info(f"Turn {turn_id}/{ctx.total_turns}: '{query}' 실행 중...")
 
-    logger.info("후보 평가 중...")
-    evaluation = await agent.evaluate_responses(ocr_text, query, candidates, cached_content=cache)
+    ctx.logger.info("후보 평가 중...")
+    evaluation = await ctx.agent.evaluate_responses(ctx.ocr_text, query, ctx.candidates, cached_content=ctx.cache)
     if not evaluation:
-        logger.warning(f"Turn {turn_id}: 평가 실패")
+        ctx.logger.warning(f"Turn {turn_id}: 평가 실패")
         return None
 
     best_candidate_id = evaluation.get_best_candidate_id()
-    logger.info(f"후보 선정 완료: {best_candidate_id}")
+    ctx.logger.info(f"후보 선정 완료: {best_candidate_id}")
 
-    raw_answer = candidates.get(best_candidate_id, "")
+    raw_answer = ctx.candidates.get(best_candidate_id, "")
     parsed = safe_json_parse(raw_answer, best_candidate_id)
     best_answer = parsed if parsed else raw_answer
 
-    logger.info("답변 재작성 중...")
-    rewritten_answer = await agent.rewrite_best_answer(ocr_text, best_answer, cached_content=None)
-    logger.info("답변 재작성 완료")
+    ctx.logger.info("답변 재작성 중...")
+    rewritten_answer = await ctx.agent.rewrite_best_answer(ctx.ocr_text, best_answer, cached_content=None)
+    ctx.logger.info("답변 재작성 완료")
 
     return WorkflowResult(
         turn_id=turn_id,
@@ -136,48 +150,31 @@ async def _evaluate_and_rewrite_turn(
         evaluation=evaluation,
         best_answer=best_answer,
         rewritten_answer=rewritten_answer,
-        cost=agent.get_total_cost(),
+        cost=ctx.agent.get_total_cost(),
         success=True,
     )
 
 async def process_single_query(
-    agent: GeminiAgent,
-    ocr_text: str,
+    ctx: WorkflowContext,
     query: str,
-    candidates: Dict[str, str],
-    cache,
     turn_id: int,
-    total_turns: int,
-    logger: logging.Logger,
-    config: AppConfig,
-    checkpoint_path: Optional[Path] = None,
-    progress: Optional[Progress] = None,  # Add progress argument
-    task_id: Optional[Any] = None,        # Add task_id argument
+    task_id: Optional[Any] = None,
 ) -> Optional[WorkflowResult]:
     """
     [Parallel Processing] 단일 질의 처리 (평가 -> 재작성)
     """
     try:
         # Update progress description
-        if progress and task_id:
-            progress.update(task_id, description=f"[cyan]Turn {turn_id}: Processing...[/cyan]")
+        if ctx.progress and task_id:
+            ctx.progress.update(task_id, description=f"[cyan]Turn {turn_id}: Processing...[/cyan]")
 
-        result = await _evaluate_and_rewrite_turn(
-            agent=agent,
-            ocr_text=ocr_text,
-            query=query,
-            candidates=candidates,
-            cache=cache,
-            turn_id=turn_id,
-            total_turns=total_turns,
-            logger=logger,
-        )
+        result = await _evaluate_and_rewrite_turn(ctx=ctx, query=query, turn_id=turn_id)
         
         if result:
             # 결과 저장 (Config injection)
-            save_result_to_file(result, config)
-            if checkpoint_path:
-                append_checkpoint(checkpoint_path, result)
+            save_result_to_file(result, ctx.config)
+            if ctx.checkpoint_path:
+                await append_checkpoint(ctx.checkpoint_path, result)
             
             # [Rich UI] 턴 결과 출력 (Thread-safe way needed for real app, but Rich handles it reasonably well)
             console.print(Panel(
@@ -189,15 +186,15 @@ async def process_single_query(
             ))
             
             # Mark task as completed
-            if progress and task_id:
-                progress.update(task_id, advance=1, description=f"[green]Turn {turn_id}: Done[/green]")
+            if ctx.progress and task_id:
+                ctx.progress.update(task_id, advance=1, description=f"[green]Turn {turn_id}: Done[/green]")
                 
             return result
             
     except Exception as e:
-        logger.exception(f"Turn {turn_id} 실행 중 오류 발생: {e}")
-        if progress and task_id:
-            progress.update(task_id, description=f"[red]Turn {turn_id}: Failed[/red]")
+        ctx.logger.exception(f"Turn {turn_id} 실행 중 오류 발생: {e}")
+        if ctx.progress and task_id:
+            ctx.progress.update(task_id, description=f"[red]Turn {turn_id}: Failed[/red]")
     
     return None
 
@@ -239,7 +236,7 @@ async def execute_workflow(
         checkpoint_path = config.output_dir / "checkpoint.jsonl"
     checkpoint_records: Dict[str, WorkflowResult] = {}
     if resume:
-        checkpoint_records = load_checkpoint(checkpoint_path)
+        checkpoint_records = await load_checkpoint(checkpoint_path)
         if checkpoint_records:
             logger.info(f"Resume enabled: {len(checkpoint_records)} completed turn(s) preloaded from {checkpoint_path}")
     
@@ -303,18 +300,20 @@ async def execute_workflow(
             
             tasks.append(
                 process_single_query(
-                    agent=agent,
-                    ocr_text=ocr_text,
+                    ctx=WorkflowContext(
+                        agent=agent,
+                        config=config,
+                        logger=logger,
+                        ocr_text=ocr_text,
+                        candidates=candidates,
+                        cache=cache,
+                        total_turns=len(queries),
+                        checkpoint_path=checkpoint_path,
+                        progress=progress,
+                    ),
                     query=query,
-                    candidates=candidates,
-                    cache=cache,
                     turn_id=turn_id,
-                    total_turns=len(queries),
-                    logger=logger,
-                    config=config,
-                    checkpoint_path=checkpoint_path,
-                    progress=progress,
-                    task_id=task_id
+                    task_id=task_id,
                 )
             )
         

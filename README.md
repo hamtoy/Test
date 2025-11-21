@@ -104,6 +104,8 @@ uv sync --extra dev    # 개발/테스트/문서 의존성 포함
 
 ```bash
 python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --intent "요약"
+# 체크포인트 복구 실행
+python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --resume
 ```
 
 3) 결과는 `data/outputs/`에 저장됩니다.
