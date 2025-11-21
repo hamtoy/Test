@@ -61,27 +61,21 @@ else: # 3개일 때
     3. [이미지 내 타겟(서술형)]: 특정 항목에 대한 상세 기술 요청
     """
 
-# LLM 호출 함수 (예시)
+# LLM 호출 함수
 def call_llm(system_prompt, user_prompt):
-    
-    response = client.chat.completions.create(
-        model="gemini-2.0-flash-exp", # Updated to a likely valid model, user had gemini-3-pro-preview which might be invalid or require specific access. Using flash-exp for speed/safety or keeping user's if preferred. Let's stick to user's but fallback if needed. Actually user said gemini-3-pro-preview. I will keep it but if it fails I might need to change.
-        # Wait, gemini-3-pro-preview might be a hallucination or a very specific closed beta. 
-        # Safe bet: use "gemini-1.5-pro" or "gemini-2.0-flash-exp" if available. 
-        # I will use "gemini-2.0-flash-exp" as it is the current cutting edge preview often used, or "gemini-1.5-pro".
-        # Let's use "gemini-1.5-pro" for stability unless user insists.
-        # actually, let's try to use the user's model name, but if it fails, we know why.
-        # User wrote: model="gemini-3-pro-preview"
-        # I will use "gemini-1.5-pro-latest" to be safe, or "gemini-2.0-flash-exp".
-        # Let's use "gemini-2.0-flash-exp" as it is often what users mean by '3' or 'next gen'.
-        # Actually, let's just use "gemini-1.5-flash" for speed and cost for this test.
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        temperature=0 # 정적인 결과를 위해 0 권장
-    )
-    return response.choices[0].message.content
+    try:
+        response = client.chat.completions.create(
+            model="gemini-3-pro-preview",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            temperature=0  # 정적인 결과를 위해 0 권장
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"LLM 호출 오류: {e}")
+        return ""
 
 print(f"--- [Step 1] 질의 생성 시작 ({QUERY_COUNT}개 모드) ---")
 
@@ -95,25 +89,6 @@ query_user_message = f"""
 {type_instruction}
 </request>
 """
-
-# Note: Passing user's model preference if possible, but hardcoding a working one for now to ensure execution.
-# I'll modify call_llm to use a standard model for now.
-# Redefining call_llm inside the script to be sure.
-
-def call_llm(system_prompt, user_prompt):
-    try:
-        response = client.chat.completions.create(
-        model="gemini-3-pro-preview", 
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            temperature=0
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        print(f"LLM 호출 오류: {e}")
-        return ""
 
 raw_questions = call_llm(SYSTEM_PROMPT_QUERY, query_user_message)
 
@@ -130,7 +105,7 @@ for line in raw_questions.strip().split('\n'):
         clean_line = re.sub(r'^\d+\.\s*', '', line)
         # 따옴표 제거
         clean_line = clean_line.replace('"', '').replace("'", "")
-        if clean_line.strip(): # Ensure not empty after cleaning
+        if clean_line.strip():  # Ensure not empty after cleaning
             questions.append(clean_line)
 
 print(f"생성된 질의: {questions}")
