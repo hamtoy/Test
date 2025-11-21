@@ -572,7 +572,9 @@ if __name__ == "__main__":
     load_dotenv()
     if os.name == "nt":
         try:
-            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+            policy = getattr(asyncio, "WindowsSelectorEventLoopPolicy", None)
+            if policy:
+                asyncio.set_event_loop_policy(policy())
         except AttributeError:
             pass
 
