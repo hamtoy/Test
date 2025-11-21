@@ -1,5 +1,4 @@
 import logging
-import pytest
 from src.logging_setup import SensitiveDataFilter
 
 class TestSecurity:

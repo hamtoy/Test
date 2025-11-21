@@ -1,6 +1,5 @@
 import pytest
-import json
-from unittest.mock import patch, mock_open, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock, MagicMock
 from src.utils import load_file_async, parse_raw_candidates, clean_markdown_code_block, safe_json_parse
 
 @pytest.mark.asyncio

@@ -12,12 +12,10 @@ from typing import Dict, Optional, Any, List
 
 # pip install python-dotenv google-generativeai aiofiles pydantic tenacity pydantic-settings jinja2 rich
 from dotenv import load_dotenv
-from pydantic import ValidationError
 import google.generativeai as genai
 import aiofiles
 from rich.console import Console
 from rich.panel import Panel
-from rich.markdown import Markdown
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 
 from rich.prompt import Confirm
@@ -29,7 +27,7 @@ from src.data_loader import load_input_data
 from src.logging_setup import setup_logging
 from src.cache_analytics import analyze_cache_stats, print_cache_report
 from src.utils import safe_json_parse, write_cache_stats
-from src.exceptions import ValidationFailedError, CacheCreationError
+from src.exceptions import CacheCreationError
 
 # [Global Console] Rich Console은 전역에서 재사용
 # [Global Console] Rich Console은 전역에서 재사용
@@ -464,7 +462,7 @@ async def main():
         if not checkpoint_path.is_absolute():
             checkpoint_path = config.output_dir / checkpoint_path
 
-        results = await execute_workflow(
+        await execute_workflow(
             agent,
             ocr_text,
             user_intent,

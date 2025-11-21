@@ -1,11 +1,8 @@
 import pytest
-from pathlib import Path
-from unittest.mock import MagicMock
 from jinja2 import DictLoader, Environment
 
 from src.agent import GeminiAgent
 from src.config import AppConfig
-from src.models import EvaluationResultSchema
 
 
 class TestDependencyInjection:

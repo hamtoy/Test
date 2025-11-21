@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 from src.utils import write_cache_stats
 

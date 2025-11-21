@@ -47,7 +47,7 @@ def test_log_level_validation():
 
 def test_directories_are_created(tmp_path, monkeypatch):
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
-    config = AppConfig(GEMINI_API_KEY=VALID_API_KEY)
+    AppConfig(GEMINI_API_KEY=VALID_API_KEY)
 
     expected_dirs = [
         Path(tmp_path) / "data" / "inputs",

@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from src.cache_analytics import analyze_cache_stats, calculate_savings
 
 

@@ -2,7 +2,7 @@ import logging
 import asyncio
 import hashlib
 import time
-from typing import Dict, Any, Optional, List
+from typing import Dict, Optional, List
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
@@ -303,7 +303,7 @@ class GeminiAgent:
 
         try:
             return response.text
-        except ValueError as e:
+        except ValueError:
             # [Improved Error] Safety filter 정보 포함
             safety_info = ""
             if hasattr(response, 'prompt_feedback') and response.prompt_feedback:
