@@ -60,6 +60,39 @@ class TestGeminiAgent:
         assert agent.cache_hits == 1
         assert agent.cache_misses == 1
 
+    @pytest.mark.asyncio
+    async def test_rate_limiter_concurrency_respected(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
+        monkeypatch.setenv("GEMINI_MAX_CONCURRENCY", "1")
+        monkeypatch.setenv("LOCAL_CACHE_DIR", str(tmp_path / ".cache"))
+
+        jinja_env = MagicMock()
+        jinja_env.get_template.return_value.render.return_value = "prompt"
+        agent = GeminiAgent(AppConfig(), jinja_env=jinja_env)
+        agent._rate_limiter = None  # use semaphore only
+
+        active = False
+        overlap = False
+
+        async def fake_execute(model, prompt_text):
+            nonlocal active, overlap
+            if active:
+                overlap = True
+            active = True
+            await asyncio.sleep(0.02)
+            active = False
+            return "ok"
+
+        agent._execute_api_call = fake_execute  # type: ignore
+
+        model = object()
+        await asyncio.gather(
+            agent._call_api_with_retry(model, "a"),
+            agent._call_api_with_retry(model, "b"),
+        )
+
+        assert overlap is False
+
 
 class TestEvaluationModel:
     """평가 모델 검증 테스트"""
