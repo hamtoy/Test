@@ -8,7 +8,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Any, List
+from typing import Any, Dict, List, Optional, cast
 
 # pip install python-dotenv google-generativeai aiofiles pydantic tenacity pydantic-settings jinja2 rich
 from dotenv import load_dotenv
@@ -383,19 +383,16 @@ async def execute_workflow(
             await asyncio.gather(*tasks, return_exceptions=True) if tasks else []
         )
 
-        # None 제거 (실패한 경우)
-        results.extend(
-            [
-                r
-                for r in processed_results
-                if r is not None and not isinstance(r, Exception)
-            ]
-        )
+        filtered: List[WorkflowResult] = []
+        for item in processed_results:
+            if isinstance(item, Exception):
+                logger.error(f"Turn 실행 중 예외 발생: {item}")
+                continue
+            if item is None:
+                continue
+            filtered.append(cast(WorkflowResult, item))
 
-        # 예외 로깅
-        for exc in processed_results:
-            if isinstance(exc, Exception):
-                logger.error(f"Turn 실행 중 예외 발생: {exc}")
+        results.extend(filtered)
 
         # 순서 보장을 위해 turn_id로 정렬 (병렬 처리로 순서가 섞일 수 있음)
         results.sort(key=lambda x: x.turn_id)
