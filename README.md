@@ -107,7 +107,11 @@ cp .env.example .env
 # 필수
 GEMINI_API_KEY=your_api_key_here
 
+<<<<<<< HEAD
 # 선택 사항 (기본값 제공)
+=======
+# Optional (with defaults)
+>>>>>>> f2ae3b7 (Update README to reflect current defaults)
 GEMINI_MODEL_NAME=gemini-3-pro-preview
 GEMINI_MAX_OUTPUT_TOKENS=8192
 GEMINI_TIMEOUT=120
