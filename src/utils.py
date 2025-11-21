@@ -1,6 +1,6 @@
 import json
 import re
-import aiofiles
+import aiofiles  # type: ignore[import-untyped]
 from pathlib import Path
 from typing import Any, Dict, Optional
 

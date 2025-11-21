@@ -2,7 +2,7 @@ import logging
 import asyncio
 import hashlib
 import time
-from typing import Dict, Optional, List
+from typing import Any, Dict, Optional, List, cast
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 from tenacity import (
@@ -47,6 +47,7 @@ class GeminiAgent:
 
         # [Concurrency Control] 동시 실행 개수 제한
         self._semaphore = asyncio.Semaphore(config.max_concurrency)
+        self._rate_limiter: Optional[Any] = None
 
         # [Rate Limiting] RPM(분당 요청 수) 제한 - 429 에러 방지
         try:
@@ -96,8 +97,8 @@ class GeminiAgent:
             )
 
     def _get_safety_settings(self) -> Dict[HarmCategory, HarmBlockThreshold]:
-        return {
-            category: HarmBlockThreshold.BLOCK_NONE
+        settings: Dict[HarmCategory, HarmBlockThreshold] = {
+            category: cast(HarmBlockThreshold, HarmBlockThreshold.BLOCK_NONE)
             for category in [
                 HarmCategory.HARM_CATEGORY_HARASSMENT,
                 HarmCategory.HARM_CATEGORY_HATE_SPEECH,
@@ -105,6 +106,7 @@ class GeminiAgent:
                 HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
             ]
         }
+        return settings
 
     def _create_generative_model(
         self, system_prompt: str, response_schema=None, cached_content=None
@@ -113,7 +115,7 @@ class GeminiAgent:
         [Factory Method] GenerativeModel 생성
         - cached_content가 있으면 이를 사용하여 모델 생성 (Context Caching)
         """
-        generation_config = {
+        generation_config: Dict[str, object] = {
             "temperature": self.config.temperature,
             "max_output_tokens": self.config.max_output_tokens,
         }
@@ -123,17 +125,19 @@ class GeminiAgent:
             generation_config["response_schema"] = response_schema
 
         # [Context Caching] 캐시된 컨텐츠가 있으면 이를 기반으로 모델 생성
+        gen_config_param = cast(Any, generation_config)
+
         if cached_content:
-            return genai.GenerativeModel.from_cached_content(
+            return genai.GenerativeModel.from_cached_content(  # type: ignore[arg-type,call-overload]
                 cached_content=cached_content,
-                generation_config=generation_config,
+                generation_config=gen_config_param,
                 safety_settings=self.safety_settings,
             )
 
-        return genai.GenerativeModel(
+        return genai.GenerativeModel(  # type: ignore[arg-type,call-overload]
             model_name=self.config.model_name,
             system_instruction=system_prompt,
-            generation_config=generation_config,
+            generation_config=gen_config_param,
             safety_settings=self.safety_settings,
         )
 
@@ -159,7 +163,8 @@ class GeminiAgent:
             )
             if created is None:
                 return None
-            ttl = entry.get("ttl_minutes", ttl_minutes)
+            ttl_raw = entry.get("ttl_minutes", ttl_minutes)
+            ttl = int(ttl_raw) if ttl_raw is not None else ttl_minutes
             now = datetime.datetime.now(datetime.timezone.utc)
             if created.tzinfo is None:
                 created = created.replace(tzinfo=datetime.timezone.utc)

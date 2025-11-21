@@ -13,7 +13,7 @@ from typing import Dict, Optional, Any, List
 # pip install python-dotenv google-generativeai aiofiles pydantic tenacity pydantic-settings jinja2 rich
 from dotenv import load_dotenv
 import google.generativeai as genai
-import aiofiles
+import aiofiles  # type: ignore[import-untyped]
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import (
@@ -97,6 +97,7 @@ async def reload_data_if_needed(
 
 def save_result_to_file(result: WorkflowResult, config: AppConfig):
     """[Config Injection] 결과를 Markdown 파일로 저장 (하드코딩 제거)"""
+    assert result.evaluation is not None
     output_dir = config.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -140,7 +141,7 @@ async def _evaluate_and_rewrite_turn(
     evaluation = await ctx.agent.evaluate_responses(
         ctx.ocr_text, query, ctx.candidates, cached_content=ctx.cache
     )
-    if not evaluation:
+    if evaluation is None:
         ctx.logger.warning(f"Turn {turn_id}: 평가 실패")
         return None
 
@@ -188,6 +189,7 @@ async def process_single_query(
 
         if result:
             # 결과 저장 (Config injection)
+            assert result.evaluation is not None
             save_result_to_file(result, ctx.config)
             if ctx.checkpoint_path:
                 await append_checkpoint(ctx.checkpoint_path, result)
@@ -256,8 +258,8 @@ async def execute_workflow(
     )
 
     # [Conditional Interactivity] AUTO 모드에서는 프롬프트 건너뛰기
-    config = AppConfig()
-    candidates = {}  # Initialize candidates
+    config = AppConfig()  # type: ignore[call-arg]
+    candidates: Dict[str, str] = {}  # Initialize candidates
     if checkpoint_path is None:
         checkpoint_path = config.output_dir / "checkpoint.jsonl"
     checkpoint_records: Dict[str, WorkflowResult] = {}

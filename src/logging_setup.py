@@ -13,7 +13,8 @@ from src.constants import SENSITIVE_PATTERN
 
 def _resolve_log_level(explicit: str | None = None) -> int:
     """Resolve log level from explicit value or LOG_LEVEL env var, defaulting to INFO."""
-    level_name = (explicit or os.getenv("LOG_LEVEL", "INFO")).upper()
+    base_name = explicit if explicit is not None else os.getenv("LOG_LEVEL", "INFO")
+    level_name = base_name.upper()
     level_value = getattr(logging, level_name, logging.INFO)
     return level_value if isinstance(level_value, int) else logging.INFO
 
@@ -58,6 +59,7 @@ def _build_file_handler(
         encoding="utf-8",
     )
     file_handler.setLevel(log_level)
+    formatter: logging.Formatter
     if use_json:
         formatter = JsonFormatter("%(asctime)s %(levelname)s %(name)s %(message)s")
     else:
