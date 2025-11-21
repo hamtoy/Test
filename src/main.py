@@ -378,11 +378,16 @@ async def execute_workflow(
                 )
             )
 
-        # [Concurrency] 모든 태스크 동시 실행
-        processed_results = await asyncio.gather(*tasks) if tasks else []
+        # [Concurrency] 모든 태스크 동시 실행 (에러 수집)
+        processed_results = await asyncio.gather(*tasks, return_exceptions=True) if tasks else []
 
         # None 제거 (실패한 경우)
-        results.extend([r for r in processed_results if r is not None])
+        results.extend([r for r in processed_results if r is not None and not isinstance(r, Exception)])
+
+        # 예외 로깅
+        for exc in processed_results:
+            if isinstance(exc, Exception):
+                logger.error(f"Turn 실행 중 예외 발생: {exc}")
 
         # 순서 보장을 위해 turn_id로 정렬 (병렬 처리로 순서가 섞일 수 있음)
         results.sort(key=lambda x: x.turn_id)
