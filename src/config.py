@@ -1,7 +1,7 @@
 import os
 import re
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -25,9 +25,15 @@ class AppConfig(BaseSettings):
     def validate_api_key(cls, v: str) -> str:
         if not v or v == "your_api_key_here":
             raise ValueError("GEMINI_API_KEY is not set. Please check your .env file.")
-        
-        # Google API 키 형식: AIza + 20+ 안전 문자
-        if not re.match(r"^AIza[0-9A-Za-z_\-]{20,}$", v):
+
+        if not v.startswith("AIza"):
+            raise ValueError("GEMINI_API_KEY must start with 'AIza'")
+
+        if len(v) != 39:
+            raise ValueError(f"GEMINI_API_KEY must be 39 characters long (got {len(v)})")
+
+        # Google API 키 형식: AIza + 35개의 안전 문자 (총 39자)
+        if not re.match(r"^AIza[0-9A-Za-z_\-]{35}$", v):
             raise ValueError("Invalid GEMINI_API_KEY format (expected Google API key starting with 'AIza')")
         return v
 
@@ -75,6 +81,10 @@ class AppConfig(BaseSettings):
             raise ValueError(f"log_level must be one of {allowed}")
         return upper
 
+    def model_post_init(self, __context: Any) -> None:
+        """Ensure required directories exist after settings load."""
+        self._ensure_directories()
+
     @staticmethod
     def _detect_project_root() -> Path:
         """
@@ -115,3 +125,13 @@ class AppConfig(BaseSettings):
     def output_dir(self) -> Path:
         """출력 데이터 디렉토리 반환"""
         return self.base_dir / "data" / "outputs"
+
+    def _ensure_directories(self) -> None:
+        """Create required directories if missing."""
+        required_dirs = [
+            self.input_dir,
+            self.output_dir,
+            self.template_dir,
+        ]
+        for dir_path in required_dirs:
+            dir_path.mkdir(parents=True, exist_ok=True)

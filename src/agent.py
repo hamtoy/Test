@@ -15,6 +15,7 @@ from google.api_core import exceptions as google_exceptions
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 from src.config import AppConfig
+from src.constants import PRICING_TIERS
 from src.models import EvaluationResultSchema, QueryResult
 from src.utils import clean_markdown_code_block, safe_json_parse
 from src.exceptions import APIRateLimitError, ValidationFailedError, CacheCreationError, SafetyFilterError
@@ -392,18 +393,23 @@ class GeminiAgent:
     def get_total_cost(self) -> float:
         """
         [Cost Tracking] 세션의 총 API 비용 계산 (USD)
-        Gemini 3 Pro Preview 전용 단가를 적용 (입력 토큰 기반 티어)
+        모델별 단가를 constants에 정의된 티어로 계산 (입력 토큰 기반)
         """
         model_name = self.config.model_name.lower()
+        tiers = PRICING_TIERS.get(model_name)
+        if not tiers:
+            raise ValueError(f"Unsupported model for pricing: {model_name}")
 
-        def _pricing_for_model(total_input_tokens: int) -> tuple[float, float]:
-            if "gemini-3-pro" not in model_name:
-                raise ValueError(f"Unsupported model for pricing: {model_name}")
-            if total_input_tokens > 200_000:
-                return (4.00, 18.00)  # >200K tokens
-            return (2.00, 12.00)      # ≤200K tokens
+        input_rate = output_rate = None
+        for tier in tiers:
+            max_tokens = tier["max_input_tokens"]
+            if max_tokens is None or self.total_input_tokens <= max_tokens:
+                input_rate = tier["input_rate"]
+                output_rate = tier["output_rate"]
+                break
 
-        input_rate, output_rate = _pricing_for_model(self.total_input_tokens)
+        if input_rate is None or output_rate is None:
+            raise ValueError(f"No pricing tier matched for model '{model_name}' and tokens {self.total_input_tokens}")
 
         input_cost = (self.total_input_tokens / 1_000_000) * input_rate
         output_cost = (self.total_output_tokens / 1_000_000) * output_rate

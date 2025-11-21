@@ -69,7 +69,7 @@ def _find_in_nested(obj: Any, target_key: str) -> Optional[Any]:
     return None
 
 
-def safe_json_parse(text: str, target_key: Optional[str] = None) -> Optional[Any]:
+def safe_json_parse(text: str, target_key: Optional[str] = None, raise_on_error: bool = False) -> Optional[Any]:
     """
     [Centralized JSON Parsing] 안전한 JSON 파싱 헬퍼 함수
     Best Practice: try-except, specific error handling, clean error reporting
@@ -79,14 +79,17 @@ def safe_json_parse(text: str, target_key: Optional[str] = None) -> Optional[Any
         target_key: 추출할 특정 키 (Optional)
     
     Returns:
-        파싱된 dict 또는 특정 키 값. 실패 시 None
+        파싱된 dict 또는 특정 키 값. 실패 시 None (raise_on_error=True면 예외 전파)
     """
     import logging
     logger = logging.getLogger("GeminiWorkflow")
     
     # Guard: 빈 입력
     if not text or not text.strip():
-        logger.warning("safe_json_parse: Empty input")
+        message = "safe_json_parse: Empty input"
+        if raise_on_error:
+            raise ValueError(message)
+        logger.warning(message)
         return None
     
     # Clean markdown
@@ -94,7 +97,10 @@ def safe_json_parse(text: str, target_key: Optional[str] = None) -> Optional[Any
     
     # Guard: JSON 형식이 아님
     if not cleaned.strip().startswith('{'):
-        logger.debug("safe_json_parse: Not JSON format")
+        message = "safe_json_parse: Not JSON format"
+        if raise_on_error:
+            raise ValueError(message)
+        logger.debug(message)
         return None
     
     try:
@@ -102,7 +108,10 @@ def safe_json_parse(text: str, target_key: Optional[str] = None) -> Optional[Any
         
         # Guard: dict가 아님
         if not isinstance(data, dict):
-            logger.warning("safe_json_parse: Parsed data is not a dict")
+            message = "safe_json_parse: Parsed data is not a dict"
+            if raise_on_error:
+                raise ValueError(message)
+            logger.warning(message)
             return None
         
         # 특정 키 추출
@@ -115,8 +124,14 @@ def safe_json_parse(text: str, target_key: Optional[str] = None) -> Optional[Any
         return data
         
     except json.JSONDecodeError as e:
-        logger.warning(f"safe_json_parse: JSON decode error - {e}")
+        message = f"safe_json_parse: JSON decode error - {e}"
+        if raise_on_error:
+            raise
+        logger.warning(message)
         return None
     except Exception as e:
-        logger.error(f"safe_json_parse: Unexpected error - {e}")
+        message = f"safe_json_parse: Unexpected error - {e}"
+        if raise_on_error:
+            raise
+        logger.error(message)
         return None

@@ -75,3 +75,9 @@ def test_safe_json_parse_target_key():
 def test_safe_json_parse_target_key_not_found():
     text = "{\"key\": \"value\"}"
     assert safe_json_parse(text, target_key="missing") is None
+
+
+def test_safe_json_parse_raise_on_error():
+    text = "{invalid json}"
+    with pytest.raises(Exception):
+        safe_json_parse(text, raise_on_error=True)

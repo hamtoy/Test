@@ -1,3 +1,6 @@
+[![CI](https://github.com/hamtoy/Test/actions/workflows/ci.yml/badge.svg)](https://github.com/hamtoy/Test/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/hamtoy/Test/branch/main/graph/badge.svg)](https://codecov.io/gh/hamtoy/Test)
+
 # Gemini 워크플로우 - Q&A 시스템
 
 Google Gemini AI를 활용한 Q&A 응답 평가 및 재작성 워크플로우 시스템입니다.
@@ -19,8 +22,8 @@ project_root/
 ├── .env                    # 환경 변수 (API 키)
 ├── .env.example            # 환경 변수 템플릿
 ├── DEPLOYMENT_VERIFIED.md  # 배포 검증 문서
-├── pyproject.toml          # 프로젝트 메타데이터
-├── requirements.txt        # Python 의존성
+├── pyproject.toml          # 프로젝트 메타데이터/의존성
+├── .pre-commit-config.yaml # pre-commit 훅 설정
 ├── README.md               # 문서
 ├── UV_GUIDE.md             # UV 패키지 매니저 가이드
 ├── list_models.py          # Gemini 모델 조회
@@ -77,21 +80,31 @@ project_root/
 
 ```bash
 cd shining-quasar
-pip install -r requirements.txt
+pip install -e .
+# 개발/테스트/문서 의존성까지 설치
+pip install -e ".[dev]"
 ```
 
 #### uv 사용
 
 ```bash
 pip install uv
-uv sync
-uv sync --extra dev  # 개발 의존성 포함
-
-# 또는 requirements.txt 사용
-uv pip install -r requirements.txt
+uv sync                # 런타임 의존성
+uv sync --extra dev    # 개발/테스트/문서 의존성 포함
 ```
 
 자세한 내용은 [UV_GUIDE.md](UV_GUIDE.md)를 참조하세요.
+
+### 개발 환경 (권장)
+
+개발/테스트 시 필요한 도구를 설치하고 pre-commit 훅을 활성화하세요.
+
+```bash
+pip install -e ".[dev]"
+pre-commit install
+# 첫 실행 시 전체 파일 검사
+pre-commit run --all-files
+```
 
 ### 환경 설정
 
