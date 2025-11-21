@@ -27,6 +27,7 @@ from src.agent import GeminiAgent
 from src.models import WorkflowResult
 from src.data_loader import load_input_data
 from src.logging_setup import setup_logging
+from src.cache_analytics import analyze_cache_stats, print_cache_report
 from src.utils import safe_json_parse, write_cache_stats
 from src.exceptions import ValidationFailedError, CacheCreationError
 
@@ -286,6 +287,21 @@ async def execute_workflow(
         # overall_task = progress.add_task("[green]Overall Progress", total=len(queries))
         
         for i, query in enumerate(queries):
+            # Budget check before scheduling turn
+            try:
+                agent.check_budget()
+            except Exception as e:
+                logger.error(f"Budget limit exceeded: {e}")
+                console.print(Panel(str(e), title="Budget Exceeded", border_style="red"))
+                break
+
+            usage = agent.get_budget_usage_percent()
+            for threshold, severity in [(80, "WARNING"), (90, "HIGH"), (95, "CRITICAL")]:
+                attr_name = f"_warned_{threshold}"
+                if usage >= threshold and not hasattr(agent, attr_name):
+                    logger.warning(f"{severity}: Budget at {usage:.1f}%")
+                    setattr(agent, attr_name, True)
+
             turn_id = i + 1
             # 각 쿼리별 태스크 생성 (초기 상태: Waiting)
             task_id = progress.add_task(f"[cyan]Turn {turn_id}: Waiting...", total=1)
@@ -388,13 +404,24 @@ async def main():
         action="store_true",
         help="Resume workflow using checkpoint file (skips completed queries)",
     )
+    core_group.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default=None,
+        help="Override log level (otherwise from LOG_LEVEL env)",
+    )
+    core_group.add_argument(
+        "--analyze-cache",
+        action="store_true",
+        help="Print cache stats summary and exit",
+    )
 
     # ... (rest of arguments)
 
     args = parser.parse_args()
 
     # ... (logging setup)
-    logger, log_listener = setup_logging()
+    logger, log_listener = setup_logging(log_level=args.log_level)
     
     # ... (config & resource loading)
     try:
@@ -423,6 +450,13 @@ async def main():
     logger.info(f"워크플로우 시작 (Mode: {args.mode})")
 
     try:
+        # Cache analytics quick path
+        if args.analyze_cache:
+            summary = analyze_cache_stats(config.cache_stats_path)
+            print_cache_report(summary)
+            log_listener.stop()
+            return
+
         # [Separation of Concerns] 워크플로우 실행 (모드에 따라 interactive 설정)
         # CHAT 모드이거나 --interactive 플래그가 있으면 대화형 모드
         is_interactive = (args.mode == "CHAT") or args.interactive

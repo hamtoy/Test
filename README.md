@@ -192,6 +192,10 @@ python -m src.main --help
 - `--cand-file`: 후보 답변 파일 경로 (`data/inputs/` 기준)
 - `--intent`: 추가 사용자 의도
 - `--interactive`: 확인 프롬프트 활성화 (AUTO 모드에서도 적용)
+- `--resume`: 체크포인트(`checkpoint.jsonl`)를 읽어 완료된 질의를 건너뜀
+- `--checkpoint-file`: 체크포인트 경로 지정 (기본: `data/outputs/checkpoint.jsonl`)
+- `--log-level`: 로그 레벨 override (`DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`)
+- `--analyze-cache`: 캐시 통계 요약을 출력하고 종료 (`CACHE_STATS_FILE` 기반)
 
 ## 출력 및 로그
 

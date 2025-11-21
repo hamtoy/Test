@@ -22,19 +22,19 @@ def test_api_key_validation_default_placeholder():
 def test_api_key_validation_invalid_format():
     with pytest.raises(ValidationError) as excinfo:
         AppConfig(GEMINI_API_KEY="AIza" + "A" * 34 + "*")
-    assert "Invalid GEMINI_API_KEY format" in str(excinfo.value)
+    assert "Invalid format" in str(excinfo.value)
 
 
 def test_api_key_validation_invalid_prefix():
     with pytest.raises(ValidationError) as excinfo:
         AppConfig(GEMINI_API_KEY="WRONG" + "A" * 35)
-    assert "must start with 'AIza'" in str(excinfo.value)
+    assert "Must start with 'AIza'" in str(excinfo.value)
 
 
 def test_api_key_validation_invalid_length():
     with pytest.raises(ValidationError) as excinfo:
         AppConfig(GEMINI_API_KEY="AIza" + "A" * 10)
-    assert "39 characters long" in str(excinfo.value)
+    assert "exactly 39 characters" in str(excinfo.value)
 
 
 def test_log_level_validation():

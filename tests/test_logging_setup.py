@@ -16,7 +16,7 @@ def _cleanup(listener: logging.handlers.QueueListener) -> None:
 def test_local_logging_uses_console_and_text_formatter(tmp_path, monkeypatch):
     monkeypatch.setenv("LOG_FILE", str(tmp_path / "app.log"))
     monkeypatch.setenv("ERROR_LOG_FILE", str(tmp_path / "error.log"))
-    logger, listener = setup_logging(env="local")
+    logger, listener = setup_logging(env="local", log_level="DEBUG")
     try:
         handlers = listener.handlers
         assert any(isinstance(h, RichHandler) for h in handlers)
@@ -33,7 +33,7 @@ def test_local_logging_uses_console_and_text_formatter(tmp_path, monkeypatch):
 def test_production_logging_uses_json_file_only(tmp_path, monkeypatch):
     monkeypatch.setenv("LOG_FILE", str(tmp_path / "app.log"))
     monkeypatch.setenv("ERROR_LOG_FILE", str(tmp_path / "error.log"))
-    logger, listener = setup_logging(env="production")
+    logger, listener = setup_logging(env="production", log_level="INFO")
     try:
         handlers = listener.handlers
         assert not any(isinstance(h, RichHandler) for h in handlers)

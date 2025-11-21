@@ -12,3 +12,7 @@ class CacheCreationError(Exception):
 
 class SafetyFilterError(Exception):
     """Raised when generation is blocked by safety filters or non-STOP finish reasons."""
+
+
+class BudgetExceededError(Exception):
+    """Raised when total cost exceeds configured budget."""

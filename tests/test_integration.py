@@ -12,6 +12,7 @@ class DummyAgent:
     def __init__(self) -> None:
         self.total_input_tokens = 1_000
         self.total_output_tokens = 500
+        self.budget_limit_usd = None
 
     async def generate_query(self, ocr_text, user_intent):
         return ["strategic query"]
@@ -30,6 +31,12 @@ class DummyAgent:
 
     def get_total_cost(self) -> float:
         return 0.123
+
+    def check_budget(self):
+        return None
+
+    def get_budget_usage_percent(self) -> float:
+        return 0.0
 
 
 @pytest.mark.asyncio

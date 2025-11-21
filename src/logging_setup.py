@@ -11,9 +11,9 @@ from rich.logging import RichHandler
 from src.constants import SENSITIVE_PATTERN
 
 
-def _resolve_log_level() -> int:
-    """Resolve log level from LOG_LEVEL env var, defaulting to INFO."""
-    level_name = os.getenv("LOG_LEVEL", "INFO").upper()
+def _resolve_log_level(explicit: str | None = None) -> int:
+    """Resolve log level from explicit value or LOG_LEVEL env var, defaulting to INFO."""
+    level_name = (explicit or os.getenv("LOG_LEVEL", "INFO")).upper()
     level_value = getattr(logging, level_name, logging.INFO)
     return level_value if isinstance(level_value, int) else logging.INFO
 
@@ -77,7 +77,7 @@ def _build_console_handler(log_level: int, sensitive_filter: logging.Filter) -> 
     return console_handler
 
 
-def setup_logging(env: str | None = None) -> Tuple[logging.Logger, logging.handlers.QueueListener]:
+def setup_logging(env: str | None = None, log_level: str | None = None) -> Tuple[logging.Logger, logging.handlers.QueueListener]:
     """
     [Non-Blocking Logging] QueueHandler 패턴 + 환경별 포맷/출력 제어
 
@@ -88,7 +88,7 @@ def setup_logging(env: str | None = None) -> Tuple[logging.Logger, logging.handl
     is_production = log_env in {"prod", "production"}
 
     log_queue: queue.Queue[Any] = queue.Queue(-1)  # 무제한 큐
-    log_level = _resolve_log_level()
+    resolved_level = _resolve_log_level(log_level)
     sensitive_filter = SensitiveDataFilter()
 
     handlers = []
@@ -97,7 +97,7 @@ def setup_logging(env: str | None = None) -> Tuple[logging.Logger, logging.handl
     error_log = os.getenv("ERROR_LOG_FILE", "error.log")
 
     file_handler = _build_file_handler(
-        log_level=log_level,
+        log_level=resolved_level,
         use_json=is_production,
         sensitive_filter=sensitive_filter,
         filename=info_log,
@@ -113,7 +113,7 @@ def setup_logging(env: str | None = None) -> Tuple[logging.Logger, logging.handl
     handlers.append(error_handler)
 
     if not is_production:
-        handlers.append(_build_console_handler(log_level, sensitive_filter))
+        handlers.append(_build_console_handler(resolved_level, sensitive_filter))
 
     listener = logging.handlers.QueueListener(
         log_queue,
@@ -124,7 +124,7 @@ def setup_logging(env: str | None = None) -> Tuple[logging.Logger, logging.handl
     queue_handler = logging.handlers.QueueHandler(log_queue)
 
     root_logger = logging.getLogger()
-    root_logger.setLevel(log_level)
+    root_logger.setLevel(resolved_level)
 
     # 기존 핸들러 제거 (중복 방지)
     if root_logger.hasHandlers():

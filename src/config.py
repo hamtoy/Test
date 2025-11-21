@@ -19,6 +19,7 @@ class AppConfig(BaseSettings):
     cache_stats_file: str = Field("cache_stats.jsonl", alias="CACHE_STATS_FILE")
     cache_stats_max_entries: int = Field(100, alias="CACHE_STATS_MAX_ENTRIES")
     local_cache_dir: str = Field(".cache", alias="LOCAL_CACHE_DIR")
+    budget_limit_usd: float | None = Field(None, alias="BUDGET_LIMIT_USD")
 
     # [Typo Prevention] extra="forbid"로 변경하여 오타를 즉시 감지
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="forbid")
@@ -30,14 +31,27 @@ class AppConfig(BaseSettings):
             raise ValueError("GEMINI_API_KEY is not set. Please check your .env file.")
 
         if not v.startswith("AIza"):
-            raise ValueError("GEMINI_API_KEY must start with 'AIza'")
+            raise ValueError(
+                "GEMINI_API_KEY validation failed:\n"
+                "  - Must start with 'AIza'\n"
+                "  - See: https://makersuite.google.com/app/apikey"
+            )
 
         if len(v) != 39:
-            raise ValueError(f"GEMINI_API_KEY must be 39 characters long (got {len(v)})")
+            raise ValueError(
+                "GEMINI_API_KEY validation failed:\n"
+                f"  - Got {len(v)} characters\n"
+                "  - Must be exactly 39 characters (starts with 'AIza')\n"
+                "  - See: https://makersuite.google.com/app/apikey"
+            )
 
         # Google API 키 형식: AIza + 35개의 안전 문자 (총 39자)
         if not re.match(r"^AIza[0-9A-Za-z_\-]{35}$", v):
-            raise ValueError("Invalid GEMINI_API_KEY format (expected Google API key starting with 'AIza')")
+            raise ValueError(
+                "GEMINI_API_KEY validation failed:\n"
+                "  - Invalid format (expected 'AIza' + 35 safe chars)\n"
+                "  - See: https://makersuite.google.com/app/apikey"
+            )
         return v
 
     @field_validator("model_name")
@@ -83,6 +97,15 @@ class AppConfig(BaseSettings):
         if upper not in allowed:
             raise ValueError(f"log_level must be one of {allowed}")
         return upper
+
+    @field_validator("budget_limit_usd")
+    @classmethod
+    def validate_budget(cls, v: float | None) -> float | None:
+        if v is None:
+            return v
+        if v <= 0:
+            raise ValueError("budget_limit_usd must be positive when set")
+        return v
 
     @field_validator("cache_stats_max_entries")
     @classmethod

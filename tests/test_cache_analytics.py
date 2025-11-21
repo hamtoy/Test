@@ -1,0 +1,28 @@
+from pathlib import Path
+
+from src.cache_analytics import analyze_cache_stats, calculate_savings
+
+
+def test_calculate_savings_zero_when_no_hits():
+    record = {"model": "gemini-3-pro-preview", "cache_hits": 0, "input_tokens": 1000}
+    assert calculate_savings(record) == 0.0
+
+
+def test_analyze_cache_stats(tmp_path):
+    path = tmp_path / "cache_stats.jsonl"
+    path.write_text(
+        "\n".join(
+            [
+                '{"model":"gemini-3-pro-preview","cache_hits":2,"cache_misses":1,"input_tokens":10000,"output_tokens":0}',
+                '{"model":"gemini-3-pro-preview","cache_hits":0,"cache_misses":1,"input_tokens":5000,"output_tokens":0}',
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    summary = analyze_cache_stats(path)
+    assert summary["total_records"] == 2
+    assert summary["total_hits"] == 2
+    assert summary["total_misses"] == 2
+    assert summary["hit_rate"] == 50.0
+    assert summary["estimated_savings_usd"] > 0

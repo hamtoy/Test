@@ -11,6 +11,8 @@ def mock_agent():
     agent.rewrite_best_answer = AsyncMock(return_value="Rewritten Answer")
     agent.create_context_cache = AsyncMock(return_value=None)
     agent.get_total_cost = MagicMock(return_value=0.1)
+    agent.get_budget_usage_percent = MagicMock(return_value=50.0)
+    agent.check_budget = MagicMock(return_value=None)
     return agent
 
 @pytest.fixture

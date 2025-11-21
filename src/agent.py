@@ -19,7 +19,13 @@ from src.config import AppConfig
 from src.constants import PRICING_TIERS
 from src.models import EvaluationResultSchema, QueryResult
 from src.utils import clean_markdown_code_block, safe_json_parse
-from src.exceptions import APIRateLimitError, ValidationFailedError, CacheCreationError, SafetyFilterError
+from src.exceptions import (
+    APIRateLimitError,
+    BudgetExceededError,
+    ValidationFailedError,
+    CacheCreationError,
+    SafetyFilterError,
+)
 
 
 class GeminiAgent:
@@ -469,3 +475,19 @@ class GeminiAgent:
         input_cost = (self.total_input_tokens / 1_000_000) * input_rate
         output_cost = (self.total_output_tokens / 1_000_000) * output_rate
         return input_cost + output_cost
+
+    def get_budget_usage_percent(self) -> float:
+        """Return budget usage percent; 0 if no budget configured."""
+        if not self.config.budget_limit_usd:
+            return 0.0
+        return (self.get_total_cost() / self.config.budget_limit_usd) * 100
+
+    def check_budget(self) -> None:
+        """Raise if total cost exceeds budget."""
+        if not self.config.budget_limit_usd:
+            return
+        total = self.get_total_cost()
+        if total > self.config.budget_limit_usd:
+            raise BudgetExceededError(
+                f"Session cost ${total:.4f} exceeded budget ${self.config.budget_limit_usd:.2f}"
+            )
