@@ -93,6 +93,18 @@ class TestGeminiAgent:
 
         assert overlap is False
 
+    def test_budget_usage_and_enforcement(self, agent):
+        agent.total_input_tokens = 500_000
+        agent.total_output_tokens = 250_000
+        agent.config.budget_limit_usd = 0.1
+
+        usage = agent.get_budget_usage_percent()
+        assert usage > 0
+
+        agent.config.budget_limit_usd = 0.00001
+        with pytest.raises(Exception):
+            agent.check_budget()
+
 
 class TestEvaluationModel:
     """평가 모델 검증 테스트"""

@@ -104,3 +104,19 @@ def test_local_cache_ttl_returns_cache(monkeypatch, tmp_path):
 
     cache = agent._load_local_cache(fingerprint, ttl_minutes=10)
     assert cache.name == "cached-keep"
+
+
+def test_local_cache_invalid_manifest(monkeypatch, tmp_path):
+    monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
+    monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
+    monkeypatch.setenv("LOCAL_CACHE_DIR", str(tmp_path / ".cache"))
+
+    jinja_env = MagicMock()
+    jinja_env.get_template.return_value.render.return_value = "prompt"
+    agent = GeminiAgent(AppConfig(), jinja_env=jinja_env)
+
+    manifest_path = agent._local_cache_manifest_path()
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text("{not json", encoding="utf-8")
+
+    assert agent._load_local_cache("fingerprint", ttl_minutes=10) is None

@@ -1,4 +1,6 @@
 from scripts.latency_baseline import percentile, summarise
+from scripts.latency_baseline import extract_latencies
+from pathlib import Path
 
 
 def test_percentile_interpolation():
@@ -17,3 +19,19 @@ def test_summarise_basic():
     assert mean_v == 20
     assert p50 == 20
     assert p90 >= p50
+
+
+def test_extract_latencies(tmp_path):
+    log = tmp_path / "app.log"
+    log.write_text(
+        "\n".join(
+            [
+                "INFO API latency: 10.5 ms",
+                "INFO something else",
+                "INFO API latency: 20 ms",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    found = extract_latencies([log])
+    assert found == [10.5, 20.0]
