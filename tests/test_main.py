@@ -103,6 +103,33 @@ async def test_execute_workflow_budget_exceeded(mock_logger):
     mock_logger.error.assert_any_call("Budget limit exceeded: limit")
 
 
+@pytest.mark.asyncio
+async def test_execute_workflow_interactive_skip_reload(mock_agent, mock_logger):
+    mock_agent.create_context_cache = AsyncMock(return_value=None)
+    eval_item = EvaluationItem(candidate_id="A", score=90, reason="Good")
+    eval_result = EvaluationResultSchema(best_candidate="A", evaluations=[eval_item])
+    mock_agent.evaluate_responses = AsyncMock(return_value=eval_result)
+    mock_agent.rewrite_best_answer = AsyncMock(return_value="rewritten")
+
+    with patch("src.main.Confirm.ask", return_value=False):
+        with patch("src.main.load_input_data", new_callable=AsyncMock) as mock_load:
+            mock_load.return_value = ("ocr", {"A": "a"})
+
+            results = await execute_workflow(
+                agent=mock_agent,
+                ocr_text="ocr",
+                user_intent=None,
+                logger=mock_logger,
+                ocr_filename="ocr.txt",
+                cand_filename="cand.json",
+                is_interactive=True,
+            )
+
+    assert len(results) == 1
+    mock_load.assert_called_once()
+    mock_agent.rewrite_best_answer.assert_awaited()
+
+
 def test_save_result_to_file(tmp_path):
     config = MagicMock()
     config.output_dir = tmp_path
@@ -128,6 +155,28 @@ def test_save_result_to_file(tmp_path):
     content = files[0].read_text(encoding="utf-8")
     assert "Test Query" in content
     assert "Rewritten" in content
+
+
+def test_save_result_to_file_io_error(monkeypatch, tmp_path):
+    config = MagicMock()
+    config.output_dir = tmp_path
+
+    eval_item = EvaluationItem(candidate_id="A", score=90, reason="Good")
+    eval_result = EvaluationResultSchema(best_candidate="A", evaluations=[eval_item])
+
+    result = WorkflowResult(
+        turn_id=1,
+        query="Test Query",
+        evaluation=eval_result,
+        best_answer="Best Answer",
+        rewritten_answer="Rewritten",
+        cost=0.05,
+        success=True,
+    )
+
+    monkeypatch.setattr("builtins.open", MagicMock(side_effect=PermissionError))
+    with pytest.raises(PermissionError):
+        save_result_to_file(result, config)
 
 
 @pytest.mark.asyncio
