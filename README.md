@@ -120,6 +120,13 @@ python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_ca
 python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --resume
 ```
 
+### 시나리오 예시 (샘플 데이터)
+
+- 요약: `uv run python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --intent "요약"`
+- 분류/라벨링: `uv run python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --intent "분류"`
+- 체크포인트 재시작: `uv run python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --resume`
+- 개인 사용 시 API 할당량 절약: `.env`에서 `GEMINI_MAX_CONCURRENCY=1`로 낮춰 실행
+
 ### 성능/관측 도구
 
 ```bash

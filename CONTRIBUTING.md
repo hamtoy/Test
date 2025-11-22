@@ -24,6 +24,14 @@ We use `uv` for fast and reliable package management.
     - Windows: `.venv\Scripts\activate`
     - Linux/macOS: `source .venv/bin/activate`
 
+4.  **Install Pre-commit Hooks** (권장):
+
+    ```bash
+    uv run pre-commit install
+    # 최초 실행 시 전체 검사
+    uv run pre-commit run --all-files
+    ```
+
 ## Running Tests
 
 We use `pytest` for testing. Ensure all tests pass before submitting a PR.
