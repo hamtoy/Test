@@ -4,7 +4,12 @@ from logging.handlers import RotatingFileHandler
 from pythonjsonlogger.json import JsonFormatter
 from rich.logging import RichHandler
 
-from src.logging_setup import setup_logging, SensitiveDataFilter
+from src.logging_setup import (
+    SensitiveDataFilter,
+    _build_file_handler,
+    _resolve_log_level,
+    setup_logging,
+)
 
 
 def _cleanup(listener: logging.handlers.QueueListener) -> None:
@@ -63,3 +68,20 @@ def test_sensitive_data_filter_masks_api_key():
     assert filt.filter(record)
     assert "[FILTERED_API_KEY]" in record.msg
     assert "AIza" not in record.msg
+
+
+def test_build_file_handler_formats(tmp_path):
+    filt = logging.Filter()
+    json_handler = _build_file_handler(
+        logging.INFO, True, filt, str(tmp_path / "log.json")
+    )
+    text_handler = _build_file_handler(
+        logging.INFO, False, filt, str(tmp_path / "log.txt")
+    )
+
+    assert isinstance(json_handler.formatter, JsonFormatter)
+    assert not isinstance(text_handler.formatter, JsonFormatter)
+
+
+def test_resolve_log_level_invalid():
+    assert _resolve_log_level("NOT_A_LEVEL") == logging.INFO
