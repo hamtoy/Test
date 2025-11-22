@@ -9,19 +9,17 @@
 
 ### 1. Dependencies
 
-All required packages installed and verified:
+All runtime dependencies resolved from `pyproject.toml` / `uv.lock`:
 
 ```
-✅ aiolimiter 1.2.1
-✅ pydantic-settings 2.12.0
-✅ python-dotenv 1.2.1
-✅ rich 14.2.0
-✅ tenacity 9.1.2
-✅ google-generativeai >=0.8.3
-✅ pydantic >=2.0.0
-✅ jinja2 >=3.1.0
-✅ aiofiles >=23.2.1
-✅ pytest >=7.4.0
+✅ google-generativeai
+✅ pydantic / pydantic-settings
+✅ jinja2 / aiofiles
+✅ aiolimiter
+✅ tenacity
+✅ rich
+✅ python-dotenv
+✅ python-json-logger
 ```
 
 ### 2. Python Environment
@@ -52,10 +50,10 @@ Default encoding: utf-8 ✅
 ### 5. Test Suite
 
 ```
-✅ 7 tests passing
+✅ 15 test modules (agent, caching, config, logging, security, integration)
 ✅ Dependency injection verified
-✅ Model validation tested
-✅ Cost tracking validated
+✅ Model validation and cost tracking covered
+✅ CLI/logging behaviors exercised
 ```
 
 ---
@@ -65,7 +63,8 @@ Default encoding: utf-8 ✅
 ### Required Files
 
 - ✅ `README.md` - Comprehensive documentation
-- ✅ `requirements.txt` - All dependencies with versions
+- ✅ `pyproject.toml` - Project metadata and dependencies
+- ✅ `uv.lock` - Locked dependency versions (uv)
 - ✅ `.env.example` - Environment variable template
 - ✅ `UV_GUIDE.md` - Fast package manager guide
 - ✅ `src/__init__.py` - Python package marker
@@ -77,26 +76,37 @@ shining-quasar/
 ├── .env                  ✅ (User creates from .env.example)
 ├── .env.example          ✅ Template provided
 ├── README.md             ✅ Complete documentation
-├── UV_GUIDE.md           ✅ Installation guide
-├── requirements.txt      ✅ All dependencies
-├── app.log              ✅ Auto-generated
+├── UV_GUIDE.md           ✅ Installation guide (uv-based)
+├── pyproject.toml        ✅ Project metadata & dependencies
+├── uv.lock               ✅ Locked dependency versions
+├── app.log               ✅ Auto-generated
 ├── data/
 │   ├── inputs/          ✅ Input directory
 │   └── outputs/         ✅ Output directory
 ├── templates/           ✅ All .j2 files present
+│   ├── prompt_eval.j2
+│   ├── prompt_query_gen.j2
+│   ├── prompt_rewrite.j2
+│   ├── query_gen_user.j2
+│   └── rewrite_user.j2
 ├── src/                 ✅ Source package
 │   ├── __init__.py      ✅ Package marker
 │   ├── agent.py         ✅ Core agent
+│   ├── cache_analytics.py ✅ Cache analytics
 │   ├── config.py        ✅ Configuration
+│   ├── constants.py     ✅ Shared constants
 │   ├── data_loader.py   ✅ Data loading
+│   ├── exceptions.py    ✅ Custom exceptions
 │   ├── logging_setup.py ✅ Logging config
 │   ├── main.py          ✅ Entry point
 │   ├── models.py        ✅ Pydantic models
 │   └── utils.py         ✅ Utilities
-└── tests/               ✅ Test suite
+├── scripts/             ✅ Utility scripts
+└── tests/               ✅ Test suite (15 files)
     ├── __init__.py      ✅ Package marker
     ├── test_agent.py    ✅ Agent tests
-    └── test_dependency_injection.py ✅ DI tests
+    ├── test_main.py     ✅ Main CLI tests
+    └── ...              ✅ Caching, config, logging, security
 ```
 
 ---
@@ -105,7 +115,7 @@ shining-quasar/
 
 ### Architecture
 
-- ✅ Modular design (7 source modules)
+- ✅ Modular design (11 source modules)
 - ✅ Dependency Injection pattern
 - ✅ Proper package structure
 - ✅ Separation of concerns
@@ -153,12 +163,14 @@ shining-quasar/
 2. **Install Dependencies**
 
    ```bash
-   # Option A: pip (standard)
-   pip install -r requirements.txt
-
-   # Option B: uv (10-100x faster)
+   # Option A: uv (recommended, uses pyproject.toml)
    pip install uv
-   uv pip install -r requirements.txt
+   uv sync                 # runtime deps
+   uv sync --extra dev     # include dev/test/docs deps
+
+   # Option B: pip (editable install)
+   pip install -e .
+   pip install -e ".[dev]"
    ```
 
 3. **Configure Environment**
@@ -190,14 +202,14 @@ shining-quasar/
 
 ## 📊 Final Statistics
 
-- **Total Files:** 29
-- **Source Modules:** 7
-- **Test Files:** 2
+- **Tracked Files:** 141
+- **Source Modules:** 11
+- **Test Files:** 15
 - **Templates:** 5
-- **Documentation:** 3
+- **Documentation:** 4 top-level guides (+ Sphinx docs/)
 - **Lines of Code:** ~1,500
-- **Test Coverage:** 7 tests
-- **Dependencies:** 10 packages
+- **Test Coverage:** pytest suite across unit/integration modules
+- **Dependencies:** 10 runtime + 9 dev extras (pyproject/uv.lock)
 
 ---
 
@@ -205,7 +217,7 @@ shining-quasar/
 
 - ✅ No syntax errors
 - ✅ No encoding issues
-- ✅ All tests passing
+- ✅ pytest suite covers core workflows
 - ✅ Type-safe (Pydantic)
 - ✅ Production logging
 - ✅ Cost tracking
