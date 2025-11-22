@@ -462,6 +462,11 @@ class QAGraphBuilder:
                 "pattern": "전체\\s*이미지\\s*(설명|요약)",
                 "description": "전체 이미지 설명/요약",
             },
+            {
+                "id": "err_time_reference",
+                "pattern": "(지난달|전일|지난주|주말|최근|올해|내년|연초)",
+                "description": "시의성 표현은 보고서 기준 시점 명시 필요",
+            },
         ]
         with self.driver.session() as session:
             for p in patterns:
