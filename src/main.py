@@ -33,7 +33,13 @@ from src.data_loader import load_input_data
 from src.logging_setup import setup_logging
 from src.cache_analytics import analyze_cache_stats, print_cache_report
 from src.utils import safe_json_parse, write_cache_stats
-from src.exceptions import CacheCreationError
+from src.exceptions import (
+    APIRateLimitError,
+    BudgetExceededError,
+    CacheCreationError,
+    SafetyFilterError,
+    ValidationFailedError,
+)
 from src.constants import (
     BUDGET_WARNING_THRESHOLDS,
     LOG_MESSAGES,
@@ -492,6 +498,24 @@ async def process_single_query(
 
             return result
 
+    except (APIRateLimitError, ValidationFailedError, SafetyFilterError) as e:
+        ctx.logger.error(
+            f"복구 가능 오류로 턴 {turn_id}를 건너뜁니다: {e}"
+        )
+        if ctx.progress and task_id:
+            ctx.progress.update(
+                task_id,
+                description=PROGRESS_FAILED_TEMPLATE.format(turn_id=turn_id),
+            )
+        return None
+    except BudgetExceededError as e:
+        ctx.logger.critical(f"예산 초과로 워크플로우를 중단합니다: {e}")
+        if ctx.progress and task_id:
+            ctx.progress.update(
+                task_id,
+                description=PROGRESS_FAILED_TEMPLATE.format(turn_id=turn_id),
+            )
+        raise
     except Exception as e:
         ctx.logger.exception(LOG_MESSAGES["turn_exception"].format(error=e))
         if ctx.progress and task_id:
@@ -513,6 +537,7 @@ async def execute_workflow(
     is_interactive: bool = True,
     resume: bool = False,
     checkpoint_path: Optional[Path] = None,
+    keep_progress: bool = False,
 ) -> List[WorkflowResult]:
     """전체 워크플로우 실행 (질의 생성 → 평가 → 재작성).
 
@@ -532,6 +557,7 @@ async def execute_workflow(
         is_interactive: 대화형 모드 활성화 여부
         resume: 체크포인트 복구 여부
         checkpoint_path: 체크포인트 파일 경로
+        keep_progress: 완료 후에도 Progress Bar를 유지할지 여부
 
     Returns:
         각 질의별 평가 결과 리스트
@@ -581,7 +607,7 @@ async def execute_workflow(
         BarColumn(),
         TaskProgressColumn(),
         console=console,
-        transient=True,  # 완료 후 사라짐 (깔끔하게)
+        transient=not keep_progress,  # 디버깅 시 기록 유지 옵션
     ) as progress:
         restored_results, tasks = _schedule_turns(
             queries=queries,
@@ -661,6 +687,12 @@ async def main():
         type=str,
         default="checkpoint.jsonl",
         help="Checkpoint JSONL path (relative paths resolve under data/outputs)",
+    )
+    debug_group = parser.add_argument_group("Debugging")
+    debug_group.add_argument(
+        "--keep-progress",
+        action="store_true",
+        help="Keep progress bar visible after completion (for debugging)",
     )
     core_group.add_argument(
         "--resume",
@@ -742,6 +774,7 @@ async def main():
             is_interactive,
             resume=args.resume,
             checkpoint_path=checkpoint_path,
+            keep_progress=args.keep_progress,
         )
 
         # ... (rest of main)
