@@ -17,7 +17,12 @@ from typing import List
 
 from checks.detect_forbidden_patterns import find_violations
 from checks.validate_session import validate_turns
-from scripts.build_session import SessionContext, build_session, is_calc_query, repo_root
+from scripts.build_session import (
+    SessionContext,
+    build_session,
+    is_calc_query,
+    repo_root,
+)
 from scripts.render_prompt import render
 
 

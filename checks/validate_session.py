@@ -17,7 +17,11 @@ from pathlib import Path
 from typing import Dict, List
 
 from checks.detect_forbidden_patterns import find_violations
-from scripts.build_session import SessionContext, build_session, repo_root as builder_root
+from scripts.build_session import (
+    SessionContext,
+    build_session,
+    repo_root as builder_root,
+)
 
 
 def validate_turns(turns, ctx: SessionContext) -> Dict:
