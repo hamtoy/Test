@@ -464,7 +464,10 @@ class QAGraphBuilder:
             },
             {
                 "id": "err_time_reference",
-                "pattern": "(지난달|전일|지난주|주말|최근|올해|내년|연초)",
+                "pattern": (
+                    "(.?)(지난달|전일|지난주|주말|최근|올해|내년|연초|"
+                    "last month|yesterday|last week|recently|this year|next year|earlier this year)"
+                ),
                 "description": "시의성 표현은 보고서 기준 시점 명시 필요",
             },
         ]
@@ -532,7 +535,23 @@ class QAGraphBuilder:
             ("explanation", ["전체 설명", "설명문", "full explanation", "본문 전체"]),
             ("summary", ["요약", "summary", "짧게"]),
             ("target", ["질문", "타겟", "target", "단일 항목"]),
-            ("reasoning", ["추론", "전망", "예측", "분석"]),
+            (
+                "reasoning",
+                [
+                    "추론",
+                    "전망",
+                    "예측",
+                    "분석",
+                    "금리",
+                    "물가",
+                    "심리",
+                    "수요",
+                    "공급",
+                    "rate",
+                    "inflation",
+                    "outlook",
+                ],
+            ),
         ]
         with self.driver.session() as session:
             for qt, keywords in mappings:
