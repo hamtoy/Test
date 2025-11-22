@@ -33,7 +33,7 @@ if match:
     with open("graph_schema_builder.py", "w", encoding="utf-8") as f:
         f.write(new_content)
 
-    print(f"✅ graph_schema_builder.py 업데이트 완료!")
+    print("✅ graph_schema_builder.py 업데이트 완료!")
     print(f"✅ {len(mappings_sorted)}개 manual_mappings 추가됨\n")
 
     # Show statistics

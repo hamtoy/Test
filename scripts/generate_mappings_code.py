@@ -24,5 +24,5 @@ with open("manual_mappings_code.txt", "w", encoding="utf-8") as f:
     f.write(manual_mappings_code)
 
 print("=" * 60)
-print(f"✅ Saved to manual_mappings_code.txt")
+print("✅ Saved to manual_mappings_code.txt")
 print(f"✅ {len(high_conf)} mappings ready to add to graph_schema_builder.py")
