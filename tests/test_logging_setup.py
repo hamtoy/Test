@@ -4,7 +4,7 @@ from logging.handlers import RotatingFileHandler
 from pythonjsonlogger.json import JsonFormatter
 from rich.logging import RichHandler
 
-from src.logging_setup import setup_logging
+from src.logging_setup import setup_logging, SensitiveDataFilter
 
 
 def _cleanup(listener: logging.handlers.QueueListener) -> None:
@@ -43,3 +43,23 @@ def test_production_logging_uses_json_file_only(tmp_path, monkeypatch):
         assert all(isinstance(h.formatter, JsonFormatter) for h in file_handlers)
     finally:
         _cleanup(listener)
+
+
+def test_sensitive_data_filter_masks_api_key():
+    filt = SensitiveDataFilter()
+    raw_key = "AIza" + "0" * 35
+    record = logging.LogRecord(
+        name="test",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg=f"Key: {raw_key}",
+        args=(),
+        exc_info=None,
+        func=None,
+        sinfo=None,
+    )
+
+    assert filt.filter(record)
+    assert "[FILTERED_API_KEY]" in record.msg
+    assert "AIza" not in record.msg
