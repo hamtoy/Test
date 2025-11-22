@@ -1,5 +1,3 @@
-import types
-
 from qa_rag_system import QAKnowledgeGraph
 
 

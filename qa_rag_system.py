@@ -56,7 +56,6 @@ class QAKnowledgeGraph:
         try:
             from langchain_neo4j import Neo4jVector
             import google.generativeai as genai
-            from typing import List
 
             class CustomGeminiEmbeddings:
                 def __init__(
