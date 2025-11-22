@@ -1,0 +1,225 @@
+from __future__ import annotations
+
+import os
+import sys
+import uuid
+from typing import List, Dict
+
+from neo4j import GraphDatabase
+from neo4j.exceptions import Neo4jError
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+def require_env(var: str) -> str:
+    val = os.getenv(var)
+    if not val:
+        raise EnvironmentError(f"환경 변수 {var}가 설정되지 않았습니다 (.env 확인).")
+    return val
+
+
+class QAGraphBuilder:
+    def __init__(self, uri: str, user: str, password: str):
+        self.driver = GraphDatabase.driver(uri, auth=(user, password))
+
+    def close(self):
+        if self.driver:
+            self.driver.close()
+
+    def create_schema_constraints(self):
+        """고유 제약 추가 (존재 시 무시)."""
+        with self.driver.session() as session:
+            session.run("CREATE CONSTRAINT rule_id_unique IF NOT EXISTS FOR (r:Rule) REQUIRE r.id IS UNIQUE")
+            session.run("CREATE CONSTRAINT constraint_id_unique IF NOT EXISTS FOR (c:Constraint) REQUIRE c.id IS UNIQUE")
+            session.run("CREATE CONSTRAINT example_id_unique IF NOT EXISTS FOR (e:Example) REQUIRE e.id IS UNIQUE")
+            session.run("CREATE CONSTRAINT qtype_name_unique IF NOT EXISTS FOR (q:QueryType) REQUIRE q.name IS UNIQUE")
+        print("✅ 스키마 고유 제약 생성/확인 완료")
+
+    def extract_rules_from_notion(self):
+        """Notion 문서에서 규칙 추출 및 그래프화 (중복 방지 MERGE)."""
+        with self.driver.session() as session:
+            result = session.run(
+                """
+                MATCH (p:Page)-[:CONTAINS*]->(h:Block)
+                WHERE h.type = 'heading_1' AND h.content CONTAINS '자주 틀리는'
+                MATCH (h)-[:NEXT*]->(b:Block)
+                WHERE b.type IN ['paragraph', 'bulleted_list_item', 'callout']
+                RETURN h.content AS section, collect(b.content) AS rules
+                """
+            )
+
+            created = 0
+            for record in result:
+                section = record["section"]
+                rules = record["rules"] or []
+                for rule_text in rules:
+                    if not rule_text or len(rule_text) <= 10:
+                        continue
+                    rid = f"{uuid.uuid4()}"
+                    session.run(
+                        """
+                        MERGE (r:Rule {id: $id})
+                        SET r.text = $text,
+                            r.section = $section,
+                            r.priority = 'high'
+                        """,
+                        id=rid,
+                        text=rule_text,
+                        section=section,
+                    )
+                    created += 1
+            print(f"✅ 규칙 {created}개 추출/병합 완료")
+
+    def extract_query_types(self):
+        """질의 유형 정의 추출."""
+        query_types = [
+            {"name": "explanation", "korean": "전체 설명문", "limit": 1, "requires_reconstruction": True},
+            {"name": "summary", "korean": "전체 요약문", "limit": 1, "requires_reconstruction": True},
+            {"name": "target", "korean": "이미지 내 타겟", "limit": None, "requires_reconstruction": False},
+            {"name": "reasoning", "korean": "추론 질의", "limit": 1, "requires_reconstruction": False},
+        ]
+        with self.driver.session() as session:
+            for qt in query_types:
+                session.run(
+                    """
+                    MERGE (q:QueryType {name: $name})
+                    SET q.korean = $korean,
+                        q.session_limit = $limit,
+                        q.requires_reconstruction = $reconstruction
+                    """,
+                    name=qt["name"],
+                    korean=qt["korean"],
+                    limit=qt["limit"],
+                    reconstruction=qt["requires_reconstruction"],
+                )
+        print(f"✅ 질의 유형 {len(query_types)}개 생성/병합")
+
+    def extract_constraints(self):
+        """제약 조건 추출."""
+        constraints = [
+            {
+                "id": "session_turns",
+                "description": "세션당 3-4턴만 허용",
+                "type": "count",
+                "min": 3,
+                "max": 4,
+            },
+            {
+                "id": "explanation_summary_limit",
+                "description": "설명문/요약문 중 하나만 포함",
+                "type": "exclusivity",
+                "exception": "4턴 세션에서만 둘 다 허용",
+            },
+            {
+                "id": "calculation_limit",
+                "description": "계산 요청 질의 1회 제한",
+                "type": "count",
+                "max": 1,
+            },
+            {
+                "id": "table_chart_prohibition",
+                "description": "표/그래프 참조 금지",
+                "type": "prohibition",
+                "pattern": r"(표|그래프)(에 따르면|에서)",
+            },
+        ]
+        with self.driver.session() as session:
+            for c in constraints:
+                session.run(
+                    """
+                    MERGE (c:Constraint {id: $id})
+                    SET c.description = $desc,
+                        c.type = $type,
+                        c += $props
+                    """,
+                    id=c["id"],
+                    desc=c["description"],
+                    type=c["type"],
+                    props=c,
+                )
+        print(f"✅ 제약 조건 {len(constraints)}개 생성/병합")
+
+    def link_rules_to_constraints(self):
+        """규칙과 제약 조건 연결."""
+        with self.driver.session() as session:
+            session.run(
+                """
+                MATCH (r:Rule), (c:Constraint)
+                WHERE (r.text CONTAINS c.description) OR (r.text CONTAINS c.id)
+                MERGE (r)-[:ENFORCES]->(c)
+                """
+            )
+            count = session.run(
+                "MATCH (r:Rule)-[:ENFORCES]->(c:Constraint) RETURN count(*) AS links"
+            ).single()["links"]
+        print(f"✅ 규칙-제약 연결 {count}개 생성/병합")
+
+    def extract_examples(self):
+        """예시 추출 (❌/⭕ 패턴) 및 중복 방지."""
+        with self.driver.session() as session:
+            result = session.run(
+                """
+                MATCH (b:Block)
+                WHERE (b.content CONTAINS '❌' OR b.content CONTAINS '⭕')
+                  AND size(b.content) > 10
+                RETURN DISTINCT b.content AS text,
+                       CASE 
+                           WHEN b.content CONTAINS '❌' THEN 'negative'
+                           ELSE 'positive'
+                       END AS type
+                """
+            )
+
+            examples = []
+            for record in result:
+                text = record["text"]
+                ex_type = record["type"]
+                eid = f"ex_{uuid.uuid4()}"
+                session.run(
+                    """
+                    MERGE (e:Example {id: $id})
+                    SET e.text = $text,
+                        e.type = $type,
+                        e.extracted_at = datetime()
+                    """,
+                    id=eid,
+                    text=text,
+                    type=ex_type,
+                )
+                examples.append((text[:50], ex_type))
+
+            print(f"✅ 예시 {len(examples)}개 추출/병합")
+            if examples:
+                print("샘플:")
+                for text, t in examples[:3]:
+                    print(f"   [{t}] {text}...")
+
+
+def main():
+    uri = require_env("NEO4J_URI")
+    user = require_env("NEO4J_USER")
+    password = require_env("NEO4J_PASSWORD")
+
+    builder = QAGraphBuilder(uri, user, password)
+    try:
+        print("🔨 QA 그래프 스키마 구축 중...\n")
+        builder.create_schema_constraints()
+        builder.extract_rules_from_notion()
+        builder.extract_query_types()
+        builder.extract_constraints()
+        builder.link_rules_to_constraints()
+        builder.extract_examples()
+        print("\n✅ QA 그래프 구축 완료!")
+    except Neo4jError as e:
+        print(f"❌ Neo4j 오류: {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"❌ 예기치 못한 오류: {e}")
+        sys.exit(1)
+    finally:
+        builder.close()
+
+
+if __name__ == "__main__":
+    main()
