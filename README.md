@@ -423,7 +423,52 @@ results = await asyncio.gather(*[
 - **[DEPLOYMENT_VERIFIED.md](DEPLOYMENT_VERIFIED.md)**: 배포 검증 내역
 - **Sphinx 문서**: `docs/` 디렉토리에서 `make html` 실행
 
+
+## Text-Image QA 템플릿 시스템
+
+Notion 가이드 기반 텍스트 중심 이미지 QA 세션 생성 시스템입니다.
+
+### 주요 구성요소
+
+**템플릿:**
+- `templates/system/` - 설명문, 요약문, 추론, 전역 시스템 프롬프트
+- `templates/user/` - 타겟 질의, 일반 사용자 입력
+- `templates/eval/` - 3개 답변 비교 평가
+- `templates/rewrite/` - 최고 답변 재작성
+- `templates/fact/` - 사실 검증
+
+**도구:**
+- `scripts/build_session.py` - 3~4턴 세션 자동 구성
+- `scripts/render_prompt.py` - 템플릿 렌더링
+- `checks/detect_forbidden_patterns.py` - 금지 패턴 검출
+
+### 빠른 시작
+
+```bash
+# 기본 세션 생성
+python scripts/build_session.py
+
+# 커스텀 컨텍스트로 세션 생성
+python scripts/build_session.py --context examples/session_input.json
+
+# 단일 템플릿 렌더링
+python scripts/render_prompt.py --template system/text_image_qa_explanation_system.j2
+```
+
+### 주요 제약사항
+
+- 세션당 3~4턴 제한
+- 설명문/요약문 중 하나만 사용 (4턴 시 예외적 동시 허용)
+- 추론 질의 가능한 경우 필수 포함
+- 계산 요청 세션당 1회 제한
+- 표/그래프 참조 금지 (텍스트만 사용)
+
+자세한 내용은 `docs/guide_mapping.md`를 참조하세요.
+
+---
+
 ## 라이선스
+
 
 MIT License
 
