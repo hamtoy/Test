@@ -91,8 +91,8 @@ class QAGraphBuilder:
                     with open("debug_log.txt", "a", encoding="utf-8") as f:
                         f.write(f"DEBUG: Processing sibling {sib['type']}\n")
 
-                    # Stop at next heading
-                    if sib["type"] in ["heading_1", "heading_2", "heading_3"]:
+                    # Stop at next major heading only (allow subsections)
+                    if sib["type"] == "heading_1":
                         break
 
                     # If content block, add
