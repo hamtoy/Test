@@ -80,6 +80,7 @@ class Turn:
     violations: List[Dict] = field(default_factory=list)
     calc_used: bool = False
     focus_hint: str = ""
+    content: str = ""  # Generated content for this turn
 
 
 def choose_expl_or_summary(ctx: SessionContext) -> str:
