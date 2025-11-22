@@ -161,6 +161,11 @@ async def test_main_analyze_cache_quick_path(monkeypatch, tmp_path):
 
     monkeypatch.setenv("LOG_FILE", str(tmp_path / "app.log"))
     monkeypatch.setenv("ERROR_LOG_FILE", str(tmp_path / "error.log"))
+    monkeypatch.setattr(
+        main_module,
+        "setup_logging",
+        lambda log_level=None: (MagicMock(), SimpleNamespace(stop=lambda: None)),
+    )
     monkeypatch.setitem(
         sys.modules,
         "jinja2",
