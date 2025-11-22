@@ -27,6 +27,7 @@ project_root/
 ├── README.md               # 문서
 ├── UV_GUIDE.md             # UV 패키지 매니저 가이드
 ├── list_models.py          # Gemini 모델 조회
+├── scripts/                # 유틸리티 스크립트
 ├── templates/              # Jinja2 템플릿
 │   ├── prompt_eval.j2
 │   ├── prompt_query_gen.j2
@@ -378,7 +379,7 @@ results = await asyncio.gather(*[
 ## FAQ
 
 - **GEMINI_API_KEY 형식 오류가 뜹니다.** → `AIza`로 시작하고 총 39자여야 합니다. `.env`에서 공백/따옴표가 섞여 있지 않은지 확인하세요.
-- **커버리지 기준은 얼마인가요?** → CI에서 `--cov-fail-under=80`을 사용합니다. 로컬에서도 동일하게 실행됩니다.
+- **커버리지 기준은 얼마인가요?** → CI에서 `--cov-fail-under=68`을 사용합니다. 로컬에서도 동일하게 실행됩니다.
 - **캐시 통계 파일은 어디에 저장되나요?** → 기본 `cache_stats.jsonl`이며, `CACHE_STATS_FILE`로 경로를, `CACHE_STATS_MAX_ENTRIES`로 보존 개수를 설정할 수 있습니다.
 
 ## 구현된 기능
