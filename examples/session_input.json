@@ -1,0 +1,11 @@
+{
+  "image_path": "images/sample_korean_report.png",
+  "language_hint": "ko",
+  "text_density": "high",
+  "has_table_chart": true,
+  "session_turns": 4,
+  "must_include_reasoning": true,
+  "used_calc_query_count": 0,
+  "prior_focus_summary": "N/A (first turn)",
+  "candidate_focus": "주요 수치와 핵심 주장 요약"
+}
