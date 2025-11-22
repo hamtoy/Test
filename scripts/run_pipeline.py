@@ -19,7 +19,12 @@ root = Path(__file__).resolve().parents[1]
 if str(root) not in sys.path:
     sys.path.insert(0, str(root))
 
-from scripts.build_session import SessionContext, build_session, repo_root, is_calc_query  # noqa: E402
+from scripts.build_session import (
+    SessionContext,
+    build_session,
+    repo_root,
+    is_calc_query,
+)  # noqa: E402
 from checks.validate_session import validate_turns  # noqa: E402
 from checks.detect_forbidden_patterns import find_violations  # noqa: E402
 from scripts.render_prompt import render  # noqa: E402
@@ -48,14 +53,24 @@ class ModelClient:
         if self.stub:
             lengths = [len(a) for a in answers]
             best_idx = max(range(len(answers)), key=lambda i: lengths[i])
-            return {"scores": lengths, "best_index": best_idx, "notes": "length heuristic"}
+            return {
+                "scores": lengths,
+                "best_index": best_idx,
+                "notes": "length heuristic",
+            }
         raise NotImplementedError("Model eval not implemented")
 
     def fact_check(self, answer: str, has_table_chart: bool) -> dict:
         violations = find_violations(answer)
-        table_refs = re.findall(r"(표|그래프|table|chart)", answer, flags=re.IGNORECASE) if has_table_chart else []
+        table_refs = (
+            re.findall(r"(표|그래프|table|chart)", answer, flags=re.IGNORECASE)
+            if has_table_chart
+            else []
+        )
         if has_table_chart and table_refs:
-            violations.append({"type": "table_ref", "match": table_refs[0], "span": (0, 0)})
+            violations.append(
+                {"type": "table_ref", "match": table_refs[0], "span": (0, 0)}
+            )
         verdict = "fail" if violations else "pass"
         return {"verdict": verdict, "issues": violations}
 
@@ -64,7 +79,7 @@ def rerender_target(ctx_dict, root: Path, avoid_calc: bool, focus_hint: str):
     """Fallback re-render for target turns to avoid forbidden patterns or calc overuse."""
     uctx = {
         **ctx_dict,
-        "prior_focus_summary": f"{ctx_dict.get('prior_focus_summary','')} | avoid duplicates",
+        "prior_focus_summary": f"{ctx_dict.get('prior_focus_summary', '')} | avoid duplicates",
         "candidate_focus": focus_hint,
         "calc_allowed": not avoid_calc,
         "used_calc_query_count": ctx_dict.get("used_calc_query_count", 0),
@@ -76,9 +91,17 @@ def main() -> None:
     root = repo_root()
     default_ctx = root / "examples" / "session_input.json"
 
-    parser = argparse.ArgumentParser(description="Run session build + validation pipeline.")
-    parser.add_argument("--context", default=str(default_ctx), help="Path to JSON context.")
-    parser.add_argument("--real-model", action="store_true", help="Use real model hooks (not implemented).")
+    parser = argparse.ArgumentParser(
+        description="Run session build + validation pipeline."
+    )
+    parser.add_argument(
+        "--context", default=str(default_ctx), help="Path to JSON context."
+    )
+    parser.add_argument(
+        "--real-model",
+        action="store_true",
+        help="Use real model hooks (not implemented).",
+    )
     args = parser.parse_args()
 
     ctx_data = json.loads(Path(args.context).read_text(encoding="utf-8"))
@@ -101,12 +124,22 @@ def main() -> None:
                 violations = find_violations(question)
 
                 if calc_flag and used_calc >= 1:
-                    turn.prompt = rerender_target(ctx.__dict__, root, avoid_calc=True, focus_hint="계산 없이 다른 부분 질문")
+                    turn.prompt = rerender_target(
+                        ctx.__dict__,
+                        root,
+                        avoid_calc=True,
+                        focus_hint="계산 없이 다른 부분 질문",
+                    )
                     attempts += 1
                     continue
 
                 if violations:
-                    turn.prompt = rerender_target(ctx.__dict__, root, avoid_calc=calc_flag, focus_hint="표/그래프 언급 금지, 새 구역")
+                    turn.prompt = rerender_target(
+                        ctx.__dict__,
+                        root,
+                        avoid_calc=calc_flag,
+                        focus_hint="표/그래프 언급 금지, 새 구역",
+                    )
                     attempts += 1
                     continue
 
@@ -138,7 +171,9 @@ def main() -> None:
         best = answers[eval_res["best_index"]]
         rewritten = model.rewrite(best)
         fact_res = model.fact_check(rewritten, ctx.has_table_chart)
-        print(f"- Turn {idx} ({turn.type}): best={eval_res['best_index']}, fact={fact_res['verdict']}")
+        print(
+            f"- Turn {idx} ({turn.type}): best={eval_res['best_index']}, fact={fact_res['verdict']}"
+        )
 
 
 if __name__ == "__main__":

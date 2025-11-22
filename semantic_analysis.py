@@ -34,12 +34,51 @@ REL_BATCH_SIZE = 500
 
 STOPWORDS = {
     # English
-    "the", "and", "for", "are", "but", "not", "you", "your", "with",
-    "this", "that", "from", "have", "has", "was", "were", "will", "would",
-    "can", "could", "should", "a", "an", "of", "to", "in", "on", "at",
-    "as", "is", "it", "by", "be", "or", "if", "we", "our",
+    "the",
+    "and",
+    "for",
+    "are",
+    "but",
+    "not",
+    "you",
+    "your",
+    "with",
+    "this",
+    "that",
+    "from",
+    "have",
+    "has",
+    "was",
+    "were",
+    "will",
+    "would",
+    "can",
+    "could",
+    "should",
+    "a",
+    "an",
+    "of",
+    "to",
+    "in",
+    "on",
+    "at",
+    "as",
+    "is",
+    "it",
+    "by",
+    "be",
+    "or",
+    "if",
+    "we",
+    "our",
     # Korean (간단 예시)
-    "그리고", "하지만", "그러나", "또한", "입니다", "있습니다", "하는",
+    "그리고",
+    "하지만",
+    "그러나",
+    "또한",
+    "입니다",
+    "있습니다",
+    "하는",
 }
 
 TOKEN_PATTERN = re.compile(r"[A-Za-z0-9가-힣']+")
@@ -58,6 +97,7 @@ logger = logging.getLogger(__name__)
 # --------------------
 # 유틸리티
 # --------------------
+
 
 def require_env(var: str) -> str:
     value = os.getenv(var)
@@ -111,7 +151,9 @@ def create_topics(driver, keywords: List[Tuple[str, int]]) -> None:
     logger.info("Topic %d개 생성/업데이트 완료", len(keywords))
 
 
-def link_blocks_to_topics(driver, blocks: List[Dict], topics: List[Tuple[str, int]]) -> None:
+def link_blocks_to_topics(
+    driver, blocks: List[Dict], topics: List[Tuple[str, int]]
+) -> None:
     topic_set = {w for w, _ in topics}
     links: List[Dict[str, str]] = []
 
@@ -165,6 +207,7 @@ def fetch_blocks(driver) -> List[Dict]:
 # 메인 흐름
 # --------------------
 
+
 def main() -> None:
     load_dotenv()
 
@@ -178,7 +221,9 @@ def main() -> None:
         logger.error(str(e))
         sys.exit(1)
 
-    driver = GraphDatabase.driver(config["uri"], auth=(config["user"], config["password"]))
+    driver = GraphDatabase.driver(
+        config["uri"], auth=(config["user"], config["password"])
+    )
 
     try:
         blocks = fetch_blocks(driver)

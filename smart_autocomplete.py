@@ -35,7 +35,11 @@ class SmartAutocomplete:
         suggestions = []
         for r in records:
             limit = r.get("limit")
-            if limit is not None and isinstance(limit, int) and counts.get(r["name"], 0) >= limit:
+            if (
+                limit is not None
+                and isinstance(limit, int)
+                and counts.get(r["name"], 0) >= limit
+            ):
                 continue
             if r["name"] in used_types:
                 # 이미 사용된 타입은 우선순위를 낮게
@@ -46,7 +50,9 @@ class SmartAutocomplete:
         suggestions.sort(key=lambda x: x.get("priority", 0), reverse=True)
         return suggestions[:3]
 
-    def suggest_constraint_compliance(self, draft_output: str, query_type: str) -> Dict[str, List[str]]:
+    def suggest_constraint_compliance(
+        self, draft_output: str, query_type: str
+    ) -> Dict[str, List[str]]:
         """
         출력 초안에 대해 제약 위반을 찾아 개선 제안을 반환.
         - 금지 패턴(그래프 + 로컬) 검사
@@ -61,7 +67,9 @@ class SmartAutocomplete:
 
         # 그래프의 ErrorPattern 및 Constraint 패턴 검사
         with self.kg.template_gen.driver.session() as session:
-            ep_records = session.run("MATCH (ep:ErrorPattern) RETURN ep.pattern AS pattern, ep.description AS desc")
+            ep_records = session.run(
+                "MATCH (ep:ErrorPattern) RETURN ep.pattern AS pattern, ep.description AS desc"
+            )
             for rec in ep_records:
                 pat = rec["pattern"]
                 if pat and re.search(pat, draft_output, flags=re.IGNORECASE):

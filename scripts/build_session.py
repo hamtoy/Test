@@ -35,8 +35,18 @@ def render(template_path: str, context: Dict, root: Path) -> str:
 def is_calc_query(text: str) -> bool:
     """Heuristic: detect calculation-type questions (word-boundary for EN to avoid 'summary')."""
     calc_keywords_ko = [
-        "합계", "총액", "차이", "증감", "증가율", "감소율", "비율", "퍼센트",
-        "더해", "빼", "곱", "나눈",
+        "합계",
+        "총액",
+        "차이",
+        "증감",
+        "증가율",
+        "감소율",
+        "비율",
+        "퍼센트",
+        "더해",
+        "빼",
+        "곱",
+        "나눈",
     ]
     if any(kw in text for kw in calc_keywords_ko):
         return True
@@ -104,7 +114,11 @@ def build_session(ctx: SessionContext, validate: bool = True) -> List[Turn]:
     first_template = f"system/text_image_qa_{first_type}_system.j2"
     prompt_text = render(first_template, ctx.__dict__, root)
     violations = find_violations(prompt_text) if validate else []
-    turns.append(Turn(first_type, prompt_text, violations, calc_used=False, focus_hint=first_type))
+    turns.append(
+        Turn(
+            first_type, prompt_text, violations, calc_used=False, focus_hint=first_type
+        )
+    )
     focus_history.append(first_type)
 
     # 2) Reasoning if required
@@ -113,7 +127,15 @@ def build_session(ctx: SessionContext, validate: bool = True) -> List[Turn]:
             "system/text_image_qa_reasoning_system.j2", ctx.__dict__, root
         )
         violations = find_violations(prompt_text) if validate else []
-        turns.append(Turn("reasoning", prompt_text, violations, calc_used=False, focus_hint="reasoning"))
+        turns.append(
+            Turn(
+                "reasoning",
+                prompt_text,
+                violations,
+                calc_used=False,
+                focus_hint="reasoning",
+            )
+        )
         focus_history.append("reasoning")
 
     # 3) Fill remaining with target queries (respect calc limit metadata)
@@ -131,7 +153,13 @@ def build_session(ctx: SessionContext, validate: bool = True) -> List[Turn]:
         calc_used_flag = is_calc_query(prompt_text)
 
         if calc_used_flag and not calc_allowed:
-            violations.append({"type": "calc_limit", "match": "calc request exceeds limit", "span": (0, 0)})
+            violations.append(
+                {
+                    "type": "calc_limit",
+                    "match": "calc request exceeds limit",
+                    "span": (0, 0),
+                }
+            )
 
         turns.append(
             Turn(

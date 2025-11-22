@@ -61,7 +61,9 @@ class IntegratedQAPipeline:
         post_violations = []
         for idx, turn in enumerate(session["turns"], 1):
             for v in find_violations(turn["prompt"]):
-                post_violations.append(f"turn {idx} ({turn['type']}): {v['type']} -> {v['match']}")
+                post_violations.append(
+                    f"turn {idx} ({turn['type']}): {v['type']} -> {v['match']}"
+                )
         if post_violations:
             raise ValueError(f"렌더링 후 금지 패턴 검출: {post_violations}")
 
@@ -78,7 +80,9 @@ class IntegratedQAPipeline:
         """
         density = image_meta.get("text_density", "high")
         if isinstance(density, (int, float)):
-            density = "high" if density >= 0.7 else "medium" if density >= 0.4 else "low"
+            density = (
+                "high" if density >= 0.7 else "medium" if density >= 0.4 else "low"
+            )
 
         return {
             "image_path": image_meta.get("image_path", "N/A"),
@@ -86,10 +90,16 @@ class IntegratedQAPipeline:
             "text_density": density,
             "has_table_chart": bool(image_meta.get("has_table_chart", False)),
             "session_turns": int(image_meta.get("session_turns", 4)),
-            "must_include_reasoning": bool(image_meta.get("must_include_reasoning", True)),
+            "must_include_reasoning": bool(
+                image_meta.get("must_include_reasoning", True)
+            ),
             "used_calc_query_count": int(image_meta.get("used_calc_query_count", 0)),
-            "prior_focus_summary": image_meta.get("prior_focus_summary", "N/A (first turn)"),
-            "candidate_focus": image_meta.get("candidate_focus", "전체 본문을 골고루 커버"),
+            "prior_focus_summary": image_meta.get(
+                "prior_focus_summary", "N/A (first turn)"
+            ),
+            "candidate_focus": image_meta.get(
+                "candidate_focus", "전체 본문을 골고루 커버"
+            ),
             "focus_history": image_meta.get("focus_history", []),
         }
 

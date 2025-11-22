@@ -20,7 +20,11 @@ repo_root = Path(__file__).resolve().parents[1]
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
-from scripts.build_session import SessionContext, build_session, repo_root as builder_root  # noqa: E402
+from scripts.build_session import (
+    SessionContext,
+    build_session,
+    repo_root as builder_root,
+)  # noqa: E402
 from checks.detect_forbidden_patterns import find_violations  # noqa: E402
 
 
@@ -57,7 +61,9 @@ def main() -> None:
     default_ctx = builder_root() / "examples" / "session_input.json"
 
     parser = argparse.ArgumentParser(description="Validate a generated session.")
-    parser.add_argument("--context", default=str(default_ctx), help="Path to JSON context.")
+    parser.add_argument(
+        "--context", default=str(default_ctx), help="Path to JSON context."
+    )
     args = parser.parse_args()
 
     ctx_data = json.loads(Path(args.context).read_text(encoding="utf-8"))

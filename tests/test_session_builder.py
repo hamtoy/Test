@@ -74,7 +74,9 @@ def test_table_chart_case():
 
     assert len(session) == 4
     # Note: violations may be detected in template instructions (acceptable)
-    print("✓ test_table_chart_case passed (violations detected as expected in templates)")
+    print(
+        "✓ test_table_chart_case passed (violations detected as expected in templates)"
+    )
 
 
 def test_invalid_turn_count():

@@ -17,7 +17,9 @@ class CachingLayer:
     Redis가 없으면 그래프에서 직접 조회합니다.
     """
 
-    def __init__(self, kg: QAKnowledgeGraph, redis_client: Optional["redis.Redis"] = None):
+    def __init__(
+        self, kg: QAKnowledgeGraph, redis_client: Optional["redis.Redis"] = None
+    ):
         self.kg = kg
         self.redis = redis_client if redis_client and redis else None
 

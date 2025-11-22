@@ -24,7 +24,11 @@ def test_table_context_no_violation():
     assert result["ok"]
     assert turn_types(turns)[0] in ("summary", "explanation")
     # ensure calc not overused
-    assert ctx.used_calc_query_count + sum(int(getattr(t, "calc_used", False)) for t in turns) <= 1
+    assert (
+        ctx.used_calc_query_count
+        + sum(int(getattr(t, "calc_used", False)) for t in turns)
+        <= 1
+    )
 
 
 def test_low_text_prefers_explanation_and_three_turns():
@@ -42,4 +46,8 @@ def test_calc_used_context_blocks_extra_calc():
     result = validate_turns(turns, ctx)
     assert result["ok"]
     # calc already consumed; targets should not push total over 1
-    assert ctx.used_calc_query_count + sum(int(getattr(t, "calc_used", False)) for t in turns) <= 1
+    assert (
+        ctx.used_calc_query_count
+        + sum(int(getattr(t, "calc_used", False)) for t in turns)
+        <= 1
+    )

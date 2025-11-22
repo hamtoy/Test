@@ -111,7 +111,11 @@ class DynamicTemplateGenerator:
         for qt in query_types:
             for record in self._run(cypher, {"qt": qt}):
                 checklist.append(
-                    {"item": record["item"], "category": record["category"], "query_type": qt}
+                    {
+                        "item": record["item"],
+                        "category": record["category"],
+                        "query_type": qt,
+                    }
                 )
         return checklist
 
