@@ -42,21 +42,32 @@ project_root/
 ├── src/                    # 소스 코드
 │   ├── __init__.py
 │   ├── agent.py            # Gemini API 인터페이스
+│   ├── cache_analytics.py  # 캐시 통계 분석 및 리포트
 │   ├── config.py           # 설정 관리
+│   ├── constants.py        # 공통 상수 (가격, 메시지, 템플릿)
 │   ├── data_loader.py      # 데이터 로딩
+│   ├── exceptions.py       # 예외 정의
 │   ├── logging_setup.py    # 로깅 설정
 │   ├── main.py             # 메인 워크플로우
 │   ├── models.py           # Pydantic 모델
-│   ├── exceptions.py       # 예외 정의
 │   └── utils.py            # 유틸리티 함수
 └── tests/                  # 테스트
     ├── __init__.py
     ├── conftest.py
     ├── test_agent.py
-    ├── test_dependency_injection.py
+    ├── test_agent_cache.py
+    ├── test_cache_analytics.py
+    ├── test_cache_stats.py
     ├── test_config_validation.py
+    ├── test_data_loader.py
     ├── test_data_loader_validation.py
+    ├── test_dependency_injection.py
+    ├── test_integration.py
+    ├── test_latency_baseline.py
+    ├── test_logging_setup.py
+    ├── test_main.py
     ├── test_models.py
+    ├── test_security.py
     └── test_utils.py
 ```
 
@@ -303,10 +314,14 @@ pytest tests/ --cov=src --cov-report=html
 ### 주요 모듈
 
 - `src/agent.py`: Gemini API 호출, 재시도, rate limiting, 비용 추적
-- `src/models.py`: 환각 감지 기능이 포함된 Pydantic 모델
+- `src/cache_analytics.py`: 캐시 통계 분석 및 비용 절감 계산
 - `src/config.py`: 환경 변수 기반 설정 관리
-- `src/logging_setup.py`: 콘솔/파일 로깅 분리, 민감 데이터 마스킹
+- `src/constants.py`: 가격 티어, 예산 임계값, UI 메시지 템플릿
 - `src/data_loader.py`: 타입 검증을 포함한 데이터 로딩
+- `src/exceptions.py`: 사용자 정의 예외 (API 제한, 예산 초과 등)
+- `src/logging_setup.py`: 콘솔/파일 로깅 분리, 민감 데이터 마스킹
+- `src/main.py`: 워크플로우 실행, 체크포인트 관리, 병렬 처리
+- `src/models.py`: 환각 감지 기능이 포함된 Pydantic 모델
 - `src/utils.py`: 파일 처리 및 파싱 유틸리티
 
 ### 주요 기능
