@@ -1,0 +1,154 @@
+from __future__ import annotations
+
+import os
+import sys
+from typing import Dict, List
+
+from dotenv import load_dotenv
+from jinja2 import Environment, FileSystemLoader, StrictUndefined
+from neo4j import GraphDatabase
+from neo4j.exceptions import Neo4jError
+
+load_dotenv()
+
+REPO_ROOT = os.path.abspath(os.path.dirname(__file__))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+
+TEMPLATE_DIR = os.path.join(REPO_ROOT, "templates")
+
+
+def require_env(var: str) -> str:
+    val = os.getenv(var)
+    if not val:
+        raise EnvironmentError(f"환경 변수 {var}가 설정되지 않았습니다 (.env 확인).")
+    return val
+
+
+class DynamicTemplateGenerator:
+    """
+    그래프에 저장된 Rule/Constraint/Example을 템플릿 컨텍스트에 주입해
+    질의 유형별 프롬프트를 렌더링하고, 세션 검증 체크리스트를 생성합니다.
+    """
+
+    def __init__(self, neo4j_uri: str, neo4j_user: str, neo4j_password: str):
+        self.driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
+        self.jinja_env = Environment(
+            loader=FileSystemLoader(TEMPLATE_DIR),
+            undefined=StrictUndefined,
+            trim_blocks=True,
+            lstrip_blocks=True,
+        )
+
+    def close(self):
+        if self.driver:
+            self.driver.close()
+
+    def _run(self, cypher: str, params: Dict = None):
+        params = params or {}
+        with self.driver.session() as session:
+            return list(session.run(cypher, **params))
+
+    def generate_prompt_for_query_type(self, query_type: str, context: dict) -> str:
+        """
+        질의 유형에 맞는 시스템 템플릿을 그래프 지식과 합쳐 렌더링.
+        """
+        cypher = """
+        MATCH (qt:QueryType {name: $type})
+        OPTIONAL MATCH (qt)<-[:APPLIES_TO]-(r:Rule)
+        OPTIONAL MATCH (r)-[:ENFORCES]->(c:Constraint)
+        OPTIONAL MATCH (bp:BestPractice)-[:APPLIES_TO]->(qt)
+        OPTIONAL MATCH (e:Example)
+        WITH qt,
+             collect(DISTINCT r.text) AS rules,
+             collect(DISTINCT c.description) AS constraints,
+             collect(DISTINCT bp.text) AS best_practices,
+             collect(DISTINCT {text: e.text, type: e.type}) AS examples
+        RETURN qt.korean AS type_name, rules, constraints, best_practices, examples
+        """
+        records = self._run(cypher, {"type": query_type})
+        if not records:
+            raise ValueError(f"QueryType '{query_type}'을(를) 찾을 수 없습니다.")
+        data = records[0]
+
+        template_name = f"{query_type}_system.j2"
+        fallback = "system/text_image_qa_explanation_system.j2"
+        try:
+            template = self.jinja_env.get_template(template_name)
+        except Exception:
+            # fallback to explanation template if not found
+            template = self.jinja_env.get_template(fallback)
+
+        full_context = {
+            **context,
+            "query_type_korean": data["type_name"],
+            "rules": data["rules"],
+            "constraints": data["constraints"],
+            "best_practices": data["best_practices"],
+            "examples": data["examples"],
+        }
+        return template.render(**full_context)
+
+    def generate_validation_checklist(self, session: dict) -> List[Dict]:
+        """
+        세션에 포함된 QueryType에 대해 그래프에서 제약을 수집해 체크리스트 생성.
+        """
+        query_types = {t.get("type") for t in session.get("turns", []) if t.get("type")}
+        checklist: List[Dict] = []
+        cypher = """
+        MATCH (qt:QueryType {name: $qt})
+        OPTIONAL MATCH (r:Rule)-[:APPLIES_TO]->(qt)
+        OPTIONAL MATCH (r)-[:ENFORCES]->(c:Constraint)
+        OPTIONAL MATCH (t:Template)-[:ENFORCES]->(c2:Constraint)
+        WITH qt, collect(DISTINCT c) + collect(DISTINCT c2) AS cons
+        UNWIND cons AS c
+        RETURN DISTINCT c.description AS item, c.type AS category
+        """
+        for qt in query_types:
+            for record in self._run(cypher, {"qt": qt}):
+                checklist.append(
+                    {"item": record["item"], "category": record["category"], "query_type": qt}
+                )
+        return checklist
+
+
+if __name__ == "__main__":
+    try:
+        generator = DynamicTemplateGenerator(
+            neo4j_uri=require_env("NEO4J_URI"),
+            neo4j_user=require_env("NEO4J_USER"),
+            neo4j_password=require_env("NEO4J_PASSWORD"),
+        )
+
+        context = {
+            "image_path": "sample.png",
+            "has_table_chart": True,
+            "session_turns": 4,
+            "language_hint": "ko",
+            "text_density": "high",
+        }
+
+        prompt = generator.generate_prompt_for_query_type("explanation", context)
+        print("🎯 생성된 프롬프트 (앞부분):")
+        print(prompt[:500], "...\n")
+
+        test_session = {
+            "turns": [
+                {"type": "explanation"},
+                {"type": "reasoning"},
+                {"type": "target"},
+                {"type": "target"},
+            ]
+        }
+        checklist = generator.generate_validation_checklist(test_session)
+        print("📝 검증 체크리스트:")
+        for item in checklist:
+            print(f"  [{item['query_type']}] {item['item']}")
+
+    except Exception as e:
+        print(f"❌ 실행 실패: {e}")
+    finally:
+        try:
+            generator.close()
+        except Exception:
+            pass
