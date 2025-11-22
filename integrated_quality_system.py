@@ -9,6 +9,7 @@ from dynamic_example_selector import DynamicExampleSelector
 from multimodal_understanding import MultimodalUnderstanding
 from qa_rag_system import QAKnowledgeGraph
 from real_time_constraint_enforcer import RealTimeConstraintEnforcer
+from gemini_model_client import GeminiModelClient
 
 
 class IntegratedQualitySystem:
@@ -32,6 +33,7 @@ class IntegratedQualitySystem:
         self.validator = CrossValidationSystem(self.kg)
         self.example_selector = DynamicExampleSelector(self.kg)
         self.multimodal = MultimodalUnderstanding(self.kg)
+        self.llm = GeminiModelClient()
 
     def generate_qa_with_all_enhancements(
         self, image_path: str, query_type: str
@@ -64,10 +66,8 @@ class IntegratedQualitySystem:
             },
         )
 
-        # 5. 생성 with 실시간 검증 (LLM 호출 스텁)
-        generated_output = (
-            augmented_prompt  # 실제로는 LLM 출력 스트리밍 + enforcer 적용
-        )
+        # 5. Gemini LLM 생성
+        generated_output = self.llm.generate(augmented_prompt, role="generator")
 
         # 6. 크로스 검증
         validation = self.validator.cross_validate_qa_pair(
