@@ -290,9 +290,20 @@ class QAGraphBuilder:
                 """
             )
 
-            # 수동 매핑 테이블 (필요 시 채워서 명시적 연결)
+            # 수동 매핑 테이블 (텍스트 유사도 기반 자동 생성)
             manual_mappings = [
-                # {"ex_id": "ex_<hash>", "rule_id": "<rule_id>"},
+                {
+                    "ex_id": "6d8d778d07679546",
+                    "rule_id": "45c64a61bc869349",
+                },  # sim: 0.91
+                {
+                    "ex_id": "cf76634755769349",
+                    "rule_id": "45c64a61bc869349",
+                },  # sim: 0.91
+                {
+                    "ex_id": "a2894ab6c6cf18e7",
+                    "rule_id": "edb01b11eafccbce",
+                },  # sim: 0.31
             ]
             for m in manual_mappings:
                 session.run(
