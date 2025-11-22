@@ -31,20 +31,17 @@ def test_all():
     # 1. Notion 테스트
     print("\n[1/2] Notion API 테스트...")
     notion = Client(auth=token)
-    notion.pages.retrieve(page_id)
-    print("✅ Notion 연결 성공")
+    res = notion.pages.retrieve(page_id)
+    assert res
 
     # 2. Neo4j 테스트
     print("\n[2/2] Neo4j Aura 테스트...")
     driver = GraphDatabase.driver(uri, auth=(user, password))
     with driver.session() as session:
-        session.run("RETURN 1")
+        result = session.run("RETURN 1")
+        assert result.single()
     driver.close()
-    print("✅ Neo4j 연결 성공")
-
-    print("\n" + "=" * 50)
-    print("🎉 모든 연결 성공! 데이터 임포트 준비 완료")
-    print("=" * 50)
+    print("✅ 통합 연결 성공")
 
 
 if __name__ == "__main__":

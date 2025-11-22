@@ -745,7 +745,7 @@ async def main():
         # Cache stats persistence: append JSONL entry with small retention window
         try:
             cache_entry = {
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(datetime.UTC).isoformat(),
                 "model": config.model_name,
                 "input_tokens": agent.total_input_tokens,
                 "output_tokens": agent.total_output_tokens,
