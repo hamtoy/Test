@@ -55,23 +55,79 @@ class QAGraphBuilder:
     def extract_rules_from_notion(self):
         """Notion 문서에서 규칙 추출 및 그래프화 (중복 방지 MERGE)."""
         with self.driver.session() as session:
-            result = session.run(
+            # 1. Find headings
+            headings = session.run(
                 """
-                MATCH (p:Page)-[:CONTAINS*]->(h:Block)
+                MATCH (p:Page)-[:HAS_BLOCK]->(h:Block)
                 WHERE h.type = 'heading_1' AND h.content CONTAINS '자주 틀리는'
-                MATCH (h)-[:NEXT*]->(b:Block)
-                WHERE b.type IN ['paragraph', 'bulleted_list_item', 'callout']
-                RETURN h.content AS section, collect(b.content) AS rules
+                RETURN p.id as page_id, h.order as start_order, h.content as section
                 """
-            )
+            ).data()
+            with open("debug_log.txt", "w", encoding="utf-8") as f:
+                f.write(f"DEBUG: Found {len(headings)} headings\n")
 
             created = 0
-            for record in result:
-                section = record["section"]
-                rules = record["rules"] or []
-                for rule_text in rules:
+            for h in headings:
+                # 2. Fetch subsequent top-level blocks
+                siblings = session.run(
+                    """
+                    MATCH (p:Page {id: $page_id})-[:HAS_BLOCK]->(b:Block)
+                    WHERE b.order > $start_order
+                    RETURN b.id as id, b.content as content, b.type as type
+                    ORDER BY b.order ASC
+                    """,
+                    page_id=h["page_id"],
+                    start_order=h["start_order"],
+                )
+                siblings_list = list(siblings)
+
+                with open("debug_log.txt", "a", encoding="utf-8") as f:
+                    f.write(
+                        f"DEBUG: Found {len(siblings_list)} siblings for heading {h['section']}\n"
+                    )
+
+                current_rules = []
+                for sib in siblings_list:
+                    with open("debug_log.txt", "a", encoding="utf-8") as f:
+                        f.write(f"DEBUG: Processing sibling {sib['type']}\n")
+
+                    # Stop at next heading
+                    if sib["type"] in ["heading_1", "heading_2", "heading_3"]:
+                        break
+
+                    # If content block, add
+                    if sib["type"] in ["paragraph", "bulleted_list_item", "callout"]:
+                        current_rules.append(sib["content"])
+
+                    # If container, fetch descendants
+                    elif sib["type"] in ["column_list", "column"]:
+                        descendants = session.run(
+                            """
+                            MATCH (b:Block {id: $id})-[:HAS_CHILD*]->(d:Block)
+                            WHERE d.type IN ['paragraph', 'bulleted_list_item', 'callout']
+                            RETURN d.content as content
+                            """,
+                            id=sib["id"],
+                        )
+                        desc_list = list(descendants)
+                        with open("debug_log.txt", "a", encoding="utf-8") as f:
+                            f.write(
+                                f"DEBUG: Found {len(desc_list)} descendants in container\n"
+                            )
+
+                        for d in desc_list:
+                            current_rules.append(d["content"])
+
+                # 3. Create Rule nodes
+                for rule_text in current_rules:
                     if not rule_text or len(rule_text) <= 10:
+                        with open("debug_log.txt", "a", encoding="utf-8") as f:
+                            f.write(f"DEBUG: Skipping short rule: {rule_text}\n")
                         continue
+
+                    with open("debug_log.txt", "a", encoding="utf-8") as f:
+                        f.write(f"DEBUG: Creating rule: {rule_text[:20]}...\n")
+
                     # 텍스트 해시 기반 ID로 중복 방지
                     rid = hashlib.sha256(rule_text.encode("utf-8")).hexdigest()[:16]
                     session.run(
@@ -83,7 +139,7 @@ class QAGraphBuilder:
                         """,
                         id=rid,
                         text=rule_text,
-                        section=section,
+                        section=h["section"],
                     )
                     created += 1
             print(f"✅ 규칙 {created}개 추출/병합 완료")

@@ -35,15 +35,7 @@ NOTION_PAGE_IDS=page_id_1,page_id_2
 
 ## 선택적 환경 변수
 
-### OpenAI (벡터 검색용)
-
-```bash
-OPENAI_API_KEY=sk-xxxxx
-```
-
-미설정 시 벡터 검색 기능은 건너뛰고 나머지 기능만 동작합니다.
-
-### Gemini (기존 QA 워크플로우용)
+### Gemini (임베딩/워크플로우용)
 
 ```bash
 GEMINI_API_KEY=AIzaxxxxx
@@ -76,5 +68,5 @@ python qa_rag_system.py
 ### "Neo4j 연결 실패"
 → URI/User/Password 확인, 네트워크 연결 확인
 
-### "OPENAI_API_KEY 미설정: 벡터 검색을 건너뜁니다"
+### "GEMINI_API_KEY 미설정: 벡터 검색을 건너뜁니다"
 → 정상 동작 (벡터 검색은 선택 사항)

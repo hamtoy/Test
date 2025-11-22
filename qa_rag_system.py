@@ -51,19 +51,42 @@ class QAKnowledgeGraph:
 
     def _init_vector_store(self):
         """
-        OpenAI 키가 없거나 인덱스가 없으면 건너뜀.
+        GEMINI_API_KEY로 임베딩을 생성합니다. 키가 없거나 인덱스가 없으면 건너뜀.
         """
         try:
-            from langchain.vectorstores.neo4j_vector import Neo4jVector
-            from langchain.embeddings import OpenAIEmbeddings
+            from langchain_neo4j import Neo4jVector
+            import google.generativeai as genai
+            from typing import List
 
-            openai_api_key = os.getenv("OPENAI_API_KEY")
-            if not openai_api_key:
-                print("⚠️ OPENAI_API_KEY 미설정: 벡터 검색을 건너뜁니다.")
+            class CustomGeminiEmbeddings:
+                def __init__(
+                    self, api_key: str, model: str = "models/text-embedding-004"
+                ):
+                    genai.configure(api_key=api_key)
+                    self.model = model
+
+                def embed_documents(self, texts: List[str]) -> List[List[float]]:
+                    return [self.embed_query(text) for text in texts]
+
+                def embed_query(self, text: str) -> List[float]:
+                    result = genai.embed_content(
+                        model=self.model, content=text, task_type="retrieval_query"
+                    )
+                    return result["embedding"]
+
+            gemini_api_key = os.getenv("GEMINI_API_KEY")
+
+            embedding_model = None
+            if gemini_api_key:
+                embedding_model = CustomGeminiEmbeddings(api_key=gemini_api_key)
+            else:
+                print(
+                    "⚠️ GEMINI_API_KEY 미설정: 벡터 검색을 건너뜁니다."
+                )
                 return
 
             self._vector_store = Neo4jVector.from_existing_graph(
-                OpenAIEmbeddings(),
+                embedding_model,
                 url=self.neo4j_uri,
                 username=self.neo4j_user,
                 password=self.neo4j_password,

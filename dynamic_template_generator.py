@@ -90,6 +90,9 @@ class DynamicTemplateGenerator:
             "constraints": data["constraints"],
             "best_practices": data["best_practices"],
             "examples": data["examples"],
+            "calc_allowed": context.get(
+                "calc_allowed", context.get("used_calc_query_count", 0) < 1
+            ),
         }
         return template.render(**full_context)
 
