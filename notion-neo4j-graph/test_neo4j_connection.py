@@ -1,6 +1,10 @@
 import os
-from neo4j import GraphDatabase
+
+import pytest
 from dotenv import load_dotenv
+
+pytest.importorskip("neo4j")
+from neo4j import GraphDatabase  # noqa: E402
 
 load_dotenv()
 

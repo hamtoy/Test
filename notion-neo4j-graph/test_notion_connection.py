@@ -1,6 +1,10 @@
 import os
-from notion_client import Client
+
+import pytest
 from dotenv import load_dotenv
+
+pytest.importorskip("notion_client")
+from notion_client import Client  # noqa: E402
 
 load_dotenv()
 
