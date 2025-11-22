@@ -6,6 +6,7 @@ import os
 from langchain.prompts import PromptTemplate
 from langchain_community.graphs import Neo4jGraph
 from langchain_community.vectorstores import Neo4jVector
+from qa_rag_system import CustomGeminiEmbeddings
 
 
 class AdvancedContextAugmentation:
@@ -30,9 +31,6 @@ class AdvancedContextAugmentation:
         key = gemini_key or os.getenv("GEMINI_API_KEY")
         if not key:
             raise ValueError("GEMINI_API_KEY가 필요합니다. 키를 설정해 주세요.")
-
-        # 커스텀 Gemini 임베딩을 사용하려면 qa_rag_system.py와 동일한 클래스를 재사용
-        from qa_rag_system import CustomGeminiEmbeddings
 
         self.vector_index = Neo4jVector.from_existing_graph(
             CustomGeminiEmbeddings(api_key=key),

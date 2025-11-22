@@ -15,6 +15,8 @@ if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 from checks.validate_session import validate_turns  # noqa: E402
+import google.generativeai as genai
+from langchain_core.embeddings import Embeddings
 
 
 def require_env(var: str) -> str:
@@ -22,6 +24,23 @@ def require_env(var: str) -> str:
     if not val:
         raise EnvironmentError(f"환경 변수 {var}가 설정되지 않았습니다 (.env 확인).")
     return val
+
+
+class CustomGeminiEmbeddings(Embeddings):
+    """Gemini 임베딩 래퍼."""
+
+    def __init__(self, api_key: str, model: str = "models/text-embedding-004"):
+        genai.configure(api_key=api_key)
+        self.model = model
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        return [self.embed_query(text) for text in texts]
+
+    def embed_query(self, text: str) -> List[float]:
+        result = genai.embed_content(
+            model=self.model, content=text, task_type="retrieval_query"
+        )
+        return result["embedding"]
 
 
 class QAKnowledgeGraph:
@@ -55,23 +74,6 @@ class QAKnowledgeGraph:
         """
         try:
             from langchain_neo4j import Neo4jVector
-            import google.generativeai as genai
-
-            class CustomGeminiEmbeddings:
-                def __init__(
-                    self, api_key: str, model: str = "models/text-embedding-004"
-                ):
-                    genai.configure(api_key=api_key)
-                    self.model = model
-
-                def embed_documents(self, texts: List[str]) -> List[List[float]]:
-                    return [self.embed_query(text) for text in texts]
-
-                def embed_query(self, text: str) -> List[float]:
-                    result = genai.embed_content(
-                        model=self.model, content=text, task_type="retrieval_query"
-                    )
-                    return result["embedding"]
 
             gemini_api_key = os.getenv("GEMINI_API_KEY")
 
