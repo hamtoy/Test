@@ -15,18 +15,18 @@ def fetch_ids():
     with driver.session() as session:
         print("=== Rules ===")
         result = session.run(
-            "MATCH (r:Rule) RETURN r.id AS id, left(r.text, 80) AS text"
+            "MATCH (r:Rule) RETURN r.id AS id, left(r.text, 80) AS text ORDER BY r.id LIMIT 50"
         )
         for record in result:
-            print(f"ID: {record['id']} | Text: {record['text']}...")
+            print(f"ID: {record['id']} | Text: {record['text']}")
 
         print("\n=== Examples ===")
         result = session.run(
-            "MATCH (e:Example) RETURN e.id AS id, left(e.text, 80) AS text, e.type AS type"
+            "MATCH (e:Example) RETURN e.id AS id, left(e.text, 80) AS text, e.type AS type ORDER BY e.id LIMIT 50"
         )
         for record in result:
             print(
-                f"ID: {record['id']} | Type: {record['type']} | Text: {record['text']}..."
+                f"ID: {record['id']} | Type: {record['type']} | Text: {record['text']}"
             )
 
     driver.close()

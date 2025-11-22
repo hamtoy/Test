@@ -63,8 +63,6 @@ class QAGraphBuilder:
                 RETURN p.id as page_id, h.order as start_order, h.content as section
                 """
             ).data()
-            with open("debug_log.txt", "w", encoding="utf-8") as f:
-                f.write(f"DEBUG: Found {len(headings)} headings\n")
 
             created = 0
             for h in headings:
@@ -81,16 +79,8 @@ class QAGraphBuilder:
                 )
                 siblings_list = list(siblings)
 
-                with open("debug_log.txt", "a", encoding="utf-8") as f:
-                    f.write(
-                        f"DEBUG: Found {len(siblings_list)} siblings for heading {h['section']}\n"
-                    )
-
                 current_rules = []
                 for sib in siblings_list:
-                    with open("debug_log.txt", "a", encoding="utf-8") as f:
-                        f.write(f"DEBUG: Processing sibling {sib['type']}\n")
-
                     # Stop at next major heading only (allow subsections)
                     if sib["type"] == "heading_1":
                         break
@@ -110,10 +100,6 @@ class QAGraphBuilder:
                             id=sib["id"],
                         )
                         desc_list = list(descendants)
-                        with open("debug_log.txt", "a", encoding="utf-8") as f:
-                            f.write(
-                                f"DEBUG: Found {len(desc_list)} descendants in container\n"
-                            )
 
                         for d in desc_list:
                             current_rules.append(d["content"])
@@ -121,12 +107,7 @@ class QAGraphBuilder:
                 # 3. Create Rule nodes
                 for rule_text in current_rules:
                     if not rule_text or len(rule_text) <= 10:
-                        with open("debug_log.txt", "a", encoding="utf-8") as f:
-                            f.write(f"DEBUG: Skipping short rule: {rule_text}\n")
                         continue
-
-                    with open("debug_log.txt", "a", encoding="utf-8") as f:
-                        f.write(f"DEBUG: Creating rule: {rule_text[:20]}...\n")
 
                     # 텍스트 해시 기반 ID로 중복 방지
                     rid = hashlib.sha256(rule_text.encode("utf-8")).hexdigest()[:16]
