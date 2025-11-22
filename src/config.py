@@ -7,7 +7,20 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class AppConfig(BaseSettings):
-    """[Modern Config] Pydantic Settings를 이용한 설정 관리"""
+    """애플리케이션 설정 관리.
+
+    환경 변수(.env)를 통해 모든 설정을 주입받으며,
+    Pydantic을 사용한 엄격한 타입 검증을 수행합니다.
+
+    주요 설정:
+    - API 키 검증 (39자, AIza 시작)
+    - 동시성 제한 (1-20)
+    - 타임아웃 (30-600초)
+    - 캐시 TTL (1-1440분)
+
+    Raises:
+        ValueError: 설정값이 유효하지 않은 경우
+    """
 
     api_key: str = Field(..., alias="GEMINI_API_KEY")
     model_name: Literal["gemini-3-pro-preview"] = Field(
@@ -25,7 +38,7 @@ class AppConfig(BaseSettings):
     local_cache_dir: str = Field(".cache", alias="LOCAL_CACHE_DIR")
     budget_limit_usd: float | None = Field(None, alias="BUDGET_LIMIT_USD")
 
-    # [Typo Prevention] extra="forbid"로 변경하여 오타를 즉시 감지
+    # extra="forbid"로 변경하여 오타를 즉시 감지
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="forbid"
     )

@@ -35,8 +35,7 @@ from src.cache_analytics import analyze_cache_stats, print_cache_report
 from src.utils import safe_json_parse, write_cache_stats
 from src.exceptions import CacheCreationError
 
-# [Global Console] Rich Console은 전역에서 재사용
-# [Global Console] Rich Console은 전역에서 재사용
+# Rich Console은 전역에서 재사용
 console = Console()
 
 
@@ -96,7 +95,7 @@ async def reload_data_if_needed(
 
 
 def save_result_to_file(result: WorkflowResult, config: AppConfig):
-    """[Config Injection] 결과를 Markdown 파일로 저장 (하드코딩 제거)"""
+    """결과를 Markdown 파일로 저장 (하드코딩 제거)"""
     assert result.evaluation is not None
     output_dir = config.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -176,7 +175,7 @@ async def process_single_query(
     task_id: Optional[Any] = None,
 ) -> Optional[WorkflowResult]:
     """
-    [Parallel Processing] 단일 질의 처리 (평가 -> 재작성)
+    단일 질의 처리 (평가 -> 재작성)
     """
     try:
         # Update progress description
@@ -188,13 +187,13 @@ async def process_single_query(
         result = await _evaluate_and_rewrite_turn(ctx=ctx, query=query, turn_id=turn_id)
 
         if result:
-            # 결과 저장 (Config injection)
+            # 결과 저장
             assert result.evaluation is not None
             save_result_to_file(result, ctx.config)
             if ctx.checkpoint_path:
                 await append_checkpoint(ctx.checkpoint_path, result)
 
-            # [Rich UI] 턴 결과 출력 (Thread-safe way needed for real app, but Rich handles it reasonably well)
+            # 턴 결과 출력 (Thread-safe way needed for real app, but Rich handles it reasonably well)
             console.print(
                 Panel(
                     f"[bold]Query:[/bold] {query}\n\n"
@@ -236,11 +235,30 @@ async def execute_workflow(
     resume: bool = False,
     checkpoint_path: Optional[Path] = None,
 ) -> List[WorkflowResult]:
-    """
-    [Orchestration] 전체 워크플로우 실행 (Iterative & Human-in-the-Loop)
+    """전체 워크플로우 실행 (질의 생성 → 평가 → 재작성).
+
+    단계:
+    1. 질의 생성: OCR + 사용자 의도 기반
+    2. 대화형 모드: 후보 답변 수정 가능 (선택)
+    3. 병렬 평가: 각 질의에 대해 후보 평가 및 재작성
+    4. 체크포인트: 완료된 질의는 재실행 건너뜀
+
+    Args:
+        agent: Gemini API 에이전트
+        ocr_text: 입력 OCR 텍스트
+        user_intent: 사용자 의도 (선택)
+        logger: 로거 인스턴스
+        ocr_filename: OCR 파일명 (재로딩용)
+        cand_filename: 후보 파일명 (재로딩용)
+        is_interactive: 대화형 모드 활성화 여부
+        resume: 체크포인트 복구 여부
+        checkpoint_path: 체크포인트 파일 경로
+
+    Returns:
+        각 질의별 평가 결과 리스트
     """
     # ... (Phase 1: Planning - same as before)
-    # [Phase 1: Planning] 질의 리스트 생성
+    # 질의 리스트 생성
     logger.info("질의 리스트 생성 중...")
     queries = await agent.generate_query(ocr_text, user_intent)
 
@@ -248,7 +266,7 @@ async def execute_workflow(
         logger.error("질의 생성 실패")
         return []
 
-    # [Rich UI] 생성된 질의 리스트 출력
+    # 생성된 질의 리스트 출력
     console.print(
         Panel(
             "\n".join([f"{i + 1}. {q}" for i, q in enumerate(queries)]),
@@ -257,7 +275,7 @@ async def execute_workflow(
         )
     )
 
-    # [Conditional Interactivity] AUTO 모드에서는 프롬프트 건너뛰기
+    # AUTO 모드에서는 프롬프트 건너뛰기
     config = AppConfig()  # type: ignore[call-arg]
     candidates: Dict[str, str] = {}  # Initialize candidates
     if checkpoint_path is None:
@@ -271,7 +289,7 @@ async def execute_workflow(
             )
 
     if is_interactive:
-        # [Breakpoint & Hot Reload] 사용자 개입
+        # 사용자 개입 (Breakpoint & Hot Reload)
         if Confirm.ask(
             "위 질의를 보고 후보 답변 파일(input_candidates.json)을 수정하시겠습니까? (수정 후 Enter)",
             default=True,
@@ -291,11 +309,11 @@ async def execute_workflow(
                 config, ocr_filename, cand_filename
             )
     else:
-        # [AUTO Mode] 자동으로 데이터 로드 (프롬프트 없음)
+        # AUTO 모드: 자동으로 데이터 로드 (프롬프트 없음)
         logger.info("AUTO 모드: 데이터 자동 로딩 중...")
         _, candidates = await reload_data_if_needed(config, ocr_filename, cand_filename)
 
-    # [Context Caching] 캐시 생성 시도
+    # 캐시 생성 시도 (Context Caching)
     logger.info("Context Caching 시도 중...")
     try:
         cache = await agent.create_context_cache(ocr_text)
@@ -303,7 +321,7 @@ async def execute_workflow(
         cache = None
         logger.warning(f"Context cache creation skipped: {e}")
 
-    # [Phase 2: Execution Loop] 병렬 실행 (Parallel Processing) with Progress Bar
+    # 병렬 실행 (Parallel Processing) with Progress Bar
     logger.info(f"총 {len(queries)}개의 질의를 병렬로 처리합니다...")
 
     results = []
@@ -378,7 +396,7 @@ async def execute_workflow(
                 )
             )
 
-        # [Concurrency] 모든 태스크 동시 실행 (에러 수집)
+        # 모든 태스크 동시 실행 (에러 수집)
         processed_results = (
             await asyncio.gather(*tasks, return_exceptions=True) if tasks else []
         )
@@ -397,7 +415,7 @@ async def execute_workflow(
         # 순서 보장을 위해 turn_id로 정렬 (병렬 처리로 순서가 섞일 수 있음)
         results.sort(key=lambda x: x.turn_id)
 
-    # [Cleanup] 캐시 삭제
+    # 캐시 삭제 (Cleanup)
     if cache:
         try:
             cache.delete()
@@ -504,7 +522,7 @@ async def main():
         log_listener.stop()
         sys.exit(1)
 
-    # [DI] Agent에 모든 의존성 주입
+    # Agent에 모든 의존성 주입 (Dependency Injection)
     agent = GeminiAgent(config, jinja_env=jinja_env)
     user_intent = args.intent if args.mode == "CHAT" else None
 
@@ -518,7 +536,7 @@ async def main():
             log_listener.stop()
             return
 
-        # [Separation of Concerns] 워크플로우 실행 (모드에 따라 interactive 설정)
+        # 워크플로우 실행 (모드에 따라 interactive 설정)
         # CHAT 모드이거나 --interactive 플래그가 있으면 대화형 모드
         is_interactive = (args.mode == "CHAT") or args.interactive
         checkpoint_path = Path(args.checkpoint_file)
@@ -539,7 +557,7 @@ async def main():
 
         # ... (rest of main)
 
-        # [Cost Summary] 비용 정보를 Panel로 표시
+        # 비용 정보를 Panel로 표시
         total_cost = agent.get_total_cost()
         cost_info = f"""[bold cyan]💰 Total Session Cost:[/bold cyan] ${total_cost:.4f} USD
 [bold green]📊 Token Usage:[/bold green] {agent.total_input_tokens:,} input / {agent.total_output_tokens:,} output
@@ -554,7 +572,7 @@ async def main():
             )
         )
 
-        # [Cache Stats Persistence] append JSONL entry with small retention window
+        # Cache stats persistence: append JSONL entry with small retention window
         try:
             cache_entry = {
                 "timestamp": datetime.utcnow().isoformat() + "Z",
@@ -574,7 +592,7 @@ async def main():
     except Exception as e:
         logger.exception(f"Workflow Failed: {e}")
     finally:
-        # [Cleanup] 로그 리스너 종료 (남은 로그 플러시)
+        # 로그 리스너 종료 (남은 로그 플러시)
         log_listener.stop()
 
 

@@ -31,10 +31,22 @@ def validate_candidates(candidates: Dict[str, str]) -> None:
 async def load_input_data(
     base_dir: Path, ocr_filename: str, cand_filename: str
 ) -> tuple[str, Dict[str, str]]:
-    """
-    [Smart Loader] 확장자나 형식을 가리지 않고 최선을 다해 데이터를 로드합니다.
+    """확장자나 형식을 가리지 않고 최선을 다해 데이터를 로드합니다 (Smart Loader).
+
     1. JSON 파싱 시도 -> 성공 시 반환
     2. 실패 시 -> Raw Text (A:, B:) 파싱 시도
+
+    Args:
+        base_dir: 기본 디렉토리 경로
+        ocr_filename: OCR 파일명
+        cand_filename: 후보 답변 파일명
+
+    Returns:
+        (OCR 텍스트, 후보 답변 딕셔너리) 튜플
+
+    Raises:
+        FileNotFoundError: 파일이 없을 경우
+        ValueError: 파일이 비어있거나 파싱 실패 시
     """
     ocr_path = base_dir / ocr_filename
     cand_path = base_dir / cand_filename

@@ -35,21 +35,36 @@ from src.exceptions import (
 
 
 class GeminiAgent:
-    """Gemini API와의 통신을 담당하는 에이전트."""
+    """Gemini API와의 통신을 담당하는 에이전트.
+
+    주요 기능:
+    - 의존성 주입을 통한 테스트 용이성 확보
+    - Rate limiting 및 동시성 제어
+    - 비용 추적 및 캐시 모니터링
+
+    Args:
+        config: 애플리케이션 설정
+        jinja_env: Jinja2 환경 (테스트 시 mock 주입 가능)
+    """
 
     def __init__(self, config: AppConfig, jinja_env: Optional[Environment] = None):
-        """
-        [Dependency Injection] jinja_env를 외부에서 주입받을 수 있게 하여 테스트 용이성 향상
-        [Rate Limiting] Semaphore(동시성) + RateLimiter(RPM) 이중 제어
+        """Gemini API 에이전트 초기화.
+
+        Args:
+            config: 애플리케이션 설정 (API 키, 타임아웃, 동시성 등)
+            jinja_env: Jinja2 환경 (테스트 시 mock 주입 가능, 없으면 생성)
+
+        Raises:
+            FileNotFoundError: 필수 템플릿 파일이 누락된 경우
         """
         self.logger = logging.getLogger("GeminiWorkflow")
         self.config = config
 
-        # [Concurrency Control] 동시 실행 개수 제한
+        # 동시 실행 개수 제한
         self._semaphore = asyncio.Semaphore(config.max_concurrency)
         self._rate_limiter: Optional[Any] = None
 
-        # [Rate Limiting] RPM(분당 요청 수) 제한 - 429 에러 방지
+        # RPM(분당 요청 수) 제한 - 429 에러 방지
         try:
             from aiolimiter import AsyncLimiter
 
@@ -62,19 +77,19 @@ class GeminiAgent:
 
         self.safety_settings = self._get_safety_settings()
 
-        # [Cost Tracking] 토큰 사용량 누적
+        # 토큰 사용량 누적
         self.total_input_tokens = 0
         self.total_output_tokens = 0
 
-        # [Cache Monitoring] 캐시 적중률 추적
+        # 캐시 적중률 추적
         self.cache_hits = 0
         self.cache_misses = 0
 
-        # [Dependency Injection] 외부에서 주입하거나, 없으면 생성
+        # 외부에서 주입하거나, 없으면 생성 (Dependency Injection)
         if jinja_env is not None:
             self.jinja_env = jinja_env
         else:
-            # [Fail-Fast] 필수 템플릿 파일 존재 확인
+            # 필수 템플릿 파일 존재 확인 (없으면 즉시 실패)
             required_templates = [
                 "prompt_eval.j2",
                 "prompt_query_gen.j2",
@@ -91,9 +106,10 @@ class GeminiAgent:
                         f"Please ensure all .j2 files are in the templates/ directory."
                     )
 
-            # [Jinja2] 템플릿 엔진 초기화 (Config에서 경로 참조)
+            # 템플릿 엔진 초기화
             self.jinja_env = Environment(
-                loader=FileSystemLoader(config.template_dir), autoescape=True
+                loader=FileSystemLoader(config.template_dir),
+                autoescape=True  # XSS 방지
             )
 
     def _get_safety_settings(self) -> Dict[HarmCategory, HarmBlockThreshold]:
@@ -124,7 +140,7 @@ class GeminiAgent:
             generation_config["response_mime_type"] = "application/json"
             generation_config["response_schema"] = response_schema
 
-        # [Context Caching] 캐시된 컨텐츠가 있으면 이를 기반으로 모델 생성
+        # 캐시된 컨텐츠가 있으면 이를 기반으로 모델 생성 (Context Caching)
         gen_config_param = cast(Any, generation_config)
 
         if cached_content:
@@ -200,9 +216,18 @@ class GeminiAgent:
     async def create_context_cache(
         self, ocr_text: str
     ) -> Optional[caching.CachedContent]:
-        """
-        [Optimization] OCR 텍스트와 시스템 프롬프트를 결합하여 Context Cache 생성
-        조건: 총 토큰 수가 2048 이상일 때만 생성
+        """OCR 텍스트를 기반으로 Gemini Context Cache 생성.
+
+        2048 토큰 이상일 때만 캐시를 생성하며, 로컬 디스크 캐시로 재사용을 시도합니다.
+
+        Args:
+            ocr_text: 캐시할 OCR 텍스트
+
+        Returns:
+            생성된 캐시 객체. 토큰이 부족하거나 실패 시 None
+
+        Raises:
+            CacheCreationError: 캐시 생성 실패 시
         """
         # 1. 시스템 프롬프트 렌더링 (평가용 기준)
         system_prompt = self.jinja_env.get_template("prompt_eval.j2").render()
@@ -210,7 +235,7 @@ class GeminiAgent:
         fingerprint = hashlib.sha256(combined_content.encode("utf-8")).hexdigest()
         ttl_minutes = self.config.cache_ttl_minutes
 
-        # [Local Disk Cache] 재사용 가능한 캐시가 있으면 반환
+        # 재사용 가능한 캐시가 있으면 반환 (Local Disk Cache)
         local_cached = self._load_local_cache(fingerprint, ttl_minutes)
         if local_cached:
             self.logger.info(f"Reusing context cache from disk: {local_cached.name}")
@@ -259,7 +284,7 @@ class GeminiAgent:
             self.logger.error(f"Failed to create cache: {e}")
             raise CacheCreationError(f"Failed to create cache: {e}") from e
 
-    # [Modern Retry] Tenacity 라이브러리 사용
+    # [Retry Logic] Tenacity 라이브러리 사용
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -276,11 +301,11 @@ class GeminiAgent:
     async def _call_api_with_retry(
         self, model: genai.GenerativeModel, prompt_text: str
     ) -> str:
-        """[Tenacity] 재시도 로직이 데코레이터로 추상화됨"""
-        # [Rate Limiting] RPM 제어 (시간 기반)
+        """[Retry Logic] 재시도 로직이 데코레이터로 추상화됨"""
+        # RPM 제어 (시간 기반)
         if self._rate_limiter:
             async with self._rate_limiter:
-                # [Concurrency Control] 동시 실행 개수 제어 (공간 기반)
+                # 동시 실행 개수 제어 (공간 기반)
                 async with self._semaphore:
                     return await self._execute_api_call(model, prompt_text)
         else:
@@ -301,7 +326,7 @@ class GeminiAgent:
         latency_ms = (time.perf_counter() - start) * 1000
         self.logger.info(f"API latency: {latency_ms:.2f} ms")
 
-        # [Cost Observability] 토큰 사용량 로깅 및 누적
+        # 토큰 사용량 로깅 및 누적
         if hasattr(response, "usage_metadata") and response.usage_metadata:
             usage = response.usage_metadata
             self.total_input_tokens += usage.prompt_token_count
@@ -313,7 +338,7 @@ class GeminiAgent:
                 f"Total: {usage.total_token_count}"
             )
 
-        # [Enhanced] Finish Reason 및 Safety Filter 상세 검증
+        # Finish Reason 및 Safety Filter 상세 검증
         if response.candidates:
             candidate = response.candidates[0]
             finish_reason = candidate.finish_reason
@@ -339,7 +364,7 @@ class GeminiAgent:
         try:
             return response.text
         except ValueError:
-            # [Improved Error] Safety filter 정보 포함
+            # Safety filter 정보 포함
             safety_info = ""
             if hasattr(response, "prompt_feedback") and response.prompt_feedback:
                 safety_info = f" Safety Filter: {response.prompt_feedback}"
@@ -347,7 +372,7 @@ class GeminiAgent:
             error_msg = f"No text content in response.{safety_info}"
             self.logger.error(error_msg)
 
-            # [Null Check] 텍스트 추출 실패 시 수동 추출 시도 (빈 상자 확인)
+            # 텍스트 추출 실패 시 수동 추출 시도 (빈 상자 확인)
             if response.candidates and response.candidates[0].content.parts:
                 parts = response.candidates[0].content.parts
                 if len(parts) > 0 and hasattr(parts[0], "text"):
@@ -363,21 +388,21 @@ class GeminiAgent:
 
         Returns an empty list on invalid/empty responses; raises APIRateLimitError on rate limiting.
         """
-        # [Jinja2] 템플릿 렌더링
+        # 템플릿 렌더링
         template = self.jinja_env.get_template("query_gen_user.j2")
         user_prompt = template.render(ocr_text=ocr_text, user_intent=user_intent)
 
-        # [Dynamic Schema Injection] Pydantic 스키마 추출 및 주입
+        # Pydantic 스키마 추출 및 주입
         schema_json = json.dumps(
             QueryResult.model_json_schema(), indent=2, ensure_ascii=False
         )
 
-        # [System Prompt] 템플릿 로드
+        # 시스템 프롬프트 렌더링
         system_prompt = self.jinja_env.get_template("prompt_query_gen.j2").render(
             response_schema=schema_json
         )
 
-        # [Modern Schema] Pydantic 모델 전달 (JSON Mode)
+        # Pydantic 모델 전달 (JSON Mode)
         model = self._create_generative_model(
             system_prompt, response_schema=QueryResult
         )
@@ -389,7 +414,7 @@ class GeminiAgent:
                 f"Rate limit exceeded during query generation: {e}"
             ) from e
 
-        # [Native Parsing] Pydantic Validation 사용 (안전한 파싱)
+        # Pydantic Validation 사용 (안전한 파싱)
         cleaned_response = clean_markdown_code_block(response_text)
         if not cleaned_response or not cleaned_response.strip():
             self.logger.error("Query Generation: Empty response received")
@@ -423,13 +448,21 @@ class GeminiAgent:
     async def evaluate_responses(
         self, ocr_text: str, query: str, candidates: Dict[str, str], cached_content=None
     ) -> Optional[EvaluationResultSchema]:
-        """
-        Evaluate candidates against OCR text and return structured scores.
+        """후보 답변을 평가하고 점수를 부여.
+
+        Args:
+            ocr_text: 평가 기준이 되는 OCR 텍스트
+            query: 평가 대상 질의
+            candidates: 후보 답변 딕셔너리 (키: 후보 ID, 값: 답변)
+            cached_content: 재사용할 캐시 객체 (선택)
+
+        Returns:
+            평가 결과. 질의가 비어있으면 None
 
         Raises:
-            APIRateLimitError: when evaluation hits API rate limits.
-            ValidationFailedError: when schema validation or JSON parsing fails.
-            ValueError: when response is empty.
+            APIRateLimitError: API rate limit 초과 시
+            ValidationFailedError: 스키마 검증 또는 JSON 파싱 실패 시
+            ValueError: 응답이 비어있을 때
         """
         if not query:
             return None
@@ -440,17 +473,17 @@ class GeminiAgent:
             "candidates": candidates,
         }
 
-        # [System Prompt] 템플릿 로드
+        # 시스템 프롬프트 렌더링
         system_prompt = self.jinja_env.get_template("prompt_eval.j2").render()
 
-        # [Modern Schema] Pydantic 모델 전달
+        # Pydantic 모델 전달
         model = self._create_generative_model(
             system_prompt,
             response_schema=EvaluationResultSchema,
             cached_content=cached_content,
         )
 
-        # [Cache Monitoring]
+        # 캐시 적중률 모니터링
         if cached_content:
             self.cache_hits += 1
         else:
@@ -488,24 +521,32 @@ class GeminiAgent:
     async def rewrite_best_answer(
         self, ocr_text: str, best_answer: str, cached_content=None
     ) -> str:
-        """
-        Rewrite the best answer with clarity/safety improvements.
+        """선택된 최고 답변을 가독성 및 안전성 측면에서 개선.
 
-        Returns the rewritten answer; falls back to original text on parse failure.
+        Args:
+            ocr_text: 컨텍스트 정보
+            best_answer: 재작성할 답변
+            cached_content: 재사용할 캐시 객체 (선택)
+
+        Returns:
+            재작성된 답변. 파싱 실패 시 원본 텍스트 반환
+
+        Raises:
+            APIRateLimitError: API rate limit 초과 시
         """
-        # [Jinja2] 템플릿 렌더링
+        # 템플릿 렌더링
         template = self.jinja_env.get_template("rewrite_user.j2")
         payload = template.render(ocr_text=ocr_text, best_answer=best_answer)
 
-        # [System Prompt] 템플릿 로드
+        # 시스템 프롬프트 렌더링
         system_prompt = self.jinja_env.get_template("prompt_rewrite.j2").render()
 
-        # [IMPORTANT] rewrite는 순수 텍스트여야 하므로 response_schema=None
+        # rewrite는 순수 텍스트여야 하므로 response_schema=None
         model = self._create_generative_model(
             system_prompt, cached_content=cached_content
         )
 
-        # [Cache Monitoring]
+        # 캐시 적중률 모니터링
         if cached_content:
             self.cache_hits += 1
         else:
@@ -516,7 +557,7 @@ class GeminiAgent:
         except google_exceptions.ResourceExhausted as e:
             raise APIRateLimitError(f"Rate limit exceeded during rewrite: {e}") from e
 
-        # [Defensive Programming] utils의 중앙화된 함수 사용 (DRY 원칙)
+        # utils의 중앙화된 함수 사용 (DRY 원칙)
         unwrapped = safe_json_parse(response_text, "rewritten_answer")
 
         # Guard: unwrapping 성공 시 반환
@@ -528,7 +569,7 @@ class GeminiAgent:
 
     def get_total_cost(self) -> float:
         """
-        [Cost Tracking] 세션의 총 API 비용 계산 (USD)
+        세션의 총 API 비용 계산 (USD)
         모델별 단가를 constants에 정의된 티어로 계산 (입력 토큰 기반)
         """
         model_name = self.config.model_name.lower()

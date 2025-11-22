@@ -6,7 +6,18 @@ from typing import Any, Dict, Optional
 
 
 async def load_file_async(file_path: Path) -> str:
-    """[Async I/O] 파일을 비동기로 읽어옵니다. (Fail Fast: 에러 발생 시 예외 전파)"""
+    """파일을 비동기로 읽어옵니다.
+
+    Args:
+        file_path: 읽을 파일 경로
+
+    Returns:
+        파일 내용 문자열
+
+    Raises:
+        FileNotFoundError: 파일이 없을 경우
+        ValueError: 파일이 비어있을 경우
+    """
     try:
         async with aiofiles.open(file_path, mode="r", encoding="utf-8") as f:
             content = await f.read()
@@ -18,7 +29,7 @@ async def load_file_async(file_path: Path) -> str:
 
 
 def parse_raw_candidates(text: str) -> Dict[str, str]:
-    """[Raw Text Parsing] A:, B: 패턴을 사용하여 후보 답변 파싱"""
+    """A:, B: 패턴을 사용하여 후보 답변 파싱 (Raw Text Parsing)."""
     candidates = {}
     # 패턴: 대문자 알파벳 + 콜론으로 시작하는 블록
     pattern = r"^([A-Z]):\s*(.+?)(?=^[A-Z]:|$)"
@@ -30,7 +41,7 @@ def parse_raw_candidates(text: str) -> Dict[str, str]:
         content = match.group(2).strip()
         candidates[key] = content
 
-    # [Fallback] 구조화된 후보를 찾지 못한 경우
+    # 구조화된 후보를 찾지 못한 경우 (Fallback)
     if not candidates:
         import logging
 
@@ -43,10 +54,9 @@ def parse_raw_candidates(text: str) -> Dict[str, str]:
 
 
 def clean_markdown_code_block(text: str) -> str:
-    """
-    [Simplified & Safe] Trust Gemini JSON Mode
-    Remove markdown code blocks, then return as-is.
-    Gemini's JSON mode is reliable - complex regex can break valid JSON.
+    """Markdown 코드 블록을 제거하고 내용만 반환.
+
+    Gemini의 JSON 모드는 신뢰할 수 있으므로 복잡한 정규식 대신 단순 제거를 사용합니다.
     """
     # Remove markdown code blocks if present (case-insensitive for JSON/json)
     pattern = r"```(?:json)?\s*(.*?)\s*```"
@@ -79,13 +89,14 @@ def _find_in_nested(obj: Any, target_key: str) -> Optional[Any]:
 def safe_json_parse(
     text: str, target_key: Optional[str] = None, raise_on_error: bool = False
 ) -> Optional[Any]:
-    """
-    [Centralized JSON Parsing] 안전한 JSON 파싱 헬퍼 함수
-    Best Practice: try-except, specific error handling, clean error reporting
+    """안전한 JSON 파싱 헬퍼 함수.
+
+    Best Practice: try-except, specific error handling, clean error reporting.
 
     Args:
         text: JSON 문자열 (마크다운 코드 블록 포함 가능)
         target_key: 추출할 특정 키 (Optional)
+        raise_on_error: 에러 발생 시 예외 전파 여부
 
     Returns:
         파싱된 dict 또는 특정 키 값. 실패 시 None (raise_on_error=True면 예외 전파)

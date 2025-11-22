@@ -2,15 +2,15 @@ from typing import List, Optional, Literal
 import logging
 from pydantic import BaseModel, Field, model_validator
 
-# [Module-Level Logger] 모듈 전체에서 재사용
+# 모듈 전체에서 재사용
 logger = logging.getLogger("GeminiWorkflow")
 
-# [Strict Typing] CandidateID는 A, B, C만 허용
+# CandidateID는 A, B, C만 허용
 CandidateID = Literal["A", "B", "C"]
 
 
 class EvaluationItem(BaseModel):
-    candidate_id: CandidateID  # [Type Safety] Literal로 강제
+    candidate_id: CandidateID  # Literal로 강제
     score: int
     reason: str
 
@@ -25,9 +25,9 @@ class EvaluationResultSchema(BaseModel):
 
     @model_validator(mode="after")
     def validate_best_candidate(self):
-        """
-        [Hallucination Detection] LLM이 주장한 best_candidate와 실제 점수가 일치하는지 검증
-        불일치 시 자동 수정하여 downstream 에러 방지
+        """LLM이 주장한 best_candidate와 실제 점수가 일치하는지 검증.
+
+        불일치 시 자동 수정하여 downstream 에러를 방지합니다 (Hallucination Detection).
         """
         if self.evaluations:
             # 실제 최고 점수 후보 찾기
@@ -45,11 +45,14 @@ class EvaluationResultSchema(BaseModel):
         return self
 
     def get_best_candidate_id(self) -> CandidateID:
-        """
-        [Domain Logic] 점수가 가장 높은 후보의 ID를 반환합니다.
+        """점수가 가장 높은 후보의 ID를 반환합니다.
+
         best_candidate 필드를 우선 사용하고, 없으면 evaluations에서 최고점을 찾습니다.
+
+        Returns:
+            최고 점수 후보의 ID (A, B, C 중 하나)
         """
-        # [Simplified] Literal 타입이 보장하므로 A/B/C 체크 불필요
+        # Literal 타입이 보장하므로 A/B/C 체크 불필요
         if self.best_candidate:
             return self.best_candidate
 
@@ -63,9 +66,7 @@ class EvaluationResultSchema(BaseModel):
 
 
 class QueryResult(BaseModel):
-    """
-    [Structured Output] LLM이 생성한 질의 리스트를 구조화하여 받기 위한 모델
-    """
+    """LLM이 생성한 질의 리스트를 구조화하여 받기 위한 모델."""
 
     queries: List[str] = Field(
         description="Generated list of strategic search queries based on the user intent and OCR text."
@@ -73,9 +74,7 @@ class QueryResult(BaseModel):
 
 
 class WorkflowResult(BaseModel):
-    """
-    [Data Transfer Object] 워크플로우의 최종 결과를 담는 객체
-    """
+    """워크플로우의 최종 결과를 담는 객체 (DTO)."""
 
     turn_id: int = Field(description="Iteration turn number")
     query: str
