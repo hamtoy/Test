@@ -290,17 +290,35 @@ class QAGraphBuilder:
                 """
             )
 
-            # 수동 매핑 테이블 (텍스트 유사도 기반 자동 생성, threshold >= 0.2)
+            # 수동 매핑 테이블 (텍스트 유사도 기반 - 전체 27개 매핑)
             manual_mappings = [
-                {"ex_id": "45d38ada918d23b7", "rule_id": "45d38ada918d23b7"},  # sim: 0.90
-                {"ex_id": "cf76634755769349", "rule_id": "cf76634755769349"},  # sim: 0.90
-                {"ex_id": "6d8d778d07679551", "rule_id": "74fb853e8344cdae"},  # sim: 0.26
-                {"ex_id": "3a822c5a7cb6febe", "rule_id": "064a2e85eab0037a"},  # sim: 0.22
-                {"ex_id": "4501bbd1a0ac6eeb", "rule_id": "74fb853e8344cdae"},  # sim: 0.22
-                {"ex_id": "6beb76f2c037af0a", "rule_id": "064a2e85eab0037a"},  # sim: 0.21
-                {"ex_id": "cc7329fc50d5c9c0", "rule_id": "064a2e85eab0037a"},  # sim: 0.21
-                {"ex_id": "5c9030841bc1f28a", "rule_id": "f1b66e7991427573"},  # sim: 0.20
-                {"ex_id": "c2297ccab80815be", "rule_id": "ed715984caa427d9"},  # sim: 0.20
+                {"ex_id": "45d38ada918d23b7", "rule_id": "45d38ada918d23b7"},  # sim: 0.900
+                {"ex_id": "cf76634755769349", "rule_id": "cf76634755769349"},  # sim: 0.900
+                {"ex_id": "6d8d778d07679551", "rule_id": "74fb853e8344cdae"},  # sim: 0.264
+                {"ex_id": "3a822c5a7cb6febe", "rule_id": "064a2e85eab0037a"},  # sim: 0.219
+                {"ex_id": "4501bbd1a0ac6eeb", "rule_id": "74fb853e8344cdae"},  # sim: 0.217
+                {"ex_id": "6beb76f2c037af0a", "rule_id": "064a2e85eab0037a"},  # sim: 0.211
+                {"ex_id": "cc7329fc50d5c9c0", "rule_id": "064a2e85eab0037a"},  # sim: 0.209
+                {"ex_id": "5c9030841bc1f28a", "rule_id": "f1b66e7991427573"},  # sim: 0.202
+                {"ex_id": "c2297ccab80815be", "rule_id": "ed715984caa427d9"},  # sim: 0.201
+                {"ex_id": "bac3f6c4e74538cf", "rule_id": "83a25f83293421cb"},  # sim: 0.196
+                {"ex_id": "b9254ad66c943c63", "rule_id": "ed715984caa427d9"},  # sim: 0.194
+                {"ex_id": "361d2e6907476754", "rule_id": "74fb853e8344cdae"},  # sim: 0.185
+                {"ex_id": "f4ff0a927af9dd75", "rule_id": "68126c74e965fc95"},  # sim: 0.185
+                {"ex_id": "e64ff39e4f5ccdae", "rule_id": "68126c74e965fc95"},  # sim: 0.185
+                {"ex_id": "73ec90483d94de4e", "rule_id": "74fb853e8344cdae"},  # sim: 0.178
+                {"ex_id": "fc3b6beb75c97d73", "rule_id": "1ec1943f3b2ac695"},  # sim: 0.173
+                {"ex_id": "aa3a1556c30d903c", "rule_id": "83a25f83293421cb"},  # sim: 0.170
+                {"ex_id": "c8604f69e5419197", "rule_id": "c3ad6e856a5e4eac"},  # sim: 0.167
+                {"ex_id": "3e6f027c10f3ce19", "rule_id": "c377a77caae6c9fc"},  # sim: 0.166
+                {"ex_id": "642e3b1bf4c9c1c6", "rule_id": "74fb853e8344cdae"},  # sim: 0.165
+                {"ex_id": "44d1648296e64007", "rule_id": "1ec1943f3b2ac695"},  # sim: 0.156
+                {"ex_id": "916d03c24e532d7f", "rule_id": "b40a33c04b44a9f8"},  # sim: 0.153
+                {"ex_id": "3fdbe917fdc8da83", "rule_id": "064a2e85eab0037a"},  # sim: 0.153
+                {"ex_id": "04c2e4f5f3b8d07a", "rule_id": "1ec1943f3b2ac695"},  # sim: 0.152
+                {"ex_id": "598798882c9382af", "rule_id": "1ec1943f3b2ac695"},  # sim: 0.152
+                {"ex_id": "c8117a599dc04a8a", "rule_id": "3d37cba5ab431c3c"},  # sim: 0.152
+                {"ex_id": "ee8012b86a054472", "rule_id": "b40a33c04b44a9f8"},  # sim: 0.151
             ]
             for m in manual_mappings:
                 session.run(
