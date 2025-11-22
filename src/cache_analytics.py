@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 from rich.console import Console
 from rich.table import Table
@@ -13,9 +13,10 @@ def calculate_savings(
 ) -> float:
     """
     Estimate savings (USD) for a single record given cache hits.
+
     Assumptions:
-      - cached_portion of input tokens are cacheable (system + OCR context)
-      - cached tokens cost is discounted by `discount` factor (e.g., 0.9 = 90% off)
+    - cached_portion of input tokens are cacheable (system + OCR context)
+    - cached tokens cost is discounted by `discount` factor (e.g., 0.9 = 90% off)
     """
     model = str(record.get("model", "gemini-3-pro-preview")).lower()
     tiers = PRICING_TIERS.get(model)

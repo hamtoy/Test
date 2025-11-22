@@ -5,8 +5,9 @@ import logging
 from pathlib import Path
 from typing import Dict, Set
 
-from src.utils import load_file_async, parse_raw_candidates
+from src.config import AppConfig
 from src.exceptions import ValidationFailedError
+from src.utils import load_file_async, parse_raw_candidates
 
 logger = logging.getLogger("GeminiWorkflow")
 
@@ -106,3 +107,12 @@ async def load_input_data(
     validate_candidates(candidates)
 
     return ocr_text, candidates
+
+
+async def reload_data_if_needed(
+    config: AppConfig, ocr_filename: str, cand_filename: str, interactive: bool = False
+) -> tuple[str, Dict[str, str]]:
+    """
+    Wrapper to reload OCR/candidate data. interactive flag reserved for future prompts.
+    """
+    return await load_input_data(config.input_dir, ocr_filename, cand_filename)

@@ -49,6 +49,7 @@ Thumbs.db
 data/outputs/*
 !data/outputs/.gitkeep
 *.pyc
+docs/_build/
 
 # Coverage
 .coverage

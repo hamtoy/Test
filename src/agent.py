@@ -1,25 +1,25 @@
-import logging
 import asyncio
-import hashlib
-import time
-from typing import Any, Dict, Optional, List, cast, TYPE_CHECKING
-from pathlib import Path
-from jinja2 import Environment, FileSystemLoader
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-)
-from pydantic import BaseModel, ValidationError
-import json
 import datetime
+import hashlib
+import json
+import logging
+import time
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
 import google.generativeai as genai
 import google.generativeai.caching as caching
-from google.generativeai import protos
 from google.api_core import exceptions as google_exceptions
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
+from google.generativeai import protos
+from google.generativeai.types import HarmBlockThreshold, HarmCategory
+from jinja2 import Environment, FileSystemLoader
+from pydantic import BaseModel, ValidationError
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 from src.config import AppConfig
 from src.constants import (
@@ -28,15 +28,15 @@ from src.constants import (
     MIN_CACHE_TOKENS,
     PRICING_TIERS,
 )
-from src.models import EvaluationResultSchema, QueryResult
-from src.utils import clean_markdown_code_block, safe_json_parse
 from src.exceptions import (
     APIRateLimitError,
     BudgetExceededError,
-    ValidationFailedError,
     CacheCreationError,
     SafetyFilterError,
+    ValidationFailedError,
 )
+from src.models import EvaluationResultSchema, QueryResult
+from src.utils import clean_markdown_code_block, safe_json_parse
 
 if TYPE_CHECKING:
     from aiolimiter import AsyncLimiter
@@ -123,7 +123,7 @@ class GeminiAgent:
             # 템플릿 엔진 초기화
             self.jinja_env = Environment(
                 loader=FileSystemLoader(config.template_dir),
-                autoescape=True  # XSS 방지
+                autoescape=True,  # XSS 방지
             )
 
     def _get_safety_settings(self) -> Dict[HarmCategory, HarmBlockThreshold]:
@@ -180,12 +180,52 @@ class GeminiAgent:
             base = self.config.base_dir / base
         return base / "context_cache.json"
 
+    def _cleanup_expired_cache(self, ttl_minutes: int) -> None:
+        """Remove expired cache entries from the local manifest (best-effort)."""
+        manifest_path = self._local_cache_manifest_path()
+        if not manifest_path.exists():
+            return
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception as e:
+            self.logger.debug(f"Cache cleanup skipped (read error): {e}")
+            return
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+        updated: dict[str, dict[str, Any]] = {}
+
+        for fingerprint, entry in data.items():
+            created_raw = entry.get("created")
+            created = (
+                datetime.datetime.fromisoformat(created_raw) if created_raw else None
+            )
+            if created is None:
+                continue
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=datetime.timezone.utc)
+            ttl = int(entry.get("ttl_minutes", ttl_minutes) or ttl_minutes)
+            if now - created <= datetime.timedelta(minutes=ttl):
+                updated[fingerprint] = entry
+
+        if len(updated) == len(data):
+            return
+
+        try:
+            manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(manifest_path, "w", encoding="utf-8") as f:
+                json.dump(updated, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            self.logger.debug(f"Cache cleanup skipped (write error): {e}")
+
     def _load_local_cache(
         self, fingerprint: str, ttl_minutes: int
     ) -> Optional[caching.CachedContent]:
         manifest_path = self._local_cache_manifest_path()
         if not manifest_path.exists():
             return None
+        # Remove expired entries to keep manifest small and clean
+        self._cleanup_expired_cache(ttl_minutes)
         try:
             with open(manifest_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -271,9 +311,7 @@ class GeminiAgent:
         self.logger.info(f"Total Tokens for Caching: {token_count}")
 
         if token_count < MIN_CACHE_TOKENS:
-            self.logger.info(
-                "Skipping cache creation (Tokens < %s)", MIN_CACHE_TOKENS
-            )
+            self.logger.info("Skipping cache creation (Tokens < %s)", MIN_CACHE_TOKENS)
             return None
 
         try:

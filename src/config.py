@@ -2,9 +2,11 @@ import os
 import re
 from pathlib import Path
 from typing import Any, Literal
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from src.constants import GEMINI_API_KEY_LENGTH, ERROR_MESSAGES
+
+from src.constants import ERROR_MESSAGES, GEMINI_API_KEY_LENGTH
 
 
 class AppConfig(BaseSettings):
@@ -108,7 +110,9 @@ class AppConfig(BaseSettings):
         allowed = {"CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"}
         upper = v.upper()
         if upper not in allowed:
-            raise ValueError(ERROR_MESSAGES["log_level_invalid"].format(allowed=allowed))
+            raise ValueError(
+                ERROR_MESSAGES["log_level_invalid"].format(allowed=allowed)
+            )
         return upper
 
     @field_validator("budget_limit_usd")

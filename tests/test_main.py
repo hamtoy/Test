@@ -1,11 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
-from src.main import (
-    execute_workflow,
-    save_result_to_file,
-    load_checkpoint,
-    append_checkpoint,
-)
+from src.main import execute_workflow, save_result_to_file
+from src.utils import load_checkpoint, append_checkpoint
 from src.models import WorkflowResult, EvaluationResultSchema, EvaluationItem
 from src.exceptions import BudgetExceededError
 
@@ -38,8 +34,8 @@ async def test_execute_workflow_success(mock_agent, mock_logger):
     eval_result = EvaluationResultSchema(best_candidate="A", evaluations=[eval_item])
     mock_agent.evaluate_responses.return_value = eval_result
 
-    with patch("src.main.load_input_data", new_callable=AsyncMock) as mock_load:
-        mock_load.return_value = (ocr_text, candidates)
+    with patch("src.main.reload_data_if_needed", new_callable=AsyncMock) as mock_reload:
+        mock_reload.return_value = (ocr_text, candidates)
 
         # Mock save_result_to_file to avoid file I/O
         with patch("src.main.save_result_to_file") as mock_save:
@@ -86,8 +82,8 @@ async def test_execute_workflow_budget_exceeded(mock_logger):
     mock_agent.get_budget_usage_percent = MagicMock(return_value=95.0)
     mock_agent.create_context_cache = AsyncMock(return_value=None)
 
-    with patch("src.main.load_input_data", new_callable=AsyncMock) as mock_load:
-        mock_load.return_value = ("ocr", {"A": "a"})
+    with patch("src.main.reload_data_if_needed", new_callable=AsyncMock) as mock_reload:
+        mock_reload.return_value = ("ocr", {"A": "a"})
 
         results = await execute_workflow(
             agent=mock_agent,
@@ -112,8 +108,8 @@ async def test_execute_workflow_interactive_skip_reload(mock_agent, mock_logger)
     mock_agent.rewrite_best_answer = AsyncMock(return_value="rewritten")
 
     with patch("src.main.Confirm.ask", return_value=False):
-        with patch("src.main.load_input_data", new_callable=AsyncMock) as mock_load:
-            mock_load.return_value = ("ocr", {"A": "a"})
+        with patch("src.main.reload_data_if_needed", new_callable=AsyncMock) as mock_reload:
+            mock_reload.return_value = ("ocr", {"A": "a"})
 
             results = await execute_workflow(
                 agent=mock_agent,
@@ -126,7 +122,7 @@ async def test_execute_workflow_interactive_skip_reload(mock_agent, mock_logger)
             )
 
     assert len(results) == 1
-    mock_load.assert_called_once()
+    mock_reload.assert_called_once()
     mock_agent.rewrite_best_answer.assert_awaited()
 
 

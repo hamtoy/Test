@@ -1,38 +1,50 @@
 # -*- coding: utf-8 -*-
+import argparse
+import asyncio
+import logging
 import os
 import sys
-import logging
-import asyncio
-import argparse
-import json
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Awaitable, Dict, List, Optional, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Awaitable, Dict, List, Optional, cast
+
+import google.generativeai as genai
 
 # pip install python-dotenv google-generativeai aiofiles pydantic tenacity pydantic-settings jinja2 rich
 from dotenv import load_dotenv
-import google.generativeai as genai
-import aiofiles  # type: ignore[import-untyped]
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import (
+    BarColumn,
     Progress,
     SpinnerColumn,
-    TextColumn,
-    BarColumn,
     TaskProgressColumn,
+    TextColumn,
 )
-
 from rich.prompt import Confirm
 
-from src.config import AppConfig
 from src.agent import GeminiAgent
-from src.models import WorkflowResult
-from src.data_loader import load_input_data
-from src.logging_setup import setup_logging
 from src.cache_analytics import analyze_cache_stats, print_cache_report
-from src.utils import safe_json_parse, write_cache_stats
+from src.config import AppConfig
+from src.constants import (
+    BUDGET_WARNING_THRESHOLDS,
+    COST_PANEL_TEMPLATE,
+    LOG_MESSAGES,
+    PANEL_TITLE_BUDGET,
+    PANEL_TITLE_COST,
+    PANEL_TITLE_QUERIES,
+    PANEL_TURN_BODY_TEMPLATE,
+    PANEL_TURN_TITLE_TEMPLATE,
+    PROGRESS_DONE_TEMPLATE,
+    PROGRESS_FAILED_TEMPLATE,
+    PROGRESS_PROCESSING_TEMPLATE,
+    PROGRESS_RESTORED_TEMPLATE,
+    PROGRESS_WAITING_TEMPLATE,
+    PROMPT_EDIT_CANDIDATES,
+    USER_INTERRUPT_MESSAGE,
+)
+from src.data_loader import load_input_data, reload_data_if_needed
 from src.exceptions import (
     APIRateLimitError,
     BudgetExceededError,
@@ -40,22 +52,13 @@ from src.exceptions import (
     SafetyFilterError,
     ValidationFailedError,
 )
-from src.constants import (
-    BUDGET_WARNING_THRESHOLDS,
-    LOG_MESSAGES,
-    PANEL_TITLE_BUDGET,
-    PANEL_TITLE_COST,
-    PANEL_TITLE_QUERIES,
-    PANEL_TURN_BODY_TEMPLATE,
-    PROMPT_EDIT_CANDIDATES,
-    COST_PANEL_TEMPLATE,
-    PROGRESS_WAITING_TEMPLATE,
-    PROGRESS_DONE_TEMPLATE,
-    PROGRESS_RESTORED_TEMPLATE,
-    PROGRESS_PROCESSING_TEMPLATE,
-    PROGRESS_FAILED_TEMPLATE,
-    PANEL_TURN_TITLE_TEMPLATE,
-    USER_INTERRUPT_MESSAGE,
+from src.logging_setup import setup_logging
+from src.models import WorkflowResult
+from src.utils import (
+    append_checkpoint,
+    load_checkpoint,
+    safe_json_parse,
+    write_cache_stats,
 )
 
 if TYPE_CHECKING:
@@ -76,48 +79,6 @@ class WorkflowContext:
     total_turns: int
     checkpoint_path: Optional[Path]
     progress: Optional[Progress] = None
-
-
-async def load_checkpoint(path: Path) -> Dict[str, WorkflowResult]:
-    """Load checkpoint entries indexed by query string (async, best-effort)."""
-    if not path.exists():
-        return {}
-    records: Dict[str, WorkflowResult] = {}
-    try:
-        async with aiofiles.open(path, "r", encoding="utf-8") as f:
-            async for line in f:
-                if not line.strip():
-                    continue
-                try:
-                    payload = json.loads(line)
-                    wf = WorkflowResult(**payload)
-                    records[wf.query] = wf
-                except Exception:
-                    continue
-    except Exception:
-        return {}
-    return records
-
-
-async def append_checkpoint(path: Path, result: WorkflowResult) -> None:
-    """Append a single WorkflowResult to checkpoint JSONL (async, best-effort)."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        async with aiofiles.open(path, "a", encoding="utf-8") as f:
-            await f.write(json.dumps(result.model_dump(), ensure_ascii=False) + "\n")
-    except Exception:
-        # Non-fatal
-        return
-
-
-async def reload_data_if_needed(
-    config: AppConfig, ocr_filename: str, cand_filename: str, interactive: bool = False
-) -> tuple[str, Dict[str, str]]:
-    """
-    [Refactoring] 데이터 로딩 로직 통합
-    interactive 모드일 경우 사용자에게 재로딩 여부를 물어볼 수 있게 함 (현재는 로직 단순화로 직접 호출)
-    """
-    return await load_input_data(config.input_dir, ocr_filename, cand_filename)
 
 
 def save_result_to_file(result: WorkflowResult, config: AppConfig) -> None:
@@ -199,7 +160,9 @@ def _render_cost_panel(agent: GeminiAgent) -> Panel:
     return Panel(cost_info, title=PANEL_TITLE_COST, border_style="blue")
 
 
-def _resolve_checkpoint_path(config: AppConfig, checkpoint_path: Optional[Path]) -> Path:
+def _resolve_checkpoint_path(
+    config: AppConfig, checkpoint_path: Optional[Path]
+) -> Path:
     """Resolve the absolute path for the checkpoint file.
 
     Args:
@@ -499,9 +462,7 @@ async def process_single_query(
             return result
 
     except (APIRateLimitError, ValidationFailedError, SafetyFilterError) as e:
-        ctx.logger.error(
-            f"복구 가능 오류로 턴 {turn_id}를 건너뜁니다: {e}"
-        )
+        ctx.logger.error(f"복구 가능 오류로 턴 {turn_id}를 건너뜁니다: {e}")
         if ctx.progress and task_id:
             ctx.progress.update(
                 task_id,
@@ -578,9 +539,7 @@ async def execute_workflow(
     config = AppConfig()  # type: ignore[call-arg]
     candidates: Dict[str, str] = {}  # Initialize candidates
     checkpoint_path = _resolve_checkpoint_path(config, checkpoint_path)
-    checkpoint_records = await _load_checkpoint_records(
-        checkpoint_path, resume, logger
-    )
+    checkpoint_records = await _load_checkpoint_records(checkpoint_path, resume, logger)
 
     candidates = await _load_candidates(
         config=config,

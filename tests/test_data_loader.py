@@ -22,18 +22,11 @@ def test_validate_candidates_empty_content():
 
 
 @pytest.mark.asyncio
-async def test_load_input_data_success(tmp_path):
-    ocr_file = tmp_path / "ocr.txt"
-    ocr_file.write_text("ocr content", encoding="utf-8")
+async def test_load_input_data_success(temp_data_dir):
+    ocr_text, candidates = await load_input_data(temp_data_dir, "ocr.txt", "cand.json")
 
-    cand_file = tmp_path / "cand.json"
-    cand_data = {"A": "a", "B": "b", "C": "c"}
-    cand_file.write_text(json.dumps(cand_data), encoding="utf-8")
-
-    ocr_text, candidates = await load_input_data(tmp_path, "ocr.txt", "cand.json")
-
-    assert ocr_text == "ocr content"
-    assert candidates == cand_data
+    assert ocr_text == "Sample OCR"
+    assert candidates == {"A": "Answer A", "B": "Answer B", "C": "Answer C"}
 
 
 @pytest.mark.asyncio

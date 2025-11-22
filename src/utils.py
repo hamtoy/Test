@@ -1,8 +1,11 @@
 import json
 import re
-import aiofiles  # type: ignore[import-untyped]
 from pathlib import Path
 from typing import Any, Dict, Optional
+
+import aiofiles  # type: ignore[import-untyped]
+
+from src.models import WorkflowResult
 
 
 async def load_file_async(file_path: Path) -> str:
@@ -183,3 +186,35 @@ def write_cache_stats(path: Path, max_entries: int, entry: Dict[str, Any]) -> No
     with open(path, "w", encoding="utf-8") as f:
         for item in trimmed:
             f.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+
+async def load_checkpoint(path: Path) -> Dict[str, WorkflowResult]:
+    """Load checkpoint entries indexed by query string (async, best-effort)."""
+    if not path.exists():
+        return {}
+    records: Dict[str, WorkflowResult] = {}
+    try:
+        async with aiofiles.open(path, "r", encoding="utf-8") as f:
+            async for line in f:
+                if not line.strip():
+                    continue
+                try:
+                    payload = json.loads(line)
+                    wf = WorkflowResult(**payload)
+                    records[wf.query] = wf
+                except Exception:
+                    continue
+    except Exception:
+        return {}
+    return records
+
+
+async def append_checkpoint(path: Path, result: WorkflowResult) -> None:
+    """Append a single WorkflowResult to checkpoint JSONL (async, best-effort)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        async with aiofiles.open(path, "a", encoding="utf-8") as f:
+            await f.write(json.dumps(result.model_dump(), ensure_ascii=False) + "\n")
+    except Exception:
+        # Non-fatal
+        return

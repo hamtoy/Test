@@ -1,5 +1,6 @@
-from typing import List, Optional, Literal
 import logging
+from typing import List, Literal, Optional
+
 from pydantic import BaseModel, Field, model_validator
 
 # 모듈 전체에서 재사용

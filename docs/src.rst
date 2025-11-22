@@ -60,6 +60,30 @@ src.logging\_setup module
    :undoc-members:
    :show-inheritance:
 
+src.cache\_analytics module
+---------------------------
+
+.. automodule:: src.cache_analytics
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+src.constants module
+--------------------
+
+.. automodule:: src.constants
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+src.exceptions module
+---------------------
+
+.. automodule:: src.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 
