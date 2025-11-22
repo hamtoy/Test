@@ -436,6 +436,34 @@ results = await asyncio.gather(*[
 - **Sphinx 문서**: `docs/` 디렉토리에서 `make html` 실행
 
 
+## 즉시 실행 가능 - QA 시스템 구축
+
+### 1. 그래프 스키마 구축
+```bash
+python graph_schema_builder.py
+```
+Notion 가이드에서 Rule/Constraint/Example을 추출하여 Neo4j 지식 그래프를 생성합니다.
+
+### 2. Neo4j Browser에서 확인
+```cypher
+MATCH (n) RETURN labels(n), count(n)
+```
+생성된 노드 타입별 개수를 확인합니다.
+
+### 3. RAG 시스템 테스트
+```bash
+python qa_rag_system.py
+```
+벡터 검색 기반 규칙 조회 및 제약 조건/모범 사례를 확인합니다.
+
+### 4. 통합 파이프라인 실행
+```bash
+python integrated_qa_pipeline.py
+```
+전체 QA 세션 생성 및 검증을 실행합니다.
+
+---
+
 ## Text-Image QA 템플릿 시스템
 
 Notion 가이드 기반 텍스트 중심 이미지 QA 세션 생성 시스템입니다.
