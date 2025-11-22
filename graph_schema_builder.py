@@ -290,20 +290,17 @@ class QAGraphBuilder:
                 """
             )
 
-            # 수동 매핑 테이블 (텍스트 유사도 기반 자동 생성)
+            # 수동 매핑 테이블 (텍스트 유사도 기반 자동 생성, threshold >= 0.2)
             manual_mappings = [
-                {
-                    "ex_id": "6d8d778d07679546",
-                    "rule_id": "45c64a61bc869349",
-                },  # sim: 0.91
-                {
-                    "ex_id": "cf76634755769349",
-                    "rule_id": "45c64a61bc869349",
-                },  # sim: 0.91
-                {
-                    "ex_id": "a2894ab6c6cf18e7",
-                    "rule_id": "edb01b11eafccbce",
-                },  # sim: 0.31
+                {"ex_id": "45d38ada918d23b7", "rule_id": "45d38ada918d23b7"},  # sim: 0.90
+                {"ex_id": "cf76634755769349", "rule_id": "cf76634755769349"},  # sim: 0.90
+                {"ex_id": "6d8d778d07679551", "rule_id": "74fb853e8344cdae"},  # sim: 0.26
+                {"ex_id": "3a822c5a7cb6febe", "rule_id": "064a2e85eab0037a"},  # sim: 0.22
+                {"ex_id": "4501bbd1a0ac6eeb", "rule_id": "74fb853e8344cdae"},  # sim: 0.22
+                {"ex_id": "6beb76f2c037af0a", "rule_id": "064a2e85eab0037a"},  # sim: 0.21
+                {"ex_id": "cc7329fc50d5c9c0", "rule_id": "064a2e85eab0037a"},  # sim: 0.21
+                {"ex_id": "5c9030841bc1f28a", "rule_id": "f1b66e7991427573"},  # sim: 0.20
+                {"ex_id": "c2297ccab80815be", "rule_id": "ed715984caa427d9"},  # sim: 0.20
             ]
             for m in manual_mappings:
                 session.run(
