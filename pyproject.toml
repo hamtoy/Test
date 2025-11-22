@@ -37,8 +37,18 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]
+
 [tool.mypy]
-ignore_missing_imports = true
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+exclude = [
+    "notion-neo4j-graph/",
+    ".venv/",
+    "build/",
+]
 
 [tool.uv.workspace]
 members = [
