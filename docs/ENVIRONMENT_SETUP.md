@@ -13,7 +13,8 @@ NEO4J_PASSWORD=your_password
 ```
 
 **Neo4j Aura 무료 인스턴스 생성:**
-1. https://neo4j.com/cloud/aura-free/ 접속
+
+1. <https://neo4j.com/cloud/aura-free/> 접속
 2. "Start Free" 클릭
 3. 인스턴스 생성 후 연결 정보 복사
 4. **중요**: 비밀번호는 재확인 불가하므로 안전하게 저장
@@ -26,7 +27,8 @@ NOTION_PAGE_IDS=page_id_1,page_id_2
 ```
 
 **Notion Integration 생성:**
-1. https://www.notion.so/my-integrations 접속
+
+1. <https://www.notion.so/my-integrations> 접속
 2. "New integration" 클릭
 3. API 키 복사
 4. 대상 페이지에서 "Connections" → Integration 연결

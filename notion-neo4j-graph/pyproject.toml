@@ -1,0 +1,11 @@
+[project]
+name = "notion-neo4j-graph"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "neo4j>=6.0.3",
+    "notion-client>=2.7.0",
+    "python-dotenv>=1.2.1",
+]

@@ -71,12 +71,17 @@ class DynamicTemplateGenerator:
             raise ValueError(f"QueryType '{query_type}'을(를) 찾을 수 없습니다.")
         data = records[0]
 
-        template_name = f"{query_type}_system.j2"
-        fallback = "system/text_image_qa_explanation_system.j2"
+        template_map = {
+            "explanation": "system/text_image_qa_explanation_system.j2",
+            "summary": "system/text_image_qa_summary_system.j2",
+            "reasoning": "system/text_image_qa_reasoning_system.j2",
+            "target": "user/text_image_qa_target_user.j2",
+        }
+        template_name = template_map.get(query_type, "templates/base_system.j2")
+        fallback = "templates/base_system.j2"
         try:
             template = self.jinja_env.get_template(template_name)
         except Exception:
-            # fallback to explanation template if not found
             template = self.jinja_env.get_template(fallback)
 
         full_context = {

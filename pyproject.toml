@@ -39,3 +39,8 @@ packages = ["src"]
 
 [tool.mypy]
 ignore_missing_imports = true
+
+[tool.uv.workspace]
+members = [
+    "notion-neo4j-graph",
+]

@@ -1,0 +1,37 @@
+import os
+from neo4j import GraphDatabase
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+def verify_import():
+    uri = os.environ["NEO4J_URI"]
+    user = os.environ["NEO4J_USER"]
+    password = os.environ["NEO4J_PASSWORD"]
+
+    driver = GraphDatabase.driver(uri, auth=(user, password))
+
+    with driver.session() as session:
+        # 페이지 수 확인
+        result = session.run("MATCH (p:Page) RETURN count(p) as count")
+        page_count = result.single()["count"]
+
+        # 블록 수 확인
+        result = session.run("MATCH (b:Block) RETURN count(b) as count")
+        block_count = result.single()["count"]
+
+        # 관계 수 확인
+        result = session.run("MATCH ()-[r]->() RETURN count(r) as count")
+        rel_count = result.single()["count"]
+
+        print(f"📊 데이터 검증 결과:")
+        print(f"   - 페이지(Page): {page_count}개")
+        print(f"   - 블록(Block): {block_count}개")
+        print(f"   - 관계(Relationship): {rel_count}개")
+
+    driver.close()
+
+
+if __name__ == "__main__":
+    verify_import()

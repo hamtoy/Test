@@ -57,6 +57,14 @@ class IntegratedQAPipeline:
                 turn["type"], ctx_data
             )
 
+        # 렌더링 후 금지 패턴 재검사
+        post_violations = []
+        for idx, turn in enumerate(session["turns"], 1):
+            for v in find_violations(turn["prompt"]):
+                post_violations.append(f"turn {idx} ({turn['type']}): {v['type']} -> {v['match']}")
+        if post_violations:
+            raise ValueError(f"렌더링 후 금지 패턴 검출: {post_violations}")
+
         # 검증
         result = validate_turns(turns, ctx)
         if not result["ok"]:
