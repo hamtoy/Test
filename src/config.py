@@ -41,9 +41,10 @@ class AppConfig(BaseSettings):
     local_cache_dir: str = Field(".cache", alias="LOCAL_CACHE_DIR")
     budget_limit_usd: float | None = Field(None, alias="BUDGET_LIMIT_USD")
 
-    # extra="forbid"로 변경하여 오타를 즉시 감지
     model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="forbid"
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
     )
 
     @field_validator("api_key")
