@@ -44,13 +44,10 @@ packages = ["src"]
 python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
-exclude = [
-    "notion-neo4j-graph/",
-    ".venv/",
-    "build/",
-]
+namespace_packages = true
+explicit_package_bases = true
+mypy_path = "."
+exclude = ["notion-neo4j-graph/", ".venv/", "build/"]
 
 [tool.uv.workspace]
-members = [
-    "notion-neo4j-graph",
-]
+members = ["notion-neo4j-graph"]
