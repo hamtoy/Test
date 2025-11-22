@@ -32,19 +32,19 @@ class GraphEnhancedRouter:
         choice = self.llm.generate(prompt, role="router").strip().lower()
 
         # 선택 결과 정규화
-        chosen = None
+        chosen: Optional[str] = None
         for qt in qtypes:
             if qt["name"].lower() in choice:
                 chosen = qt["name"]
                 break
         if not chosen:
-            chosen = (
-                "explanation"
-                if any(q["name"] == "explanation" for q in qtypes)
-                else next(
-                    (qtypes[0]["name"] if qtypes else "explanation"), "explanation"
-                )
-            )
+            if any(q.get("name") == "explanation" for q in qtypes):
+                chosen = "explanation"
+            elif qtypes:
+                first_name = qtypes[0].get("name")
+                chosen = str(first_name) if first_name is not None else "explanation"
+            else:
+                chosen = "explanation"
 
         output = None
         if chosen in handlers:
