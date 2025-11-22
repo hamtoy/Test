@@ -219,7 +219,12 @@ class QAGraphBuilder:
         # 키워드 기반 보강 매핑 (필요 시 여기에 추가)
         constraint_keywords = {
             "session_turns": ["3-4", "3턴", "4턴", "턴만", "3~4"],
-            "explanation_summary_limit": ["설명문/요약문", "둘 다", "동시", "설명과 요약"],
+            "explanation_summary_limit": [
+                "설명문/요약문",
+                "둘 다",
+                "동시",
+                "설명과 요약",
+            ],
             "calculation_limit": ["계산", "연산", "계산 요청", "수식"],
             "table_chart_prohibition": ["표", "그래프", "차트", "테이블"],
         }
