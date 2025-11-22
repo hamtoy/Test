@@ -108,7 +108,9 @@ async def test_execute_workflow_interactive_skip_reload(mock_agent, mock_logger)
     mock_agent.rewrite_best_answer = AsyncMock(return_value="rewritten")
 
     with patch("src.main.Confirm.ask", return_value=False):
-        with patch("src.main.reload_data_if_needed", new_callable=AsyncMock) as mock_reload:
+        with patch(
+            "src.main.reload_data_if_needed", new_callable=AsyncMock
+        ) as mock_reload:
             mock_reload.return_value = ("ocr", {"A": "a"})
 
             results = await execute_workflow(
