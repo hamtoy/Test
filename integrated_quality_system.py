@@ -1,0 +1,88 @@
+from __future__ import annotations
+
+from typing import Any, Dict, Optional
+
+from adaptive_difficulty import AdaptiveDifficultyAdjuster
+from advanced_context_augmentation import AdvancedContextAugmentation
+from cross_validation import CrossValidationSystem
+from dynamic_example_selector import DynamicExampleSelector
+from multimodal_understanding import MultimodalUnderstanding
+from qa_rag_system import QAKnowledgeGraph
+from real_time_constraint_enforcer import RealTimeConstraintEnforcer
+
+
+class IntegratedQualitySystem:
+    """
+    모든 품질 향상 기능을 통합한 파이프라인.
+    """
+
+    def __init__(
+        self,
+        neo4j_uri: str,
+        user: str,
+        password: str,
+        gemini_key: Optional[str] = None,
+    ):
+        self.kg = QAKnowledgeGraph()
+        self.augmenter = AdvancedContextAugmentation(
+            neo4j_uri, user, password, gemini_key
+        )
+        self.enforcer = RealTimeConstraintEnforcer(self.kg)
+        self.adjuster = AdaptiveDifficultyAdjuster(self.kg)
+        self.validator = CrossValidationSystem(self.kg)
+        self.example_selector = DynamicExampleSelector(self.kg)
+        self.multimodal = MultimodalUnderstanding(self.kg)
+
+    def generate_qa_with_all_enhancements(
+        self, image_path: str, query_type: str
+    ) -> Dict[str, Any]:
+        """
+        모든 품질 보강 기능을 적용한 QA 생성 플로우.
+        실제 LLM 호출 부분은 스텁으로 남겨두었습니다.
+        """
+
+        # 1. 이미지 분석
+        image_meta = self.multimodal.analyze_image_deep(image_path)
+
+        # 2. 복잡도 분석 및 조정
+        complexity = self.adjuster.analyze_image_complexity(image_meta)
+        adjustments = self.adjuster.adjust_query_requirements(complexity, query_type)
+
+        # 3. 최적 예시 선택
+        examples = self.example_selector.select_best_examples(
+            query_type, image_meta, k=3
+        )
+
+        # 4. 컨텍스트 증강
+        augmented_prompt = self.augmenter.generate_with_augmentation(
+            user_query=f"Generate {query_type} for image",
+            query_type=query_type,
+            base_context={
+                "image_meta": image_meta,
+                "adjustments": adjustments,
+                "examples": examples,
+            },
+        )
+
+        # 5. 생성 with 실시간 검증 (LLM 호출 스텁)
+        generated_output = (
+            augmented_prompt  # 실제로는 LLM 출력 스트리밍 + enforcer 적용
+        )
+
+        # 6. 크로스 검증
+        validation = self.validator.cross_validate_qa_pair(
+            question="(auto-generated)",  # 실제 질문을 여기에 넣어야 함
+            answer=generated_output,
+            query_type=query_type,
+            image_meta=image_meta,
+        )
+
+        return {
+            "output": generated_output,
+            "validation": validation,
+            "metadata": {
+                "complexity": complexity,
+                "adjustments": adjustments,
+                "examples_used": examples,
+            },
+        }
