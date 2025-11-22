@@ -537,7 +537,7 @@ async def execute_workflow(
 
     # AUTO 모드에서는 프롬프트 건너뛰기
     config = AppConfig()  # type: ignore[call-arg]
-    candidates: Dict[str, str] = {}  # Initialize candidates
+    candidates: Optional[Dict[str, str]] = None
     checkpoint_path = _resolve_checkpoint_path(config, checkpoint_path)
     checkpoint_records = await _load_checkpoint_records(checkpoint_path, resume, logger)
 
