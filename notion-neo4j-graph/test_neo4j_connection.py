@@ -9,42 +9,34 @@ from neo4j import GraphDatabase  # noqa: E402
 load_dotenv()
 
 
+@pytest.mark.skipif(
+    not all(os.environ.get(var) for var in ("NEO4J_URI", "NEO4J_USER", "NEO4J_PASSWORD")),
+    reason="Neo4j 환경 변수가 설정되지 않아 연결 테스트를 건너뜁니다.",
+)
 def test_neo4j_connection():
     """Neo4j Aura 연결 테스트"""
 
-    uri = os.environ.get("NEO4J_URI")
-    user = os.environ.get("NEO4J_USER")
-    password = os.environ.get("NEO4J_PASSWORD")
+    uri = os.environ["NEO4J_URI"]
+    user = os.environ["NEO4J_USER"]
+    password = os.environ["NEO4J_PASSWORD"]
 
-    if not all([uri, user, password]):
-        pytest.skip("Neo4j 환경 변수가 설정되지 않아 연결 테스트를 건너뜁니다.")
+    driver = GraphDatabase.driver(uri, auth=(user, password))
+    with driver.session() as session:
+        result = session.run("RETURN 'Connection successful!' AS message")
+        record = result.single()
+        assert record and record["message"]
 
-    print("🔌 Neo4j Aura 연결 시도...")
-    print(f"   URI: {uri}")
-    print(f"   User: {user}")
+        result = session.run(
+            """
+            CALL dbms.components() 
+            YIELD name, versions, edition 
+            RETURN name, versions[0] AS version, edition
+            """
+        )
+        records = list(result)
+        assert records
 
-    try:
-        driver = GraphDatabase.driver(uri, auth=(user, password))
-        with driver.session() as session:
-            result = session.run("RETURN 'Connection successful!' AS message")
-            record = result.single()
-            print(f"\n✅ {record['message']}")
-
-            result = session.run(
-                """
-                CALL dbms.components() 
-                YIELD name, versions, edition 
-                RETURN name, versions[0] AS version, edition
-                """
-            )
-            for record in result:
-                print("\n📊 Neo4j 정보:")
-                print(f"   Edition: {record['edition']}")
-                print(f"   Version: {record['version']}")
-
-        driver.close()
-    except Exception as e:
-        pytest.fail(f"Neo4j 연결 실패: {e}")
+    driver.close()
 
 
 if __name__ == "__main__":
