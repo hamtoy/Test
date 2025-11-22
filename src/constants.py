@@ -47,5 +47,32 @@ PROGRESS_PROCESSING_TEMPLATE: Final[str] = "[cyan]Turn {turn_id}: Processing...[
 PROGRESS_FAILED_TEMPLATE: Final[str] = "[red]Turn {turn_id}: Failed[/red]"
 PANEL_TURN_TITLE_TEMPLATE: Final[str] = "Turn {turn_id} Result"
 
+ERROR_MESSAGES: Final[dict[str, str]] = {
+    "api_key_missing": "GEMINI_API_KEY is not set. Please check your .env file.",
+    "api_key_prefix": (
+        "GEMINI_API_KEY validation failed:\n"
+        "  - Must start with 'AIza'\n"
+        "  - See: https://makersuite.google.com/app/apikey"
+    ),
+    "api_key_length": (
+        "GEMINI_API_KEY validation failed:\n"
+        "  - Got {got} characters\n"
+        "  - Must be exactly {length} characters (starts with 'AIza')\n"
+        "  - See: https://makersuite.google.com/app/apikey"
+    ),
+    "api_key_format": (
+        "GEMINI_API_KEY validation failed:\n"
+        "  - Invalid format (expected 'AIza' + 35 safe chars)\n"
+        "  - See: https://makersuite.google.com/app/apikey"
+    ),
+    "concurrency_range": "max_concurrency must be between 1 and 20",
+    "timeout_range": "timeout must be between 30 and 600 seconds",
+    "temperature_range": "temperature must be between 0.0 and 2.0",
+    "cache_ttl_range": "cache_ttl_minutes must be between 1 and 1440",
+    "log_level_invalid": "log_level must be one of {allowed}",
+    "budget_positive": "budget_limit_usd must be positive when set",
+    "cache_stats_min_entries": "cache_stats_max_entries must be >= 1",
+}
+
 # Pattern for masking sensitive API keys in logs (e.g., Google API keys).
 SENSITIVE_PATTERN: Final[str] = r"AIza[0-9A-Za-z_-]{35}"

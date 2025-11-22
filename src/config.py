@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from src.constants import GEMINI_API_KEY_LENGTH
+from src.constants import GEMINI_API_KEY_LENGTH, ERROR_MESSAGES
 
 
 class AppConfig(BaseSettings):
@@ -48,30 +48,21 @@ class AppConfig(BaseSettings):
     @classmethod
     def validate_api_key(cls, v: str) -> str:
         if not v or v == "your_api_key_here":
-            raise ValueError("GEMINI_API_KEY is not set. Please check your .env file.")
+            raise ValueError(ERROR_MESSAGES["api_key_missing"])
 
         if not v.startswith("AIza"):
-            raise ValueError(
-                "GEMINI_API_KEY validation failed:\n"
-                "  - Must start with 'AIza'\n"
-                "  - See: https://makersuite.google.com/app/apikey"
-            )
+            raise ValueError(ERROR_MESSAGES["api_key_prefix"])
 
         if len(v) != GEMINI_API_KEY_LENGTH:
             raise ValueError(
-                "GEMINI_API_KEY validation failed:\n"
-                f"  - Got {len(v)} characters\n"
-                f"  - Must be exactly {GEMINI_API_KEY_LENGTH} characters (starts with 'AIza')\n"
-                "  - See: https://makersuite.google.com/app/apikey"
+                ERROR_MESSAGES["api_key_length"].format(
+                    got=len(v), length=GEMINI_API_KEY_LENGTH
+                )
             )
 
         # Google API 키 형식: AIza + 35개의 안전 문자 (총 GEMINI_API_KEY_LENGTH자)
         if not re.match(r"^AIza[0-9A-Za-z_\-]{35}$", v):
-            raise ValueError(
-                "GEMINI_API_KEY validation failed:\n"
-                "  - Invalid format (expected 'AIza' + 35 safe chars)\n"
-                "  - See: https://makersuite.google.com/app/apikey"
-            )
+            raise ValueError(ERROR_MESSAGES["api_key_format"])
         return v
 
     @field_validator("model_name")
@@ -87,28 +78,28 @@ class AppConfig(BaseSettings):
     @classmethod
     def validate_concurrency(cls, v: int) -> int:
         if not 1 <= v <= 20:
-            raise ValueError("max_concurrency must be between 1 and 20")
+            raise ValueError(ERROR_MESSAGES["concurrency_range"])
         return v
 
     @field_validator("timeout")
     @classmethod
     def validate_timeout(cls, v: int) -> int:
         if not 30 <= v <= 600:
-            raise ValueError("timeout must be between 30 and 600 seconds")
+            raise ValueError(ERROR_MESSAGES["timeout_range"])
         return v
 
     @field_validator("temperature")
     @classmethod
     def validate_temperature(cls, v: float) -> float:
         if not 0.0 <= v <= 2.0:
-            raise ValueError("temperature must be between 0.0 and 2.0")
+            raise ValueError(ERROR_MESSAGES["temperature_range"])
         return v
 
     @field_validator("cache_ttl_minutes")
     @classmethod
     def validate_cache_ttl(cls, v: int) -> int:
         if not 1 <= v <= 1440:
-            raise ValueError("cache_ttl_minutes must be between 1 and 1440")
+            raise ValueError(ERROR_MESSAGES["cache_ttl_range"])
         return v
 
     @field_validator("log_level")
@@ -117,7 +108,7 @@ class AppConfig(BaseSettings):
         allowed = {"CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"}
         upper = v.upper()
         if upper not in allowed:
-            raise ValueError(f"log_level must be one of {allowed}")
+            raise ValueError(ERROR_MESSAGES["log_level_invalid"].format(allowed=allowed))
         return upper
 
     @field_validator("budget_limit_usd")
@@ -126,14 +117,14 @@ class AppConfig(BaseSettings):
         if v is None:
             return v
         if v <= 0:
-            raise ValueError("budget_limit_usd must be positive when set")
+            raise ValueError(ERROR_MESSAGES["budget_positive"])
         return v
 
     @field_validator("cache_stats_max_entries")
     @classmethod
     def validate_cache_stats_max_entries(cls, v: int) -> int:
         if v < 1:
-            raise ValueError("cache_stats_max_entries must be >= 1")
+            raise ValueError(ERROR_MESSAGES["cache_stats_min_entries"])
         return v
 
     def model_post_init(self, __context: Any) -> None:
