@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any, Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from src.constants import GEMINI_API_KEY_LENGTH
 
 
 class AppConfig(BaseSettings):
@@ -13,7 +14,7 @@ class AppConfig(BaseSettings):
     Pydantic을 사용한 엄격한 타입 검증을 수행합니다.
 
     주요 설정:
-    - API 키 검증 (39자, AIza 시작)
+    - API 키 검증 (길이 제한, AIza 시작)
     - 동시성 제한 (1-20)
     - 타임아웃 (30-600초)
     - 캐시 TTL (1-1440분)
@@ -56,15 +57,15 @@ class AppConfig(BaseSettings):
                 "  - See: https://makersuite.google.com/app/apikey"
             )
 
-        if len(v) != 39:
+        if len(v) != GEMINI_API_KEY_LENGTH:
             raise ValueError(
                 "GEMINI_API_KEY validation failed:\n"
                 f"  - Got {len(v)} characters\n"
-                "  - Must be exactly 39 characters (starts with 'AIza')\n"
+                f"  - Must be exactly {GEMINI_API_KEY_LENGTH} characters (starts with 'AIza')\n"
                 "  - See: https://makersuite.google.com/app/apikey"
             )
 
-        # Google API 키 형식: AIza + 35개의 안전 문자 (총 39자)
+        # Google API 키 형식: AIza + 35개의 안전 문자 (총 GEMINI_API_KEY_LENGTH자)
         if not re.match(r"^AIza[0-9A-Za-z_\-]{35}$", v):
             raise ValueError(
                 "GEMINI_API_KEY validation failed:\n"

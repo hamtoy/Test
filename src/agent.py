@@ -2,7 +2,7 @@ import logging
 import asyncio
 import hashlib
 import time
-from typing import Any, Dict, Optional, List, cast
+from typing import Any, Dict, Optional, List, cast, TYPE_CHECKING
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 from tenacity import (
@@ -11,7 +11,7 @@ from tenacity import (
     wait_exponential,
     retry_if_exception_type,
 )
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 import json
 import datetime
 
@@ -22,7 +22,12 @@ from google.api_core import exceptions as google_exceptions
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 from src.config import AppConfig
-from src.constants import PRICING_TIERS
+from src.constants import (
+    DEFAULT_RPM_LIMIT,
+    DEFAULT_RPM_WINDOW_SECONDS,
+    MIN_CACHE_TOKENS,
+    PRICING_TIERS,
+)
 from src.models import EvaluationResultSchema, QueryResult
 from src.utils import clean_markdown_code_block, safe_json_parse
 from src.exceptions import (
@@ -32,6 +37,9 @@ from src.exceptions import (
     CacheCreationError,
     SafetyFilterError,
 )
+
+if TYPE_CHECKING:
+    from aiolimiter import AsyncLimiter
 
 
 class GeminiAgent:
@@ -62,15 +70,21 @@ class GeminiAgent:
 
         # 동시 실행 개수 제한
         self._semaphore = asyncio.Semaphore(config.max_concurrency)
-        self._rate_limiter: Optional[Any] = None
+        self._rate_limiter: Optional["AsyncLimiter"] = None
 
         # RPM(분당 요청 수) 제한 - 429 에러 방지
         try:
             from aiolimiter import AsyncLimiter
 
-            # Gemini API 기본 RPM: 60 (1분에 60개)
-            self._rate_limiter = AsyncLimiter(max_rate=60, time_period=60)
-            self.logger.info("Rate limiter enabled: 60 requests/minute")
+            # Gemini API 기본 RPM: DEFAULT_RPM_LIMIT (1분에 DEFAULT_RPM_LIMIT개)
+            self._rate_limiter = AsyncLimiter(
+                max_rate=DEFAULT_RPM_LIMIT, time_period=DEFAULT_RPM_WINDOW_SECONDS
+            )
+            self.logger.info(
+                "Rate limiter enabled: %s requests/%s seconds",
+                DEFAULT_RPM_LIMIT,
+                DEFAULT_RPM_WINDOW_SECONDS,
+            )
         except ImportError:
             self._rate_limiter = None
             self.logger.warning("aiolimiter not installed. Rate limiting disabled.")
@@ -125,7 +139,10 @@ class GeminiAgent:
         return settings
 
     def _create_generative_model(
-        self, system_prompt: str, response_schema=None, cached_content=None
+        self,
+        system_prompt: str,
+        response_schema: type[BaseModel] | None = None,
+        cached_content: Optional[caching.CachedContent] = None,
     ) -> genai.GenerativeModel:
         """
         [Factory Method] GenerativeModel 생성
@@ -163,7 +180,9 @@ class GeminiAgent:
             base = self.config.base_dir / base
         return base / "context_cache.json"
 
-    def _load_local_cache(self, fingerprint: str, ttl_minutes: int):
+    def _load_local_cache(
+        self, fingerprint: str, ttl_minutes: int
+    ) -> Optional[caching.CachedContent]:
         manifest_path = self._local_cache_manifest_path()
         if not manifest_path.exists():
             return None
@@ -218,7 +237,7 @@ class GeminiAgent:
     ) -> Optional[caching.CachedContent]:
         """OCR 텍스트를 기반으로 Gemini Context Cache 생성.
 
-        2048 토큰 이상일 때만 캐시를 생성하며, 로컬 디스크 캐시로 재사용을 시도합니다.
+        MIN_CACHE_TOKENS 이상일 때만 캐시를 생성하며, 로컬 디스크 캐시로 재사용을 시도합니다.
 
         Args:
             ocr_text: 캐시할 OCR 텍스트
@@ -251,8 +270,10 @@ class GeminiAgent:
         token_count = await loop.run_in_executor(None, _count_tokens)
         self.logger.info(f"Total Tokens for Caching: {token_count}")
 
-        if token_count < 2048:
-            self.logger.info("Skipping cache creation (Tokens < 2048)")
+        if token_count < MIN_CACHE_TOKENS:
+            self.logger.info(
+                "Skipping cache creation (Tokens < %s)", MIN_CACHE_TOKENS
+            )
             return None
 
         try:
@@ -446,7 +467,11 @@ class GeminiAgent:
         reraise=True,
     )
     async def evaluate_responses(
-        self, ocr_text: str, query: str, candidates: Dict[str, str], cached_content=None
+        self,
+        ocr_text: str,
+        query: str,
+        candidates: Dict[str, str],
+        cached_content: Optional[caching.CachedContent] = None,
     ) -> Optional[EvaluationResultSchema]:
         """후보 답변을 평가하고 점수를 부여.
 
@@ -519,7 +544,10 @@ class GeminiAgent:
             raise ValidationFailedError(f"Evaluation JSON parsing failed: {e}") from e
 
     async def rewrite_best_answer(
-        self, ocr_text: str, best_answer: str, cached_content=None
+        self,
+        ocr_text: str,
+        best_answer: str,
+        cached_content: Optional[caching.CachedContent] = None,
     ) -> str:
         """선택된 최고 답변을 가독성 및 안전성 측면에서 개선.
 
