@@ -403,23 +403,23 @@ class QAGraphBuilder:
     def link_rules_to_query_types(self):
         """Rule을 QueryType과 연계 (키워드 기반 간단 매핑)."""
         mappings = [
-            ("explanation", ["전체 설명", "설명문", "full explanation"]),
-            ("summary", ["요약", "summary"]),
-            ("target", ["질문", "타겟", "target"]),
-            ("reasoning", ["추론", "전망", "예측"]),
+            ("explanation", ["전체 설명", "설명문", "full explanation", "본문 전체"]),
+            ("summary", ["요약", "summary", "짧게"]),
+            ("target", ["질문", "타겟", "target", "단일 항목"]),
+            ("reasoning", ["추론", "전망", "예측", "분석"]),
         ]
         with self.driver.session() as session:
             for qt, keywords in mappings:
                 session.run(
                     """
                     MATCH (r:Rule), (q:QueryType {name: $qt})
-                    WHERE ANY(kw IN $keywords WHERE r.text CONTAINS kw)
+                    WHERE ANY(kw IN $keywords WHERE toLower(r.text) CONTAINS toLower(kw))
                     MERGE (r)-[:APPLIES_TO]->(q)
                     """,
                     qt=qt,
                     keywords=keywords,
                 )
-        print("✅ Rule→QueryType 매핑 (키워드 기반) 완료")
+        print("✅ Rule→QueryType 매핑 (키워드 확장) 완료")
 
 
 def main():
