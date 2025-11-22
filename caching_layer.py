@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import List, Dict, Optional, Any, cast
+from typing import Dict, List, Optional, cast
 
 try:
     import redis
