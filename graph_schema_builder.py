@@ -234,7 +234,7 @@ class QAGraphBuilder:
                     print(f"   [{t}] {text}...")
 
     def link_examples_to_rules(self):
-        """예시와 규칙 연결 (텍스트 포함 관계 기반)."""
+        """예시와 규칙 연결 (텍스트 포함 + 수동 매핑 기반)."""
         with self.driver.session() as session:
             # 긍정 예시: DEMONSTRATES
             session.run(
@@ -253,13 +253,27 @@ class QAGraphBuilder:
                 """
             )
 
+            # 수동 매핑 테이블 (필요 시 채워서 명시적 연결)
+            manual_mappings = [
+                # {"ex_id": "ex_<hash>", "rule_id": "<rule_id>"},
+            ]
+            for m in manual_mappings:
+                session.run(
+                    """
+                    MATCH (e:Example {id: $ex_id}), (r:Rule {id: $rule_id})
+                    MERGE (e)-[:DEMONSTRATES]->(r)
+                    """,
+                    ex_id=m["ex_id"],
+                    rule_id=m["rule_id"],
+                )
+
             count = session.run(
                 """
                 MATCH (e:Example)-[rel]->(r:Rule)
                 RETURN count(rel) AS links
                 """
             ).single()["links"]
-        print(f"✅ 예시-규칙 연결 {count}개 생성/병합")
+        print(f"✅ 예시-규칙 연결 {count}개 생성/병합 (수동 매핑 포함)")
 
     def create_templates(self):
         """템플릿 노드 및 제약/규칙 연결."""
