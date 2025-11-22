@@ -8,7 +8,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Awaitable, Dict, List, Optional, cast, TYPE_CHECKING
 
 # pip install python-dotenv google-generativeai aiofiles pydantic tenacity pydantic-settings jinja2 rich
 from dotenv import load_dotenv
@@ -34,6 +34,23 @@ from src.logging_setup import setup_logging
 from src.cache_analytics import analyze_cache_stats, print_cache_report
 from src.utils import safe_json_parse, write_cache_stats
 from src.exceptions import CacheCreationError
+from src.constants import (
+    BUDGET_WARNING_THRESHOLDS,
+    PANEL_TITLE_BUDGET,
+    PANEL_TITLE_COST,
+    PANEL_TITLE_QUERIES,
+    PROMPT_EDIT_CANDIDATES,
+    COST_PANEL_TEMPLATE,
+    PROGRESS_WAITING_TEMPLATE,
+    PROGRESS_DONE_TEMPLATE,
+    PROGRESS_RESTORED_TEMPLATE,
+    PROGRESS_PROCESSING_TEMPLATE,
+    PROGRESS_FAILED_TEMPLATE,
+    PANEL_TURN_TITLE_TEMPLATE,
+)
+
+if TYPE_CHECKING:
+    from google.generativeai import caching
 
 # Rich Console은 전역에서 재사용
 console = Console()
@@ -46,7 +63,7 @@ class WorkflowContext:
     logger: logging.Logger
     ocr_text: str
     candidates: Dict[str, str]
-    cache: Any
+    cache: Optional["caching.CachedContent"]
     total_turns: int
     checkpoint_path: Optional[Path]
     progress: Optional[Progress] = None
@@ -94,7 +111,7 @@ async def reload_data_if_needed(
     return await load_input_data(config.input_dir, ocr_filename, cand_filename)
 
 
-def save_result_to_file(result: WorkflowResult, config: AppConfig):
+def save_result_to_file(result: WorkflowResult, config: AppConfig) -> None:
     """결과를 Markdown 파일로 저장 (하드코딩 제거)"""
     assert result.evaluation is not None
     output_dir = config.output_dir
@@ -127,6 +144,261 @@ def save_result_to_file(result: WorkflowResult, config: AppConfig):
         f.write(content)
 
     logging.getLogger("GeminiWorkflow").info(f"결과 파일 저장됨: {filename}")
+
+
+def _warn_budget_thresholds(agent: GeminiAgent, logger: logging.Logger) -> None:
+    """Emit one-time budget warnings at configured thresholds."""
+    usage = agent.get_budget_usage_percent()
+    for threshold, severity in BUDGET_WARNING_THRESHOLDS:
+        attr_name = f"_warned_{threshold}"
+        if usage >= threshold and not hasattr(agent, attr_name):
+            logger.warning(f"{severity}: Budget at {usage:.1f}%")
+            setattr(agent, attr_name, True)
+
+
+def _display_queries(queries: List[str]) -> None:
+    """Render generated queries to the console using a Rich Panel.
+
+    Args:
+        queries: List of query strings to display.
+    """
+    console.print(
+        Panel(
+            "\n".join([f"{i + 1}. {q}" for i, q in enumerate(queries)]),
+            title=PANEL_TITLE_QUERIES,
+            border_style="green",
+        )
+    )
+
+
+def _render_cost_panel(agent: GeminiAgent) -> Panel:
+    """Build a Rich Panel displaying cost, token usage, and cache statistics.
+
+    Args:
+        agent: The GeminiAgent instance containing usage statistics.
+
+    Returns:
+        A Rich Panel object configured with cost and usage information.
+    """
+    cost_info = COST_PANEL_TEMPLATE.format(
+        cost=agent.get_total_cost(),
+        input_tokens=agent.total_input_tokens,
+        output_tokens=agent.total_output_tokens,
+        cache_hits=agent.cache_hits,
+        cache_misses=agent.cache_misses,
+    )
+    return Panel(cost_info, title=PANEL_TITLE_COST, border_style="blue")
+
+
+def _resolve_checkpoint_path(config: AppConfig, checkpoint_path: Optional[Path]) -> Path:
+    """Resolve the absolute path for the checkpoint file.
+
+    Args:
+        config: Application configuration object.
+        checkpoint_path: Optional path provided via CLI arguments.
+
+    Returns:
+        Absolute path to the checkpoint file.
+    """
+    path = checkpoint_path or (config.output_dir / "checkpoint.jsonl")
+    if not path.is_absolute():
+        path = config.output_dir / path
+    return path
+
+
+async def _load_checkpoint_records(
+    checkpoint_path: Path, resume: bool, logger: logging.Logger
+) -> Dict[str, WorkflowResult]:
+    """Load existing checkpoint records if resume mode is enabled.
+
+    Args:
+        checkpoint_path: Path to the checkpoint file.
+        resume: Boolean flag indicating whether to resume from checkpoint.
+        logger: Logger instance for status updates.
+
+    Returns:
+        Dictionary mapping query strings to WorkflowResult objects.
+    """
+    if not resume:
+        return {}
+    records = await load_checkpoint(checkpoint_path)
+    if records:
+        logger.info(
+            f"Resume enabled: {len(records)} completed turn(s) preloaded from {checkpoint_path}"
+        )
+    return records
+
+
+async def _load_candidates(
+    config: AppConfig,
+    ocr_filename: str,
+    cand_filename: str,
+    is_interactive: bool,
+    logger: logging.Logger,
+) -> Optional[Dict[str, str]]:
+    """Load candidate answers, optionally prompting for reload in interactive mode.
+
+    Args:
+        config: Application configuration object.
+        ocr_filename: Filename of the OCR input.
+        cand_filename: Filename of the candidate answers input.
+        is_interactive: Boolean flag for interactive mode.
+        logger: Logger instance.
+
+    Returns:
+        Dictionary of candidate answers, or None if loading fails.
+    """
+    if is_interactive and Confirm.ask(PROMPT_EDIT_CANDIDATES, default=True):
+        logger.info("사용자 요청으로 데이터 재로딩 중...")
+        try:
+            _, candidates = await reload_data_if_needed(
+                config, ocr_filename, cand_filename
+            )
+            logger.info("데이터 재로딩 완료")
+            return candidates
+        except Exception as e:
+            logger.error(f"데이터 재로딩 실패: {e}")
+            return None
+
+    # 재로딩 없이 진행 (AUTO 또는 skip)
+    if not is_interactive:
+        logger.info("AUTO 모드: 데이터 자동 로딩 중...")
+    else:
+        logger.info("재로딩 없이 진행")
+    _, candidates = await reload_data_if_needed(config, ocr_filename, cand_filename)
+    return candidates
+
+
+async def _create_context_cache(
+    agent: GeminiAgent, ocr_text: str, logger: logging.Logger
+) -> Optional["caching.CachedContent"]:
+    """Attempt to create a context cache for the OCR text.
+
+    Args:
+        agent: GeminiAgent instance.
+        ocr_text: The OCR text content to cache.
+        logger: Logger instance.
+
+    Returns:
+        CachedContent object if successful, None otherwise.
+    """
+    logger.info("Context Caching 시도 중...")
+    try:
+        return await agent.create_context_cache(ocr_text)
+    except CacheCreationError as e:
+        logger.warning(f"Context cache creation skipped: {e}")
+        return None
+
+
+def _schedule_turns(
+    queries: List[str],
+    agent: GeminiAgent,
+    config: AppConfig,
+    logger: logging.Logger,
+    ocr_text: str,
+    candidates: Dict[str, str],
+    cache: Optional["caching.CachedContent"],
+    checkpoint_records: Dict[str, WorkflowResult],
+    checkpoint_path: Path,
+    progress: Progress,
+    resume: bool,
+) -> tuple[List[WorkflowResult], List[Awaitable[Optional[WorkflowResult]]]]:
+    """Prepare turn tasks, handling budget checks, checkpoints, and progress bars.
+
+    Args:
+        queries: List of queries to process.
+        agent: GeminiAgent instance.
+        config: Application configuration.
+        logger: Logger instance.
+        ocr_text: OCR text content.
+        candidates: Dictionary of candidate answers.
+        cache: Optional context cache.
+        checkpoint_records: Dictionary of loaded checkpoint records.
+        checkpoint_path: Path to the checkpoint file.
+        progress: Rich Progress instance.
+        resume: Boolean flag for resume mode.
+
+    Returns:
+        Tuple containing a list of restored results and a list of awaitable tasks.
+    """
+    results: List[WorkflowResult] = []
+    tasks: List[Awaitable[Optional[WorkflowResult]]] = []
+
+    for i, query in enumerate(queries):
+        # Budget check before scheduling turn
+        try:
+            agent.check_budget()
+        except Exception as e:
+            logger.error(f"Budget limit exceeded: {e}")
+            console.print(Panel(str(e), title=PANEL_TITLE_BUDGET, border_style="red"))
+            break
+
+        _warn_budget_thresholds(agent, logger)
+
+        turn_id = i + 1
+        task_id = progress.add_task(
+            PROGRESS_WAITING_TEMPLATE.format(turn_id=turn_id), total=1
+        )
+
+        if resume and query in checkpoint_records:
+            restored = checkpoint_records[query]
+            restored.turn_id = turn_id
+            results.append(restored)
+            progress.update(
+                task_id,
+                advance=1,
+                description=PROGRESS_RESTORED_TEMPLATE.format(turn_id=turn_id),
+            )
+            continue
+
+        tasks.append(
+            process_single_query(
+                ctx=WorkflowContext(
+                    agent=agent,
+                    config=config,
+                    logger=logger,
+                    ocr_text=ocr_text,
+                    candidates=candidates,
+                    cache=cache,
+                    total_turns=len(queries),
+                    checkpoint_path=checkpoint_path,
+                    progress=progress,
+                ),
+                query=query,
+                turn_id=turn_id,
+                task_id=task_id,
+            )
+        )
+
+    return results, tasks
+
+
+async def _gather_results(
+    tasks: List[Awaitable[Optional[WorkflowResult]]],
+    logger: logging.Logger,
+) -> List[WorkflowResult]:
+    """Execute scheduled tasks and collect successful results.
+
+    Args:
+        tasks: List of awaitable tasks returning Optional[WorkflowResult].
+        logger: Logger instance.
+
+    Returns:
+        List of successfully completed WorkflowResult objects.
+    """
+    if not tasks:
+        return []
+
+    filtered: List[WorkflowResult] = []
+    processed_results = await asyncio.gather(*tasks, return_exceptions=True)
+    for item in processed_results:
+        if isinstance(item, Exception):
+            logger.error(f"Turn 실행 중 예외 발생: {item}")
+            continue
+        if item is None:
+            continue
+        filtered.append(cast(WorkflowResult, item))
+    return filtered
 
 
 async def _evaluate_and_rewrite_turn(
@@ -181,7 +453,8 @@ async def process_single_query(
         # Update progress description
         if ctx.progress and task_id:
             ctx.progress.update(
-                task_id, description=f"[cyan]Turn {turn_id}: Processing...[/cyan]"
+                task_id,
+                description=PROGRESS_PROCESSING_TEMPLATE.format(turn_id=turn_id),
             )
 
         result = await _evaluate_and_rewrite_turn(ctx=ctx, query=query, turn_id=turn_id)
@@ -199,7 +472,7 @@ async def process_single_query(
                     f"[bold]Query:[/bold] {query}\n\n"
                     f"[bold]Best Candidate:[/bold] {result.evaluation.get_best_candidate_id()}\n"
                     f"[bold]Rewritten:[/bold] {result.rewritten_answer[:200]}...",
-                    title=f"Turn {turn_id} Result",
+                    title=PANEL_TURN_TITLE_TEMPLATE.format(turn_id=turn_id),
                     border_style="blue",
                 )
             )
@@ -209,7 +482,7 @@ async def process_single_query(
                 ctx.progress.update(
                     task_id,
                     advance=1,
-                    description=f"[green]Turn {turn_id}: Done[/green]",
+                    description=PROGRESS_DONE_TEMPLATE.format(turn_id=turn_id),
                 )
 
             return result
@@ -218,7 +491,8 @@ async def process_single_query(
         ctx.logger.exception(f"Turn {turn_id} 실행 중 오류 발생: {e}")
         if ctx.progress and task_id:
             ctx.progress.update(
-                task_id, description=f"[red]Turn {turn_id}: Failed[/red]"
+                task_id,
+                description=PROGRESS_FAILED_TEMPLATE.format(turn_id=turn_id),
             )
 
     return None
@@ -267,64 +541,33 @@ async def execute_workflow(
         return []
 
     # 생성된 질의 리스트 출력
-    console.print(
-        Panel(
-            "\n".join([f"{i + 1}. {q}" for i, q in enumerate(queries)]),
-            title="[bold green]Generated Strategic Queries[/bold green]",
-            border_style="green",
-        )
-    )
+    _display_queries(queries)
 
     # AUTO 모드에서는 프롬프트 건너뛰기
     config = AppConfig()  # type: ignore[call-arg]
     candidates: Dict[str, str] = {}  # Initialize candidates
-    if checkpoint_path is None:
-        checkpoint_path = config.output_dir / "checkpoint.jsonl"
-    checkpoint_records: Dict[str, WorkflowResult] = {}
-    if resume:
-        checkpoint_records = await load_checkpoint(checkpoint_path)
-        if checkpoint_records:
-            logger.info(
-                f"Resume enabled: {len(checkpoint_records)} completed turn(s) preloaded from {checkpoint_path}"
-            )
+    checkpoint_path = _resolve_checkpoint_path(config, checkpoint_path)
+    checkpoint_records = await _load_checkpoint_records(
+        checkpoint_path, resume, logger
+    )
 
-    if is_interactive:
-        # 사용자 개입 (Breakpoint & Hot Reload)
-        if Confirm.ask(
-            "위 질의를 보고 후보 답변 파일(input_candidates.json)을 수정하시겠습니까? (수정 후 Enter)",
-            default=True,
-        ):
-            logger.info("사용자 요청으로 데이터 재로딩 중...")
-            try:
-                _, candidates = await reload_data_if_needed(
-                    config, ocr_filename, cand_filename
-                )
-                logger.info("데이터 재로딩 완료")
-            except Exception as e:
-                logger.error(f"데이터 재로딩 실패: {e}")
-                return []
-        else:
-            # 재로딩 없이 진행
-            _, candidates = await reload_data_if_needed(
-                config, ocr_filename, cand_filename
-            )
-    else:
-        # AUTO 모드: 자동으로 데이터 로드 (프롬프트 없음)
-        logger.info("AUTO 모드: 데이터 자동 로딩 중...")
-        _, candidates = await reload_data_if_needed(config, ocr_filename, cand_filename)
+    candidates = await _load_candidates(
+        config=config,
+        ocr_filename=ocr_filename,
+        cand_filename=cand_filename,
+        is_interactive=is_interactive,
+        logger=logger,
+    )
+    if candidates is None:
+        return []
 
     # 캐시 생성 시도 (Context Caching)
-    logger.info("Context Caching 시도 중...")
-    try:
-        cache = await agent.create_context_cache(ocr_text)
-    except CacheCreationError as e:
-        cache = None
-        logger.warning(f"Context cache creation skipped: {e}")
+    cache = await _create_context_cache(agent, ocr_text, logger)
 
     # 병렬 실행 (Parallel Processing) with Progress Bar
     logger.info(f"총 {len(queries)}개의 질의를 병렬로 처리합니다...")
 
-    results = []
+    results: List[WorkflowResult] = []
 
     # Rich Progress Bar Context
     with Progress(
@@ -335,82 +578,23 @@ async def execute_workflow(
         console=console,
         transient=True,  # 완료 후 사라짐 (깔끔하게)
     ) as progress:
-        tasks = []
-        # 전체 진행률 트래킹용 태스크 (선택 사항, 여기서는 개별 태스크만 보여줌)
-        # overall_task = progress.add_task("[green]Overall Progress", total=len(queries))
-
-        for i, query in enumerate(queries):
-            # Budget check before scheduling turn
-            try:
-                agent.check_budget()
-            except Exception as e:
-                logger.error(f"Budget limit exceeded: {e}")
-                console.print(
-                    Panel(str(e), title="Budget Exceeded", border_style="red")
-                )
-                break
-
-            usage = agent.get_budget_usage_percent()
-            for threshold, severity in [
-                (80, "WARNING"),
-                (90, "HIGH"),
-                (95, "CRITICAL"),
-            ]:
-                attr_name = f"_warned_{threshold}"
-                if usage >= threshold and not hasattr(agent, attr_name):
-                    logger.warning(f"{severity}: Budget at {usage:.1f}%")
-                    setattr(agent, attr_name, True)
-
-            turn_id = i + 1
-            # 각 쿼리별 태스크 생성 (초기 상태: Waiting)
-            task_id = progress.add_task(f"[cyan]Turn {turn_id}: Waiting...", total=1)
-
-            if resume and query in checkpoint_records:
-                restored = checkpoint_records[query]
-                restored.turn_id = turn_id
-                results.append(restored)
-                if progress and task_id:
-                    progress.update(
-                        task_id,
-                        advance=1,
-                        description=f"[green]Turn {turn_id}: Restored[/green]",
-                    )
-                continue
-
-            tasks.append(
-                process_single_query(
-                    ctx=WorkflowContext(
-                        agent=agent,
-                        config=config,
-                        logger=logger,
-                        ocr_text=ocr_text,
-                        candidates=candidates,
-                        cache=cache,
-                        total_turns=len(queries),
-                        checkpoint_path=checkpoint_path,
-                        progress=progress,
-                    ),
-                    query=query,
-                    turn_id=turn_id,
-                    task_id=task_id,
-                )
-            )
+        restored_results, tasks = _schedule_turns(
+            queries=queries,
+            agent=agent,
+            config=config,
+            logger=logger,
+            ocr_text=ocr_text,
+            candidates=candidates,
+            cache=cache,
+            checkpoint_records=checkpoint_records,
+            checkpoint_path=checkpoint_path,
+            progress=progress,
+            resume=resume,
+        )
+        results.extend(restored_results)
 
         # 모든 태스크 동시 실행 (에러 수집)
-        processed_results = (
-            await asyncio.gather(*tasks, return_exceptions=True) if tasks else []
-        )
-
-        filtered: List[WorkflowResult] = []
-        for item in processed_results:
-            if isinstance(item, Exception):
-                logger.error(f"Turn 실행 중 예외 발생: {item}")
-                continue
-            if item is None:
-                continue
-            filtered.append(cast(WorkflowResult, item))
-
-        results.extend(filtered)
+        results.extend(await _gather_results(tasks, logger))
 
         # 순서 보장을 위해 turn_id로 정렬 (병렬 처리로 순서가 섞일 수 있음)
         results.sort(key=lambda x: x.turn_id)
@@ -558,19 +742,8 @@ async def main():
         # ... (rest of main)
 
         # 비용 정보를 Panel로 표시
-        total_cost = agent.get_total_cost()
-        cost_info = f"""[bold cyan]💰 Total Session Cost:[/bold cyan] ${total_cost:.4f} USD
-[bold green]📊 Token Usage:[/bold green] {agent.total_input_tokens:,} input / {agent.total_output_tokens:,} output
-[bold magenta]🚀 Cache Stats:[/bold magenta] {agent.cache_hits} hits / {agent.cache_misses} misses"""
-
         console.print()
-        console.print(
-            Panel(
-                cost_info,
-                title="[bold blue]Cost Summary[/bold blue]",
-                border_style="blue",
-            )
-        )
+        console.print(_render_cost_panel(agent))
 
         # Cache stats persistence: append JSONL entry with small retention window
         try:
