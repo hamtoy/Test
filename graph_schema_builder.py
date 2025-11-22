@@ -41,6 +41,8 @@ class QAGraphBuilder:
 
     def extract_rules_from_notion(self):
         """Notion 문서에서 규칙 추출 및 그래프화 (중복 방지 MERGE)."""
+        import hashlib
+        
         with self.driver.session() as session:
             result = session.run(
                 """
@@ -59,7 +61,8 @@ class QAGraphBuilder:
                 for rule_text in rules:
                     if not rule_text or len(rule_text) <= 10:
                         continue
-                    rid = f"{uuid.uuid4()}"
+                    # 텍스트 해시 기반 ID로 중복 방지
+                    rid = hashlib.sha256(rule_text.encode('utf-8')).hexdigest()[:16]
                     session.run(
                         """
                         MERGE (r:Rule {id: $id})
@@ -160,6 +163,8 @@ class QAGraphBuilder:
 
     def extract_examples(self):
         """예시 추출 (❌/⭕ 패턴) 및 중복 방지."""
+        import hashlib
+        
         with self.driver.session() as session:
             result = session.run(
                 """
@@ -178,7 +183,8 @@ class QAGraphBuilder:
             for record in result:
                 text = record["text"]
                 ex_type = record["type"]
-                eid = f"ex_{uuid.uuid4()}"
+                # 텍스트 해시 기반 ID로 중복 방지
+                eid = hashlib.sha256(text.encode('utf-8')).hexdigest()[:16]
                 session.run(
                     """
                     MERGE (e:Example {id: $id})
