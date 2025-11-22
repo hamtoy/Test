@@ -140,7 +140,7 @@ Generate output that follows ALL rules and learns from successful cases.
             or "(none)",
             rules="\n".join(
                 [
-                    f"[P{r.get('priority','?')}] {r.get('rule','')}"
+                    f"[P{r.get('priority', '?')}] {r.get('rule', '')}"
                     for r in aug_ctx["relevant_rules"]
                 ]
             )

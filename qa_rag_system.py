@@ -79,9 +79,7 @@ class QAKnowledgeGraph:
             if gemini_api_key:
                 embedding_model = CustomGeminiEmbeddings(api_key=gemini_api_key)
             else:
-                print(
-                    "⚠️ GEMINI_API_KEY 미설정: 벡터 검색을 건너뜁니다."
-                )
+                print("⚠️ GEMINI_API_KEY 미설정: 벡터 검색을 건너뜁니다.")
                 return
 
             self._vector_store = Neo4jVector.from_existing_graph(
