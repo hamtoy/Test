@@ -1,5 +1,4 @@
 import pytest
-import json
 from src.data_loader import validate_candidates, load_input_data
 from src.exceptions import ValidationFailedError
 
