@@ -22,7 +22,7 @@ def test_all():
         if not page_id:
             print("⚠️ PAGE_ID_1 not found in .env")
         else:
-            page = notion.pages.retrieve(page_id)
+            notion.pages.retrieve(page_id)
             print("✅ Notion 연결 성공")
     except Exception as e:
         print(f"❌ Notion 연결 실패: {e}")

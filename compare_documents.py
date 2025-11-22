@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, List, Tuple
 
 from dotenv import load_dotenv
 from neo4j import GraphDatabase

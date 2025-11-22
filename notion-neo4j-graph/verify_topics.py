@@ -20,7 +20,7 @@ def verify_topics():
         result = session.run("MATCH ()-[r:DISCUSSES]->() RETURN count(r) as count")
         rel_count = result.single()["count"]
 
-        print(f"📊 의미 분석 결과 검증:")
+        print("📊 의미 분석 결과 검증:")
         print(f"   - 생성된 토픽(Topic): {topic_count}개")
         print(f"   - 연결된 관계(DISCUSSES): {rel_count}개")
 

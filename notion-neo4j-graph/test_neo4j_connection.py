@@ -12,7 +12,7 @@ def test_neo4j_connection():
     user = os.environ["NEO4J_USER"]
     password = os.environ["NEO4J_PASSWORD"]
 
-    print(f"🔌 Neo4j Aura 연결 시도...")
+    print("🔌 Neo4j Aura 연결 시도...")
     print(f"   URI: {uri}")
     print(f"   User: {user}")
 
@@ -33,7 +33,7 @@ def test_neo4j_connection():
                 RETURN name, versions[0] AS version, edition
             """)
             for record in result:
-                print(f"\n📊 Neo4j 정보:")
+                print("\n📊 Neo4j 정보:")
                 print(f"   Edition: {record['edition']}")
                 print(f"   Version: {record['version']}")
 

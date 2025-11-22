@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
-import uuid
-from typing import List, Dict
+import hashlib
 
 from neo4j import GraphDatabase
 from neo4j.exceptions import Neo4jError
@@ -55,8 +54,6 @@ class QAGraphBuilder:
 
     def extract_rules_from_notion(self):
         """Notion 문서에서 규칙 추출 및 그래프화 (중복 방지 MERGE)."""
-        import hashlib
-
         with self.driver.session() as session:
             result = session.run(
                 """
@@ -197,8 +194,6 @@ class QAGraphBuilder:
 
     def extract_examples(self):
         """예시 추출 (❌/⭕ 패턴) 및 중복 방지."""
-        import hashlib
-
         with self.driver.session() as session:
             result = session.run(
                 """

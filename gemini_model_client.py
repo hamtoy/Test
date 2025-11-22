@@ -132,7 +132,7 @@ class GeminiModelClient:
 """
         try:
             return self.generate(rewrite_prompt, role="rewriter")
-        except Exception as e:
+        except Exception:
             return f"[재작성 실패] {text}"
 
     def fact_check(self, answer: str, has_table_chart: bool) -> Dict[str, Any]:
@@ -167,11 +167,11 @@ class GeminiModelClient:
                 "issues": issues,
                 "details": response,
             }
-        except Exception as e:
+        except Exception:
             return {
                 "verdict": "error",
-                "issues": [f"검증 실패: {e}"],
-                "details": str(e),
+                "issues": ["검증 실패"],
+                "details": "",
             }
 
 

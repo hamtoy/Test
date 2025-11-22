@@ -7,7 +7,6 @@ from typing import Dict, List
 from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from neo4j import GraphDatabase
-from neo4j.exceptions import Neo4jError
 
 load_dotenv()
 

@@ -25,7 +25,7 @@ def verify_import():
         result = session.run("MATCH ()-[r]->() RETURN count(r) as count")
         rel_count = result.single()["count"]
 
-        print(f"📊 데이터 검증 결과:")
+        print("📊 데이터 검증 결과:")
         print(f"   - 페이지(Page): {page_count}개")
         print(f"   - 블록(Block): {block_count}개")
         print(f"   - 관계(Relationship): {rel_count}개")

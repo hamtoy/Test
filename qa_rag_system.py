@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 from dotenv import load_dotenv
 from neo4j import GraphDatabase

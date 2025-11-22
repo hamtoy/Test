@@ -14,15 +14,10 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List
 import re
-
-# Add repo root to path
-_repo_root = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(_repo_root))
 
 from checks.detect_forbidden_patterns import find_violations
 

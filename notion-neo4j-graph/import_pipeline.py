@@ -1,8 +1,7 @@
 import os
 import re
 import logging
-from typing import List, Dict, Optional, Any, Generator
-from datetime import datetime
+from typing import List, Dict, Any
 from contextlib import contextmanager
 
 from notion_client import Client
@@ -363,7 +362,7 @@ def main():
 
             # Neo4j 임포트
             importer.import_page(page_data, blocks)
-            logger.info(f"   - Neo4j 저장 완료")
+            logger.info("   - Neo4j 저장 완료")
 
         # 3. 교차 참조 생성
         logger.info("🔗 교차 참조(Mentions) 연결 중...")

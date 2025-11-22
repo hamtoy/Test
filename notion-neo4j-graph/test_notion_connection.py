@@ -32,7 +32,7 @@ def test_connection():
         else:
             title_text = "제목 없음"
 
-        print(f"✅ 페이지 1 연결 성공!")
+        print("✅ 페이지 1 연결 성공!")
         print(f"   제목: {title_text}")
         print(f"   URL: {page1.get('url', 'N/A')}")
 
@@ -52,7 +52,7 @@ def test_connection():
             else:
                 title_text2 = "제목 없음"
 
-            print(f"✅ 페이지 2 연결 성공!")
+            print("✅ 페이지 2 연결 성공!")
             print(f"   제목: {title_text2}")
             print(f"   URL: {page2.get('url', 'N/A')}")
 

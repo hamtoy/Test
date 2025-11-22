@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import os
 import sys
-import json
 import logging
 import re
 from collections import Counter
