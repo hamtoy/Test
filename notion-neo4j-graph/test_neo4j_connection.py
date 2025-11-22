@@ -10,7 +10,9 @@ load_dotenv()
 
 
 @pytest.mark.skipif(
-    not all(os.environ.get(var) for var in ("NEO4J_URI", "NEO4J_USER", "NEO4J_PASSWORD")),
+    not all(
+        os.environ.get(var) for var in ("NEO4J_URI", "NEO4J_USER", "NEO4J_PASSWORD")
+    ),
     reason="Neo4j 환경 변수가 설정되지 않아 연결 테스트를 건너뜁니다.",
 )
 def test_neo4j_connection():
