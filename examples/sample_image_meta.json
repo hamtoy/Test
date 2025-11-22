@@ -1,0 +1,11 @@
+{
+  "image_path": "data/inputs/example_image.png",
+  "language_hint": "ko",
+  "text_density": "high",
+  "has_table_chart": false,
+  "session_turns": 3,
+  "must_include_reasoning": true,
+  "used_calc_query_count": 0,
+  "prior_focus_summary": "N/A (first turn)",
+  "candidate_focus": "주요 수치와 추세 요약"
+}
