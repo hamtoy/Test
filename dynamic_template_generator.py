@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Dict, List
+from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
@@ -43,7 +43,7 @@ class DynamicTemplateGenerator:
         if self.driver:
             self.driver.close()
 
-    def _run(self, cypher: str, params: Dict = None):
+    def _run(self, cypher: str, params: Optional[Dict[str, Any]] = None):
         params = params or {}
         with self.driver.session() as session:
             return list(session.run(cypher, **params))

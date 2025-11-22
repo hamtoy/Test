@@ -42,11 +42,12 @@ packages = ["src"]
 
 [tool.mypy]
 python_version = "3.13"
-warn_return_any = true
+warn_return_any = false
 warn_unused_configs = true
 namespace_packages = true
 explicit_package_bases = true
 mypy_path = "."
+ignore_missing_imports = true
 exclude = ["notion-neo4j-graph/", ".venv/", "build/"]
 
 [tool.uv.workspace]

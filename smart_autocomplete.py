@@ -66,7 +66,7 @@ class SmartAutocomplete:
             suggestions.append(f"{v['match']} 표현을 제거하세요")
 
         # 그래프의 ErrorPattern 및 Constraint 패턴 검사
-        with self.kg.template_gen.driver.session() as session:
+        with self.kg._graph.session() as session:
             ep_records = session.run(
                 "MATCH (ep:ErrorPattern) RETURN ep.pattern AS pattern, ep.description AS desc"
             )

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import List, Dict, Any
+from typing import Dict, Any, List
 
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
@@ -126,26 +126,19 @@ class QAKnowledgeGraph:
         """
         checks/validate_session 로직을 활용해 세션 구조 검증.
         """
-        try:
-            from scripts.build_session import SessionContext
-        except Exception:
-            SessionContext = None
+        from scripts.build_session import SessionContext
 
         turns = session.get("turns", [])
         if not turns:
             return {"ok": False, "issues": ["turns가 비어있습니다."]}
 
-        # 최소 필드만 있는 세션 컨텍스트 구성
         ctx_kwargs = session.get("context", {})
-        if SessionContext:
-            try:
-                ctx = SessionContext(**ctx_kwargs)
-                res = validate_turns([type("T", (), t) for t in turns], ctx)
-                return res
-            except Exception as e:
-                return {"ok": False, "issues": [f"컨텍스트 생성 실패: {e}"]}
-        else:
-            return {"ok": False, "issues": ["SessionContext 로드를 실패했습니다."]}
+        try:
+            ctx = SessionContext(**ctx_kwargs)
+            res = validate_turns([type("T", (), t) for t in turns], ctx)
+            return res
+        except Exception as exc:
+            return {"ok": False, "issues": [f"컨텍스트 생성 실패: {exc}"]}
 
     def close(self):
         if self._graph:
