@@ -218,15 +218,35 @@ class QAGraphBuilder:
         """규칙과 제약 조건 연결(기본 포함 매칭 + 키워드 기반 보강)."""
         # 키워드 기반 보강 매핑 (필요 시 여기에 추가)
         constraint_keywords = {
-            "session_turns": ["3-4", "3턴", "4턴", "턴만", "3~4"],
+            "session_turns": ["3-4", "3턴", "4턴", "턴만", "3~4", "turn limit"],
             "explanation_summary_limit": [
                 "설명문/요약문",
                 "둘 다",
                 "동시",
                 "설명과 요약",
+                "full image 설명",
+                "전체 이미지 요약",
             ],
-            "calculation_limit": ["계산", "연산", "계산 요청", "수식"],
-            "table_chart_prohibition": ["표", "그래프", "차트", "테이블"],
+            "calculation_limit": [
+                "계산",
+                "연산",
+                "계산 요청",
+                "수식",
+                "sum",
+                "average",
+                "평균값",
+            ],
+            "table_chart_prohibition": [
+                "표",
+                "그래프",
+                "차트",
+                "테이블",
+                "table",
+                "chart",
+                "graph",
+                "표 참고",
+                "그래프 참고",
+            ],
         }
         with self.driver.session() as session:
             session.run(
