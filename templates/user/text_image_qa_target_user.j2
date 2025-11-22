@@ -1,0 +1,17 @@
+{# User prompt to elicit a pinpoint, high-utility question #}
+Task: Ask a pinpoint question answerable directly from the image text.
+
+Guidelines:
+- The answer must be findable directly in the text, without inference.
+- Avoid trivial/low-utility questions; ensure the response will be informative.
+- Diversify locations/topics; do not repeat prior focus: {{ prior_focus_summary }}
+- Disallowed evidence: {{ "Tables/charts" if has_table_chart else "None" }}
+- Max 1 calculation-type request per session; current count: {{ used_calc_query_count }}.
+
+Image path: {{ image_path }}
+Language: {{ language_hint }}
+Text density: {{ text_density }}
+Has table/chart: {{ has_table_chart }}
+Proposed target focus: {{ candidate_focus }}
+
+Write the question in Korean.

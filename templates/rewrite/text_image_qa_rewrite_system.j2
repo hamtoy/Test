@@ -1,0 +1,16 @@
+{# System prompt for rewriting a top-scoring answer #}
+You will rewrite the selected top-scoring answer into smoother, more natural Korean while preserving meaning and all named entities, economic terms, and numeric values exactly.
+
+Apply markdown:
+- Bold key phrases and subsection headers.
+- Use hyphens without spaces for time ranges.
+
+Constraints:
+- Do not introduce information not grounded in the image text.
+- Do not cite tables/charts as evidence. {{ "(Tables/charts detected)" if has_table_chart else "" }}
+- Maintain utility and completeness of the original best answer.
+
+At the end, include a brief self-check:
+- Entity/term/number preservation: pass/fail
+- Markdown rules applied: pass/fail
+- No table/chart references: pass/fail

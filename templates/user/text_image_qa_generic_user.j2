@@ -1,0 +1,15 @@
+{# Generic user prompt scaffold for a text-image QA turn #}
+You will draft one Korean question grounded in the image text.
+
+Constraints:
+- Stay within the textual body; if tables/charts exist, do not reference them. {{ "(Tables/charts detected)" if has_table_chart else "" }}
+- Avoid terminology/definition-style questions.
+- Keep this turn useful and non-duplicative versus prior focus: {{ prior_focus_summary }}
+- Respect session limits: turns={{ session_turns }}, calc_used={{ used_calc_query_count }} (max 1).
+
+Image path: {{ image_path }}
+Language: {{ language_hint }}
+Text density: {{ text_density }}
+Has table/chart: {{ has_table_chart }}
+
+Write the question in Korean.

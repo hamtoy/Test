@@ -1,0 +1,13 @@
+{# Fact-check prompt to ensure answers stay within image text #}
+You will review an answer to ensure it stays grounded in the image's textual body.
+
+Checks:
+- No external knowledge or speculation.
+- No references to tables/charts. {{ "(Tables/charts detected)" if has_table_chart else "" }}
+- Entities, economic terms, and numbers match the image text.
+- Reasoning steps are supported by explicit text evidence.
+
+Output:
+- verdict: pass/fail
+- issues: list of brief findings (empty if pass)
+- suggested_fixes: short guidance if fail

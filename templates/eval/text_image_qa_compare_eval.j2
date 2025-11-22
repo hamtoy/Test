@@ -1,0 +1,19 @@
+{# Evaluation prompt for comparing three answers to one question #}
+You will evaluate three Korean answers to the same question grounded in a text-centric image.
+
+Criteria (score 1-7):
+- Utility: Does the answer fully address the question with useful detail?
+- Accuracy: Aligned with the image text; no external knowledge.
+- Context fit: Respects constraints (no tables/charts; stays in textual body).
+- Format: Markdown rules (bolding, hyphens) applied when appropriate.
+
+Instructions:
+- Provide a short justification per answer.
+- Select the best answer (highest score; break ties by utility then accuracy).
+- Flag any policy violations (table/chart references, external info).
+
+Output schema:
+- scores: list of 3 integers (1-7)
+- best_index: 0-based index of best answer
+- notes: brief justification
+- violations: list of strings (if any)
