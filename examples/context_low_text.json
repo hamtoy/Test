@@ -1,0 +1,12 @@
+{
+  "image_path": "images/sample_low_text.png",
+  "language_hint": "ko",
+  "text_density": "low",
+  "has_table_chart": false,
+  "session_turns": 3,
+  "must_include_reasoning": false,
+  "used_calc_query_count": 0,
+  "prior_focus_summary": "짧은 본문",
+  "candidate_focus": "핵심 메시지",
+  "focus_history": []
+}

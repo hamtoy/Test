@@ -1,0 +1,12 @@
+{
+  "image_path": "images/sample_calc_used.png",
+  "language_hint": "ko",
+  "text_density": "medium",
+  "has_table_chart": false,
+  "session_turns": 3,
+  "must_include_reasoning": true,
+  "used_calc_query_count": 1,
+  "prior_focus_summary": "이전에 계산형 질문 사용",
+  "candidate_focus": "새로운 지점",
+  "focus_history": []
+}
