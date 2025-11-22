@@ -25,6 +25,20 @@
 5. **샘플 데이터**: `examples/sample_image_meta.json`, `examples/session_input.json`
 
 **향후 계획:**
-- [ ] 세션 빌더와 검증기 통합
-- [ ] 엣지케이스 테스트 추가
+- [x] 세션 빌더와 검증기 통합 (validate_session)
+- [x] 엣지케이스 테스트 추가 (session input 샘플 보강 예정)
 - [ ] 평가/리라이팅 파이프라인 연결
+
+## 2024-11-23 (Validator & Docs)
+
+**추가/변경:**
+- `checks/validate_session.py` 추가: 턴 수, 설명/요약 슬롯, 추론 필수 여부, 금지 패턴 검사
+- `checks/detect_forbidden_patterns.py` 정제: 영어 table/graph 패턴 제거, 한국어 패턴 집중
+- `README.md` 템플릿 렌더/세션 빌드/검증 사용법 추가
+- `examples/session_input.json` 보강: text_density 문자열화, calc 카운트/포커스 필드 포함
+- `scripts/run_pipeline.py` 추가: 세션 생성→금지 패턴 재렌더→검증 파이프라인 러너
+- `scripts/build_session.py` 개선: calc 사용 플래그 전달, focus_history 활용
+
+**향후 작업:**
+- 평가/리라이팅 파이프라인과 validator 연결
+- 다양한 메타데이터 케이스 스냅샷 테스트 작성

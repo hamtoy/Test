@@ -5,8 +5,8 @@ Rules enforced:
 - 3~4 turns only.
 - Exactly one of: Explanation or Summary. (Use Summary if text density is "high" and 4 turns are allowed; otherwise Explanation.)
 - Include reasoning if required.
-- Max 1 calculation/simple numeric request (tracked via used_calc_query_count in context).
-- Avoid duplicate focus hints by passing prior_focus_summary.
+- Max 1 calculation/simple numeric request (tracked via used_calc_query_count + target calc_used).
+- Avoid duplicate focus hints by passing prior_focus_summary/focus_history.
 - Validates all generated prompts for forbidden patterns.
 """
 
@@ -18,6 +18,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List
+import re
 
 # Add repo root to path
 _repo_root = Path(__file__).resolve().parents[1]
@@ -36,6 +37,23 @@ def render(template_path: str, context: Dict, root: Path) -> str:
     return template.render(**context)
 
 
+def is_calc_query(text: str) -> bool:
+    """Heuristic: detect calculation-type questions (word-boundary for EN to avoid 'summary')."""
+    calc_keywords_ko = [
+        "합계", "총액", "차이", "증감", "증가율", "감소율", "비율", "퍼센트",
+        "더해", "빼", "곱", "나눈",
+    ]
+    if any(kw in text for kw in calc_keywords_ko):
+        return True
+    # numeric percent
+    if re.search(r"\d+\s*%", text):
+        return True
+    # English words with boundaries
+    if re.search(r"\b(sum|difference|ratio|percentage)\b", text, flags=re.IGNORECASE):
+        return True
+    return False
+
+
 @dataclass
 class SessionContext:
     image_path: str
@@ -47,6 +65,7 @@ class SessionContext:
     used_calc_query_count: int = 0
     prior_focus_summary: str = "N/A (first turn)"
     candidate_focus: str = "전체 본문을 골고루 커버"
+    focus_history: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -54,6 +73,8 @@ class Turn:
     type: str  # explanation | summary | target | reasoning
     prompt: str
     violations: List[Dict] = field(default_factory=list)
+    calc_used: bool = False
+    focus_hint: str = ""
 
 
 def choose_expl_or_summary(ctx: SessionContext) -> str:
@@ -77,6 +98,9 @@ def build_session(ctx: SessionContext, validate: bool = True) -> List[Turn]:
 
     turns: List[Turn] = []
     used_calc = ctx.used_calc_query_count
+    focus_history = list(ctx.focus_history) if ctx.focus_history else []
+    if ctx.prior_focus_summary:
+        focus_history.append(ctx.prior_focus_summary)
 
     root = repo_root()
 
@@ -85,7 +109,8 @@ def build_session(ctx: SessionContext, validate: bool = True) -> List[Turn]:
     first_template = f"system/text_image_qa_{first_type}_system.j2"
     prompt_text = render(first_template, ctx.__dict__, root)
     violations = find_violations(prompt_text) if validate else []
-    turns.append(Turn(first_type, prompt_text, violations))
+    turns.append(Turn(first_type, prompt_text, violations, calc_used=False, focus_hint=first_type))
+    focus_history.append(first_type)
 
     # 2) Reasoning if required
     if ctx.must_include_reasoning:
@@ -93,19 +118,38 @@ def build_session(ctx: SessionContext, validate: bool = True) -> List[Turn]:
             "system/text_image_qa_reasoning_system.j2", ctx.__dict__, root
         )
         violations = find_violations(prompt_text) if validate else []
-        turns.append(Turn("reasoning", prompt_text, violations))
+        turns.append(Turn("reasoning", prompt_text, violations, calc_used=False, focus_hint="reasoning"))
+        focus_history.append("reasoning")
 
     # 3) Fill remaining with target queries (respect calc limit metadata)
     while len(turns) < ctx.session_turns:
+        calc_allowed = used_calc < 1
         uctx: Dict = {
             **ctx.__dict__,
-            "prior_focus_summary": "cover different sections than previous turns",
+            "prior_focus_summary": " | ".join(focus_history[-3:]),
             "used_calc_query_count": used_calc,
             "candidate_focus": "새로운 지점/항목",
+            "calc_allowed": calc_allowed,
         }
         prompt_text = render("user/text_image_qa_target_user.j2", uctx, root)
         violations = find_violations(prompt_text) if validate else []
-        turns.append(Turn("target", prompt_text, violations))
+        calc_used_flag = is_calc_query(prompt_text)
+
+        if calc_used_flag and not calc_allowed:
+            violations.append({"type": "calc_limit", "match": "calc request exceeds limit", "span": (0, 0)})
+
+        turns.append(
+            Turn(
+                "target",
+                prompt_text,
+                violations,
+                calc_used=calc_used_flag,
+                focus_hint=uctx["candidate_focus"],
+            )
+        )
+        focus_history.append(uctx["candidate_focus"])
+        if calc_used_flag:
+            used_calc += 1
 
     return turns
 

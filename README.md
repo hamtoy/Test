@@ -152,6 +152,18 @@ pre-commit install
 pre-commit run --all-files
 ```
 
+### 템플릿/세션 도구
+
+```bash
+# 템플릿 렌더링 예시
+uv run python scripts/render_prompt.py --template system/text_image_qa_explanation_system.j2 --context examples/session_input.json
+
+# 세션 빌드 및 검증
+uv run python scripts/build_session.py --context examples/session_input.json
+uv run python checks/validate_session.py --context examples/session_input.json
+uv run python scripts/run_pipeline.py --context examples/session_input.json
+```
+
 ### 환경 설정
 
 `.env.example`을 복사하여 `.env` 파일 생성:

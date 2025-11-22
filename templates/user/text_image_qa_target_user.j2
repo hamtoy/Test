@@ -6,7 +6,7 @@ Guidelines:
 - Avoid trivial/low-utility questions; ensure the response will be informative.
 - Diversify locations/topics; do not repeat prior focus: {{ prior_focus_summary }}
 - Disallowed evidence: {{ "Tables/charts" if has_table_chart else "None" }}
-- Max 1 calculation-type request per session; current count: {{ used_calc_query_count }}.
+- Max 1 calculation-type request per session; remaining calc allowed: {{ "Yes" if calc_allowed else "No" }} (used: {{ used_calc_query_count }}).
 
 Image path: {{ image_path }}
 Language: {{ language_hint }}
