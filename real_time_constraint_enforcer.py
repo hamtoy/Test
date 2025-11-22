@@ -35,7 +35,7 @@ class RealTimeConstraintEnforcer:
                     if pattern and re.search(pattern, buffer):
                         yield {
                             "type": "violation",
-                            "constraint": constraint["description"],
+                            "constraint": constraint.get("description", ""),
                             "suggestion": f"'{pattern}' 표현을 제거해주세요",
                         }
                         return
@@ -83,14 +83,15 @@ class RealTimeConstraintEnforcer:
         """
 
         try:
-            result = self.kg.graph.query(
-                """
-                MATCH (b:Block)
-                RETURN b.content AS content
-                LIMIT 20
-                """
-            )
-            return result or []
+            with self.kg._graph.session() as session:  # noqa: SLF001
+                result = session.run(
+                    """
+                    MATCH (b:Block)
+                    RETURN b.content AS content
+                    LIMIT 20
+                    """
+                )
+                return [dict(r) for r in result]
         except Exception:
             return []
 

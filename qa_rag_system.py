@@ -118,7 +118,11 @@ class QAKnowledgeGraph:
         OPTIONAL MATCH (t:Template)-[:ENFORCES]->(c2:Constraint)
         WITH qt, collect(DISTINCT c1) + collect(DISTINCT c2) AS cons
         UNWIND cons AS c
-        RETURN DISTINCT c.id AS id, c.description AS description, c.type AS type
+        RETURN DISTINCT
+            c.id AS id,
+            c.description AS description,
+            c.type AS type,
+            c.pattern AS pattern
         """
         with self._graph.session() as session:
             records = session.run(cypher, qt=query_type)
