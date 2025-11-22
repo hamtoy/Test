@@ -34,6 +34,9 @@ class QAGraphBuilder:
             session.run("CREATE CONSTRAINT constraint_id_unique IF NOT EXISTS FOR (c:Constraint) REQUIRE c.id IS UNIQUE")
             session.run("CREATE CONSTRAINT example_id_unique IF NOT EXISTS FOR (e:Example) REQUIRE e.id IS UNIQUE")
             session.run("CREATE CONSTRAINT qtype_name_unique IF NOT EXISTS FOR (q:QueryType) REQUIRE q.name IS UNIQUE")
+            session.run("CREATE CONSTRAINT template_id_unique IF NOT EXISTS FOR (t:Template) REQUIRE t.id IS UNIQUE")
+            session.run("CREATE CONSTRAINT errorpattern_id_unique IF NOT EXISTS FOR (e:ErrorPattern) REQUIRE e.id IS UNIQUE")
+            session.run("CREATE CONSTRAINT bestpractice_id_unique IF NOT EXISTS FOR (b:BestPractice) REQUIRE b.id IS UNIQUE")
         print("✅ 스키마 고유 제약 생성/확인 완료")
 
     def extract_rules_from_notion(self):
@@ -190,11 +193,118 @@ class QAGraphBuilder:
                 examples.append((text[:50], ex_type))
 
             print(f"✅ 예시 {len(examples)}개 추출/병합")
-            if examples:
-                print("샘플:")
-                for text, t in examples[:3]:
-                    print(f"   [{t}] {text}...")
+                if examples:
+                    print("샘플:")
+                    for text, t in examples[:3]:
+                        print(f"   [{t}] {text}...")
 
+    def create_templates(self):
+        """템플릿 노드 및 제약/규칙 연결."""
+        templates = [
+            {"id": "tmpl_explanation", "name": "explanation_system", "enforces": ["session_turns", "table_chart_prohibition"], "includes": []},
+            {"id": "tmpl_summary", "name": "summary_system", "enforces": ["session_turns", "table_chart_prohibition", "explanation_summary_limit"], "includes": []},
+            {"id": "tmpl_target", "name": "target_user", "enforces": ["calculation_limit", "table_chart_prohibition"], "includes": []},
+            {"id": "tmpl_reasoning", "name": "reasoning_system", "enforces": ["session_turns", "table_chart_prohibition"], "includes": []},
+        ]
+        with self.driver.session() as session:
+            for tmpl in templates:
+                session.run(
+                    """
+                    MERGE (t:Template {id: $id})
+                    SET t.name = $name
+                    """,
+                    id=tmpl["id"],
+                    name=tmpl["name"],
+                )
+                for cid in tmpl["enforces"]:
+                    session.run(
+                        """
+                        MATCH (t:Template {id: $tid}), (c:Constraint {id: $cid})
+                        MERGE (t)-[:ENFORCES]->(c)
+                        """,
+                        tid=tmpl["id"],
+                        cid=cid,
+                    )
+                for cid in tmpl.get("includes", []):
+                    session.run(
+                        """
+                        MATCH (t:Template {id: $tid}), (c:Constraint {id: $cid})
+                        MERGE (t)-[:INCLUDES]->(c)
+                        """,
+                        tid=tmpl["id"],
+                        cid=cid,
+                    )
+        print(f"✅ 템플릿 {len(templates)}개 생성/연결")
+
+    def create_error_patterns(self):
+        """금지 패턴 노드 생성."""
+        patterns = [
+            {"id": "err_table_ref", "pattern": "(표|그래프)(에 따르면|에서)", "description": "표/그래프 참조"},
+            {"id": "err_definition", "pattern": "용어\\s*(정의|설명)", "description": "용어 정의 질문"},
+            {"id": "err_full_image", "pattern": "전체\\s*이미지\\s*(설명|요약)", "description": "전체 이미지 설명/요약"},
+        ]
+        with self.driver.session() as session:
+            for p in patterns:
+                session.run(
+                    """
+                    MERGE (e:ErrorPattern {id: $id})
+                    SET e.pattern = $pattern,
+                        e.description = $desc
+                    """,
+                    id=p["id"],
+                    pattern=p["pattern"],
+                    desc=p["description"],
+                )
+        print(f"✅ 금지 패턴 {len(patterns)}개 생성/병합")
+
+    def create_best_practices(self):
+        """모범 사례 노드 생성."""
+        practices = [
+            {"id": "bp_explanation", "text": "전체 본문을 재구성하되 고유명/숫자 그대로 유지", "applies_to": "explanation"},
+            {"id": "bp_summary", "text": "설명의 20-30% 길이로 핵심만 요약", "applies_to": "summary"},
+            {"id": "bp_reasoning", "text": "명시되지 않은 전망을 근거 기반으로 묻기", "applies_to": "reasoning"},
+            {"id": "bp_target", "text": "중복 위치 피하고 단일 명확한 타겟 질문", "applies_to": "target"},
+        ]
+        with self.driver.session() as session:
+            for bp in practices:
+                session.run(
+                    """
+                    MERGE (b:BestPractice {id: $id})
+                    SET b.text = $text
+                    """,
+                    id=bp["id"],
+                    text=bp["text"],
+                )
+                session.run(
+                    """
+                    MATCH (b:BestPractice {id: $id}), (q:QueryType {name: $qt})
+                    MERGE (b)-[:APPLIES_TO]->(q)
+                    """,
+                    id=bp["id"],
+                    qt=bp["applies_to"],
+                )
+        print(f"✅ 모범 사례 {len(practices)}개 생성/연결")
+
+    def link_rules_to_query_types(self):
+        """Rule을 QueryType과 연계 (키워드 기반 간단 매핑)."""
+        mappings = [
+            ("explanation", ["전체 설명", "설명문", "full explanation"]),
+            ("summary", ["요약", "summary"]),
+            ("target", ["질문", "타겟", "target"]),
+            ("reasoning", ["추론", "전망", "예측"]),
+        ]
+        with self.driver.session() as session:
+            for qt, keywords in mappings:
+                session.run(
+                    """
+                    MATCH (r:Rule), (q:QueryType {name: $qt})
+                    WHERE ANY(kw IN $keywords WHERE r.text CONTAINS kw)
+                    MERGE (r)-[:APPLIES_TO]->(q)
+                    """,
+                    qt=qt,
+                    keywords=keywords,
+                )
+        print("✅ Rule→QueryType 매핑 (키워드 기반) 완료")
 
 def main():
     uri = require_env("NEO4J_URI")
@@ -208,8 +318,12 @@ def main():
         builder.extract_rules_from_notion()
         builder.extract_query_types()
         builder.extract_constraints()
+        builder.create_templates()
         builder.link_rules_to_constraints()
+        builder.link_rules_to_query_types()
         builder.extract_examples()
+        builder.create_error_patterns()
+        builder.create_best_practices()
         print("\n✅ QA 그래프 구축 완료!")
     except Neo4jError as e:
         print(f"❌ Neo4j 오류: {e}")
