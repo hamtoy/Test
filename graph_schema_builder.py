@@ -233,6 +233,34 @@ class QAGraphBuilder:
                 for text, t in examples[:3]:
                     print(f"   [{t}] {text}...")
 
+    def link_examples_to_rules(self):
+        """예시와 규칙 연결 (텍스트 포함 관계 기반)."""
+        with self.driver.session() as session:
+            # 긍정 예시: DEMONSTRATES
+            session.run(
+                """
+                MATCH (e:Example {type: 'positive'}), (r:Rule)
+                WHERE e.text CONTAINS r.text OR r.text CONTAINS e.text
+                MERGE (e)-[:DEMONSTRATES]->(r)
+                """
+            )
+            # 부정 예시: VIOLATES
+            session.run(
+                """
+                MATCH (e:Example {type: 'negative'}), (r:Rule)
+                WHERE e.text CONTAINS r.text OR r.text CONTAINS e.text
+                MERGE (e)-[:VIOLATES]->(r)
+                """
+            )
+
+            count = session.run(
+                """
+                MATCH (e:Example)-[rel]->(r:Rule)
+                RETURN count(rel) AS links
+                """
+            ).single()["links"]
+        print(f"✅ 예시-규칙 연결 {count}개 생성/병합")
+
     def create_templates(self):
         """템플릿 노드 및 제약/규칙 연결."""
         templates = [
@@ -410,6 +438,8 @@ def main():
         builder.link_rules_to_constraints()
         builder.link_rules_to_query_types()
         builder.extract_examples()
+        builder.extract_examples()
+        builder.link_examples_to_rules()
         builder.create_error_patterns()
         builder.create_best_practices()
         print("\n✅ QA 그래프 구축 완료!")
