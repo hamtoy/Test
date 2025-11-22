@@ -46,6 +46,19 @@ PROGRESS_RESTORED_TEMPLATE: Final[str] = "[green]Turn {turn_id}: Restored[/green
 PROGRESS_PROCESSING_TEMPLATE: Final[str] = "[cyan]Turn {turn_id}: Processing...[/cyan]"
 PROGRESS_FAILED_TEMPLATE: Final[str] = "[red]Turn {turn_id}: Failed[/red]"
 PANEL_TURN_TITLE_TEMPLATE: Final[str] = "Turn {turn_id} Result"
+PANEL_TURN_BODY_TEMPLATE: Final[str] = (
+    "[bold]Query:[/bold] {query}\n\n"
+    "[bold]Best Candidate:[/bold] {best_candidate}\n"
+    "[bold]Rewritten:[/bold] {rewritten}..."
+)
+USER_INTERRUPT_MESSAGE: Final[str] = "\n[bold red][!] 사용자 중단[/bold red]"
+LOG_MESSAGES: Final[dict[str, str]] = {
+    "budget_exceeded": "Budget limit exceeded: {error}",
+    "reload_failed": "데이터 재로딩 실패: {error}",
+    "cache_skipped": "Context cache creation skipped: {error}",
+    "workflow_failed": "Workflow Failed: {error}",
+    "turn_exception": "Turn 실행 중 예외 발생: {error}",
+}
 
 ERROR_MESSAGES: Final[dict[str, str]] = {
     "api_key_missing": "GEMINI_API_KEY is not set. Please check your .env file.",

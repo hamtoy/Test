@@ -36,9 +36,11 @@ from src.utils import safe_json_parse, write_cache_stats
 from src.exceptions import CacheCreationError
 from src.constants import (
     BUDGET_WARNING_THRESHOLDS,
+    LOG_MESSAGES,
     PANEL_TITLE_BUDGET,
     PANEL_TITLE_COST,
     PANEL_TITLE_QUERIES,
+    PANEL_TURN_BODY_TEMPLATE,
     PROMPT_EDIT_CANDIDATES,
     COST_PANEL_TEMPLATE,
     PROGRESS_WAITING_TEMPLATE,
@@ -47,6 +49,7 @@ from src.constants import (
     PROGRESS_PROCESSING_TEMPLATE,
     PROGRESS_FAILED_TEMPLATE,
     PANEL_TURN_TITLE_TEMPLATE,
+    USER_INTERRUPT_MESSAGE,
 )
 
 if TYPE_CHECKING:
@@ -257,7 +260,7 @@ async def _load_candidates(
             logger.info("데이터 재로딩 완료")
             return candidates
         except Exception as e:
-            logger.error(f"데이터 재로딩 실패: {e}")
+            logger.error(LOG_MESSAGES["reload_failed"].format(error=e))
             return None
 
     # 재로딩 없이 진행 (AUTO 또는 skip)
@@ -286,7 +289,7 @@ async def _create_context_cache(
     try:
         return await agent.create_context_cache(ocr_text)
     except CacheCreationError as e:
-        logger.warning(f"Context cache creation skipped: {e}")
+        logger.warning(LOG_MESSAGES["cache_skipped"].format(error=e))
         return None
 
 
@@ -329,7 +332,7 @@ def _schedule_turns(
         try:
             agent.check_budget()
         except Exception as e:
-            logger.error(f"Budget limit exceeded: {e}")
+            logger.error(LOG_MESSAGES["budget_exceeded"].format(error=e))
             console.print(Panel(str(e), title=PANEL_TITLE_BUDGET, border_style="red"))
             break
 
@@ -393,7 +396,7 @@ async def _gather_results(
     processed_results = await asyncio.gather(*tasks, return_exceptions=True)
     for item in processed_results:
         if isinstance(item, Exception):
-            logger.error(f"Turn 실행 중 예외 발생: {item}")
+            logger.error(LOG_MESSAGES["turn_exception"].format(error=item))
             continue
         if item is None:
             continue
@@ -469,9 +472,11 @@ async def process_single_query(
             # 턴 결과 출력 (Thread-safe way needed for real app, but Rich handles it reasonably well)
             console.print(
                 Panel(
-                    f"[bold]Query:[/bold] {query}\n\n"
-                    f"[bold]Best Candidate:[/bold] {result.evaluation.get_best_candidate_id()}\n"
-                    f"[bold]Rewritten:[/bold] {result.rewritten_answer[:200]}...",
+                    PANEL_TURN_BODY_TEMPLATE.format(
+                        query=query,
+                        best_candidate=result.evaluation.get_best_candidate_id(),
+                        rewritten=result.rewritten_answer[:200],
+                    ),
                     title=PANEL_TURN_TITLE_TEMPLATE.format(turn_id=turn_id),
                     border_style="blue",
                 )
@@ -488,7 +493,7 @@ async def process_single_query(
             return result
 
     except Exception as e:
-        ctx.logger.exception(f"Turn {turn_id} 실행 중 오류 발생: {e}")
+        ctx.logger.exception(LOG_MESSAGES["turn_exception"].format(error=e))
         if ctx.progress and task_id:
             ctx.progress.update(
                 task_id,
@@ -763,7 +768,7 @@ async def main():
             logger.warning(f"Cache stats write skipped: {e}")
 
     except Exception as e:
-        logger.exception(f"Workflow Failed: {e}")
+        logger.exception(LOG_MESSAGES["workflow_failed"].format(error=e))
     finally:
         # 로그 리스너 종료 (남은 로그 플러시)
         log_listener.stop()
@@ -783,7 +788,7 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         # from rich.console import Console # Already imported at the top
-        console.print("\n[bold red][!] 사용자 중단[/bold red]")
+        console.print(USER_INTERRUPT_MESSAGE)
         sys.exit(130)
     except Exception as e:
         logging.critical(f"Critical error: {e}", exc_info=True)
