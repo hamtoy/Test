@@ -30,19 +30,33 @@ class QAGraphBuilder:
     def create_schema_constraints(self):
         """고유 제약 추가 (존재 시 무시)."""
         with self.driver.session() as session:
-            session.run("CREATE CONSTRAINT rule_id_unique IF NOT EXISTS FOR (r:Rule) REQUIRE r.id IS UNIQUE")
-            session.run("CREATE CONSTRAINT constraint_id_unique IF NOT EXISTS FOR (c:Constraint) REQUIRE c.id IS UNIQUE")
-            session.run("CREATE CONSTRAINT example_id_unique IF NOT EXISTS FOR (e:Example) REQUIRE e.id IS UNIQUE")
-            session.run("CREATE CONSTRAINT qtype_name_unique IF NOT EXISTS FOR (q:QueryType) REQUIRE q.name IS UNIQUE")
-            session.run("CREATE CONSTRAINT template_id_unique IF NOT EXISTS FOR (t:Template) REQUIRE t.id IS UNIQUE")
-            session.run("CREATE CONSTRAINT errorpattern_id_unique IF NOT EXISTS FOR (e:ErrorPattern) REQUIRE e.id IS UNIQUE")
-            session.run("CREATE CONSTRAINT bestpractice_id_unique IF NOT EXISTS FOR (b:BestPractice) REQUIRE b.id IS UNIQUE")
+            session.run(
+                "CREATE CONSTRAINT rule_id_unique IF NOT EXISTS FOR (r:Rule) REQUIRE r.id IS UNIQUE"
+            )
+            session.run(
+                "CREATE CONSTRAINT constraint_id_unique IF NOT EXISTS FOR (c:Constraint) REQUIRE c.id IS UNIQUE"
+            )
+            session.run(
+                "CREATE CONSTRAINT example_id_unique IF NOT EXISTS FOR (e:Example) REQUIRE e.id IS UNIQUE"
+            )
+            session.run(
+                "CREATE CONSTRAINT qtype_name_unique IF NOT EXISTS FOR (q:QueryType) REQUIRE q.name IS UNIQUE"
+            )
+            session.run(
+                "CREATE CONSTRAINT template_id_unique IF NOT EXISTS FOR (t:Template) REQUIRE t.id IS UNIQUE"
+            )
+            session.run(
+                "CREATE CONSTRAINT errorpattern_id_unique IF NOT EXISTS FOR (e:ErrorPattern) REQUIRE e.id IS UNIQUE"
+            )
+            session.run(
+                "CREATE CONSTRAINT bestpractice_id_unique IF NOT EXISTS FOR (b:BestPractice) REQUIRE b.id IS UNIQUE"
+            )
         print("✅ 스키마 고유 제약 생성/확인 완료")
 
     def extract_rules_from_notion(self):
         """Notion 문서에서 규칙 추출 및 그래프화 (중복 방지 MERGE)."""
         import hashlib
-        
+
         with self.driver.session() as session:
             result = session.run(
                 """
@@ -62,7 +76,7 @@ class QAGraphBuilder:
                     if not rule_text or len(rule_text) <= 10:
                         continue
                     # 텍스트 해시 기반 ID로 중복 방지
-                    rid = hashlib.sha256(rule_text.encode('utf-8')).hexdigest()[:16]
+                    rid = hashlib.sha256(rule_text.encode("utf-8")).hexdigest()[:16]
                     session.run(
                         """
                         MERGE (r:Rule {id: $id})
@@ -80,10 +94,30 @@ class QAGraphBuilder:
     def extract_query_types(self):
         """질의 유형 정의 추출."""
         query_types = [
-            {"name": "explanation", "korean": "전체 설명문", "limit": 1, "requires_reconstruction": True},
-            {"name": "summary", "korean": "전체 요약문", "limit": 1, "requires_reconstruction": True},
-            {"name": "target", "korean": "이미지 내 타겟", "limit": None, "requires_reconstruction": False},
-            {"name": "reasoning", "korean": "추론 질의", "limit": 1, "requires_reconstruction": False},
+            {
+                "name": "explanation",
+                "korean": "전체 설명문",
+                "limit": 1,
+                "requires_reconstruction": True,
+            },
+            {
+                "name": "summary",
+                "korean": "전체 요약문",
+                "limit": 1,
+                "requires_reconstruction": True,
+            },
+            {
+                "name": "target",
+                "korean": "이미지 내 타겟",
+                "limit": None,
+                "requires_reconstruction": False,
+            },
+            {
+                "name": "reasoning",
+                "korean": "추론 질의",
+                "limit": 1,
+                "requires_reconstruction": False,
+            },
         ]
         with self.driver.session() as session:
             for qt in query_types:
@@ -164,7 +198,7 @@ class QAGraphBuilder:
     def extract_examples(self):
         """예시 추출 (❌/⭕ 패턴) 및 중복 방지."""
         import hashlib
-        
+
         with self.driver.session() as session:
             result = session.run(
                 """
@@ -184,7 +218,7 @@ class QAGraphBuilder:
                 text = record["text"]
                 ex_type = record["type"]
                 # 텍스트 해시 기반 ID로 중복 방지
-                eid = hashlib.sha256(text.encode('utf-8')).hexdigest()[:16]
+                eid = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
                 session.run(
                     """
                     MERGE (e:Example {id: $id})
@@ -199,18 +233,42 @@ class QAGraphBuilder:
                 examples.append((text[:50], ex_type))
 
             print(f"✅ 예시 {len(examples)}개 추출/병합")
-                if examples:
-                    print("샘플:")
-                    for text, t in examples[:3]:
-                        print(f"   [{t}] {text}...")
+            if examples:
+                print("샘플:")
+                for text, t in examples[:3]:
+                    print(f"   [{t}] {text}...")
 
     def create_templates(self):
         """템플릿 노드 및 제약/규칙 연결."""
         templates = [
-            {"id": "tmpl_explanation", "name": "explanation_system", "enforces": ["session_turns", "table_chart_prohibition"], "includes": []},
-            {"id": "tmpl_summary", "name": "summary_system", "enforces": ["session_turns", "table_chart_prohibition", "explanation_summary_limit"], "includes": []},
-            {"id": "tmpl_target", "name": "target_user", "enforces": ["calculation_limit", "table_chart_prohibition"], "includes": []},
-            {"id": "tmpl_reasoning", "name": "reasoning_system", "enforces": ["session_turns", "table_chart_prohibition"], "includes": []},
+            {
+                "id": "tmpl_explanation",
+                "name": "explanation_system",
+                "enforces": ["session_turns", "table_chart_prohibition"],
+                "includes": [],
+            },
+            {
+                "id": "tmpl_summary",
+                "name": "summary_system",
+                "enforces": [
+                    "session_turns",
+                    "table_chart_prohibition",
+                    "explanation_summary_limit",
+                ],
+                "includes": [],
+            },
+            {
+                "id": "tmpl_target",
+                "name": "target_user",
+                "enforces": ["calculation_limit", "table_chart_prohibition"],
+                "includes": [],
+            },
+            {
+                "id": "tmpl_reasoning",
+                "name": "reasoning_system",
+                "enforces": ["session_turns", "table_chart_prohibition"],
+                "includes": [],
+            },
         ]
         with self.driver.session() as session:
             for tmpl in templates:
@@ -245,9 +303,21 @@ class QAGraphBuilder:
     def create_error_patterns(self):
         """금지 패턴 노드 생성."""
         patterns = [
-            {"id": "err_table_ref", "pattern": "(표|그래프)(에 따르면|에서)", "description": "표/그래프 참조"},
-            {"id": "err_definition", "pattern": "용어\\s*(정의|설명)", "description": "용어 정의 질문"},
-            {"id": "err_full_image", "pattern": "전체\\s*이미지\\s*(설명|요약)", "description": "전체 이미지 설명/요약"},
+            {
+                "id": "err_table_ref",
+                "pattern": "(표|그래프)(에 따르면|에서)",
+                "description": "표/그래프 참조",
+            },
+            {
+                "id": "err_definition",
+                "pattern": "용어\\s*(정의|설명)",
+                "description": "용어 정의 질문",
+            },
+            {
+                "id": "err_full_image",
+                "pattern": "전체\\s*이미지\\s*(설명|요약)",
+                "description": "전체 이미지 설명/요약",
+            },
         ]
         with self.driver.session() as session:
             for p in patterns:
@@ -266,10 +336,26 @@ class QAGraphBuilder:
     def create_best_practices(self):
         """모범 사례 노드 생성."""
         practices = [
-            {"id": "bp_explanation", "text": "전체 본문을 재구성하되 고유명/숫자 그대로 유지", "applies_to": "explanation"},
-            {"id": "bp_summary", "text": "설명의 20-30% 길이로 핵심만 요약", "applies_to": "summary"},
-            {"id": "bp_reasoning", "text": "명시되지 않은 전망을 근거 기반으로 묻기", "applies_to": "reasoning"},
-            {"id": "bp_target", "text": "중복 위치 피하고 단일 명확한 타겟 질문", "applies_to": "target"},
+            {
+                "id": "bp_explanation",
+                "text": "전체 본문을 재구성하되 고유명/숫자 그대로 유지",
+                "applies_to": "explanation",
+            },
+            {
+                "id": "bp_summary",
+                "text": "설명의 20-30% 길이로 핵심만 요약",
+                "applies_to": "summary",
+            },
+            {
+                "id": "bp_reasoning",
+                "text": "명시되지 않은 전망을 근거 기반으로 묻기",
+                "applies_to": "reasoning",
+            },
+            {
+                "id": "bp_target",
+                "text": "중복 위치 피하고 단일 명확한 타겟 질문",
+                "applies_to": "target",
+            },
         ]
         with self.driver.session() as session:
             for bp in practices:
@@ -311,6 +397,7 @@ class QAGraphBuilder:
                     keywords=keywords,
                 )
         print("✅ Rule→QueryType 매핑 (키워드 기반) 완료")
+
 
 def main():
     uri = require_env("NEO4J_URI")
