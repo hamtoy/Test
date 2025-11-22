@@ -4,19 +4,19 @@ import os
 import sys
 from typing import Dict, Any, List
 
+import google.generativeai as genai
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 from neo4j.exceptions import Neo4jError
+from langchain_core.embeddings import Embeddings
+
+from checks.validate_session import validate_turns
 
 load_dotenv()
 
 REPO_ROOT = os.path.abspath(os.path.dirname(__file__))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
-
-from checks.validate_session import validate_turns  # noqa: E402
-import google.generativeai as genai
-from langchain_core.embeddings import Embeddings
 
 
 def require_env(var: str) -> str:
