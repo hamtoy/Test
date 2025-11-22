@@ -15,19 +15,10 @@ import re
 from pathlib import Path
 from typing import List
 
-root = Path(__file__).resolve().parents[1]
-if str(root) not in sys.path:
-    sys.path.insert(0, str(root))
-
-from scripts.build_session import (
-    SessionContext,
-    build_session,
-    repo_root,
-    is_calc_query,
-)  # noqa: E402
-from checks.validate_session import validate_turns  # noqa: E402
-from checks.detect_forbidden_patterns import find_violations  # noqa: E402
-from scripts.render_prompt import render  # noqa: E402
+from checks.detect_forbidden_patterns import find_violations
+from checks.validate_session import validate_turns
+from scripts.build_session import SessionContext, build_session, is_calc_query, repo_root
+from scripts.render_prompt import render
 
 
 class ModelClient:

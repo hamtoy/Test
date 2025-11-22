@@ -14,18 +14,10 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import List, Dict
+from typing import Dict, List
 
-repo_root = Path(__file__).resolve().parents[1]
-if str(repo_root) not in sys.path:
-    sys.path.insert(0, str(repo_root))
-
-from scripts.build_session import (
-    SessionContext,
-    build_session,
-    repo_root as builder_root,
-)  # noqa: E402
-from checks.detect_forbidden_patterns import find_violations  # noqa: E402
+from checks.detect_forbidden_patterns import find_violations
+from scripts.build_session import SessionContext, build_session, repo_root as builder_root
 
 
 def validate_turns(turns, ctx: SessionContext) -> Dict:
