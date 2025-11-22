@@ -215,7 +215,14 @@ class QAGraphBuilder:
         print(f"✅ 제약 조건 {len(constraints)}개 생성/병합")
 
     def link_rules_to_constraints(self):
-        """규칙과 제약 조건 연결."""
+        """규칙과 제약 조건 연결(기본 포함 매칭 + 키워드 기반 보강)."""
+        # 키워드 기반 보강 매핑 (필요 시 여기에 추가)
+        constraint_keywords = {
+            "session_turns": ["3-4", "3턴", "4턴", "턴만", "3~4"],
+            "explanation_summary_limit": ["설명문/요약문", "둘 다", "동시", "설명과 요약"],
+            "calculation_limit": ["계산", "연산", "계산 요청", "수식"],
+            "table_chart_prohibition": ["표", "그래프", "차트", "테이블"],
+        }
         with self.driver.session() as session:
             session.run(
                 """
@@ -224,6 +231,17 @@ class QAGraphBuilder:
                 MERGE (r)-[:ENFORCES]->(c)
                 """
             )
+            # 키워드 기반 추가 연결
+            for cid, keywords in constraint_keywords.items():
+                session.run(
+                    """
+                    MATCH (r:Rule), (c:Constraint {id: $cid})
+                    WHERE ANY(kw IN $keywords WHERE toLower(r.text) CONTAINS toLower(kw))
+                    MERGE (r)-[:ENFORCES]->(c)
+                    """,
+                    cid=cid,
+                    keywords=keywords,
+                )
             count = session.run(
                 "MATCH (r:Rule)-[:ENFORCES]->(c:Constraint) RETURN count(*) AS links"
             ).single()["links"]
