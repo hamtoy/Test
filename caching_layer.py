@@ -29,7 +29,10 @@ class CachingLayer:
         RETURN r.id AS id, r.text AS text, r.section AS section
         """
         with self.kg._graph.session() as session:
-            return cast(List[Dict[str, str]], [dict(rec) for rec in session.run(cypher, qt=query_type)])
+            return cast(
+                List[Dict[str, str]],
+                [dict(rec) for rec in session.run(cypher, qt=query_type)],
+            )
 
     def get_rules_cached(self, query_type: str) -> List[Dict[str, str]]:
         """
