@@ -1,24 +1,3 @@
-[![CI](https://github.com/hamtoy/Test/actions/workflows/ci.yml/badge.svg)](https://github.com/hamtoy/Test/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/hamtoy/Test/branch/main/graph/badge.svg)](https://codecov.io/gh/hamtoy/Test)
-
-# Gemini 워크플로우 - Q&A 시스템
-
-Google Gemini AI를 활용한 Q&A 응답 평가 및 재작성 워크플로우 시스템입니다.
-
-## 주요 기능
-
-- 🤖 **질의 생성**: OCR 텍스트에서 질의 자동생성
-- 📊 **후보 평가**: 여러 답변 후보 평가 및 점수 부여
-- ✍️ **답변 재작성**: 선택된 답변의 품질 개선
-- 💰 **비용 추적**: 토큰 사용량 및 비용 추적
-- 🛡️ **안정성**: Rate limiting, 타입 검증, 환각 감지
-- 🎨 **사용자 인터페이스**: Rich 기반 콘솔 출력
-- 🧪 **테스트**: pytest 기반 테스트 지원
-
-## 프로젝트 구조
-
-```
-project_root/
 ├── .env                    # 환경 변수 (API 키)
 ├── .env.example            # 환경 변수 템플릿
 ├── DEPLOYMENT_VERIFIED.md  # 배포 검증 문서
@@ -307,28 +286,6 @@ INFO     Token Usage - Prompt: 3,681, Response: 867, Total: 6,316
 
 ╭─ 비용 요약 ───────────────────────────────╮
 │ 💰 총 비용: $0.0534 USD                   │
-│ 📊 토큰: 11,684 입력 / 1,194 출력         │
-│ 📈 캐시: 5 hit / 2 miss                   │
-╰────────────────────────────────────────────╯
-```
-
-## 테스트
-
-```bash
-# 전체 테스트
-pytest tests/ -v
-
-# 특정 테스트
-pytest tests/test_agent.py -v
-
-# 커버리지 포함
-pytest tests/ --cov=src --cov-report=html
-```
-
-## 개발 가이드
-
-### 주요 모듈
-
 - `src/agent.py`: Gemini API 호출, 재시도, rate limiting, 비용 추적
 - `src/cache_analytics.py`: 캐시 통계 분석 및 비용 절감 계산
 - `src/config.py`: 환경 변수 기반 설정 관리
@@ -359,8 +316,8 @@ def validate_best_candidate(self):
 
 #### Rate Limiting
 
-- **Semaphore**: 동시 API 호출 수 제한
-- **Rate Limiter**: 분당 요청 수 제한
+- __Semaphore__: 동시 API 호출 수 제한
+- __Rate Limiter__: 분당 요청 수 제한
 - `429 Too Many Requests` 오류 방지
 
 #### Dependency Injection
@@ -414,28 +371,28 @@ results = await asyncio.gather(*[
 
 ## FAQ
 
-- **GEMINI_API_KEY 형식 오류가 뜹니다.** → `AIza`로 시작하고 총 39자여야 합니다. `.env`에서 공백/따옴표가 섞여 있지 않은지 확인하세요.
-- **커버리지 기준은 얼마인가요?** → CI에서 `--cov-fail-under=68`을 사용합니다. 로컬에서도 동일하게 실행됩니다.
-- **캐시 통계 파일은 어디에 저장되나요?** → 기본 `cache_stats.jsonl`이며, `CACHE_STATS_FILE`로 경로를, `CACHE_STATS_MAX_ENTRIES`로 보존 개수를 설정할 수 있습니다.
+- __GEMINI_API_KEY 형식 오류가 뜹니다.__ → `AIza`로 시작하고 총 39자여야 합니다. `.env`에서 공백/따옴표가 섞여 있지 않은지 확인하세요.
+- __커버리지 기준은 얼마인가요?__ → CI에서 `--cov-fail-under=68`을 사용합니다. 로컬에서도 동일하게 실행됩니다.
+- __캐시 통계 파일은 어디에 저장되나요?__ → 기본 `cache_stats.jsonl`이며, `CACHE_STATS_FILE`로 경로를, `CACHE_STATS_MAX_ENTRIES`로 보존 개수를 설정할 수 있습니다.
 
 ## 구현된 기능
 
-- **타입 안정성**: Pydantic Literal 사용
-- **예외 처리**: 다중 레이어 에러 핸들링
-- **Rate Limiting**: 동시성 및 RPM 제어
-- **비용 추적**: 실시간 토큰 사용량 계산
-- **로깅**: 콘솔 및 파일 분리, API 키 마스킹
-- **테스트**: Dependency Injection 지원
-- **검증**: 입력 유효성 검사 및 환각 감지
-- **병렬 처리**: 여러 쿼리 동시 처리
-- **캐시 모니터링**: 캐시 hit/miss 추적
+- __타입 안정성__: Pydantic Literal 사용
+- __예외 처리__: 다중 레이어 에러 핸들링
+- __Rate Limiting__: 동시성 및 RPM 제어
+- __비용 추적__: 실시간 토큰 사용량 계산
+- __로깅__: 콘솔 및 파일 분리, API 키 마스킹
+- __테스트__: Dependency Injection 지원
+- __검증__: 입력 유효성 검사 및 환각 감지
+- __병렬 처리__: 여러 쿼리 동시 처리
+- __캐시 모니터링__: 캐시 hit/miss 추적
 
 ## 문서
 
-- **[UV_GUIDE.md](UV_GUIDE.md)**: UV 패키지 매니저 사용 가이드
-- **[CONTRIBUTING.md](CONTRIBUTING.md)**: 기여 가이드라인
-- **[DEPLOYMENT_VERIFIED.md](DEPLOYMENT_VERIFIED.md)**: 배포 검증 내역
-- **Sphinx 문서**: `docs/` 디렉토리에서 `make html` 실행
+- __[UV_GUIDE.md](UV_GUIDE.md)__: UV 패키지 매니저 사용 가이드
+- __[CONTRIBUTING.md](CONTRIBUTING.md)__: 기여 가이드라인
+- __[DEPLOYMENT_VERIFIED.md](DEPLOYMENT_VERIFIED.md)__: 배포 검증 내역
+- __Sphinx 문서__: `docs/` 디렉토리에서 `make html` 실행
 
 ## 즉시 실행 가능 - QA 시스템 구축
 
@@ -479,7 +436,7 @@ Notion 가이드 기반 텍스트 중심 이미지 QA 세션 생성 시스템입
 
 ### 주요 구성요소
 
-**템플릿:**
+__템플릿:__
 
 - `templates/system/` - 설명문, 요약문, 추론, 전역 시스템 프롬프트
 - `templates/user/` - 타겟 질의, 일반 사용자 입력
@@ -487,7 +444,7 @@ Notion 가이드 기반 텍스트 중심 이미지 QA 세션 생성 시스템입
 - `templates/rewrite/` - 최고 답변 재작성
 - `templates/fact/` - 사실 검증
 
-**도구:**
+__도구:__
 
 - `scripts/build_session.py` - 3~4턴 세션 자동 구성
 - `scripts/render_prompt.py` - 템플릿 렌더링
