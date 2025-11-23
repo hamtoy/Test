@@ -8,6 +8,7 @@ import tempfile
 from pathlib import Path
 import types
 
+
 # Stub external deps before importing targets (with attributes for mypy)
 class _StubPIL(types.ModuleType):
     class Image:  # type: ignore[valid-type]
