@@ -73,13 +73,40 @@ project_root/
 - 토큰 사용량 및 비용 추적
 - 입력 검증 및 환각 감지
 
+### 시스템 구성
+
+**기본 워크플로우** (Gemini만 사용):
+```
+
+OCR 입력 → 질의 생성 → 후보 평가 → 답변 재작성 → 결과 출력
+
+```
+
+**고급 워크플로우** (Gemini + Neo4j QA RAG 시스템):
+```
+
+OCR 입력 → 질의 생성 → 후보 평가 ──┬─→ Neo4j 그래프
+                                    ├─→ 벡터 검색
+                                    └─→ Session 검증 (checks/)
+              ↓
+         답변 재작성 → 결과 출력
+
+```
+
+> [!NOTE]
+> Neo4j와 Notion은 **QA RAG 시스템** 사용 시에만 필요합니다. 기본 워크플로우는 Gemini API만으로 동작합니다.
+
 ## 시작하기
 
 ### 필수 요구사항
 
 - Python 3.10 이상
 - Google Gemini API 키 ([발급 링크](https://makersuite.google.com/app/apikey))
-- Neo4j 데이터베이스 (RAG 시스템 사용 시)
+
+### 선택 요구사항 (QA RAG 시스템 사용 시)
+
+- Neo4j 데이터베이스 ([Aura 무료](https://neo4j.com/cloud/aura-free/))
+- Notion 계정 (규칙 데이터 소스)
 
 ### 설치
 
@@ -149,6 +176,7 @@ pre-commit run --all-files
 pre-commit run --all-files        # ruff + ruff-format + mypy
 uv run pytest tests/ --cov=src --cov-fail-under=68
 ```
+
 ```
 
 ### 템플릿/세션 도구
