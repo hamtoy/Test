@@ -51,7 +51,9 @@ def test_generate_qa_with_all_enhancements(monkeypatch):
         def __init__(self, *_, **__):
             pass
 
-        def analyze_image_complexity(self, image_meta: Dict[str, Any]) -> Dict[str, Any]:
+        def analyze_image_complexity(
+            self, image_meta: Dict[str, Any]
+        ) -> Dict[str, Any]:
             return {"text_density": 0.5, "has_structure": False, "level": "simple"}
 
         def adjust_query_requirements(
@@ -64,7 +66,11 @@ def test_generate_qa_with_all_enhancements(monkeypatch):
             pass
 
         def cross_validate_qa_pair(
-            self, question: str, answer: str, query_type: str, image_meta: Dict[str, Any]
+            self,
+            question: str,
+            answer: str,
+            query_type: str,
+            image_meta: Dict[str, Any],
         ) -> Dict[str, Any]:
             return {"valid": True, "issues": []}
 
@@ -96,7 +102,9 @@ def test_generate_qa_with_all_enhancements(monkeypatch):
     monkeypatch.setattr(iqs, "RealTimeConstraintEnforcer", FakeEnforcer, raising=True)
     monkeypatch.setattr(iqs, "AdaptiveDifficultyAdjuster", FakeAdjuster, raising=True)
     monkeypatch.setattr(iqs, "CrossValidationSystem", FakeValidator, raising=True)
-    monkeypatch.setattr(iqs, "DynamicExampleSelector", FakeExampleSelector, raising=True)
+    monkeypatch.setattr(
+        iqs, "DynamicExampleSelector", FakeExampleSelector, raising=True
+    )
     monkeypatch.setattr(iqs, "MultimodalUnderstanding", FakeMultimodal, raising=True)
     monkeypatch.setattr(iqs, "GeminiModelClient", FakeLLM, raising=True)
 

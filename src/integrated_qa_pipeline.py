@@ -24,6 +24,7 @@ def require_env(var: str) -> str:
 
 class IntegratedQAPipeline:
     """Graph-backed QA session builder and validator."""
+
     def __init__(self):
         self.neo4j_uri = require_env("NEO4J_URI")
         self.neo4j_user = require_env("NEO4J_USER")

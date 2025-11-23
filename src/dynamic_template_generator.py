@@ -81,7 +81,9 @@ class DynamicTemplateGenerator:
         try:
             template = self.jinja_env.get_template(template_name)
         except TemplateNotFound as exc:
-            self.logger.warning("Template %s not found (%s), using fallback", template_name, exc)
+            self.logger.warning(
+                "Template %s not found (%s), using fallback", template_name, exc
+            )
             template = self.jinja_env.get_template(fallback)
 
         full_context = {
