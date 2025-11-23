@@ -6,13 +6,13 @@ import os
 from langchain_core.prompts import PromptTemplate
 from langchain_community.graphs import Neo4jGraph
 from langchain_community.vectorstores import Neo4jVector
-from qa_rag_system import CustomGeminiEmbeddings
+from src.qa_rag_system import CustomGeminiEmbeddings
 
 
 class AdvancedContextAugmentation:
     """
     유사 사례/규칙/예시를 찾아 프롬프트에 주입하는 보조 유틸.
-    - GEMINI_API_KEY가 없으면 벡터 검색을 건너뛰고 그래프 기반 정보만 사용.
+    - GEMINI_API_KEY가 없으면 벡터 검색을 건너뛰고 그래프 기반 대체 검색을 사용.
     """
 
     def __init__(
@@ -36,7 +36,7 @@ class AdvancedContextAugmentation:
                 username=user,
                 password=password,
                 index_name="combined_embeddings",
-                node_label="Block",  # Rule, Example도 포함한다고 가정
+                node_label="Block",  # Block 노드만 벡터 인덱싱 (Rule/Example은 그래프 관계로 조회)
                 text_node_properties=["content", "text"],
                 embedding_node_property="embedding",
             )
@@ -46,42 +46,76 @@ class AdvancedContextAugmentation:
     ) -> Dict[str, Any]:
         """
         유사한 블록/규칙/예시를 찾아 컨텍스트를 구성.
-        벡터 인덱스가 없으면 그래프 검색만 수행.
+        벡터 인덱스가 없으면 간단한 그래프 기반 대체 검색을 수행합니다.
         """
 
         similar_blocks: List[Any] = []
+        enriched_rules: List[Dict[str, Any]] = []
+
         if self.vector_index:
             similar_blocks = self.vector_index.similarity_search(user_query, k=5)
 
-        block_ids = [
-            b.metadata.get("id")
-            for b in similar_blocks
-            if isinstance(b.metadata, dict) and b.metadata.get("id") is not None
-        ]
+            block_ids = [
+                b.metadata.get("id")
+                for b in similar_blocks
+                if isinstance(b.metadata, dict) and b.metadata.get("id") is not None
+            ]
 
-        enriched_rules: List[Dict[str, Any]] = []
-        if block_ids:
-            with self.graph._driver.session() as session:
-                result = session.run(
-                    """
-                    MATCH (b:Block)
-                    WHERE id(b) IN $block_ids
-                    MATCH (b)-[:RELATED_TO]->(r:Rule)
-                    OPTIONAL MATCH (r)<-[:DEMONSTRATES]-(e:Example)
-                    WHERE e.type = 'positive'
-                    RETURN DISTINCT
-                        r.text AS rule,
-                        r.priority AS priority,
-                        collect(DISTINCT e.text)[0..2] AS examples
-                    ORDER BY r.priority DESC
-                    LIMIT 5
-                    """,
-                    block_ids=block_ids,
-                )
-                enriched_rules = result.data()
+            if block_ids:
+                with self.graph._driver.session() as session:
+                    result = session.run(
+                        """
+                        MATCH (b:Block)
+                        WHERE id(b) IN $block_ids
+                        MATCH (b)-[:RELATED_TO]->(r:Rule)
+                        OPTIONAL MATCH (r)<-[:DEMONSTRATES]-(e:Example)
+                        WHERE e.type = 'positive'
+                        RETURN DISTINCT
+                            r.text AS rule,
+                            r.priority AS priority,
+                            collect(DISTINCT e.text)[0..2] AS examples
+                        ORDER BY r.priority DESC
+                        LIMIT 5
+                        """,
+                        block_ids=block_ids,
+                    )
+                    enriched_rules = result.data()
+        else:
+            # 백업: QueryType 기반 그래프 조회로 규칙/예시/블록을 가져옵니다.
+            try:
+                with self.graph._driver.session() as session:
+                    record = session.run(
+                        """
+                        MATCH (qt:QueryType {name: $qt})
+                        OPTIONAL MATCH (qt)<-[:RELATED_TO]-(b:Block)
+                        WITH qt, collect(DISTINCT b)[0..5] AS blocks
+                        OPTIONAL MATCH (qt)<-[:APPLIES_TO]-(r:Rule)
+                        OPTIONAL MATCH (r)<-[:DEMONSTRATES]-(e:Example)
+                        WHERE r IS NOT NULL AND (e IS NULL OR e.type = 'positive')
+                        WITH blocks, r, [x IN collect(DISTINCT e.text) WHERE x IS NOT NULL][0..2] AS ex
+                        RETURN blocks,
+                               collect(DISTINCT {rule: r.text, priority: r.priority, examples: ex})[0..5] AS rules
+                        """,
+                        qt=query_type,
+                    ).single()
+
+                    if record:
+                        similar_blocks = record.get("blocks") or []
+                        enriched_rules = record.get("rules") or []
+            except Exception:
+                pass
 
         return {
-            "similar_cases": [b.page_content for b in similar_blocks],
+            "similar_cases": [
+                str(
+                    getattr(b, "page_content", "")
+                    or (b.get("content") if hasattr(b, "get") else "")
+                    or (b.get("text") if hasattr(b, "get") else "")
+                )
+                for b in similar_blocks
+                if getattr(b, "page_content", None)
+                or (hasattr(b, "get") and (b.get("content") or b.get("text")))
+            ],
             "relevant_rules": enriched_rules,
             "query_type": query_type,
         }

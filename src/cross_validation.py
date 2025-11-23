@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List
 
-from qa_rag_system import QAKnowledgeGraph
+from src.qa_rag_system import QAKnowledgeGraph
 
 
 class CrossValidationSystem:

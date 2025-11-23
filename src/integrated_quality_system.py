@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from adaptive_difficulty import AdaptiveDifficultyAdjuster
-from advanced_context_augmentation import AdvancedContextAugmentation
-from cross_validation import CrossValidationSystem
-from dynamic_example_selector import DynamicExampleSelector
-from multimodal_understanding import MultimodalUnderstanding
-from qa_rag_system import QAKnowledgeGraph
-from real_time_constraint_enforcer import RealTimeConstraintEnforcer
-from gemini_model_client import GeminiModelClient
+from src.adaptive_difficulty import AdaptiveDifficultyAdjuster
+from src.advanced_context_augmentation import AdvancedContextAugmentation
+from src.cross_validation import CrossValidationSystem
+from src.dynamic_example_selector import DynamicExampleSelector
+from src.multimodal_understanding import MultimodalUnderstanding
+from src.qa_rag_system import QAKnowledgeGraph
+from src.real_time_constraint_enforcer import RealTimeConstraintEnforcer
+from src.gemini_model_client import GeminiModelClient
 
 
 class IntegratedQualitySystem:
@@ -40,7 +40,7 @@ class IntegratedQualitySystem:
     ) -> Dict[str, Any]:
         """
         모든 품질 보강 기능을 적용한 QA 생성 플로우.
-        실제 LLM 호출 부분은 스텁으로 남겨두었습니다.
+        GeminiModelClient를 통해 실제 LLM을 호출하여 답변을 생성합니다.
         """
 
         # 1. 이미지 분석

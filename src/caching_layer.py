@@ -8,7 +8,7 @@ try:
 except ImportError:  # redis가 없을 때도 동작하도록
     redis = None
 
-from qa_rag_system import QAKnowledgeGraph
+from src.qa_rag_system import QAKnowledgeGraph
 
 
 class CachingLayer:

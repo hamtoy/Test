@@ -1,4 +1,4 @@
-from qa_rag_system import QAKnowledgeGraph
+from src.qa_rag_system import QAKnowledgeGraph
 
 
 class FakeDoc:

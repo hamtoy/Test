@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from langchain.callbacks.base import BaseCallbackHandler
 from neo4j import GraphDatabase
 
-from qa_rag_system import require_env
+from src.qa_rag_system import require_env
 
 
 class Neo4jLoggingCallback(BaseCallbackHandler):

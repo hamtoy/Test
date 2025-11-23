@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from qa_rag_system import QAKnowledgeGraph
+from src.qa_rag_system import QAKnowledgeGraph
 
 
 class AdaptiveDifficultyAdjuster:

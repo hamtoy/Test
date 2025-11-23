@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-import sys
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
@@ -10,11 +10,8 @@ from neo4j import GraphDatabase
 
 load_dotenv()
 
-REPO_ROOT = os.path.abspath(os.path.dirname(__file__))
-if REPO_ROOT not in sys.path:
-    sys.path.insert(0, REPO_ROOT)
-
-TEMPLATE_DIR = os.path.join(REPO_ROOT, "templates")
+REPO_ROOT = Path(__file__).resolve().parent.parent
+TEMPLATE_DIR = REPO_ROOT / "templates"
 
 
 def require_env(var: str) -> str:
@@ -33,7 +30,7 @@ class DynamicTemplateGenerator:
     def __init__(self, neo4j_uri: str, neo4j_user: str, neo4j_password: str):
         self.driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
         self.jinja_env = Environment(
-            loader=FileSystemLoader(TEMPLATE_DIR),
+            loader=FileSystemLoader(str(TEMPLATE_DIR)),
             undefined=StrictUndefined,
             trim_blocks=True,
             lstrip_blocks=True,

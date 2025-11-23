@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import List, Dict
 
-from qa_rag_system import QAKnowledgeGraph
+from src.qa_rag_system import QAKnowledgeGraph
 from checks.detect_forbidden_patterns import find_violations
 
 

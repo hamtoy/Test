@@ -4,8 +4,8 @@ from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
-from qa_rag_system import CustomGeminiEmbeddings, require_env
-from gemini_model_client import GeminiModelClient
+from src.qa_rag_system import CustomGeminiEmbeddings, require_env
+from src.gemini_model_client import GeminiModelClient
 
 load_dotenv()
 

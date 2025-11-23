@@ -1,23 +1,18 @@
 from __future__ import annotations
 
 import os
-import sys
 import re
 from typing import Dict, List, Any
 
 from dotenv import load_dotenv
 
+from src.qa_rag_system import QAKnowledgeGraph
+from src.dynamic_template_generator import DynamicTemplateGenerator
+from scripts.build_session import SessionContext, build_session
+from checks.validate_session import validate_turns
+from checks.detect_forbidden_patterns import find_violations
+
 load_dotenv()
-
-REPO_ROOT = os.path.abspath(os.path.dirname(__file__))
-if REPO_ROOT not in sys.path:
-    sys.path.insert(0, REPO_ROOT)
-
-from qa_rag_system import QAKnowledgeGraph  # noqa: E402
-from dynamic_template_generator import DynamicTemplateGenerator  # noqa: E402
-from scripts.build_session import SessionContext, build_session  # noqa: E402
-from checks.validate_session import validate_turns  # noqa: E402
-from checks.detect_forbidden_patterns import find_violations  # noqa: E402
 
 
 def require_env(var: str) -> str:

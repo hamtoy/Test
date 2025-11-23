@@ -6,17 +6,12 @@ Replaces stub implementations with actual API calls.
 from __future__ import annotations
 
 import os
-import sys
 from typing import List, Dict, Any
 
 import google.generativeai as genai
 from dotenv import load_dotenv
 
 load_dotenv()
-
-REPO_ROOT = os.path.abspath(os.path.dirname(__file__))
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
 
 
 def require_env(var: str) -> str:
@@ -55,7 +50,7 @@ class GeminiModelClient:
             return f"[생성 실패: {e}]"
 
     def evaluate(self, question: str, answers: List[str]) -> Dict[str, Any]:
-        """3개 답변 평가 및 최고 답변 선택."""
+        """3개 답변 평가 및 최고 답변 선택 (3개 미만 시 길이 기반 Fallback)."""
 
         if not answers:
             return {

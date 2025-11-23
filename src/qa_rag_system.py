@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import sys
 from typing import Dict, Any, List, Optional
 
 import google.generativeai as genai
@@ -13,10 +12,6 @@ from langchain_core.embeddings import Embeddings
 from checks.validate_session import validate_turns
 
 load_dotenv()
-
-REPO_ROOT = os.path.abspath(os.path.dirname(__file__))
-if REPO_ROOT not in sys.path:
-    sys.path.insert(0, REPO_ROOT)
 
 
 def require_env(var: str) -> str:

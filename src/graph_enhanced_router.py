@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Optional
 
-from gemini_model_client import GeminiModelClient
-from qa_rag_system import QAKnowledgeGraph
+from src.gemini_model_client import GeminiModelClient
+from src.qa_rag_system import QAKnowledgeGraph
 
 
 class GraphEnhancedRouter:
