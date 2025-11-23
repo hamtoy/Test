@@ -92,7 +92,12 @@ class RealTimeConstraintEnforcer:
                     """
                 )
                 return [dict(r) for r in result]
-        except Exception:
+        except Exception as exc:  # noqa: BLE001
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "Original blocks fetch failed: %s", exc
+            )
             return []
 
     def _calculate_similarity(self, text1: str, text2: str) -> float:

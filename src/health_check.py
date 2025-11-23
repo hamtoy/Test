@@ -3,6 +3,8 @@ from __future__ import annotations
 import datetime
 from typing import Any, Dict
 
+import logging
+
 from neo4j.exceptions import Neo4jError
 
 from src.qa_rag_system import QAKnowledgeGraph
@@ -17,7 +19,8 @@ def check_neo4j_connection(kg: QAKnowledgeGraph | None = None) -> bool:
         return True
     except Neo4jError:
         return False
-    except Exception:
+    except Exception as exc:  # noqa: BLE001
+        logging.getLogger(__name__).warning("Neo4j health check failed: %s", exc)
         return False
 
 
