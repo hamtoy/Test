@@ -1,5 +1,5 @@
-[![CI](https://img.shields.io/badge/CI-private%20repo-lightgrey)](#)
-[![codecov](https://img.shields.io/badge/codecov-not%20configured-lightgrey)](#)
+[![CI](https://github.com/hamtoy/Test/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hamtoy/Test/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/hamtoy/Test/branch/main/graph/badge.svg)](https://codecov.io/gh/hamtoy/Test)
 
 # Gemini 워크플로우 - Q&A 시스템
 
