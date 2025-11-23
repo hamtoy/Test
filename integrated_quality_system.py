@@ -24,7 +24,7 @@ class IntegratedQualitySystem:
         password: str,
         gemini_key: Optional[str] = None,
     ):
-        self.kg = QAKnowledgeGraph()
+        self.kg = QAKnowledgeGraph(neo4j_uri, user, password)
         self.augmenter = AdvancedContextAugmentation(
             neo4j_uri, user, password, gemini_key
         )

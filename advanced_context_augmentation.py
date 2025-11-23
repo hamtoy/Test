@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 import os
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain_community.graphs import Neo4jGraph
 from langchain_community.vectorstores import Neo4jVector
 from qa_rag_system import CustomGeminiEmbeddings
@@ -29,19 +29,17 @@ class AdvancedContextAugmentation:
 
         # GEMINI_API_KEY를 우선 사용
         key = gemini_key or os.getenv("GEMINI_API_KEY")
-        if not key:
-            raise ValueError("GEMINI_API_KEY가 필요합니다. 키를 설정해 주세요.")
-
-        self.vector_index = Neo4jVector.from_existing_graph(
-            CustomGeminiEmbeddings(api_key=key),
-            url=neo4j_uri,
-            username=user,
-            password=password,
-            index_name="combined_embeddings",
-            node_label="Block",  # Rule, Example도 포함한다고 가정
-            text_node_properties=["content", "text"],
-            embedding_node_property="embedding",
-        )
+        if key:
+            self.vector_index = Neo4jVector.from_existing_graph(
+                CustomGeminiEmbeddings(api_key=key),
+                url=neo4j_uri,
+                username=user,
+                password=password,
+                index_name="combined_embeddings",
+                node_label="Block",  # Rule, Example도 포함한다고 가정
+                text_node_properties=["content", "text"],
+                embedding_node_property="embedding",
+            )
 
     def augment_prompt_with_similar_cases(
         self, user_query: str, query_type: str

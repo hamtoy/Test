@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 import google.generativeai as genai
 from dotenv import load_dotenv
-from neo4j import GraphDatabase
+from neo4j import GraphDatabase, Driver
 from neo4j.exceptions import Neo4jError
 from langchain_core.embeddings import Embeddings
 
@@ -51,22 +51,25 @@ class QAKnowledgeGraph:
     - 세션 구조 검증
     """
 
-    def __init__(self):
-        self.neo4j_uri = require_env("NEO4J_URI")
-        self.neo4j_user = require_env("NEO4J_USER")
-        self.neo4j_password = require_env("NEO4J_PASSWORD")
-        self._graph = None
-        self._vector_store = None
-        self._init_graph()
-        self._init_vector_store()
+    def __init__(
+        self,
+        neo4j_uri: Optional[str] = None,
+        neo4j_user: Optional[str] = None,
+        neo4j_password: Optional[str] = None,
+    ):
+        self.neo4j_uri = neo4j_uri or require_env("NEO4J_URI")
+        self.neo4j_user = neo4j_user or require_env("NEO4J_USER")
+        self.neo4j_password = neo4j_password or require_env("NEO4J_PASSWORD")
 
-    def _init_graph(self):
         try:
-            self._graph = GraphDatabase.driver(
+            self._graph: Driver = GraphDatabase.driver(
                 self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
             )
         except Neo4jError as e:
             raise RuntimeError(f"Neo4j 연결 실패: {e}")
+
+        self._vector_store = None
+        self._init_vector_store()
 
     def _init_vector_store(self):
         """

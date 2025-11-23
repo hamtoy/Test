@@ -28,24 +28,23 @@ class AdaptiveDifficultyAdjuster:
         # Neo4j에서 유사한 text_density 페이지의 평균 블록 수 추정 (실패 시 무시)
         try:
             with self.kg._graph.session() as session:  # noqa: SLF001
-                record = (
-                    session.run(
-                        """
-                        MATCH (p:Page)
-                        WHERE exists(p.text_density)
-                          AND p.text_density > $density - 0.1
-                          AND p.text_density < $density + 0.1
-                        OPTIONAL MATCH (p)-[:CONTAINS*]->(b:Block)
-                        WITH p, count(DISTINCT b) AS blocks
-                        RETURN avg(blocks) AS avg_blocks
-                        """,
-                        density=complexity["text_density"],
-                    ).single()
-                    or {}
+                result = session.run(
+                    """
+                    MATCH (p:Page)
+                    WHERE exists(p.text_density)
+                      AND p.text_density > $density - 0.1
+                      AND p.text_density < $density + 0.1
+                    OPTIONAL MATCH (p)-[:CONTAINS*]->(b:Block)
+                    WITH p, count(DISTINCT b) AS blocks
+                    RETURN avg(blocks) AS avg_blocks
+                    """,
+                    density=complexity["text_density"],
                 )
-                avg_blocks = record.get("avg_blocks")
-                if avg_blocks is not None:
-                    complexity["estimated_blocks"] = float(avg_blocks)
+                record = result.single()
+                if record:
+                    avg_blocks = record.get("avg_blocks")
+                    if avg_blocks is not None:
+                        complexity["estimated_blocks"] = float(avg_blocks)
         except Exception:
             pass  # 그래프 접근 실패 시 기본값 유지
 

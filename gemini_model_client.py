@@ -56,6 +56,22 @@ class GeminiModelClient:
 
     def evaluate(self, question: str, answers: List[str]) -> Dict[str, Any]:
         """3개 답변 평가 및 최고 답변 선택."""
+
+        if not answers:
+            return {
+                "scores": [],
+                "best_index": -1,
+                "notes": "평가 실패: 답변이 없습니다.",
+            }
+
+        if len(answers) < 3:
+            scores = [len(a) for a in answers]
+            best_idx = scores.index(max(scores))
+            return {
+                "scores": scores,
+                "best_index": best_idx,
+                "notes": f"3개 미만 답변({len(answers)})으로 길이 기반 선택",
+            }
         eval_prompt = f"""다음 질문에 대한 3개의 답변을 평가하세요.
 
 질문: {question}
