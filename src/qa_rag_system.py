@@ -101,7 +101,7 @@ class QAKnowledgeGraph:
         except ValueError as e:
             print(f"⚠️ 벡터 스토어 설정 오류: {e}")
             self._vector_store = None
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"⚠️ 벡터 스토어 초기화 중 알 수 없는 오류: {e}")
             self._vector_store = None
 
@@ -112,7 +112,7 @@ class QAKnowledgeGraph:
         start = time.perf_counter()
         results = self._vector_store.similarity_search(query, k=k)
         elapsed_ms = (time.perf_counter() - start) * 1000
-        logger.info("vector_search_ms=%.2f k=%s", elapsed_ms, k)
+        logger.info("vector_search_ms=%.2f k=%s query=%s", elapsed_ms, k, query)
         return [doc.page_content for doc in results]
 
     def get_constraints_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
@@ -175,7 +175,7 @@ class QAKnowledgeGraph:
             return res
         except (TypeError, ValueError) as exc:
             return {"ok": False, "issues": [f"컨텍스트 생성 실패: {exc}"]}
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             return {"ok": False, "issues": [f"컨텍스트 검증 실패: {exc}"]}
 
     def close(self):
