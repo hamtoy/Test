@@ -87,6 +87,8 @@ async def load_input_data(
         logger.info(
             f"Format Detection: JSON parse failed ({e}). Trying Raw Text format..."
         )
+    except (TypeError, ValueError) as e:
+        logger.warning(f"Format Detection: Invalid JSON structure ({e}).")
     except Exception as e:  # noqa: BLE001
         logger.warning(f"Format Detection: Unexpected error during JSON parse: {e}")
 
