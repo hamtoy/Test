@@ -22,6 +22,8 @@ from src import multimodal_understanding as mmu
 from src import qa_rag_system as qrs
 from src import self_correcting_chain
 from src import ultimate_langchain_qa_system as ulqa
+from src import gemini_model_client as gmc
+from src import agent as ag
 
 
 def test_self_correcting_chain_stops_on_yes(monkeypatch):
@@ -132,6 +134,52 @@ def test_qa_rag_system_embeddings_and_rules(monkeypatch):
     assert result == ["rule"]
 
 
+def test_gemini_model_client_errors(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "key")
+
+    class _FakeResponse:
+        def __init__(self, text, usage=None, candidates=None):
+            self.text = text
+            self.usage_metadata = usage
+            self.candidates = candidates
+
+    class _FakeModel:
+        def __init__(self):
+            self.calls = []
+
+        def generate_content(self, prompt, generation_config=None):
+            self.calls.append(("gen", prompt))
+            raise gmc.google_exceptions.GoogleAPIError("boom")
+
+    fake_genai = types.SimpleNamespace(
+        configure=lambda api_key: None,
+        GenerativeModel=lambda name="m": _FakeModel(),
+        types=types.SimpleNamespace(GenerationConfig=lambda **_: None),
+    )
+    monkeypatch.setattr(gmc, "genai", fake_genai)
+    client = gmc.GeminiModelClient()
+
+    # generate handles exceptions
+    assert client.generate("hi").startswith("[생성 실패")
+
+    # evaluate len-based fallback on parse failure
+    client.generate = lambda prompt, role="evaluator": "not numbers"
+    eval_res = client.evaluate("q", ["a", "bb", "ccc"])
+    assert eval_res["best_index"] == 2
+
+    # rewrite/fact_check exception paths
+    client.generate = lambda prompt, role="rewriter": (_ for _ in ()).throw(
+        gmc.google_exceptions.GoogleAPIError("rewriter error")
+    )
+    assert "재작성 실패" in client.rewrite("text")
+
+    client.generate = lambda prompt, role="fact_checker": (_ for _ in ()).throw(
+        ValueError("bad input")
+    )
+    fact_res = client.fact_check("ans", has_table_chart=True)
+    assert fact_res["verdict"] == "error"
+
+
 def test_ultimate_langchain_qa_system_wires_dependencies(monkeypatch):
     class _KG:
         def __init__(self):
@@ -182,3 +230,69 @@ def test_ultimate_langchain_qa_system_wires_dependencies(monkeypatch):
 
     assert out["output"] == "corrected"
     assert out["metadata"]["iterations"] == 1
+
+
+def test_agent_cache_budget_and_pricing(monkeypatch, tmp_path):
+    # Minimal config stub
+    class _Config:
+        def __init__(self):
+            self.max_concurrency = 1
+            self.temperature = 0.1
+            self.max_output_tokens = 16
+            self.model_name = "tier-model"
+            self.timeout = 1
+            self.template_dir = tmp_path
+            self.local_cache_dir = tmp_path / "cache"
+            self.base_dir = tmp_path
+            self.cache_ttl_minutes = 1
+            self.budget_limit_usd = 1.0
+
+    # pricing tiers stub
+    monkeypatch.setattr(ag, "PRICING_TIERS", {"tier-model": [{"max_input_tokens": None, "input_rate": 1, "output_rate": 2}]})
+    monkeypatch.setattr(ag, "DEFAULT_RPM_LIMIT", 10)
+    monkeypatch.setattr(ag, "DEFAULT_RPM_WINDOW_SECONDS", 60)
+
+    # templates required (empty content)
+    for name in ["prompt_eval.j2", "prompt_query_gen.j2", "prompt_rewrite.j2", "query_gen_user.j2", "rewrite_user.j2"]:
+        (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
+
+    agent = ag.GeminiAgent(_Config(), jinja_env=None)
+
+    # cost calculations
+    agent.total_input_tokens = 1_000_000
+    agent.total_output_tokens = 1_000_000
+    cost = agent.get_total_cost()
+    assert cost == pytest.approx(3.0)
+    assert agent.get_budget_usage_percent() == pytest.approx(300.0)
+
+    # budget check raises
+    with pytest.raises(ag.BudgetExceededError):
+        agent.check_budget()
+
+
+def test_agent_local_cache_load_and_store(monkeypatch, tmp_path):
+    class _Config:
+        def __init__(self):
+            self.max_concurrency = 1
+            self.temperature = 0.1
+            self.max_output_tokens = 16
+            self.model_name = "tier-model"
+            self.timeout = 1
+            self.template_dir = tmp_path
+            self.local_cache_dir = tmp_path / "cache"
+            self.base_dir = tmp_path
+            self.cache_ttl_minutes = 1
+            self.budget_limit_usd = None
+
+    for name in ["prompt_eval.j2", "prompt_query_gen.j2", "prompt_rewrite.j2", "query_gen_user.j2", "rewrite_user.j2"]:
+        (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
+
+    agent = ag.GeminiAgent(_Config(), jinja_env=None)
+    fp = "abc"
+    # Avoid calling CachedContent.get in _load_local_cache
+    monkeypatch.setattr(ag.caching.CachedContent, "get", lambda name: types.SimpleNamespace(name=name))
+    agent._store_local_cache(fp, "name1", ttl_minutes=1)
+    cached = agent._load_local_cache(fp, ttl_minutes=1)
+    # _load_local_cache returns None unless CachedContent.get is patched; just ensure manifest exists and no crash
+    assert (tmp_path / "cache" / "context_cache.json").exists()
+    assert cached is not None
