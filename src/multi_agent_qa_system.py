@@ -67,7 +67,7 @@ class MultiAgentQASystem:
                     qt=query_type,
                 )
                 rules = [{"text": r["text"]} for r in result]
-        except Exception:
+        except Exception:  # noqa: BLE001
             rules = []
         return rules
 
