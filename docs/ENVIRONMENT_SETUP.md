@@ -63,10 +63,13 @@ python qa_rag_system.py
 ## 문제 해결
 
 ### "환경 변수 NEO4J_URI가 설정되지 않았습니다"
+
 → `.env` 파일에 `NEO4J_URI` 추가 필요
 
 ### "Neo4j 연결 실패"
+
 → URI/User/Password 확인, 네트워크 연결 확인
 
 ### "GEMINI_API_KEY 미설정: 벡터 검색을 건너뜁니다"
+
 → 정상 동작 (벡터 검색은 선택 사항)
