@@ -166,8 +166,10 @@ class QAKnowledgeGraph:
             ctx = SessionContext(**ctx_kwargs)
             res = validate_turns([type("T", (), t) for t in turns], ctx)
             return res
-        except Exception as exc:
+        except (TypeError, ValueError) as exc:
             return {"ok": False, "issues": [f"컨텍스트 생성 실패: {exc}"]}
+        except Exception as exc:
+            return {"ok": False, "issues": [f"컨텍스트 검증 실패: {exc}"]}
 
     def close(self):
         if self._graph:
