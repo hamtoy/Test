@@ -1,3 +1,15 @@
+[![CI](https://github.com/hamtoy/Test/actions/workflows/ci.yml/badge.svg)](https://github.com/hamtoy/Test/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/hamtoy/Test/branch/main/graph/badge.svg)](https://codecov.io/gh/hamtoy/Test)
+
+# Gemini 워크플로우 - Q&A 시스템
+
+Google Gemini AI를 활용한 Q&A 응답 평가 및 재작성 워크플로우 시스템입니다.
+
+## 주요 기능
+
+- 🤖 **질의 생성**: OCR 텍스트에서 질의 자동생성
+- 📊 **후보 평가**: 여러 답변 후보 평가 및 점수 부여
+- ✍️ **답변 재작성**: 선택된 답변의 품질 개선
 - 💰 **비용 추적**: 토큰 사용량 및 비용 추적
 - 🛡️ **안정성**: Rate limiting, 타입 검증, 환각 감지
 - 🎨 **사용자 인터페이스**: Rich 기반 콘솔 출력
