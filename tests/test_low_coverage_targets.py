@@ -81,8 +81,14 @@ def test_multimodal_understanding_uses_fakes(monkeypatch):
         width = 10
         height = 20
 
-    monkeypatch.setattr(mmu, "Image", types.SimpleNamespace(open=lambda path: _FakeImg()))
-    monkeypatch.setattr(mmu, "pytesseract", types.SimpleNamespace(image_to_string=lambda img, lang=None: "alpha beta beta"))
+    monkeypatch.setattr(
+        mmu, "Image", types.SimpleNamespace(open=lambda path: _FakeImg())
+    )
+    monkeypatch.setattr(
+        mmu,
+        "pytesseract",
+        types.SimpleNamespace(image_to_string=lambda img, lang=None: "alpha beta beta"),
+    )
 
     analyzer = mmu.MultimodalUnderstanding(_KG())
     meta = analyzer.analyze_image_deep("fake.png")
@@ -107,10 +113,16 @@ def test_compare_documents_main_flow(monkeypatch, capsys):
         def run(self, query, **kwargs):
             if "collect(DISTINCT b.type)" in query:
                 return [
-                    {"title": "Page A", "total_blocks": 2, "types": ["heading", "paragraph"]},
+                    {
+                        "title": "Page A",
+                        "total_blocks": 2,
+                        "types": ["heading", "paragraph"],
+                    },
                     {"title": "Page B", "total_blocks": 1, "types": ["paragraph"]},
                 ]
-            return [{"content": "content text long enough", "pages": ["Page A", "Page B"]}]
+            return [
+                {"content": "content text long enough", "pages": ["Page A", "Page B"]}
+            ]
 
     class _Driver:
         def session(self):
@@ -119,7 +131,11 @@ def test_compare_documents_main_flow(monkeypatch, capsys):
         def close(self):
             return None
 
-    monkeypatch.setattr(compare_documents, "GraphDatabase", types.SimpleNamespace(driver=lambda uri, auth: _Driver()))
+    monkeypatch.setattr(
+        compare_documents,
+        "GraphDatabase",
+        types.SimpleNamespace(driver=lambda uri, auth: _Driver()),
+    )
     compare_documents.main()
     out = capsys.readouterr().out
     assert "Page A" in out
@@ -129,14 +145,20 @@ def test_compare_documents_main_flow(monkeypatch, capsys):
 def test_qa_rag_system_embeddings_and_rules(monkeypatch):
     calls: list[str] = []
     monkeypatch.setattr(qrs.genai, "configure", lambda api_key: calls.append("config"))
-    monkeypatch.setattr(qrs.genai, "embed_content", lambda **kwargs: {"embedding": [1.0, 2.0]})
+    monkeypatch.setattr(
+        qrs.genai, "embed_content", lambda **kwargs: {"embedding": [1.0, 2.0]}
+    )
 
     emb = qrs.CustomGeminiEmbeddings(api_key="k")
     assert emb.embed_query("hi") == [1.0, 2.0]
     assert emb.embed_documents(["a", "b"]) == [[1.0, 2.0], [1.0, 2.0]]
 
     kg = qrs.QAKnowledgeGraph.__new__(qrs.QAKnowledgeGraph)
-    kg._vector_store = types.SimpleNamespace(similarity_search=lambda query, k=5: [types.SimpleNamespace(page_content="rule")])
+    kg._vector_store = types.SimpleNamespace(
+        similarity_search=lambda query, k=5: [
+            types.SimpleNamespace(page_content="rule")
+        ]
+    )
     result = kg.find_relevant_rules("q", k=1)
     assert result == ["rule"]
 
@@ -255,12 +277,22 @@ def test_agent_cache_budget_and_pricing(monkeypatch, tmp_path):
             self.budget_limit_usd = 1.0
 
     # pricing tiers stub
-    monkeypatch.setattr(ag, "PRICING_TIERS", {"tier-model": [{"max_input_tokens": None, "input_rate": 1, "output_rate": 2}]})
+    monkeypatch.setattr(
+        ag,
+        "PRICING_TIERS",
+        {"tier-model": [{"max_input_tokens": None, "input_rate": 1, "output_rate": 2}]},
+    )
     monkeypatch.setattr(ag, "DEFAULT_RPM_LIMIT", 10)
     monkeypatch.setattr(ag, "DEFAULT_RPM_WINDOW_SECONDS", 60)
 
     # templates required (empty content)
-    for name in ["prompt_eval.j2", "prompt_query_gen.j2", "prompt_rewrite.j2", "query_gen_user.j2", "rewrite_user.j2"]:
+    for name in [
+        "prompt_eval.j2",
+        "prompt_query_gen.j2",
+        "prompt_rewrite.j2",
+        "query_gen_user.j2",
+        "rewrite_user.j2",
+    ]:
         (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
 
     agent = ag.GeminiAgent(_Config(), jinja_env=None)
@@ -291,13 +323,21 @@ def test_agent_local_cache_load_and_store(monkeypatch, tmp_path):
             self.cache_ttl_minutes = 1
             self.budget_limit_usd = None
 
-    for name in ["prompt_eval.j2", "prompt_query_gen.j2", "prompt_rewrite.j2", "query_gen_user.j2", "rewrite_user.j2"]:
+    for name in [
+        "prompt_eval.j2",
+        "prompt_query_gen.j2",
+        "prompt_rewrite.j2",
+        "query_gen_user.j2",
+        "rewrite_user.j2",
+    ]:
         (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
 
     agent = ag.GeminiAgent(_Config(), jinja_env=None)
     fp = "abc"
     # Avoid calling CachedContent.get in _load_local_cache
-    monkeypatch.setattr(ag.caching.CachedContent, "get", lambda name: types.SimpleNamespace(name=name))
+    monkeypatch.setattr(
+        ag.caching.CachedContent, "get", lambda name: types.SimpleNamespace(name=name)
+    )
     agent._store_local_cache(fp, "name1", ttl_minutes=1)
     cached = agent._load_local_cache(fp, ttl_minutes=1)
     # _load_local_cache returns None unless CachedContent.get is patched; just ensure manifest exists and no crash
@@ -320,7 +360,13 @@ def test_agent_get_total_cost_invalid_model(monkeypatch):
             self.budget_limit_usd = None
 
     tmp_path = Path(tempfile.mkdtemp(prefix="agent_cost_invalid_"))
-    for name in ["prompt_eval.j2", "prompt_query_gen.j2", "prompt_rewrite.j2", "query_gen_user.j2", "rewrite_user.j2"]:
+    for name in [
+        "prompt_eval.j2",
+        "prompt_query_gen.j2",
+        "prompt_rewrite.j2",
+        "query_gen_user.j2",
+        "rewrite_user.j2",
+    ]:
         (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
 
     agent = ag.GeminiAgent(_Config(), jinja_env=None)
@@ -390,7 +436,9 @@ def test_qa_rag_validate_session(monkeypatch):
             if kwargs.get("fail"):
                 raise TypeError("boom")
 
-    sys.modules["scripts.build_session"] = types.SimpleNamespace(SessionContext=_SessionContext)
+    sys.modules["scripts.build_session"] = types.SimpleNamespace(
+        SessionContext=_SessionContext
+    )
     monkeypatch.setattr(qrs, "validate_turns", lambda turns, ctx: {"ok": True})
 
     kg = qrs.QAKnowledgeGraph.__new__(qrs.QAKnowledgeGraph)
@@ -430,7 +478,13 @@ async def test_agent_execute_api_call_safety_error(monkeypatch, tmp_path):
             self.cache_ttl_minutes = 1
             self.budget_limit_usd = None
 
-    for name in ["prompt_eval.j2", "prompt_query_gen.j2", "prompt_rewrite.j2", "query_gen_user.j2", "rewrite_user.j2"]:
+    for name in [
+        "prompt_eval.j2",
+        "prompt_query_gen.j2",
+        "prompt_rewrite.j2",
+        "query_gen_user.j2",
+        "rewrite_user.j2",
+    ]:
         (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
 
     monkeypatch.setattr(ag, "DEFAULT_RPM_LIMIT", 1)
@@ -449,7 +503,13 @@ async def test_agent_execute_api_call_safety_error(monkeypatch, tmp_path):
 
     class _Resp:
         def __init__(self):
-            self.candidates = [type("C", (), {"finish_reason": "BLOCK", "content": type("P", (), {"parts": []})})()]
+            self.candidates = [
+                type(
+                    "C",
+                    (),
+                    {"finish_reason": "BLOCK", "content": type("P", (), {"parts": []})},
+                )()
+            ]
             self.usage_metadata = None
 
     class _Model:
@@ -503,7 +563,9 @@ def test_advanced_context_augmentation_vector_index(monkeypatch):
             return _Session()
 
     aug = aca.AdvancedContextAugmentation.__new__(aca.AdvancedContextAugmentation)
-    aug.vector_index = types.SimpleNamespace(similarity_search=lambda q, k=5: [_Doc("doc")])
+    aug.vector_index = types.SimpleNamespace(
+        similarity_search=lambda q, k=5: [_Doc("doc")]
+    )
     aug.graph = types.SimpleNamespace(_driver=_Driver())
 
     out = aug.augment_prompt_with_similar_cases("q", "explanation")
@@ -512,7 +574,10 @@ def test_advanced_context_augmentation_vector_index(monkeypatch):
 
 
 def test_advanced_context_augmentation_fallback_graph():
-    record = {"blocks": [{"content": "b"}], "rules": [{"rule": "r", "priority": 1, "examples": ["e"]}]}
+    record = {
+        "blocks": [{"content": "b"}],
+        "rules": [{"rule": "r", "priority": 1, "examples": ["e"]}],
+    }
 
     class _Session:
         def __enter__(self):
@@ -530,7 +595,9 @@ def test_advanced_context_augmentation_fallback_graph():
 
     aug = aca.AdvancedContextAugmentation.__new__(aca.AdvancedContextAugmentation)
     aug.vector_index = None
-    aug.graph = types.SimpleNamespace(_driver=types.SimpleNamespace(session=lambda: _Session()))
+    aug.graph = types.SimpleNamespace(
+        _driver=types.SimpleNamespace(session=lambda: _Session())
+    )
 
     out = aug.augment_prompt_with_similar_cases("q", "explanation")
     assert out["similar_cases"]
@@ -557,7 +624,9 @@ def test_semantic_analysis_utils_simple():
     assert "alpha" in tokens and "beta" in tokens
 
     counts = sa.count_keywords(["alpha alpha", "beta"])
-    assert counts["alpha"] >= 1 or "alpha" not in counts  # MIN_FREQ may filter low counts
+    assert (
+        counts["alpha"] >= 1 or "alpha" not in counts
+    )  # MIN_FREQ may filter low counts
 
 
 def test_adaptive_difficulty_levels(monkeypatch):
@@ -603,7 +672,13 @@ async def test_agent_call_api_with_retry(monkeypatch, tmp_path):
             self.cache_ttl_minutes = 1
             self.budget_limit_usd = None
 
-    for name in ["prompt_eval.j2", "prompt_query_gen.j2", "prompt_rewrite.j2", "query_gen_user.j2", "rewrite_user.j2"]:
+    for name in [
+        "prompt_eval.j2",
+        "prompt_query_gen.j2",
+        "prompt_rewrite.j2",
+        "query_gen_user.j2",
+        "rewrite_user.j2",
+    ]:
         (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
 
     agent = ag.GeminiAgent(_Config(), jinja_env=None)
