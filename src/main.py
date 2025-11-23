@@ -228,7 +228,7 @@ async def _load_candidates(
             )
             logger.info("데이터 재로딩 완료")
             return candidates
-        except Exception as e:
+        except (ValidationFailedError, FileNotFoundError, ValueError) as e:
             logger.error(LOG_MESSAGES["reload_failed"].format(error=e))
             return None
 
@@ -300,7 +300,7 @@ def _schedule_turns(
         # Budget check before scheduling turn
         try:
             agent.check_budget()
-        except Exception as e:
+        except BudgetExceededError as e:
             logger.error(LOG_MESSAGES["budget_exceeded"].format(error=e))
             console.print(Panel(str(e), title=PANEL_TITLE_BUDGET, border_style="red"))
             break

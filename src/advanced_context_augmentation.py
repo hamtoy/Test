@@ -44,22 +44,31 @@ class AdvancedContextAugmentation:
     def augment_prompt_with_similar_cases(
         self, user_query: str, query_type: str
     ) -> Dict[str, Any]:
-        """
-        유사 사례/규칙을 찾아 프롬프트 컨텍스트를 증강합니다.
+        """유사 사례/규칙을 찾아 프롬프트 컨텍스트를 증강합니다.
 
         벡터 인덱스가 있으면 임베딩 기반으로 Block을 검색하고, 없으면 QueryType
         관계를 활용한 그래프 기반 대체 검색을 수행해 관련 규칙/예시를 수집합니다.
 
         Args:
-            user_query: 사용자 입력 문장.
-            query_type: 질의 유형(예: "explanation", "summary").
+            user_query: 사용자 입력 문장
+            query_type: 질의 유형 (예: "explanation", "summary")
 
         Returns:
-            dict: {
-                "similar_cases": 유사 Block 콘텐츠 리스트,
-                "relevant_rules": 규칙/예시 정보 리스트,
-                "query_type": 입력 질의 유형
-            }
+            다음 키를 포함하는 딕셔너리:
+            - similar_cases (List[str]): 유사 Block 콘텐츠 텍스트 리스트
+            - relevant_rules (List[Dict[str, Any]]): 규칙 정보, 각 Dict는 다음 포함:
+                - rule (str): 규칙 텍스트
+                - priority (int): 우선순위 (높을수록 중요)
+                - examples (List[str]): 관련 예시 리스트 (최대 2개)
+            - query_type (str): 입력 질의 유형
+
+        Example:
+            >>> aug = AdvancedContextAugmentation(uri, user, pwd, key)
+            >>> result = aug.augment_prompt_with_similar_cases("설명문 작성", "explanation")
+            >>> len(result["similar_cases"])
+            5
+            >>> result["relevant_rules"][0]["priority"]
+            1
         """
 
         similar_blocks: List[Any] = []
