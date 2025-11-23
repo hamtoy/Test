@@ -81,12 +81,17 @@ flowchart LR
     C --> D[답변 재작성]
     D --> E[결과 출력]
 
-    C -->|선택| F[Neo4j 그래프]
-    F --> G[벡터 검색]
-    F --> H["Session 검증 checks/"]
+    C -.->|옵션: QA RAG| F[Neo4j 그래프]
+    F -.-> G[벡터 검색]
+    F -.-> H["Session 검증 (checks/)"]
+    
+    style F fill:#2d3748,stroke:#718096,stroke-dasharray: 5 5
+    style G fill:#2d3748,stroke:#718096,stroke-dasharray: 5 5
+    style H fill:#2d3748,stroke:#718096,stroke-dasharray: 5 5
 ```
 
-> 기본 워크플로우는 A→B→C→D→E의 직선 흐름을 따르며, Neo4j/벡터 검색/세션 검증은 QA RAG 시스템 사용 시에만 활성화됩니다.
+> **기본 워크플로우** (실선): OCR 입력 → 질의 생성 → 후보 평가 → 답변 재작성 → 결과 출력  
+> **선택적 RAG 경로** (점선): 후보 평가 시점에 Neo4j 그래프/벡터 검색/Session 검증을 통해 평가 품질을 보강할 수 있습니다.
 
 > [!NOTE]
 > Neo4j와 Notion은 **QA RAG 시스템** 사용 시에만 필요합니다. 기본 워크플로우는 Gemini API만으로 동작합니다.
