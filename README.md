@@ -50,26 +50,18 @@ project_root/
 │   ├── logging_setup.py    # 로깅 설정
 │   ├── main.py             # 메인 워크플로우
 │   ├── models.py           # Pydantic 모델
-│   └── utils.py            # 유틸리티 함수
+│   ├── utils.py            # 유틸리티 함수
+│   ├── qa_rag_system.py    # RAG + Graph QA 시스템
+│   ├── integrated_quality_system.py # 통합 품질 시스템
+│   ├── gemini_model_client.py # Gemini 모델 클라이언트
+│   ├── advanced_context_augmentation.py # 컨텍스트 증강
+│   ├── adaptive_difficulty.py # 난이도 조절
+│   └── ...                 # 기타 모듈
 └── tests/                  # 테스트
     ├── __init__.py
     ├── conftest.py
     ├── test_agent.py
-    ├── test_agent_cache.py
-    ├── test_cache_analytics.py
-    ├── test_cache_stats.py
-    ├── test_config_validation.py
-    ├── test_data_loader.py
-    ├── test_data_loader_validation.py
-    ├── test_dependency_injection.py
-    ├── test_integration.py
-    ├── test_latency_baseline.py
-    ├── test_logging_setup.py
-    ├── test_main.py
-    ├── test_models.py
-    ├── test_security.py
-    └── test_utils.py
-```
+    └── ...
 
 ## 시스템 개요
 
@@ -87,6 +79,7 @@ project_root/
 
 - Python 3.10 이상
 - Google Gemini API 키 ([발급 링크](https://makersuite.google.com/app/apikey))
+- Neo4j 데이터베이스 (RAG 시스템 사용 시)
 
 ### 설치
 
@@ -177,6 +170,9 @@ cp .env.example .env
 ```bash
 # 필수
 GEMINI_API_KEY=your_api_key_here
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=password
 
 # 선택 사항 (기본값 제공)
 GEMINI_MODEL_NAME=gemini-3-pro-preview
@@ -268,6 +264,7 @@ python scripts/latency_baseline.py --log-file run1.log --log-file run2.log
 ```
 
 출력 예시:
+
 ```
 ┏━━━━━━━━┳━━━━━━━━┓
 ┃ Metric ┃ Value  ┃
@@ -342,6 +339,8 @@ pytest tests/ --cov=src --cov-report=html
 - `src/main.py`: 워크플로우 실행, 체크포인트 관리, 병렬 처리
 - `src/models.py`: 환각 감지 기능이 포함된 Pydantic 모델
 - `src/utils.py`: 파일 처리 및 파싱 유틸리티
+- `src/qa_rag_system.py`: RAG 및 그래프 기반 QA 시스템
+- `src/integrated_quality_system.py`: 통합 품질 관리 파이프라인
 
 ### 주요 기능
 
@@ -407,6 +406,9 @@ results = await asyncio.gather(*[
 | `LOG_FILE`                 | `app.log`              | INFO+ 로그 파일 경로 |
 | `ERROR_LOG_FILE`           | `error.log`            | ERROR+ 로그 파일 경로 |
 | `PROJECT_ROOT`             | 자동 감지              | 프로젝트 루트 경로 |
+| `NEO4J_URI`                | `bolt://localhost:7687`| Neo4j 접속 URI     |
+| `NEO4J_USER`               | `neo4j`                | Neo4j 사용자명     |
+| `NEO4J_PASSWORD`           | 필수                   | Neo4j 비밀번호     |
 
 자동 감지는 `.git`, `templates`, `data` 폴더를 기준으로 수행됩니다.
 
@@ -435,31 +437,38 @@ results = await asyncio.gather(*[
 - **[DEPLOYMENT_VERIFIED.md](DEPLOYMENT_VERIFIED.md)**: 배포 검증 내역
 - **Sphinx 문서**: `docs/` 디렉토리에서 `make html` 실행
 
-
 ## 즉시 실행 가능 - QA 시스템 구축
 
 ### 1. 그래프 스키마 구축
+
 ```bash
-python graph_schema_builder.py
+python src/graph_schema_builder.py
 ```
+
 Notion 가이드에서 Rule/Constraint/Example을 추출하여 Neo4j 지식 그래프를 생성합니다.
 
 ### 2. Neo4j Browser에서 확인
+
 ```cypher
 MATCH (n) RETURN labels(n), count(n)
 ```
+
 생성된 노드 타입별 개수를 확인합니다.
 
 ### 3. RAG 시스템 테스트
+
 ```bash
-python qa_rag_system.py
+python src/qa_rag_system.py
 ```
+
 벡터 검색 기반 규칙 조회 및 제약 조건/모범 사례를 확인합니다.
 
 ### 4. 통합 파이프라인 실행
+
 ```bash
-python integrated_qa_pipeline.py
+python src/integrated_qa_pipeline.py
 ```
+
 전체 QA 세션 생성 및 검증을 실행합니다.
 
 ---
@@ -471,6 +480,7 @@ Notion 가이드 기반 텍스트 중심 이미지 QA 세션 생성 시스템입
 ### 주요 구성요소
 
 **템플릿:**
+
 - `templates/system/` - 설명문, 요약문, 추론, 전역 시스템 프롬프트
 - `templates/user/` - 타겟 질의, 일반 사용자 입력
 - `templates/eval/` - 3개 답변 비교 평가
@@ -478,6 +488,7 @@ Notion 가이드 기반 텍스트 중심 이미지 QA 세션 생성 시스템입
 - `templates/fact/` - 사실 검증
 
 **도구:**
+
 - `scripts/build_session.py` - 3~4턴 세션 자동 구성
 - `scripts/render_prompt.py` - 템플릿 렌더링
 - `checks/detect_forbidden_patterns.py` - 금지 패턴 검출
@@ -508,7 +519,6 @@ python scripts/render_prompt.py --template system/text_image_qa_explanation_syst
 ---
 
 ## 라이선스
-
 
 MIT License
 
