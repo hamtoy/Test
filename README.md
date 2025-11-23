@@ -170,8 +170,10 @@ pip install -e ".[dev]"
 pre-commit install
 # 첫 실행 시 전체 파일 검사
 pre-commit run --all-files
+```
 
 ### 빠른 품질 검사(권장)
+
 ```bash
 pre-commit run --all-files        # ruff + ruff-format + mypy
 uv run pytest tests/ --cov=src --cov-fail-under=75
@@ -215,11 +217,8 @@ cp .env.example .env
 ```bash
 # 필수
 GEMINI_API_KEY=your_api_key_here
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=password
 
-# 선택 사항 (기본값 제공)
+# 선택 사항 - Gemini 설정 (기본값 제공)
 GEMINI_MODEL_NAME=gemini-3-pro-preview
 GEMINI_MAX_OUTPUT_TOKENS=8192
 GEMINI_TIMEOUT=120
@@ -228,6 +227,11 @@ GEMINI_TEMPERATURE=0.2
 GEMINI_CACHE_SIZE=50
 GEMINI_CACHE_TTL_MINUTES=10
 LOG_LEVEL=INFO
+
+# 선택 사항 - QA RAG 시스템 사용 시
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=password
 ```
 
 다른 디렉토리에서 실행할 경우 `PROJECT_ROOT`를 설정할 수 있습니다.
@@ -235,7 +239,7 @@ LOG_LEVEL=INFO
 API 키 확인:
 
 ```bash
-python list_models.py
+python -m src.list_models
 ```
 
 ### 입력 파일 준비
