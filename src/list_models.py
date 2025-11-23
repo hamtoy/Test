@@ -6,12 +6,12 @@ load_dotenv()
 
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
-    print("No API key found in .env")
+    print("No API key found in .env (GEMINI_API_KEY)")
     exit(1)
 
 genai.configure(api_key=api_key)
 
-print(f"Listing models for key: {api_key[:5]}...")
+print("Listing models for configured Gemini key...")
 try:
     for m in genai.list_models():
         if "generateContent" in m.supported_generation_methods:

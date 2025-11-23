@@ -50,12 +50,13 @@ class GeminiModelClient:
             return f"[생성 실패: {e}]"
 
     def evaluate(self, question: str, answers: List[str]) -> Dict[str, Any]:
-        """3개 답변 평가 및 최고 답변 선택 (3개 미만 시 길이 기반 Fallback)."""
+        """답변 집합 평가 및 최고 답변 선택 (3개 미만도 처리)."""
 
         if not answers:
             return {
                 "scores": [],
-                "best_index": -1,
+                "best_index": None,
+                "best_answer": None,
                 "notes": "평가 실패: 답변이 없습니다.",
             }
 
@@ -65,6 +66,7 @@ class GeminiModelClient:
             return {
                 "scores": scores,
                 "best_index": best_idx,
+                "best_answer": answers[best_idx],
                 "notes": f"3개 미만 답변({len(answers)})으로 길이 기반 선택",
             }
         eval_prompt = f"""다음 질문에 대한 3개의 답변을 평가하세요.
@@ -114,6 +116,7 @@ class GeminiModelClient:
             return {
                 "scores": scores,
                 "best_index": best_idx,
+                "best_answer": answers[best_idx],
                 "notes": response,
             }
         except Exception as e:
@@ -122,6 +125,7 @@ class GeminiModelClient:
             return {
                 "scores": scores,
                 "best_index": scores.index(max(scores)),
+                "best_answer": answers[scores.index(max(scores))],
                 "notes": f"평가 실패, 길이 기반 선택: {e}",
             }
 
@@ -197,5 +201,8 @@ if __name__ == "__main__":
     ]
 
     result = client.evaluate("매출 증가율은?", test_answers)
-    print(f"평가 결과: 최고 답변 = {result['best_index'] + 1}번")
-    print(f"재작성: {client.rewrite(test_answers[result['best_index']])[:100]}...")
+    if result["best_index"] is not None:
+        print(f"평가 결과: 최고 답변 = {result['best_index'] + 1}번")
+        print(f"재작성: {client.rewrite(test_answers[result['best_index']])[:100]}...")
+    else:
+        print("평가 결과 없음: 답변이 비어 있습니다.")
