@@ -74,7 +74,7 @@ def call_llm(system_prompt: str, user_prompt: str) -> str:
         )
         content = response.choices[0].message.content or ""
         return str(content)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"LLM 호출 오류: {e}")
         return ""
 

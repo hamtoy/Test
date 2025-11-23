@@ -159,7 +159,7 @@ def safe_json_parse(
             raise
         logger.error(message)
         return None
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         message = f"safe_json_parse: Unexpected error - {e}"
         if raise_on_error:
             raise
