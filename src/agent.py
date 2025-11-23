@@ -142,20 +142,20 @@ class GeminiAgent:
         globals()["caching"] = caching
         return caching
 
-    @property
-    def _google_exceptions(self):
+    @staticmethod
+    def _google_exceptions():
         from google.api_core import exceptions as google_exceptions
 
         return google_exceptions
 
-    @property
-    def _protos(self):
+    @staticmethod
+    def _protos():
         from google.generativeai import protos
 
         return protos
 
-    @property
-    def _harm_types(self):
+    @staticmethod
+    def _harm_types():
         from google.generativeai.types import HarmBlockThreshold, HarmCategory
 
         return HarmBlockThreshold, HarmCategory
@@ -374,7 +374,7 @@ class GeminiAgent:
             except OSError as e:
                 self.logger.debug(f"Local cache manifest write skipped: {e}")
             return cache
-        except self._google_exceptions.ResourceExhausted as e:
+        except self._google_exceptions().ResourceExhausted as e:
             self.logger.error(f"Failed to create cache due to rate limit: {e}")
             raise CacheCreationError(
                 f"Rate limit exceeded during cache creation: {e}"
@@ -511,7 +511,7 @@ class GeminiAgent:
 
         try:
             response_text = await self._call_api_with_retry(model, user_prompt)
-        except self._google_exceptions.ResourceExhausted as e:
+        except self._google_exceptions().ResourceExhausted as e:
             raise APIRateLimitError(
                 f"Rate limit exceeded during query generation: {e}"
             ) from e
@@ -599,7 +599,7 @@ class GeminiAgent:
             response_text = await self._call_api_with_retry(
                 model, json.dumps(input_data, ensure_ascii=False)
             )
-        except self._google_exceptions.ResourceExhausted as e:
+        except self._google_exceptions().ResourceExhausted as e:
             raise APIRateLimitError(
                 f"Rate limit exceeded during evaluation: {e}"
             ) from e
@@ -663,7 +663,7 @@ class GeminiAgent:
 
         try:
             response_text = await self._call_api_with_retry(model, payload)
-        except self._google_exceptions.ResourceExhausted as e:
+        except self._google_exceptions().ResourceExhausted as e:
             raise APIRateLimitError(f"Rate limit exceeded during rewrite: {e}") from e
 
         # utils의 중앙화된 함수 사용 (DRY 원칙)
