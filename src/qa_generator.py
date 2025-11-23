@@ -61,8 +61,8 @@ else:  # 3개일 때
     """
 
 
-def call_llm(system_prompt, user_prompt):
-    """Gemini 3 Pro Preview로 고정된 LLM 호출"""
+def call_llm(system_prompt: str, user_prompt: str) -> str:
+    """Gemini 3 Pro Preview로 고정된 LLM 호출."""
     try:
         response = client.chat.completions.create(
             model="gemini-3-pro-preview",
@@ -72,7 +72,8 @@ def call_llm(system_prompt, user_prompt):
             ],
             temperature=0,
         )
-        return response.choices[0].message.content
+        content = response.choices[0].message.content or ""
+        return str(content)
     except Exception as e:
         print(f"LLM 호출 오류: {e}")
         return ""

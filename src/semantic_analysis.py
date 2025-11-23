@@ -20,7 +20,7 @@ from collections import Counter
 from typing import Dict, Iterable, List, Tuple
 
 from dotenv import load_dotenv
-from neo4j import GraphDatabase
+from neo4j import GraphDatabase, Driver
 from neo4j.exceptions import Neo4jError
 
 # --------------------
@@ -131,7 +131,7 @@ def count_keywords(contents: Iterable[str]) -> Counter:
     return counter
 
 
-def create_topics(driver, keywords: List[Tuple[str, int]]) -> None:
+def create_topics(driver: Driver, keywords: List[Tuple[str, int]]) -> None:
     def _tx(tx, items):
         tx.run(
             """

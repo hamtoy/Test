@@ -45,8 +45,21 @@ class AdvancedContextAugmentation:
         self, user_query: str, query_type: str
     ) -> Dict[str, Any]:
         """
-        유사한 블록/규칙/예시를 찾아 컨텍스트를 구성.
-        벡터 인덱스가 없으면 간단한 그래프 기반 대체 검색을 수행합니다.
+        유사 사례/규칙을 찾아 프롬프트 컨텍스트를 증강합니다.
+
+        벡터 인덱스가 있으면 임베딩 기반으로 Block을 검색하고, 없으면 QueryType
+        관계를 활용한 그래프 기반 대체 검색을 수행해 관련 규칙/예시를 수집합니다.
+
+        Args:
+            user_query: 사용자 입력 문장.
+            query_type: 질의 유형(예: "explanation", "summary").
+
+        Returns:
+            dict: {
+                "similar_cases": 유사 Block 콘텐츠 리스트,
+                "relevant_rules": 규칙/예시 정보 리스트,
+                "query_type": 입력 질의 유형
+            }
         """
 
         similar_blocks: List[Any] = []
