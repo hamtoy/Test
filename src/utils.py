@@ -153,6 +153,12 @@ def safe_json_parse(
             raise
         logger.warning(message)
         return None
+    except (TypeError, ValueError) as e:
+        message = f"safe_json_parse: Invalid JSON structure - {e}"
+        if raise_on_error:
+            raise
+        logger.error(message)
+        return None
     except Exception as e:
         message = f"safe_json_parse: Unexpected error - {e}"
         if raise_on_error:
@@ -202,9 +208,9 @@ async def load_checkpoint(path: Path) -> Dict[str, WorkflowResult]:
                     payload = json.loads(line)
                     wf = WorkflowResult(**payload)
                     records[wf.query] = wf
-                except Exception:
+                except (TypeError, ValueError, json.JSONDecodeError):
                     continue
-    except Exception:
+    except OSError:
         return {}
     return records
 
@@ -215,6 +221,5 @@ async def append_checkpoint(path: Path, result: WorkflowResult) -> None:
     try:
         async with aiofiles.open(path, "a", encoding="utf-8") as f:
             await f.write(json.dumps(result.model_dump(), ensure_ascii=False) + "\n")
-    except Exception:
-        # Non-fatal
+    except OSError:
         return
