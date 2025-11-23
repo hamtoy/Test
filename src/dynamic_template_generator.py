@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import os
+import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
-from jinja2 import Environment, FileSystemLoader, StrictUndefined
+from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateNotFound
 from neo4j import GraphDatabase
 
 load_dotenv()
@@ -29,6 +30,7 @@ class DynamicTemplateGenerator:
 
     def __init__(self, neo4j_uri: str, neo4j_user: str, neo4j_password: str):
         self.driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
+        self.logger = logging.getLogger(__name__)
         self.jinja_env = Environment(
             loader=FileSystemLoader(str(TEMPLATE_DIR)),
             undefined=StrictUndefined,
@@ -78,7 +80,8 @@ class DynamicTemplateGenerator:
         fallback = "templates/base_system.j2"
         try:
             template = self.jinja_env.get_template(template_name)
-        except Exception:
+        except TemplateNotFound as exc:
+            self.logger.warning("Template %s not found (%s), using fallback", template_name, exc)
             template = self.jinja_env.get_template(fallback)
 
         full_context = {
