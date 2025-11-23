@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Optional
 
+from neo4j.exceptions import Neo4jError
+
 from src.gemini_model_client import GeminiModelClient
 from src.qa_rag_system import QAKnowledgeGraph
 
@@ -66,6 +68,8 @@ class GraphEnhancedRouter:
                     """
                 )
                 return [dict(r) for r in rows]
+        except Neo4jError:
+            return []
         except Exception:
             return []
 
@@ -104,5 +108,7 @@ class GraphEnhancedRouter:
                     input=input_text,
                     chosen=chosen,
                 )
+        except Neo4jError:
+            pass
         except Exception:
             pass

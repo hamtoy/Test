@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import logging
+import time
 from typing import Dict, Any, List, Optional
 
 import google.generativeai as genai
@@ -10,6 +12,8 @@ from neo4j.exceptions import Neo4jError
 from langchain_core.embeddings import Embeddings
 
 from checks.validate_session import validate_turns
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -105,7 +109,10 @@ class QAKnowledgeGraph:
         """벡터 검색 기반 규칙 찾기 (가능할 때만)."""
         if not self._vector_store:
             return []
+        start = time.perf_counter()
         results = self._vector_store.similarity_search(query, k=k)
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        logger.info("vector_search_ms=%.2f k=%s", elapsed_ms, k)
         return [doc.page_content for doc in results]
 
     def get_constraints_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
