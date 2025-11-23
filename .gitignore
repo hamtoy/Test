@@ -54,3 +54,6 @@ docs/_build/
 # Coverage
 .coverage
 htmlcov/
+
+# Profiling
+profiling_results/

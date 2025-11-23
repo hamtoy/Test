@@ -73,3 +73,11 @@ python qa_rag_system.py
 ### "GEMINI_API_KEY 미설정: 벡터 검색을 건너뜁니다"
 
 → 정상 동작 (벡터 검색은 선택 사항)
+
+## 로컬 개발 속도 향상 (개인용)
+
+- 테스트 워치: `uv run pytest-watcher .` (파일 변경 시 자동 재실행), 빠른 재시작 `uv run pytest --lf` / `--ff`
+- 병렬 테스트: `uv run pytest -n auto tests/` (실패 우선 실행은 `--ff` 추가)
+- 프로파일링: `python scripts/auto_profile.py --module src.main -- --help` (임의 모듈에 `--` 뒤 인자 전달)
+- 결과 비교: `python scripts/compare_runs.py --sort-by cost` (최신 `data/outputs/result_*.md` 요약)
+- 빠른 백업: `pwsh scripts/backup.ps1` (민감 정보 포함 시 `-SkipEnv` 옵션 사용)

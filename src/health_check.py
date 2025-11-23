@@ -30,5 +30,5 @@ def health_check() -> Dict[str, Any]:
     return {
         "status": "healthy" if neo4j_ok else "unhealthy",
         "neo4j": neo4j_ok,
-        "timestamp": datetime.datetime.utcnow().isoformat(),
+        "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
     }

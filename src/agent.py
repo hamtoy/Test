@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import datetime
 import hashlib
@@ -7,11 +9,6 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
-import google.generativeai as genai
-import google.generativeai.caching as caching
-from google.api_core import exceptions as google_exceptions
-from google.generativeai import protos
-from google.generativeai.types import HarmBlockThreshold, HarmCategory
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, ValidationError
 from tenacity import (
@@ -39,6 +36,9 @@ from src.models import EvaluationResultSchema, QueryResult
 from src.utils import clean_markdown_code_block, safe_json_parse
 
 if TYPE_CHECKING:
+    import google.generativeai as genai
+    import google.generativeai.caching as caching
+    from google.generativeai.types import HarmBlockThreshold, HarmCategory
     from aiolimiter import AsyncLimiter
 
 
@@ -126,7 +126,42 @@ class GeminiAgent:
                 autoescape=True,  # XSS 방지
             )
 
-    def _get_safety_settings(self) -> Dict[HarmCategory, HarmBlockThreshold]:
+    @property
+    def _genai(self):
+        import google.generativeai as genai
+
+        return genai
+
+    @property
+    def _caching(self):
+        cached = globals().get("caching")
+        if cached is not None:
+            return cached
+        import google.generativeai.caching as caching
+
+        globals()["caching"] = caching
+        return caching
+
+    @property
+    def _google_exceptions(self):
+        from google.api_core import exceptions as google_exceptions
+
+        return google_exceptions
+
+    @property
+    def _protos(self):
+        from google.generativeai import protos
+
+        return protos
+
+    @property
+    def _harm_types(self):
+        from google.generativeai.types import HarmBlockThreshold, HarmCategory
+
+        return HarmBlockThreshold, HarmCategory
+
+    def _get_safety_settings(self) -> Dict["HarmCategory", "HarmBlockThreshold"]:
+        HarmBlockThreshold, HarmCategory = self._harm_types
         settings: Dict[HarmCategory, HarmBlockThreshold] = {
             category: cast(HarmBlockThreshold, HarmBlockThreshold.BLOCK_NONE)
             for category in [
@@ -142,8 +177,8 @@ class GeminiAgent:
         self,
         system_prompt: str,
         response_schema: type[BaseModel] | None = None,
-        cached_content: Optional[caching.CachedContent] = None,
-    ) -> genai.GenerativeModel:
+        cached_content: Optional["caching.CachedContent"] = None,
+    ) -> "genai.GenerativeModel":
         """GenerativeModel 인스턴스를 생성하는 팩토리 메서드.
 
         Args:
@@ -154,6 +189,7 @@ class GeminiAgent:
         Returns:
             GenerativeModel 인스턴스
         """
+
         generation_config: Dict[str, object] = {
             "temperature": self.config.temperature,
             "max_output_tokens": self.config.max_output_tokens,
@@ -166,13 +202,13 @@ class GeminiAgent:
         gen_config_param = cast(Any, generation_config)
 
         if cached_content:
-            return genai.GenerativeModel.from_cached_content(  # type: ignore[arg-type,call-overload]
+            return self._genai.GenerativeModel.from_cached_content(  # type: ignore[arg-type,call-overload]
                 cached_content=cached_content,
                 generation_config=gen_config_param,
                 safety_settings=self.safety_settings,
             )
 
-        return genai.GenerativeModel(  # type: ignore[arg-type,call-overload]
+        return self._genai.GenerativeModel(  # type: ignore[arg-type,call-overload]
             model_name=self.config.model_name,
             system_instruction=system_prompt,
             generation_config=gen_config_param,
@@ -225,7 +261,7 @@ class GeminiAgent:
 
     def _load_local_cache(
         self, fingerprint: str, ttl_minutes: int
-    ) -> Optional[caching.CachedContent]:
+    ) -> Optional["caching.CachedContent"]:
         manifest_path = self._local_cache_manifest_path()
         if not manifest_path.exists():
             return None
@@ -252,7 +288,7 @@ class GeminiAgent:
                 return None
             cache_name = entry.get("name")
             if cache_name:
-                return caching.CachedContent.get(name=cache_name)
+                return self._caching.CachedContent.get(name=cache_name)
         except Exception as e:  # noqa: BLE001
             self.logger.debug(f"Local cache load skipped: {e}")
         return None
@@ -279,7 +315,7 @@ class GeminiAgent:
 
     async def create_context_cache(
         self, ocr_text: str
-    ) -> Optional[caching.CachedContent]:
+    ) -> Optional["caching.CachedContent"]:
         """OCR 텍스트를 기반으로 Gemini Context Cache 생성.
 
         MIN_CACHE_TOKENS 이상일 때만 캐시를 생성하며, 로컬 디스크 캐시로 재사용을 시도합니다.
@@ -309,7 +345,7 @@ class GeminiAgent:
 
         # 2. 토큰 수 계산을 블로킹하지 않도록 오프로드
         def _count_tokens() -> int:
-            model = genai.GenerativeModel(self.config.model_name)
+            model = self._genai.GenerativeModel(self.config.model_name)
             return model.count_tokens(combined_content).total_tokens
 
         token_count = await loop.run_in_executor(None, _count_tokens)
@@ -322,7 +358,7 @@ class GeminiAgent:
         try:
             # 3. 캐시 생성 (Configurable TTL) - 블로킹 호출 오프로드
             def _create_cache():
-                return caching.CachedContent.create(
+                return self._caching.CachedContent.create(
                     model=self.config.model_name,
                     display_name="ocr_context_cache",
                     system_instruction=system_prompt,
@@ -339,7 +375,7 @@ class GeminiAgent:
             except OSError as e:
                 self.logger.debug(f"Local cache manifest write skipped: {e}")
             return cache
-        except google_exceptions.ResourceExhausted as e:
+        except self._google_exceptions.ResourceExhausted as e:
             self.logger.error(f"Failed to create cache due to rate limit: {e}")
             raise CacheCreationError(
                 f"Rate limit exceeded during cache creation: {e}"
@@ -348,36 +384,41 @@ class GeminiAgent:
             self.logger.error(f"Failed to create cache: {e}")
             raise CacheCreationError(f"Failed to create cache: {e}") from e
 
-    # [Retry Logic] Tenacity 라이브러리 사용
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        retry=retry_if_exception_type(
-            (
-                google_exceptions.ResourceExhausted,
-                google_exceptions.ServiceUnavailable,
-                google_exceptions.DeadlineExceeded,
-                TimeoutError,
-            )
-        ),
-        reraise=True,
-    )
     async def _call_api_with_retry(
-        self, model: genai.GenerativeModel, prompt_text: str
+        self, model: "genai.GenerativeModel", prompt_text: str
     ) -> str:
         """[Retry Logic] 재시도 로직이 데코레이터로 추상화됨"""
-        # RPM 제어 (시간 기반)
-        if self._rate_limiter:
-            async with self._rate_limiter:
-                # 동시 실행 개수 제어 (공간 기반)
+
+        # Lazy import exceptions for retry decorator
+        exceptions = self._google_exceptions
+        retry_exceptions = (
+            exceptions.ResourceExhausted,
+            exceptions.ServiceUnavailable,
+            exceptions.DeadlineExceeded,
+            TimeoutError,
+        )
+
+        @retry(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=2, max=10),
+            retry=retry_if_exception_type(retry_exceptions),
+            reraise=True,
+        )
+        async def _execute_with_retry():
+            # RPM 제어 (시간 기반)
+            if self._rate_limiter:
+                async with self._rate_limiter:
+                    # 동시 실행 개수 제어 (공간 기반)
+                    async with self._semaphore:
+                        return await self._execute_api_call(model, prompt_text)
+            else:
                 async with self._semaphore:
                     return await self._execute_api_call(model, prompt_text)
-        else:
-            async with self._semaphore:
-                return await self._execute_api_call(model, prompt_text)
+
+        return await _execute_with_retry()
 
     async def _execute_api_call(
-        self, model: genai.GenerativeModel, prompt_text: str
+        self, model: "genai.GenerativeModel", prompt_text: str
     ) -> str:
         """실제 API 호출 로직"""
         self.logger.debug(
@@ -409,8 +450,8 @@ class GeminiAgent:
             self.logger.debug(f"API Response - Finish Reason: {finish_reason}")
 
             if finish_reason not in [
-                protos.Candidate.FinishReason.STOP,
-                protos.Candidate.FinishReason.MAX_TOKENS,
+                self._protos.Candidate.FinishReason.STOP,
+                self._protos.Candidate.FinishReason.MAX_TOKENS,
             ]:
                 # Safety filter나 기타 이유로 중단됨
                 safety_info = ""
@@ -473,7 +514,7 @@ class GeminiAgent:
 
         try:
             response_text = await self._call_api_with_retry(model, user_prompt)
-        except google_exceptions.ResourceExhausted as e:
+        except self._google_exceptions.ResourceExhausted as e:
             raise APIRateLimitError(
                 f"Rate limit exceeded during query generation: {e}"
             ) from e
@@ -514,7 +555,7 @@ class GeminiAgent:
         ocr_text: str,
         query: str,
         candidates: Dict[str, str],
-        cached_content: Optional[caching.CachedContent] = None,
+        cached_content: Optional["caching.CachedContent"] = None,
     ) -> Optional[EvaluationResultSchema]:
         """후보 답변을 평가하고 점수를 부여.
 
@@ -561,7 +602,7 @@ class GeminiAgent:
             response_text = await self._call_api_with_retry(
                 model, json.dumps(input_data, ensure_ascii=False)
             )
-        except google_exceptions.ResourceExhausted as e:
+        except self._google_exceptions.ResourceExhausted as e:
             raise APIRateLimitError(
                 f"Rate limit exceeded during evaluation: {e}"
             ) from e
@@ -590,7 +631,7 @@ class GeminiAgent:
         self,
         ocr_text: str,
         best_answer: str,
-        cached_content: Optional[caching.CachedContent] = None,
+        cached_content: Optional["caching.CachedContent"] = None,
     ) -> str:
         """선택된 최고 답변을 가독성 및 안전성 측면에서 개선.
 
@@ -625,7 +666,7 @@ class GeminiAgent:
 
         try:
             response_text = await self._call_api_with_retry(model, payload)
-        except google_exceptions.ResourceExhausted as e:
+        except self._google_exceptions.ResourceExhausted as e:
             raise APIRateLimitError(f"Rate limit exceeded during rewrite: {e}") from e
 
         # utils의 중앙화된 함수 사용 (DRY 원칙)
@@ -680,3 +721,14 @@ class GeminiAgent:
             raise BudgetExceededError(
                 f"Session cost ${total:.4f} exceeded budget ${self.config.budget_limit_usd:.2f}"
             )
+
+
+def __getattr__(name: str):
+    if name == "caching":
+        # Provide a late import hook so tests can monkeypatch `src.agent.caching`
+        # while keeping the heavy dependency out of module import time.
+        import google.generativeai.caching as caching_mod
+
+        globals()["caching"] = caching_mod
+        return caching_mod
+    raise AttributeError(name)

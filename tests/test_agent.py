@@ -1,6 +1,6 @@
 import pytest
 import asyncio
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock, AsyncMock, PropertyMock, patch
 from src.agent import GeminiAgent
 from src.config import AppConfig
 from src.models import EvaluationResultSchema
@@ -48,17 +48,34 @@ class TestGeminiAgent:
             return_value='{"best_candidate": "A", "evaluations": []}'
         )
 
-        # Test with cache
-        await agent.evaluate_responses(
-            "ocr", "query", {"A": "a"}, cached_content="cache"
-        )
-        assert agent.cache_hits == 1
-        assert agent.cache_misses == 0
+        # Mock lazy properties using patch.object
+        mock_genai = MagicMock()
+        mock_caching = MagicMock()
 
-        # Test without cache
-        await agent.evaluate_responses("ocr", "query", {"A": "a"}, cached_content=None)
-        assert agent.cache_hits == 1
-        assert agent.cache_misses == 1
+        with (
+            patch.object(
+                GeminiAgent, "_genai", new_callable=PropertyMock
+            ) as mock_genai_prop,
+            patch.object(
+                GeminiAgent, "_caching", new_callable=PropertyMock
+            ) as mock_caching_prop,
+        ):
+            mock_genai_prop.return_value = mock_genai
+            mock_caching_prop.return_value = mock_caching
+
+            # Test with cache
+            await agent.evaluate_responses(
+                "ocr", "query", {"A": "a"}, cached_content=MagicMock()
+            )
+            assert agent.cache_hits == 1
+            assert agent.cache_misses == 0
+
+            # Test without cache
+            await agent.evaluate_responses(
+                "ocr", "query", {"A": "a"}, cached_content=None
+            )
+            assert agent.cache_hits == 1
+            assert agent.cache_misses == 1
 
     @pytest.mark.asyncio
     async def test_rate_limiter_concurrency_respected(self, monkeypatch, tmp_path):

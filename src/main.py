@@ -8,8 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, Dict, List, Optional, cast
-
-import google.generativeai as genai
+from types import SimpleNamespace
 
 # pip install python-dotenv google-generativeai aiofiles pydantic tenacity pydantic-settings jinja2 rich
 from dotenv import load_dotenv
@@ -63,6 +62,9 @@ from src.utils import (
 
 if TYPE_CHECKING:
     from google.generativeai import caching
+
+
+genai = SimpleNamespace(configure=lambda *_args, **_kwargs: None)
 
 # Rich Console은 전역에서 재사용
 console = Console()
@@ -680,6 +682,8 @@ async def main():
     # ... (config & resource loading)
     try:
         config = AppConfig()
+        import google.generativeai as genai
+
         genai.configure(api_key=config.api_key)
         # ... (jinja env setup)
         from jinja2 import Environment, FileSystemLoader
