@@ -143,6 +143,12 @@ pip install -e ".[dev]"
 pre-commit install
 # 첫 실행 시 전체 파일 검사
 pre-commit run --all-files
+
+### 빠른 품질 검사(권장)
+```bash
+pre-commit run --all-files        # ruff + ruff-format + mypy
+uv run pytest tests/ --cov=src --cov-fail-under=68
+```
 ```
 
 ### 템플릿/세션 도구
