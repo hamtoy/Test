@@ -235,7 +235,7 @@ class GeminiModelClient:
             response = self.generate(check_prompt, role="fact_checker")
             verdict = "pass" if "PASS" in response.upper() else "fail"
 
-            issues = []
+            issues: List[str] = []
             if "FAIL" in response.upper():
                 issues.extend(
                     line.split(":")[-1].strip()

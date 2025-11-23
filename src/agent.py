@@ -160,18 +160,17 @@ class GeminiAgent:
 
         return HarmBlockThreshold, HarmCategory
 
-    def _get_safety_settings(self) -> Dict["HarmCategory", "HarmBlockThreshold"]:
-        HarmBlockThreshold, HarmCategory = self._harm_types
-        settings: Dict[HarmCategory, HarmBlockThreshold] = {
-            category: cast(HarmBlockThreshold, HarmBlockThreshold.BLOCK_NONE)
+    def _get_safety_settings(self) -> Dict[Any, Any]:
+        harm_block_threshold, harm_category = self._harm_types()
+        return {
+            category: harm_block_threshold.BLOCK_NONE
             for category in [
-                HarmCategory.HARM_CATEGORY_HARASSMENT,
-                HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                harm_category.HARM_CATEGORY_HARASSMENT,
+                harm_category.HARM_CATEGORY_HATE_SPEECH,
+                harm_category.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                harm_category.HARM_CATEGORY_DANGEROUS_CONTENT,
             ]
         }
-        return settings
 
     def _create_generative_model(
         self,
