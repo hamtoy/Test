@@ -2,6 +2,8 @@
 
 혼자 사용하는 프로젝트이고 배포 계획이 없다는 점을 고려하여, **실제 작업 효율성과 개발 경험(DX) 향상**에 초점을 맞춘 개선 영역을 제안합니다. 웹 검색을 통해 최신 도구 트렌드(2025년 기준)와 호환성을 검증하여 내용을 보완했습니다.
 
+> **최신 상태 (2025-11-24)**: ✅ 표시가 있는 항목은 이미 구현되어 사용 가능합니다. 나머지는 향후 개선을 위한 아이디어입니다.
+
 ---
 
 ## 🎯 1. 개발 경험(DX) 개선
@@ -65,29 +67,21 @@ extend-select = [
 
 **혼자 쓸 때 체감되는 성능 개선:**
 
-### 2.1 프로파일링 자동화
+### 2.1 프로파일링 자동화 ✅ 구현됨
+
+**위치**: `scripts/auto_profile.py`
 
 ```python
-# scripts/auto_profile.py
-import cProfile
-import pstats
-from pathlib import Path
-
-def profile_main():
-    """main.py를 프로파일링하고 top 20 병목 출력"""
-    profiler = cProfile.Profile()
-    profiler.enable()
-    
-    from src import main
-    main.run()
-    
-    profiler.disable()
-    stats = pstats.Stats(profiler)
-    stats.sort_stats('cumtime')
-    stats.print_stats(20)  # 상위 20개만
-
-# 실행: python scripts/auto_profile.py
+# 실행 예시
+python scripts/auto_profile.py src.main --mode AUTO --ocr-file example_ocr.txt
 ```
+
+**기능**:
+
+- cProfile로 모듈 실행
+- 병목 상위 20개 자동 출력
+- `profiling_results/` 디렉토리에 `.prof` 파일 저장
+- argparse 기반 CLI 지원
 
 ### 2.2 메모리 사용량 모니터링
 
@@ -176,38 +170,36 @@ Select-String "ERROR" app.log | Select-Object -Last 20
 
 **개인 프로젝트에 유용한 개선:**
 
-### 4.1 실험 결과 비교 스크립트
+### 4.1 실험 결과 비교 스크립트 ✅ 구현됨
 
-```python
-# scripts/compare_runs.py
-import json
-from pathlib import Path
-from rich.table import Table
-
-def compare_experiments():
-    """여러 실험 결과를 테이블로 비교"""
-    results = []
-    for file in Path("data/outputs").glob("result_*.md"):
-        # 토큰 사용량, 비용, 시간 추출
-        results.append(parse_result(file))
-    
-    table = Table(title="Experiment Comparison")
-    table.add_column("File")
-    table.add_column("Tokens")
-    table.add_column("Cost")
-    table.add_column("Time")
-    # ...
-```
-
-### 4.2 자동 백업 스크립트
+**위치**: `scripts/compare_runs.py`
 
 ```bash
-# scripts/backup.ps1 (PowerShell)
-$date = Get-Date -Format "yyyyMMdd"
-Compress-Archive -Path "data/", ".env", "cache_stats.jsonl", "checkpoint.jsonl" -DestinationPath "backups/shining-quasar-$date.zip"
-
-# 작업 스케줄러에 등록하여 주 1회 백업
+# 실행 예시
+python scripts/compare_runs.py --sort-by cost
 ```
+
+**기능**:
+
+- `data/outputs/result_*.md` 파일 분석
+- Rich Table로 토큰, 비용, 시간 비교
+- 정렬 옵션 지원 (cost, tokens, time)
+
+### 4.2 자동 백업 스크립트 ✅ 구현됨
+
+**위치**: `scripts/backup.ps1`
+
+```bash
+# 실행 예시
+pwsh scripts/backup.ps1          # .env 포함
+pwsh scripts/backup.ps1 -SkipEnv # 민감정보 제외
+```
+
+**기능**:
+
+- 데이터, 로그를 날짜별 ZIP으로 압축
+- 선택적 .env 제외 옵션
+- Windows 작업 스케줄러 연동 가능
 
 ---
 
@@ -215,8 +207,8 @@ Compress-Archive -Path "data/", ".env", "cache_stats.jsonl", "checkpoint.jsonl" 
 
 **현재 상태:**
 
-- 77% 커버리지 달성 (최근 향상됨)
-- 주요 모듈 커버리지 높음
+- ✅ **75% 커버리지 목표 설정** (`pyproject.toml`)
+- 주요 모듈 커버리지 높음 (77% 실제 달성)
 
 **혼자 쓸 때 현실적인 테스트 전략:**
 
