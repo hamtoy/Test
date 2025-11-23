@@ -164,11 +164,16 @@ def main() -> None:
         q = turn.content or turn.prompt
         answers = [model.generate(q, role=f"answer_{i}") for i in range(3)]
         eval_res = model.evaluate(q, answers)
-        best = answers[eval_res["best_index"]]
+        best_idx = eval_res.get("best_index")
+        if best_idx is None or not (0 <= best_idx < len(answers)):
+            print(f"- Turn {idx} ({turn.type}): best answer unavailable")
+            continue
+
+        best = answers[best_idx]
         rewritten = model.rewrite(best)
         fact_res = model.fact_check(rewritten, ctx.has_table_chart)
         print(
-            f"- Turn {idx} ({turn.type}): best={eval_res['best_index']}, fact={fact_res['verdict']}"
+            f"- Turn {idx} ({turn.type}): best={best_idx}, fact={fact_res['verdict']}"
         )
 
 
