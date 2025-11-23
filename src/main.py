@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, Dict, List, Optional, cast
 from types import SimpleNamespace
 
-# pip install python-dotenv google-generativeai aiofiles pydantic tenacity pydantic-settings jinja2 rich
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.panel import Panel

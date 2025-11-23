@@ -71,8 +71,6 @@ class GeminiAgent:
         # 동시 실행 개수 제한
         self._semaphore = asyncio.Semaphore(config.max_concurrency)
         self._rate_limiter: Optional["AsyncLimiter"] = None
-
-        # RPM(분당 요청 수) 제한 - 429 에러 방지
         try:
             from aiolimiter import AsyncLimiter
 
@@ -91,11 +89,9 @@ class GeminiAgent:
 
         self.safety_settings = self._get_safety_settings()
 
-        # 토큰 사용량 누적
         self.total_input_tokens = 0
         self.total_output_tokens = 0
 
-        # 캐시 적중률 추적
         self.cache_hits = 0
         self.cache_misses = 0
 
