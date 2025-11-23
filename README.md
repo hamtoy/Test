@@ -83,7 +83,7 @@ flowchart LR
 
     C -->|선택| F[Neo4j 그래프]
     F --> G[벡터 검색]
-    F --> H[Session 검증 (checks/)]
+    F --> H["Session 검증 checks/"]
 ```
 
 > 기본 워크플로우는 A→B→C→D→E의 직선 흐름을 따르며, Neo4j/벡터 검색/세션 검증은 QA RAG 시스템 사용 시에만 활성화됩니다.
