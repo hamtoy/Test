@@ -323,3 +323,77 @@ def test_agent_get_total_cost_invalid_model(monkeypatch):
     agent.total_output_tokens = 10
     with pytest.raises(ValueError):
         agent.get_total_cost()
+
+
+def test_qa_rag_vector_store_init(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "k")
+
+    class _FakeNeo4jVector:
+        @classmethod
+        def from_existing_graph(cls, *args, **kwargs):
+            return "vector"
+
+    # stub import module
+    sys.modules["langchain_neo4j"] = types.SimpleNamespace(Neo4jVector=_FakeNeo4jVector)
+
+    kg = qrs.QAKnowledgeGraph.__new__(qrs.QAKnowledgeGraph)
+    kg.neo4j_uri = "uri"
+    kg.neo4j_user = "user"
+    kg.neo4j_password = "pw"
+    kg._graph = None
+    kg._init_vector_store()
+    assert kg._vector_store == "vector"
+
+
+def test_qa_rag_vector_store_handles_errors(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "k")
+
+    class _FakeNeo4jVector:
+        @classmethod
+        def from_existing_graph(cls, *args, **kwargs):
+            raise ValueError("bad config")
+
+    sys.modules["langchain_neo4j"] = types.SimpleNamespace(Neo4jVector=_FakeNeo4jVector)
+
+    kg = qrs.QAKnowledgeGraph.__new__(qrs.QAKnowledgeGraph)
+    kg.neo4j_uri = "uri"
+    kg.neo4j_user = "user"
+    kg.neo4j_password = "pw"
+    kg._graph = None
+    kg._init_vector_store()
+    assert kg._vector_store is None
+
+
+def test_qa_rag_find_relevant_rules(monkeypatch):
+    kg = qrs.QAKnowledgeGraph.__new__(qrs.QAKnowledgeGraph)
+    kg._vector_store = None
+    assert kg.find_relevant_rules("q") == []
+
+    class _Doc:
+        def __init__(self, text):
+            self.page_content = text
+
+    kg._vector_store = types.SimpleNamespace(
+        similarity_search=lambda query, k=5: [_Doc("r1")]
+    )
+    assert kg.find_relevant_rules("q", k=1) == ["r1"]
+
+
+def test_qa_rag_validate_session(monkeypatch):
+    class _SessionContext:
+        def __init__(self, **kwargs):
+            if kwargs.get("fail"):
+                raise TypeError("boom")
+
+    sys.modules["scripts.build_session"] = types.SimpleNamespace(SessionContext=_SessionContext)
+    monkeypatch.setattr(qrs, "validate_turns", lambda turns, ctx: {"ok": True})
+
+    kg = qrs.QAKnowledgeGraph.__new__(qrs.QAKnowledgeGraph)
+
+    # empty turns
+    res = kg.validate_session({"turns": []})
+    assert res["ok"] is False
+
+    # TypeError path
+    res2 = kg.validate_session({"turns": [{}], "context": {"fail": True}})
+    assert res2["ok"] is False
