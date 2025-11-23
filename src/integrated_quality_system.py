@@ -38,9 +38,22 @@ class IntegratedQualitySystem:
     def generate_qa_with_all_enhancements(
         self, image_path: str, query_type: str
     ) -> Dict[str, Any]:
-        """
-        모든 품질 보강 기능을 적용한 QA 생성 플로우.
+        """모든 품질 보강 기능을 적용한 QA 생성 플로우.
+
         GeminiModelClient를 통해 실제 LLM을 호출하여 답변을 생성합니다.
+
+        Args:
+            image_path: 분석할 이미지 파일 경로
+            query_type: 질의 유형 (예: "explanation", "summary")
+
+        Returns:
+            다음 키를 포함하는 딕셔너리:
+            - output (str): 생성된 QA 답변 텍스트
+            - validation (Dict): 크로스 검증 결과
+            - metadata (Dict): 메타데이터, 다음 포함:
+                - complexity (Dict): 이미지 복잡도 분석 결과
+                - adjustments (Dict): 난이도 조정 정보
+                - examples_used (List): 사용된 예시 리스트
         """
 
         # 1. 이미지 분석

@@ -37,7 +37,19 @@ class GeminiModelClient:
         self.temperature = float(os.getenv("GEMINI_TEMPERATURE", "0.7"))
 
     def generate(self, prompt: str, role: str = "default") -> str:
-        """프롬프트 기반 답변 생성."""
+        """프롬프트 기반 답변 생성.
+
+        Args:
+            prompt: 입력 프롬프트 텍스트
+            role: 생성 역할 (예: "generator", "evaluator", "rewriter")
+
+        Returns:
+            생성된 텍스트. API 오류 발생 시 오류 메시지 포함.
+
+        Note:
+            GoogleAPIError 또는 기타 예외 발생 시 예외를 raise하지 않고
+            오류 메시지를 문자열로 반환합니다.
+        """
         try:
             response = self.model.generate_content(
                 prompt,
@@ -142,7 +154,18 @@ class GeminiModelClient:
             }
 
     def rewrite(self, text: str) -> str:
-        """답변 재작성 (문장 재구성, 마크다운 적용)."""
+        """답변 재작성 (문장 재구성, 마크다운 적용).
+
+        Args:
+            text: 재작성할 원본 답변 텍스트
+
+        Returns:
+            재작성된 답변 텍스트. 실패 시 오류 메시지 + 원본 텍스트 반환.
+
+        Note:
+            고유명사와 숫자는 보존하고, 주요 용어를 볼드 처리합니다.
+            API 오류 시에도 예외를 raise하지 않고 fallback 텍스트를 반환합니다.
+        """
         rewrite_prompt = f"""다음 답변을 개선하여 재작성하세요.
 
 원본 답변:
@@ -165,7 +188,21 @@ class GeminiModelClient:
             return f"[재작성 실패(알 수 없음): {e}] {text}"
 
     def fact_check(self, answer: str, has_table_chart: bool) -> Dict[str, Any]:
-        """사실 검증 (표/그래프 참조, 외부 지식 사용 여부 등)."""
+        """사실 검증 (표/그래프 참조, 외부 지식 사용 여부 등).
+
+        Args:
+            answer: 검증할 답변 텍스트
+            has_table_chart: 표/그래프 존재 여부 (True면 참조 금지)
+
+        Returns:
+            다음 키를 포함하는 딕셔너리:
+            - verdict (str): "pass", "fail", 또는 "error"
+            - issues (List[str]): 발견된 문제점 리스트
+            - details (str): 상세 검증 결과 텍스트
+
+        Note:
+            API 오류 발생 시 verdict="error"로 설정하고 예외를 raise하지 않습니다.
+        """
         check_prompt = f"""다음 답변을 검증하세요.
 
 답변:
