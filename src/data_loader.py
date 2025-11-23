@@ -13,7 +13,7 @@ logger = logging.getLogger("GeminiWorkflow")
 
 
 def validate_candidates(candidates: Dict[str, str]) -> None:
-    """Validate candidate structure and content."""
+    """후보 답변 구조와 내용을 검증합니다."""
     required_keys: Set[str] = {"A", "B", "C"}
     actual_keys = set(candidates.keys())
 
@@ -113,6 +113,6 @@ async def reload_data_if_needed(
     config: AppConfig, ocr_filename: str, cand_filename: str, interactive: bool = False
 ) -> tuple[str, Dict[str, str]]:
     """
-    Wrapper to reload OCR/candidate data. interactive flag reserved for future prompts.
+    OCR/후보 데이터를 재로드하는 래퍼 함수. interactive 플래그는 향후 프롬프트를 위해 예약됨.
     """
     return await load_input_data(config.input_dir, ocr_filename, cand_filename)
