@@ -1,13 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Dict
-
 import importlib
 import sys
 import types
 from typing import Any, Dict
-
-import pytest
 
 
 def test_generate_qa_with_all_enhancements(monkeypatch):
