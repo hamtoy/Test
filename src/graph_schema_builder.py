@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sys
 import hashlib
+import logging
 
 from neo4j import GraphDatabase
 from neo4j.exceptions import Neo4jError
@@ -21,6 +22,7 @@ def require_env(var: str) -> str:
 class QAGraphBuilder:
     def __init__(self, uri: str, user: str, password: str):
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
+        self.logger = logging.getLogger(__name__)
 
     def close(self):
         if self.driver:
@@ -50,7 +52,7 @@ class QAGraphBuilder:
             session.run(
                 "CREATE CONSTRAINT bestpractice_id_unique IF NOT EXISTS FOR (b:BestPractice) REQUIRE b.id IS UNIQUE"
             )
-        print("✅ 스키마 고유 제약 생성/확인 완료")
+        self.logger.info("스키마 고유 제약 생성/확인 완료")
 
     def extract_rules_from_notion(self):
         """Notion 문서에서 규칙 추출 및 그래프화 (중복 방지 MERGE)."""
