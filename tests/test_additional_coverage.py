@@ -8,11 +8,17 @@ import pytest
 from jinja2 import DictLoader, Environment
 
 # Minimal langchain stubs for modules that are not installed in CI.
-_fake_lc_base = types.SimpleNamespace(BaseCallbackHandler=type("BaseCallbackHandler", (), {}))
+_fake_lc_base = types.SimpleNamespace(
+    BaseCallbackHandler=type("BaseCallbackHandler", (), {})
+)
 sys.modules.setdefault("langchain", types.ModuleType("langchain"))
 sys.modules.setdefault("langchain.callbacks", types.ModuleType("langchain.callbacks"))
-sys.modules.setdefault("langchain.callbacks.base", types.ModuleType("langchain.callbacks.base"))
-sys.modules["langchain.callbacks.base"].BaseCallbackHandler = _fake_lc_base.BaseCallbackHandler
+sys.modules.setdefault(
+    "langchain.callbacks.base", types.ModuleType("langchain.callbacks.base")
+)
+sys.modules[
+    "langchain.callbacks.base"
+].BaseCallbackHandler = _fake_lc_base.BaseCallbackHandler
 sys.modules["langchain.callbacks"].base = sys.modules["langchain.callbacks.base"]
 sys.modules["langchain"].callbacks = sys.modules["langchain.callbacks"]
 
@@ -92,17 +98,27 @@ def test_dynamic_template_generator_fallback_and_checklist(monkeypatch):
 
     monkeypatch.setattr(dtg, "GraphDatabase", _GraphDB)
 
-    env = Environment(loader=DictLoader({"templates/base_system.j2": "{{query_type_korean}}|{{rules|length}}"}))
+    env = Environment(
+        loader=DictLoader(
+            {"templates/base_system.j2": "{{query_type_korean}}|{{rules|length}}"}
+        )
+    )
     generator = dtg.DynamicTemplateGenerator("uri", "user", "pw")
     generator.jinja_env = env  # use in-memory template to trigger fallback
 
-    prompt = generator.generate_prompt_for_query_type("explanation", {"calc_allowed": False})
+    prompt = generator.generate_prompt_for_query_type(
+        "explanation", {"calc_allowed": False}
+    )
     assert "설명" in prompt
     generator._run = lambda _cypher, _params=None: [  # noqa: SLF001
         {"item": "규칙을 따를 것", "category": "rule"}
     ]
-    checklist = generator.generate_validation_checklist({"turns": [{"type": "explanation"}]})
-    assert checklist == [{"item": "규칙을 따를 것", "category": "rule", "query_type": "explanation"}]
+    checklist = generator.generate_validation_checklist(
+        {"turns": [{"type": "explanation"}]}
+    )
+    assert checklist == [
+        {"item": "규칙을 따를 것", "category": "rule", "query_type": "explanation"}
+    ]
     generator.close()
 
 
@@ -177,7 +193,11 @@ def test_compare_documents_helpers(monkeypatch):
         def run(self, query, **_kwargs):
             if "ORDER BY total_blocks" in query:
                 return [
-                    {"title": "Doc A", "total_blocks": 2, "types": ["heading", "paragraph"]},
+                    {
+                        "title": "Doc A",
+                        "total_blocks": 2,
+                        "types": ["heading", "paragraph"],
+                    },
                     {"title": "Doc B", "total_blocks": 1, "types": ["paragraph"]},
                 ]
             return [{"content": "공통 내용", "pages": ["Doc A", "Doc B"]}]
@@ -268,14 +288,20 @@ def test_real_time_constraint_enforcer_stream_and_validate():
             self._graph = types.SimpleNamespace(session=lambda: _GraphSession())
 
         def get_constraints_for_query_type(self, *_args, **_kwargs):
-            return [{"type": "prohibition", "pattern": "bad", "description": "no bad words"}]
+            return [
+                {"type": "prohibition", "pattern": "bad", "description": "no bad words"}
+            ]
 
     enforcer = rtce.RealTimeConstraintEnforcer(_FakeKG())
 
-    chunks = list(enforcer.stream_with_validation(iter(["bad content", " more"]), "target"))
+    chunks = list(
+        enforcer.stream_with_validation(iter(["bad content", " more"]), "target")
+    )
     assert chunks[0]["type"] == "violation"
 
-    result = enforcer.validate_complete_output("duplicate text 2023 - 2024", "explanation")
+    result = enforcer.validate_complete_output(
+        "duplicate text 2023 - 2024", "explanation"
+    )
     assert result["issues"]  # missing bold + similarity check
 
 
@@ -309,7 +335,9 @@ def test_gemini_model_client_behaviors(monkeypatch):
     length_eval = client.evaluate("q", ["a", "bb"])
     assert length_eval["best_index"] == 1
 
-    client.generate = lambda prompt, role="default": "점수1: 2\n점수2: 4\n점수3: 1\n최고: 2"
+    client.generate = (
+        lambda prompt, role="default": "점수1: 2\n점수2: 4\n점수3: 1\n최고: 2"
+    )
     parsed_eval = client.evaluate("q", ["a", "bb", "ccc"])
     assert parsed_eval["best_index"] == 1
 
@@ -322,7 +350,10 @@ def test_gemini_model_client_behaviors(monkeypatch):
 
 
 def test_advanced_context_augmentation_fallback(monkeypatch):
-    record = {"blocks": [{"content": "block text"}], "rules": [{"rule": "R", "priority": 1, "examples": ["ex"]}]}
+    record = {
+        "blocks": [{"content": "block text"}],
+        "rules": [{"rule": "R", "priority": 1, "examples": ["ex"]}],
+    }
 
     class _ACASession:
         def __enter__(self):
@@ -338,7 +369,9 @@ def test_advanced_context_augmentation_fallback(monkeypatch):
 
             return _Result()
 
-    fake_graph = types.SimpleNamespace(_driver=types.SimpleNamespace(session=lambda: _ACASession()))
+    fake_graph = types.SimpleNamespace(
+        _driver=types.SimpleNamespace(session=lambda: _ACASession())
+    )
     aug = aca.AdvancedContextAugmentation.__new__(aca.AdvancedContextAugmentation)
     aug.vector_index = None
     aug.graph = fake_graph
@@ -370,7 +403,11 @@ def test_graph_schema_builder_runs_with_stubbed_driver(monkeypatch):
             if "WHERE b.order >" in query:
                 return _Result(
                     [
-                        {"id": "b1", "content": "This is a useful rule text", "type": "paragraph"},
+                        {
+                            "id": "b1",
+                            "content": "This is a useful rule text",
+                            "type": "paragraph",
+                        },
                         {"id": "b2", "content": "Stop", "type": "heading_1"},
                     ]
                 )
@@ -425,7 +462,9 @@ def test_health_check_with_stub(monkeypatch):
         def run(self, *_args, **_kwargs):
             return types.SimpleNamespace(single=lambda: 1)
 
-    fake_kg = types.SimpleNamespace(_graph=types.SimpleNamespace(session=lambda: _HealthSession()))
+    fake_kg = types.SimpleNamespace(
+        _graph=types.SimpleNamespace(session=lambda: _HealthSession())
+    )
     assert health_check.check_neo4j_connection(fake_kg) is True
 
     monkeypatch.setattr(health_check, "check_neo4j_connection", lambda *_a, **_k: True)
@@ -443,7 +482,9 @@ def test_cross_validation_scoring(monkeypatch):
 
         def run(self, query, **_kwargs):
             if "collect(b.content)" in query:
-                return types.SimpleNamespace(single=lambda: {"all_content": ["Alpha beta content"]})
+                return types.SimpleNamespace(
+                    single=lambda: {"all_content": ["Alpha beta content"]}
+                )
             if "ErrorPattern" in query:
                 return [
                     {"pattern": "error", "description": "error desc"},
@@ -456,7 +497,9 @@ def test_cross_validation_scoring(monkeypatch):
             self._vector_store = None
 
         def get_constraints_for_query_type(self, _qt):
-            return [{"type": "prohibition", "pattern": "forbidden", "description": "nope"}]
+            return [
+                {"type": "prohibition", "pattern": "forbidden", "description": "nope"}
+            ]
 
     cvs = cross_validation.CrossValidationSystem(_FakeKG())
     result = cvs.cross_validate_qa_pair(
@@ -501,7 +544,9 @@ def test_graph_enhanced_router(monkeypatch):
     result = router.route_and_generate("hello", {"summary": _handler})
     assert result["choice"] == "summary"
     assert result["output"] == "ok"
-    prompt_text = router._build_router_prompt("hello", [{"name": "summary", "korean": "요약", "limit": 1}])
+    prompt_text = router._build_router_prompt(
+        "hello", [{"name": "summary", "korean": "요약", "limit": 1}]
+    )
     assert "요약" in prompt_text
 
 
@@ -575,8 +620,17 @@ def test_lcel_optimized_chain(monkeypatch):
             return f"generated:{role}"
 
     chain = lcel_optimized_chain.LCELOptimizedChain(_FakeKG(), _FakeLLM())
-    merged = chain._merge_context({"rules": ["r"], "examples": ["e"], "constraints": ["c"], "context": {"x": 1}})
-    formatted = chain._format_prompt({"rules": ["r"], "examples": ["e"], "constraints": ["c"], "original_context": {}})
+    merged = chain._merge_context(
+        {"rules": ["r"], "examples": ["e"], "constraints": ["c"], "context": {"x": 1}}
+    )
+    formatted = chain._format_prompt(
+        {
+            "rules": ["r"],
+            "examples": ["e"],
+            "constraints": ["c"],
+            "original_context": {},
+        }
+    )
     assert "- r" in formatted
     assert merged["rules"] == ["r"]
     assert chain._call_llm("prompt") == "generated:lcel"
@@ -586,7 +640,9 @@ def test_lcel_optimized_chain(monkeypatch):
 
 def test_memory_augmented_qa(monkeypatch):
     monkeypatch.setattr(memory_augmented_qa, "require_env", lambda _v: "val")
-    monkeypatch.setattr(memory_augmented_qa, "CustomGeminiEmbeddings", lambda api_key: object())
+    monkeypatch.setattr(
+        memory_augmented_qa, "CustomGeminiEmbeddings", lambda api_key: object()
+    )
 
     class _FakeSession:
         def __enter__(self):
@@ -619,9 +675,17 @@ def test_memory_augmented_qa(monkeypatch):
         def from_existing_graph(*_args, **_kwargs):
             return _FakeVector()
 
-    monkeypatch.setitem(sys.modules, "langchain_neo4j", types.SimpleNamespace(Neo4jVector=_FakeNeo4jVector))
+    monkeypatch.setitem(
+        sys.modules,
+        "langchain_neo4j",
+        types.SimpleNamespace(Neo4jVector=_FakeNeo4jVector),
+    )
     monkeypatch.setattr(memory_augmented_qa, "GraphDatabase", _GraphDB)
-    monkeypatch.setattr(memory_augmented_qa, "GeminiModelClient", lambda: types.SimpleNamespace(generate=lambda *_a, **_k: "answer"))
+    monkeypatch.setattr(
+        memory_augmented_qa,
+        "GeminiModelClient",
+        lambda: types.SimpleNamespace(generate=lambda *_a, **_k: "answer"),
+    )
 
     system = memory_augmented_qa.MemoryAugmentedQASystem()
     resp = system.ask_with_memory("무엇을 해야 하나요?")
@@ -670,8 +734,14 @@ def test_multi_agent_qa_system(monkeypatch):
     fake_kg._graph = types.SimpleNamespace(session=lambda: _FakeRuleSession())
 
     monkeypatch.setattr(multi_agent_qa_system, "GeminiModelClient", lambda: _FakeLLM())
-    monkeypatch.setattr(multi_agent_qa_system, "DynamicExampleSelector", lambda kg: _FakeExampleSelector())
-    monkeypatch.setattr(multi_agent_qa_system, "CrossValidationSystem", lambda kg: _FakeValidator())
+    monkeypatch.setattr(
+        multi_agent_qa_system,
+        "DynamicExampleSelector",
+        lambda kg: _FakeExampleSelector(),
+    )
+    monkeypatch.setattr(
+        multi_agent_qa_system, "CrossValidationSystem", lambda kg: _FakeValidator()
+    )
 
     system = multi_agent_qa_system.MultiAgentQASystem(fake_kg)
     result = system.collaborative_generate("explanation", {"page_id": "p1"})
@@ -724,7 +794,9 @@ def test_semantic_analysis_utils(monkeypatch):
 
     driver = _SADriver()
     semantic_analysis.create_topics(driver, [("alpha", 3)])
-    semantic_analysis.link_blocks_to_topics(driver, [{"id": "b1", "content": "alpha beta"}], [("alpha", 3)])
+    semantic_analysis.link_blocks_to_topics(
+        driver, [{"id": "b1", "content": "alpha beta"}], [("alpha", 3)]
+    )
     assert store
 
 
@@ -750,7 +822,11 @@ def test_smart_autocomplete(monkeypatch):
         def __init__(self):
             self._graph = types.SimpleNamespace(session=lambda: _SmartSession())
 
-    monkeypatch.setattr(smart_autocomplete, "find_violations", lambda text: [{"type": "local", "match": text}])
+    monkeypatch.setattr(
+        smart_autocomplete,
+        "find_violations",
+        lambda text: [{"type": "local", "match": text}],
+    )
     sa = smart_autocomplete.SmartAutocomplete(_SmartKG())
     suggestions = sa.suggest_next_query_type([{"type": "summary"}])
     assert any(s["name"] == "explanation" for s in suggestions)
@@ -787,7 +863,9 @@ def test_dynamic_example_selector(monkeypatch):
             self._graph = types.SimpleNamespace(session=lambda: _DESession())
 
     selector = dynamic_example_selector.DynamicExampleSelector(_DEKG())
-    examples = selector.select_best_examples("explanation", {"text_density": 0.8, "has_table_chart": True}, k=1)
+    examples = selector.select_best_examples(
+        "explanation", {"text_density": 0.8, "has_table_chart": True}, k=1
+    )
     assert examples
 
 
@@ -806,7 +884,9 @@ def test_adaptive_difficulty(monkeypatch):
 
             return _Result()
 
-    fake_kg = types.SimpleNamespace(_graph=types.SimpleNamespace(session=lambda: _ADSession()))
+    fake_kg = types.SimpleNamespace(
+        _graph=types.SimpleNamespace(session=lambda: _ADSession())
+    )
     adjuster = adaptive_difficulty.AdaptiveDifficultyAdjuster(fake_kg)
     complexity = adjuster.analyze_image_complexity({"text_density": 0.8})
     assert complexity["estimated_blocks"] == 5
@@ -832,10 +912,17 @@ def test_list_models_script(monkeypatch):
     monkeypatch.setitem(sys.modules, "google.generativeai", fake_genai)
 
     captured = []
-    monkeypatch.setattr(builtins, "print", lambda *args, **kwargs: captured.append(" ".join(str(a) for a in args)))
-    monkeypatch.setattr(builtins, "exit", lambda code=0: captured.append(f"exit:{code}"))
+    monkeypatch.setattr(
+        builtins,
+        "print",
+        lambda *args, **kwargs: captured.append(" ".join(str(a) for a in args)),
+    )
+    monkeypatch.setattr(
+        builtins, "exit", lambda code=0: captured.append(f"exit:{code}")
+    )
 
     import src.list_models as lm
+
     importlib.reload(lm)
     assert captured
 
@@ -849,9 +936,15 @@ def test_qa_generator_script(monkeypatch):
 
     class _FakeCompletions:
         def create(self, model, messages, temperature=0):
-            content = "1. 첫 번째 질문\n2. 두 번째 질문\n3. 세 번째 질문\n4. 네 번째 질문"
+            content = (
+                "1. 첫 번째 질문\n2. 두 번째 질문\n3. 세 번째 질문\n4. 네 번째 질문"
+            )
             return types.SimpleNamespace(
-                choices=[types.SimpleNamespace(message=types.SimpleNamespace(content=content))]
+                choices=[
+                    types.SimpleNamespace(
+                        message=types.SimpleNamespace(content=content)
+                    )
+                ]
             )
 
     class _FakeChat:
@@ -883,8 +976,13 @@ def test_qa_generator_script(monkeypatch):
     monkeypatch.setattr(builtins, "open", _fake_open)
     monkeypatch.setattr(builtins, "exit", lambda code=0: None)
     captured = []
-    monkeypatch.setattr(builtins, "print", lambda *args, **kwargs: captured.append(" ".join(str(a) for a in args)))
+    monkeypatch.setattr(
+        builtins,
+        "print",
+        lambda *args, **kwargs: captured.append(" ".join(str(a) for a in args)),
+    )
 
     import src.qa_generator as qg
+
     importlib.reload(qg)
     assert "QA Results" in files.get("qa_result_4pairs.md", io.StringIO()).getvalue()
