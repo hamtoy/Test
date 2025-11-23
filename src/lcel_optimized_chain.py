@@ -70,7 +70,7 @@ class LCELOptimizedChain:
                     qt=qt,
                 )
                 return [r["text"] for r in res]
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.warning("Rule fetch failed: %s", exc)
             return []
 
@@ -79,7 +79,7 @@ class LCELOptimizedChain:
         try:
             rows = self.kg.get_examples(limit=3)
             return [r["text"] for r in rows]
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.warning("Example fetch failed: %s", exc)
             return []
 
@@ -89,7 +89,7 @@ class LCELOptimizedChain:
         try:
             cons = self.kg.get_constraints_for_query_type(qt)
             return [c.get("description", "") for c in cons]
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.warning("Constraint fetch failed: %s", exc)
             return []
 

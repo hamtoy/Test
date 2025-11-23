@@ -61,7 +61,9 @@ class GeminiModelClient:
             return response.text
         except google_exceptions.GoogleAPIError as e:
             return f"[생성 실패: {e}]"
-        except Exception as e:
+        except (ValueError, TypeError) as e:
+            return f"[생성 실패(입력 오류): {e}]"
+        except Exception as e:  # noqa: BLE001
             return f"[생성 실패(알 수 없음): {e}]"
 
     def evaluate(self, question: str, answers: List[str]) -> Dict[str, Any]:
@@ -143,7 +145,16 @@ class GeminiModelClient:
                 "best_answer": answers[best_idx],
                 "notes": f"평가 실패, 길이 기반 선택: {e}",
             }
-        except Exception as e:
+        except (ValueError, TypeError) as e:
+            scores = [len(a) for a in answers]
+            best_idx = scores.index(max(scores))
+            return {
+                "scores": scores,
+                "best_index": best_idx,
+                "best_answer": answers[best_idx],
+                "notes": f"평가 실패(입력 오류), 길이 기반 선택: {e}",
+            }
+        except Exception as e:  # noqa: BLE001
             scores = [len(a) for a in answers]
             best_idx = scores.index(max(scores))
             return {
@@ -184,7 +195,9 @@ class GeminiModelClient:
             return self.generate(rewrite_prompt, role="rewriter")
         except google_exceptions.GoogleAPIError as e:
             return f"[재작성 실패: {e}] {text}"
-        except Exception as e:
+        except (ValueError, TypeError) as e:
+            return f"[재작성 실패(입력 오류): {e}] {text}"
+        except Exception as e:  # noqa: BLE001
             return f"[재작성 실패(알 수 없음): {e}] {text}"
 
     def fact_check(self, answer: str, has_table_chart: bool) -> Dict[str, Any]:
@@ -239,7 +252,13 @@ class GeminiModelClient:
                 "issues": [f"검증 실패: {e}"],
                 "details": "",
             }
-        except Exception as e:
+        except (ValueError, TypeError) as e:
+            return {
+                "verdict": "error",
+                "issues": [f"검증 실패(입력 오류): {e}"],
+                "details": "",
+            }
+        except Exception as e:  # noqa: BLE001
             return {
                 "verdict": "error",
                 "issues": [f"검증 실패(알 수 없음): {e}"],

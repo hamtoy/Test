@@ -75,7 +75,7 @@ class GraphEnhancedRouter:
         except Neo4jError as exc:
             logger.warning("QueryType fetch failed: %s", exc)
             return []
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.warning("QueryType fetch failed (unknown): %s", exc)
             return []
 
@@ -116,5 +116,5 @@ class GraphEnhancedRouter:
                 )
         except Neo4jError as exc:
             logger.warning("Routing log write failed: %s", exc)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.warning("Routing log write failed (unknown): %s", exc)
