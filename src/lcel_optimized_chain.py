@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Optional
 
 from langchain_core.output_parsers import StrOutputParser
@@ -12,6 +13,8 @@ from langchain_core.runnables import (
 
 from src.gemini_model_client import GeminiModelClient
 from src.qa_rag_system import QAKnowledgeGraph
+
+logger = logging.getLogger(__name__)
 
 
 class LCELOptimizedChain:
@@ -67,7 +70,8 @@ class LCELOptimizedChain:
                     qt=qt,
                 )
                 return [r["text"] for r in res]
-        except Exception:
+        except Exception as exc:
+            logger.warning("Rule fetch failed: %s", exc)
             return []
 
     def _get_examples(self, input_dict: Dict[str, Any]) -> List[str]:
@@ -75,7 +79,8 @@ class LCELOptimizedChain:
         try:
             rows = self.kg.get_examples(limit=3)
             return [r["text"] for r in rows]
-        except Exception:
+        except Exception as exc:
+            logger.warning("Example fetch failed: %s", exc)
             return []
 
     def _get_constraints(self, input_dict: Dict[str, Any]) -> List[str]:
@@ -84,7 +89,8 @@ class LCELOptimizedChain:
         try:
             cons = self.kg.get_constraints_for_query_type(qt)
             return [c.get("description", "") for c in cons]
-        except Exception:
+        except Exception as exc:
+            logger.warning("Constraint fetch failed: %s", exc)
             return []
 
     def _merge_context(self, parallel_output: Dict[str, Any]) -> Dict[str, Any]:
