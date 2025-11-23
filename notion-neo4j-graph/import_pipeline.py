@@ -26,9 +26,7 @@ class DataValidator:
     def validate_block(block: Dict[str, Any]) -> bool:
         if not isinstance(block, dict):
             return False
-        if "id" not in block or "type" not in block:
-            return False
-        return True
+        return not ("id" not in block or "type" not in block)
 
 
 class NotionExtractor:

@@ -103,8 +103,7 @@ class QAGraphBuilder:
                         )
                         desc_list = list(descendants)
 
-                        for d in desc_list:
-                            current_rules.append(d["content"])
+                        current_rules.extend(d["content"] for d in desc_list)
 
                 # 3. Create Rule nodes
                 for rule_text in current_rules:

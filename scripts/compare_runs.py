@@ -7,7 +7,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, List
+from typing import List
 
 from rich.console import Console
 from rich.table import Table
@@ -32,11 +32,21 @@ class RunSummary:
 def _parse_timestamp(value: str | None) -> datetime | None:
     if not value:
         return None
-    for fmt in ("%Y%m%d_%H%M%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S%z"):
-        try:
-            return datetime.strptime(value, fmt)
-        except ValueError:
-            continue
+    formats = ("%Y%m%d_%H%M%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%S%z")
+    parsed = next(
+        (dt for fmt in formats if (dt := _parse_with_format(value, fmt))), None
+    )
+    return parsed or _safe_fromisoformat(value)
+
+
+def _parse_with_format(value: str, fmt: str) -> datetime | None:
+    try:
+        return datetime.strptime(value, fmt)
+    except ValueError:
+        return None
+
+
+def _safe_fromisoformat(value: str) -> datetime | None:
     try:
         return datetime.fromisoformat(value)
     except ValueError:

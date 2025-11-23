@@ -1,7 +1,6 @@
 import cProfile
 import pstats
 import sys
-import importlib
 from pathlib import Path
 
 

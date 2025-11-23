@@ -54,9 +54,7 @@ def is_calc_query(text: str) -> bool:
     if re.search(r"\d+\s*%", text):
         return True
     # English words with boundaries
-    if re.search(r"\b(sum|difference|ratio|percentage)\b", text, flags=re.IGNORECASE):
-        return True
-    return False
+    return bool(re.search(r"\b(sum|difference|ratio|percentage)\b", text, flags=re.IGNORECASE))
 
 
 @dataclass

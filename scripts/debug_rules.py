@@ -29,10 +29,7 @@ def debug_rules():
         result = session.run(query_siblings)
         for record in result:
             content = record["content"]
-            if content:
-                content = content[:50]
-            else:
-                content = "N/A"
+            content = content[:50] if content else "N/A"
             print(f"[{record['type']}] {content}")
 
     driver.close()

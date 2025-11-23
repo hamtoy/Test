@@ -22,10 +22,12 @@ FORBIDDEN_PATTERNS: Dict[str, str] = {
 
 def find_violations(text: str) -> List[Dict]:
     """Return list of violations with pattern key, match text, and span."""
-    violations = []
+    violations: List[Dict] = []
     for key, pat in FORBIDDEN_PATTERNS.items():
-        for m in re.finditer(pat, text, flags=re.IGNORECASE):
-            violations.append({"type": key, "match": m.group(0), "span": m.span()})
+        violations.extend(
+            {"type": key, "match": m.group(0), "span": m.span()}
+            for m in re.finditer(pat, text, flags=re.IGNORECASE)
+        )
     return violations
 
 

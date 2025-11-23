@@ -22,15 +22,14 @@ def export_for_mapping():
             ORDER BY r.section, r.text
         """)
 
-        rules = []
-        for record in rules_result:
-            rules.append(
-                {
-                    "id": record["id"],
-                    "text": record["text"],
-                    "section": record["section"],
-                }
-            )
+        rules = [
+            {
+                "id": record["id"],
+                "text": record["text"],
+                "section": record["section"],
+            }
+            for record in rules_result
+        ]
 
         # Export Examples
         print("📝 Exporting Examples...")
@@ -40,11 +39,10 @@ def export_for_mapping():
             ORDER BY e.type, e.text
         """)
 
-        examples = []
-        for record in examples_result:
-            examples.append(
-                {"id": record["id"], "text": record["text"], "type": record["type"]}
-            )
+        examples = [
+            {"id": record["id"], "text": record["text"], "type": record["type"]}
+            for record in examples_result
+        ]
 
     driver.close()
 

@@ -190,8 +190,7 @@ def write_cache_stats(path: Path, max_entries: int, entry: Dict[str, Any]) -> No
     trimmed = existing[-max_entries:]
 
     with open(path, "w", encoding="utf-8") as f:
-        for item in trimmed:
-            f.write(json.dumps(item, ensure_ascii=False) + "\n")
+        f.writelines(json.dumps(item, ensure_ascii=False) + "\n" for item in trimmed)
 
 
 async def load_checkpoint(path: Path) -> Dict[str, WorkflowResult]:

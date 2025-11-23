@@ -26,16 +26,18 @@ async def test_load_file_async_empty():
     mock_file.__aenter__.return_value.read = AsyncMock(return_value="")
     mock_file.__aexit__.return_value = None
 
-    with patch("aiofiles.open", return_value=mock_file):
-        with pytest.raises(ValueError, match="File is empty"):
-            await load_file_async("dummy_path")
+    with patch("aiofiles.open", return_value=mock_file), pytest.raises(
+        ValueError, match="File is empty"
+    ):
+        await load_file_async("dummy_path")
 
 
 @pytest.mark.asyncio
 async def test_load_file_async_not_found():
-    with patch("aiofiles.open", side_effect=FileNotFoundError):
-        with pytest.raises(FileNotFoundError, match="Critical file missing"):
-            await load_file_async("dummy_path")
+    with patch("aiofiles.open", side_effect=FileNotFoundError), pytest.raises(
+        FileNotFoundError, match="Critical file missing"
+    ):
+        await load_file_async("dummy_path")
 
 
 def test_parse_raw_candidates_valid():

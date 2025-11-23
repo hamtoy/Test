@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import logging
+from contextlib import suppress
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -115,18 +116,19 @@ class DynamicTemplateGenerator:
         RETURN DISTINCT c.description AS item, c.type AS category
         """
         for qt in query_types:
-            for record in self._run(cypher, {"qt": qt}):
-                checklist.append(
-                    {
-                        "item": record["item"],
-                        "category": record["category"],
-                        "query_type": qt,
-                    }
-                )
+            checklist.extend(
+                {
+                    "item": record["item"],
+                    "category": record["category"],
+                    "query_type": qt,
+                }
+                for record in self._run(cypher, {"qt": qt})
+            )
         return checklist
 
 
 if __name__ == "__main__":
+    generator: Optional[DynamicTemplateGenerator] = None
     try:
         generator = DynamicTemplateGenerator(
             neo4j_uri=require_env("NEO4J_URI"),
@@ -162,7 +164,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ 실행 실패: {e}")
     finally:
-        try:
-            generator.close()
-        except Exception:
-            pass
+        if generator is not None:
+            with suppress(Exception):
+                generator.close()

@@ -41,16 +41,14 @@ def compare_structure(driver) -> List[Dict]:
     """
     with driver.session() as session:
         result = session.run(query)
-        rows = []
-        for record in result:
-            rows.append(
-                {
-                    "title": record["title"],
-                    "total": record["total_blocks"],
-                    "types": record["types"],
-                }
-            )
-        return rows
+        return [
+            {
+                "title": record["title"],
+                "total": record["total_blocks"],
+                "types": record["types"],
+            }
+            for record in result
+        ]
 
 
 def find_common_content(driver, limit: int = 10) -> List[Tuple[str, List[str]]]:

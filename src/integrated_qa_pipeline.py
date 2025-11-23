@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+from contextlib import suppress
 from typing import Dict, List, Any
 
 from dotenv import load_dotenv
@@ -64,12 +65,11 @@ class IntegratedQAPipeline:
             )
 
         # 렌더링 후 금지 패턴 재검사
-        post_violations = []
-        for idx, turn in enumerate(session["turns"], 1):
-            for v in find_violations(turn["prompt"]):
-                post_violations.append(
-                    f"turn {idx} ({turn['type']}): {v['type']} -> {v['match']}"
-                )
+        post_violations = [
+            f"turn {idx} ({turn['type']}): {v['type']} -> {v['match']}"
+            for idx, turn in enumerate(session["turns"], 1)
+            for v in find_violations(turn["prompt"])
+        ]
         if post_violations:
             raise ValueError(f"렌더링 후 금지 패턴 검출: {post_violations}")
 
@@ -119,11 +119,9 @@ class IntegratedQAPipeline:
         """
         출력 검증: 금지 패턴, 에러 패턴, 관련 규칙 기반 검사.
         """
-        violations: List[str] = []
-
-        # 금지 패턴 (정규식)
-        for v in find_violations(output):
-            violations.append(f"forbidden_pattern:{v['type']}")
+        violations: List[str] = [
+            f"forbidden_pattern:{v['type']}" for v in find_violations(output)
+        ]
 
         # ErrorPattern 노드 기반 정규식 검사
         ep_cypher = """
@@ -156,14 +154,10 @@ class IntegratedQAPipeline:
         }
 
     def close(self):
-        try:
+        with suppress(Exception):
             self.kg.close()
-        except Exception:
-            pass
-        try:
+        with suppress(Exception):
             self.template_gen.close()
-        except Exception:
-            pass
 
 
 if __name__ == "__main__":

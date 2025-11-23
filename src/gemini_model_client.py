@@ -237,9 +237,11 @@ class GeminiModelClient:
 
             issues = []
             if "FAIL" in response.upper():
-                for line in response.split("\n"):
-                    if "문제점:" in line:
-                        issues.append(line.split(":")[-1].strip())
+                issues.extend(
+                    line.split(":")[-1].strip()
+                    for line in response.split("\n")
+                    if "문제점:" in line
+                )
 
             return {
                 "verdict": verdict,

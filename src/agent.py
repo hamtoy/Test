@@ -390,7 +390,7 @@ class GeminiAgent:
         """[Retry Logic] 재시도 로직이 데코레이터로 추상화됨"""
 
         # Lazy import exceptions for retry decorator
-        exceptions = self._google_exceptions
+        exceptions = self._google_exceptions()
         retry_exceptions = (
             exceptions.ResourceExhausted,
             exceptions.ServiceUnavailable,
@@ -407,13 +407,10 @@ class GeminiAgent:
         async def _execute_with_retry():
             # RPM 제어 (시간 기반)
             if self._rate_limiter:
-                async with self._rate_limiter:
-                    # 동시 실행 개수 제어 (공간 기반)
-                    async with self._semaphore:
-                        return await self._execute_api_call(model, prompt_text)
-            else:
-                async with self._semaphore:
+                async with self._rate_limiter, self._semaphore:
                     return await self._execute_api_call(model, prompt_text)
+            async with self._semaphore:
+                return await self._execute_api_call(model, prompt_text)
 
         return await _execute_with_retry()
 
@@ -421,6 +418,7 @@ class GeminiAgent:
         self, model: "genai.GenerativeModel", prompt_text: str
     ) -> str:
         """실제 API 호출 로직"""
+        protos = self._protos()
         self.logger.debug(
             f"API Call - Model: {self.config.model_name}, Prompt Length: {len(prompt_text)}"
         )
@@ -450,8 +448,8 @@ class GeminiAgent:
             self.logger.debug(f"API Response - Finish Reason: {finish_reason}")
 
             if finish_reason not in [
-                self._protos.Candidate.FinishReason.STOP,
-                self._protos.Candidate.FinishReason.MAX_TOKENS,
+                protos.Candidate.FinishReason.STOP,
+                protos.Candidate.FinishReason.MAX_TOKENS,
             ]:
                 # Safety filter나 기타 이유로 중단됨
                 safety_info = ""

@@ -181,8 +181,7 @@ def link_blocks_to_topics(
             continue
         tokens = set(tokenize(content))
         matched = tokens.intersection(topic_set)
-        for topic in matched:
-            links.append({"block_id": block_id, "topic": topic})
+        links.extend({"block_id": block_id, "topic": topic} for topic in matched)
         if len(links) >= REL_BATCH_SIZE:
             flush(links)
             links = []

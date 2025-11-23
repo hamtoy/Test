@@ -196,10 +196,9 @@ class SemanticAnalyzer:
                     keywords = TextProcessor.extract_keywords(record["content"])
                     if keywords:
                         all_keywords.update(keywords)
-                        for kw in keywords:
-                            topic_mappings.append(
-                                {"block_id": record["id"], "topic": kw}
-                            )
+                        topic_mappings.extend(
+                            {"block_id": record["id"], "topic": kw} for kw in keywords
+                        )
 
                 logger.info(f"   - 추출된 고유 키워드: {len(all_keywords)}개")
 
