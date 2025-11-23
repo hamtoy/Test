@@ -21,47 +21,44 @@ Google Gemini AI를 활용한 Q&A 응답 평가 및 재작성 워크플로우 �
 project_root/
 ├── .env                    # 환경 변수 (API 키)
 ├── .env.example            # 환경 변수 템플릿
-├── DEPLOYMENT_VERIFIED.md  # 배포 검증 문서
 ├── pyproject.toml          # 프로젝트 메타데이터/의존성
 ├── .pre-commit-config.yaml # pre-commit 훅 설정
 ├── README.md               # 문서
 ├── UV_GUIDE.md             # UV 패키지 매니저 가이드
-├── list_models.py          # Gemini 모델 조회
-├── scripts/                # 유틸리티 스크립트
-├── templates/              # Jinja2 템플릿
-│   ├── prompt_eval.j2
-│   ├── prompt_query_gen.j2
-│   ├── prompt_rewrite.j2
-│   ├── query_gen_user.j2
-│   └── rewrite_user.j2
+├── checks/                 # Session 검증
+│   ├── detect_forbidden_patterns.py
+│   └── validate_session.py
 ├── data/
-│   ├── inputs/             # 입력 파일 (OCR, 후보)
-│   │   ├── example_ocr.txt
-│   │   └── example_candidates.json
+│   ├── inputs/             # 입력 파일
 │   └── outputs/            # 출력 파일 (Markdown)
-├── src/                    # 소스 코드
-│   ├── __init__.py
+├── docs/                   # 상세 문서
+│   ├── ARCHITECTURE.md     # 시스템 아키텍처
+│   ├── ENVIRONMENT_SETUP.md
+│   └── ...
+├── examples/               # 예제 데이터
+│   └── session_input.json
+├── notion-neo4j-graph/     # Neo4j 데이터 임포트
+├── scripts/                # 유틸리티 스크립트
+│   ├── auto_profile.py
+│   ├── compare_runs.py
+│   └── ...
+├── src/                    # 소스 코드 (37개 파일)
 │   ├── agent.py            # Gemini API 인터페이스
-│   ├── cache_analytics.py  # 캐시 통계 분석 및 리포트
-│   ├── config.py           # 설정 관리
-│   ├── constants.py        # 공통 상수 (가격, 메시지, 템플릿)
-│   ├── data_loader.py      # 데이터 로딩
-│   ├── exceptions.py       # 예외 정의
-│   ├── logging_setup.py    # 로깅 설정
 │   ├── main.py             # 메인 워크플로우
-│   ├── models.py           # Pydantic 모델
-│   ├── utils.py            # 유틸리티 함수
 │   ├── qa_rag_system.py    # RAG + Graph QA 시스템
-│   ├── integrated_quality_system.py # 통합 품질 시스템
-│   ├── gemini_model_client.py # Gemini 모델 클라이언트
-│   ├── advanced_context_augmentation.py # 컨텍스트 증강
-│   ├── adaptive_difficulty.py # 난이도 조절
-│   └── ...                 # 기타 모듈
-└── tests/                  # 테스트
-    ├── __init__.py
-    ├── conftest.py
+│   ├── config.py           # 설정 관리
+│   ├── models.py           # Pydantic 모델
+│   └── ...
+├── templates/              # Jinja2 템플릿 (15개)
+│   ├── system/             # 시스템 프롬프트
+│   ├── user/               # 사용자 프롬프트
+│   ├── eval/               # 평가 프롬프트
+│   └── ...
+└── tests/                  # 테스트 (25개 파일)
     ├── test_agent.py
+    ├── test_main.py
     └── ...
+```
 
 ## 시스템 개요
 
