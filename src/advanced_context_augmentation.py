@@ -36,7 +36,9 @@ class AdvancedContextAugmentation:
                 username=user,
                 password=password,
                 index_name="combined_embeddings",
-                node_label="Block",  # Block 노드만 벡터 인덱싱 (Rule/Example은 그래프 관계로 조회)
+                node_label="Block",  # Block 노드만 벡터 인덱싱.
+                # Rule/Example 노드는 Block-[:RELATED_TO]->Rule 관계를 통해 간접 조회하여
+                # 벡터 인덱스 크기를 줄이고 검색 효율성 확보.
                 text_node_properties=["content", "text"],
                 embedding_node_property="embedding",
             )
