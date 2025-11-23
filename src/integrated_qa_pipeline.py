@@ -23,6 +23,7 @@ def require_env(var: str) -> str:
 
 
 class IntegratedQAPipeline:
+    """Graph-backed QA session builder and validator."""
     def __init__(self):
         self.neo4j_uri = require_env("NEO4J_URI")
         self.neo4j_user = require_env("NEO4J_USER")
@@ -37,7 +38,16 @@ class IntegratedQAPipeline:
 
     def create_session(self, image_meta: dict) -> Dict[str, Any]:
         """
-        그래프 기반 컨텍스트를 주입해 세션 생성 후 최신 validator로 검증.
+        그래프 기반 컨텍스트로 세션을 생성하고 검증합니다.
+
+        Args:
+            image_meta: 이미지/텍스트 메타데이터 (text_density, has_table_chart 등 포함).
+
+        Returns:
+            dict: {"turns": 세션 턴 딕셔너리 리스트, "context": 세션 컨텍스트}
+
+        Raises:
+            ValueError: 금지 패턴 검출 또는 세션 검증 실패 시.
         """
         ctx_data = self._build_session_context(image_meta)
         ctx = SessionContext(**ctx_data)
@@ -71,7 +81,13 @@ class IntegratedQAPipeline:
 
     def _build_session_context(self, image_meta: dict) -> dict:
         """
-        SessionContext에서 요구하는 필드로 변환/기본값 설정.
+        SessionContext 스키마에 맞게 메타데이터를 변환하고 기본값을 채웁니다.
+
+        Args:
+            image_meta: 이미지 메타데이터 딕셔너리.
+
+        Returns:
+            SessionContext 초기화에 사용 가능한 딕셔너리.
         """
         density = image_meta.get("text_density", "high")
         if isinstance(density, (int, float)):

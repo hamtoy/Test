@@ -4,8 +4,12 @@ from typing import Any, Callable, Dict, List, Optional
 
 from neo4j.exceptions import Neo4jError
 
+import logging
+
 from src.gemini_model_client import GeminiModelClient
 from src.qa_rag_system import QAKnowledgeGraph
+
+logger = logging.getLogger(__name__)
 
 
 class GraphEnhancedRouter:
@@ -68,9 +72,11 @@ class GraphEnhancedRouter:
                     """
                 )
                 return [dict(r) for r in rows]
-        except Neo4jError:
+        except Neo4jError as exc:
+            logger.warning("QueryType fetch failed: %s", exc)
             return []
-        except Exception:
+        except Exception as exc:
+            logger.warning("QueryType fetch failed (unknown): %s", exc)
             return []
 
     def _build_router_prompt(
@@ -108,7 +114,7 @@ class GraphEnhancedRouter:
                     input=input_text,
                     chosen=chosen,
                 )
-        except Neo4jError:
-            pass
-        except Exception:
-            pass
+        except Neo4jError as exc:
+            logger.warning("Routing log write failed: %s", exc)
+        except Exception as exc:
+            logger.warning("Routing log write failed (unknown): %s", exc)

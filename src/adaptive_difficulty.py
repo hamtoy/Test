@@ -16,6 +16,12 @@ class AdaptiveDifficultyAdjuster:
     def analyze_image_complexity(self, image_meta: Dict[str, Any]) -> Dict[str, Any]:
         """
         이미지 메타 정보를 기반으로 복잡도를 추정합니다.
+
+        Args:
+            image_meta: OCR/멀티모달 분석 결과 딕셔너리.
+
+        Returns:
+            complexity dict: text_density, has_structure, estimated_blocks, level 등.
         """
 
         complexity: Dict[str, Any] = {
@@ -67,6 +73,13 @@ class AdaptiveDifficultyAdjuster:
     ) -> Dict[str, Any]:
         """
         복잡도에 따라 질의 요구사항을 조정합니다.
+
+        Args:
+            complexity: analyze_image_complexity 결과 딕셔너리.
+            query_type: 질의 유형(explanation/reasoning 등).
+
+        Returns:
+            dict: 길이/깊이/증거 요구사항 등 조정값.
         """
 
         adjustments: Dict[str, Any] = {}

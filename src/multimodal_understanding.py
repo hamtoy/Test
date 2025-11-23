@@ -20,6 +20,12 @@ class MultimodalUnderstanding:
     def analyze_image_deep(self, image_path: str) -> Dict[str, Any]:
         """
         이미지 심층 분석: OCR, 표/그래프 감지, 텍스트 밀도/토픽 추출 후 그래프 저장.
+
+        Args:
+            image_path: 분석할 이미지 파일 경로.
+
+        Returns:
+            dict: 텍스트 밀도, 주제 목록, 테이블/차트 여부 등 메타데이터.
         """
 
         img = Image.open(image_path)
