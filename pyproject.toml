@@ -52,11 +52,7 @@ fix = true
 unsafe-fixes = false
 
 [tool.ruff.lint]
-extend-select = [
-    "PERF",
-    "FURB",
-    "SIM",
-]
+extend-select = ["PERF", "FURB", "SIM"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D"]
@@ -73,3 +69,7 @@ exclude = ["notion-neo4j-graph/", ".venv/", "build/"]
 
 [tool.uv.workspace]
 members = ["notion-neo4j-graph"]
+
+[tool.coverage.report]
+fail_under = 75
+show_missing = true
