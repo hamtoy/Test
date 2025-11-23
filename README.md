@@ -315,7 +315,7 @@ python scripts/latency_baseline.py --log-file run1.log --log-file run2.log
 
 ## 개발 편의 스크립트
 
-- `python scripts/auto_profile.py --module src.main -- --help` — 원하는 모듈을 cProfile로 감싸서 병목 상위 N개 확인 (``--`` 뒤에 모듈 인자를 전달)
+- `python scripts/auto_profile.py src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --intent "요약"` — 원하는 모듈을 cProfile로 감싸서 병목 상위 N개 확인 (`--` 구분은 선택 사항)
 - `python scripts/compare_runs.py --sort-by cost` — `data/outputs/result_*.md` 파일을 표로 정렬/요약
 - `pwsh scripts/backup.ps1 -SkipEnv` — 데이터·로그를 날짜별 ZIP으로 압축 (기본값은 `.env` 포함, 민감정보 제외 시 `-SkipEnv`)
 

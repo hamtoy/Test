@@ -115,7 +115,7 @@ pre-commit run --all-files
 
 - **테스트 워치**: `uv run pytest-watcher .` (파일 변경 시 자동 재실행)
 - **병렬 테스트**: `uv run pytest -n auto tests/` (실패 우선: `--ff`)
-- **프로파일링**: `python scripts/auto_profile.py src.main -- --help`
+- **프로파일링**: `python scripts/auto_profile.py src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --intent "요약"` (`--` 구분은 선택 사항)
 - **결과 비교**: `python scripts/compare_runs.py --sort-by cost`
 - **빠른 백업**: `pwsh scripts/backup.ps1 -SkipEnv`
 
