@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -44,8 +45,8 @@ class Neo4jLoggingCallback(BaseCallbackHandler):
                     sid=self.session_id,
                     prompts=str(prompts),
                 )
-        except Exception:
-            pass
+        except Exception as exc:  # pragma: no cover - logging only
+            logging.getLogger(__name__).warning("LLM start log failed: %s", exc)
 
     def on_llm_end(self, response: Any, **kwargs):
         """LLM 호출 종료."""
@@ -65,8 +66,8 @@ class Neo4jLoggingCallback(BaseCallbackHandler):
                     sid=self.session_id,
                     response=str(response),
                 )
-        except Exception:
-            pass
+        except Exception as exc:  # pragma: no cover - logging only
+            logging.getLogger(__name__).warning("LLM end log failed: %s", exc)
 
     def on_chain_error(self, error: Exception, **kwargs):
         """체인/LLM 에러 기록."""
@@ -83,8 +84,8 @@ class Neo4jLoggingCallback(BaseCallbackHandler):
                     sid=self.session_id,
                     error=str(error),
                 )
-        except Exception:
-            pass
+        except Exception as exc:  # pragma: no cover - logging only
+            logging.getLogger(__name__).warning("LLM chain error log failed: %s", exc)
 
     def close(self):
         if self.driver:

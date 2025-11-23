@@ -9,6 +9,7 @@ import os
 from typing import List, Dict, Any
 
 import google.generativeai as genai
+from google.api_core import exceptions as google_exceptions
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -46,8 +47,10 @@ class GeminiModelClient:
                 ),
             )
             return response.text
-        except Exception as e:
+        except google_exceptions.GoogleAPIError as e:
             return f"[생성 실패: {e}]"
+        except Exception as e:
+            return f"[생성 실패(알 수 없음): {e}]"
 
     def evaluate(self, question: str, answers: List[str]) -> Dict[str, Any]:
         """답변 집합 평가 및 최고 답변 선택 (3개 미만도 처리)."""
@@ -119,14 +122,23 @@ class GeminiModelClient:
                 "best_answer": answers[best_idx],
                 "notes": response,
             }
-        except Exception as e:
-            # Fallback: 길이 기반
+        except google_exceptions.GoogleAPIError as e:
             scores = [len(a) for a in answers]
+            best_idx = scores.index(max(scores))
             return {
                 "scores": scores,
-                "best_index": scores.index(max(scores)),
-                "best_answer": answers[scores.index(max(scores))],
+                "best_index": best_idx,
+                "best_answer": answers[best_idx],
                 "notes": f"평가 실패, 길이 기반 선택: {e}",
+            }
+        except Exception as e:
+            scores = [len(a) for a in answers]
+            best_idx = scores.index(max(scores))
+            return {
+                "scores": scores,
+                "best_index": best_idx,
+                "best_answer": answers[best_idx],
+                "notes": f"평가 실패(알 수 없음), 길이 기반 선택: {e}",
             }
 
     def rewrite(self, text: str) -> str:
@@ -147,8 +159,10 @@ class GeminiModelClient:
 """
         try:
             return self.generate(rewrite_prompt, role="rewriter")
-        except Exception:
-            return f"[재작성 실패] {text}"
+        except google_exceptions.GoogleAPIError as e:
+            return f"[재작성 실패: {e}] {text}"
+        except Exception as e:
+            return f"[재작성 실패(알 수 없음): {e}] {text}"
 
     def fact_check(self, answer: str, has_table_chart: bool) -> Dict[str, Any]:
         """사실 검증 (표/그래프 참조, 외부 지식 사용 여부 등)."""
@@ -182,10 +196,16 @@ class GeminiModelClient:
                 "issues": issues,
                 "details": response,
             }
-        except Exception:
+        except google_exceptions.GoogleAPIError as e:
             return {
                 "verdict": "error",
-                "issues": ["검증 실패"],
+                "issues": [f"검증 실패: {e}"],
+                "details": "",
+            }
+        except Exception as e:
+            return {
+                "verdict": "error",
+                "issues": [f"검증 실패(알 수 없음): {e}"],
                 "details": "",
             }
 
