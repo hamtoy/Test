@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, cast
 try:
     import redis
 except ImportError:  # redis가 없을 때도 동작하도록
-    redis = None
+    redis = None  # type: ignore[assignment]
 
 from src.qa_rag_system import QAKnowledgeGraph
 

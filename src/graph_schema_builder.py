@@ -4,6 +4,7 @@ import os
 import sys
 import hashlib
 import logging
+from typing import Any, Dict, List
 
 from neo4j import GraphDatabase
 from neo4j.exceptions import Neo4jError
@@ -101,9 +102,10 @@ class QAGraphBuilder:
                             """,
                             id=sib["id"],
                         )
-                        desc_list = list(descendants)
-
-                        current_rules.extend(d["content"] for d in desc_list)
+                        desc_list: List[Dict[str, Any]] = [dict(d) for d in descendants]
+                        current_rules.extend(
+                            d.get("content", "") for d in desc_list if d.get("content")
+                        )
 
                 # 3. Create Rule nodes
                 for rule_text in current_rules:
@@ -128,7 +130,7 @@ class QAGraphBuilder:
 
     def extract_query_types(self):
         """질의 유형 정의 추출."""
-        query_types = [
+        query_types: List[Dict[str, Any]] = [
             {
                 "name": "explanation",
                 "korean": "전체 설명문",
@@ -172,7 +174,7 @@ class QAGraphBuilder:
 
     def extract_constraints(self):
         """제약 조건 추출."""
-        constraints = [
+        constraints: List[Dict[str, Any]] = [
             {
                 "id": "session_turns",
                 "description": "세션당 3-4턴만 허용",

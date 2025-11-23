@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 pytest.importorskip("notion_client")
 pytest.importorskip("neo4j")
 
-from notion_client import Client
+from notion_client import Client  # noqa: E402
 from neo4j import GraphDatabase  # noqa: E402
 
 load_dotenv()

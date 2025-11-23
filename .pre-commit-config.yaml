@@ -10,6 +10,7 @@ repos:
     rev: v1.11.2
     hooks:
       - id: mypy
+        files: ^(src/|scripts/)
         additional_dependencies:
           - types-aiofiles
         args:

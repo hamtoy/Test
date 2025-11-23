@@ -56,7 +56,7 @@ def calculate_similarity(text1, text2):
     else:
         keyword_sim = 0
 
-    substring_sim = 0
+    substring_sim: float = 0.0
     if norm2 in norm1 or norm1 in norm2:
         substring_sim = 0.5
 

@@ -73,3 +73,8 @@ members = ["notion-neo4j-graph"]
 [tool.coverage.report]
 fail_under = 75
 show_missing = true
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.4.0",
+]

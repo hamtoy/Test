@@ -38,7 +38,6 @@ from src.utils import clean_markdown_code_block, safe_json_parse
 if TYPE_CHECKING:
     import google.generativeai as genai
     import google.generativeai.caching as caching
-    from google.generativeai.types import HarmBlockThreshold, HarmCategory
     from aiolimiter import AsyncLimiter
 
 

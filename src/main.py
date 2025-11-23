@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, Dict, List, Optional, cast
 from types import SimpleNamespace
@@ -748,7 +748,7 @@ async def main():
         # Cache stats persistence: append JSONL entry with small retention window
         try:
             cache_entry = {
-                "timestamp": datetime.now(datetime.UTC).isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "model": config.model_name,
                 "input_tokens": agent.total_input_tokens,
                 "output_tokens": agent.total_output_tokens,

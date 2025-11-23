@@ -31,12 +31,13 @@ def test_basic_session():
     session = build_session(ctx, validate=False)
 
     assert len(session) == 3, f"Expected 3 turns, got {len(session)}"
-    assert session[0].type in ["explanation", "summary"], (
-        "First turn should be explanation or summary"
-    )
-    assert session[1].type == "reasoning", (
-        "Second turn should be reasoning when must_include_reasoning=True"
-    )
+    assert session[0].type in [
+        "explanation",
+        "summary",
+    ], "First turn should be explanation or summary"
+    assert (
+        session[1].type == "reasoning"
+    ), "Second turn should be reasoning when must_include_reasoning=True"
     assert session[2].type == "target", "Third turn should be target"
     print("✓ test_basic_session passed")
 
