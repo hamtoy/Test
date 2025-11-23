@@ -2,25 +2,26 @@ from __future__ import annotations
 
 # ruff: noqa: E402
 
-import types
 import sys
+import types
+from typing import Any, cast
+
 import pytest
 from jinja2 import DictLoader, Environment
 
 # Minimal langchain stubs for modules that are not installed in CI.
-_fake_lc_base = types.SimpleNamespace(
-    BaseCallbackHandler=type("BaseCallbackHandler", (), {})
-)
-sys.modules.setdefault("langchain", types.ModuleType("langchain"))
-sys.modules.setdefault("langchain.callbacks", types.ModuleType("langchain.callbacks"))
-sys.modules.setdefault(
+lc_base_module = sys.modules.setdefault(
     "langchain.callbacks.base", types.ModuleType("langchain.callbacks.base")
 )
-sys.modules[
-    "langchain.callbacks.base"
-].BaseCallbackHandler = _fake_lc_base.BaseCallbackHandler
-sys.modules["langchain.callbacks"].base = sys.modules["langchain.callbacks.base"]
-sys.modules["langchain"].callbacks = sys.modules["langchain.callbacks"]
+cast(Any, lc_base_module).BaseCallbackHandler = type("BaseCallbackHandler", (), {})
+
+callbacks_module = sys.modules.setdefault(
+    "langchain.callbacks", types.ModuleType("langchain.callbacks")
+)
+cast(Any, callbacks_module).base = lc_base_module
+
+langchain_module = sys.modules.setdefault("langchain", types.ModuleType("langchain"))
+cast(Any, langchain_module).callbacks = callbacks_module
 
 from src import caching_layer
 from src import compare_documents
