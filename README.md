@@ -1,5 +1,5 @@
-[![CI](https://github.com/hamtoy/Test/actions/workflows/ci.yml/badge.svg)](https://github.com/hamtoy/Test/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/hamtoy/Test/branch/main/graph/badge.svg)](https://codecov.io/gh/hamtoy/Test)
+[![CI](https://github.com/yourusername/shining-quasar/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/shining-quasar/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/yourusername/shining-quasar/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/shining-quasar)
 
 # Gemini 워크플로우 - Q&A 시스템
 
