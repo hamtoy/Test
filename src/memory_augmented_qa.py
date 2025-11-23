@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
@@ -106,9 +107,8 @@ class MemoryAugmentedQASystem:
                     question=question,
                     answer=answer,
                 )
-        except Exception:
-            # 로깅 실패는 무시
-            pass
+        except Exception as exc:  # pragma: no cover - best-effort logging
+            logging.getLogger(__name__).warning("Interaction log failed: %s", exc)
 
     def close(self) -> None:
         if self._driver:

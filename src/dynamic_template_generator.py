@@ -41,6 +41,7 @@ class DynamicTemplateGenerator:
             self.driver.close()
 
     def _run(self, cypher: str, params: Optional[Dict[str, Any]] = None):
+        """Run a Cypher query and return list of records."""
         params = params or {}
         with self.driver.session() as session:
             return list(session.run(cypher, **params))
