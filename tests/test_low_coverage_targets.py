@@ -8,16 +8,22 @@ import tempfile
 from pathlib import Path
 import types
 
-# Stub external deps before importing targets
-_pil = types.ModuleType("PIL")
-_pil_image = types.ModuleType("PIL.Image")
-_pil_image.Image = object  # placeholder
-sys.modules["PIL"] = _pil
-sys.modules["PIL.Image"] = _pil_image
+# Stub external deps before importing targets (with attributes for mypy)
+class _StubPIL(types.ModuleType):
+    class Image:  # type: ignore[valid-type]
+        pass
 
-_pytesseract = types.ModuleType("pytesseract")
-_pytesseract.image_to_string = lambda *a, **k: ""
-sys.modules["pytesseract"] = _pytesseract
+
+sys.modules["PIL"] = _StubPIL("PIL")
+sys.modules["PIL.Image"] = sys.modules["PIL"]
+
+
+class _StubPytesseract(types.ModuleType):
+    def image_to_string(self, *args, **kwargs):
+        return ""
+
+
+sys.modules["pytesseract"] = _StubPytesseract("pytesseract")
 
 import pytest
 
