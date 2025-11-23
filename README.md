@@ -75,23 +75,21 @@ project_root/
 
 ### 시스템 구성
 
-**기본 워크플로우** (Gemini만 사용):
+**워크플로우 다이어그램 (Mermaid)**
+
+```mermaid
+flowchart LR
+    A[OCR 입력] --> B[질의 생성]
+    B --> C[후보 평가]
+    C --> D[답변 재작성]
+    D --> E[결과 출력]
+
+    C -->|선택| F[Neo4j 그래프]
+    F --> G[벡터 검색]
+    F --> H[Session 검증 (checks/)]
 ```
 
-OCR 입력 → 질의 생성 → 후보 평가 → 답변 재작성 → 결과 출력
-
-```
-
-**고급 워크플로우** (Gemini + Neo4j QA RAG 시스템):
-```
-
-OCR 입력 → 질의 생성 → 후보 평가 ──┬─→ Neo4j 그래프
-                                    ├─→ 벡터 검색
-                                    └─→ Session 검증 (checks/)
-              ↓
-         답변 재작성 → 결과 출력
-
-```
+> 기본 워크플로우는 A→B→C→D→E의 직선 흐름을 따르며, Neo4j/벡터 검색/세션 검증은 QA RAG 시스템 사용 시에만 활성화됩니다.
 
 > [!NOTE]
 > Neo4j와 Notion은 **QA RAG 시스템** 사용 시에만 필요합니다. 기본 워크플로우는 Gemini API만으로 동작합니다.
