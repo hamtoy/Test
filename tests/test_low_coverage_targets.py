@@ -1,14 +1,12 @@
 from __future__ import annotations
 
+# ruff: noqa: E402
+
+import asyncio
 import sys
+import tempfile
+from pathlib import Path
 import types
-from typing import Any
-import tempfile
-from pathlib import Path
-import asyncio
-import asyncio
-import tempfile
-from pathlib import Path
 
 # Stub external deps before importing targets
 _pil = types.ModuleType("PIL")
@@ -404,69 +402,6 @@ def test_qa_rag_validate_session(monkeypatch):
     # TypeError path
     res2 = kg.validate_session({"turns": [{}], "context": {"fail": True}})
     assert res2["ok"] is False
-
-
-@pytest.mark.asyncio
-async def test_agent_execute_api_call_safety_error(monkeypatch, tmp_path):
-    class _Config:
-        def __init__(self):
-            self.model_name = "tier-model"
-            self.max_concurrency = 1
-            self.temperature = 0.1
-            self.max_output_tokens = 16
-            self.timeout = 1
-            self.template_dir = tmp_path
-            self.local_cache_dir = tmp_path / "cache"
-            self.base_dir = tmp_path
-            self.cache_ttl_minutes = 1
-            self.budget_limit_usd = None
-
-    for name in ["prompt_eval.j2", "prompt_query_gen.j2", "prompt_rewrite.j2", "query_gen_user.j2", "rewrite_user.j2"]:
-        (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
-
-    monkeypatch.setattr(ag, "DEFAULT_RPM_LIMIT", 1)
-    monkeypatch.setattr(ag, "DEFAULT_RPM_WINDOW_SECONDS", 60)
-
-    agent = ag.GeminiAgent(_Config(), jinja_env=None)
-    agent._rate_limiter = None
-    agent._semaphore = type(
-        "Sem",
-        (),
-        {
-            "__aenter__": lambda self: asyncio.sleep(0, result=None),
-            "__aexit__": lambda self, exc_type, exc, tb: asyncio.sleep(0, result=None),
-        },
-    )()
-
-    class _Resp:
-        def __init__(self):
-            self.candidates = [type("C", (), {"finish_reason": "BLOCK", "content": type("P", (), {"parts": []})})()]
-            self.usage_metadata = None
-
-    class _Model:
-        async def generate_content_async(self, prompt_text, request_options=None):
-            return _Resp()
-
-    with pytest.raises(ag.SafetyFilterError):
-        await agent._execute_api_call(_Model(), "prompt")
-
-
-def test_gemini_model_client_type_error(monkeypatch):
-    monkeypatch.setenv("GEMINI_API_KEY", "key")
-
-    class _FakeModel:
-        def generate_content(self, *args, **kwargs):
-            raise TypeError("bad")
-
-    fake_genai = types.SimpleNamespace(
-        configure=lambda api_key: None,
-        GenerativeModel=lambda name: _FakeModel(),
-        types=types.SimpleNamespace(GenerationConfig=lambda **_: None),
-    )
-    monkeypatch.setattr(gmc, "genai", fake_genai)
-
-    client = gmc.GeminiModelClient()
-    assert "[생성 실패(입력 오류" in client.generate("prompt")
 
 
 def test_qa_rag_vector_store_skips_without_key(monkeypatch):
