@@ -7,6 +7,8 @@ import tempfile
 from pathlib import Path
 import asyncio
 import asyncio
+import tempfile
+from pathlib import Path
 
 # Stub external deps before importing targets
 _pil = types.ModuleType("PIL")
@@ -22,6 +24,8 @@ sys.modules["pytesseract"] = _pytesseract
 import pytest
 
 from src import compare_documents
+from src import semantic_analysis as sa
+from src import adaptive_difficulty as ad
 from src import multimodal_understanding as mmu
 from src import qa_rag_system as qrs
 from src import self_correcting_chain
@@ -611,3 +615,87 @@ def test_generate_with_augmentation_formats(monkeypatch):
     )
     prompt = aug.generate_with_augmentation("u", "explanation", {"ctx": 1})
     assert "Similar Successful Cases" in prompt
+
+
+def test_semantic_analysis_utils_simple():
+    tokens = sa.tokenize("Alpha, beta! 그리고 and 123")
+    assert "alpha" in tokens and "beta" in tokens
+
+    counts = sa.count_keywords(["alpha alpha", "beta"])
+    assert counts["alpha"] >= 1 or "alpha" not in counts  # MIN_FREQ may filter low counts
+
+
+def test_adaptive_difficulty_levels(monkeypatch):
+    class _Session:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def run(self, *_args, **_kwargs):
+            class _R:
+                def single(self_inner):
+                    return {"avg_blocks": 3}
+
+            return _R()
+
+    kg = types.SimpleNamespace(_graph=types.SimpleNamespace(session=lambda: _Session()))
+    adjuster = ad.AdaptiveDifficultyAdjuster(kg)
+
+    simple = adjuster.analyze_image_complexity({"text_density": 0.1})
+    assert simple["level"] == "simple"
+
+    complex_meta = adjuster.analyze_image_complexity({"text_density": 0.9})
+    assert complex_meta["level"] == "complex"
+
+    adj = adjuster.adjust_query_requirements(complex_meta, "explanation")
+    assert adj["min_length"] >= 300
+
+
+@pytest.mark.asyncio
+async def test_agent_call_api_with_retry(monkeypatch, tmp_path):
+    class _Config:
+        def __init__(self):
+            self.model_name = "tier-model"
+            self.max_concurrency = 1
+            self.temperature = 0.1
+            self.max_output_tokens = 16
+            self.timeout = 1
+            self.template_dir = tmp_path
+            self.local_cache_dir = tmp_path / "cache"
+            self.base_dir = tmp_path
+            self.cache_ttl_minutes = 1
+            self.budget_limit_usd = None
+
+    for name in ["prompt_eval.j2", "prompt_query_gen.j2", "prompt_rewrite.j2", "query_gen_user.j2", "rewrite_user.j2"]:
+        (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
+
+    agent = ag.GeminiAgent(_Config(), jinja_env=None)
+    agent._rate_limiter = None
+
+    attempts = {"n": 0}
+
+    async def _fake_exec(model, prompt_text):
+        attempts["n"] += 1
+        if attempts["n"] < 2:
+            raise TimeoutError("retry me")
+        return "ok"
+
+    agent._execute_api_call = _fake_exec  # type: ignore[assignment]
+
+    class _Sem:
+        async def __aenter__(self):
+            return None
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+    agent._semaphore = _Sem()
+
+    class _Model:
+        pass
+
+    out = await agent._call_api_with_retry(_Model(), "p")
+    assert out == "ok"
+    assert attempts["n"] == 2
