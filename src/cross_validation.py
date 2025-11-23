@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import re
+import logging
 from typing import Any, Dict, List
+
+from neo4j.exceptions import Neo4jError
 
 from src.qa_rag_system import QAKnowledgeGraph
 
@@ -13,6 +16,7 @@ class CrossValidationSystem:
 
     def __init__(self, kg: QAKnowledgeGraph):
         self.kg = kg
+        self.logger = logging.getLogger(__name__)
 
     def cross_validate_qa_pair(
         self, question: str, answer: str, query_type: str, image_meta: Dict[str, Any]
@@ -78,7 +82,11 @@ class CrossValidationSystem:
                 contents = (
                     result["all_content"] if result and result["all_content"] else []
                 )
-        except Exception:
+        except Neo4jError as exc:
+            self.logger.warning("Grounding check failed: %s", exc)
+            return {"score": 0.5, "grounded": False, "note": "Neo4j 조회 실패"}
+        except Exception as exc:  # noqa: BLE001
+            self.logger.warning("Grounding check failed (unknown): %s", exc)
             return {"score": 0.5, "grounded": False, "note": "Neo4j 조회 실패"}
 
         if not contents:
@@ -126,8 +134,10 @@ class CrossValidationSystem:
                     pat = ep.get("pattern")
                     if pat and re.search(pat, answer):
                         violations.append(ep.get("description", pat))
-        except Exception:
-            pass
+        except Neo4jError as exc:
+            self.logger.warning("ErrorPattern lookup failed: %s", exc)
+        except Exception as exc:  # noqa: BLE001
+            self.logger.warning("ErrorPattern lookup failed (unknown): %s", exc)
 
         score = max(0.0, 1.0 - 0.2 * len(violations))
         return {"score": score, "violations": violations}
@@ -143,7 +153,8 @@ class CrossValidationSystem:
             similar = store.similarity_search(question, k=1)
             if similar and similar[0].metadata.get("similarity", 0) > 0.95:
                 return {"score": 0.3, "too_similar": True}
-        except Exception:
+        except Exception as exc:  # noqa: BLE001
+            self.logger.warning("Novelty check failed: %s", exc)
             return {"score": 0.5, "novel": False, "note": "유사도 조회 실패"}
 
         return {"score": 1.0, "novel": True}
