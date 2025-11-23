@@ -759,6 +759,8 @@ async def main():
         except Exception as e:
             logger.warning(f"Cache stats write skipped: {e}")
 
+    except (APIRateLimitError, ValidationFailedError, SafetyFilterError, BudgetExceededError) as e:
+        logger.exception(LOG_MESSAGES["workflow_failed"].format(error=e))
     except Exception as e:
         logger.exception(LOG_MESSAGES["workflow_failed"].format(error=e))
     finally:
@@ -782,6 +784,6 @@ if __name__ == "__main__":
         # from rich.console import Console # Already imported at the top
         console.print(USER_INTERRUPT_MESSAGE)
         sys.exit(130)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logging.critical(f"Critical error: {e}", exc_info=True)
         sys.exit(1)

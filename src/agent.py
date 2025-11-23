@@ -144,9 +144,15 @@ class GeminiAgent:
         response_schema: type[BaseModel] | None = None,
         cached_content: Optional[caching.CachedContent] = None,
     ) -> genai.GenerativeModel:
-        """
-        [Factory Method] GenerativeModel 생성
-        - cached_content가 있으면 이를 사용하여 모델 생성 (Context Caching)
+        """GenerativeModel 인스턴스를 생성하는 팩토리 메서드.
+
+        Args:
+            system_prompt: 시스템 프롬프트
+            response_schema: JSON 스키마 (선택, 제공 시 JSON 모드 활성화)
+            cached_content: 재사용할 캐시 객체 (선택, Context Caching 활성화)
+
+        Returns:
+            GenerativeModel 인스턴스
         """
         generation_config: Dict[str, object] = {
             "temperature": self.config.temperature,
@@ -157,7 +163,6 @@ class GeminiAgent:
             generation_config["response_mime_type"] = "application/json"
             generation_config["response_schema"] = response_schema
 
-        # 캐시된 컨텐츠가 있으면 이를 기반으로 모델 생성 (Context Caching)
         gen_config_param = cast(Any, generation_config)
 
         if cached_content:
