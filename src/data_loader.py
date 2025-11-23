@@ -87,7 +87,7 @@ async def load_input_data(
         logger.info(
             f"Format Detection: JSON parse failed ({e}). Trying Raw Text format..."
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning(f"Format Detection: Unexpected error during JSON parse: {e}")
 
     # JSON 파싱에 실패했거나 결과가 없으면 Regex 파싱 실행

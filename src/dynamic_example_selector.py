@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List
 
 from src.qa_rag_system import QAKnowledgeGraph
+
+logger = logging.getLogger(__name__)
 
 
 class DynamicExampleSelector:
@@ -62,7 +65,8 @@ class DynamicExampleSelector:
                         """,
                         text=ex["example"],
                     )
-        except Exception:
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Example selection failed: %s", exc)
             examples = []
 
         return examples

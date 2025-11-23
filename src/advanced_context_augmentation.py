@@ -126,8 +126,12 @@ class AdvancedContextAugmentation:
                     if record:
                         similar_blocks = record.get("blocks") or []
                         enriched_rules = record.get("rules") or []
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001
+                import logging
+
+                logging.getLogger(__name__).warning(
+                    "Fallback graph search failed: %s", exc
+                )
 
         return {
             "similar_cases": [

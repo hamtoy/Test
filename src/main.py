@@ -127,10 +127,10 @@ def _warn_budget_thresholds(agent: GeminiAgent, logger: logging.Logger) -> None:
 
 
 def _display_queries(queries: List[str]) -> None:
-    """Render generated queries to the console using a Rich Panel.
+    """생성된 질의 리스트를 Rich Panel로 콘솔에 출력합니다.
 
     Args:
-        queries: List of query strings to display.
+        queries: 출력할 질의 문자열 리스트
     """
     console.print(
         Panel(
@@ -142,13 +142,13 @@ def _display_queries(queries: List[str]) -> None:
 
 
 def _render_cost_panel(agent: GeminiAgent) -> Panel:
-    """Build a Rich Panel displaying cost, token usage, and cache statistics.
+    """비용, 토큰 사용량, 캐시 통계를 표시하는 Rich Panel을 생성합니다.
 
     Args:
-        agent: The GeminiAgent instance containing usage statistics.
+        agent: 사용량 통계를 포함하는 GeminiAgent 인스턴스
 
     Returns:
-        A Rich Panel object configured with cost and usage information.
+        비용 및 사용량 정보가 설정된 Rich Panel 객체
     """
     cost_info = COST_PANEL_TEMPLATE.format(
         cost=agent.get_total_cost(),
@@ -163,14 +163,14 @@ def _render_cost_panel(agent: GeminiAgent) -> Panel:
 def _resolve_checkpoint_path(
     config: AppConfig, checkpoint_path: Optional[Path]
 ) -> Path:
-    """Resolve the absolute path for the checkpoint file.
+    """체크포인트 파일의 절대 경로를 결정합니다.
 
     Args:
-        config: Application configuration object.
-        checkpoint_path: Optional path provided via CLI arguments.
+        config: 애플리케이션 설정 객체
+        checkpoint_path: CLI 인자로 제공된 선택적 경로
 
     Returns:
-        Absolute path to the checkpoint file.
+        체크포인트 파일의 절대 경로
     """
     path = checkpoint_path or (config.output_dir / "checkpoint.jsonl")
     if not path.is_absolute():
@@ -181,15 +181,15 @@ def _resolve_checkpoint_path(
 async def _load_checkpoint_records(
     checkpoint_path: Path, resume: bool, logger: logging.Logger
 ) -> Dict[str, WorkflowResult]:
-    """Load existing checkpoint records if resume mode is enabled.
+    """재개 모드가 활성화된 경우 기존 체크포인트 기록을 로드합니다.
 
     Args:
-        checkpoint_path: Path to the checkpoint file.
-        resume: Boolean flag indicating whether to resume from checkpoint.
-        logger: Logger instance for status updates.
+        checkpoint_path: 체크포인트 파일 경로
+        resume: 체크포인트에서 재개 여부를 나타내는 플래그
+        logger: 상태 업데이트를 위한 로거 인스턴스
 
     Returns:
-        Dictionary mapping query strings to WorkflowResult objects.
+        질의 문자열을 WorkflowResult 객체로 매핑하는 딕셔너리
     """
     if not resume:
         return {}
@@ -208,17 +208,17 @@ async def _load_candidates(
     is_interactive: bool,
     logger: logging.Logger,
 ) -> Optional[Dict[str, str]]:
-    """Load candidate answers, optionally prompting for reload in interactive mode.
+    """후보 답변을 로드하며, 대화형 모드에서는 선택적으로 재로드를 프롬프트합니다.
 
     Args:
-        config: Application configuration object.
-        ocr_filename: Filename of the OCR input.
-        cand_filename: Filename of the candidate answers input.
-        is_interactive: Boolean flag for interactive mode.
-        logger: Logger instance.
+        config: 애플리케이션 설정 객체
+        ocr_filename: OCR 입력 파일명
+        cand_filename: 후보 답변 입력 파일명
+        is_interactive: 대화형 모드 플래그
+        logger: 로거 인스턴스
 
     Returns:
-        Dictionary of candidate answers, or None if loading fails.
+        후보 답변 딕셔너리, 로드 실패 시 None
     """
     if is_interactive and Confirm.ask(PROMPT_EDIT_CANDIDATES, default=True):
         logger.info("사용자 요청으로 데이터 재로딩 중...")
@@ -244,15 +244,15 @@ async def _load_candidates(
 async def _create_context_cache(
     agent: GeminiAgent, ocr_text: str, logger: logging.Logger
 ) -> Optional["caching.CachedContent"]:
-    """Attempt to create a context cache for the OCR text.
+    """OCR 텍스트에 대한 컨텍스트 캐시 생성을 시도합니다.
 
     Args:
-        agent: GeminiAgent instance.
-        ocr_text: The OCR text content to cache.
-        logger: Logger instance.
+        agent: GeminiAgent 인스턴스
+        ocr_text: 캐시할 OCR 텍스트 내용
+        logger: 로거 인스턴스
 
     Returns:
-        CachedContent object if successful, None otherwise.
+        성공 시 CachedContent 객체, 실패 시 None
     """
     logger.info("Context Caching 시도 중...")
     try:
@@ -275,23 +275,23 @@ def _schedule_turns(
     progress: Progress,
     resume: bool,
 ) -> tuple[List[WorkflowResult], List[Awaitable[Optional[WorkflowResult]]]]:
-    """Prepare turn tasks, handling budget checks, checkpoints, and progress bars.
+    """턴 작업을 준비하며, 예산 확인, 체크포인트, 진행 표시줄을 처리합니다.
 
     Args:
-        queries: List of queries to process.
-        agent: GeminiAgent instance.
-        config: Application configuration.
-        logger: Logger instance.
-        ocr_text: OCR text content.
-        candidates: Dictionary of candidate answers.
-        cache: Optional context cache.
-        checkpoint_records: Dictionary of loaded checkpoint records.
-        checkpoint_path: Path to the checkpoint file.
-        progress: Rich Progress instance.
-        resume: Boolean flag for resume mode.
+        queries: 처리할 질의 리스트
+        agent: GeminiAgent 인스턴스
+        config: 애플리케이션 설정
+        logger: 로거 인스턴스
+        ocr_text: OCR 텍스트 내용
+        candidates: 후보 답변 딕셔너리
+        cache: 선택적 컨텍스트 캐시
+        checkpoint_records: 로드된 체크포인트 기록 딕셔너리
+        checkpoint_path: 체크포인트 파일 경로
+        progress: Rich Progress 인스턴스
+        resume: 재개 모드 플래그
 
     Returns:
-        Tuple containing a list of restored results and a list of awaitable tasks.
+        복원된 결과 리스트와 대기 가능한 작업 리스트를 포함하는 Tuple
     """
     results: List[WorkflowResult] = []
     tasks: List[Awaitable[Optional[WorkflowResult]]] = []
@@ -759,7 +759,12 @@ async def main():
         except Exception as e:
             logger.warning(f"Cache stats write skipped: {e}")
 
-    except (APIRateLimitError, ValidationFailedError, SafetyFilterError, BudgetExceededError) as e:
+    except (
+        APIRateLimitError,
+        ValidationFailedError,
+        SafetyFilterError,
+        BudgetExceededError,
+    ) as e:
         logger.exception(LOG_MESSAGES["workflow_failed"].format(error=e))
     except Exception as e:
         logger.exception(LOG_MESSAGES["workflow_failed"].format(error=e))

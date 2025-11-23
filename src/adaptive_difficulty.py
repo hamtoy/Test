@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict
 
 from src.qa_rag_system import QAKnowledgeGraph
@@ -51,7 +52,10 @@ class AdaptiveDifficultyAdjuster:
                     avg_blocks = record.get("avg_blocks")
                     if avg_blocks is not None:
                         complexity["estimated_blocks"] = float(avg_blocks)
-        except Exception:
+        except Exception as exc:  # noqa: BLE001
+            logging.getLogger(__name__).warning(
+                "Failed to estimate blocks from graph: %s", exc
+            )
             pass  # 그래프 접근 실패 시 기본값 유지
 
         # 복잡도 레벨 결정

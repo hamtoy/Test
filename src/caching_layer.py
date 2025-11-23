@@ -53,8 +53,10 @@ class CachingLayer:
         if self.redis:
             try:
                 self.redis.setex(cache_key, 3600, json.dumps(rules, ensure_ascii=False))
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001
+                import logging
+
+                logging.getLogger(__name__).warning("Cache write failed: %s", exc)
 
         return rules
 
