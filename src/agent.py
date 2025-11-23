@@ -188,7 +188,7 @@ class GeminiAgent:
         try:
             with open(manifest_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-        except Exception as e:
+        except (OSError, json.JSONDecodeError) as e:
             self.logger.debug(f"Cache cleanup skipped (read error): {e}")
             return
 
@@ -215,7 +215,7 @@ class GeminiAgent:
             manifest_path.parent.mkdir(parents=True, exist_ok=True)
             with open(manifest_path, "w", encoding="utf-8") as f:
                 json.dump(updated, f, ensure_ascii=False, indent=2)
-        except Exception as e:
+        except OSError as e:
             self.logger.debug(f"Cache cleanup skipped (write error): {e}")
 
     def _load_local_cache(
@@ -248,7 +248,7 @@ class GeminiAgent:
             cache_name = entry.get("name")
             if cache_name:
                 return caching.CachedContent.get(name=cache_name)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.logger.debug(f"Local cache load skipped: {e}")
         return None
 
@@ -262,7 +262,7 @@ class GeminiAgent:
             try:
                 with open(manifest_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
-            except Exception:
+            except (OSError, json.JSONDecodeError):
                 data = {}
         data[fingerprint] = {
             "name": cache_name,
@@ -331,7 +331,7 @@ class GeminiAgent:
             )
             try:
                 self._store_local_cache(fingerprint, cache.name, ttl_minutes)
-            except Exception as e:
+            except OSError as e:
                 self.logger.debug(f"Local cache manifest write skipped: {e}")
             return cache
         except google_exceptions.ResourceExhausted as e:
