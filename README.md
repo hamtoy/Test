@@ -177,6 +177,17 @@ pre-commit run --all-files        # ruff + ruff-format + mypy
 uv run pytest tests/ --cov=src --cov-fail-under=75
 ```
 
+### CI 파이프라인
+
+GitHub Actions에서 자동으로 실행되는 검증 단계:
+
+1. `ruff check` - 린트 검사
+2. `ruff format --check` - 포맷 검사
+3. `mypy` - 타입 체크
+4. `pytest --cov=src --cov-fail-under=75` - 테스트 및 커버리지
+
+로컬에서 동일하게 실행하려면 `pre-commit run --all-files` 사용
+
 ```
 
 ### 템플릿/세션 도구
@@ -276,9 +287,13 @@ python -m src.main --help
 - 콘솔: Rich 포맷 출력
 - 로그 파일: `app.log`
 - 캐싱: 프롬프트 토큰이 2000개 이상일 때만 활성화
-- 캐시 통계: `cache_stats.jsonl`(기본)로 누적 저장, `CACHE_STATS_FILE`, `CACHE_STATS_MAX_ENTRIES`로 경로/보존 개수 조정
+- **캐시 통계**: `cache_stats.jsonl`(기본)로 누적 저장
+  - 파일 경로: `CACHE_STATS_FILE` 환경 변수로 변경 가능
+  - 보존 개수: `CACHE_STATS_MAX_ENTRIES`로 조정 가능
+  - 통계 확인: `python -m src.main --analyze-cache`
 - 로그 분리: INFO+ → `app.log`, ERROR+ → `error.log` (JSON 포맷은 production 모드에서 자동 적용)
 - 체크포인트: `--resume` 사용 시 `checkpoint.jsonl`(기본)에서 완료된 질의를 건너뜀. `--checkpoint-file`로 경로 지정 가능
+- **프로파일링 결과**: `profiling_results/` 디렉토리에 `.prof` 파일 저장
 
 ## 성능 분석
 
@@ -313,11 +328,31 @@ python scripts/latency_baseline.py --log-file run1.log --log-file run2.log
 └────────┴────────┘
 ```
 
-## 개발 편의 스크립트
+## 개발 도구
 
-- `python scripts/auto_profile.py src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --intent "요약"` — 원하는 모듈을 cProfile로 감싸서 병목 상위 N개 확인 (`--` 구분은 선택 사항)
-- `python scripts/compare_runs.py --sort-by cost` — `data/outputs/result_*.md` 파일을 표로 정렬/요약
-- `pwsh scripts/backup.ps1 -SkipEnv` — 데이터·로그를 날짜별 ZIP으로 압축 (기본값은 `.env` 포함, 민감정보 제외 시 `-SkipEnv`)
+### 성능 분석
+
+- **프로파일링**: `python scripts/auto_profile.py src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --intent "요약"`
+  - 병목 상위 20개 표시 (`--` 구분은 선택 사항)
+  - 결과 저장: `profiling_results/{module_name}_stats.prof`
+  
+- **레이턴시 분석**: `python scripts/latency_baseline.py --log-file app.log`
+  - API 호출 레이턴시 통계 (p50/p90/p99)
+
+### 결과 분석
+
+- **결과 비교**: `python scripts/compare_runs.py --sort-by cost`
+  - `data/outputs/result_*.md` 파일을 표로 정렬/요약
+  
+- **캐시 분석**: `python -m src.main --analyze-cache`
+  - 캐시 hit/miss, 비용 절감 계산
+
+### 데이터 관리
+
+- **백업**: `pwsh scripts/backup.ps1`
+  - 데이터·로그를 날짜별 ZIP으로 압축
+  - 기본값: `.env` 포함
+  - 민감정보 제외: `-SkipEnv` 옵션 사용
 
 ## 출력 예시
 
