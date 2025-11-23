@@ -19,7 +19,6 @@
 **문서화:**
 
 - **원칙 준수 리뷰**: `docs/PRINCIPLES_REVIEW.md` 생성 (YAGNI, KISS, SOLID 등 18개 원칙 분석)
-- **주석 리뷰**: `docs/COMMENT_REVIEW.md` 생성 (200+ 주석 품질 분석)
 - **환경 설정 가이드**: `docs/ENVIRONMENT_SETUP.md` 업데이트 (Gemini 워크플로우 중심으로 재작성)
 
 **의존성:**

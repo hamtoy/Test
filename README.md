@@ -190,8 +190,6 @@ GitHub Actions에서 자동으로 실행되는 검증 단계:
 
 로컬에서 동일하게 실행하려면 `pre-commit run --all-files` 사용
 
-```
-
 ### 템플릿/세션 도구
 
 ```bash
