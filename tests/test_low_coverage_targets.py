@@ -6,6 +6,7 @@ from typing import Any
 import tempfile
 from pathlib import Path
 import asyncio
+import asyncio
 
 # Stub external deps before importing targets
 _pil = types.ModuleType("PIL")
@@ -27,6 +28,7 @@ from src import self_correcting_chain
 from src import ultimate_langchain_qa_system as ulqa
 from src import gemini_model_client as gmc
 from src import agent as ag
+from src import advanced_context_augmentation as aca
 
 
 def test_self_correcting_chain_stops_on_yes(monkeypatch):
@@ -472,3 +474,140 @@ def test_qa_rag_vector_store_skips_without_key(monkeypatch):
     kg._graph = None
     kg._init_vector_store()
     assert getattr(kg, "_vector_store", None) is None
+
+
+@pytest.mark.asyncio
+async def test_agent_execute_api_call_safety_error(monkeypatch, tmp_path):
+    class _Config:
+        def __init__(self):
+            self.model_name = "tier-model"
+            self.max_concurrency = 1
+            self.temperature = 0.1
+            self.max_output_tokens = 16
+            self.timeout = 1
+            self.template_dir = tmp_path
+            self.local_cache_dir = tmp_path / "cache"
+            self.base_dir = tmp_path
+            self.cache_ttl_minutes = 1
+            self.budget_limit_usd = None
+
+    for name in ["prompt_eval.j2", "prompt_query_gen.j2", "prompt_rewrite.j2", "query_gen_user.j2", "rewrite_user.j2"]:
+        (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
+
+    monkeypatch.setattr(ag, "DEFAULT_RPM_LIMIT", 1)
+    monkeypatch.setattr(ag, "DEFAULT_RPM_WINDOW_SECONDS", 60)
+
+    agent = ag.GeminiAgent(_Config(), jinja_env=None)
+    agent._rate_limiter = None
+    agent._semaphore = type(
+        "Sem",
+        (),
+        {
+            "__aenter__": lambda self: asyncio.sleep(0),
+            "__aexit__": lambda self, exc_type, exc, tb: asyncio.sleep(0),
+        },
+    )()
+
+    class _Resp:
+        def __init__(self):
+            self.candidates = [type("C", (), {"finish_reason": "BLOCK", "content": type("P", (), {"parts": []})})()]
+            self.usage_metadata = None
+
+    class _Model:
+        async def generate_content_async(self, prompt_text, request_options=None):
+            return _Resp()
+
+    with pytest.raises(ag.SafetyFilterError):
+        await agent._execute_api_call(_Model(), "prompt")
+
+
+def test_gemini_model_client_type_error(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "key")
+
+    class _FakeModel:
+        def generate_content(self, *args, **kwargs):
+            raise TypeError("bad")
+
+    fake_genai = types.SimpleNamespace(
+        configure=lambda api_key: None,
+        GenerativeModel=lambda name: _FakeModel(),
+        types=types.SimpleNamespace(GenerationConfig=lambda **_: None),
+    )
+    monkeypatch.setattr(gmc, "genai", fake_genai)
+
+    client = gmc.GeminiModelClient()
+    assert "[생성 실패(입력 오류" in client.generate("prompt")
+
+
+def test_advanced_context_augmentation_vector_index(monkeypatch):
+    class _Doc:
+        def __init__(self, text):
+            self.page_content = text
+            self.metadata = {"id": 1}
+
+    class _Result:
+        def data(self_inner):
+            return [{"rule": "R", "priority": 1, "examples": ["ex1"]}]
+
+    class _Session:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def run(self, *_args, **_kwargs):
+            return _Result()
+
+    class _Driver:
+        def session(self):
+            return _Session()
+
+    aug = aca.AdvancedContextAugmentation.__new__(aca.AdvancedContextAugmentation)
+    aug.vector_index = types.SimpleNamespace(similarity_search=lambda q, k=5: [_Doc("doc")])
+    aug.graph = types.SimpleNamespace(_driver=_Driver())
+
+    out = aug.augment_prompt_with_similar_cases("q", "explanation")
+    assert out["similar_cases"] == ["doc"]
+    assert out["relevant_rules"]
+
+
+def test_advanced_context_augmentation_fallback_graph():
+    record = {"blocks": [{"content": "b"}], "rules": [{"rule": "r", "priority": 1, "examples": ["e"]}]}
+
+    class _Session:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def run(self, *_args, **_kwargs):
+            class _Res:
+                def single(self_inner):
+                    return record
+
+            return _Res()
+
+    aug = aca.AdvancedContextAugmentation.__new__(aca.AdvancedContextAugmentation)
+    aug.vector_index = None
+    aug.graph = types.SimpleNamespace(_driver=types.SimpleNamespace(session=lambda: _Session()))
+
+    out = aug.augment_prompt_with_similar_cases("q", "explanation")
+    assert out["similar_cases"]
+    assert out["relevant_rules"]
+
+
+def test_generate_with_augmentation_formats(monkeypatch):
+    aug = aca.AdvancedContextAugmentation.__new__(aca.AdvancedContextAugmentation)
+    monkeypatch.setattr(
+        aug,
+        "augment_prompt_with_similar_cases",
+        lambda uq, qt: {
+            "similar_cases": ["case"],
+            "relevant_rules": [{"rule": "R", "priority": 1, "examples": ["ex"]}],
+            "query_type": qt,
+        },
+    )
+    prompt = aug.generate_with_augmentation("u", "explanation", {"ctx": 1})
+    assert "Similar Successful Cases" in prompt
