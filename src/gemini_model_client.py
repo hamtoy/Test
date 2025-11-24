@@ -35,8 +35,16 @@ class GeminiModelClient:
         self.model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-3-pro-preview")
         self.model = genai.GenerativeModel(self.model_name)
 
-    def generate(self, prompt: str, temperature: float = 0.2) -> str:
-        """Generate text for a given prompt."""
+    def generate(
+        self, prompt: str, temperature: float = 0.2, role: str | None = None
+    ) -> str:
+        """Generate text for a given prompt.
+
+        Args:
+            prompt: 입력 프롬프트.
+            temperature: 생성 온도.
+            role: 호출 의도(호환성용, 현재 로직에서는 사용하지 않음).
+        """
         try:
             response = self.model.generate_content(
                 prompt,
