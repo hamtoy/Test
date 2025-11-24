@@ -143,6 +143,7 @@ async def _process_task(task: OCRTask) -> dict:
 
 async def _run_task_with_lats(task: OCRTask) -> dict:
     """LATS 토글 시 사용되는 경량 트리 탐색 래퍼."""
+    eval_cache: dict[str, tuple[dict, float, int]] = {}
 
     async def graph_validator(state: SearchState, action: str) -> ValidationResult:
         # 간단한 제약: 동일 액션 반복 시 페널티, 금지 접두어 거부
@@ -236,6 +237,13 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
         if len(summary_text) > 120:
             summary_text = summary_text[:120] + "..."
 
+        cache_key = f"{node.state.hash_key()}::{node.action}"
+        if cache_key in eval_cache:
+            cached_result, base_score, cached_tokens = eval_cache[cache_key]
+            node.result = cached_result
+            node.state = node.state.update_budget(tokens=cached_tokens)
+            return base_score + node.reward
+
         if lats_agent and node.action:
             try:
                 eval_result = await lats_agent.evaluate_responses(
@@ -259,7 +267,7 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
                 rating = await llm_provider.generate_content_async(
                     prompt=(
                         "Rate from 0-1 the quality of processed OCR text: "
-                        f"{result.get('ocr_text','')[:200]}"
+                        f"{result.get('ocr_text', '')[:200]}"
                     ),
                     max_output_tokens=4,
                     temperature=0,
@@ -268,10 +276,15 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
                 base_score = max(base_score, score)
                 if rating.usage:
                     node.state = node.state.update_budget(
-                        tokens=rating.usage.get("total_tokens", 0)
+                        tokens=rating.usage.get("total_tokens", 0),
+                        cost=rating.usage.get("total_tokens", 0) * 1e-6,
                     )
             except Exception as exc:  # noqa: BLE001
                 logger.debug("LLM evaluate failed, fallback score: %s", exc)
+        # 비용 추정치 추가 누적
+        est_cost = tokens * 1e-6
+        node.state = node.state.update_budget(cost=est_cost)
+        eval_cache[cache_key] = (node.result, base_score, tokens)
         return base_score + node.reward
 
     searcher = LATSSearcher(
@@ -279,8 +292,8 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
         graph_validator=graph_validator,
         propose_actions=propose,
         evaluate_action=evaluate,
-        max_visits=3,
-        max_depth=2,
+        max_visits=5,
+        max_depth=3,
         token_budget=getattr(config, "max_output_tokens", 8192),
     )
     best = await searcher.run(SearchState())
