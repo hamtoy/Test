@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 import sys
+import contextlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -50,7 +51,7 @@ from src.exceptions import (
     SafetyFilterError,
     ValidationFailedError,
 )
-from src.logging_setup import setup_logging
+from src.logging_setup import log_metrics, setup_logging
 from src.models import WorkflowResult
 from src.utils import (
     append_checkpoint,
@@ -662,6 +663,16 @@ async def main():
         action="store_true",
         help="Keep progress bar visible after completion (for debugging)",
     )
+    debug_group.add_argument(
+        "--no-cost-panel",
+        action="store_true",
+        help="Skip cost panel summary output",
+    )
+    debug_group.add_argument(
+        "--no-budget-panel",
+        action="store_true",
+        help="Skip budget panel summary output",
+    )
     core_group.add_argument(
         "--resume",
         action="store_true",
@@ -685,6 +696,7 @@ async def main():
 
     # ... (logging setup)
     logger, log_listener = setup_logging(log_level=args.log_level)
+    start_time = datetime.now(timezone.utc)
 
     # ... (config & resource loading)
     try:
@@ -751,7 +763,12 @@ async def main():
 
         # 비용 정보를 Panel로 표시
         console.print()
-        console.print(_render_cost_panel(agent))
+        no_budget_panel = getattr(args, "no_budget_panel", False)
+        no_cost_panel = getattr(args, "no_cost_panel", False)
+        if not no_budget_panel:
+            console.print(_render_budget_panel(agent))
+        if not no_cost_panel:
+            console.print(_render_cost_panel(agent))
 
         # Cache stats persistence: append JSONL entry with small retention window
         try:
@@ -768,7 +785,11 @@ async def main():
             )
             logger.info(f"Cache stats saved to {config.cache_stats_path}")
         except Exception as e:
-            logger.warning(f"Cache stats write skipped: {e}")
+            if hasattr(logger, "warning"):
+                logger.warning(f"Cache stats write skipped: {e}")
+                logger.warning("cache_stats_write_failed")
+            else:
+                print(f"Cache stats write skipped: {e}")
 
     except (
         APIRateLimitError,
@@ -781,10 +802,19 @@ async def main():
         logger.exception(LOG_MESSAGES["workflow_failed"].format(error=e))
     finally:
         # 로그 리스너 종료 (남은 로그 플러시)
+        with contextlib.suppress(Exception):
+            elapsed_ms = (
+                datetime.now(timezone.utc) - start_time
+            ).total_seconds() * 1000
+            log_metrics(
+                logger,
+                latency_ms=elapsed_ms,
+                prompt_tokens=getattr(agent, "total_input_tokens", 0),
+                completion_tokens=getattr(agent, "total_output_tokens", 0),
+                cache_hits=getattr(agent, "cache_hits", 0),
+                cache_misses=getattr(agent, "cache_misses", 0),
+            )
         log_listener.stop()
-        # 예산/코스트 패널 표시
-        console.print(_render_budget_panel(agent))
-        console.print(_render_cost_panel(agent))
 
 
 if __name__ == "__main__":
