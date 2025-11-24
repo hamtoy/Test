@@ -1,5 +1,6 @@
 import types
-
+import pytest
+from builtins import EnvironmentError
 
 import src.semantic_analysis as sa
 
@@ -82,3 +83,11 @@ def test_link_blocks_creates_links(monkeypatch):
     assert {"block_id": "b1", "topic": "apple"} in captured
     assert {"block_id": "b2", "topic": "apple"} in captured
     assert {"block_id": "b1", "topic": "banana"} in captured
+
+
+def test_main_env_missing_exits(monkeypatch, capsys):
+    monkeypatch.setattr(
+        sa, "require_env", lambda name: (_ for _ in ()).throw(EnvironmentError(name))
+    )
+    with pytest.raises(SystemExit):
+        sa.main()

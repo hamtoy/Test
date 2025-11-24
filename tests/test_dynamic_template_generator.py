@@ -1,5 +1,4 @@
 import logging
-
 import pytest
 from jinja2 import TemplateNotFound
 
@@ -99,3 +98,12 @@ def test_generate_validation_checklist():
     assert len(checklist) == 2
     assert checklist[0]["item"] == "i1"
     assert checklist[0]["query_type"] in {"summary", "explanation"}
+
+
+def test_main_shows_error_on_missing_env(monkeypatch, capsys):
+    monkeypatch.setattr("os.getenv", lambda *_a, **_k: None)
+    import runpy
+
+    runpy.run_module("src.dynamic_template_generator", run_name="__main__")
+    out = capsys.readouterr().out
+    assert "실패" in out or "환경 변수" in out
