@@ -144,3 +144,37 @@ def setup_logging(
     listener.start()
 
     return logging.getLogger("GeminiWorkflow"), listener
+
+
+def log_metrics(
+    logger: logging.Logger,
+    *,
+    latency_ms: float | None = None,
+    prompt_tokens: int | None = None,
+    completion_tokens: int | None = None,
+    cache_hits: int | None = None,
+    cache_misses: int | None = None,
+) -> None:
+    """
+    표준화된 메트릭 로깅: latency, 토큰 처리율, 캐시 히트율을 계산해 기록.
+    """
+    metrics: dict[str, float | int] = {}
+    if latency_ms is not None:
+        metrics["latency_ms"] = round(latency_ms, 2)
+
+    total_tokens = 0
+    for t in (prompt_tokens, completion_tokens):
+        if t:
+            total_tokens += t
+    if latency_ms and latency_ms > 0 and total_tokens:
+        metrics["tokens_per_sec"] = round(total_tokens / (latency_ms / 1000), 3)
+
+    if cache_hits is not None or cache_misses is not None:
+        hits = cache_hits or 0
+        misses = cache_misses or 0
+        total = hits + misses
+        metrics["cache_hit_ratio"] = round(hits / total, 3) if total else 0.0
+        metrics["cache_hits"] = hits
+        metrics["cache_misses"] = misses
+
+    logger.info("metrics", extra={"metrics": metrics})
