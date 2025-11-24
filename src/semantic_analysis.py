@@ -220,9 +220,13 @@ def main() -> None:
         logger.error(str(e))
         sys.exit(1)
 
-    driver = GraphDatabase.driver(
-        config["uri"], auth=(config["user"], config["password"])
-    )
+    try:
+        driver = GraphDatabase.driver(
+            config["uri"], auth=(config["user"], config["password"])
+        )
+    except Neo4jError as e:
+        logger.error("Neo4j 연결 실패: %s", e)
+        sys.exit(1)
 
     try:
         blocks = fetch_blocks(driver)
