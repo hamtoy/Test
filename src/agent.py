@@ -36,6 +36,8 @@ from src.exceptions import (
 )
 from src.models import EvaluationResultSchema, QueryResult
 from src.utils import clean_markdown_code_block, safe_json_parse
+from src.core.factory import get_llm_provider
+from src.core.interfaces import LLMProvider
 
 if TYPE_CHECKING:
     import google.generativeai as genai
@@ -56,7 +58,12 @@ class GeminiAgent:
         jinja_env: Jinja2 환경 (테스트 시 mock 주입 가능)
     """
 
-    def __init__(self, config: AppConfig, jinja_env: Optional[Environment] = None):
+    def __init__(
+        self,
+        config: AppConfig,
+        jinja_env: Optional[Environment] = None,
+        llm_provider: Optional[LLMProvider] = None,
+    ):
         """Gemini API 에이전트 초기화.
 
         Args:
@@ -68,6 +75,7 @@ class GeminiAgent:
         """
         self.logger = logging.getLogger("GeminiWorkflow")
         self.config = config
+        self.llm_provider = llm_provider or get_llm_provider(config)
 
         # 동시 실행 개수 제한
         self._semaphore = asyncio.Semaphore(config.max_concurrency)
