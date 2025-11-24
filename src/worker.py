@@ -1,14 +1,16 @@
-import asyncio
+import json
 import logging
 from datetime import datetime
-from typing import Any, Dict
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 from faststream import FastStream
 from faststream.redis import RedisBroker
 from pydantic import BaseModel, Field
 
 from src.config import AppConfig
-from src.core.interfaces import RateLimitError
+from src.core.factory import get_llm_provider
+from src.core.interfaces import ProviderError, RateLimitError, SafetyBlockedError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +22,16 @@ config = AppConfig()  # type: ignore[call-arg]
 # Initialize Broker
 broker = RedisBroker(config.redis_url)
 app = FastStream(broker)
+
+# LLM provider (optional; requires llm_provider_enabled=True and valid creds)
+llm_provider = None
+if getattr(config, "llm_provider_enabled", False):
+    try:
+        llm_provider = get_llm_provider(config)
+    except Exception as e:  # noqa: BLE001
+        logger.warning("LLM provider init failed; continuing without it: %s", e)
+
+RESULTS_DIR = Path("data/queue_results")
 
 
 class OCRTask(BaseModel):
@@ -35,67 +47,77 @@ class DLQMessage(BaseModel):
     timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
 
-# Rate Limiter (Simple Token Bucket using Redis)
+def _append_jsonl(path: Path, record: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
 async def check_rate_limit(key: str, limit: int, window: int) -> bool:
     """
     Checks if the rate limit is exceeded for the given key.
     Returns True if allowed, False if blocked.
     """
-    # Note: In a real production scenario, use a Lua script for atomicity.
-    # This is a simplified pilot implementation.
     current = await broker.redis.incr(key)
     if current == 1:
         await broker.redis.expire(key, window)
-
     return current <= limit
+
+
+async def _process_task(task: OCRTask) -> dict:
+    """
+    Minimal OCR/LLM processing stub.
+    - Reads text if the path is a .txt file; otherwise uses filename as content.
+    - If llm_provider is available, rewrites/cleans text via LLM.
+    """
+    path = Path(task.image_path)
+    if path.suffix.lower() == ".txt" and path.exists():
+        content = path.read_text(encoding="utf-8", errors="ignore")
+    else:
+        content = f"OCR placeholder for {path.name}"
+
+    llm_text: Optional[str] = None
+    if llm_provider:
+        result = await llm_provider.generate_content_async(
+            prompt=f"Clean up the OCR text:\n{content}",
+            temperature=config.temperature,
+            max_output_tokens=config.max_output_tokens,
+            request_options={"timeout": config.timeout},
+        )
+        llm_text = result.content
+
+    return {
+        "request_id": task.request_id,
+        "session_id": task.session_id,
+        "image_path": task.image_path,
+        "ocr_text": content,
+        "llm_output": llm_text,
+        "processed_at": datetime.utcnow().isoformat(),
+    }
 
 
 @broker.subscriber("ocr_task", concurrency=1)  # Low concurrency for pilot
 async def handle_ocr_task(task: OCRTask):
     logger.info(f"Received task: {task.request_id}")
 
-    # 1. Global Rate Limiting (Shared across workers)
-    # Limit: 10 requests per 60 seconds (conservative pilot limit)
     allowed = await check_rate_limit("global_rate_limit", 10, 60)
     if not allowed:
         logger.warning(f"Rate limit exceeded for task {task.request_id}. Re-queuing...")
-        # Nack to retry later (FastStream handles backoff if configured,
-        # or we can manually publish to a retry queue)
-        # For pilot, we'll just raise an error to trigger FastStream's retry mechanism
         raise RateLimitError("Global rate limit exceeded")
 
     try:
-        # 2. Process Task
-        # provider = get_llm_provider(config) # Unused in pilot simulation
-
-        # Simulate OCR processing (replace with actual logic)
-        # In a real scenario, we would read the image and call provider.generate_content_async
-        logger.info(f"Processing image: {task.image_path}")
-
-        # Example call (commented out until we have actual image loading)
-        # result = await provider.generate_content_async(
-        #     prompt="Extract text from this image...",
-        #     # ...
-        # )
-
-        # Simulate success
-        await asyncio.sleep(1)
+        result = await _process_task(task)
+        _append_jsonl(RESULTS_DIR / "results.jsonl", result)
         logger.info(f"Task {task.request_id} completed successfully.")
-
+    except (RateLimitError, SafetyBlockedError, ProviderError):
+        # Transient or provider-related errors should be retried by FastStream
+        raise
     except Exception as e:
         logger.error(f"Task {task.request_id} failed: {e}")
-
-        # 3. DLQ Logic for Permanent Failures
-        # If it's not a transient error (like RateLimit), send to DLQ
-        if not isinstance(e, RateLimitError):
-            dlq_msg = DLQMessage(
-                request_id=task.request_id,
-                error_type=type(e).__name__,
-                payload=task.model_dump(),
-            )
-            await broker.publish(dlq_msg, "ocr_dlq")
-            logger.error(f"Sent task {task.request_id} to DLQ")
-            return  # Ack the original message so it's removed from the main queue
-
-        # If it IS a transient error, re-raise to let FastStream retry
-        raise e
+        dlq_msg = DLQMessage(
+            request_id=task.request_id,
+            error_type=type(e).__name__,
+            payload=task.model_dump(),
+        )
+        await broker.publish(dlq_msg, "ocr_dlq")
+        logger.error(f"Sent task {task.request_id} to DLQ")
