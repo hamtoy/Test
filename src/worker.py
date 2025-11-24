@@ -153,6 +153,14 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
             try:
                 session_ctx = graph_provider.session()
                 async with session_ctx as session:  # type: ignore[union-attr]
+                    # 가벼운 제약: 금지 패턴 필터링
+                    blocked = any(
+                        bad in action.lower() for bad in ["drop ", "delete ", "remove "]
+                    )
+                    if blocked:
+                        return ValidationResult(
+                            allowed=False, reason="blocked keyword", penalty=1.0
+                        )
                     await session.run("RETURN 1")
             except Exception as exc:  # noqa: BLE001
                 return ValidationResult(allowed=False, reason=str(exc))
@@ -200,11 +208,16 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
                 eval_result = await lats_agent.evaluate_responses(
                     ocr_text=result.get("ocr_text", ""),
                     query=node.action,
-                    candidates={"A": result.get("ocr_text", "")},
+                    candidates={
+                        "A": result.get("ocr_text", ""),
+                        "B": node.action,
+                    },
                     cached_content=None,
                 )
                 if eval_result:
-                    base_score = max(base_score, 1.0)
+                    scored = [item.score for item in eval_result.evaluations]
+                    if scored:
+                        base_score = max(base_score, max(scored) / 10)
             except Exception as exc:  # noqa: BLE001
                 logger.debug("LATS evaluate via agent failed: %s", exc)
         elif llm_provider:
