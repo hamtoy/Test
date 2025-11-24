@@ -14,8 +14,8 @@ from src.core.interfaces import RateLimitError
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("worker")
 
-# Load config
-config = AppConfig()
+# Load config (environment-driven; ignore call-arg check for BaseSettings)
+config = AppConfig()  # type: ignore[call-arg]
 
 # Initialize Broker
 broker = RedisBroker(config.redis_url)

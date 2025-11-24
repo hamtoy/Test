@@ -6,6 +6,7 @@ from typing import Any, AsyncIterator, Optional
 
 import google.generativeai as genai
 from google.api_core import exceptions as google_exceptions
+from google.generativeai.types import GenerationConfigDict
 from neo4j import AsyncGraphDatabase
 
 from src.core.interfaces import (
@@ -39,10 +40,11 @@ class GeminiProvider(LLMProvider):
         response_schema: Optional[Any] = None,
         **kwargs: Any,
     ) -> GenerationResult:
-        generation_config: dict[str, Any] = {
-            "temperature": temperature,
-            "max_output_tokens": max_output_tokens,
-        }
+        generation_config: GenerationConfigDict = {}
+        if temperature is not None:
+            generation_config["temperature"] = temperature
+        if max_output_tokens is not None:
+            generation_config["max_output_tokens"] = max_output_tokens
         if response_schema:
             generation_config["response_mime_type"] = "application/json"
             generation_config["response_schema"] = response_schema

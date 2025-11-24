@@ -49,6 +49,9 @@ class AppConfig(BaseSettings):
     graph_provider_type: str = Field(
         "neo4j", description="Graph provider type (neo4j, etc.)"
     )
+    neo4j_uri: str | None = Field(None, alias="NEO4J_URI")
+    neo4j_user: str | None = Field(None, alias="NEO4J_USER")
+    neo4j_password: str | None = Field(None, alias="NEO4J_PASSWORD")
 
     # Async Queue Configuration
     redis_url: str = Field(
