@@ -36,23 +36,25 @@ class DynamicExampleSelector:
                     conditions.append("e.text_density > $min_density")
                     params["min_density"] = float(context["text_density"]) - 0.2
 
-                where_clause = " AND ".join(conditions) if conditions else "true"
+                where_parts = [
+                    "e.type = 'positive'",
+                    "coalesce(e.success_rate, 0) > 0.8",
+                ]
+                where_parts.extend(conditions)
+                where_clause = " AND ".join(where_parts)
 
-                result = session.run(
-                    f"""
-                    MATCH (qt:QueryType {{name: $query_type}})
-                    MATCH (qt)<-[:FOR_TYPE]-(e:Example)
-                    WHERE {where_clause}
-                      AND e.type = 'positive'
-                      AND coalesce(e.success_rate, 0) > 0.8
-                    RETURN e.text AS example,
-                           coalesce(e.success_rate, 0) AS rate,
-                           coalesce(e.usage_count, 0) AS usage
-                    ORDER BY rate DESC, usage ASC
-                    LIMIT $k
-                    """,
-                    **params,
-                )
+                cypher = f"""
+                MATCH (qt:QueryType {{name: $query_type}})
+                MATCH (qt)<-[:FOR_TYPE]-(e:Example)
+                WHERE {where_clause}
+                RETURN e.text AS example,
+                       coalesce(e.success_rate, 0) AS rate,
+                       coalesce(e.usage_count, 0) AS usage
+                ORDER BY rate DESC, usage ASC
+                LIMIT $k
+                """
+
+                result = session.run(cypher, **params)
 
                 examples = result.data()
 
