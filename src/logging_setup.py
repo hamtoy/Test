@@ -159,6 +159,11 @@ def log_metrics(
     표준화된 메트릭 로깅: latency, 토큰 처리율, 캐시 히트율을 계산해 기록.
     """
     metrics: dict[str, float | int] = {}
+    if prompt_tokens is not None:
+        metrics["prompt_tokens"] = prompt_tokens
+    if completion_tokens is not None:
+        metrics["completion_tokens"] = completion_tokens
+
     if latency_ms is not None:
         metrics["latency_ms"] = round(latency_ms, 2)
 
@@ -166,6 +171,8 @@ def log_metrics(
     for t in (prompt_tokens, completion_tokens):
         if t:
             total_tokens += t
+    if total_tokens:
+        metrics["total_tokens"] = total_tokens
     if latency_ms and latency_ms > 0 and total_tokens:
         metrics["tokens_per_sec"] = round(total_tokens / (latency_ms / 1000), 3)
 

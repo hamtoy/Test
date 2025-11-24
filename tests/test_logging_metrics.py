@@ -26,6 +26,9 @@ def test_log_metrics_tokens_and_cache(caplog):
     rec = caplog.records[-1]
     metrics = rec.__dict__.get("metrics", {})
     assert metrics["latency_ms"] == 50.0
+    assert metrics["prompt_tokens"] == 100
+    assert metrics["completion_tokens"] == 50
+    assert metrics["total_tokens"] == 150
     assert metrics["tokens_per_sec"] > 0
     assert metrics["cache_hit_ratio"] == round(2 / 3, 3)
     assert metrics["cache_hits"] == 2

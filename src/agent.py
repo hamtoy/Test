@@ -95,6 +95,7 @@ class GeminiAgent:
 
         self.cache_hits = 0
         self.cache_misses = 0
+        self._budget_warned_thresholds: set[int] = set()
 
         # 외부에서 주입하거나, 없으면 생성 (Dependency Injection)
         if jinja_env is not None:
@@ -744,12 +745,16 @@ class GeminiAgent:
         usage_pct = self.get_budget_usage_percent()
 
         for threshold, level in BUDGET_WARNING_THRESHOLDS:
-            if usage_pct >= threshold:
+            if (
+                usage_pct >= threshold
+                and threshold not in self._budget_warned_thresholds
+            ):
                 self.logger.warning(
                     "Budget nearing limit: %s%% used (level=%s)",
                     round(usage_pct, 2),
                     level,
                 )
+                self._budget_warned_thresholds.add(threshold)
 
         if total > self.config.budget_limit_usd:
             raise BudgetExceededError(
