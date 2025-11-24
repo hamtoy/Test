@@ -53,7 +53,16 @@ class MultimodalUnderstanding:
 
         # 5. Neo4j에 저장 (실패해도 분석 결과는 반환)
         try:
-            with self.kg.graph_session() as session:  # type: ignore[union-attr]
+            graph_session = getattr(self.kg, "graph_session", None)
+            if graph_session is None:
+                graph = getattr(self.kg, "_graph", None)
+                if graph is None:
+                    return metadata
+                session_ctx = graph.session
+            else:
+                session_ctx = graph_session  # type: ignore[assignment]
+
+            with session_ctx() as session:  # type: ignore[misc]
                 if session is None:
                     return metadata
                 session.run(

@@ -25,7 +25,19 @@ class DynamicExampleSelector:
 
         examples: List[Dict[str, Any]] = []
         try:
-            with self.kg.graph_session() as session:  # type: ignore[union-attr]
+            graph_session = getattr(self.kg, "graph_session", None)
+            if graph_session is None:
+                graph = getattr(self.kg, "_graph", None)
+                if graph is None:
+                    logger.debug(
+                        "DynamicExampleSelector: no graph_session/_graph; returning []"
+                    )
+                    return []
+                session_ctx = graph.session
+            else:
+                session_ctx = graph_session  # type: ignore[assignment]
+
+            with session_ctx() as session:  # type: ignore[misc]
                 if session is None:
                     logger.debug(
                         "DynamicExampleSelector: graph unavailable, returning []"

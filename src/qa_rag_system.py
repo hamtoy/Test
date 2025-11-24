@@ -85,6 +85,15 @@ class QAKnowledgeGraph:
                 )
             except Neo4jError as e:
                 raise RuntimeError(f"Neo4j 연결 실패: {e}")
+        else:
+            # enable tests relying on _graph assignment for provider case
+            self.neo4j_uri = neo4j_uri or os.getenv("NEO4J_URI")
+            self.neo4j_user = neo4j_user or os.getenv("NEO4J_USER")
+            self.neo4j_password = neo4j_password or os.getenv("NEO4J_PASSWORD")
+            if self.neo4j_uri and self.neo4j_user and self.neo4j_password:
+                self._graph = GraphDatabase.driver(
+                    self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
+                )
 
         self._vector_store = None
         self._init_vector_store()
@@ -114,14 +123,8 @@ class QAKnowledgeGraph:
                 text_node_properties=["text", "section"],
                 embedding_node_property="embedding",
             )
-        except Neo4jError as e:
-            logger.warning("Neo4j 벡터 스토어 초기화 실패: %s", e)
-            self._vector_store = None
-        except ValueError as e:
-            logger.warning("벡터 스토어 설정 오류: %s", e)
-            self._vector_store = None
         except Exception as e:  # noqa: BLE001
-            logger.warning("벡터 스토어 초기화 중 알 수 없는 오류: %s", e)
+            logger.warning("Neo4j 벡터 스토어 초기화 실패: %s", e)
             self._vector_store = None
 
     def find_relevant_rules(self, query: str, k: int = 5) -> List[str]:

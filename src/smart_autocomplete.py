@@ -3,9 +3,10 @@ from __future__ import annotations
 import re
 from typing import List, Dict
 
-from src.qa_rag_system import QAKnowledgeGraph
-from checks.detect_forbidden_patterns import find_violations
 import logging
+
+from checks.detect_forbidden_patterns import find_violations
+from src.qa_rag_system import QAKnowledgeGraph
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,18 @@ class SmartAutocomplete:
         MATCH (qt:QueryType)
         RETURN qt.name AS name, qt.korean AS korean, qt.session_limit AS limit, coalesce(qt.priority, 0) AS priority
         """
-        with self.kg.graph_session() as session:  # type: ignore[union-attr]
+        graph_session = getattr(self.kg, "graph_session", None)
+        if graph_session is None:
+            # fallback for legacy stubs in tests
+            graph = getattr(self.kg, "_graph", None)
+            if graph is None:
+                logger.debug("SmartAutocomplete: no graph_session/_graph; returning []")
+                return []
+            session_ctx = graph.session
+        else:
+            session_ctx = graph_session  # type: ignore[assignment]
+
+        with session_ctx() as session:  # type: ignore[misc]
             if session is None:
                 logger.debug("SmartAutocomplete: graph unavailable, no suggestions")
                 return []
@@ -72,7 +84,18 @@ class SmartAutocomplete:
             suggestions.append(f"{v['match']} 표현을 제거하세요")
 
         # 그래프의 ErrorPattern 및 Constraint 패턴 검사
-        with self.kg.graph_session() as session:  # type: ignore[union-attr]
+        graph_session = getattr(self.kg, "graph_session", None)
+        if graph_session is None:
+            graph = getattr(self.kg, "_graph", None)
+            session_ctx = graph.session if graph is not None else None
+        else:
+            session_ctx = graph_session  # type: ignore[assignment]
+
+        if session_ctx is None:
+            logger.debug("SmartAutocomplete: graph unavailable, skip constraint checks")
+            return {"violations": violations, "suggestions": suggestions}
+
+        with session_ctx() as session:  # type: ignore[misc]
             if session is None:
                 logger.debug(
                     "SmartAutocomplete: graph unavailable, skip constraint checks"

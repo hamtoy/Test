@@ -71,7 +71,17 @@ class CrossValidationSystem:
 
         contents: List[str] = []
         try:
-            with self.kg.graph_session() as session:  # type: ignore[union-attr]
+            graph_session = getattr(self.kg, "graph_session", None)
+            if graph_session is None:
+                graph = getattr(self.kg, "_graph", None)
+                if graph is None:
+                    self.logger.debug("Grounding check skipped: graph unavailable")
+                    return {"score": 0.5, "grounded": False, "note": "graph 없음"}
+                session_ctx = graph.session
+            else:
+                session_ctx = graph_session  # type: ignore[assignment]
+
+            with session_ctx() as session:  # type: ignore[misc]
                 if session is None:
                     self.logger.debug("Grounding check skipped: graph unavailable")
                     return {"score": 0.5, "grounded": False, "note": "graph 없음"}
@@ -126,7 +136,17 @@ class CrossValidationSystem:
 
         # 금지 패턴(ErrorPattern) 전체 검사
         try:
-            with self.kg.graph_session() as session:  # type: ignore[union-attr]
+            graph_session = getattr(self.kg, "graph_session", None)
+            if graph_session is None:
+                graph = getattr(self.kg, "_graph", None)
+                if graph is None:
+                    self.logger.debug("ErrorPattern check skipped: graph unavailable")
+                    raise RuntimeError("graph missing")
+                session_ctx = graph.session
+            else:
+                session_ctx = graph_session  # type: ignore[assignment]
+
+            with session_ctx() as session:  # type: ignore[misc]
                 if session is None:
                     self.logger.debug("ErrorPattern check skipped: graph unavailable")
                     raise RuntimeError("graph missing")
