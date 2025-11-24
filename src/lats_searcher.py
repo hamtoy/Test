@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import math
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, List, Optional
@@ -79,21 +80,23 @@ class LATSSearcher:
         graph_validator: Optional[GraphValidator] = None,
         propose_actions: Optional[ActionProposer] = None,
         evaluate_action: Optional[ActionEvaluator] = None,
-        max_depth: int = 5,
-        max_visits: int = 50,
-        token_budget: int = 50000,
+        budget_tracker: Optional[Any] = None,  # BudgetTracker instance
+        max_visits: int = 10,
+        max_depth: int = 3,
+        exploration_constant: float = math.sqrt(2),
+        token_budget: int = 10000,
         cost_budget: float = 1.0,
-        exploration_constant: float = 1.41,
     ):
         self.llm_provider = llm_provider
         self.graph_validator = graph_validator
         self.propose_actions = propose_actions
         self.evaluate_action = evaluate_action
-        self.max_depth = max_depth
+        self.budget_tracker = budget_tracker
         self.max_visits = max_visits
+        self.max_depth = max_depth
+        self.exploration_constant = exploration_constant
         self.token_budget = token_budget
         self.cost_budget = cost_budget
-        self.exploration_constant = exploration_constant
         self.total_visits = 0
 
     def should_terminate(self, node: SearchNode) -> bool:
@@ -142,22 +145,48 @@ class LATSSearcher:
             gen = await self.llm_provider.generate_content_async(prompt=prompt)
             actions = [a.strip() for a in gen.content.split(",") if a.strip()]
 
-        new_children: List[SearchNode] = []
-        for action in actions:
-            if self.graph_validator:
-                validation = await self.graph_validator(node.state, action)
-                if not validation.allowed:
-                    continue
-            else:
-                validation = ValidationResult(allowed=True)
+        if not actions:
+            return []
 
+        valid_action_validation_pairs: List[tuple[str, ValidationResult]] = []
+
+        # Parallel validation for performance (only if multiple actions and validator exists)
+        if self.graph_validator and len(actions) > 1:
+            # Validate all actions in parallel
+            validations = await asyncio.gather(
+                *[self.graph_validator(node.state, action) for action in actions],
+                return_exceptions=True,
+            )
+
+            # Filter valid actions and handle exceptions
+            for action, validation in zip(actions, validations):
+                if isinstance(validation, BaseException):
+                    # Log but continue if validation fails
+                    continue
+                if validation.allowed:
+                    valid_action_validation_pairs.append((action, validation))
+        elif self.graph_validator:
+            # Sequential for single action
+            for action in actions:
+                validation = await self.graph_validator(node.state, action)
+                if validation.allowed:
+                    valid_action_validation_pairs.append((action, validation))
+        else:
+            # No validator: allow all actions
+            valid_action_validation_pairs = [
+                (action, ValidationResult(allowed=True)) for action in actions
+            ]
+
+        # Create child nodes for valid actions
+        new_children: List[SearchNode] = []
+        for action, validation in valid_action_validation_pairs:
             child_state = node.state.add_turn(action)
             child = SearchNode(
                 state=child_state,
                 action=action,
                 parent=node,
             )
-            # Penalty는 평가 시 반영
+            # Apply penalty from validation
             child.reward -= validation.penalty
             node.children.append(child)
             new_children.append(child)

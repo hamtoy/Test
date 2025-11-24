@@ -23,8 +23,21 @@ from rich.progress import (
 )
 from rich.prompt import Confirm
 
+# ============================================================================
+# Workflow Execution
+# ============================================================================
 from src.agent import GeminiAgent
+from src.data_loader import load_input_data, reload_data_if_needed
+
+# ============================================================================
+# Analytics & Reporting
+# ============================================================================
 from src.cache_analytics import analyze_cache_stats, print_cache_report
+from src.logging_setup import log_metrics, setup_logging
+
+# ============================================================================
+# Configuration
+# ============================================================================
 from src.config import AppConfig
 from src.constants import (
     BUDGET_WARNING_THRESHOLDS,
@@ -43,7 +56,11 @@ from src.constants import (
     PROMPT_EDIT_CANDIDATES,
     USER_INTERRUPT_MESSAGE,
 )
-from src.data_loader import load_input_data, reload_data_if_needed
+
+# ============================================================================
+# Models & Exceptions
+# ============================================================================
+from src.models import WorkflowResult
 from src.exceptions import (
     APIRateLimitError,
     BudgetExceededError,
@@ -51,8 +68,10 @@ from src.exceptions import (
     SafetyFilterError,
     ValidationFailedError,
 )
-from src.logging_setup import log_metrics, setup_logging
-from src.models import WorkflowResult
+
+# ============================================================================
+# Utilities
+# ============================================================================
 from src.utils import (
     append_checkpoint,
     load_checkpoint,

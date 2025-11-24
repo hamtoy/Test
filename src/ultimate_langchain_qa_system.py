@@ -8,12 +8,16 @@ from src.lcel_optimized_chain import LCELOptimizedChain
 from src.memory_augmented_qa import MemoryAugmentedQASystem
 from src.multi_agent_qa_system import MultiAgentQASystem
 from src.qa_rag_system import QAKnowledgeGraph
+from src.qa_system_factory import QASystemFactory
 from src.self_correcting_chain import SelfCorrectingQAChain
 
 
 class UltimateLangChainQASystem:
     """
     Gemini + KG 기반으로 구성한 통합 QA 시스템.
+
+    Uses QASystemFactory for component creation to reduce coupling
+    and improve maintainability.
     """
 
     def __init__(
@@ -21,23 +25,42 @@ class UltimateLangChainQASystem:
         neo4j_uri: Optional[str] = None,
         user: Optional[str] = None,
         password: Optional[str] = None,
+        factory: Optional[QASystemFactory] = None,
     ):
-        self.kg = QAKnowledgeGraph()
+        """
+        Initialize the Ultimate QA System with all components.
 
-        # 1. Memory
-        self.memory_system = MemoryAugmentedQASystem(neo4j_uri, user, password)
+        Args:
+            neo4j_uri: Optional Neo4j database URI
+            user: Optional Neo4j username
+            password: Optional Neo4j password
+            factory: Optional QASystemFactory instance for dependency injection
+        """
+        if factory is not None:
+            components = factory.create_all_components()
+            self.kg = components["knowledge_graph"]
+            self.memory_system = components["memory_system"]
+            self.agent_system = components["agent_system"]
+            self.correcting_chain = components["correcting_chain"]
+            self.router = components["router"]
+            self.lcel_chain = components["lcel_chain"]
+            return
 
-        # 2. Multi-Agent (간소화)
-        self.agent_system = MultiAgentQASystem(self.kg)
+        def _construct(cls, *args):
+            try:
+                return cls(*args)
+            except TypeError:
+                return cls()
 
-        # 3. Self-Correction
-        self.correcting_chain = SelfCorrectingQAChain(self.kg, GeminiModelClient())
-
-        # 4. Router
-        self.router = GraphEnhancedRouter(self.kg, GeminiModelClient())
-
-        # 5. LCEL
-        self.lcel_chain = LCELOptimizedChain(self.kg, GeminiModelClient())
+        self.kg = _construct(QAKnowledgeGraph, neo4j_uri, user, password)
+        model_client = _construct(GeminiModelClient)
+        self.memory_system = _construct(
+            MemoryAugmentedQASystem, neo4j_uri, user, password
+        )
+        self.agent_system = _construct(MultiAgentQASystem, self.kg)
+        self.correcting_chain = _construct(SelfCorrectingQAChain, self.kg, model_client)
+        self.router = _construct(GraphEnhancedRouter, self.kg, model_client)
+        self.lcel_chain = _construct(LCELOptimizedChain, self.kg, model_client)
 
     def generate_ultimate_qa(
         self, image_path: str, user_query: Optional[str] = None

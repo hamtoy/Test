@@ -116,6 +116,14 @@ async def test_should_terminate_on_budget_and_depth():
 
 
 @pytest.mark.asyncio
+async def test_cost_budget_termination():
+    state = SearchState(cumulative_tokens=0, cumulative_cost=5.0)
+    searcher = LATSSearcher(llm_provider=None, cost_budget=1.0)
+    node = SearchNode(state=state)
+    assert searcher.should_terminate(node) is True
+
+
+@pytest.mark.asyncio
 async def test_reflection_uses_llm():
     llm = _FakeLLM(["insight"])
     searcher = LATSSearcher(llm_provider=llm)

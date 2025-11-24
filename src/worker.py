@@ -13,6 +13,7 @@ from src.agent import GeminiAgent
 from src.core.factory import get_graph_provider, get_llm_provider
 from src.core.interfaces import ProviderError, RateLimitError, SafetyBlockedError
 from src.lats_searcher import LATSSearcher, SearchState, ValidationResult
+from src.action_executor import ActionExecutor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -146,7 +147,14 @@ async def _process_task(task: OCRTask) -> dict:
 
 async def _run_task_with_lats(task: OCRTask) -> dict:
     """LATS 토글 시 사용되는 경량 트리 탐색 래퍼."""
-    eval_cache: dict[str, tuple[dict, float, int]] = {}
+    from src.budget_tracker import BudgetTracker
+    from src.redis_eval_cache import RedisEvalCache
+
+    # Initialize Redis-backed cache with fallback
+    eval_cache = RedisEvalCache(redis_client=redis_client, ttl=3600)
+    budget_tracker = BudgetTracker(
+        budget_limit_usd=getattr(config, "budget_limit_usd", 1.0)
+    )
 
     async def graph_validator(state: SearchState, action: str) -> ValidationResult:
         # 간단한 제약: 동일 액션 반복 시 페널티, 금지 접두어 거부
@@ -273,78 +281,108 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
         return dedup[:3]
 
     async def evaluate(node):
+        # ActionExecutor 인스턴스 생성 (LLM provider 주입)
+        executor = ActionExecutor(llm_provider=llm_provider)
+
+        # 원본 OCR 텍스트 로드
         result = await _process_task(task)
-        tokens = len(result.get("ocr_text", "").split())
-        node.state = node.state.update_budget(tokens=tokens)
-        node.result = result
-        # 간단한 점수: clean 우선, LLM 평가 시 점수 교체
-        base_score = 0.9 if node.action and node.action.startswith("clean") else 0.6
-        # 후보 응답 준비: 원본/정제/요약
         original_text = result.get("ocr_text", "")
-        cleaned_text = " ".join(original_text.split())
-        summary_text = cleaned_text
-        if len(summary_text) > 120:
-            summary_text = summary_text[:120] + "..."
+        tokens = len(original_text.split())
 
+        # 캐시 체크
         cache_key = f"{node.state.hash_key()}::{node.action}"
-        if cache_key in eval_cache:
-            cached_result, base_score, cached_tokens = eval_cache[cache_key]
-            node.result = cached_result
-            node.state = node.state.update_budget(tokens=cached_tokens)
-            return base_score + node.reward
+        cached_score = await eval_cache.get(cache_key)
+        if cached_score is not None:
+            # Use cached score directly
+            node.state = node.state.update_budget(tokens=tokens)
+            return cached_score + node.reward
 
-        if lats_agent and node.action:
-            try:
-                eval_result = await lats_agent.evaluate_responses(
-                    ocr_text=original_text,
-                    query=node.action,
-                    candidates={
-                        "A": original_text,
-                        "B": cleaned_text or original_text,
-                        "C": summary_text or node.action,
-                    },
-                    cached_content=None,
-                )
-                if eval_result:
-                    scored = [item.score for item in eval_result.evaluations]
-                    if scored:
-                        base_score = max(base_score, max(scored) / 10)
-            except Exception as exc:  # noqa: BLE001
-                logger.debug("LATS evaluate via agent failed: %s", exc)
-        elif llm_provider:
-            try:
-                rating = await llm_provider.generate_content_async(
-                    prompt=(
-                        "Rate from 0-1 the quality of processed OCR text: "
-                        f"{result.get('ocr_text', '')[:200]}"
-                    ),
-                    max_output_tokens=4,
-                    temperature=0,
-                )
-                score = float(rating.content.strip())
-                base_score = max(base_score, score)
-                if rating.usage:
-                    node.state = node.state.update_budget(
-                        tokens=rating.usage.get("total_tokens", 0),
-                        cost=rating.usage.get("total_tokens", 0) * 1e-6,
+        # 액션 실행: 실제 출력물 생성
+        action_output = await executor.execute_action(
+            action=node.action or "clean",
+            text=original_text,
+            max_length=120,
+            use_llm=bool(llm_provider),
+        )
+
+        # 액션 결과를 result에 저장
+        if isinstance(action_output, dict):
+            # validate 액션의 경우 dict 반환
+            result["action_output"] = action_output
+            result["processed_text"] = original_text  # 원본 유지
+            # 품질 점수를 base_score로 사용
+            base_score = action_output.get("quality_score", 0.5)
+        else:
+            # 다른 액션들은 문자열 반환
+            result["processed_text"] = action_output
+            result["action_output"] = {"type": node.action, "text": action_output}
+            # 액션 타입별 기본 점수
+            action_type = (node.action or "").split(":", 1)[0]
+            base_score = {
+                "clean": 0.9,
+                "summarize": 0.8,
+                "clarify": 0.85,
+                "validate": 0.7,
+                "rerank": 0.75,
+            }.get(action_type, 0.5)
+
+        # 품질 평가 (간소화: 텍스트 길이 기반)
+        output_text = (
+            action_output
+            if isinstance(action_output, str)
+            else action_output.get("text", "")
+        )
+        quality_penalty = 0.0
+        if len(output_text) < 10:
+            quality_penalty = 0.3
+        elif "error" in output_text.lower():
+            quality_penalty = 0.5
+
+        final_score = max(0.0, base_score - quality_penalty)
+
+        # BudgetTracker 업데이트 (실제 LLM usage 기록)
+        if hasattr(executor, "last_llm_usage") and executor.last_llm_usage:
+            usage = dict(executor.last_llm_usage)
+            budget_tracker.record_usage(usage)
+            token_total = usage.get("total_tokens")
+            if token_total is None:
+                if "prompt_tokens" in usage or "completion_tokens" in usage:
+                    token_total = usage.get("prompt_tokens", 0) + usage.get(
+                        "completion_tokens", 0
                     )
-            except Exception as exc:  # noqa: BLE001
-                logger.debug("LLM evaluate failed, fallback score: %s", exc)
-        # 비용 추정치 추가 누적
-        est_cost = tokens * 1e-6
-        node.state = node.state.update_budget(cost=est_cost)
-        eval_cache[cache_key] = (node.result, base_score, tokens)
-        return base_score + node.reward
+                elif "input_tokens" in usage or "output_tokens" in usage:
+                    token_total = usage.get("input_tokens", 0) + usage.get(
+                        "output_tokens", 0
+                    )
+                else:
+                    token_total = tokens
+
+            node.state = node.state.update_budget(
+                tokens=token_total or tokens, cost=budget_tracker.get_total_cost()
+            )
+        else:
+            # Fallback: 추정치 사용
+            node.state = node.state.update_budget(tokens=tokens)
+
+        # 노드 결과 저장
+        node.result = result
+
+        # 캐시에 저장
+        await eval_cache.set(cache_key, final_score)
+
+        return final_score + node.reward
 
     searcher = LATSSearcher(
         llm_provider=llm_provider,
         graph_validator=graph_validator,
         propose_actions=propose,
         evaluate_action=evaluate,
-        max_visits=5,
-        max_depth=3,
+        budget_tracker=budget_tracker,
+        max_visits=8,  # Increased from 5 for more exploration
+        max_depth=4,  # Increased from 3 for deeper paths
+        exploration_constant=2.0,  # Increased from 1.41 for more exploration
         token_budget=getattr(config, "max_output_tokens", 8192),
-        cost_budget=getattr(config, "budget_limit_usd", 1.0) or 1.0,
+        cost_budget=0.5,
     )
     best = await searcher.run(SearchState())
     return best.result or {}
