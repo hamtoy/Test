@@ -62,24 +62,59 @@ class GeminiModelClient:
             return f"[생성 실패(알 수 없음): {e}]"
 
     def evaluate(self, question: str, answers: List[str]) -> Dict[str, Any]:
-        """Evaluate a set of answers; pick the longest as a simple fallback."""
-        if not answers:
+        """Evaluate answers; parse 점수/최고 형식, otherwise length fallback."""
+
+        def _length_fallback(notes: str = "길이 기반 임시 평가") -> Dict[str, Any]:
+            scores = [len(a) for a in answers]
+            best_idx = scores.index(max(scores)) if scores else None
             return {
-                "scores": [],
-                "best_index": None,
-                "best_answer": None,
-                "notes": "평가 실패: 답변이 없습니다.",
+                "scores": scores,
+                "best_index": best_idx,
+                "best_answer": answers[best_idx] if best_idx is not None else None,
+                "notes": notes,
             }
 
-        # Placeholder scoring: length-based
-        scores = [len(a) for a in answers]
-        best_idx = scores.index(max(scores))
-        return {
-            "scores": scores,
-            "best_index": best_idx,
-            "best_answer": answers[best_idx],
-            "notes": "길이 기반 임시 평가",
-        }
+        if not answers:
+            return _length_fallback("평가 실패: 답변이 없습니다.")
+
+        try:
+            raw = self.generate(
+                f"질문: {question}\n답변 수: {len(answers)}", role="evaluator"
+            )
+        except google_exceptions.GoogleAPIError:
+            return _length_fallback("API 오류로 길이 기반 평가 수행")
+        except Exception:
+            return _length_fallback("예상치 못한 오류로 길이 기반 평가 수행")
+
+        scores: List[int] = []
+        best_idx: int | None = None
+        for line in raw.splitlines():
+            line = line.strip()
+            if line.startswith("점수"):
+                try:
+                    _, val = line.split(":", 1)
+                    scores.append(int(val.strip()))
+                except Exception:
+                    continue
+            elif line.startswith("최고"):
+                try:
+                    _, val = line.split(":", 1)
+                    best_idx = int(val.strip()) - 1
+                except Exception:
+                    continue
+
+        if scores:
+            if best_idx is None:
+                best_idx = scores.index(max(scores))
+            best_idx = max(0, min(best_idx, len(answers) - 1))
+            return {
+                "scores": scores,
+                "best_index": best_idx,
+                "best_answer": answers[best_idx],
+                "notes": "점수 파싱 기반 평가",
+            }
+
+        return _length_fallback()
 
     def rewrite(self, answer: str) -> str:
         """Rewrite an answer with light prompting."""
@@ -88,7 +123,12 @@ class GeminiModelClient:
             "사실 관계는 유지하고, 불필요한 군더더기는 제거합니다.\n\n"
             f"{answer}"
         )
-        return self.generate(prompt)
+        try:
+            return self.generate(prompt, role="rewriter")
+        except google_exceptions.GoogleAPIError as e:
+            return f"[재작성 실패: {e}]"
+        except Exception as e:  # noqa: BLE001
+            return f"[재작성 실패(알 수 없음): {e}]"
 
 
 if __name__ == "__main__":
