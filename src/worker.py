@@ -343,7 +343,7 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
         # BudgetTracker 업데이트 (실제 LLM usage 기록)
         if hasattr(executor, "last_llm_usage") and executor.last_llm_usage:
             usage = dict(executor.last_llm_usage)
-            budget_tracker.record_usage(usage)
+            record = budget_tracker.record_usage(usage)
             token_total = usage.get("total_tokens")
             if token_total is None:
                 if "prompt_tokens" in usage or "completion_tokens" in usage:
@@ -358,7 +358,7 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
                     token_total = tokens
 
             node.state = node.state.update_budget(
-                tokens=token_total or tokens, cost=budget_tracker.get_total_cost()
+                tokens=token_total or tokens, cost=record.cost_usd
             )
         else:
             # Fallback: 추정치 사용

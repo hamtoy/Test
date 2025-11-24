@@ -1,6 +1,10 @@
 import os
+import types
 
 import pytest
+
+# For BudgetTracker monkeypatching in LATS tests
+import src.budget_tracker as budget_tracker
 
 # Ensure required env is present for AppConfig during import
 os.environ.setdefault("GEMINI_API_KEY", "AIza" + "0" * 35)
@@ -83,6 +87,56 @@ async def test_check_rate_limit_allows_then_blocks(monkeypatch):
 async def test_check_rate_limit_fail_open(monkeypatch):
     monkeypatch.setattr(worker, "redis_client", None)
     assert await worker.check_rate_limit("k", limit=1, window=1) is True
+
+
+@pytest.mark.asyncio
+async def test_lats_budget_uses_cost_delta(monkeypatch):
+    class _FakeLLM:
+        async def generate_content_async(self, prompt, **kwargs):  # noqa: ANN001
+            return types.SimpleNamespace(
+                content="ok",
+                usage={
+                    "total_tokens": 10,
+                    "prompt_tokens": 4,
+                    "completion_tokens": 6,
+                },
+            )
+
+    class _FakeBudgetTracker:
+        def __init__(self, *args, **kwargs):  # noqa: ANN002, D401
+            self.total_cost_usd = 0.0
+
+        def record_usage(self, usage):  # noqa: ANN001
+            cost = 0.1
+            self.total_cost_usd += cost
+            return types.SimpleNamespace(
+                cost_usd=cost, total_tokens=usage.get("total_tokens", 0)
+            )
+
+        def get_total_cost(self):  # noqa: D401
+            return self.total_cost_usd
+
+    cost_calls: list[float] = []
+    original_update_budget = worker.SearchState.update_budget
+
+    def _spy_update_budget(self, tokens: int = 0, cost: float = 0.0):  # type: ignore[override]
+        cost_calls.append(cost)
+        return original_update_budget(self, tokens=tokens, cost=cost)
+
+    monkeypatch.setattr(worker.SearchState, "update_budget", _spy_update_budget)
+    monkeypatch.setattr(budget_tracker, "BudgetTracker", _FakeBudgetTracker)
+    monkeypatch.setattr(worker, "llm_provider", _FakeLLM(), raising=False)
+    monkeypatch.setattr(worker, "graph_provider", None, raising=False)
+    monkeypatch.setattr(worker, "lats_agent", None, raising=False)
+    monkeypatch.setattr(worker, "redis_client", None, raising=False)
+    monkeypatch.setattr(worker.config, "max_output_tokens", 128, raising=False)
+
+    task = worker.OCRTask(request_id="cost1", image_path="img", session_id="s1")
+    await worker._run_task_with_lats(task)
+
+    non_zero_costs = [c for c in cost_calls if c > 0]
+    assert len(non_zero_costs) >= 2  # multiple evaluations should occur
+    assert all(abs(c - 0.1) < 1e-9 for c in non_zero_costs)
 
 
 @pytest.mark.asyncio
