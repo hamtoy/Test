@@ -1,14 +1,24 @@
 from __future__ import annotations
 
 import json
-from typing import Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Protocol, Sequence, cast
 
 try:
-    import redis
+    import redis  # type: ignore[import-not-found]
 except ImportError:  # redis가 없을 때도 동작하도록
     redis = None  # type: ignore[assignment]
 
 from src.qa_rag_system import QAKnowledgeGraph
+
+
+class _RedisClientProto(Protocol):
+    def get(self, key: str) -> Any: ...
+
+    def setex(self, key: str, ttl: int, value: str) -> Any: ...
+
+    def keys(self, pattern: str) -> Sequence[Any]: ...
+
+    def delete(self, *keys: Any) -> Any: ...
 
 
 class CachingLayer:
@@ -18,7 +28,7 @@ class CachingLayer:
     """
 
     def __init__(
-        self, kg: QAKnowledgeGraph, redis_client: Optional["redis.Redis"] = None
+        self, kg: QAKnowledgeGraph, redis_client: Optional[_RedisClientProto] = None
     ):
         self.kg = kg
         self.redis = redis_client if redis_client and redis else None
@@ -47,7 +57,7 @@ class CachingLayer:
             cached = self.redis.get(cache_key)
             if cached:
                 try:
-                    return json.loads(cached)
+                    return json.loads(cast(str | bytes, cached))
                 except json.JSONDecodeError:
                     pass
 
@@ -69,7 +79,8 @@ class CachingLayer:
         """
         if not self.redis:
             return 0
-        keys = self.redis.keys(pattern)
+        keys = list(self.redis.keys(pattern))
         if keys:
-            return self.redis.delete(*keys)
+            deleted = self.redis.delete(*keys)
+            return int(deleted) if isinstance(deleted, int) else 0
         return 0
