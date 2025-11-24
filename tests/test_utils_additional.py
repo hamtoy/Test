@@ -1,4 +1,3 @@
-import asyncio
 import json
 from pathlib import Path
 
@@ -15,6 +14,11 @@ def test_safe_json_parse_errors():
     # raise_on_error True -> ValueError for non-JSON format
     with pytest.raises(ValueError):
         utils.safe_json_parse("not-json", raise_on_error=True)
+
+    # JSON array should be rejected unless raise_on_error
+    assert utils.safe_json_parse("[1,2,3]") is None
+    with pytest.raises(ValueError):
+        utils.safe_json_parse("[1,2,3]", raise_on_error=True)
 
 
 def test_write_cache_stats_trims(tmp_path: Path):
@@ -57,3 +61,11 @@ async def test_checkpoint_roundtrip(tmp_path: Path):
     loaded = await utils.load_checkpoint(path)
     assert loaded["q1"].best_answer == "a1"
     assert loaded["q2"].rewritten_answer == "r2"
+
+
+def test_safe_json_parse_target_key():
+    payload = {"a": {"b": "c"}}
+    text = json.dumps(payload)
+    assert utils.safe_json_parse(text, target_key="b") == "c"
+    # missing key returns None
+    assert utils.safe_json_parse(text, target_key="missing") is None
