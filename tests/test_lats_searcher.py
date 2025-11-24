@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import List
+from typing import Any, List, Optional
 
 import pytest
 
@@ -19,7 +19,15 @@ class _FakeLLM(LLMProvider):
         self.responses = responses
         self.calls = 0
 
-    async def generate_content_async(self, prompt: str, **_kwargs):  # noqa: ANN001
+    async def generate_content_async(
+        self,
+        prompt: str,
+        system_instruction: Optional[str] = None,  # noqa: ARG002
+        temperature: Optional[float] = None,  # noqa: ARG002
+        max_output_tokens: Optional[int] = None,  # noqa: ARG002
+        response_schema: Optional[Any] = None,  # noqa: ARG002
+        **_kwargs: Any,
+    ) -> GenerationResult:
         content = self.responses[self.calls % len(self.responses)]
         self.calls += 1
         return GenerationResult(content=content)
