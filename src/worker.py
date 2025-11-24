@@ -150,6 +150,15 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
         if action.startswith(("invalid", "forbidden")):
             return ValidationResult(allowed=False, reason="invalid action")
         penalty = 0.2 if action in state.focus_history else 0.0
+        # 반복된 액션 타입(접두어 기준) 누적 시 페널티/차단
+        action_prefix = action.split(":", 1)[0] if ":" in action else action
+        repeats = sum(1 for a in state.focus_history if a.startswith(action_prefix))
+        if repeats >= 3:
+            return ValidationResult(
+                allowed=False, reason="too many repeats", penalty=1.0
+            )
+        if repeats == 2:
+            penalty += 0.5
         if graph_provider:
             try:
                 session_ctx = graph_provider.session()
@@ -295,6 +304,7 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
         max_visits=5,
         max_depth=3,
         token_budget=getattr(config, "max_output_tokens", 8192),
+        cost_budget=getattr(config, "budget_limit_usd", 1.0) or 1.0,
     )
     best = await searcher.run(SearchState())
     return best.result or {}
