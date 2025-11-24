@@ -151,8 +151,9 @@ def _render_cost_panel(agent: GeminiAgent) -> Panel:
     Returns:
         비용 및 사용량 정보가 설정된 Rich Panel 객체
     """
+    cost_fn = getattr(agent, "get_total_cost", None)
     cost_info = COST_PANEL_TEMPLATE.format(
-        cost=agent.get_total_cost(),
+        cost=cost_fn() if callable(cost_fn) else 0.0,
         input_tokens=agent.total_input_tokens,
         output_tokens=agent.total_output_tokens,
         cache_hits=agent.cache_hits,
@@ -162,7 +163,8 @@ def _render_cost_panel(agent: GeminiAgent) -> Panel:
 
 
 def _render_budget_panel(agent: GeminiAgent) -> Panel:
-    usage = agent.get_budget_usage_percent()
+    usage_fn = getattr(agent, "get_budget_usage_percent", None)
+    usage = usage_fn() if callable(usage_fn) else 0.0
     content = f"Budget usage: {usage:.2f}%"
     return Panel(content, title=PANEL_TITLE_BUDGET, border_style="red")
 
