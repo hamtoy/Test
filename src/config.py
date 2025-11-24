@@ -42,6 +42,19 @@ class AppConfig(BaseSettings):
     budget_limit_usd: float | None = Field(None, alias="BUDGET_LIMIT_USD")
     cache_min_tokens: int = Field(MIN_CACHE_TOKENS, alias="GEMINI_CACHE_MIN_TOKENS")
 
+    # Provider Configuration
+    llm_provider_type: str = Field(
+        "gemini", description="LLM provider type (gemini, etc.)"
+    )
+    graph_provider_type: str = Field(
+        "neo4j", description="Graph provider type (neo4j, etc.)"
+    )
+
+    # Async Queue Configuration
+    redis_url: str = Field(
+        "redis://localhost:6379", description="Redis URL for FastStream"
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
