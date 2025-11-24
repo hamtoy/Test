@@ -24,7 +24,7 @@ async def test_process_task_with_llm(monkeypatch):
     class _FakeResult:
         def __init__(self, content: str):
             self.content = content
-            self.usage = {}
+            self.usage: dict[str, int] = {}
 
     class _FakeProvider:
         async def generate_content_async(self, **kwargs):  # noqa: ANN001
