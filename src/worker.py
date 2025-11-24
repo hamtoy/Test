@@ -162,6 +162,21 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
             )
         if repeats == 2:
             penalty += 0.5
+        # 간단한 순서 규칙: clean → summarize/clarify → validate/rerank
+        if state.focus_history:
+            last_prefix = state.focus_history[-1].split(":", 1)[0]
+            allowed_flow = {
+                "clean": {"summarize", "clarify", "validate", "rerank", "clean"},
+                "summarize": {"clarify", "validate", "rerank", "summarize"},
+                "clarify": {"validate", "rerank", "clarify"},
+                "validate": {"rerank", "validate"},
+                "rerank": {"rerank"},
+            }
+            if (
+                last_prefix in allowed_flow
+                and action_prefix not in allowed_flow[last_prefix]
+            ):
+                penalty += 0.5
         if graph_provider:
             try:
                 session_ctx = graph_provider.session()
