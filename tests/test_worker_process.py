@@ -190,20 +190,6 @@ async def test_handle_ocr_task_lats_toggle(monkeypatch):
 
     monkeypatch.setattr(worker, "check_rate_limit", _allow)
 
-    result_payload = {
-        "request_id": "l1",
-        "session_id": "s-lats",
-        "image_path": "img",
-        "ocr_text": "t",
-        "llm_output": None,
-        "processed_at": "now",
-    }
-
-    async def _run_lats(task):
-        assert task.request_id == "l1"
-        return result_payload
-
-    monkeypatch.setattr(worker, "_run_task_with_lats", _run_lats)
     monkeypatch.setattr(worker.config, "enable_lats", True, raising=False)
 
     written: list[dict] = []
@@ -218,6 +204,19 @@ async def test_handle_ocr_task_lats_toggle(monkeypatch):
 
     broker = _Broker()
     monkeypatch.setattr(worker, "broker", broker)
+
+    # use real lats wrapper but ensure deterministic content
+    async def _process(task):
+        return {
+            "request_id": task.request_id,
+            "session_id": task.session_id,
+            "image_path": task.image_path,
+            "ocr_text": "hello world",
+            "llm_output": None,
+            "processed_at": "now",
+        }
+
+    monkeypatch.setattr(worker, "_process_task", _process)
 
     task = worker.OCRTask(request_id="l1", image_path="img", session_id="s-lats")
     await worker.handle_ocr_task(task)

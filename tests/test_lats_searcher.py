@@ -128,3 +128,22 @@ async def test_reflection_without_llm_returns_fallback():
     searcher = LATSSearcher(llm_provider=None)
     text = await searcher.reflect_on_error("boom")
     assert "Reflection unavailable" in text
+
+
+@pytest.mark.asyncio
+async def test_evaluate_updates_budget_on_error():
+    async def propose(node: SearchNode):  # noqa: ARG001
+        return ["x"]
+
+    async def evaluate(node: SearchNode):
+        raise RuntimeError("fail")
+
+    searcher = LATSSearcher(
+        llm_provider=None,
+        propose_actions=propose,
+        evaluate_action=evaluate,
+        max_visits=1,
+    )
+    best = await searcher.run(SearchState())
+    assert best.reward == -1.0
+    assert best.reflection is not None

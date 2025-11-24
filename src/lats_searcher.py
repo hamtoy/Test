@@ -21,7 +21,14 @@ class SearchState(BaseModel):
     def add_turn(self, action: str) -> "SearchState":
         new_state = self.model_copy(deep=True)
         new_state.turns.append({"action": action})
+        new_state.focus_history.append(action)
         return new_state
+
+    def update_budget(self, tokens: int = 0, cost: float = 0.0) -> "SearchState":
+        updated = self.model_copy(deep=True)
+        updated.cumulative_tokens += max(0, tokens)
+        updated.cumulative_cost += max(0.0, cost)
+        return updated
 
     def hash_key(self) -> str:
         """간단한 캐시 키."""
@@ -110,7 +117,7 @@ class LATSSearcher:
                 if expanded:
                     leaf = expanded[0]
                 reward = await self._evaluate(leaf)
-            if reward > best.reward:
+            if reward > best.reward or (leaf.reflection and best is root):
                 best = leaf
             self._backpropagate(leaf, reward)
             self.total_visits += 1
@@ -158,27 +165,33 @@ class LATSSearcher:
         return new_children
 
     async def _evaluate(self, node: SearchNode) -> float:
-        if self.evaluate_action:
-            score = await self.evaluate_action(node)
-            effective = score + node.reward if node.reward < 0 else score
-            node.reward = max(node.reward, effective)
-            return effective
-
-        if self.llm_provider:
-            prompt = f"Score this action from 0-1: {node.action}"
-            result: GenerationResult = await self.llm_provider.generate_content_async(
-                prompt=prompt
-            )
-            try:
-                score = float(result.content.strip())
-            except ValueError:
+        try:
+            if self.evaluate_action:
+                score = await self.evaluate_action(node)
+            elif self.llm_provider:
+                prompt = f"Score this action from 0-1: {node.action}"
+                result: GenerationResult = (
+                    await self.llm_provider.generate_content_async(prompt=prompt)
+                )
+                try:
+                    score = float(result.content.strip())
+                except ValueError:
+                    score = 0.0
+                tokens = result.usage.get("total_tokens", 0)
+                if tokens:
+                    node.state = node.state.update_budget(tokens=tokens)
+            else:
                 score = 0.0
-            effective = score + node.reward if node.reward < 0 else score
-            node.reward = max(node.reward, effective)
-            return effective
+        except Exception as exc:  # noqa: BLE001
+            node.reflection = await self.reflect_on_error(str(exc), node.action or "")
+            score = -1.0
 
-        # no evaluator -> neutral score
-        return 0.0
+        effective = score + node.reward if node.reward < 0 else score
+        if score < 0:
+            node.reward = effective
+        else:
+            node.reward = max(node.reward, effective)
+        return effective
 
     def _backpropagate(self, node: SearchNode, reward: float) -> None:
         cur: Optional[SearchNode] = node

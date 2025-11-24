@@ -134,16 +134,25 @@ async def _process_task(task: OCRTask) -> dict:
 async def _run_task_with_lats(task: OCRTask) -> dict:
     """LATS 토글 시 사용되는 경량 트리 탐색 래퍼."""
 
-    async def graph_validator(_state: SearchState, _action: str) -> ValidationResult:
-        return ValidationResult(allowed=True)
+    async def graph_validator(state: SearchState, action: str) -> ValidationResult:
+        # 간단한 제약: 동일 액션 반복 시 페널티, "invalid" 접두어는 거부
+        if action.startswith("invalid"):
+            return ValidationResult(allowed=False, reason="invalid action")
+        penalty = 0.2 if action in state.focus_history else 0.0
+        return ValidationResult(allowed=True, penalty=penalty)
 
     async def propose(_node):
-        return [f"process:{task.request_id}"]
+        # 복수 브랜치 제안 (예: 정제 vs 요약)
+        return [f"clean:{task.request_id}", f"summarize:{task.request_id}"]
 
     async def evaluate(node):
         result = await _process_task(task)
+        tokens = len(result.get("ocr_text", "").split())
+        node.state = node.state.update_budget(tokens=tokens)
         node.result = result
-        return 1.0
+        # 간단한 점수: clean 우선
+        base_score = 0.9 if node.action and node.action.startswith("clean") else 0.6
+        return base_score + node.reward
 
     searcher = LATSSearcher(
         llm_provider=llm_provider,
