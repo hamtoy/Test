@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from src.core.interfaces import GenerationResult, SafetyBlockedError
 from src.core.adapters import GeminiProvider
-from src.core.factory import get_llm_provider
+from src.core.factory import get_llm_provider, get_graph_provider
 from src.config import AppConfig
 
 
@@ -84,3 +84,24 @@ def test_factory_invalid_provider(valid_api_key, monkeypatch):
     config = AppConfig(llm_provider_type="invalid")
     with pytest.raises(ValueError, match="Unsupported LLM provider type"):
         get_llm_provider(config)
+
+
+def test_get_graph_provider_missing():
+    class _Cfg:
+        graph_provider_type = "neo4j"
+        neo4j_uri = None
+        neo4j_user = None
+        neo4j_password = None
+
+    assert get_graph_provider(_Cfg()) is None
+
+
+def test_get_graph_provider_valid():
+    class _Cfg:
+        graph_provider_type = "neo4j"
+        neo4j_uri = "bolt://localhost:7687"
+        neo4j_user = "u"
+        neo4j_password = "p"
+
+    provider = get_graph_provider(_Cfg())
+    assert provider is not None

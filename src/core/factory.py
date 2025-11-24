@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Optional
 
 from src.config import AppConfig
 from src.core.adapters import GeminiProvider, Neo4jProvider
@@ -28,7 +29,7 @@ def get_llm_provider(config: AppConfig) -> LLMProvider:
     raise ValueError(f"Unsupported LLM provider type: {provider_type}")
 
 
-def get_graph_provider(config: AppConfig) -> GraphProvider:
+def get_graph_provider(config: AppConfig) -> Optional[GraphProvider]:
     """
     Factory to create a Graph provider based on configuration.
     Defaults to Neo4jProvider if not specified or if 'neo4j' is selected.
@@ -36,13 +37,14 @@ def get_graph_provider(config: AppConfig) -> GraphProvider:
     provider_type = getattr(config, "graph_provider_type", "neo4j").lower()
 
     if provider_type == "neo4j":
-        if not config.neo4j_uri or not config.neo4j_user or not config.neo4j_password:
-            raise ValueError(
-                "NEO4J_URI, NEO4J_USER, and NEO4J_PASSWORD are required for Neo4jProvider"
-            )
+        uri = getattr(config, "neo4j_uri", None)
+        user = getattr(config, "neo4j_user", None)
+        password = getattr(config, "neo4j_password", None)
+        if not uri or not user or not password:
+            return None
         return Neo4jProvider(
-            uri=config.neo4j_uri,
-            auth=(config.neo4j_user, config.neo4j_password),
+            uri=uri,
+            auth=(user, password),
         )
 
     raise ValueError(f"Unsupported Graph provider type: {provider_type}")
