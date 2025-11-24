@@ -83,10 +83,9 @@ class RealTimeConstraintEnforcer:
         """
 
         try:
-            graph = getattr(self.kg, "_graph", None)
-            if graph is None:
-                return []
-            with graph.session() as session:  # noqa: SLF001
+            with self.kg.graph_session() as session:  # type: ignore[union-attr]
+                if session is None:
+                    return []
                 result = session.run(
                     """
                     MATCH (b:Block)

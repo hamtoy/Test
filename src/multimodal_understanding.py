@@ -53,10 +53,9 @@ class MultimodalUnderstanding:
 
         # 5. Neo4j에 저장 (실패해도 분석 결과는 반환)
         try:
-            graph = getattr(self.kg, "_graph", None)
-            if graph is None:
-                return metadata
-            with graph.session() as session:  # noqa: SLF001
+            with self.kg.graph_session() as session:  # type: ignore[union-attr]
+                if session is None:
+                    return metadata
                 session.run(
                     """
                     MERGE (img:ImageMeta {path: $path})

@@ -5,6 +5,7 @@ import asyncio
 import os
 import logging
 import time
+from contextlib import contextmanager
 from typing import Dict, Any, List, Optional, cast, no_type_check
 
 import google.generativeai as genai
@@ -243,6 +244,18 @@ class QAKnowledgeGraph:
                 asyncio.get_event_loop().run_until_complete(
                     cast(GraphProvider, provider).close()
                 )
+
+    @contextmanager
+    def graph_session(self):
+        """
+        동기 Neo4j 세션 헬퍼.
+        - _graph가 없을 때는 None을 yield하여 호출자가 판단.
+        """
+        if self._graph:
+            with self._graph.session() as session:
+                yield session
+        else:
+            yield None
 
 
 if __name__ == "__main__":

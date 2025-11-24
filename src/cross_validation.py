@@ -71,10 +71,9 @@ class CrossValidationSystem:
 
         contents: List[str] = []
         try:
-            graph = getattr(self.kg, "_graph", None)
-            if graph is None:
-                return {"score": 0.5, "grounded": False, "note": "graph 없음"}
-            with graph.session() as session:  # noqa: SLF001
+            with self.kg.graph_session() as session:  # type: ignore[union-attr]
+                if session is None:
+                    return {"score": 0.5, "grounded": False, "note": "graph 없음"}
                 result = session.run(
                     """
                     MATCH (p:Page {id: $page_id})-[:CONTAINS*]->(b:Block)
@@ -126,10 +125,9 @@ class CrossValidationSystem:
 
         # 금지 패턴(ErrorPattern) 전체 검사
         try:
-            graph = getattr(self.kg, "_graph", None)
-            if graph is None:
-                raise RuntimeError("graph missing")
-            with graph.session() as session:  # noqa: SLF001
+            with self.kg.graph_session() as session:  # type: ignore[union-attr]
+                if session is None:
+                    raise RuntimeError("graph missing")
                 eps = session.run(
                     """
                     MATCH (e:ErrorPattern)

@@ -29,10 +29,9 @@ class SmartAutocomplete:
         MATCH (qt:QueryType)
         RETURN qt.name AS name, qt.korean AS korean, qt.session_limit AS limit, coalesce(qt.priority, 0) AS priority
         """
-        graph = getattr(self.kg, "_graph", None)
-        if graph is None:
-            return []
-        with graph.session() as session:  # noqa: SLF001
+        with self.kg.graph_session() as session:  # type: ignore[union-attr]
+            if session is None:
+                return []
             records = [dict(r) for r in session.run(cypher)]
 
         suggestions = []
@@ -69,10 +68,9 @@ class SmartAutocomplete:
             suggestions.append(f"{v['match']} 표현을 제거하세요")
 
         # 그래프의 ErrorPattern 및 Constraint 패턴 검사
-        graph = getattr(self.kg, "_graph", None)
-        if graph is None:
-            return {"violations": violations, "suggestions": suggestions}
-        with graph.session() as session:  # noqa: SLF001
+        with self.kg.graph_session() as session:  # type: ignore[union-attr]
+            if session is None:
+                return {"violations": violations, "suggestions": suggestions}
             ep_records = session.run(
                 "MATCH (ep:ErrorPattern) RETURN ep.pattern AS pattern, ep.description AS desc"
             )
