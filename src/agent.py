@@ -95,6 +95,8 @@ class GeminiAgent:
 
         self.cache_hits = 0
         self.cache_misses = 0
+        self.api_retries = 0
+        self.api_failures = 0
         self._budget_warned_thresholds: set[int] = set()
 
         # 외부에서 주입하거나, 없으면 생성 (Dependency Injection)
@@ -342,6 +344,7 @@ class GeminiAgent:
         combined_content = system_prompt + "\n\n" + ocr_text
         fingerprint = hashlib.sha256(combined_content.encode("utf-8")).hexdigest()
         ttl_minutes = self.config.cache_ttl_minutes
+        token_threshold = getattr(self.config, "cache_min_tokens", MIN_CACHE_TOKENS)
 
         # 재사용 가능한 캐시가 있으면 반환 (Local Disk Cache)
         local_cached = self._load_local_cache(fingerprint, ttl_minutes)
@@ -359,8 +362,8 @@ class GeminiAgent:
         token_count = await loop.run_in_executor(None, _count_tokens)
         self.logger.info(f"Total Tokens for Caching: {token_count}")
 
-        if token_count < MIN_CACHE_TOKENS:
-            self.logger.info("Skipping cache creation (Tokens < %s)", MIN_CACHE_TOKENS)
+        if token_count < token_threshold:
+            self.logger.info("Skipping cache creation (Tokens < %s)", token_threshold)
             return None
 
         try:
@@ -410,6 +413,7 @@ class GeminiAgent:
             """
             시도 횟수에 따라 동적으로 지연을 늘려주는 훅.
             """
+            self.api_retries += 1
             delay = min(10, 2 * attempt)
             self.logger.warning(
                 "Retrying API call (attempt=%s, delay=%ss)", attempt, delay
@@ -442,7 +446,11 @@ class GeminiAgent:
                     await _adaptive_backoff(attempt)
                     raise
 
-        return await _execute_with_retry()
+        try:
+            return await _execute_with_retry()
+        except Exception:
+            self.api_failures += 1
+            raise
 
     async def _execute_api_call(
         self, model: "genai.GenerativeModel", prompt_text: str
@@ -477,6 +485,8 @@ class GeminiAgent:
                 completion_tokens=usage.candidates_token_count,
                 cache_hits=self.cache_hits,
                 cache_misses=self.cache_misses,
+                api_retries=self.api_retries,
+                api_failures=self.api_failures,
             )
 
         # Finish Reason 및 Safety Filter 상세 검증

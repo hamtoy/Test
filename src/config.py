@@ -6,7 +6,7 @@ from typing import Any, Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from src.constants import ERROR_MESSAGES, GEMINI_API_KEY_LENGTH
+from src.constants import ERROR_MESSAGES, GEMINI_API_KEY_LENGTH, MIN_CACHE_TOKENS
 
 
 class AppConfig(BaseSettings):
@@ -40,6 +40,7 @@ class AppConfig(BaseSettings):
     cache_stats_max_entries: int = Field(100, alias="CACHE_STATS_MAX_ENTRIES")
     local_cache_dir: str = Field(".cache", alias="LOCAL_CACHE_DIR")
     budget_limit_usd: float | None = Field(None, alias="BUDGET_LIMIT_USD")
+    cache_min_tokens: int = Field(MIN_CACHE_TOKENS, alias="GEMINI_CACHE_MIN_TOKENS")
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -130,6 +131,13 @@ class AppConfig(BaseSettings):
     def validate_cache_stats_max_entries(cls, v: int) -> int:
         if v < 1:
             raise ValueError(ERROR_MESSAGES["cache_stats_min_entries"])
+        return v
+
+    @field_validator("cache_min_tokens")
+    @classmethod
+    def validate_cache_min_tokens(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("cache_min_tokens must be positive")
         return v
 
     def model_post_init(self, __context: Any) -> None:

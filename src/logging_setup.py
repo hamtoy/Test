@@ -154,6 +154,8 @@ def log_metrics(
     completion_tokens: int | None = None,
     cache_hits: int | None = None,
     cache_misses: int | None = None,
+    api_retries: int | None = None,
+    api_failures: int | None = None,
 ) -> None:
     """
     표준화된 메트릭 로깅: latency, 토큰 처리율, 캐시 히트율을 계산해 기록.
@@ -183,5 +185,10 @@ def log_metrics(
         metrics["cache_hit_ratio"] = round(hits / total, 3) if total else 0.0
         metrics["cache_hits"] = hits
         metrics["cache_misses"] = misses
+
+    if api_retries is not None:
+        metrics["api_retries"] = api_retries
+    if api_failures is not None:
+        metrics["api_failures"] = api_failures
 
     logger.info("metrics", extra={"metrics": metrics})
