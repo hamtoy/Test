@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from src import utils
+from src.models import WorkflowResult
 
 
 @pytest.mark.asyncio
@@ -34,6 +35,11 @@ def test_safe_json_parse_variants(caplog):
         utils.safe_json_parse("", raise_on_error=True)
 
 
+def test_safe_json_parse_list_with_raise():
+    with pytest.raises(ValueError):
+        utils.safe_json_parse("[1,2,3]", raise_on_error=True)
+
+
 def test_write_cache_stats_trims_and_caps(tmp_path: Path):
     path = tmp_path / "stats.jsonl"
     # prepopulate more than cap
@@ -55,3 +61,35 @@ def test_parse_raw_candidates_with_fallback(caplog):
 
     structured = utils.parse_raw_candidates("A: first\n\nB: second")
     assert structured == {"A": "first", "B": "second"}
+
+
+@pytest.mark.asyncio
+async def test_load_checkpoint_ignores_bad_lines(tmp_path: Path):
+    path = tmp_path / "checkpoint.jsonl"
+    valid = WorkflowResult(
+        turn_id=1,
+        query="good",
+        evaluation=None,
+        best_answer="A",
+        rewritten_answer="B",
+        cost=0.0,
+        final_output=None,
+        success=True,
+        error_message=None,
+    ).model_dump()
+    # mix of invalid and valid payloads
+    path.write_text(
+        "\n".join(
+            [
+                "",  # blank
+                "not json",  # invalid
+                json.dumps({"turn_id": 2}),  # missing fields
+                json.dumps(valid),
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    records = await utils.load_checkpoint(path)
+    assert list(records.keys()) == ["good"]
+    assert isinstance(records["good"], WorkflowResult)
