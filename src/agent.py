@@ -79,10 +79,13 @@ class GeminiAgent:
         if llm_provider is not None:
             self.llm_provider = llm_provider
         else:
-            # 일부 테스트 스텁은 AppConfig 속성이 없으므로 실패 없이 통과시킨다.
-            try:
-                self.llm_provider = get_llm_provider(config)
-            except AttributeError:
+            # opt-in: only auto-create when explicitly enabled on config
+            if getattr(config, "llm_provider_enabled", False):
+                try:
+                    self.llm_provider = get_llm_provider(config)
+                except AttributeError:
+                    self.llm_provider = None
+            else:
                 self.llm_provider = None
 
         # 동시 실행 개수 제한
@@ -233,18 +236,18 @@ class GeminiAgent:
                 generation_config=gen_config_param,
                 safety_settings=self.safety_settings,
             )
+        else:
+            model = self._genai.GenerativeModel(  # type: ignore[arg-type,call-overload]
+                model_name=self.config.model_name,
+                system_instruction=system_prompt,
+                generation_config=gen_config_param,
+                safety_settings=self.safety_settings,
+            )
+        try:
             setattr(model, "_agent_system_instruction", system_prompt)
             setattr(model, "_agent_response_schema", response_schema)
-            return model
-
-        model = self._genai.GenerativeModel(  # type: ignore[arg-type,call-overload]
-            model_name=self.config.model_name,
-            system_instruction=system_prompt,
-            generation_config=gen_config_param,
-            safety_settings=self.safety_settings,
-        )
-        setattr(model, "_agent_system_instruction", system_prompt)
-        setattr(model, "_agent_response_schema", response_schema)
+        except Exception:
+            pass
         return model
 
     def _local_cache_manifest_path(self) -> Path:
