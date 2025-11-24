@@ -46,6 +46,7 @@ class SearchNode:
     parent: Optional["SearchNode"] = None
     reflection: Optional[str] = None
     children: List["SearchNode"] = field(default_factory=list)
+    result: Optional[dict[str, Any]] = None
 
     @property
     def depth(self) -> int:

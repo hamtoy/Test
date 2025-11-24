@@ -52,6 +52,7 @@ class AppConfig(BaseSettings):
     neo4j_uri: str | None = Field(None, alias="NEO4J_URI")
     neo4j_user: str | None = Field(None, alias="NEO4J_USER")
     neo4j_password: str | None = Field(None, alias="NEO4J_PASSWORD")
+    enable_lats: bool = Field(False, alias="ENABLE_LATS")
 
     # Async Queue Configuration
     redis_url: str = Field(

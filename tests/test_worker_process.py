@@ -176,3 +176,51 @@ async def test_handle_ocr_task_sends_dlq(monkeypatch):
     channel, msg = broker.published[0]
     assert channel == "ocr_dlq"
     assert getattr(msg, "request_id") == "r5"
+
+
+@pytest.mark.asyncio
+async def test_handle_ocr_task_lats_toggle(monkeypatch):
+    async def _ready():
+        return None
+
+    monkeypatch.setattr(worker, "ensure_redis_ready", _ready)
+
+    async def _allow(*_args, **_kwargs):
+        return True
+
+    monkeypatch.setattr(worker, "check_rate_limit", _allow)
+
+    result_payload = {
+        "request_id": "l1",
+        "session_id": "s-lats",
+        "image_path": "img",
+        "ocr_text": "t",
+        "llm_output": None,
+        "processed_at": "now",
+    }
+
+    async def _run_lats(task):
+        assert task.request_id == "l1"
+        return result_payload
+
+    monkeypatch.setattr(worker, "_run_task_with_lats", _run_lats)
+    monkeypatch.setattr(worker.config, "enable_lats", True, raising=False)
+
+    written: list[dict] = []
+    monkeypatch.setattr(worker, "_append_jsonl", lambda _p, rec: written.append(rec))
+
+    class _Broker:
+        def __init__(self):
+            self.published: list = []
+
+        async def publish(self, msg, channel):
+            self.published.append((channel, msg))
+
+    broker = _Broker()
+    monkeypatch.setattr(worker, "broker", broker)
+
+    task = worker.OCRTask(request_id="l1", image_path="img", session_id="s-lats")
+    await worker.handle_ocr_task(task)
+
+    assert written and written[0]["request_id"] == "l1"
+    assert broker.published == []

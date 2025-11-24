@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from src.config import AppConfig
 from src.core.factory import get_llm_provider
 from src.core.interfaces import ProviderError, RateLimitError, SafetyBlockedError
+from src.lats_searcher import LATSSearcher, SearchState, ValidationResult
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -128,6 +129,33 @@ async def _process_task(task: OCRTask) -> dict:
     }
 
 
+async def _run_task_with_lats(task: OCRTask) -> dict:
+    """LATS 토글 시 사용되는 경량 트리 탐색 래퍼."""
+
+    async def graph_validator(_state: SearchState, _action: str) -> ValidationResult:
+        return ValidationResult(allowed=True)
+
+    async def propose(_node):
+        return [f"process:{task.request_id}"]
+
+    async def evaluate(node):
+        result = await _process_task(task)
+        node.result = result
+        return 1.0
+
+    searcher = LATSSearcher(
+        llm_provider=llm_provider,
+        graph_validator=graph_validator,
+        propose_actions=propose,
+        evaluate_action=evaluate,
+        max_visits=3,
+        max_depth=2,
+        token_budget=getattr(config, "max_output_tokens", 8192),
+    )
+    best = await searcher.run(SearchState())
+    return best.result or {}
+
+
 @broker.subscriber("ocr_task")  # Low concurrency for pilot
 async def handle_ocr_task(task: OCRTask):
     await ensure_redis_ready()
@@ -139,7 +167,10 @@ async def handle_ocr_task(task: OCRTask):
         raise RateLimitError("Global rate limit exceeded")
 
     try:
-        result = await _process_task(task)
+        if getattr(config, "enable_lats", False):
+            result = await _run_task_with_lats(task)
+        else:
+            result = await _process_task(task)
         _append_jsonl(RESULTS_DIR / "results.jsonl", result)
         logger.info(f"Task {task.request_id} completed successfully.")
     except (RateLimitError, SafetyBlockedError, ProviderError):
