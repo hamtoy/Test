@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import types
-from pathlib import Path
-
 import pytest
+from jinja2 import DictLoader, Environment
 
 from src.agent import GeminiAgent
 from src.config import AppConfig
@@ -11,28 +10,32 @@ from src.config import AppConfig
 VALID_API_KEY = "AIza" + "E" * 35
 
 
-def _make_agent(monkeypatch, tmp_path: Path):
-    # Provide all required settings via env
-    monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
-    monkeypatch.setenv("GEMINI_MODEL_NAME", "gemini-3-pro-preview")
-    monkeypatch.setenv("GEMINI_MAX_OUTPUT_TOKENS", "1024")
-    monkeypatch.setenv("GEMINI_TIMEOUT", "60")
-    monkeypatch.setenv("GEMINI_MAX_CONCURRENCY", "2")
-    monkeypatch.setenv("GEMINI_CACHE_SIZE", "10")
-    monkeypatch.setenv("GEMINI_TEMPERATURE", "0.2")
-    monkeypatch.setenv("GEMINI_CACHE_TTL_MINUTES", "5")
-    monkeypatch.setenv("LOG_LEVEL", "INFO")
-    monkeypatch.setenv("CACHE_STATS_FILE", "cache_stats.jsonl")
-    monkeypatch.setenv("CACHE_STATS_MAX_ENTRIES", "100")
-    monkeypatch.setenv("LOCAL_CACHE_DIR", str(tmp_path / ".cache"))
-    monkeypatch.setenv("BUDGET_LIMIT_USD", "100")
+def _make_config(tmp_path):
+    return AppConfig.model_validate(
+        {
+            "GEMINI_API_KEY": VALID_API_KEY,
+            "GEMINI_MODEL_NAME": "gemini-3-pro-preview",
+            "GEMINI_MAX_OUTPUT_TOKENS": 1024,
+            "GEMINI_TIMEOUT": 60,
+            "GEMINI_MAX_CONCURRENCY": 2,
+            "GEMINI_CACHE_SIZE": 10,
+            "GEMINI_TEMPERATURE": 0.2,
+            "GEMINI_CACHE_TTL_MINUTES": 5,
+            "LOG_LEVEL": "INFO",
+            "CACHE_STATS_FILE": "cache_stats.jsonl",
+            "CACHE_STATS_MAX_ENTRIES": 100,
+            "LOCAL_CACHE_DIR": str(tmp_path / ".cache"),
+            "BUDGET_LIMIT_USD": 100,
+        }
+    )
 
-    jinja_env = types.SimpleNamespace(
-        get_template=lambda name: types.SimpleNamespace(render=lambda **_k: "x")
-    )  # noqa: ARG005
-    agent = GeminiAgent(AppConfig(), jinja_env=jinja_env)
 
-    # Avoid touching real genai client
+def _make_agent(monkeypatch, tmp_path):
+    config = _make_config(tmp_path)
+    jinja_env = Environment(loader=DictLoader({"prompt_eval.j2": "x"}))
+    agent = GeminiAgent(config, jinja_env=jinja_env)
+
+    # Avoid touching real genai client, provide protos stub
     class _Finish:
         STOP = "STOP"
         MAX_TOKENS = "MAX_TOKENS"
