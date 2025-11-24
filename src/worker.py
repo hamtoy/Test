@@ -181,6 +181,13 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
                         return ValidationResult(
                             allowed=False, reason="graph constraint", penalty=1.0
                         )
+                    # 접두어로 단순 타입 분기 시, 허용 목록 이외는 페널티
+                    allowed_types = {"clean", "summarize", "clarify", "validate"}
+                    prefix = action.split(":", 1)[0].lower()
+                    if prefix and prefix not in allowed_types:
+                        return ValidationResult(
+                            allowed=True, reason="unrecognized action", penalty=0.5
+                        )
             except Exception as exc:  # noqa: BLE001
                 return ValidationResult(allowed=False, reason=str(exc))
         return ValidationResult(allowed=True, penalty=penalty)
@@ -213,7 +220,11 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
             except Exception as exc:  # noqa: BLE001
                 logger.debug("LLM propose failed, fallback to defaults: %s", exc)
         if not candidates:
-            candidates = [f"clean:{task.request_id}", f"summarize:{task.request_id}"]
+            candidates = [
+                f"clean:{task.request_id}",
+                f"summarize:{task.request_id}",
+                f"clarify:{task.request_id}",
+            ]
         # 상태 기반: 동일 액션 중복 제거, 최근 실패(있다면)와 다른 액션 우선
         dedup = []
         seen = set()
