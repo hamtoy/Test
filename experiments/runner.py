@@ -59,11 +59,13 @@ class PromptExperimentRunner:
         agent = GeminiAgent(self.config, jinja_env=env)
 
         for case in self.cases:
-            record = {
+            record: dict[str, object] = {
                 "variant": variant.tag,
                 "variant_description": variant.description,
                 "case_id": case.case_id,
                 "user_intent": case.user_intent,
+                "queries": [],
+                "error": None,
             }
             try:
                 queries = await agent.generate_query(case.ocr_text, case.user_intent)
@@ -95,7 +97,8 @@ def example_usage() -> None:
     Small example: define cases and variants, then execute.
     Requires a valid GEMINI_API_KEY in the environment.
     """
-    config = AppConfig()
+    # AppConfig pulls from environment; ignore call-arg type check for BaseSettings ctor.
+    config = AppConfig()  # type: ignore[call-arg]
     cases = [
         ExperimentCase(case_id="1", ocr_text="표가 많은 문서", user_intent="요약"),
         ExperimentCase(case_id="2", ocr_text="계약서 조항", user_intent="검토"),
