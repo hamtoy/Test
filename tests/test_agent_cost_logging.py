@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import types
+from pathlib import Path
 
 import pytest
 
@@ -10,8 +11,22 @@ from src.config import AppConfig
 VALID_API_KEY = "AIza" + "E" * 35
 
 
-def _make_agent(monkeypatch):
+def _make_agent(monkeypatch, tmp_path: Path):
+    # Provide all required settings via env
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
+    monkeypatch.setenv("GEMINI_MODEL_NAME", "gemini-3-pro-preview")
+    monkeypatch.setenv("GEMINI_MAX_OUTPUT_TOKENS", "1024")
+    monkeypatch.setenv("GEMINI_TIMEOUT", "60")
+    monkeypatch.setenv("GEMINI_MAX_CONCURRENCY", "2")
+    monkeypatch.setenv("GEMINI_CACHE_SIZE", "10")
+    monkeypatch.setenv("GEMINI_TEMPERATURE", "0.2")
+    monkeypatch.setenv("GEMINI_CACHE_TTL_MINUTES", "5")
+    monkeypatch.setenv("LOG_LEVEL", "INFO")
+    monkeypatch.setenv("CACHE_STATS_FILE", "cache_stats.jsonl")
+    monkeypatch.setenv("CACHE_STATS_MAX_ENTRIES", "100")
+    monkeypatch.setenv("LOCAL_CACHE_DIR", str(tmp_path / ".cache"))
+    monkeypatch.setenv("BUDGET_LIMIT_USD", "100")
+
     jinja_env = types.SimpleNamespace(
         get_template=lambda name: types.SimpleNamespace(render=lambda **_k: "x")
     )  # noqa: ARG005
@@ -34,8 +49,8 @@ def _make_agent(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_execute_api_call_logs_metrics(monkeypatch):
-    agent = _make_agent(monkeypatch)
+async def test_execute_api_call_logs_metrics(monkeypatch, tmp_path):
+    agent = _make_agent(monkeypatch, tmp_path)
     logged = {}
 
     def _log_metrics(logger, **kwargs):
@@ -66,8 +81,8 @@ async def test_execute_api_call_logs_metrics(monkeypatch):
     assert "latency_ms" in logged
 
 
-def test_get_total_cost_unknown_model(monkeypatch):
-    agent = _make_agent(monkeypatch)
+def test_get_total_cost_unknown_model(monkeypatch, tmp_path):
+    agent = _make_agent(monkeypatch, tmp_path)
     agent.config.model_name = "unknown-model"  # type: ignore[assignment]
     agent.total_input_tokens = 10
     agent.total_output_tokens = 5
