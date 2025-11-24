@@ -47,5 +47,10 @@ async def test_ensure_redis_ready(monkeypatch):
         async def ping(self):
             return True
 
-    monkeypatch.setattr(worker.broker, "redis", _Redis())
+    # FastStream RedisBroker 0.5+는 ._connection에 연결 클라이언트를 보관
+    if hasattr(worker.broker, "redis"):
+        monkeypatch.setattr(worker.broker, "redis", _Redis())
+    else:
+        monkeypatch.setattr(worker.broker, "_connection", _Redis())
+
     await worker.ensure_redis_ready()
