@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -61,7 +61,9 @@ class DLQMessage(BaseModel):
     request_id: str
     error_type: str
     payload: Dict[str, Any]
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    timestamp: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+    )
 
 
 def _append_jsonl(path: Path, record: dict) -> None:
@@ -125,7 +127,7 @@ async def _process_task(task: OCRTask) -> dict:
         "image_path": task.image_path,
         "ocr_text": content,
         "llm_output": llm_text,
-        "processed_at": datetime.utcnow().isoformat(),
+        "processed_at": datetime.now(timezone.utc).isoformat(),
     }
 
 

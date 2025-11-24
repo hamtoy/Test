@@ -76,6 +76,28 @@ async def test_graph_validator_prunes_actions():
 
 
 @pytest.mark.asyncio
+async def test_graph_penalty_reduces_score():
+    async def propose(node: SearchNode):  # noqa: ARG001
+        return ["penalty"]
+
+    async def graph_validator(_state: SearchState, action: str):
+        return ValidationResult(allowed=True, penalty=0.3 if action == "penalty" else 0)
+
+    async def evaluate(node: SearchNode):
+        return 1.0
+
+    searcher = LATSSearcher(
+        llm_provider=None,
+        graph_validator=graph_validator,
+        propose_actions=propose,
+        evaluate_action=evaluate,
+        max_visits=1,
+    )
+    best = await searcher.run(SearchState())
+    assert best.reward == 0.7
+
+
+@pytest.mark.asyncio
 async def test_should_terminate_on_budget_and_depth():
     state = SearchState(cumulative_tokens=60000, cumulative_cost=2.0)
     searcher = LATSSearcher(
@@ -91,3 +113,10 @@ async def test_reflection_uses_llm():
     searcher = LATSSearcher(llm_provider=llm)
     text = await searcher.reflect_on_error("boom", context="ctx")
     assert "insight" in text
+
+
+@pytest.mark.asyncio
+async def test_reflection_without_llm_returns_fallback():
+    searcher = LATSSearcher(llm_provider=None)
+    text = await searcher.reflect_on_error("boom")
+    assert "Reflection unavailable" in text

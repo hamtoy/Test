@@ -160,8 +160,9 @@ class LATSSearcher:
     async def _evaluate(self, node: SearchNode) -> float:
         if self.evaluate_action:
             score = await self.evaluate_action(node)
-            node.reward = max(node.reward, score)
-            return score
+            effective = score + node.reward if node.reward < 0 else score
+            node.reward = max(node.reward, effective)
+            return effective
 
         if self.llm_provider:
             prompt = f"Score this action from 0-1: {node.action}"
@@ -172,8 +173,9 @@ class LATSSearcher:
                 score = float(result.content.strip())
             except ValueError:
                 score = 0.0
-            node.reward = max(node.reward, score)
-            return score
+            effective = score + node.reward if node.reward < 0 else score
+            node.reward = max(node.reward, effective)
+            return effective
 
         # no evaluator -> neutral score
         return 0.0
