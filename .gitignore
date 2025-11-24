@@ -50,6 +50,10 @@ data/outputs/*
 !data/outputs/.gitkeep
 *.pyc
 docs/_build/
+data/queue_results/
+sample_image.txt
+coverage_output.txt
+Redis-x64-5.0.14.1/
 
 # Coverage
 .coverage
