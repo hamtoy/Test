@@ -135,14 +135,26 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
     """LATS 토글 시 사용되는 경량 트리 탐색 래퍼."""
 
     async def graph_validator(state: SearchState, action: str) -> ValidationResult:
-        # 간단한 제약: 동일 액션 반복 시 페널티, "invalid" 접두어는 거부
-        if action.startswith("invalid"):
+        # 간단한 제약: 동일 액션 반복 시 페널티, 금지 접두어 거부
+        if action.startswith(("invalid", "forbidden")):
             return ValidationResult(allowed=False, reason="invalid action")
         penalty = 0.2 if action in state.focus_history else 0.0
         return ValidationResult(allowed=True, penalty=penalty)
 
     async def propose(_node):
-        # 복수 브랜치 제안 (예: 정제 vs 요약)
+        # 복수 브랜치 제안: LLM 제안 우선, 실패 시 기본값
+        if llm_provider:
+            try:
+                prompt = (
+                    "Propose 3 next actions (comma separated) for OCR post-processing. "
+                    "Include at least one clean and one summarize variant."
+                )
+                resp = await llm_provider.generate_content_async(prompt=prompt)
+                actions = [a.strip() for a in resp.content.split(",") if a.strip()]
+                if len(actions) >= 2:
+                    return actions[:3]
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("LLM propose failed, fallback to defaults: %s", exc)
         return [f"clean:{task.request_id}", f"summarize:{task.request_id}"]
 
     async def evaluate(node):
@@ -150,8 +162,26 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
         tokens = len(result.get("ocr_text", "").split())
         node.state = node.state.update_budget(tokens=tokens)
         node.result = result
-        # 간단한 점수: clean 우선
+        # 간단한 점수: clean 우선, LLM 평가 시 점수 교체
         base_score = 0.9 if node.action and node.action.startswith("clean") else 0.6
+        if llm_provider:
+            try:
+                rating = await llm_provider.generate_content_async(
+                    prompt=(
+                        "Rate from 0-1 the quality of processed OCR text: "
+                        f"{result.get('ocr_text','')[:200]}"
+                    ),
+                    max_output_tokens=4,
+                    temperature=0,
+                )
+                score = float(rating.content.strip())
+                base_score = max(base_score, score)
+                if rating.usage:
+                    node.state = node.state.update_budget(
+                        tokens=rating.usage.get("total_tokens", 0)
+                    )
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("LLM evaluate failed, fallback score: %s", exc)
         return base_score + node.reward
 
     searcher = LATSSearcher(
