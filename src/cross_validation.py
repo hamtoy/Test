@@ -73,6 +73,7 @@ class CrossValidationSystem:
         try:
             with self.kg.graph_session() as session:  # type: ignore[union-attr]
                 if session is None:
+                    self.logger.debug("Grounding check skipped: graph unavailable")
                     return {"score": 0.5, "grounded": False, "note": "graph 없음"}
                 result = session.run(
                     """
@@ -127,6 +128,7 @@ class CrossValidationSystem:
         try:
             with self.kg.graph_session() as session:  # type: ignore[union-attr]
                 if session is None:
+                    self.logger.debug("ErrorPattern check skipped: graph unavailable")
                     raise RuntimeError("graph missing")
                 eps = session.run(
                     """

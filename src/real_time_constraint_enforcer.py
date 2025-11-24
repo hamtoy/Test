@@ -85,6 +85,11 @@ class RealTimeConstraintEnforcer:
         try:
             with self.kg.graph_session() as session:  # type: ignore[union-attr]
                 if session is None:
+                    import logging
+
+                    logging.getLogger(__name__).debug(
+                        "Original blocks fetch skipped: graph unavailable"
+                    )
                     return []
                 result = session.run(
                     """

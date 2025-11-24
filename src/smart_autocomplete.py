@@ -5,6 +5,9 @@ from typing import List, Dict
 
 from src.qa_rag_system import QAKnowledgeGraph
 from checks.detect_forbidden_patterns import find_violations
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SmartAutocomplete:
@@ -31,6 +34,7 @@ class SmartAutocomplete:
         """
         with self.kg.graph_session() as session:  # type: ignore[union-attr]
             if session is None:
+                logger.debug("SmartAutocomplete: graph unavailable, no suggestions")
                 return []
             records = [dict(r) for r in session.run(cypher)]
 
@@ -70,6 +74,9 @@ class SmartAutocomplete:
         # 그래프의 ErrorPattern 및 Constraint 패턴 검사
         with self.kg.graph_session() as session:  # type: ignore[union-attr]
             if session is None:
+                logger.debug(
+                    "SmartAutocomplete: graph unavailable, skip constraint checks"
+                )
                 return {"violations": violations, "suggestions": suggestions}
             ep_records = session.run(
                 "MATCH (ep:ErrorPattern) RETURN ep.pattern AS pattern, ep.description AS desc"

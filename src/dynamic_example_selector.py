@@ -27,6 +27,9 @@ class DynamicExampleSelector:
         try:
             with self.kg.graph_session() as session:  # type: ignore[union-attr]
                 if session is None:
+                    logger.debug(
+                        "DynamicExampleSelector: graph unavailable, returning []"
+                    )
                     return []
                 conditions = []
                 params: Dict[str, Any] = {"query_type": query_type, "k": k}
