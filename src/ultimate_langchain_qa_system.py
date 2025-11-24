@@ -69,12 +69,16 @@ class UltimateLangChainQASystem:
         모든 기능을 활용한 최상급 생성.
         """
 
-        # 1. 라우터로 질의 유형 자동 판단
-        if user_query:
-            routed = self.router.route_and_generate(user_query, handlers={})
-            query_type = routed.get("choice", "explanation")
-        else:
-            query_type = "explanation"
+        # 1. 라우터로 질의 유형 자동 판단 (핸들러 기본값 제공해 빈 핸들러 오류 방지)
+        router_handlers = {
+            "explanation": lambda text: None,
+            "summary": lambda text: None,
+            "explore": lambda text: None,
+        }
+        routed = self.router.route_and_generate(
+            user_query or "explanation", handlers=router_handlers
+        )
+        query_type = routed.get("choice", "explanation")
 
         # 2. Multi-Agent로 정보 수집
         agent_result = self.agent_system.collaborative_generate(

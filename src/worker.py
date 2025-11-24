@@ -121,7 +121,11 @@ async def _process_task(task: OCRTask) -> dict:
     """
     path = Path(task.image_path)
     if path.suffix.lower() == ".txt" and path.exists():
-        content = path.read_text(encoding="utf-8", errors="ignore")
+        try:
+            content = path.read_text(encoding="utf-8", errors="ignore")
+        except OSError as exc:  # noqa: PERF203
+            logger.warning("Failed to read %s: %s", path, exc)
+            content = f"OCR placeholder for {path.name}"
     else:
         content = f"OCR placeholder for {path.name}"
 
@@ -390,7 +394,13 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
 
 @broker.subscriber("ocr_task")  # Low concurrency for pilot
 async def handle_ocr_task(task: OCRTask):
-    await ensure_redis_ready()
+    try:
+        await ensure_redis_ready()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Redis not ready, continuing with in-memory cache: %s", exc)
+        # fail open: allow downstream to use in-memory cache paths
+        global redis_client
+        redis_client = None
     logger.info(f"Received task: {task.request_id}")
 
     allowed = await check_rate_limit("global_rate_limit", 10, 60)
