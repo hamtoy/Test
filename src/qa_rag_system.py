@@ -99,7 +99,7 @@ class QAKnowledgeGraph:
             gemini_api_key = os.getenv("GEMINI_API_KEY")
 
             if not gemini_api_key:
-                print("⚠️ GEMINI_API_KEY 미설정: 벡터 검색을 건너뜁니다.")
+                logger.debug("GEMINI_API_KEY 미설정: 벡터 검색을 건너뜁니다.")
                 return
 
             embedding_model = CustomGeminiEmbeddings(api_key=gemini_api_key)
@@ -115,13 +115,13 @@ class QAKnowledgeGraph:
                 embedding_node_property="embedding",
             )
         except Neo4jError as e:
-            print(f"⚠️ Neo4j 벡터 스토어 초기화 실패: {e}")
+            logger.warning("Neo4j 벡터 스토어 초기화 실패: %s", e)
             self._vector_store = None
         except ValueError as e:
-            print(f"⚠️ 벡터 스토어 설정 오류: {e}")
+            logger.warning("벡터 스토어 설정 오류: %s", e)
             self._vector_store = None
         except Exception as e:  # noqa: BLE001
-            print(f"⚠️ 벡터 스토어 초기화 중 알 수 없는 오류: {e}")
+            logger.warning("벡터 스토어 초기화 중 알 수 없는 오류: %s", e)
             self._vector_store = None
 
     def find_relevant_rules(self, query: str, k: int = 5) -> List[str]:
@@ -255,6 +255,7 @@ class QAKnowledgeGraph:
             with self._graph.session() as session:
                 yield session
         else:
+            logger.debug("graph_session: graph not available; yielding None")
             yield None
 
 
