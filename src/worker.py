@@ -18,6 +18,9 @@ from src.lats_searcher import LATSSearcher, SearchState, ValidationResult
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("worker")
 
+# Rough cost estimation (USD per token) for budgeting/cost guardrails
+MODEL_COST_PER_TOKEN = 1e-6
+
 # Load config (environment-driven; ignore call-arg check for BaseSettings)
 config = AppConfig()  # type: ignore[call-arg]
 
