@@ -26,6 +26,7 @@ from src.constants import (
     PRICING_TIERS,
     BUDGET_WARNING_THRESHOLDS,
 )
+from src.logging_setup import log_metrics
 from src.exceptions import (
     APIRateLimitError,
     BudgetExceededError,
@@ -456,6 +457,14 @@ class GeminiAgent:
                 f"Token Usage - Prompt: {usage.prompt_token_count}, "
                 f"Response: {usage.candidates_token_count}, "
                 f"Total: {usage.total_token_count}"
+            )
+            log_metrics(
+                self.logger,
+                latency_ms=latency_ms,
+                prompt_tokens=usage.prompt_token_count,
+                completion_tokens=usage.candidates_token_count,
+                cache_hits=self.cache_hits,
+                cache_misses=self.cache_misses,
             )
 
         # Finish Reason 및 Safety Filter 상세 검증

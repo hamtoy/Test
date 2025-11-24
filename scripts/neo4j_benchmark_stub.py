@@ -41,6 +41,13 @@ def run_probe() -> None:
         ("examples", lambda: kg.get_examples(limit=3)),
     ]
 
+    if getattr(kg, "_vector_store", None):
+        samples.append(
+            ("vector_search", lambda: kg.find_relevant_rules("테스트 질의", k=1)),
+        )
+    else:
+        print("vector_search: skipped (no vector store)")
+
     for name, fn in samples:
         start = time.perf_counter()
         try:
