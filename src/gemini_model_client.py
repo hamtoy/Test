@@ -9,6 +9,7 @@ helpers. Defaults to the model name from `GEMINI_MODEL_NAME` or
 from __future__ import annotations
 
 import os
+import time
 from typing import Any, Dict, List
 
 import google.generativeai as genai
@@ -55,6 +56,7 @@ class GeminiModelClient:
             role: 호출 의도(호환성용, 현재 로직에서는 사용하지 않음).
         """
         try:
+            start = time.perf_counter()
             response = self.model.generate_content(
                 prompt,
                 generation_config=genai.types.GenerationConfig(
@@ -62,11 +64,12 @@ class GeminiModelClient:
                     max_output_tokens=2048,
                 ),
             )
+            latency_ms = (time.perf_counter() - start) * 1000
             if hasattr(response, "usage_metadata") and response.usage_metadata:
                 usage = response.usage_metadata
                 log_metrics(
                     self.logger,  # type: ignore[attr-defined]
-                    latency_ms=None,
+                    latency_ms=latency_ms,
                     prompt_tokens=usage.prompt_token_count,
                     completion_tokens=usage.candidates_token_count,
                 )
@@ -94,6 +97,7 @@ class GeminiModelClient:
         if not answers:
             return _length_fallback("평가 실패: 답변이 없습니다.")
 
+        start = time.perf_counter()
         try:
             raw = self.generate(
                 f"질문: {question}\n답변 수: {len(answers)}", role="evaluator"
@@ -102,6 +106,7 @@ class GeminiModelClient:
             return _length_fallback("API 오류로 길이 기반 평가 수행")
         except Exception:
             return _length_fallback("예상치 못한 오류로 길이 기반 평가 수행")
+        latency_ms = (time.perf_counter() - start) * 1000
 
         scores: List[int] = []
         best_idx: int | None = None
@@ -126,7 +131,7 @@ class GeminiModelClient:
             best_idx = max(0, min(best_idx, len(answers) - 1))
             log_metrics(
                 self.logger,
-                latency_ms=None,
+                latency_ms=latency_ms,
                 prompt_tokens=len(question),
                 completion_tokens=sum(scores),
             )
@@ -146,11 +151,12 @@ class GeminiModelClient:
             "사실 관계는 유지하고, 불필요한 군더더기는 제거합니다.\n\n"
             f"{answer}"
         )
+        start = time.perf_counter()
         try:
             rewritten = self.generate(prompt, role="rewriter")
             log_metrics(
                 self.logger,
-                latency_ms=None,
+                latency_ms=(time.perf_counter() - start) * 1000,
                 prompt_tokens=len(answer),
                 completion_tokens=len(rewritten),
             )

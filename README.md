@@ -128,6 +128,18 @@ python scripts/neo4j_benchmark_stub.py
 ```
 
 > `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`가 설정되어 있을 때만 실행되며, 미설정 시 안전하게 스킵됩니다.
+>
+> 예시 출력:
+> ```
+> Neo4j credentials missing; skipping probe.
+> ```
+> 또는 벡터 스토어가 있을 경우:
+> ```
+> constraints: 42.1 ms, rows=5
+> best_practices: 35.7 ms, rows=3
+> examples: 28.4 ms, rows=3
+> vector_search: 50.2 ms, rows=1
+> ```
 
 ### 예산/코스트 알림
 

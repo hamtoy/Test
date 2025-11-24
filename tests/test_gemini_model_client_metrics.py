@@ -36,6 +36,7 @@ def test_generate_logs_metrics(monkeypatch):
     assert out == "ok"
     assert captured["prompt_tokens"] == 10
     assert captured["completion_tokens"] == 5
+    assert captured["latency_ms"] >= 0
 
 
 def test_evaluate_and_rewrite_log_metrics(monkeypatch):
@@ -76,4 +77,4 @@ def test_evaluate_and_rewrite_log_metrics(monkeypatch):
 
     assert eval_res["best_index"] == 1
     assert rewritten == "rewritten"
-    assert captured  # metrics logged at least once
+    assert any("latency_ms" in entry for entry in captured)
