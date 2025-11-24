@@ -46,7 +46,10 @@ def test_analyze_cache_stats_reads_and_sums(tmp_path: Path):
     ]
     with path.open("w", encoding="utf-8") as f:
         for obj in lines:
-            f.write(json.dumps(obj) + "\n" if isinstance(obj, dict) else obj + "\n")
+            if isinstance(obj, dict):
+                f.write(json.dumps(obj) + "\n")
+            else:
+                f.write(str(obj) + "\n")
 
     summary = cache_analytics.analyze_cache_stats(path)
     assert summary["total_records"] == 2  # skips bad line
