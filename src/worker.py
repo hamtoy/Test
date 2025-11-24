@@ -171,18 +171,27 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
                         return ValidationResult(
                             allowed=False, reason="blocked keyword", penalty=1.0
                         )
-                    # Neo4j 제약 예시: 에러 패턴/쿼리 타입 검증
                     result = await session.run(
-                        "RETURN coalesce($action CONTAINS 'error', false) AS bad",
+                        """
+                        WITH $action AS act
+                        RETURN
+                          act CONTAINS 'error' AS bad_pattern,
+                          act STARTS WITH 'forbidden:' AS bad_prefix
+                        """,
                         action=action,
                     )
                     data = await result.single()
-                    if data and data.get("bad"):
+                    if data and (data.get("bad_pattern") or data.get("bad_prefix")):
                         return ValidationResult(
                             allowed=False, reason="graph constraint", penalty=1.0
                         )
-                    # 접두어로 단순 타입 분기 시, 허용 목록 이외는 페널티
-                    allowed_types = {"clean", "summarize", "clarify", "validate"}
+                    allowed_types = {
+                        "clean",
+                        "summarize",
+                        "clarify",
+                        "validate",
+                        "rerank",
+                    }
                     prefix = action.split(":", 1)[0].lower()
                     if prefix and prefix not in allowed_types:
                         return ValidationResult(
@@ -241,6 +250,8 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
             dedup.append(f"clean:{task.request_id}")
         if not any(a.startswith("summarize:") for a in dedup):
             dedup.append(f"summarize:{task.request_id}")
+        if not any(a.startswith("clarify:") for a in dedup):
+            dedup.append(f"clarify:{task.request_id}")
         return dedup[:3]
 
     async def evaluate(node):
