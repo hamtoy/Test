@@ -161,6 +161,7 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
                         return ValidationResult(
                             allowed=False, reason="blocked keyword", penalty=1.0
                         )
+                    # 향후: 에러 패턴/타입 기반 검증으로 확장 가능
                     await session.run("RETURN 1")
             except Exception as exc:  # noqa: BLE001
                 return ValidationResult(allowed=False, reason=str(exc))
@@ -215,6 +216,15 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
         node.result = result
         # 간단한 점수: clean 우선, LLM 평가 시 점수 교체
         base_score = 0.9 if node.action and node.action.startswith("clean") else 0.6
+        # 요약 액션이면 간단한 요약 후보 생성
+        summary_text = result.get("ocr_text", "")
+        if node.action and "summarize" in node.action and summary_text:
+            summary_text = (
+                (summary_text[:120] + "...")
+                if len(summary_text) > 120
+                else summary_text
+            )
+
         if lats_agent and node.action:
             try:
                 eval_result = await lats_agent.evaluate_responses(
@@ -222,7 +232,7 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
                     query=node.action,
                     candidates={
                         "A": result.get("ocr_text", ""),
-                        "B": node.action,
+                        "B": summary_text or node.action,
                     },
                     cached_content=None,
                 )
