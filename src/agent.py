@@ -146,6 +146,17 @@ class GeminiAgent:
 
         return google_exceptions
 
+    def _is_rate_limit_error(self, exc: Exception) -> bool:
+        """Return True if the exception represents a rate limit (ResourceExhausted)."""
+        try:
+            google_exceptions = self._google_exceptions()
+            if isinstance(exc, google_exceptions.ResourceExhausted):
+                return True
+        except Exception:  # noqa: BLE001
+            # Fallback for environments or tests that monkeypatch ResourceExhausted
+            pass
+        return exc.__class__.__name__ == "ResourceExhausted"
+
     @staticmethod
     def _protos():
         from google.generativeai import protos
@@ -539,10 +550,12 @@ class GeminiAgent:
 
         try:
             response_text = await self._call_api_with_retry(model, user_prompt)
-        except self._google_exceptions().ResourceExhausted as e:
-            raise APIRateLimitError(
-                f"Rate limit exceeded during query generation: {e}"
-            ) from e
+        except Exception as e:  # noqa: BLE001
+            if self._is_rate_limit_error(e):
+                raise APIRateLimitError(
+                    f"Rate limit exceeded during query generation: {e}"
+                ) from e
+            raise
 
         # Pydantic Validation 사용 (안전한 파싱)
         cleaned_response = clean_markdown_code_block(response_text)
@@ -627,10 +640,12 @@ class GeminiAgent:
             response_text = await self._call_api_with_retry(
                 model, json.dumps(input_data, ensure_ascii=False)
             )
-        except self._google_exceptions().ResourceExhausted as e:
-            raise APIRateLimitError(
-                f"Rate limit exceeded during evaluation: {e}"
-            ) from e
+        except Exception as e:  # noqa: BLE001
+            if self._is_rate_limit_error(e):
+                raise APIRateLimitError(
+                    f"Rate limit exceeded during evaluation: {e}"
+                ) from e
+            raise
         cleaned_response = clean_markdown_code_block(response_text)
 
         if not cleaned_response or not cleaned_response.strip():
@@ -691,8 +706,12 @@ class GeminiAgent:
 
         try:
             response_text = await self._call_api_with_retry(model, payload)
-        except self._google_exceptions().ResourceExhausted as e:
-            raise APIRateLimitError(f"Rate limit exceeded during rewrite: {e}") from e
+        except Exception as e:  # noqa: BLE001
+            if self._is_rate_limit_error(e):
+                raise APIRateLimitError(
+                    f"Rate limit exceeded during rewrite: {e}"
+                ) from e
+            raise
 
         # utils의 중앙화된 함수 사용 (DRY 원칙)
         unwrapped = safe_json_parse(response_text, "rewritten_answer")
