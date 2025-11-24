@@ -19,9 +19,25 @@ logger = logging.getLogger("worker")
 # Load config (environment-driven; ignore call-arg check for BaseSettings)
 config = AppConfig()  # type: ignore[call-arg]
 
-# Initialize Broker
+# Initialize Broker and Redis Client
 broker = RedisBroker(config.redis_url)
 app = FastStream(broker)
+redis_client = None
+
+
+@app.on_startup
+async def setup_redis():
+    global redis_client
+    from redis.asyncio import Redis
+
+    redis_client = Redis.from_url(config.redis_url)
+
+
+@app.on_shutdown
+async def close_redis():
+    if redis_client:
+        await redis_client.close()
+
 
 # LLM provider (optional; requires llm_provider_enabled=True and valid creds)
 llm_provider = None
@@ -58,20 +74,20 @@ async def check_rate_limit(key: str, limit: int, window: int) -> bool:
     Checks if the rate limit is exceeded for the given key.
     Returns True if allowed, False if blocked.
     """
-    current = await broker.redis.incr(key)
+    if not redis_client:
+        return True  # Fail open if redis not ready (or raise)
+
+    current = await redis_client.incr(key)
     if current == 1:
-        await broker.redis.expire(key, window)
+        await redis_client.expire(key, window)
     return current <= limit
 
 
 async def ensure_redis_ready() -> None:
     """Ping Redis once; raise if unavailable."""
     try:
-        redis_client = getattr(broker, "redis", None) or getattr(
-            broker, "_connection", None
-        )
-        if redis_client is None:
-            raise RuntimeError("Redis client unavailable on broker")
+        if not redis_client:
+            raise RuntimeError("Redis client not initialized")
         pong = await redis_client.ping()
         if pong is not True:
             raise RuntimeError("Redis ping failed")
