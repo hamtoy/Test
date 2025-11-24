@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import logging
 import time
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, cast, no_type_check
 
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -12,6 +13,9 @@ from neo4j.exceptions import Neo4jError
 from langchain_core.embeddings import Embeddings
 
 from checks.validate_session import validate_turns
+from src.core.interfaces import GraphProvider
+from src.core.factory import get_graph_provider
+from src.config import AppConfig
 
 logger = logging.getLogger(__name__)
 
@@ -50,22 +54,35 @@ class QAKnowledgeGraph:
     - 세션 구조 검증
     """
 
+    _graph_provider: Optional[GraphProvider] = None
+    _graph: Optional[Driver] = None
+
     def __init__(
         self,
         neo4j_uri: Optional[str] = None,
         neo4j_user: Optional[str] = None,
         neo4j_password: Optional[str] = None,
+        graph_provider: Optional[GraphProvider] = None,
+        config: Optional[AppConfig] = None,
     ):
-        self.neo4j_uri = neo4j_uri or require_env("NEO4J_URI")
-        self.neo4j_user = neo4j_user or require_env("NEO4J_USER")
-        self.neo4j_password = neo4j_password or require_env("NEO4J_PASSWORD")
+        cfg = config or AppConfig()
+        provider = (
+            graph_provider if graph_provider is not None else get_graph_provider(cfg)
+        )
+        self._graph_provider: Optional[GraphProvider] = provider
+        self._graph: Optional[Driver] = None
 
-        try:
-            self._graph: Driver = GraphDatabase.driver(
-                self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
-            )
-        except Neo4jError as e:
-            raise RuntimeError(f"Neo4j 연결 실패: {e}")
+        if provider is None:
+            self.neo4j_uri = neo4j_uri or require_env("NEO4J_URI")
+            self.neo4j_user = neo4j_user or require_env("NEO4J_USER")
+            self.neo4j_password = neo4j_password or require_env("NEO4J_PASSWORD")
+
+            try:
+                self._graph = GraphDatabase.driver(
+                    self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
+                )
+            except Neo4jError as e:
+                raise RuntimeError(f"Neo4j 연결 실패: {e}")
 
         self._vector_store = None
         self._init_vector_store()
@@ -115,6 +132,7 @@ class QAKnowledgeGraph:
         logger.info("vector_search_ms=%.2f k=%s query=%s", elapsed_ms, k, query)
         return [doc.page_content for doc in results]
 
+    @no_type_check
     def get_constraints_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
         """
         QueryType과 연결된 제약 조건 조회.
@@ -134,18 +152,42 @@ class QAKnowledgeGraph:
             c.type AS type,
             c.pattern AS pattern
         """
-        with self._graph.session() as session:
-            records = session.run(cypher, qt=query_type)
-            return [dict(r) for r in records]
+        if self._graph_provider is None:
+            with self._graph.session() as session:
+                records = session.run(cypher, qt=query_type)
+                return [dict(r) for r in records]
 
+        assert self._graph_provider is not None
+        prov = cast(GraphProvider, self._graph_provider)
+
+        async def _run():
+            async with prov.session() as session:  # type: ignore[union-attr]
+                records = await session.run(cypher, qt=query_type)
+                return [dict(r) for r in records]
+
+        return asyncio.get_event_loop().run_until_complete(_run())
+
+    @no_type_check
     def get_best_practices(self, query_type: str) -> List[Dict[str, str]]:
         cypher = """
         MATCH (qt:QueryType {name: $qt})<-[:APPLIES_TO]-(b:BestPractice)
         RETURN b.id AS id, b.text AS text
         """
-        with self._graph.session() as session:
-            return [dict(r) for r in session.run(cypher, qt=query_type)]
+        if self._graph_provider is None:
+            with self._graph.session() as session:
+                return [dict(r) for r in session.run(cypher, qt=query_type)]
 
+        assert self._graph_provider is not None
+        prov = cast(GraphProvider, self._graph_provider)
+
+        async def _run():
+            async with prov.session() as session:  # type: ignore[union-attr]
+                records = await session.run(cypher, qt=query_type)
+                return [dict(r) for r in records]
+
+        return asyncio.get_event_loop().run_until_complete(_run())
+
+    @no_type_check
     def get_examples(self, limit: int = 5) -> List[Dict[str, str]]:
         """
         Example 노드 조회 (현재 Rule과 직접 연결되지 않았으므로 전체에서 샘플링).
@@ -155,8 +197,19 @@ class QAKnowledgeGraph:
         RETURN e.id AS id, e.text AS text, e.type AS type
         LIMIT $limit
         """
-        with self._graph.session() as session:
-            return [dict(r) for r in session.run(cypher, limit=limit)]
+        if self._graph_provider is None:
+            with self._graph.session() as session:
+                return [dict(r) for r in session.run(cypher, limit=limit)]
+
+        assert self._graph_provider is not None
+        prov = cast(GraphProvider, self._graph_provider)
+
+        async def _run():
+            async with prov.session() as session:  # type: ignore[union-attr]
+                records = await session.run(cypher, limit=limit)
+                return [dict(r) for r in records]
+
+        return asyncio.get_event_loop().run_until_complete(_run())
 
     def validate_session(self, session: dict) -> Dict[str, Any]:
         """
@@ -181,6 +234,14 @@ class QAKnowledgeGraph:
     def close(self):
         if self._graph:
             self._graph.close()
+        provider = self._graph_provider
+        if provider:
+            from contextlib import suppress
+
+            with suppress(Exception):
+                asyncio.get_event_loop().run_until_complete(
+                    cast(GraphProvider, provider).close()
+                )
 
 
 if __name__ == "__main__":
