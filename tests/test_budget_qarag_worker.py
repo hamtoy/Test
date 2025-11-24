@@ -1,9 +1,13 @@
 import asyncio
 import json
+import os
 import sys
 import types
 
 import pytest
+
+# Ensure required env is present for AppConfig during import
+os.environ.setdefault("GEMINI_API_KEY", "AIza" + "0" * 35)
 
 from src import budget_tracker
 from src import qa_rag_system

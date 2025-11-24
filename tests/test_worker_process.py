@@ -1,4 +1,9 @@
+import os
+
 import pytest
+
+# Ensure required env is present for AppConfig during import
+os.environ.setdefault("GEMINI_API_KEY", "AIza" + "0" * 35)
 
 pytest.importorskip("faststream")
 from src import worker  # noqa: E402
