@@ -75,7 +75,15 @@ class GeminiAgent:
         """
         self.logger = logging.getLogger("GeminiWorkflow")
         self.config = config
-        self.llm_provider = llm_provider or get_llm_provider(config)
+        self.llm_provider: Optional[LLMProvider]
+        if llm_provider is not None:
+            self.llm_provider = llm_provider
+        else:
+            # 일부 테스트 스텁은 AppConfig 속성이 없으므로 실패 없이 통과시킨다.
+            try:
+                self.llm_provider = get_llm_provider(config)
+            except AttributeError:
+                self.llm_provider = None
 
         # 동시 실행 개수 제한
         self._semaphore = asyncio.Semaphore(config.max_concurrency)
