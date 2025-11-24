@@ -91,4 +91,4 @@ shining-quasar/
 - **Jinja2 템플릿 안전성**: 템플릿 상속/feature flag 케이스와 사용자 입력 escape 동작을 테스트로 커버; 템플릿 버전 관리(체크섬 기록) 도입 검토.
 - **Neo4j/RAG 성능**: `QAKnowledgeGraph` 초기화/벡터 스토어 실패 폴백 테스트 유지하며, 인덱스/APOC 기반 성능 프로파일링을 별도 벤치 마크로 추가.
 - **관측성 확대**: 토큰 처리율, 캐시 hit ratio, API latency를 시계열 로그로 남기고 `logging_setup` 테스트에 지표 포맷 검증을 추가.
-- **Neo4j 프로브 사용법**: `python scripts/neo4j_benchmark_stub.py` (환경변수 설정 시)로 대표 쿼리 latency/row 수 체크. 미설정 시 안전히 스킵.
+- **Neo4j 프로브 사용법**: `python scripts/neo4j_benchmark_stub.py` (환경변수 설정 시)로 대표 쿼리 latency/row 수 체크, 벡터 스토어 있으면 vector_search도 포함. 미설정 시 안전히 스킵.

@@ -161,6 +161,12 @@ def _render_cost_panel(agent: GeminiAgent) -> Panel:
     return Panel(cost_info, title=PANEL_TITLE_COST, border_style="blue")
 
 
+def _render_budget_panel(agent: GeminiAgent) -> Panel:
+    usage = agent.get_budget_usage_percent()
+    content = f"Budget usage: {usage:.2f}%"
+    return Panel(content, title=PANEL_TITLE_BUDGET, border_style="red")
+
+
 def _resolve_checkpoint_path(
     config: AppConfig, checkpoint_path: Optional[Path]
 ) -> Path:
@@ -774,6 +780,9 @@ async def main():
     finally:
         # 로그 리스너 종료 (남은 로그 플러시)
         log_listener.stop()
+        # 예산/코스트 패널 표시
+        console.print(_render_budget_panel(agent))
+        console.print(_render_cost_panel(agent))
 
 
 if __name__ == "__main__":

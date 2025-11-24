@@ -124,6 +124,12 @@ class GeminiModelClient:
             if best_idx is None:
                 best_idx = scores.index(max(scores))
             best_idx = max(0, min(best_idx, len(answers) - 1))
+            log_metrics(
+                self.logger,
+                latency_ms=None,
+                prompt_tokens=len(question),
+                completion_tokens=sum(scores),
+            )
             return {
                 "scores": scores,
                 "best_index": best_idx,
@@ -141,7 +147,14 @@ class GeminiModelClient:
             f"{answer}"
         )
         try:
-            return self.generate(prompt, role="rewriter")
+            rewritten = self.generate(prompt, role="rewriter")
+            log_metrics(
+                self.logger,
+                latency_ms=None,
+                prompt_tokens=len(answer),
+                completion_tokens=len(rewritten),
+            )
+            return rewritten
         except google_exceptions.GoogleAPIError as e:
             return f"[재작성 실패: {e}]"
         except Exception as e:  # noqa: BLE001

@@ -129,6 +129,11 @@ python scripts/neo4j_benchmark_stub.py
 
 > `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`가 설정되어 있을 때만 실행되며, 미설정 시 안전하게 스킵됩니다.
 
+### 예산/코스트 알림
+
+- 워크플로우 실행 중 예산 임계(80/90/95%) 도달 시 콘솔 경고와 패널로 알려줍니다.
+- 세션 종료 시 비용/토큰/캐시 통계를 패널로 요약 표시하고, `cache_stats.jsonl`에 최근 항목을 남깁니다.
+
 #### uv 사용
 
 ```bash
