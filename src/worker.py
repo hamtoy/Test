@@ -207,6 +207,11 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
             dedup = [a for a in dedup if state_last not in a] + [
                 a for a in dedup if state_last in a
             ]
+        # 필수 액션 유형 보장
+        if not any(a.startswith("clean:") for a in dedup):
+            dedup.append(f"clean:{task.request_id}")
+        if not any(a.startswith("summarize:") for a in dedup):
+            dedup.append(f"summarize:{task.request_id}")
         return dedup[:3]
 
     async def evaluate(node):
@@ -216,23 +221,22 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
         node.result = result
         # 간단한 점수: clean 우선, LLM 평가 시 점수 교체
         base_score = 0.9 if node.action and node.action.startswith("clean") else 0.6
-        # 요약 액션이면 간단한 요약 후보 생성
-        summary_text = result.get("ocr_text", "")
-        if node.action and "summarize" in node.action and summary_text:
-            summary_text = (
-                (summary_text[:120] + "...")
-                if len(summary_text) > 120
-                else summary_text
-            )
+        # 후보 응답 준비: 원본/정제/요약
+        original_text = result.get("ocr_text", "")
+        cleaned_text = " ".join(original_text.split())
+        summary_text = cleaned_text
+        if len(summary_text) > 120:
+            summary_text = summary_text[:120] + "..."
 
         if lats_agent and node.action:
             try:
                 eval_result = await lats_agent.evaluate_responses(
-                    ocr_text=result.get("ocr_text", ""),
+                    ocr_text=original_text,
                     query=node.action,
                     candidates={
-                        "A": result.get("ocr_text", ""),
-                        "B": summary_text or node.action,
+                        "A": original_text,
+                        "B": cleaned_text or original_text,
+                        "C": summary_text or node.action,
                     },
                     cached_content=None,
                 )
