@@ -1,5 +1,4 @@
 from __future__ import annotations
-# mypy: ignore-errors
 
 import logging
 from typing import Any, Dict
@@ -35,7 +34,10 @@ class AdaptiveDifficultyAdjuster:
 
         # Neo4j에서 유사한 text_density 페이지의 평균 블록 수 추정 (실패 시 무시)
         try:
-            with self.kg._graph.session() as session:  # noqa: SLF001
+            graph = getattr(self.kg, "_graph", None)
+            if graph is None:
+                raise RuntimeError("graph not available")
+            with graph.session() as session:  # noqa: SLF001
                 result = session.run(
                     """
                     MATCH (p:Page)

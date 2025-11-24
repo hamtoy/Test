@@ -1,5 +1,4 @@
 from __future__ import annotations
-# mypy: ignore-errors
 
 import re
 from typing import List, Dict
@@ -30,7 +29,10 @@ class SmartAutocomplete:
         MATCH (qt:QueryType)
         RETURN qt.name AS name, qt.korean AS korean, qt.session_limit AS limit, coalesce(qt.priority, 0) AS priority
         """
-        with self.kg._graph.session() as session:
+        graph = getattr(self.kg, "_graph", None)
+        if graph is None:
+            return []
+        with graph.session() as session:  # noqa: SLF001
             records = [dict(r) for r in session.run(cypher)]
 
         suggestions = []
@@ -67,7 +69,10 @@ class SmartAutocomplete:
             suggestions.append(f"{v['match']} 표현을 제거하세요")
 
         # 그래프의 ErrorPattern 및 Constraint 패턴 검사
-        with self.kg._graph.session() as session:
+        graph = getattr(self.kg, "_graph", None)
+        if graph is None:
+            return {"violations": violations, "suggestions": suggestions}
+        with graph.session() as session:  # noqa: SLF001
             ep_records = session.run(
                 "MATCH (ep:ErrorPattern) RETURN ep.pattern AS pattern, ep.description AS desc"
             )

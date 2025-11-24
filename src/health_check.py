@@ -1,5 +1,4 @@
 from __future__ import annotations
-# mypy: ignore-errors
 
 import datetime
 from typing import Any, Dict
@@ -14,8 +13,11 @@ from src.qa_rag_system import QAKnowledgeGraph
 def check_neo4j_connection(kg: QAKnowledgeGraph | None = None) -> bool:
     """Return True if a simple Neo4j query succeeds."""
     graph = kg or QAKnowledgeGraph()
+    graph_obj = getattr(graph, "_graph", None)
+    if graph_obj is None:
+        return False
     try:
-        with graph._graph.session() as session:  # noqa: SLF001
+        with graph_obj.session() as session:  # noqa: SLF001
             session.run("RETURN 1").single()
         return True
     except Neo4jError:

@@ -62,7 +62,10 @@ class LCELOptimizedChain:
         """QueryType별 Rule 텍스트 조회."""
         qt = input_dict.get("query_type", "explanation")
         try:
-            with self.kg._graph.session() as session:  # noqa: SLF001
+            graph = getattr(self.kg, "_graph", None)
+            if graph is None:
+                return []
+            with graph.session() as session:  # noqa: SLF001
                 res = session.run(
                     """
                     MATCH (r:Rule)-[:APPLIES_TO]->(q:QueryType {name: $qt})

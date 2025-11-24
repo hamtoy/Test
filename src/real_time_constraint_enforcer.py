@@ -1,5 +1,4 @@
 from __future__ import annotations
-# mypy: ignore-errors
 
 import re
 from difflib import SequenceMatcher
@@ -84,7 +83,10 @@ class RealTimeConstraintEnforcer:
         """
 
         try:
-            with self.kg._graph.session() as session:  # noqa: SLF001
+            graph = getattr(self.kg, "_graph", None)
+            if graph is None:
+                return []
+            with graph.session() as session:  # noqa: SLF001
                 result = session.run(
                     """
                     MATCH (b:Block)

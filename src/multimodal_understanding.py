@@ -1,5 +1,4 @@
 from __future__ import annotations
-# mypy: ignore-errors
 
 from collections import Counter
 from typing import Any, Dict, List
@@ -54,7 +53,10 @@ class MultimodalUnderstanding:
 
         # 5. Neo4j에 저장 (실패해도 분석 결과는 반환)
         try:
-            with self.kg._graph.session() as session:  # noqa: SLF001
+            graph = getattr(self.kg, "_graph", None)
+            if graph is None:
+                return metadata
+            with graph.session() as session:  # noqa: SLF001
                 session.run(
                     """
                     MERGE (img:ImageMeta {path: $path})

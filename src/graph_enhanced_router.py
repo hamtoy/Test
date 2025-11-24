@@ -1,5 +1,4 @@
 from __future__ import annotations
-# mypy: ignore-errors
 
 from typing import Any, Callable, Dict, List, Optional
 
@@ -63,7 +62,10 @@ class GraphEnhancedRouter:
 
     def _fetch_query_types(self) -> List[Dict[str, Any]]:
         try:
-            with self.kg._graph.session() as session:  # noqa: SLF001
+            graph = getattr(self.kg, "_graph", None)
+            if graph is None:
+                return []
+            with graph.session() as session:  # noqa: SLF001
                 rows = session.run(
                     """
                     MATCH (qt:QueryType)
@@ -103,7 +105,10 @@ class GraphEnhancedRouter:
 
     def _log_routing(self, input_text: str, chosen: str) -> None:
         try:
-            with self.kg._graph.session() as session:  # noqa: SLF001
+            graph = getattr(self.kg, "_graph", None)
+            if graph is None:
+                return
+            with graph.session() as session:  # noqa: SLF001
                 session.run(
                     """
                     CREATE (r:RoutingLog {

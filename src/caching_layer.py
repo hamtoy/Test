@@ -1,5 +1,4 @@
 from __future__ import annotations
-# mypy: ignore-errors
 
 import json
 from typing import Dict, List, Optional, cast
@@ -29,7 +28,10 @@ class CachingLayer:
         MATCH (r:Rule)-[:APPLIES_TO]->(qt:QueryType {name: $qt})
         RETURN r.id AS id, r.text AS text, r.section AS section
         """
-        with self.kg._graph.session() as session:
+        graph = getattr(self.kg, "_graph", None)
+        if graph is None:
+            return []
+        with graph.session() as session:
             return cast(
                 List[Dict[str, str]],
                 [dict(rec) for rec in session.run(cypher, qt=query_type)],

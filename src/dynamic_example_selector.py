@@ -1,5 +1,4 @@
 from __future__ import annotations
-# mypy: ignore-errors
 
 import logging
 from typing import Any, Dict, List
@@ -26,7 +25,10 @@ class DynamicExampleSelector:
 
         examples: List[Dict[str, Any]] = []
         try:
-            with self.kg._graph.session() as session:  # noqa: SLF001
+            graph = getattr(self.kg, "_graph", None)
+            if graph is None:
+                return []
+            with graph.session() as session:  # noqa: SLF001
                 conditions = []
                 params: Dict[str, Any] = {"query_type": query_type, "k": k}
 
