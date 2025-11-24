@@ -58,7 +58,10 @@ class MultiAgentQASystem:
         """QueryType 관련 Rule/Constraint 텍스트를 수집."""
         rules: List[Dict[str, Any]] = []
         try:
-            with self.kg._graph.session() as session:  # noqa: SLF001
+            graph = getattr(self.kg, "_graph", None)
+            if graph is None:
+                return rules
+            with graph.session() as session:  # noqa: SLF001
                 result = session.run(
                     """
                     MATCH (r:Rule)-[:APPLIES_TO]->(q:QueryType {name: $qt})

@@ -51,7 +51,7 @@ def _preprocess_image(
     binarize: bool = True,
     threshold: int = BINARY_THRESHOLD,
 ) -> Image.Image:
-    working = ImageOps.exif_transpose(img)
+    working = ImageOps.exif_transpose(img) or img
     if max_dim:
         working.thumbnail(max_dim)
     if grayscale:
