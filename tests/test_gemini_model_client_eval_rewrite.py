@@ -1,6 +1,5 @@
 import types
 
-import pytest
 
 import src.gemini_model_client as gmc
 
@@ -26,7 +25,9 @@ def test_evaluate_parses_scores(monkeypatch):
     _fake_genai(monkeypatch)
 
     client = gmc.GeminiModelClient()
-    client.generate = lambda prompt, role="evaluator": "점수1: 2\n점수2: 4\n점수3: 1\n최고: 2"
+    client.generate = (
+        lambda prompt, role="evaluator": "점수1: 2\n점수2: 4\n점수3: 1\n최고: 2"
+    )
 
     result = client.evaluate("q", ["a", "bb", "ccc"])
     assert result["best_index"] == 1
