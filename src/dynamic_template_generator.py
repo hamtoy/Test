@@ -37,6 +37,7 @@ class DynamicTemplateGenerator:
             undefined=StrictUndefined,
             trim_blocks=True,
             lstrip_blocks=True,
+            autoescape=True,
         )
 
     def close(self):

@@ -24,6 +24,7 @@ from src.constants import (
     DEFAULT_RPM_WINDOW_SECONDS,
     MIN_CACHE_TOKENS,
     PRICING_TIERS,
+    BUDGET_WARNING_THRESHOLDS,
 )
 from src.exceptions import (
     APIRateLimitError,
@@ -392,6 +393,16 @@ class GeminiAgent:
             TimeoutError,
         )
 
+        async def _adaptive_backoff(attempt: int) -> None:
+            """
+            시도 횟수에 따라 동적으로 지연을 늘려주는 훅.
+            """
+            delay = min(10, 2 * attempt)
+            self.logger.warning(
+                "Retrying API call (attempt=%s, delay=%ss)", attempt, delay
+            )
+            await asyncio.sleep(delay)
+
         @retry(
             stop=stop_after_attempt(3),
             wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -402,9 +413,21 @@ class GeminiAgent:
             # RPM 제어 (시간 기반)
             if self._rate_limiter:
                 async with self._rate_limiter, self._semaphore:
-                    return await self._execute_api_call(model, prompt_text)
+                    try:
+                        return await self._execute_api_call(model, prompt_text)
+                    except retry_exceptions:
+                        stats = getattr(_execute_with_retry.retry, "statistics", {})  # type: ignore[attr-defined]
+                        attempt = stats.get("attempt_number", 1) or 1
+                        await _adaptive_backoff(attempt)
+                        raise
             async with self._semaphore:
-                return await self._execute_api_call(model, prompt_text)
+                try:
+                    return await self._execute_api_call(model, prompt_text)
+                except retry_exceptions:
+                    stats = getattr(_execute_with_retry.retry, "statistics", {})  # type: ignore[attr-defined]
+                    attempt = stats.get("attempt_number", 1) or 1
+                    await _adaptive_backoff(attempt)
+                    raise
 
         return await _execute_with_retry()
 
@@ -709,6 +732,16 @@ class GeminiAgent:
         if not self.config.budget_limit_usd:
             return
         total = self.get_total_cost()
+        usage_pct = self.get_budget_usage_percent()
+
+        for threshold, level in BUDGET_WARNING_THRESHOLDS:
+            if usage_pct >= threshold:
+                self.logger.warning(
+                    "Budget nearing limit: %s%% used (level=%s)",
+                    round(usage_pct, 2),
+                    level,
+                )
+
         if total > self.config.budget_limit_usd:
             raise BudgetExceededError(
                 f"Session cost ${total:.4f} exceeded budget ${self.config.budget_limit_usd:.2f}"
