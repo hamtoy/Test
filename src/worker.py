@@ -153,7 +153,7 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
             try:
                 session_ctx = graph_provider.session()
                 async with session_ctx as session:  # type: ignore[union-attr]
-                    # 가벼운 제약: 금지 패턴 필터링
+                    # 금지 패턴 + 간단한 제약 검증 (실제 규칙으로 확장 가능)
                     blocked = any(
                         bad in action.lower() for bad in ["drop ", "delete ", "remove "]
                     )
@@ -161,8 +161,16 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
                         return ValidationResult(
                             allowed=False, reason="blocked keyword", penalty=1.0
                         )
-                    # 향후: 에러 패턴/타입 기반 검증으로 확장 가능
-                    await session.run("RETURN 1")
+                    # Neo4j 제약 예시: 에러 패턴/쿼리 타입 검증
+                    result = await session.run(
+                        "RETURN coalesce($action CONTAINS 'error', false) AS bad",
+                        action=action,
+                    )
+                    data = await result.single()
+                    if data and data.get("bad"):
+                        return ValidationResult(
+                            allowed=False, reason="graph constraint", penalty=1.0
+                        )
             except Exception as exc:  # noqa: BLE001
                 return ValidationResult(allowed=False, reason=str(exc))
         return ValidationResult(allowed=True, penalty=penalty)
