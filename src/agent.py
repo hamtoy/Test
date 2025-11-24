@@ -228,18 +228,24 @@ class GeminiAgent:
         gen_config_param = cast(Any, generation_config)
 
         if cached_content:
-            return self._genai.GenerativeModel.from_cached_content(  # type: ignore[arg-type,call-overload]
+            model = self._genai.GenerativeModel.from_cached_content(  # type: ignore[arg-type,call-overload]
                 cached_content=cached_content,
                 generation_config=gen_config_param,
                 safety_settings=self.safety_settings,
             )
+            setattr(model, "_agent_system_instruction", system_prompt)
+            setattr(model, "_agent_response_schema", response_schema)
+            return model
 
-        return self._genai.GenerativeModel(  # type: ignore[arg-type,call-overload]
+        model = self._genai.GenerativeModel(  # type: ignore[arg-type,call-overload]
             model_name=self.config.model_name,
             system_instruction=system_prompt,
             generation_config=gen_config_param,
             safety_settings=self.safety_settings,
         )
+        setattr(model, "_agent_system_instruction", system_prompt)
+        setattr(model, "_agent_response_schema", response_schema)
+        return model
 
     def _local_cache_manifest_path(self) -> Path:
         base = Path(self.config.local_cache_dir)
@@ -472,6 +478,44 @@ class GeminiAgent:
         self, model: "genai.GenerativeModel", prompt_text: str
     ) -> str:
         """실제 API 호출 로직"""
+        if self.llm_provider:
+            start = time.perf_counter()
+            system_instruction = getattr(model, "_agent_system_instruction", None)
+            response_schema = getattr(model, "_agent_response_schema", None)
+            result = await self.llm_provider.generate_content_async(
+                prompt_text,
+                system_instruction=system_instruction,
+                temperature=self.config.temperature,
+                max_output_tokens=self.config.max_output_tokens,
+                response_schema=response_schema,
+                request_options={"timeout": self.config.timeout},
+            )
+            latency_ms = (time.perf_counter() - start) * 1000
+
+            prompt_tokens = result.usage.get("prompt_tokens", 0)
+            completion_tokens = result.usage.get("completion_tokens", 0)
+            self.total_input_tokens += prompt_tokens
+            self.total_output_tokens += completion_tokens
+
+            log_metrics(
+                self.logger,
+                latency_ms=latency_ms,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                cache_hits=self.cache_hits,
+                cache_misses=self.cache_misses,
+                api_retries=self.api_retries,
+                api_failures=self.api_failures,
+            )
+
+            finish_reason = result.finish_reason
+            if finish_reason and finish_reason.upper() not in {"STOP", "MAX_TOKENS"}:
+                safety_info = result.safety_ratings or ""
+                raise SafetyFilterError(
+                    f"Blocked by safety filter or other reason: {finish_reason}.{safety_info}"
+                )
+            return result.content
+
         protos = self._protos()
         self.logger.debug(
             f"API Call - Model: {self.config.model_name}, Prompt Length: {len(prompt_text)}"
