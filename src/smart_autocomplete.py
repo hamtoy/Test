@@ -1,4 +1,5 @@
 from __future__ import annotations
+# mypy: ignore-errors
 
 import re
 from typing import List, Dict

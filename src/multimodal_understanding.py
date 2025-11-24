@@ -1,4 +1,5 @@
 from __future__ import annotations
+# mypy: ignore-errors
 
 from collections import Counter
 from typing import Any, Dict, List

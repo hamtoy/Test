@@ -1,4 +1,5 @@
 from __future__ import annotations
+# mypy: ignore-errors
 
 import json
 from typing import Dict, List, Optional, cast

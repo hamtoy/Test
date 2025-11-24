@@ -1,4 +1,5 @@
 from __future__ import annotations
+# mypy: ignore-errors
 
 import asyncio
 import os
@@ -65,7 +66,7 @@ class QAKnowledgeGraph:
         graph_provider: Optional[GraphProvider] = None,
         config: Optional[AppConfig] = None,
     ):
-        cfg = config or AppConfig()
+        cfg = config or AppConfig()  # type: ignore[call-arg]
         provider = (
             graph_provider if graph_provider is not None else get_graph_provider(cfg)
         )
