@@ -19,6 +19,7 @@ dependencies = [
     "langchain-community>=0.4.1",
     "langchain-neo4j>=0.6.0",
     "langchain-openai>=1.0.3",
+    "pillow>=10.0.0",
 ]
 
 [project.optional-dependencies]
@@ -75,6 +76,4 @@ fail_under = 75
 show_missing = true
 
 [dependency-groups]
-dev = [
-    "pre-commit>=4.4.0",
-]
+dev = ["pre-commit>=4.4.0"]
