@@ -15,6 +15,8 @@ import google.generativeai as genai
 from google.api_core import exceptions as google_exceptions
 from dotenv import load_dotenv
 
+from src.logging_setup import log_metrics
+
 load_dotenv()
 
 
@@ -34,6 +36,13 @@ class GeminiModelClient:
         genai.configure(api_key=api_key)
         self.model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-3-pro-preview")
         self.model = genai.GenerativeModel(self.model_name)
+        genai_logger = getattr(genai, "_logging", None)
+        if genai_logger and getattr(genai_logger, "logger", None):
+            self.logger = genai_logger.logger
+        else:
+            import logging
+
+            self.logger = logging.getLogger("GeminiModelClient")
 
     def generate(
         self, prompt: str, temperature: float = 0.2, role: str | None = None
@@ -53,6 +62,14 @@ class GeminiModelClient:
                     max_output_tokens=2048,
                 ),
             )
+            if hasattr(response, "usage_metadata") and response.usage_metadata:
+                usage = response.usage_metadata
+                log_metrics(
+                    self.logger,  # type: ignore[attr-defined]
+                    latency_ms=None,
+                    prompt_tokens=usage.prompt_token_count,
+                    completion_tokens=usage.candidates_token_count,
+                )
             return response.text
         except google_exceptions.GoogleAPIError as e:
             return f"[생성 실패: {e}]"

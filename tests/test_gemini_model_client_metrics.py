@@ -1,0 +1,38 @@
+from __future__ import annotations
+
+import types
+
+import src.gemini_model_client as gmc
+
+
+def test_generate_logs_metrics(monkeypatch):
+    captured = {}
+
+    def _log_metrics(logger, **kwargs):
+        captured.update(kwargs)
+
+    monkeypatch.setattr("src.gemini_model_client.log_metrics", _log_metrics)
+    monkeypatch.setattr(gmc, "require_env", lambda name: "key")
+
+    class _Usage:
+        prompt_token_count = 10
+        candidates_token_count = 5
+
+    class _Resp:
+        def __init__(self):
+            self.text = "ok"
+            self.usage_metadata = _Usage()
+
+    class _Model:
+        def generate_content(self, prompt, generation_config=None):  # noqa: ARG002
+            return _Resp()
+
+    client = gmc.GeminiModelClient.__new__(gmc.GeminiModelClient)
+    client.model_name = "gemini-3-pro-preview"
+    client.model = _Model()
+    client.logger = types.SimpleNamespace(info=lambda *a, **k: None)
+
+    out = client.generate("hi")
+    assert out == "ok"
+    assert captured["prompt_tokens"] == 10
+    assert captured["completion_tokens"] == 5

@@ -119,6 +119,16 @@ pip install -e .
 pip install -e ".[dev]"
 ```
 
+### Neo4j 프로브(선택)
+
+대표 쿼리/벡터 검색 latency를 빠르게 점검하려면:
+
+```bash
+python scripts/neo4j_benchmark_stub.py
+```
+
+> `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`가 설정되어 있을 때만 실행되며, 미설정 시 안전하게 스킵됩니다.
+
 #### uv 사용
 
 ```bash
