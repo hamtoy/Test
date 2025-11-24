@@ -168,6 +168,7 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
 
     async def propose(_node):
         # 복수 브랜치 제안: LLM 제안 우선, 실패 시 기본값
+        candidates: list[str] = []
         if lats_agent:
             try:
                 ocr_text = Path(task.image_path).read_text(
@@ -178,11 +179,10 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
             if ocr_text:
                 try:
                     queries = await lats_agent.generate_query(ocr_text, None)
-                    if len(queries) >= 2:
-                        return queries[:3]
+                    candidates.extend([q for q in queries if q])
                 except Exception as exc:  # noqa: BLE001
                     logger.debug("LATS propose via agent failed: %s", exc)
-        if llm_provider:
+        if llm_provider and len(candidates) < 2:
             try:
                 prompt = (
                     "Propose 3 next actions (comma separated) for OCR post-processing. "
@@ -190,11 +190,23 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
                 )
                 resp = await llm_provider.generate_content_async(prompt=prompt)
                 actions = [a.strip() for a in resp.content.split(",") if a.strip()]
-                if len(actions) >= 2:
-                    return actions[:3]
+                candidates.extend(actions)
             except Exception as exc:  # noqa: BLE001
                 logger.debug("LLM propose failed, fallback to defaults: %s", exc)
-        return [f"clean:{task.request_id}", f"summarize:{task.request_id}"]
+        if not candidates:
+            candidates = [f"clean:{task.request_id}", f"summarize:{task.request_id}"]
+        # 상태 기반: 동일 액션 중복 제거, 최근 실패(있다면)와 다른 액션 우선
+        dedup = []
+        seen = set()
+        for act in candidates:
+            if act and act not in seen:
+                dedup.append(act)
+                seen.add(act)
+        if state_last := _node.state.last_failure_reason:
+            dedup = [a for a in dedup if state_last not in a] + [
+                a for a in dedup if state_last in a
+            ]
+        return dedup[:3]
 
     async def evaluate(node):
         result = await _process_task(task)
