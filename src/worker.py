@@ -9,7 +9,8 @@ from faststream.redis import RedisBroker
 from pydantic import BaseModel, Field
 
 from src.config import AppConfig
-from src.core.factory import get_llm_provider
+from src.agent import GeminiAgent
+from src.core.factory import get_graph_provider, get_llm_provider
 from src.core.interfaces import ProviderError, RateLimitError, SafetyBlockedError
 from src.lats_searcher import LATSSearcher, SearchState, ValidationResult
 
@@ -42,11 +43,20 @@ async def close_redis():
 
 # LLM provider (optional; requires llm_provider_enabled=True and valid creds)
 llm_provider = None
+lats_agent: Optional[GeminiAgent] = None
 if getattr(config, "llm_provider_enabled", False):
     try:
         llm_provider = get_llm_provider(config)
+        lats_agent = GeminiAgent(config)
     except Exception as e:  # noqa: BLE001
         logger.warning("LLM provider init failed; continuing without it: %s", e)
+
+# Graph provider (optional; used for validation when available)
+graph_provider = None
+try:
+    graph_provider = get_graph_provider(config)
+except Exception as e:  # noqa: BLE001
+    logger.debug("Graph provider init skipped: %s", e)
 
 RESULTS_DIR = Path("data/queue_results")
 
@@ -139,10 +149,31 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
         if action.startswith(("invalid", "forbidden")):
             return ValidationResult(allowed=False, reason="invalid action")
         penalty = 0.2 if action in state.focus_history else 0.0
+        if graph_provider:
+            try:
+                session_ctx = graph_provider.session()
+                async with session_ctx as session:  # type: ignore[union-attr]
+                    await session.run("RETURN 1")
+            except Exception as exc:  # noqa: BLE001
+                return ValidationResult(allowed=False, reason=str(exc))
         return ValidationResult(allowed=True, penalty=penalty)
 
     async def propose(_node):
         # 복수 브랜치 제안: LLM 제안 우선, 실패 시 기본값
+        if lats_agent:
+            try:
+                ocr_text = Path(task.image_path).read_text(
+                    encoding="utf-8", errors="ignore"
+                )
+            except OSError:
+                ocr_text = ""
+            if ocr_text:
+                try:
+                    queries = await lats_agent.generate_query(ocr_text, None)
+                    if len(queries) >= 2:
+                        return queries[:3]
+                except Exception as exc:  # noqa: BLE001
+                    logger.debug("LATS propose via agent failed: %s", exc)
         if llm_provider:
             try:
                 prompt = (
@@ -164,7 +195,19 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
         node.result = result
         # 간단한 점수: clean 우선, LLM 평가 시 점수 교체
         base_score = 0.9 if node.action and node.action.startswith("clean") else 0.6
-        if llm_provider:
+        if lats_agent and node.action:
+            try:
+                eval_result = await lats_agent.evaluate_responses(
+                    ocr_text=result.get("ocr_text", ""),
+                    query=node.action,
+                    candidates={"A": result.get("ocr_text", "")},
+                    cached_content=None,
+                )
+                if eval_result:
+                    base_score = max(base_score, 1.0)
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("LATS evaluate via agent failed: %s", exc)
+        elif llm_provider:
             try:
                 rating = await llm_provider.generate_content_async(
                     prompt=(
