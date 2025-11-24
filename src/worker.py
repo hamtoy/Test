@@ -64,6 +64,17 @@ async def check_rate_limit(key: str, limit: int, window: int) -> bool:
     return current <= limit
 
 
+async def ensure_redis_ready() -> None:
+    """Ping Redis once; raise if unavailable."""
+    try:
+        pong = await broker.redis.ping()
+        if pong is not True:
+            raise RuntimeError("Redis ping failed")
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Redis not available: %s", exc)
+        raise
+
+
 async def _process_task(task: OCRTask) -> dict:
     """
     Minimal OCR/LLM processing stub.
@@ -98,6 +109,7 @@ async def _process_task(task: OCRTask) -> dict:
 
 @broker.subscriber("ocr_task", concurrency=1)  # Low concurrency for pilot
 async def handle_ocr_task(task: OCRTask):
+    await ensure_redis_ready()
     logger.info(f"Received task: {task.request_id}")
 
     allowed = await check_rate_limit("global_rate_limit", 10, 60)

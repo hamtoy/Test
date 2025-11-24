@@ -252,14 +252,41 @@ class QAKnowledgeGraph:
     def graph_session(self):
         """
         동기 Neo4j 세션 헬퍼.
-        - _graph가 없을 때는 None을 yield하여 호출자가 판단.
+        - _graph가 있으면 동기 세션 반환
+        - _graph_provider가 있으면 별도 이벤트 루프로 async 세션을 동기화
+        - 모두 없으면 None yield
         """
         if self._graph:
             with self._graph.session() as session:
                 yield session
-        else:
-            logger.debug("graph_session: graph not available; yielding None")
-            yield None
+            return
+
+        provider = self._graph_provider
+        if provider:
+            # 동기 컨텍스트에서 async provider를 동기화; 실행 중인 루프가 있으면 fallback
+            try:
+                loop = asyncio.get_running_loop()
+                if loop.is_running():
+                    logger.debug(
+                        "graph_session: event loop already running; skipping provider session"
+                    )
+                    yield None
+                    return
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+            session_cm = provider.session()
+            session = loop.run_until_complete(session_cm.__aenter__())
+            try:
+                yield session
+            finally:
+                loop.run_until_complete(session_cm.__aexit__(None, None, None))
+                loop.close()
+            return
+
+        logger.debug("graph_session: graph not available; yielding None")
+        yield None
 
 
 if __name__ == "__main__":
