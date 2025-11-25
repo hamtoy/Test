@@ -393,7 +393,6 @@ def main() -> None:
         builder.link_rules_to_constraints()
         builder.link_rules_to_query_types()
         builder.extract_examples()
-        builder.extract_examples()
         builder.link_examples_to_rules()
         builder.create_error_patterns()
         builder.create_best_practices()
