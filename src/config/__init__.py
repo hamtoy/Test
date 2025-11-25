@@ -1,22 +1,64 @@
-"""Configuration package - centralized settings management.
+"""Configuration package - centralized settings management."""
+from src.config.settings import AppConfig
+from src.config.constants import (
+    ERROR_MESSAGES,
+    GEMINI_API_KEY_LENGTH,
+    MIN_CACHE_TOKENS,
+    LOG_MESSAGES,
+    USER_INTERRUPT_MESSAGE,
+    PRICING_TIERS,
+    DEFAULT_RPM_LIMIT,
+    DEFAULT_RPM_WINDOW_SECONDS,
+    BUDGET_WARNING_THRESHOLDS,
+    PANEL_TITLE_QUERIES,
+    PANEL_TITLE_BUDGET,
+    PANEL_TITLE_COST,
+    PROMPT_EDIT_CANDIDATES,
+    COST_PANEL_TEMPLATE,
+    PROGRESS_WAITING_TEMPLATE,
+    PROGRESS_DONE_TEMPLATE,
+    PROGRESS_RESTORED_TEMPLATE,
+    PROGRESS_PROCESSING_TEMPLATE,
+    PROGRESS_FAILED_TEMPLATE,
+    PANEL_TURN_TITLE_TEMPLATE,
+    PANEL_TURN_BODY_TEMPLATE,
+    SENSITIVE_PATTERN,
+)
+from src.config.exceptions import (
+    APIRateLimitError,
+    BudgetExceededError,
+    SafetyFilterError,
+    ValidationFailedError,
+    CacheCreationError,
+)
 
-Temporary backward compatibility: Re-exports from parent-level config module.
-This will be replaced in Phase 3-B with proper package structure.
-"""
-
-import importlib.util
-from pathlib import Path
-
-# Explicitly load the config.py module file from parent directory
-_config_module_path = Path(__file__).parent.parent / "config.py"
-_spec = importlib.util.spec_from_file_location("_src_config_module", _config_module_path)
-if _spec and _spec.loader:
-    _config_module = importlib.util.module_from_spec(_spec)
-    _spec.loader.exec_module(_config_module)
-    
-    # Re-export AppConfig
-    AppConfig = _config_module.AppConfig
-    
-    __all__ = ["AppConfig"]
-else:
-    raise ImportError(f"Could not load config module from {_config_module_path}")
+__all__ = [
+    "AppConfig",
+    "ERROR_MESSAGES",
+    "GEMINI_API_KEY_LENGTH",
+    "MIN_CACHE_TOKENS",
+    "LOG_MESSAGES",
+    "USER_INTERRUPT_MESSAGE",
+    "PRICING_TIERS",
+    "DEFAULT_RPM_LIMIT",
+    "DEFAULT_RPM_WINDOW_SECONDS",
+    "BUDGET_WARNING_THRESHOLDS",
+    "PANEL_TITLE_QUERIES",
+    "PANEL_TITLE_BUDGET",
+    "PANEL_TITLE_COST",
+    "PROMPT_EDIT_CANDIDATES",
+    "COST_PANEL_TEMPLATE",
+    "PROGRESS_WAITING_TEMPLATE",
+    "PROGRESS_DONE_TEMPLATE",
+    "PROGRESS_RESTORED_TEMPLATE",
+    "PROGRESS_PROCESSING_TEMPLATE",
+    "PROGRESS_FAILED_TEMPLATE",
+    "PANEL_TURN_TITLE_TEMPLATE",
+    "PANEL_TURN_BODY_TEMPLATE",
+    "SENSITIVE_PATTERN",
+    "APIRateLimitError",
+    "BudgetExceededError",
+    "SafetyFilterError",
+    "ValidationFailedError",
+    "CacheCreationError",
+]
