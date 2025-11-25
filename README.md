@@ -567,7 +567,7 @@ results = await asyncio.gather(*[
 ### 1. 그래프 스키마 구축
 
 ```bash
-python src/graph_schema_builder.py
+python -m src.graph_schema_builder
 ```
 
 Notion 가이드에서 Rule/Constraint/Example을 추출하여 Neo4j 지식 그래프를 생성합니다.
@@ -583,7 +583,7 @@ MATCH (n) RETURN labels(n), count(n)
 ### 3. RAG 시스템 테스트
 
 ```bash
-python src/qa_rag_system.py
+python -m src.qa_rag_system
 ```
 
 벡터 검색 기반 규칙 조회 및 제약 조건/모범 사례를 확인합니다.
