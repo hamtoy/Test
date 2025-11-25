@@ -22,7 +22,8 @@ async def load_file_async(file_path: Path) -> str:
         ValueError: 파일이 비어있을 경우
     """
     try:
-        async with aiofiles.open(file_path, mode="r", encoding="utf-8") as f:
+        # Use utf-8-sig to automatically handle UTF-8 BOM (common on Windows)
+        async with aiofiles.open(file_path, mode="r", encoding="utf-8-sig") as f:
             content = await f.read()
             if not content.strip():
                 raise ValueError(f"File is empty: {file_path}")

@@ -77,20 +77,24 @@ async def load_input_data(
         if isinstance(data, dict) and data:
             candidates = data
             logger.info(
-                f"Format Detection: Valid JSON detected in '{cand_filename}' ({len(candidates)} candidates)"
+                f"Format Detection: Valid JSON in '{cand_filename}' "
+                f"({len(candidates)} candidates)"
             )
         else:
             logger.warning(
-                f"Format Detection: JSON parsed but empty or invalid type in '{cand_filename}'"
+                f"Format Detection: JSON parsed but empty/invalid type "
+                f"in '{cand_filename}'"
             )
     except json.JSONDecodeError as e:
-        logger.info(
-            f"Format Detection: JSON parse failed ({e}). Trying Raw Text format..."
+        logger.warning(
+            f"Format Detection: JSON parse failed in '{cand_filename}' "
+            f"at line {e.lineno}, column {e.colno}: {e.msg}. "
+            f"Trying Raw Text format..."
         )
     except (TypeError, ValueError) as e:
         logger.warning(f"Format Detection: Invalid JSON structure ({e}).")
     except Exception as e:  # noqa: BLE001
-        logger.warning(f"Format Detection: Unexpected error during JSON parse: {e}")
+        logger.warning(f"Format Detection: Unexpected JSON parse error: {e}")
 
     # JSON 파싱에 실패했거나 결과가 없으면 Regex 파싱 실행
     if not candidates:

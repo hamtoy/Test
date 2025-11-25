@@ -63,3 +63,21 @@ C: Answer C
     assert candidates["A"] == "Answer A"
     assert candidates["B"] == "Answer B"
     assert candidates["C"] == "Answer C"
+
+
+@pytest.mark.asyncio
+async def test_load_input_data_with_utf8_bom(tmp_path):
+    """Test that files with UTF-8 BOM are handled correctly (Windows compat)."""
+    # Write OCR file with UTF-8 BOM
+    ocr_file = tmp_path / "ocr.txt"
+    ocr_file.write_bytes(b"\xef\xbb\xbfSample OCR with BOM")
+
+    # Write JSON file with UTF-8 BOM
+    cand_file = tmp_path / "cand.json"
+    json_content = '{"A": "Answer A", "B": "Answer B", "C": "Answer C"}'
+    cand_file.write_bytes(b"\xef\xbb\xbf" + json_content.encode("utf-8"))
+
+    ocr_text, candidates = await load_input_data(tmp_path, "ocr.txt", "cand.json")
+
+    assert ocr_text == "Sample OCR with BOM"
+    assert candidates == {"A": "Answer A", "B": "Answer B", "C": "Answer C"}
