@@ -143,7 +143,7 @@ async def test_main_keep_progress_flag(monkeypatch, tmp_path):
         AsyncMock(return_value=("ocr", {"A": "a", "B": "b", "C": "c"})),
     )
     monkeypatch.setattr(main_module, "execute_workflow", execute_spy)
-    monkeypatch.setattr(main_module, "_render_cost_panel", lambda agent: "panel")
+    monkeypatch.setattr(main_module, "render_cost_panel", lambda agent: "panel")
     monkeypatch.setattr(main_module.console, "print", lambda *args, **kwargs: None)
     monkeypatch.setattr(main_module, "write_cache_stats", lambda *args, **kwargs: None)
     monkeypatch.setattr(
@@ -228,7 +228,7 @@ async def test_main_cache_stats_warning(monkeypatch, tmp_path):
         AsyncMock(return_value=("ocr", {"A": "a", "B": "b", "C": "c"})),
     )
     monkeypatch.setattr(main_module, "execute_workflow", AsyncMock(return_value=[]))
-    monkeypatch.setattr(main_module, "_render_cost_panel", lambda agent: "panel")
+    monkeypatch.setattr(main_module, "render_cost_panel", lambda agent: "panel")
     monkeypatch.setattr(main_module.console, "print", lambda *args, **kwargs: None)
     monkeypatch.setattr(
         main_module,
@@ -316,7 +316,7 @@ async def test_main_auto_mode_passes_intent(monkeypatch, tmp_path):
         AsyncMock(return_value=("ocr", {"A": "a"})),
     )
     monkeypatch.setattr(main_module, "execute_workflow", execute_spy)
-    monkeypatch.setattr(main_module, "_render_cost_panel", lambda agent: "panel")
+    monkeypatch.setattr(main_module, "render_cost_panel", lambda agent: "panel")
     monkeypatch.setattr(main_module.console, "print", lambda *args, **kwargs: None)
     monkeypatch.setattr(main_module, "write_cache_stats", lambda *args, **kwargs: None)
     monkeypatch.setattr(
