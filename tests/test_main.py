@@ -148,6 +148,7 @@ async def test_execute_workflow_interactive_skip_reload(mock_agent, mock_logger)
 @pytest.mark.asyncio
 async def test_main_analyze_cache_quick_path(monkeypatch, tmp_path):
     import src.main as main_module
+    from src.cli import CLIArgs
 
     template_dir = tmp_path / "templates"
     input_dir = tmp_path / "inputs"
@@ -203,19 +204,23 @@ async def test_main_analyze_cache_quick_path(monkeypatch, tmp_path):
         lambda summary: calls.setdefault("printed", summary),
     )
     monkeypatch.setattr(
-        main_module.argparse.ArgumentParser,
+        main_module,
         "parse_args",
-        lambda self: SimpleNamespace(
+        lambda: CLIArgs(
             mode="AUTO",
             interactive=False,
             ocr_file="ocr.txt",
             cand_file="cand.json",
             intent=None,
             checkpoint_file="checkpoint.jsonl",
+            keep_progress=False,
+            no_cost_panel=False,
+            no_budget_panel=False,
             resume=False,
             log_level="INFO",
             analyze_cache=True,
-            keep_progress=False,
+            integrated_pipeline=False,
+            pipeline_meta="examples/session_input.json",
         ),
     )
 
@@ -227,6 +232,7 @@ async def test_main_analyze_cache_quick_path(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_main_keep_progress_flag(monkeypatch, tmp_path):
     import src.main as main_module
+    from src.cli import CLIArgs
 
     template_dir = tmp_path / "templates"
     input_dir = tmp_path / "inputs"
@@ -282,19 +288,23 @@ async def test_main_keep_progress_flag(monkeypatch, tmp_path):
     monkeypatch.setattr(main_module.console, "print", lambda *args, **kwargs: None)
     monkeypatch.setattr(main_module, "write_cache_stats", lambda *args, **kwargs: None)
     monkeypatch.setattr(
-        main_module.argparse.ArgumentParser,
+        main_module,
         "parse_args",
-        lambda self: SimpleNamespace(
+        lambda: CLIArgs(
             mode="AUTO",
             interactive=False,
             ocr_file="ocr.txt",
             cand_file="cand.json",
             intent=None,
             checkpoint_file="checkpoint.jsonl",
+            keep_progress=True,
+            no_cost_panel=False,
+            no_budget_panel=False,
             resume=False,
             log_level="INFO",
             analyze_cache=False,
-            keep_progress=True,
+            integrated_pipeline=False,
+            pipeline_meta="examples/session_input.json",
         ),
     )
 
@@ -308,6 +318,7 @@ async def test_main_keep_progress_flag(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_main_cache_stats_warning(monkeypatch, tmp_path):
     import src.main as main_module
+    from src.cli import CLIArgs
 
     template_dir = tmp_path / "templates"
     input_dir = tmp_path / "inputs"
@@ -361,19 +372,23 @@ async def test_main_cache_stats_warning(monkeypatch, tmp_path):
     monkeypatch.setattr(main_module, "_render_cost_panel", lambda agent: "panel")
     monkeypatch.setattr(main_module.console, "print", lambda *args, **kwargs: None)
     monkeypatch.setattr(
-        main_module.argparse.ArgumentParser,
+        main_module,
         "parse_args",
-        lambda self: SimpleNamespace(
+        lambda: CLIArgs(
             mode="AUTO",
             interactive=False,
             ocr_file="ocr.txt",
             cand_file="cand.json",
             intent=None,
             checkpoint_file="checkpoint.jsonl",
+            keep_progress=False,
+            no_cost_panel=False,
+            no_budget_panel=False,
             resume=False,
             log_level="INFO",
             analyze_cache=False,
-            keep_progress=False,
+            integrated_pipeline=False,
+            pipeline_meta="examples/session_input.json",
         ),
     )
     monkeypatch.setattr(
@@ -390,6 +405,7 @@ async def test_main_cache_stats_warning(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_main_auto_mode_passes_intent(monkeypatch, tmp_path):
     import src.main as main_module
+    from src.cli import CLIArgs
 
     template_dir = tmp_path / "templates"
     input_dir = tmp_path / "inputs"
@@ -445,21 +461,23 @@ async def test_main_auto_mode_passes_intent(monkeypatch, tmp_path):
     monkeypatch.setattr(main_module.console, "print", lambda *args, **kwargs: None)
     monkeypatch.setattr(main_module, "write_cache_stats", lambda *args, **kwargs: None)
     monkeypatch.setattr(
-        main_module.argparse.ArgumentParser,
+        main_module,
         "parse_args",
-        lambda self: SimpleNamespace(
+        lambda: CLIArgs(
             mode="AUTO",
             interactive=False,
             ocr_file="ocr.txt",
             cand_file="cand.json",
             intent="요약",
             checkpoint_file="checkpoint.jsonl",
-            resume=False,
-            log_level="INFO",
-            analyze_cache=False,
             keep_progress=False,
             no_cost_panel=False,
             no_budget_panel=False,
+            resume=False,
+            log_level="INFO",
+            analyze_cache=False,
+            integrated_pipeline=False,
+            pipeline_meta="examples/session_input.json",
         ),
     )
 
@@ -472,6 +490,7 @@ async def test_main_auto_mode_passes_intent(monkeypatch, tmp_path):
 @pytest.mark.asyncio
 async def test_main_missing_templates_exits(monkeypatch, tmp_path):
     import src.main as main_module
+    from src.cli import CLIArgs
 
     template_dir = tmp_path / "missing"
     input_dir = tmp_path / "inputs"
@@ -509,19 +528,23 @@ async def test_main_missing_templates_exits(monkeypatch, tmp_path):
     monkeypatch.setattr(main_module, "GeminiAgent", MagicMock())
     monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)
     monkeypatch.setattr(
-        main_module.argparse.ArgumentParser,
+        main_module,
         "parse_args",
-        lambda self: SimpleNamespace(
+        lambda: CLIArgs(
             mode="AUTO",
             interactive=False,
             ocr_file="ocr.txt",
             cand_file="cand.json",
             intent=None,
             checkpoint_file="checkpoint.jsonl",
+            keep_progress=False,
+            no_cost_panel=False,
+            no_budget_panel=False,
             resume=False,
             log_level="INFO",
             analyze_cache=False,
-            keep_progress=False,
+            integrated_pipeline=False,
+            pipeline_meta="examples/session_input.json",
         ),
     )
 

@@ -663,7 +663,7 @@ class GeminiAgent:
                 "Query JSON Parse Failed: %s. Response: %s...", e, cleaned_response[:200]
             )
             return []
-        except (TypeError, KeyError) as e:
+        except (TypeError, KeyError, AttributeError) as e:
             self.logger.error("Unexpected error in query parsing: %s", e)
             return []
 

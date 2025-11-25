@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import argparse
 import asyncio
 import logging
 import os
@@ -56,6 +55,11 @@ from src.constants import (
     PROMPT_EDIT_CANDIDATES,
     USER_INTERRUPT_MESSAGE,
 )
+
+# ============================================================================
+# CLI Module
+# ============================================================================
+from src.cli import parse_args, resolve_checkpoint_path
 
 # ============================================================================
 # Models & Exceptions
@@ -638,110 +642,18 @@ async def execute_workflow(
 
 
 async def main():
-    """Main workflow orchestrator with professional argument parsing"""
-    parser = argparse.ArgumentParser(
-        description="🚀 Advanced Gemini Workflow: AI-powered Q&A Evaluation System",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,  # Auto-show defaults
-    )
-
-    # 1. Core Configuration
-    core_group = parser.add_argument_group("Core Configuration")
-    core_group.add_argument(
-        "--mode",
-        type=str,
-        choices=["AUTO", "CHAT"],
-        default="AUTO",
-        help="Execution mode",
-    )
-    core_group.add_argument(
-        "--interactive",
-        action="store_true",
-        help="Force interactive mode (ask for confirmation) even in AUTO mode",
-    )
-
-    io_group = parser.add_argument_group("Input/Output")
-    io_group.add_argument(
-        "--ocr-file",
-        type=str,
-        default="input_ocr.txt",
-        help="OCR input filename (relative to data/inputs by default)",
-    )
-    io_group.add_argument(
-        "--cand-file",
-        type=str,
-        default="input_candidates.json",
-        help="Candidate answers filename (relative to data/inputs by default)",
-    )
-    core_group.add_argument(
-        "--intent",
-        type=str,
-        default=None,
-        help="Optional user intent to guide query generation",
-    )
-    io_group.add_argument(
-        "--checkpoint-file",
-        type=str,
-        default="checkpoint.jsonl",
-        help="Checkpoint JSONL path (relative paths resolve under data/outputs)",
-    )
-    debug_group = parser.add_argument_group("Debugging")
-    debug_group.add_argument(
-        "--keep-progress",
-        action="store_true",
-        help="Keep progress bar visible after completion (for debugging)",
-    )
-    debug_group.add_argument(
-        "--no-cost-panel",
-        action="store_true",
-        help="Skip cost panel summary output",
-    )
-    debug_group.add_argument(
-        "--no-budget-panel",
-        action="store_true",
-        help="Skip budget panel summary output",
-    )
-    core_group.add_argument(
-        "--resume",
-        action="store_true",
-        help="Resume workflow using checkpoint file (skips completed queries)",
-    )
-    core_group.add_argument(
-        "--log-level",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        default=None,
-        help="Override log level (otherwise from LOG_LEVEL env)",
-    )
-    core_group.add_argument(
-        "--analyze-cache",
-        action="store_true",
-        help="Print cache stats summary and exit",
-    )
-    core_group.add_argument(
-        "--integrated-pipeline",
-        action="store_true",
-        help="Run integrated QA pipeline (graph + validation) instead of the standard workflow",
-    )
-    core_group.add_argument(
-        "--pipeline-meta",
-        type=str,
-        default="examples/session_input.json",
-        help="Path to JSON metadata file for integrated pipeline mode",
-    )
-
-    # ... (rest of arguments)
-
-    args = parser.parse_args()
+    """Main workflow orchestrator using CLI module for argument parsing"""
+    # Parse arguments using cli.py module
+    args = parse_args()
 
     # ... (logging setup)
     logger, log_listener = setup_logging(log_level=args.log_level)
     start_time = datetime.now(timezone.utc)
 
     # Integrated pipeline quick path (skip Gemini workflow)
-    if getattr(args, "integrated_pipeline", False):
+    if args.integrated_pipeline:
         try:
-            meta_path = Path(
-                getattr(args, "pipeline_meta", "examples/session_input.json")
-            )
+            meta_path = Path(args.pipeline_meta)
             if not meta_path.is_absolute():
                 meta_path = Path(__file__).resolve().parents[1] / meta_path
             from src.integrated_qa_pipeline import run_integrated_pipeline
@@ -803,9 +715,7 @@ async def main():
         # 워크플로우 실행 (모드에 따라 interactive 설정)
         # CHAT 모드이거나 --interactive 플래그가 있으면 대화형 모드
         is_interactive = (args.mode == "CHAT") or args.interactive
-        checkpoint_path = Path(args.checkpoint_file)
-        if not checkpoint_path.is_absolute():
-            checkpoint_path = config.output_dir / checkpoint_path
+        checkpoint_path = resolve_checkpoint_path(config.output_dir, args.checkpoint_file)
 
         await execute_workflow(
             agent,
@@ -825,11 +735,9 @@ async def main():
 
         # 비용 정보를 Panel로 표시
         console.print()
-        no_budget_panel = getattr(args, "no_budget_panel", False)
-        no_cost_panel = getattr(args, "no_cost_panel", False)
-        if not no_budget_panel:
+        if not args.no_budget_panel:
             console.print(_render_budget_panel(agent))
-        if not no_cost_panel:
+        if not args.no_cost_panel:
             console.print(_render_cost_panel(agent))
 
         # Cache stats persistence: append JSONL entry with small retention window
@@ -860,7 +768,7 @@ async def main():
         BudgetExceededError,
     ) as e:
         logger.exception(LOG_MESSAGES["workflow_failed"].format(error=e))
-    except (OSError, RuntimeError) as e:
+    except Exception as e:  # noqa: BLE001 - Top-level handler for unexpected errors
         logger.exception(LOG_MESSAGES["workflow_failed"].format(error=e))
     finally:
         # 로그 리스너 종료 (남은 로그 플러시)
@@ -895,7 +803,7 @@ if __name__ == "__main__":
         # from rich.console import Console # Already imported at the top
         console.print(USER_INTERRUPT_MESSAGE)
         sys.exit(130)
-    except (OSError, RuntimeError, ValueError) as e:
+    except Exception as e:  # noqa: BLE001 - Top-level handler must catch all exceptions
         logging.critical("Critical error: %s", e, exc_info=True)
         sys.exit(1)
 
