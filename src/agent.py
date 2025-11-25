@@ -427,7 +427,7 @@ class GeminiAgent:
             raise CacheCreationError(
                 "Rate limit exceeded during cache creation: %s" % e
             ) from e
-        except Exception as e:
+        except (ValueError, RuntimeError, OSError) as e:
             self.logger.error("Failed to create cache: %s", e)
             raise CacheCreationError("Failed to create cache: %s" % e) from e
 
