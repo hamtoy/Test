@@ -44,14 +44,35 @@ def parse_raw_candidates(text: str) -> Dict[str, str]:
         content = match.group(2).strip()
         candidates[key] = content
 
-    # 구조화된 후보를 찾지 못한 경우 (Fallback)
-    if not candidates:
-        import logging
+    import logging
+    import re as _re
 
+    def _split_chunks(raw: str) -> dict[str, str]:
+        chunks = [
+            chunk.strip()
+            for chunk in _re.split(r"\n-{3,}\n|\n{2,}", raw)
+            if chunk.strip()
+        ]
+        if len(chunks) >= 2:
+            labels = ["A", "B", "C"]
+            return {lbl: chunk for lbl, chunk in zip(labels, chunks)}
+        return {}
+
+    # 구조화된 후보를 찾지 못한 경우 먼저 구분자로 split 시도 후 최종 fallback
+    if not candidates:
+        split_candidates = _split_chunks(text)
+        if split_candidates:
+            return split_candidates
         logging.warning(
             "No structured candidates found. Treating entire text as Candidate A."
         )
         return {"A": text.strip()}
+
+    # 추가 보조: A만 있는 경우, 구분자(--- 혹은 빈 줄 2개 이상)로 나눠 A/B/C 추론
+    if set(candidates.keys()) == {"A"}:
+        split_candidates = _split_chunks(text)
+        if split_candidates:
+            candidates = split_candidates
 
     return candidates
 

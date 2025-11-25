@@ -63,6 +63,14 @@ def test_parse_raw_candidates_with_fallback(caplog):
     assert structured == {"A": "first", "B": "second"}
 
 
+def test_parse_raw_candidates_auto_split_three():
+    raw = "alpha\n\n---\n\nbravo text\n\n---\n\ncharlie content"
+    parsed = utils.parse_raw_candidates(raw)
+    assert parsed["A"].startswith("alpha")
+    assert parsed["B"].startswith("bravo")
+    assert parsed["C"].startswith("charlie")
+
+
 @pytest.mark.asyncio
 async def test_load_checkpoint_ignores_bad_lines(tmp_path: Path):
     path = tmp_path / "checkpoint.jsonl"
