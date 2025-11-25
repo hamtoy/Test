@@ -63,3 +63,18 @@ coverage.xml
 # Profiling
 profiling_results/
 
+# Cache
+.cache/
+cache_stats.jsonl
+*.jsonl
+!data/inputs/*.jsonl
+
+# Analysis outputs
+mypy_output*.txt
+coverage_report.txt
+performance_baseline.txt
+output.txt
+
+# IDE additional
+*.code-workspace
+
