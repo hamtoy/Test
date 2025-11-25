@@ -135,10 +135,13 @@ python scripts/neo4j_benchmark_stub.py
 > `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`가 설정되어 있을 때만 실행되며, 미설정 시 안전하게 스킵됩니다.
 >
 > 예시 출력:
+>
 > ```
 > Neo4j credentials missing; skipping probe.
 > ```
+>
 > 또는 벡터 스토어가 있을 경우:
+>
 > ```
 > constraints: 42.1 ms, rows=5
 > best_practices: 35.7 ms, rows=3
@@ -298,7 +301,9 @@ python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_ca
 
 # 통합 파이프라인 (그래프 + 세션 검증)
 python -m src.main --integrated-pipeline --pipeline-meta examples/session_input.json
-```
+
+# 통합 파이프라인 (그래프 + 세션 검증)
+python -m src.main --integrated-pipeline --pipeline-meta examples/session_input.json
 
 ## 명령줄 옵션
 
@@ -586,7 +591,7 @@ python src/qa_rag_system.py
 ### 4. 통합 파이프라인 실행
 
 ```bash
-python src/integrated_qa_pipeline.py
+python -m src.main --integrated-pipeline --pipeline-meta examples/session_input.json
 ```
 
 전체 QA 세션 생성 및 검증을 실행합니다.
