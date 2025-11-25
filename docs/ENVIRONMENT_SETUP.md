@@ -69,7 +69,7 @@ pre-commit install
 
 ```bash
 pre-commit run --all-files
-uv run pytest tests/ --cov=src --cov-fail-under=75
+uv run pytest tests/ --cov=src --cov-fail-under=80
 ```
 
 ## 추가 정보

@@ -208,7 +208,7 @@ pre-commit run --all-files
 
 ```bash
 pre-commit run --all-files        # ruff + ruff-format + mypy
-uv run pytest tests/ --cov=src --cov-fail-under=75
+uv run pytest tests/ --cov=src --cov-fail-under=80
 ```
 
 ### CI 파이프라인
@@ -218,7 +218,7 @@ GitHub Actions에서 자동으로 실행되는 검증 단계:
 1. `ruff check` - 린트 검사
 2. `ruff format --check` - 포맷 검사
 3. `mypy` - 타입 체크
-4. `pytest --cov=src --cov-fail-under=75` - 테스트 및 커버리지
+4. `pytest --cov=src --cov-fail-under=80` - 테스트 및 커버리지
 
 로컬에서 동일하게 실행하려면 `pre-commit run --all-files` 사용
 
@@ -528,7 +528,7 @@ results = await asyncio.gather(*[
 ## FAQ
 
 - **GEMINI_API_KEY 형식 오류가 뜹니다.** → `AIza`로 시작하고 총 39자여야 합니다. `.env`에서 공백/따옴표가 섞여 있지 않은지 확인하세요.
-- **커버리지 기준은 얼마인가요?** → CI에서 `--cov-fail-under=75`를 사용합니다. 로컬에서도 동일하게 실행됩니다.
+- **커버리지 기준은 얼마인가요?** → CI에서 `--cov-fail-under=80`을 사용합니다. 로컬에서도 동일하게 실행됩니다.
 - **캐시 통계 파일은 어디에 저장되나요?** → 기본 `cache_stats.jsonl`이며, `CACHE_STATS_FILE`로 경로를, `CACHE_STATS_MAX_ENTRIES`로 보존 개수를 설정할 수 있습니다.
 
 ## 구현된 기능
