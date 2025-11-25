@@ -4,6 +4,7 @@
 This module contains argument parsing logic extracted from main.py
 following the Single Responsibility Principle (SRP).
 """
+
 import argparse
 from dataclasses import dataclass
 from pathlib import Path
