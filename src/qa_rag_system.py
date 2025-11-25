@@ -6,13 +6,12 @@ import logging
 import os
 import time
 import weakref
-import atexit
 from contextlib import contextmanager, suppress
 from typing import Dict, Any, List, Optional, cast, no_type_check
 
 import google.generativeai as genai
 from dotenv import load_dotenv
-from neo4j import GraphDatabase, Driver
+from neo4j import GraphDatabase
 from neo4j.exceptions import Neo4jError
 from langchain_core.embeddings import Embeddings
 
@@ -20,28 +19,11 @@ from checks.validate_session import validate_turns
 from src.core.interfaces import GraphProvider
 from src.core.factory import get_graph_provider
 from src.config import AppConfig
+from src.neo4j_utils import SafeDriver, create_sync_driver
 
 logger = logging.getLogger(__name__)
 
 load_dotenv()
-
-
-class _SafeDriver:
-    """Wrapper to ensure Neo4j sync driver is always closed."""
-
-    def __init__(self, driver: Driver):
-        self._driver = driver
-
-    def __getattr__(self, name: str):
-        return getattr(self._driver, name)
-
-    def close(self) -> None:
-        if self._driver:
-            self._driver.close()
-
-    def __del__(self):
-        with suppress(Exception):
-            self.close()
 
 
 def require_env(var: str) -> str:
@@ -76,9 +58,6 @@ class QAKnowledgeGraph:
     - 세션 구조 검증
     """
 
-    _graph_provider: Optional[GraphProvider] = None
-    _graph: Optional[Driver] = None
-
     def __init__(
         self,
         neo4j_uri: Optional[str] = None,
@@ -92,9 +71,8 @@ class QAKnowledgeGraph:
             graph_provider if graph_provider is not None else get_graph_provider(cfg)
         )
         self._graph_provider: Optional[GraphProvider] = provider
-        self._graph: Optional[Driver] = None
+        self._graph: Optional[SafeDriver] = None
         self._graph_finalizer: Optional[weakref.finalize] = None
-        self._atexit_registered = False
 
         if provider is None:
             self.neo4j_uri = neo4j_uri or require_env("NEO4J_URI")
@@ -102,15 +80,14 @@ class QAKnowledgeGraph:
             self.neo4j_password = neo4j_password or require_env("NEO4J_PASSWORD")
 
             try:
-                self._graph = _SafeDriver(
-                    GraphDatabase.driver(
-                        self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
-                    )
+                self._graph = create_sync_driver(
+                    self.neo4j_uri,
+                    self.neo4j_user,
+                    self.neo4j_password,
+                    register_atexit=True,
+                    graph_db_factory=GraphDatabase.driver,
                 )
                 self._graph_finalizer = weakref.finalize(self._graph, self._graph.close)
-                if not self._atexit_registered:
-                    atexit.register(self.close)
-                    self._atexit_registered = True
             except Neo4jError as e:
                 raise RuntimeError(f"Neo4j 연결 실패: {e}")
         else:
@@ -119,15 +96,14 @@ class QAKnowledgeGraph:
             self.neo4j_user = neo4j_user or os.getenv("NEO4J_USER")
             self.neo4j_password = neo4j_password or os.getenv("NEO4J_PASSWORD")
             if self.neo4j_uri and self.neo4j_user and self.neo4j_password:
-                self._graph = _SafeDriver(
-                    GraphDatabase.driver(
-                        self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
-                    )
+                self._graph = create_sync_driver(
+                    self.neo4j_uri,
+                    self.neo4j_user,
+                    self.neo4j_password,
+                    register_atexit=True,
+                    graph_db_factory=GraphDatabase.driver,
                 )
                 self._graph_finalizer = weakref.finalize(self._graph, self._graph.close)
-                if not self._atexit_registered:
-                    atexit.register(self.close)
-                    self._atexit_registered = True
 
         self._vector_store = None
         self._init_vector_store()
@@ -191,13 +167,13 @@ class QAKnowledgeGraph:
             c.type AS type,
             c.pattern AS pattern
         """
-        if self._graph_provider is None:
+        provider = getattr(self, "_graph_provider", None)
+        if provider is None:
             with self._graph.session() as session:
                 records = session.run(cypher, qt=query_type)
                 return [dict(r) for r in records]
 
-        assert self._graph_provider is not None
-        prov = cast(GraphProvider, self._graph_provider)
+        prov = cast(GraphProvider, provider)
 
         async def _run():
             async with prov.session() as session:  # type: ignore[union-attr]
@@ -212,12 +188,12 @@ class QAKnowledgeGraph:
         MATCH (qt:QueryType {name: $qt})<-[:APPLIES_TO]-(b:BestPractice)
         RETURN b.id AS id, b.text AS text
         """
-        if self._graph_provider is None:
+        provider = getattr(self, "_graph_provider", None)
+        if provider is None:
             with self._graph.session() as session:
                 return [dict(r) for r in session.run(cypher, qt=query_type)]
 
-        assert self._graph_provider is not None
-        prov = cast(GraphProvider, self._graph_provider)
+        prov = cast(GraphProvider, provider)
 
         async def _run():
             async with prov.session() as session:  # type: ignore[union-attr]
@@ -236,12 +212,12 @@ class QAKnowledgeGraph:
         RETURN e.id AS id, e.text AS text, e.type AS type
         LIMIT $limit
         """
-        if self._graph_provider is None:
+        provider = getattr(self, "_graph_provider", None)
+        if provider is None:
             with self._graph.session() as session:
                 return [dict(r) for r in session.run(cypher, limit=limit)]
 
-        assert self._graph_provider is not None
-        prov = cast(GraphProvider, self._graph_provider)
+        prov = cast(GraphProvider, provider)
 
         async def _run():
             async with prov.session() as session:  # type: ignore[union-attr]

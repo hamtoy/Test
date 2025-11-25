@@ -61,6 +61,7 @@ async def test_execute_workflow_e2e(monkeypatch, tmp_path):
         logger=logger,
         ocr_filename="ocr.txt",
         cand_filename="cand.json",
+        config=None,
         is_interactive=False,
     )
 
@@ -122,6 +123,7 @@ async def test_execute_workflow_resume(monkeypatch, tmp_path):
         logger=logger,
         ocr_filename="ocr.txt",
         cand_filename="cand.json",
+        config=None,
         is_interactive=False,
         resume=True,
         checkpoint_path=checkpoint_path,

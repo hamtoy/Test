@@ -49,6 +49,7 @@ async def test_execute_workflow_success(mock_agent, mock_logger):
                 logger=mock_logger,
                 ocr_filename="ocr.txt",
                 cand_filename="cand.json",
+                config=None,
                 is_interactive=False,
             )
 
@@ -70,6 +71,7 @@ async def test_execute_workflow_query_gen_fail(mock_agent, mock_logger):
         logger=mock_logger,
         ocr_filename="ocr.txt",
         cand_filename="cand.json",
+        config=None,
         is_interactive=False,
     )
 
@@ -95,6 +97,7 @@ async def test_execute_workflow_budget_exceeded(mock_logger):
             logger=mock_logger,
             ocr_filename="ocr.txt",
             cand_filename="cand.json",
+            config=None,
             is_interactive=False,
         )
 
@@ -133,6 +136,7 @@ async def test_execute_workflow_interactive_skip_reload(mock_agent, mock_logger)
             logger=mock_logger,
             ocr_filename="ocr.txt",
             cand_filename="cand.json",
+            config=None,
             is_interactive=True,
         )
 

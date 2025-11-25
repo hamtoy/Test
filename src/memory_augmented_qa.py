@@ -6,6 +6,7 @@ from typing import Dict, List, Optional
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 from src.qa_rag_system import CustomGeminiEmbeddings, require_env
+from src.neo4j_utils import create_sync_driver, SafeDriver
 from src.gemini_model_client import GeminiModelClient
 
 load_dotenv()
@@ -29,8 +30,11 @@ class MemoryAugmentedQASystem:
         self.session_id = session_id
 
         # Neo4j 드라이버
-        self._driver = GraphDatabase.driver(
-            self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
+        self._driver: SafeDriver = create_sync_driver(
+            self.neo4j_uri,
+            self.neo4j_user,
+            self.neo4j_password,
+            graph_db_factory=GraphDatabase.driver,
         )
 
         # 임베딩/벡터 스토어(Gemini 임베딩)
@@ -113,3 +117,12 @@ class MemoryAugmentedQASystem:
     def close(self) -> None:
         if self._driver:
             self._driver.close()
+
+    def __enter__(self) -> "MemoryAugmentedQASystem":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        self.close()
+
+    def __del__(self):
+        self.close()

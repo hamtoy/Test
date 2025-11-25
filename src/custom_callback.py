@@ -3,11 +3,13 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+from contextlib import suppress
 
-from langchain.callbacks.base import BaseCallbackHandler
 from neo4j import GraphDatabase
+from langchain.callbacks.base import BaseCallbackHandler
 
 from src.qa_rag_system import require_env
+from src.neo4j_utils import create_sync_driver, SafeDriver
 
 
 class Neo4jLoggingCallback(BaseCallbackHandler):
@@ -26,8 +28,11 @@ class Neo4jLoggingCallback(BaseCallbackHandler):
         self.neo4j_user = user or require_env("NEO4J_USER")
         self.neo4j_password = password or require_env("NEO4J_PASSWORD")
         self.session_id = session_id or datetime.now().isoformat()
-        self.driver = GraphDatabase.driver(
-            self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
+        self.driver: SafeDriver = create_sync_driver(
+            self.neo4j_uri,
+            self.neo4j_user,
+            self.neo4j_password,
+            graph_db_factory=GraphDatabase.driver,
         )
 
     def on_llm_start(self, serialized: Dict[str, Any], prompts: List[str], **kwargs):
@@ -90,6 +95,16 @@ class Neo4jLoggingCallback(BaseCallbackHandler):
     def close(self):
         if self.driver:
             self.driver.close()
+
+    def __enter__(self) -> "Neo4jLoggingCallback":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        self.close()
+
+    def __del__(self):
+        with suppress(Exception):
+            self.close()
 
 
 # 사용 예시:

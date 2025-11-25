@@ -391,6 +391,7 @@ async def _gather_results(
         return []
 
     filtered: List[WorkflowResult] = []
+    first_error: Optional[Exception] = None
     processed_results = await asyncio.gather(*tasks, return_exceptions=True)
     for item in processed_results:
         if isinstance(item, BudgetExceededError):
@@ -398,10 +399,13 @@ async def _gather_results(
             raise item
         if isinstance(item, Exception):
             logger.error(LOG_MESSAGES["turn_exception"].format(error=item))
+            first_error = first_error or item
             continue
         if item is None:
             continue
         filtered.append(cast(WorkflowResult, item))
+    if first_error:
+        raise first_error
     return filtered
 
 
@@ -527,6 +531,7 @@ async def execute_workflow(
     logger: logging.Logger,
     ocr_filename: str,
     cand_filename: str,
+    config: Optional[AppConfig] = None,
     is_interactive: bool = True,
     resume: bool = False,
     checkpoint_path: Optional[Path] = None,
@@ -568,7 +573,7 @@ async def execute_workflow(
     _display_queries(queries)
 
     # AUTO 모드에서는 프롬프트 건너뛰기
-    config = AppConfig()  # type: ignore[call-arg]
+    config = config or AppConfig()  # type: ignore[call-arg]
     candidates: Optional[Dict[str, str]] = None
     checkpoint_path = _resolve_checkpoint_path(config, checkpoint_path)
     checkpoint_records = await _load_checkpoint_records(checkpoint_path, resume, logger)
@@ -775,6 +780,7 @@ async def main():
             logger,
             args.ocr_file,
             args.cand_file,
+            config,
             is_interactive,
             resume=args.resume,
             checkpoint_path=checkpoint_path,
