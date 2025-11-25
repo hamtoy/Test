@@ -141,9 +141,9 @@ def _warn_budget_thresholds(agent: GeminiAgent, logger: logging.Logger) -> None:
     """Emit one-time budget warnings at configured thresholds."""
     usage = agent.get_budget_usage_percent()
     for threshold, severity in BUDGET_WARNING_THRESHOLDS:
-        attr_name = f"_warned_{threshold}"
+        attr_name = "_warned_%s" % threshold
         if usage >= threshold and not hasattr(agent, attr_name):
-            logger.warning(f"{severity}: Budget at {usage:.1f}%")
+            logger.warning("%s: Budget at %.1f%%", severity, usage)
             setattr(agent, attr_name, True)
 
 
@@ -414,18 +414,18 @@ async def _evaluate_and_rewrite_turn(
     query: str,
     turn_id: int,
 ) -> Optional[WorkflowResult]:
-    ctx.logger.info(f"Turn {turn_id}/{ctx.total_turns}: '{query}' 실행 중...")
+    ctx.logger.info("Turn %s/%s: '%s' 실행 중...", turn_id, ctx.total_turns, query)
 
     ctx.logger.info("후보 평가 중...")
     evaluation = await ctx.agent.evaluate_responses(
         ctx.ocr_text, query, ctx.candidates, cached_content=ctx.cache
     )
     if evaluation is None:
-        ctx.logger.warning(f"Turn {turn_id}: 평가 실패")
+        ctx.logger.warning("Turn %s: 평가 실패", turn_id)
         return None
 
     best_candidate_id = evaluation.get_best_candidate_id()
-    ctx.logger.info(f"후보 선정 완료: {best_candidate_id}")
+    ctx.logger.info("후보 선정 완료: %s", best_candidate_id)
 
     raw_answer = ctx.candidates.get(best_candidate_id, "")
     parsed = safe_json_parse(raw_answer, best_candidate_id)
@@ -498,7 +498,7 @@ async def process_single_query(
             return result
 
     except (APIRateLimitError, ValidationFailedError, SafetyFilterError) as e:
-        ctx.logger.error(f"복구 가능 오류로 턴 {turn_id}를 건너뜁니다: {e}")
+        ctx.logger.error("복구 가능 오류로 턴 %s를 건너뜁니다: %s", turn_id, e)
         if ctx.progress and task_id:
             ctx.progress.update(
                 task_id,
@@ -506,14 +506,14 @@ async def process_single_query(
             )
         return None
     except BudgetExceededError as e:
-        ctx.logger.critical(f"예산 초과로 워크플로우를 중단합니다: {e}")
+        ctx.logger.critical("예산 초과로 워크플로우를 중단합니다: %s", e)
         if ctx.progress and task_id:
             ctx.progress.update(
                 task_id,
                 description=PROGRESS_FAILED_TEMPLATE.format(turn_id=turn_id),
             )
         raise
-    except Exception as e:
+    except (OSError, RuntimeError) as e:
         ctx.logger.exception(LOG_MESSAGES["turn_exception"].format(error=e))
         if ctx.progress and task_id:
             ctx.progress.update(
@@ -592,7 +592,7 @@ async def execute_workflow(
     cache = await _create_context_cache(agent, ocr_text, logger)
 
     # 병렬 실행 (Parallel Processing) with Progress Bar
-    logger.info(f"총 {len(queries)}개의 질의를 병렬로 처리합니다...")
+    logger.info("총 %s개의 질의를 병렬로 처리합니다...", len(queries))
 
     results: List[WorkflowResult] = []
 
@@ -630,9 +630,9 @@ async def execute_workflow(
     if cache:
         try:
             cache.delete()
-            logger.info(f"Cache cleaned up: {cache.name}")
-        except Exception as e:
-            logger.warning(f"Cache cleanup failed: {e}")
+            logger.info("Cache cleaned up: %s", cache.name)
+        except (OSError, RuntimeError) as e:
+            logger.warning("Cache cleanup failed: %s", e)
 
     return results
 
@@ -750,10 +750,10 @@ async def main():
             console.print("[bold green]Integrated pipeline completed[/bold green]")
             for i, turn in enumerate(session.get("turns", []), 1):
                 console.print(
-                    f"{i}. {turn.get('type')}: {turn.get('prompt', '')[:80]}..."
+                    "%s. %s: %s..." % (i, turn.get("type"), turn.get("prompt", "")[:80])
                 )
-        except Exception as e:  # noqa: BLE001
-            logger.critical(f"[FATAL] Integrated pipeline failed: {e}")
+        except (OSError, ValueError, RuntimeError) as e:
+            logger.critical("[FATAL] Integrated pipeline failed: %s", e)
             log_listener.stop()
             sys.exit(1)
         log_listener.stop()
@@ -770,7 +770,7 @@ async def main():
 
         if not config.template_dir.exists():
             raise FileNotFoundError(
-                f"Templates directory missing: {config.template_dir}"
+                "Templates directory missing: %s" % config.template_dir
             )
         jinja_env = Environment(
             loader=FileSystemLoader(config.template_dir), autoescape=True
@@ -780,9 +780,9 @@ async def main():
         input_dir = config.input_dir
         ocr_text, _ = await load_input_data(input_dir, args.ocr_file, args.cand_file)
 
-    except Exception as e:
+    except (FileNotFoundError, ValueError, OSError) as e:
         # ... (error handling)
-        logger.critical(f"[FATAL] Initialization failed: {e}")
+        logger.critical("[FATAL] Initialization failed: %s", e)
         log_listener.stop()
         sys.exit(1)
 
@@ -790,7 +790,7 @@ async def main():
     agent = GeminiAgent(config, jinja_env=jinja_env)
     user_intent = args.intent
 
-    logger.info(f"워크플로우 시작 (Mode: {args.mode})")
+    logger.info("워크플로우 시작 (Mode: %s)", args.mode)
 
     try:
         # Cache analytics quick path
@@ -845,13 +845,13 @@ async def main():
             write_cache_stats(
                 config.cache_stats_path, config.cache_stats_max_entries, cache_entry
             )
-            logger.info(f"Cache stats saved to {config.cache_stats_path}")
-        except Exception as e:
+            logger.info("Cache stats saved to %s", config.cache_stats_path)
+        except (OSError, ValueError, TypeError, RuntimeError) as e:
             if hasattr(logger, "warning"):
-                logger.warning(f"Cache stats write skipped: {e}")
+                logger.warning("Cache stats write skipped: %s", e)
                 logger.warning("cache_stats_write_failed")
             else:
-                print(f"Cache stats write skipped: {e}")
+                print("Cache stats write skipped: %s" % e)
 
     except (
         APIRateLimitError,
@@ -860,7 +860,7 @@ async def main():
         BudgetExceededError,
     ) as e:
         logger.exception(LOG_MESSAGES["workflow_failed"].format(error=e))
-    except Exception as e:
+    except (OSError, RuntimeError) as e:
         logger.exception(LOG_MESSAGES["workflow_failed"].format(error=e))
     finally:
         # 로그 리스너 종료 (남은 로그 플러시)
@@ -895,6 +895,7 @@ if __name__ == "__main__":
         # from rich.console import Console # Already imported at the top
         console.print(USER_INTERRUPT_MESSAGE)
         sys.exit(130)
-    except Exception as e:  # noqa: BLE001
-        logging.critical(f"Critical error: {e}", exc_info=True)
+    except (OSError, RuntimeError, ValueError) as e:
+        logging.critical("Critical error: %s", e, exc_info=True)
         sys.exit(1)
+
