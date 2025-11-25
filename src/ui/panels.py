@@ -1,4 +1,5 @@
 """Rich UI 패널 렌더링."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, List

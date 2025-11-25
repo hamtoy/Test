@@ -1,4 +1,5 @@
 """QA 그래프 빌더."""
+
 from __future__ import annotations
 
 import hashlib
