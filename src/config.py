@@ -1,4 +1,5 @@
 """Backward compatibility - use src.config.settings instead."""
+
 import warnings
 
 from src.config.settings import AppConfig
