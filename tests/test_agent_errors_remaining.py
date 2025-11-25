@@ -64,7 +64,7 @@ async def test_create_context_cache_raises(monkeypatch, tmp_path):
         class CachedContent:
             @staticmethod
             def create(**kwargs):
-                raise Exception("boom")
+                raise RuntimeError("boom")
 
     monkeypatch.setattr(type(agent), "_caching", property(lambda _self: _Caching))
 
