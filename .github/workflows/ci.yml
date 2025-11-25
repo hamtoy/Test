@@ -52,7 +52,7 @@ jobs:
         run: uv run pytest --cov=src --cov-report=xml --cov-fail-under=75
 
       - name: Upload coverage to Codecov (optional)
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         if: env.CODECOV_TOKEN != ''
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
