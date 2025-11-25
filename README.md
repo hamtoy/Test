@@ -111,6 +111,7 @@ flowchart LR
 
 - Neo4j 데이터베이스 ([Aura 무료](https://neo4j.com/cloud/aura-free/))
 - Notion 계정 (규칙 데이터 소스)
+- Neo4j 연결은 `src/neo4j_utils.py`의 `create_sync_driver`/`SafeDriver`를 통해 생성하면 컨텍스트 매니저로 자동 정리되며, 종료 시점에 반드시 `close()`가 호출되도록 보장합니다.
 
 ### 설치
 

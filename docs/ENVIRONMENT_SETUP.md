@@ -54,6 +54,8 @@ NEO4J_USER=neo4j
 NEO4J_PASSWORD=your_password
 ```
 
+Neo4j 드라이버는 컨텍스트 매니저로 사용하거나 `src/neo4j_utils.py`의 `create_sync_driver`/`SafeDriver`를 통해 생성하면 자동으로 `close()`가 보장됩니다.
+
 ### 개발 환경 (권장)
 
 개발/테스트 도구 설치:

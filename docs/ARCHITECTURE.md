@@ -79,6 +79,7 @@ if prompt_tokens >= 2000:
 - 벡터 검색 (Gemini Embeddings)
 - 그래프 쿼리 (Rule/Constraint/Example)
 - Session 검증 (`checks/validate_session.py` 통합)
+- `neo4j_utils.SafeDriver`를 통해 Neo4j 드라이버 수명을 명확히 관리 (컨텍스트 매니저/atexit)
 
 **데이터 플로우**:
 
