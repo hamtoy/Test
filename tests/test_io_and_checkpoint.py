@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock
-from src.main import save_result_to_file
+from src.workflow.processor import save_result_to_file
 from src.utils import load_checkpoint, append_checkpoint
 from src.models import WorkflowResult, EvaluationResultSchema, EvaluationItem
 

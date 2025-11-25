@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from src.main import execute_workflow
+from src.workflow import execute_workflow
 from src.models import EvaluationItem, EvaluationResultSchema
 
 VALID_API_KEY = "AIza" + "A" * 35
@@ -49,7 +49,7 @@ async def test_execute_workflow_e2e(monkeypatch, tmp_path):
     async def fake_reload_data(config, ocr_filename, cand_filename, interactive=False):
         return "ocr text", {"A": '{"A": "Best answer"}'}
 
-    monkeypatch.setattr("src.main.reload_data_if_needed", fake_reload_data)
+    monkeypatch.setattr("src.workflow.executor.reload_data_if_needed", fake_reload_data)
 
     agent = DummyAgent()
     logger = logging.getLogger("GeminiWorkflow")
@@ -92,7 +92,7 @@ async def test_execute_workflow_resume(monkeypatch, tmp_path):
     async def fake_reload_data(config, ocr_filename, cand_filename, interactive=False):
         return "ocr text", {"A": '{"A": "Best answer"}'}
 
-    monkeypatch.setattr("src.main.reload_data_if_needed", fake_reload_data)
+    monkeypatch.setattr("src.workflow.executor.reload_data_if_needed", fake_reload_data)
 
     checkpoint_path = tmp_path / "data" / "outputs" / "checkpoint.jsonl"
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)

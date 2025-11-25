@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import types
-from src import graph_schema_builder as gsb
+from src.graph import builder as graph
 from src import graph_enhanced_router
 from src import custom_callback
 
@@ -58,9 +58,9 @@ def test_graph_schema_builder_runs_with_stubbed_driver(monkeypatch):
         def driver(*_args, **_kwargs):
             return _BuilderDriver()
 
-    monkeypatch.setattr(gsb, "GraphDatabase", _GraphDB)
+    monkeypatch.setattr(graph, "GraphDatabase", _GraphDB)
 
-    builder = gsb.QAGraphBuilder("uri", "user", "pw")
+    builder = graph.QAGraphBuilder("uri", "user", "pw")
     builder.create_schema_constraints()
     builder.extract_rules_from_notion()
     builder.extract_query_types()
