@@ -56,3 +56,47 @@ def test_health_check_with_stub(monkeypatch):
     monkeypatch.setattr(health_check, "check_neo4j_connection", lambda *_a, **_k: True)
     report = health_check.health_check()
     assert report["status"] == "healthy"
+
+
+def test_compare_documents_main_flow(monkeypatch, capsys):
+    monkeypatch.setenv("NEO4J_URI", "bolt://fake")
+    monkeypatch.setenv("NEO4J_USER", "user")
+    monkeypatch.setenv("NEO4J_PASSWORD", "pass")
+
+    class _Session:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def run(self, query, **kwargs):
+            if "collect(DISTINCT b.type)" in query:
+                return [
+                    {
+                        "title": "Page A",
+                        "total_blocks": 2,
+                        "types": ["heading", "paragraph"],
+                    },
+                    {"title": "Page B", "total_blocks": 1, "types": ["paragraph"]},
+                ]
+            return [
+                {"content": "content text long enough", "pages": ["Page A", "Page B"]}
+            ]
+
+    class _Driver:
+        def session(self):
+            return _Session()
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr(
+        compare_documents,
+        "GraphDatabase",
+        types.SimpleNamespace(driver=lambda uri, auth: _Driver()),
+    )
+    compare_documents.main()
+    out = capsys.readouterr().out
+    assert "Page A" in out
+    assert "공통으로 등장하는 내용" in out

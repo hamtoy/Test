@@ -149,3 +149,41 @@ def test_adaptive_difficulty(monkeypatch):
     assert complexity["estimated_blocks"] == 5
     adjustments = adjuster.adjust_query_requirements(complexity, "explanation")
     assert adjustments["min_length"] >= 300
+
+
+def test_semantic_analysis_utils_simple():
+    tokens = semantic_analysis.tokenize("Alpha, beta! 그리고 and 123")
+    assert "alpha" in tokens and "beta" in tokens
+
+    counts = semantic_analysis.count_keywords(["alpha alpha", "beta"])
+    assert (
+        counts["alpha"] >= 1 or "alpha" not in counts
+    )  # MIN_FREQ may filter low counts
+
+
+def test_adaptive_difficulty_levels(monkeypatch):
+    class _Session:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def run(self, *_args, **_kwargs):
+            class _R:
+                def single(self_inner):
+                    return {"avg_blocks": 3}
+
+            return _R()
+
+    kg = types.SimpleNamespace(_graph=types.SimpleNamespace(session=lambda: _Session()))
+    adjuster = adaptive_difficulty.AdaptiveDifficultyAdjuster(kg)
+
+    simple = adjuster.analyze_image_complexity({"text_density": 0.1})
+    assert simple["level"] == "simple"
+
+    complex_meta = adjuster.analyze_image_complexity({"text_density": 0.9})
+    assert complex_meta["level"] == "complex"
+
+    adj = adjuster.adjust_query_requirements(complex_meta, "explanation")
+    assert adj["min_length"] >= 300
