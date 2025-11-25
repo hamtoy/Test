@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import argparse
 import asyncio
 import logging
 import os
@@ -56,6 +55,11 @@ from src.constants import (
     PROMPT_EDIT_CANDIDATES,
     USER_INTERRUPT_MESSAGE,
 )
+
+# ============================================================================
+# CLI Module
+# ============================================================================
+from src.cli import parse_args, resolve_checkpoint_path
 
 # ============================================================================
 # Models & Exceptions
@@ -141,9 +145,9 @@ def _warn_budget_thresholds(agent: GeminiAgent, logger: logging.Logger) -> None:
     """Emit one-time budget warnings at configured thresholds."""
     usage = agent.get_budget_usage_percent()
     for threshold, severity in BUDGET_WARNING_THRESHOLDS:
-        attr_name = f"_warned_{threshold}"
+        attr_name = "_warned_%s" % threshold
         if usage >= threshold and not hasattr(agent, attr_name):
-            logger.warning(f"{severity}: Budget at {usage:.1f}%")
+            logger.warning("%s: Budget at %.1f%%", severity, usage)
             setattr(agent, attr_name, True)
 
 
@@ -414,18 +418,18 @@ async def _evaluate_and_rewrite_turn(
     query: str,
     turn_id: int,
 ) -> Optional[WorkflowResult]:
-    ctx.logger.info(f"Turn {turn_id}/{ctx.total_turns}: '{query}' 실행 중...")
+    ctx.logger.info("Turn %s/%s: '%s' 실행 중...", turn_id, ctx.total_turns, query)
 
     ctx.logger.info("후보 평가 중...")
     evaluation = await ctx.agent.evaluate_responses(
         ctx.ocr_text, query, ctx.candidates, cached_content=ctx.cache
     )
     if evaluation is None:
-        ctx.logger.warning(f"Turn {turn_id}: 평가 실패")
+        ctx.logger.warning("Turn %s: 평가 실패", turn_id)
         return None
 
     best_candidate_id = evaluation.get_best_candidate_id()
-    ctx.logger.info(f"후보 선정 완료: {best_candidate_id}")
+    ctx.logger.info("후보 선정 완료: %s", best_candidate_id)
 
     raw_answer = ctx.candidates.get(best_candidate_id, "")
     parsed = safe_json_parse(raw_answer, best_candidate_id)
@@ -498,7 +502,7 @@ async def process_single_query(
             return result
 
     except (APIRateLimitError, ValidationFailedError, SafetyFilterError) as e:
-        ctx.logger.error(f"복구 가능 오류로 턴 {turn_id}를 건너뜁니다: {e}")
+        ctx.logger.error("복구 가능 오류로 턴 %s를 건너뜁니다: %s", turn_id, e)
         if ctx.progress and task_id:
             ctx.progress.update(
                 task_id,
@@ -506,14 +510,14 @@ async def process_single_query(
             )
         return None
     except BudgetExceededError as e:
-        ctx.logger.critical(f"예산 초과로 워크플로우를 중단합니다: {e}")
+        ctx.logger.critical("예산 초과로 워크플로우를 중단합니다: %s", e)
         if ctx.progress and task_id:
             ctx.progress.update(
                 task_id,
                 description=PROGRESS_FAILED_TEMPLATE.format(turn_id=turn_id),
             )
         raise
-    except Exception as e:
+    except (OSError, RuntimeError) as e:
         ctx.logger.exception(LOG_MESSAGES["turn_exception"].format(error=e))
         if ctx.progress and task_id:
             ctx.progress.update(
@@ -592,7 +596,7 @@ async def execute_workflow(
     cache = await _create_context_cache(agent, ocr_text, logger)
 
     # 병렬 실행 (Parallel Processing) with Progress Bar
-    logger.info(f"총 {len(queries)}개의 질의를 병렬로 처리합니다...")
+    logger.info("총 %s개의 질의를 병렬로 처리합니다...", len(queries))
 
     results: List[WorkflowResult] = []
 
@@ -630,118 +634,26 @@ async def execute_workflow(
     if cache:
         try:
             cache.delete()
-            logger.info(f"Cache cleaned up: {cache.name}")
-        except Exception as e:
-            logger.warning(f"Cache cleanup failed: {e}")
+            logger.info("Cache cleaned up: %s", cache.name)
+        except (OSError, RuntimeError) as e:
+            logger.warning("Cache cleanup failed: %s", e)
 
     return results
 
 
 async def main():
-    """Main workflow orchestrator with professional argument parsing"""
-    parser = argparse.ArgumentParser(
-        description="🚀 Advanced Gemini Workflow: AI-powered Q&A Evaluation System",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,  # Auto-show defaults
-    )
-
-    # 1. Core Configuration
-    core_group = parser.add_argument_group("Core Configuration")
-    core_group.add_argument(
-        "--mode",
-        type=str,
-        choices=["AUTO", "CHAT"],
-        default="AUTO",
-        help="Execution mode",
-    )
-    core_group.add_argument(
-        "--interactive",
-        action="store_true",
-        help="Force interactive mode (ask for confirmation) even in AUTO mode",
-    )
-
-    io_group = parser.add_argument_group("Input/Output")
-    io_group.add_argument(
-        "--ocr-file",
-        type=str,
-        default="input_ocr.txt",
-        help="OCR input filename (relative to data/inputs by default)",
-    )
-    io_group.add_argument(
-        "--cand-file",
-        type=str,
-        default="input_candidates.json",
-        help="Candidate answers filename (relative to data/inputs by default)",
-    )
-    core_group.add_argument(
-        "--intent",
-        type=str,
-        default=None,
-        help="Optional user intent to guide query generation",
-    )
-    io_group.add_argument(
-        "--checkpoint-file",
-        type=str,
-        default="checkpoint.jsonl",
-        help="Checkpoint JSONL path (relative paths resolve under data/outputs)",
-    )
-    debug_group = parser.add_argument_group("Debugging")
-    debug_group.add_argument(
-        "--keep-progress",
-        action="store_true",
-        help="Keep progress bar visible after completion (for debugging)",
-    )
-    debug_group.add_argument(
-        "--no-cost-panel",
-        action="store_true",
-        help="Skip cost panel summary output",
-    )
-    debug_group.add_argument(
-        "--no-budget-panel",
-        action="store_true",
-        help="Skip budget panel summary output",
-    )
-    core_group.add_argument(
-        "--resume",
-        action="store_true",
-        help="Resume workflow using checkpoint file (skips completed queries)",
-    )
-    core_group.add_argument(
-        "--log-level",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        default=None,
-        help="Override log level (otherwise from LOG_LEVEL env)",
-    )
-    core_group.add_argument(
-        "--analyze-cache",
-        action="store_true",
-        help="Print cache stats summary and exit",
-    )
-    core_group.add_argument(
-        "--integrated-pipeline",
-        action="store_true",
-        help="Run integrated QA pipeline (graph + validation) instead of the standard workflow",
-    )
-    core_group.add_argument(
-        "--pipeline-meta",
-        type=str,
-        default="examples/session_input.json",
-        help="Path to JSON metadata file for integrated pipeline mode",
-    )
-
-    # ... (rest of arguments)
-
-    args = parser.parse_args()
+    """Main workflow orchestrator using CLI module for argument parsing"""
+    # Parse arguments using cli.py module
+    args = parse_args()
 
     # ... (logging setup)
     logger, log_listener = setup_logging(log_level=args.log_level)
     start_time = datetime.now(timezone.utc)
 
     # Integrated pipeline quick path (skip Gemini workflow)
-    if getattr(args, "integrated_pipeline", False):
+    if args.integrated_pipeline:
         try:
-            meta_path = Path(
-                getattr(args, "pipeline_meta", "examples/session_input.json")
-            )
+            meta_path = Path(args.pipeline_meta)
             if not meta_path.is_absolute():
                 meta_path = Path(__file__).resolve().parents[1] / meta_path
             from src.integrated_qa_pipeline import run_integrated_pipeline
@@ -750,10 +662,10 @@ async def main():
             console.print("[bold green]Integrated pipeline completed[/bold green]")
             for i, turn in enumerate(session.get("turns", []), 1):
                 console.print(
-                    f"{i}. {turn.get('type')}: {turn.get('prompt', '')[:80]}..."
+                    "%s. %s: %s..." % (i, turn.get("type"), turn.get("prompt", "")[:80])
                 )
-        except Exception as e:  # noqa: BLE001
-            logger.critical(f"[FATAL] Integrated pipeline failed: {e}")
+        except (OSError, ValueError, RuntimeError) as e:
+            logger.critical("[FATAL] Integrated pipeline failed: %s", e)
             log_listener.stop()
             sys.exit(1)
         log_listener.stop()
@@ -770,7 +682,7 @@ async def main():
 
         if not config.template_dir.exists():
             raise FileNotFoundError(
-                f"Templates directory missing: {config.template_dir}"
+                "Templates directory missing: %s" % config.template_dir
             )
         jinja_env = Environment(
             loader=FileSystemLoader(config.template_dir), autoescape=True
@@ -780,9 +692,9 @@ async def main():
         input_dir = config.input_dir
         ocr_text, _ = await load_input_data(input_dir, args.ocr_file, args.cand_file)
 
-    except Exception as e:
+    except (FileNotFoundError, ValueError, OSError) as e:
         # ... (error handling)
-        logger.critical(f"[FATAL] Initialization failed: {e}")
+        logger.critical("[FATAL] Initialization failed: %s", e)
         log_listener.stop()
         sys.exit(1)
 
@@ -790,7 +702,7 @@ async def main():
     agent = GeminiAgent(config, jinja_env=jinja_env)
     user_intent = args.intent
 
-    logger.info(f"워크플로우 시작 (Mode: {args.mode})")
+    logger.info("워크플로우 시작 (Mode: %s)", args.mode)
 
     try:
         # Cache analytics quick path
@@ -803,9 +715,9 @@ async def main():
         # 워크플로우 실행 (모드에 따라 interactive 설정)
         # CHAT 모드이거나 --interactive 플래그가 있으면 대화형 모드
         is_interactive = (args.mode == "CHAT") or args.interactive
-        checkpoint_path = Path(args.checkpoint_file)
-        if not checkpoint_path.is_absolute():
-            checkpoint_path = config.output_dir / checkpoint_path
+        checkpoint_path = resolve_checkpoint_path(
+            config.output_dir, args.checkpoint_file
+        )
 
         await execute_workflow(
             agent,
@@ -825,11 +737,9 @@ async def main():
 
         # 비용 정보를 Panel로 표시
         console.print()
-        no_budget_panel = getattr(args, "no_budget_panel", False)
-        no_cost_panel = getattr(args, "no_cost_panel", False)
-        if not no_budget_panel:
+        if not args.no_budget_panel:
             console.print(_render_budget_panel(agent))
-        if not no_cost_panel:
+        if not args.no_cost_panel:
             console.print(_render_cost_panel(agent))
 
         # Cache stats persistence: append JSONL entry with small retention window
@@ -845,13 +755,13 @@ async def main():
             write_cache_stats(
                 config.cache_stats_path, config.cache_stats_max_entries, cache_entry
             )
-            logger.info(f"Cache stats saved to {config.cache_stats_path}")
-        except Exception as e:
+            logger.info("Cache stats saved to %s", config.cache_stats_path)
+        except (OSError, ValueError, TypeError, RuntimeError) as e:
             if hasattr(logger, "warning"):
-                logger.warning(f"Cache stats write skipped: {e}")
+                logger.warning("Cache stats write skipped: %s", e)
                 logger.warning("cache_stats_write_failed")
             else:
-                print(f"Cache stats write skipped: {e}")
+                print("Cache stats write skipped: %s" % e)
 
     except (
         APIRateLimitError,
@@ -860,7 +770,7 @@ async def main():
         BudgetExceededError,
     ) as e:
         logger.exception(LOG_MESSAGES["workflow_failed"].format(error=e))
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - Top-level handler for unexpected errors
         logger.exception(LOG_MESSAGES["workflow_failed"].format(error=e))
     finally:
         # 로그 리스너 종료 (남은 로그 플러시)
@@ -895,6 +805,6 @@ if __name__ == "__main__":
         # from rich.console import Console # Already imported at the top
         console.print(USER_INTERRUPT_MESSAGE)
         sys.exit(130)
-    except Exception as e:  # noqa: BLE001
-        logging.critical(f"Critical error: {e}", exc_info=True)
+    except Exception as e:  # noqa: BLE001 - Top-level handler must catch all exceptions
+        logging.critical("Critical error: %s", e, exc_info=True)
         sys.exit(1)

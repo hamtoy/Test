@@ -145,6 +145,17 @@ class GeminiAgent:
                 autoescape=True,  # XSS 방지
             )
 
+    def _track_cache_usage(self, cached: bool) -> None:
+        """Track cache hit or miss for monitoring purposes.
+
+        Args:
+            cached: True if cache was used (hit), False if not (miss)
+        """
+        if cached:
+            self.cache_hits += 1
+        else:
+            self.cache_misses += 1
+
     @property
     def _genai(self):
         import google.generativeai as genai
@@ -173,7 +184,7 @@ class GeminiAgent:
             google_exceptions = self._google_exceptions()
             if isinstance(exc, google_exceptions.ResourceExhausted):
                 return True
-        except Exception:  # noqa: BLE001
+        except (ImportError, AttributeError):
             # Fallback for environments or tests that monkeypatch ResourceExhausted
             pass
         return exc.__class__.__name__ == "ResourceExhausted"
@@ -246,7 +257,7 @@ class GeminiAgent:
         try:
             setattr(model, "_agent_system_instruction", system_prompt)
             setattr(model, "_agent_response_schema", response_schema)
-        except Exception:
+        except (TypeError, AttributeError):
             pass
         return model
 
@@ -265,7 +276,7 @@ class GeminiAgent:
             with open(manifest_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except (OSError, json.JSONDecodeError) as e:
-            self.logger.debug(f"Cache cleanup skipped (read error): {e}")
+            self.logger.debug("Cache cleanup skipped (read error): %s", e)
             return
 
         now = datetime.datetime.now(datetime.timezone.utc)
@@ -292,7 +303,7 @@ class GeminiAgent:
             with open(manifest_path, "w", encoding="utf-8") as f:
                 json.dump(updated, f, ensure_ascii=False, indent=2)
         except OSError as e:
-            self.logger.debug(f"Cache cleanup skipped (write error): {e}")
+            self.logger.debug("Cache cleanup skipped (write error): %s", e)
 
     def _load_local_cache(
         self, fingerprint: str, ttl_minutes: int
@@ -324,8 +335,8 @@ class GeminiAgent:
             cache_name = entry.get("name")
             if cache_name:
                 return self._caching.CachedContent.get(name=cache_name)
-        except Exception as e:  # noqa: BLE001
-            self.logger.debug(f"Local cache load skipped: {e}")
+        except (OSError, json.JSONDecodeError, KeyError, ValueError) as e:
+            self.logger.debug("Local cache load skipped: %s", e)
         return None
 
     def _store_local_cache(
@@ -374,7 +385,7 @@ class GeminiAgent:
         # 재사용 가능한 캐시가 있으면 반환 (Local Disk Cache)
         local_cached = self._load_local_cache(fingerprint, ttl_minutes)
         if local_cached:
-            self.logger.info(f"Reusing context cache from disk: {local_cached.name}")
+            self.logger.info("Reusing context cache from disk: %s", local_cached.name)
             return local_cached
 
         loop = asyncio.get_running_loop()
@@ -385,7 +396,7 @@ class GeminiAgent:
             return model.count_tokens(combined_content).total_tokens
 
         token_count = await loop.run_in_executor(None, _count_tokens)
-        self.logger.info(f"Total Tokens for Caching: {token_count}")
+        self.logger.info("Total Tokens for Caching: %s", token_count)
 
         if token_count < token_threshold:
             self.logger.info("Skipping cache creation (Tokens < %s)", token_threshold)
@@ -404,21 +415,21 @@ class GeminiAgent:
 
             cache = await loop.run_in_executor(None, _create_cache)
             self.logger.info(
-                f"Context Cache Created: {cache.name} (Expires in {ttl_minutes}m)"
+                "Context Cache Created: %s (Expires in %sm)", cache.name, ttl_minutes
             )
             try:
                 self._store_local_cache(fingerprint, cache.name, ttl_minutes)
             except OSError as e:
-                self.logger.debug(f"Local cache manifest write skipped: {e}")
+                self.logger.debug("Local cache manifest write skipped: %s", e)
             return cache
         except self._google_exceptions().ResourceExhausted as e:
-            self.logger.error(f"Failed to create cache due to rate limit: {e}")
+            self.logger.error("Failed to create cache due to rate limit: %s", e)
             raise CacheCreationError(
-                f"Rate limit exceeded during cache creation: {e}"
+                "Rate limit exceeded during cache creation: %s" % e
             ) from e
-        except Exception as e:
-            self.logger.error(f"Failed to create cache: {e}")
-            raise CacheCreationError(f"Failed to create cache: {e}") from e
+        except (ValueError, RuntimeError, OSError) as e:
+            self.logger.error("Failed to create cache: %s", e)
+            raise CacheCreationError("Failed to create cache: %s" % e) from e
 
     async def _call_api_with_retry(
         self, model: "genai.GenerativeModel", prompt_text: str
@@ -516,20 +527,23 @@ class GeminiAgent:
             if finish_reason and finish_reason.upper() not in {"STOP", "MAX_TOKENS"}:
                 safety_info = result.safety_ratings or ""
                 raise SafetyFilterError(
-                    f"Blocked by safety filter or other reason: {finish_reason}.{safety_info}"
+                    "Blocked by safety filter or other reason: %s.%s"
+                    % (finish_reason, safety_info)
                 )
             return result.content
 
         protos = self._protos()
         self.logger.debug(
-            f"API Call - Model: {self.config.model_name}, Prompt Length: {len(prompt_text)}"
+            "API Call - Model: %s, Prompt Length: %s",
+            self.config.model_name,
+            len(prompt_text),
         )
         start = time.perf_counter()
         response = await model.generate_content_async(
             prompt_text, request_options={"timeout": self.config.timeout}
         )
         latency_ms = (time.perf_counter() - start) * 1000
-        self.logger.info(f"API latency: {latency_ms:.2f} ms")
+        self.logger.info("API latency: %.2f ms", latency_ms)
 
         # 토큰 사용량 로깅 및 누적
         if hasattr(response, "usage_metadata") and response.usage_metadata:
@@ -538,9 +552,10 @@ class GeminiAgent:
             self.total_output_tokens += usage.candidates_token_count
 
             self.logger.info(
-                f"Token Usage - Prompt: {usage.prompt_token_count}, "
-                f"Response: {usage.candidates_token_count}, "
-                f"Total: {usage.total_token_count}"
+                "Token Usage - Prompt: %s, Response: %s, Total: %s",
+                usage.prompt_token_count,
+                usage.candidates_token_count,
+                usage.total_token_count,
             )
             log_metrics(
                 self.logger,
@@ -557,7 +572,7 @@ class GeminiAgent:
         if response.candidates:
             candidate = response.candidates[0]
             finish_reason = candidate.finish_reason
-            self.logger.debug(f"API Response - Finish Reason: {finish_reason}")
+            self.logger.debug("API Response - Finish Reason: %s", finish_reason)
 
             if finish_reason not in [
                 protos.Candidate.FinishReason.STOP,
@@ -566,14 +581,16 @@ class GeminiAgent:
                 # Safety filter나 기타 이유로 중단됨
                 safety_info = ""
                 if hasattr(response, "prompt_feedback") and response.prompt_feedback:
-                    safety_info = f" Safety Ratings: {response.prompt_feedback}"
+                    safety_info = " Safety Ratings: %s" % response.prompt_feedback
 
                 self.logger.warning(
-                    f"⚠️ Generation stopped unexpectedly. "
-                    f"Finish Reason: {finish_reason}.{safety_info}"
+                    "⚠️ Generation stopped unexpectedly. Finish Reason: %s.%s",
+                    finish_reason,
+                    safety_info,
                 )
                 raise SafetyFilterError(
-                    f"Blocked by safety filter or other reason: {finish_reason}.{safety_info}"
+                    "Blocked by safety filter or other reason: %s.%s"
+                    % (finish_reason, safety_info)
                 )
 
         try:
@@ -582,9 +599,9 @@ class GeminiAgent:
             # Safety filter 정보 포함
             safety_info = ""
             if hasattr(response, "prompt_feedback") and response.prompt_feedback:
-                safety_info = f" Safety Filter: {response.prompt_feedback}"
+                safety_info = " Safety Filter: %s" % response.prompt_feedback
 
-            error_msg = f"No text content in response.{safety_info}"
+            error_msg = "No text content in response.%s" % safety_info
             self.logger.error(error_msg)
 
             # 텍스트 추출 실패 시 수동 추출 시도 (빈 상자 확인)
@@ -627,7 +644,7 @@ class GeminiAgent:
         except Exception as e:  # noqa: BLE001
             if self._is_rate_limit_error(e):
                 raise APIRateLimitError(
-                    f"Rate limit exceeded during query generation: {e}"
+                    "Rate limit exceeded during query generation: %s" % e
                 ) from e
             raise
 
@@ -642,16 +659,20 @@ class GeminiAgent:
             return result.queries if result.queries else []
         except ValidationError as e:
             self.logger.error(
-                f"Query Validation Failed: {e}. Response: {cleaned_response[:200]}..."
+                "Query Validation Failed: %s. Response: %s...",
+                e,
+                cleaned_response[:200],
             )
             return []
         except json.JSONDecodeError as e:
             self.logger.error(
-                f"Query JSON Parse Failed: {e}. Response: {cleaned_response[:200]}..."
+                "Query JSON Parse Failed: %s. Response: %s...",
+                e,
+                cleaned_response[:200],
             )
             return []
-        except Exception as e:
-            self.logger.error(f"Unexpected error in query parsing: {e}")
+        except (TypeError, KeyError, AttributeError) as e:
+            self.logger.error("Unexpected error in query parsing: %s", e)
             return []
 
     @retry(
@@ -705,10 +726,7 @@ class GeminiAgent:
         )
 
         # 캐시 적중률 모니터링
-        if cached_content:
-            self.cache_hits += 1
-        else:
-            self.cache_misses += 1
+        self._track_cache_usage(cached_content is not None)
 
         try:
             response_text = await self._call_api_with_retry(
@@ -717,7 +735,7 @@ class GeminiAgent:
         except Exception as e:  # noqa: BLE001
             if self._is_rate_limit_error(e):
                 raise APIRateLimitError(
-                    f"Rate limit exceeded during evaluation: {e}"
+                    "Rate limit exceeded during evaluation: %s" % e
                 ) from e
             raise
         cleaned_response = clean_markdown_code_block(response_text)
@@ -732,14 +750,18 @@ class GeminiAgent:
             return result
         except ValidationError as e:
             self.logger.error(
-                f"Evaluation Validation Failed: {e}. Response: {cleaned_response[:200]}..."
+                "Evaluation Validation Failed: %s. Response: %s...",
+                e,
+                cleaned_response[:200],
             )
-            raise ValidationFailedError(f"Evaluation validation failed: {e}") from e
+            raise ValidationFailedError("Evaluation validation failed: %s" % e) from e
         except json.JSONDecodeError as e:
             self.logger.error(
-                f"Evaluation JSON Parse Failed: {e}. Response: {cleaned_response[:200]}..."
+                "Evaluation JSON Parse Failed: %s. Response: %s...",
+                e,
+                cleaned_response[:200],
             )
-            raise ValidationFailedError(f"Evaluation JSON parsing failed: {e}") from e
+            raise ValidationFailedError("Evaluation JSON parsing failed: %s" % e) from e
 
     async def rewrite_best_answer(
         self,
@@ -773,17 +795,14 @@ class GeminiAgent:
         )
 
         # 캐시 적중률 모니터링
-        if cached_content:
-            self.cache_hits += 1
-        else:
-            self.cache_misses += 1
+        self._track_cache_usage(cached_content is not None)
 
         try:
             response_text = await self._call_api_with_retry(model, payload)
         except Exception as e:  # noqa: BLE001
             if self._is_rate_limit_error(e):
                 raise APIRateLimitError(
-                    f"Rate limit exceeded during rewrite: {e}"
+                    "Rate limit exceeded during rewrite: %s" % e
                 ) from e
             raise
 
