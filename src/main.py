@@ -737,9 +737,11 @@ async def main():
     start_time = datetime.now(timezone.utc)
 
     # Integrated pipeline quick path (skip Gemini workflow)
-    if args.integrated_pipeline:
+    if getattr(args, "integrated_pipeline", False):
         try:
-            meta_path = Path(args.pipeline_meta)
+            meta_path = Path(
+                getattr(args, "pipeline_meta", "examples/session_input.json")
+            )
             if not meta_path.is_absolute():
                 meta_path = Path(__file__).resolve().parents[1] / meta_path
             from src.integrated_qa_pipeline import run_integrated_pipeline

@@ -51,7 +51,7 @@ def parse_raw_candidates(text: str) -> Dict[str, str]:
         chunks = [
             chunk.strip()
             for chunk in _re.split(r"\n-{3,}\n|\n{2,}", raw)
-            if chunk.strip()
+            if chunk.strip() and not _re.fullmatch(r"-+", chunk.strip())
         ]
         if len(chunks) >= 2:
             labels = ["A", "B", "C"]
