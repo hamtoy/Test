@@ -1,8 +1,9 @@
+"""GeminiAgent 메인 클래스."""
+
 from __future__ import annotations
 
 import asyncio
 import datetime
-import hashlib
 import json
 import logging
 import time
@@ -18,44 +19,36 @@ from tenacity import (
     wait_exponential,
 )
 
+from src.agent.cache_manager import CacheManager
+from src.agent.cost_tracker import CostTracker
+from src.agent.rate_limiter import RateLimitManager
 from src.config import AppConfig
-from src.constants import (
-    DEFAULT_RPM_LIMIT,
-    DEFAULT_RPM_WINDOW_SECONDS,
-    MIN_CACHE_TOKENS,
-    PRICING_TIERS,
-    BUDGET_WARNING_THRESHOLDS,
-)
-from src.logging_setup import log_metrics
+from src.constants import MIN_CACHE_TOKENS
+from src.core.factory import get_llm_provider
+from src.core.interfaces import LLMProvider
 from src.exceptions import (
     APIRateLimitError,
-    BudgetExceededError,
     CacheCreationError,
     SafetyFilterError,
     ValidationFailedError,
 )
+from src.logging_setup import log_metrics
 from src.models import EvaluationResultSchema, QueryResult
 from src.utils import clean_markdown_code_block, safe_json_parse
-from src.core.factory import get_llm_provider
-from src.core.interfaces import LLMProvider
 
 if TYPE_CHECKING:
     import google.generativeai as genai
     import google.generativeai.caching as caching
-    from aiolimiter import AsyncLimiter
 
 
 class GeminiAgent:
-    """Gemini API와의 통신을 담당하는 에이전트.
+    """Gemini API와의 통신을 담당하는 에이전트 (Refactored).
 
     주요 기능:
     - 의존성 주입을 통한 테스트 용이성 확보
-    - Rate limiting 및 동시성 제어
-    - 비용 추적 및 캐시 모니터링
-
-    Args:
-        config: 애플리케이션 설정
-        jinja_env: Jinja2 환경 (테스트 시 mock 주입 가능)
+    - Rate limiting 및 동시성 제어 (RateLimitManager 위임)
+    - 비용 추적 (CostTracker 위임)
+    - 캐시 관리 (CacheManager 위임)
     """
 
     def __init__(
@@ -64,22 +57,29 @@ class GeminiAgent:
         jinja_env: Optional[Environment] = None,
         llm_provider: Optional[LLMProvider] = None,
     ):
-        """Gemini API 에이전트 초기화.
-
-        Args:
-            config: 애플리케이션 설정 (API 키, 타임아웃, 동시성 등)
-            jinja_env: Jinja2 환경 (테스트 시 mock 주입 가능, 없으면 생성)
-
-        Raises:
-            FileNotFoundError: 필수 템플릿 파일이 누락된 경우
-        """
         self.logger = logging.getLogger("GeminiWorkflow")
         self.config = config
+
+        # 컴포넌트 초기화
+        self.cost_tracker = CostTracker(
+            model_name=config.model_name, budget_limit_usd=config.budget_limit_usd
+        )
+        self.rate_limiter = RateLimitManager(max_concurrency=config.max_concurrency)
+
+        # Resolve cache directory
+        cache_path = Path(config.local_cache_dir)
+        if not cache_path.is_absolute():
+            cache_path = config.base_dir / cache_path
+
+        self.cache_manager = CacheManager(
+            cache_dir=cache_path, ttl_minutes=config.cache_ttl_minutes
+        )
+
+        # LLM Provider 설정
         self.llm_provider: Optional[LLMProvider]
         if llm_provider is not None:
             self.llm_provider = llm_provider
         else:
-            # opt-in: only auto-create when explicitly enabled on config
             if getattr(config, "llm_provider_enabled", False):
                 try:
                     self.llm_provider = get_llm_provider(config)
@@ -88,74 +88,87 @@ class GeminiAgent:
             else:
                 self.llm_provider = None
 
-        # 동시 실행 개수 제한
-        self._semaphore = asyncio.Semaphore(config.max_concurrency)
-        self._rate_limiter: Optional["AsyncLimiter"] = None
-        try:
-            from aiolimiter import AsyncLimiter
-
-            # Gemini API 기본 RPM: DEFAULT_RPM_LIMIT (1분에 DEFAULT_RPM_LIMIT개)
-            self._rate_limiter = AsyncLimiter(
-                max_rate=DEFAULT_RPM_LIMIT, time_period=DEFAULT_RPM_WINDOW_SECONDS
-            )
-            self.logger.info(
-                "Rate limiter enabled: %s requests/%s seconds",
-                DEFAULT_RPM_LIMIT,
-                DEFAULT_RPM_WINDOW_SECONDS,
-            )
-        except ImportError:
-            self._rate_limiter = None
-            self.logger.warning("aiolimiter not installed. Rate limiting disabled.")
-
         self.safety_settings = self._get_safety_settings()
-
-        self.total_input_tokens = 0
-        self.total_output_tokens = 0
-
-        self.cache_hits = 0
-        self.cache_misses = 0
         self.api_retries = 0
         self.api_failures = 0
-        self._budget_warned_thresholds: set[int] = set()
 
-        # 외부에서 주입하거나, 없으면 생성 (Dependency Injection)
+        # Jinja 환경 설정
         if jinja_env is not None:
             self.jinja_env = jinja_env
         else:
-            # 필수 템플릿 파일 존재 확인 (없으면 즉시 실패)
-            required_templates = [
-                "prompt_eval.j2",
-                "prompt_query_gen.j2",
-                "prompt_rewrite.j2",
-                "query_gen_user.j2",
-                "rewrite_user.j2",
-            ]
+            self._init_jinja_env()
 
-            for template_name in required_templates:
-                template_path = config.template_dir / template_name
-                if not template_path.exists():
-                    raise FileNotFoundError(
-                        f"Required template not found: {template_path}\n"
-                        f"Please ensure all .j2 files are in the templates/ directory."
-                    )
+    def _init_jinja_env(self) -> None:
+        required_templates = [
+            "prompt_eval.j2",
+            "prompt_query_gen.j2",
+            "prompt_rewrite.j2",
+            "query_gen_user.j2",
+            "rewrite_user.j2",
+        ]
+        for template_name in required_templates:
+            template_path = self.config.template_dir / template_name
+            if not template_path.exists():
+                raise FileNotFoundError(
+                    f"Required template not found: {template_path}\n"
+                    f"Please ensure all .j2 files are in the templates/ directory."
+                )
+        self.jinja_env = Environment(
+            loader=FileSystemLoader(self.config.template_dir),
+            autoescape=True,
+        )
 
-            # 템플릿 엔진 초기화
-            self.jinja_env = Environment(
-                loader=FileSystemLoader(config.template_dir),
-                autoescape=True,  # XSS 방지
-            )
+    # --- Properties for Backward Compatibility ---
+    @property
+    def total_input_tokens(self) -> int:
+        return self.cost_tracker.total_input_tokens
 
-    def _track_cache_usage(self, cached: bool) -> None:
-        """Track cache hit or miss for monitoring purposes.
+    @total_input_tokens.setter
+    def total_input_tokens(self, value: int) -> None:
+        # Allow setting for tests or manual adjustments
+        self.cost_tracker.total_input_tokens = value
 
-        Args:
-            cached: True if cache was used (hit), False if not (miss)
-        """
-        if cached:
-            self.cache_hits += 1
-        else:
-            self.cache_misses += 1
+    @property
+    def total_output_tokens(self) -> int:
+        return self.cost_tracker.total_output_tokens
 
+    @total_output_tokens.setter
+    def total_output_tokens(self, value: int) -> None:
+        self.cost_tracker.total_output_tokens = value
+
+    @property
+    def cache_hits(self) -> int:
+        return self.cache_manager.cache_hits
+
+    @cache_hits.setter
+    def cache_hits(self, value: int) -> None:
+        self.cache_manager.cache_hits = value
+
+    @property
+    def cache_misses(self) -> int:
+        return self.cache_manager.cache_misses
+
+    @cache_misses.setter
+    def cache_misses(self, value: int) -> None:
+        self.cache_manager.cache_misses = value
+
+    @property
+    def _rate_limiter(self):
+        return self.rate_limiter.limiter
+
+    @_rate_limiter.setter
+    def _rate_limiter(self, value):
+        self.rate_limiter.limiter = value
+
+    @property
+    def _semaphore(self):
+        return self.rate_limiter.semaphore
+
+    @_semaphore.setter
+    def _semaphore(self, value):
+        self.rate_limiter.semaphore = value
+
+    # --- Helper Properties ---
     @property
     def _genai(self):
         import google.generativeai as genai
@@ -177,17 +190,6 @@ class GeminiAgent:
         from google.api_core import exceptions as google_exceptions
 
         return google_exceptions
-
-    def _is_rate_limit_error(self, exc: Exception) -> bool:
-        """Return True if the exception represents a rate limit (ResourceExhausted)."""
-        try:
-            google_exceptions = self._google_exceptions()
-            if isinstance(exc, google_exceptions.ResourceExhausted):
-                return True
-        except (ImportError, AttributeError):
-            # Fallback for environments or tests that monkeypatch ResourceExhausted
-            pass
-        return exc.__class__.__name__ == "ResourceExhausted"
 
     @staticmethod
     def _protos():
@@ -213,23 +215,53 @@ class GeminiAgent:
             ]
         }
 
+    def _is_rate_limit_error(self, exc: Exception) -> bool:
+        try:
+            google_exceptions = self._google_exceptions()
+            if isinstance(exc, google_exceptions.ResourceExhausted):
+                return True
+        except (ImportError, AttributeError):
+            pass
+        return exc.__class__.__name__ == "ResourceExhausted"
+
+    # --- Private Methods for Backward Compatibility (Proxies) ---
+    def _store_local_cache(
+        self, fingerprint: str, cache_name: str, ttl_minutes: int
+    ) -> None:
+        self.cache_manager.store_cache(fingerprint, cache_name, ttl_minutes)
+
+    def _load_local_cache(
+        self, fingerprint: str, ttl_minutes: Optional[int] = None
+    ) -> Any:
+        # Note: ttl_minutes is ignored in new implementation or handled differently
+        return self.cache_manager.load_cached(fingerprint, self._caching)
+
+    def _local_cache_manifest_path(self) -> Path:
+        return self.cache_manager._resolve_manifest_path(self.cache_manager.cache_dir)
+
+    def _cleanup_expired_cache(self, ttl_minutes: int) -> None:
+        self.cache_manager.cleanup_expired(ttl_minutes)
+
+    def _get_fingerprint(self, content: str) -> str:
+        return self.cache_manager.get_fingerprint(content)
+
+    # --- Core Methods ---
+
+    def get_total_cost(self) -> float:
+        return self.cost_tracker.get_total_cost()
+
+    def get_budget_usage_percent(self) -> float:
+        return self.cost_tracker.get_budget_usage_percent()
+
+    def check_budget(self) -> None:
+        self.cost_tracker.check_budget()
+
     def _create_generative_model(
         self,
         system_prompt: str,
         response_schema: type[BaseModel] | None = None,
         cached_content: Optional["caching.CachedContent"] = None,
     ) -> "genai.GenerativeModel":
-        """GenerativeModel 인스턴스를 생성하는 팩토리 메서드.
-
-        Args:
-            system_prompt: 시스템 프롬프트
-            response_schema: JSON 스키마 (선택, 제공 시 JSON 모드 활성화)
-            cached_content: 재사용할 캐시 객체 (선택, Context Caching 활성화)
-
-        Returns:
-            GenerativeModel 인스턴스
-        """
-
         generation_config: Dict[str, object] = {
             "temperature": self.config.temperature,
             "max_output_tokens": self.config.max_output_tokens,
@@ -242,13 +274,13 @@ class GeminiAgent:
         gen_config_param = cast(Any, generation_config)
 
         if cached_content:
-            model = self._genai.GenerativeModel.from_cached_content(  # type: ignore[arg-type,call-overload]
+            model = self._genai.GenerativeModel.from_cached_content(  # type: ignore
                 cached_content=cached_content,
                 generation_config=gen_config_param,
                 safety_settings=self.safety_settings,
             )
         else:
-            model = self._genai.GenerativeModel(  # type: ignore[arg-type,call-overload]
+            model = self._genai.GenerativeModel(  # type: ignore
                 model_name=self.config.model_name,
                 system_instruction=system_prompt,
                 generation_config=gen_config_param,
@@ -261,136 +293,22 @@ class GeminiAgent:
             pass
         return model
 
-    def _local_cache_manifest_path(self) -> Path:
-        base = Path(self.config.local_cache_dir)
-        if not base.is_absolute():
-            base = self.config.base_dir / base
-        return base / "context_cache.json"
-
-    def _cleanup_expired_cache(self, ttl_minutes: int) -> None:
-        """Remove expired cache entries from the local manifest (best-effort)."""
-        manifest_path = self._local_cache_manifest_path()
-        if not manifest_path.exists():
-            return
-        try:
-            with open(manifest_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-        except (OSError, json.JSONDecodeError) as e:
-            self.logger.debug("Cache cleanup skipped (read error): %s", e)
-            return
-
-        now = datetime.datetime.now(datetime.timezone.utc)
-        updated: dict[str, dict[str, Any]] = {}
-
-        for fingerprint, entry in data.items():
-            created_raw = entry.get("created")
-            created = (
-                datetime.datetime.fromisoformat(created_raw) if created_raw else None
-            )
-            if created is None:
-                continue
-            if created.tzinfo is None:
-                created = created.replace(tzinfo=datetime.timezone.utc)
-            ttl = int(entry.get("ttl_minutes", ttl_minutes) or ttl_minutes)
-            if now - created <= datetime.timedelta(minutes=ttl):
-                updated[fingerprint] = entry
-
-        if len(updated) == len(data):
-            return
-
-        try:
-            manifest_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(manifest_path, "w", encoding="utf-8") as f:
-                json.dump(updated, f, ensure_ascii=False, indent=2)
-        except OSError as e:
-            self.logger.debug("Cache cleanup skipped (write error): %s", e)
-
-    def _load_local_cache(
-        self, fingerprint: str, ttl_minutes: int
-    ) -> Optional["caching.CachedContent"]:
-        manifest_path = self._local_cache_manifest_path()
-        if not manifest_path.exists():
-            return None
-        # Remove expired entries to keep manifest small and clean
-        self._cleanup_expired_cache(ttl_minutes)
-        try:
-            with open(manifest_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            entry = data.get(fingerprint)
-            if not entry:
-                return None
-            created_raw = entry.get("created")
-            created = (
-                datetime.datetime.fromisoformat(created_raw) if created_raw else None
-            )
-            if created is None:
-                return None
-            ttl_raw = entry.get("ttl_minutes", ttl_minutes)
-            ttl = int(ttl_raw) if ttl_raw is not None else ttl_minutes
-            now = datetime.datetime.now(datetime.timezone.utc)
-            if created.tzinfo is None:
-                created = created.replace(tzinfo=datetime.timezone.utc)
-            if now - created > datetime.timedelta(minutes=ttl):
-                return None
-            cache_name = entry.get("name")
-            if cache_name:
-                return self._caching.CachedContent.get(name=cache_name)
-        except (OSError, json.JSONDecodeError, KeyError, ValueError) as e:
-            self.logger.debug("Local cache load skipped: %s", e)
-        return None
-
-    def _store_local_cache(
-        self, fingerprint: str, cache_name: str, ttl_minutes: int
-    ) -> None:
-        manifest_path = self._local_cache_manifest_path()
-        manifest_path.parent.mkdir(parents=True, exist_ok=True)
-        data = {}
-        if manifest_path.exists():
-            try:
-                with open(manifest_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-            except (OSError, json.JSONDecodeError):
-                data = {}
-        data[fingerprint] = {
-            "name": cache_name,
-            "created": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "ttl_minutes": ttl_minutes,
-        }
-        with open(manifest_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-
     async def create_context_cache(
         self, ocr_text: str
     ) -> Optional["caching.CachedContent"]:
-        """OCR 텍스트를 기반으로 Gemini Context Cache 생성.
-
-        MIN_CACHE_TOKENS 이상일 때만 캐시를 생성하며, 로컬 디스크 캐시로 재사용을 시도합니다.
-
-        Args:
-            ocr_text: 캐시할 OCR 텍스트
-
-        Returns:
-            생성된 캐시 객체. 토큰이 부족하거나 실패 시 None
-
-        Raises:
-            CacheCreationError: 캐시 생성 실패 시
-        """
-        # 1. 시스템 프롬프트 렌더링 (평가용 기준)
         system_prompt = self.jinja_env.get_template("prompt_eval.j2").render()
         combined_content = system_prompt + "\n\n" + ocr_text
-        fingerprint = hashlib.sha256(combined_content.encode("utf-8")).hexdigest()
-        ttl_minutes = self.config.cache_ttl_minutes
-        token_threshold = getattr(self.config, "cache_min_tokens", MIN_CACHE_TOKENS)
+        fingerprint = self.cache_manager.get_fingerprint(combined_content)
 
-        # 재사용 가능한 캐시가 있으면 반환 (Local Disk Cache)
-        local_cached = self._load_local_cache(fingerprint, ttl_minutes)
+        # Try loading from local cache
+        local_cached = self.cache_manager.load_cached(fingerprint, self._caching)
         if local_cached:
             self.logger.info("Reusing context cache from disk: %s", local_cached.name)
             return local_cached
 
         loop = asyncio.get_running_loop()
+        token_threshold = getattr(self.config, "cache_min_tokens", MIN_CACHE_TOKENS)
 
-        # 2. 토큰 수 계산을 블로킹하지 않도록 오프로드
         def _count_tokens() -> int:
             model = self._genai.GenerativeModel(self.config.model_name)
             return model.count_tokens(combined_content).total_tokens
@@ -403,22 +321,26 @@ class GeminiAgent:
             return None
 
         try:
-            # 3. 캐시 생성 (Configurable TTL) - 블로킹 호출 오프로드
+
             def _create_cache():
                 return self._caching.CachedContent.create(
                     model=self.config.model_name,
                     display_name="ocr_context_cache",
                     system_instruction=system_prompt,
                     contents=[ocr_text],
-                    ttl=datetime.timedelta(minutes=ttl_minutes),
+                    ttl=datetime.timedelta(minutes=self.config.cache_ttl_minutes),
                 )
 
             cache = await loop.run_in_executor(None, _create_cache)
             self.logger.info(
-                "Context Cache Created: %s (Expires in %sm)", cache.name, ttl_minutes
+                "Context Cache Created: %s (Expires in %sm)",
+                cache.name,
+                self.config.cache_ttl_minutes,
             )
             try:
-                self._store_local_cache(fingerprint, cache.name, ttl_minutes)
+                self.cache_manager.store_cache(
+                    fingerprint, cache.name, self.config.cache_ttl_minutes
+                )
             except OSError as e:
                 self.logger.debug("Local cache manifest write skipped: %s", e)
             return cache
@@ -434,22 +356,16 @@ class GeminiAgent:
     async def _call_api_with_retry(
         self, model: "genai.GenerativeModel", prompt_text: str
     ) -> str:
-        """[Retry Logic] 재시도 로직이 데코레이터로 추상화됨"""
-
-        # Lazy import exceptions for retry decorator
         exceptions = self._google_exceptions()
         retry_exceptions = (
             exceptions.ResourceExhausted,
             exceptions.ServiceUnavailable,
             exceptions.DeadlineExceeded,
-            exceptions.Cancelled,  # Handle 499 "operation cancelled" errors
+            exceptions.Cancelled,
             TimeoutError,
         )
 
         async def _adaptive_backoff(attempt: int) -> None:
-            """
-            시도 횟수에 따라 동적으로 지연을 늘려주는 훅.
-            """
             self.api_retries += 1
             delay = min(10, 2 * attempt)
             self.logger.warning(
@@ -464,21 +380,24 @@ class GeminiAgent:
             reraise=True,
         )
         async def _execute_with_retry():
-            # RPM 제어 (시간 기반)
-            if self._rate_limiter:
-                async with self._rate_limiter, self._semaphore:
+            limiter = self.rate_limiter.limiter
+            semaphore = self.rate_limiter.semaphore
+
+            if limiter:
+                async with limiter, semaphore:
                     try:
                         return await self._execute_api_call(model, prompt_text)
                     except retry_exceptions:
-                        stats = getattr(_execute_with_retry.retry, "statistics", {})  # type: ignore[attr-defined]
+                        stats = getattr(_execute_with_retry.retry, "statistics", {})  # type: ignore
                         attempt = stats.get("attempt_number", 1) or 1
                         await _adaptive_backoff(attempt)
                         raise
-            async with self._semaphore:
+
+            async with semaphore:
                 try:
                     return await self._execute_api_call(model, prompt_text)
                 except retry_exceptions:
-                    stats = getattr(_execute_with_retry.retry, "statistics", {})  # type: ignore[attr-defined]
+                    stats = getattr(_execute_with_retry.retry, "statistics", {})  # type: ignore
                     attempt = stats.get("attempt_number", 1) or 1
                     await _adaptive_backoff(attempt)
                     raise
@@ -492,7 +411,6 @@ class GeminiAgent:
     async def _execute_api_call(
         self, model: "genai.GenerativeModel", prompt_text: str
     ) -> str:
-        """실제 API 호출 로직"""
         if self.llm_provider:
             start = time.perf_counter()
             system_instruction = getattr(model, "_agent_system_instruction", None)
@@ -509,8 +427,7 @@ class GeminiAgent:
 
             prompt_tokens = result.usage.get("prompt_tokens", 0)
             completion_tokens = result.usage.get("completion_tokens", 0)
-            self.total_input_tokens += prompt_tokens
-            self.total_output_tokens += completion_tokens
+            self.cost_tracker.record_usage(prompt_tokens, completion_tokens)
 
             log_metrics(
                 self.logger,
@@ -545,11 +462,11 @@ class GeminiAgent:
         latency_ms = (time.perf_counter() - start) * 1000
         self.logger.info("API latency: %.2f ms", latency_ms)
 
-        # 토큰 사용량 로깅 및 누적
         if hasattr(response, "usage_metadata") and response.usage_metadata:
             usage = response.usage_metadata
-            self.total_input_tokens += usage.prompt_token_count
-            self.total_output_tokens += usage.candidates_token_count
+            self.cost_tracker.record_usage(
+                usage.prompt_token_count, usage.candidates_token_count
+            )
 
             self.logger.info(
                 "Token Usage - Prompt: %s, Response: %s, Total: %s",
@@ -568,7 +485,6 @@ class GeminiAgent:
                 api_failures=self.api_failures,
             )
 
-        # Finish Reason 및 Safety Filter 상세 검증
         if response.candidates:
             candidate = response.candidates[0]
             finish_reason = candidate.finish_reason
@@ -578,7 +494,6 @@ class GeminiAgent:
                 protos.Candidate.FinishReason.STOP,
                 protos.Candidate.FinishReason.MAX_TOKENS,
             ]:
-                # Safety filter나 기타 이유로 중단됨
                 safety_info = ""
                 if hasattr(response, "prompt_feedback") and response.prompt_feedback:
                     safety_info = " Safety Ratings: %s" % response.prompt_feedback
@@ -596,7 +511,6 @@ class GeminiAgent:
         try:
             return response.text
         except ValueError:
-            # Safety filter 정보 포함
             safety_info = ""
             if hasattr(response, "prompt_feedback") and response.prompt_feedback:
                 safety_info = " Safety Filter: %s" % response.prompt_feedback
@@ -604,7 +518,6 @@ class GeminiAgent:
             error_msg = "No text content in response.%s" % safety_info
             self.logger.error(error_msg)
 
-            # 텍스트 추출 실패 시 수동 추출 시도 (빈 상자 확인)
             if response.candidates and response.candidates[0].content.parts:
                 parts = response.candidates[0].content.parts
                 if len(parts) > 0 and hasattr(parts[0], "text"):
@@ -615,40 +528,30 @@ class GeminiAgent:
     async def generate_query(
         self, ocr_text: str, user_intent: Optional[str] = None
     ) -> List[str]:
-        """
-        Generate strategic queries based on OCR text and optional user intent.
-
-        Returns an empty list on invalid/empty responses; raises APIRateLimitError on rate limiting.
-        """
-        # 템플릿 렌더링
         template = self.jinja_env.get_template("query_gen_user.j2")
         user_prompt = template.render(ocr_text=ocr_text, user_intent=user_intent)
 
-        # Pydantic 스키마 추출 및 주입
         schema_json = json.dumps(
             QueryResult.model_json_schema(), indent=2, ensure_ascii=False
         )
 
-        # 시스템 프롬프트 렌더링
         system_prompt = self.jinja_env.get_template("prompt_query_gen.j2").render(
             response_schema=schema_json
         )
 
-        # Pydantic 모델 전달 (JSON Mode)
         model = self._create_generative_model(
             system_prompt, response_schema=QueryResult
         )
 
         try:
             response_text = await self._call_api_with_retry(model, user_prompt)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             if self._is_rate_limit_error(e):
                 raise APIRateLimitError(
                     "Rate limit exceeded during query generation: %s" % e
                 ) from e
             raise
 
-        # Pydantic Validation 사용 (안전한 파싱)
         cleaned_response = clean_markdown_code_block(response_text)
         if not cleaned_response or not cleaned_response.strip():
             self.logger.error("Query Generation: Empty response received")
@@ -690,22 +593,6 @@ class GeminiAgent:
         candidates: Dict[str, str],
         cached_content: Optional["caching.CachedContent"] = None,
     ) -> Optional[EvaluationResultSchema]:
-        """후보 답변을 평가하고 점수를 부여.
-
-        Args:
-            ocr_text: 평가 기준이 되는 OCR 텍스트
-            query: 평가 대상 질의
-            candidates: 후보 답변 딕셔너리 (키: 후보 ID, 값: 답변)
-            cached_content: 재사용할 캐시 객체 (선택)
-
-        Returns:
-            평가 결과. 질의가 비어있으면 None
-
-        Raises:
-            APIRateLimitError: API rate limit 초과 시
-            ValidationFailedError: 스키마 검증 또는 JSON 파싱 실패 시
-            ValueError: 응답이 비어있을 때
-        """
         if not query:
             return None
 
@@ -715,24 +602,21 @@ class GeminiAgent:
             "candidates": candidates,
         }
 
-        # 시스템 프롬프트 렌더링
         system_prompt = self.jinja_env.get_template("prompt_eval.j2").render()
 
-        # Pydantic 모델 전달
         model = self._create_generative_model(
             system_prompt,
             response_schema=EvaluationResultSchema,
             cached_content=cached_content,
         )
 
-        # 캐시 적중률 모니터링
-        self._track_cache_usage(cached_content is not None)
+        self.cache_manager.track_usage(cached_content is not None)
 
         try:
             response_text = await self._call_api_with_retry(
                 model, json.dumps(input_data, ensure_ascii=False)
             )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             if self._is_rate_limit_error(e):
                 raise APIRateLimitError(
                     "Rate limit exceeded during evaluation: %s" % e
@@ -745,7 +629,6 @@ class GeminiAgent:
             raise ValueError("Empty evaluation response")
 
         try:
-            # Pydantic을 사용하여 검증 및 파싱 (에러 발생 시 retry 데코레이터가 처리)
             result = EvaluationResultSchema.model_validate_json(cleaned_response)
             return result
         except ValidationError as e:
@@ -769,117 +652,29 @@ class GeminiAgent:
         best_answer: str,
         cached_content: Optional["caching.CachedContent"] = None,
     ) -> str:
-        """선택된 최고 답변을 가독성 및 안전성 측면에서 개선.
-
-        Args:
-            ocr_text: 컨텍스트 정보
-            best_answer: 재작성할 답변
-            cached_content: 재사용할 캐시 객체 (선택)
-
-        Returns:
-            재작성된 답변. 파싱 실패 시 원본 텍스트 반환
-
-        Raises:
-            APIRateLimitError: API rate limit 초과 시
-        """
-        # 템플릿 렌더링
         template = self.jinja_env.get_template("rewrite_user.j2")
         payload = template.render(ocr_text=ocr_text, best_answer=best_answer)
 
-        # 시스템 프롬프트 렌더링
         system_prompt = self.jinja_env.get_template("prompt_rewrite.j2").render()
 
-        # rewrite는 순수 텍스트여야 하므로 response_schema=None
         model = self._create_generative_model(
             system_prompt, cached_content=cached_content
         )
 
-        # 캐시 적중률 모니터링
-        self._track_cache_usage(cached_content is not None)
+        self.cache_manager.track_usage(cached_content is not None)
 
         try:
             response_text = await self._call_api_with_retry(model, payload)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             if self._is_rate_limit_error(e):
                 raise APIRateLimitError(
                     "Rate limit exceeded during rewrite: %s" % e
                 ) from e
             raise
 
-        # utils의 중앙화된 함수 사용 (DRY 원칙)
         unwrapped = safe_json_parse(response_text, "rewritten_answer")
 
-        # Guard: unwrapping 성공 시 반환
         if isinstance(unwrapped, str):
             return unwrapped
 
-        # Fallback: 원본 텍스트 반환
         return response_text if response_text else ""
-
-    def get_total_cost(self) -> float:
-        """
-        세션의 총 API 비용 계산 (USD)
-        모델별 단가를 constants에 정의된 티어로 계산 (입력 토큰 기반)
-        """
-        model_name = self.config.model_name.lower()
-        tiers = PRICING_TIERS.get(model_name)
-        if not tiers:
-            raise ValueError(f"Unsupported model for pricing: {model_name}")
-
-        input_rate = output_rate = None
-        for tier in tiers:
-            max_tokens = tier["max_input_tokens"]
-            if max_tokens is None or self.total_input_tokens <= max_tokens:
-                input_rate = tier["input_rate"]
-                output_rate = tier["output_rate"]
-                break
-
-        if input_rate is None or output_rate is None:
-            raise ValueError(
-                f"No pricing tier matched for model '{model_name}' and tokens {self.total_input_tokens}"
-            )
-
-        input_cost = (self.total_input_tokens / 1_000_000) * input_rate
-        output_cost = (self.total_output_tokens / 1_000_000) * output_rate
-        return input_cost + output_cost
-
-    def get_budget_usage_percent(self) -> float:
-        """Return budget usage percent; 0 if no budget configured."""
-        if not self.config.budget_limit_usd:
-            return 0.0
-        return (self.get_total_cost() / self.config.budget_limit_usd) * 100
-
-    def check_budget(self) -> None:
-        """Raise if total cost exceeds budget."""
-        if not self.config.budget_limit_usd:
-            return
-        total = self.get_total_cost()
-        usage_pct = self.get_budget_usage_percent()
-
-        for threshold, level in BUDGET_WARNING_THRESHOLDS:
-            if (
-                usage_pct >= threshold
-                and threshold not in self._budget_warned_thresholds
-            ):
-                self.logger.warning(
-                    "Budget nearing limit: %s%% used (level=%s)",
-                    round(usage_pct, 2),
-                    level,
-                )
-                self._budget_warned_thresholds.add(threshold)
-
-        if total > self.config.budget_limit_usd:
-            raise BudgetExceededError(
-                f"Session cost ${total:.4f} exceeded budget ${self.config.budget_limit_usd:.2f}"
-            )
-
-
-def __getattr__(name: str):
-    if name == "caching":
-        # Provide a late import hook so tests can monkeypatch `src.agent.caching`
-        # while keeping the heavy dependency out of module import time.
-        import google.generativeai.caching as caching_mod
-
-        globals()["caching"] = caching_mod
-        return caching_mod
-    raise AttributeError(name)

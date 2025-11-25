@@ -6,6 +6,7 @@ import types
 from pathlib import Path
 import tempfile
 from src import agent as ag
+import google.generativeai.caching as caching
 
 
 @pytest.mark.asyncio
@@ -32,8 +33,8 @@ async def test_agent_execute_api_call_safety_error(monkeypatch, tmp_path):
     ]:
         (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
 
-    monkeypatch.setattr(ag, "DEFAULT_RPM_LIMIT", 1)
-    monkeypatch.setattr(ag, "DEFAULT_RPM_WINDOW_SECONDS", 60)
+    monkeypatch.setattr("src.agent.rate_limiter.DEFAULT_RPM_LIMIT", 1)
+    monkeypatch.setattr("src.agent.rate_limiter.DEFAULT_RPM_WINDOW_SECONDS", 60)
 
     agent = ag.GeminiAgent(_Config(), jinja_env=None)
     agent._rate_limiter = None
@@ -82,12 +83,11 @@ def test_agent_cache_budget_and_pricing(monkeypatch, tmp_path):
 
     # pricing tiers stub
     monkeypatch.setattr(
-        ag,
-        "PRICING_TIERS",
+        "src.agent.cost_tracker.PRICING_TIERS",
         {"tier-model": [{"max_input_tokens": None, "input_rate": 1, "output_rate": 2}]},
     )
-    monkeypatch.setattr(ag, "DEFAULT_RPM_LIMIT", 10)
-    monkeypatch.setattr(ag, "DEFAULT_RPM_WINDOW_SECONDS", 60)
+    monkeypatch.setattr("src.agent.rate_limiter.DEFAULT_RPM_LIMIT", 10)
+    monkeypatch.setattr("src.agent.rate_limiter.DEFAULT_RPM_WINDOW_SECONDS", 60)
 
     # templates required (empty content)
     for name in [
@@ -140,7 +140,7 @@ def test_agent_local_cache_load_and_store(monkeypatch, tmp_path):
     fp = "abc"
     # Avoid calling CachedContent.get in _load_local_cache
     monkeypatch.setattr(
-        ag.caching.CachedContent, "get", lambda name: types.SimpleNamespace(name=name)
+        caching.CachedContent, "get", lambda name: types.SimpleNamespace(name=name)
     )
     agent._store_local_cache(fp, "name1", ttl_minutes=1)
     cached = agent._load_local_cache(fp, ttl_minutes=1)

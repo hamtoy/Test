@@ -113,12 +113,12 @@ class TestGeminiAgent:
     def test_budget_usage_and_enforcement(self, agent):
         agent.total_input_tokens = 500_000
         agent.total_output_tokens = 250_000
-        agent.config.budget_limit_usd = 0.1
+        agent.cost_tracker.budget_limit_usd = 0.1
 
         usage = agent.get_budget_usage_percent()
         assert usage > 0
 
-        agent.config.budget_limit_usd = 0.00001
+        agent.cost_tracker.budget_limit_usd = 0.00001
         with pytest.raises(Exception):
             agent.check_budget()
 

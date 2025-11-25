@@ -6,7 +6,8 @@ from unittest.mock import AsyncMock
 import pytest
 from jinja2 import DictLoader, Environment
 
-from src.agent import GeminiAgent, SafetyFilterError
+from src.agent import GeminiAgent
+from src.exceptions import SafetyFilterError
 from src.config import AppConfig
 
 VALID_API_KEY = "AIza" + "B" * 35

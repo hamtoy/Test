@@ -7,7 +7,8 @@ import pytest
 
 from jinja2 import DictLoader, Environment
 
-from src.agent import GeminiAgent, CacheCreationError
+from src.agent import GeminiAgent
+from src.exceptions import CacheCreationError
 from src.config import AppConfig
 
 VALID_API_KEY = "AIza" + "F" * 35
@@ -74,7 +75,7 @@ async def test_create_context_cache_raises(monkeypatch, tmp_path):
 
 def test_cost_error_unknown_model(monkeypatch, tmp_path):
     agent = _agent(monkeypatch, tmp_path)
-    agent.config.model_name = "unknown-model"  # type: ignore[assignment]
+    agent.cost_tracker.model_name = "unknown-model"
     agent.total_input_tokens = 1000
     agent.total_output_tokens = 10
     with pytest.raises(ValueError):
