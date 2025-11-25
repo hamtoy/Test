@@ -750,7 +750,7 @@ async def main():
             console.print("[bold green]Integrated pipeline completed[/bold green]")
             for i, turn in enumerate(session.get("turns", []), 1):
                 console.print(
-                    f"{i}. {turn.get('type')}: {turn.get('prompt','')[:80]}..."
+                    f"{i}. {turn.get('type')}: {turn.get('prompt', '')[:80]}..."
                 )
         except Exception as e:  # noqa: BLE001
             logger.critical(f"[FATAL] Integrated pipeline failed: {e}")
