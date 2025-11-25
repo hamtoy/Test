@@ -5,12 +5,11 @@ from typing import Any, Dict, List, Optional
 
 
 # Gemini 3 Pro Preview pricing (USD per 1M tokens)
-# Source: Google AI Studio pricing page
-# <=200K tokens tier (most common)
+# Source: Google AI Studio pricing page (<=200K tokens tier)
 GEMINI_PRO_PREVIEW_PRICING = {
-    "input": 0.002,  # $2.00 per 1M input tokens
-    "output": 0.012,  # $12.00 per 1M output tokens
-    "cached_input": 0.0005,  # $0.50 per 1M cached tokens (estimate)
+    "input": 2.0,  # $2.00 per 1M input tokens
+    "output": 12.0,  # $12.00 per 1M output tokens
+    "cached_input": 0.5,  # $0.50 per 1M cached tokens (estimate)
 }
 
 # Note: >200K tokens tier has higher rates:

@@ -393,6 +393,9 @@ async def _gather_results(
     filtered: List[WorkflowResult] = []
     processed_results = await asyncio.gather(*tasks, return_exceptions=True)
     for item in processed_results:
+        if isinstance(item, BudgetExceededError):
+            # 예산 초과는 즉시 상위로 전파하여 추가 실행을 막는다.
+            raise item
         if isinstance(item, Exception):
             logger.error(LOG_MESSAGES["turn_exception"].format(error=item))
             continue
@@ -746,7 +749,7 @@ async def main():
 
     # Agent에 모든 의존성 주입 (Dependency Injection)
     agent = GeminiAgent(config, jinja_env=jinja_env)
-    user_intent = args.intent if args.mode == "CHAT" else None
+    user_intent = args.intent
 
     logger.info(f"워크플로우 시작 (Mode: {args.mode})")
 

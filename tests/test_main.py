@@ -1,8 +1,9 @@
+import asyncio
 import pytest
 import sys
 from types import SimpleNamespace
 from unittest.mock import MagicMock, AsyncMock, patch
-from src.main import execute_workflow, save_result_to_file
+from src.main import execute_workflow, save_result_to_file, _gather_results
 from src.utils import load_checkpoint, append_checkpoint
 from src.models import WorkflowResult, EvaluationResultSchema, EvaluationItem
 from src.exceptions import BudgetExceededError
@@ -99,6 +100,16 @@ async def test_execute_workflow_budget_exceeded(mock_logger):
 
     assert results == []
     mock_logger.error.assert_any_call("Budget limit exceeded: limit")
+
+
+@pytest.mark.asyncio
+async def test_gather_results_propagates_budget_error(mock_logger):
+    async def _raise_budget():
+        raise BudgetExceededError("limit")
+
+    task = asyncio.create_task(_raise_budget())
+    with pytest.raises(BudgetExceededError):
+        await _gather_results([task], mock_logger)
 
 
 @pytest.mark.asyncio
@@ -370,6 +381,88 @@ async def test_main_cache_stats_warning(monkeypatch, tmp_path):
     await main_module.main()
 
     logger.warning.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_main_auto_mode_passes_intent(monkeypatch, tmp_path):
+    import src.main as main_module
+
+    template_dir = tmp_path / "templates"
+    input_dir = tmp_path / "inputs"
+    output_dir = tmp_path / "outputs"
+    for d in (template_dir, input_dir, output_dir):
+        d.mkdir(parents=True, exist_ok=True)
+    (template_dir / "placeholder.j2").write_text("content", encoding="utf-8")
+
+    class FakeConfig:
+        def __init__(self):
+            self.api_key = "AIza" + "0" * 35
+            self.template_dir = template_dir
+            self.input_dir = input_dir
+            self.output_dir = output_dir
+            self.model_name = "gemini-3-pro-preview"
+            self.cache_stats_path = tmp_path / "stats.jsonl"
+            self.cache_stats_max_entries = 3
+
+    class FakeAgent:
+        def __init__(self, config, jinja_env):
+            self.total_input_tokens = 0
+            self.total_output_tokens = 0
+            self.cache_hits = 0
+            self.cache_misses = 0
+
+    execute_spy = AsyncMock(return_value=[])
+    logger = MagicMock()
+
+    monkeypatch.setenv("LOG_FILE", str(tmp_path / "app.log"))
+    monkeypatch.setenv("ERROR_LOG_FILE", str(tmp_path / "error.log"))
+    monkeypatch.setattr(
+        main_module,
+        "setup_logging",
+        lambda log_level=None: (logger, SimpleNamespace(stop=lambda: None)),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "jinja2",
+        SimpleNamespace(
+            Environment=lambda **kwargs: "env", FileSystemLoader=lambda p: "loader"
+        ),
+    )
+    monkeypatch.setattr(main_module, "AppConfig", FakeConfig)
+    monkeypatch.setattr(main_module, "GeminiAgent", FakeAgent)
+    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)
+    monkeypatch.setattr(
+        main_module,
+        "load_input_data",
+        AsyncMock(return_value=("ocr", {"A": "a"})),
+    )
+    monkeypatch.setattr(main_module, "execute_workflow", execute_spy)
+    monkeypatch.setattr(main_module, "_render_cost_panel", lambda agent: "panel")
+    monkeypatch.setattr(main_module.console, "print", lambda *args, **kwargs: None)
+    monkeypatch.setattr(main_module, "write_cache_stats", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        main_module.argparse.ArgumentParser,
+        "parse_args",
+        lambda self: SimpleNamespace(
+            mode="AUTO",
+            interactive=False,
+            ocr_file="ocr.txt",
+            cand_file="cand.json",
+            intent="요약",
+            checkpoint_file="checkpoint.jsonl",
+            resume=False,
+            log_level="INFO",
+            analyze_cache=False,
+            keep_progress=False,
+            no_cost_panel=False,
+            no_budget_panel=False,
+        ),
+    )
+
+    await main_module.main()
+
+    args, kwargs = execute_spy.await_args
+    assert args[2] == "요약"
 
 
 @pytest.mark.asyncio
