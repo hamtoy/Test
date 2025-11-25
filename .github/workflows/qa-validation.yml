@@ -35,9 +35,7 @@ jobs:
         run: pip install uv
 
       - name: Install dependencies
-        run: |
-          uv sync --extra dev
-          uv pip install neo4j
+        run: uv sync --extra dev
 
       - name: Wait for Neo4j
         run: |
@@ -63,7 +61,7 @@ jobs:
           exit 1
 
       - name: Load graph schema
-        run: uv run python src/graph_schema_builder.py
+        run: uv run python -m src.graph_schema_builder
 
       - name: Run tests
         run: uv run pytest --maxfail=1 --disable-warnings -q
