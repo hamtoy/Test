@@ -1,0 +1,203 @@
+from __future__ import annotations
+
+import types
+import sys
+from src import cross_validation
+from src import lcel_optimized_chain
+from src import memory_augmented_qa
+from src import multi_agent_qa_system
+
+
+def test_cross_validation_scoring(monkeypatch):
+    class _CVSession:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def run(self, query, **_kwargs):
+            if "collect(b.content)" in query:
+                return types.SimpleNamespace(
+                    single=lambda: {"all_content": ["Alpha beta content"]}
+                )
+            if "ErrorPattern" in query:
+                return [
+                    {"pattern": "error", "description": "error desc"},
+                ]
+            return []
+
+    class _FakeKG:
+        def __init__(self):
+            self._graph = types.SimpleNamespace(session=lambda: _CVSession())
+            self._vector_store = None
+
+        def get_constraints_for_query_type(self, _qt):
+            return [
+                {"type": "prohibition", "pattern": "forbidden", "description": "nope"}
+            ]
+
+    cvs = cross_validation.CrossValidationSystem(_FakeKG())
+    result = cvs.cross_validate_qa_pair(
+        "What is alpha?",
+        "forbidden error response with alpha token",
+        "explanation",
+        {"page_id": "p1"},
+    )
+    assert 0 <= result["overall_score"] <= 1
+    assert result["rule_compliance"]["violations"]
+
+
+def test_lcel_optimized_chain(monkeypatch):
+    class _LCELSession:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def run(self, *_args, **_kwargs):
+            return [{"text": "rule text"}]
+
+    class _FakeKG:
+        def __init__(self):
+            self._graph = types.SimpleNamespace(session=lambda: _LCELSession())
+
+        def get_examples(self, limit=3):
+            return [{"text": f"ex{idx}"} for idx in range(limit)]
+
+        def get_constraints_for_query_type(self, qt):
+            return [{"description": f"constraint for {qt}"}]
+
+    class _FakeLLM:
+        def generate(self, prompt, role="lcel"):
+            return f"generated:{role}"
+
+    chain = lcel_optimized_chain.LCELOptimizedChain(_FakeKG(), _FakeLLM())
+    merged = chain._merge_context(
+        {"rules": ["r"], "examples": ["e"], "constraints": ["c"], "context": {"x": 1}}
+    )
+    formatted = chain._format_prompt(
+        {
+            "rules": ["r"],
+            "examples": ["e"],
+            "constraints": ["c"],
+            "original_context": {},
+        }
+    )
+    assert "- r" in formatted
+    assert merged["rules"] == ["r"]
+    assert chain._call_llm("prompt") == "generated:lcel"
+    output = chain.invoke({"query_type": "explanation", "context": {"foo": "bar"}})
+    assert isinstance(output, str)
+
+
+def test_memory_augmented_qa(monkeypatch):
+    monkeypatch.setattr(memory_augmented_qa, "require_env", lambda _v: "val")
+    monkeypatch.setattr(
+        memory_augmented_qa, "CustomGeminiEmbeddings", lambda api_key: object()
+    )
+
+    class _FakeSession:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def run(self, *_args, **_kwargs):
+            return None
+
+    class _FakeDriver:
+        def session(self):
+            return _FakeSession()
+
+        def close(self):
+            return None
+
+    class _GraphDB:
+        @staticmethod
+        def driver(*_args, **_kwargs):
+            return _FakeDriver()
+
+    class _FakeVector:
+        def similarity_search(self, *_args, **_kwargs):
+            return [types.SimpleNamespace(page_content="doc1")]
+
+    class _FakeNeo4jVector:
+        @staticmethod
+        def from_existing_graph(*_args, **_kwargs):
+            return _FakeVector()
+
+    monkeypatch.setitem(
+        sys.modules,
+        "langchain_neo4j",
+        types.SimpleNamespace(Neo4jVector=_FakeNeo4jVector),
+    )
+    monkeypatch.setattr(memory_augmented_qa, "GraphDatabase", _GraphDB)
+    monkeypatch.setattr(
+        memory_augmented_qa,
+        "GeminiModelClient",
+        lambda: types.SimpleNamespace(generate=lambda *_a, **_k: "answer"),
+    )
+
+    system = memory_augmented_qa.MemoryAugmentedQASystem()
+    resp = system.ask_with_memory("무엇을 해야 하나요?")
+    assert resp == "answer"
+    assert system.history[-1]["q"] == "무엇을 해야 하나요?"
+    system.close()
+
+
+def test_multi_agent_qa_system(monkeypatch):
+    class _FakeKG:
+        def __init__(self):
+            self._graph = types.SimpleNamespace(session=lambda: _FakeRuleSession())
+
+        def get_constraints_for_query_type(self, _qt):
+            return [{"description": "c1"}]
+
+    class _FakeLLM:
+        def generate(self, prompt, role="generator"):
+            return f"output for {role}"
+
+    class _FakeExampleSelector:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def select_best_examples(self, *_args, **_kwargs):
+            return [{"example": "ex"}]
+
+    class _FakeValidator:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def cross_validate_qa_pair(self, **_kwargs):
+            return {"valid": True}
+
+    class _FakeRuleSession:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def run(self, *_args, **_kwargs):
+            return [{"text": "rule text"}]
+
+    fake_kg = _FakeKG()
+    fake_kg._graph = types.SimpleNamespace(session=lambda: _FakeRuleSession())
+
+    monkeypatch.setattr(multi_agent_qa_system, "GeminiModelClient", lambda: _FakeLLM())
+    monkeypatch.setattr(
+        multi_agent_qa_system,
+        "DynamicExampleSelector",
+        lambda kg: _FakeExampleSelector(),
+    )
+    monkeypatch.setattr(
+        multi_agent_qa_system, "CrossValidationSystem", lambda kg: _FakeValidator()
+    )
+
+    system = multi_agent_qa_system.MultiAgentQASystem(fake_kg)
+    result = system.collaborative_generate("explanation", {"page_id": "p1"})
+    assert result["metadata"]["examples_used"]
+    assert result["validation"]["valid"] is True
