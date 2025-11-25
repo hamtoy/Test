@@ -1,5 +1,4 @@
 import subprocess
-import sys
 
 result = subprocess.run(
     ["uv", "run", "pytest", "tests/test_agent.py", "-v", "--tb=short"],
