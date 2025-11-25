@@ -1,6 +1,19 @@
 import json
 
 import pytest
+import warnings
+
+# Neo4j sync driver emits a noisy deprecation warning when GC closes a driver.
+warnings.filterwarnings(
+    "ignore",
+    category=DeprecationWarning,
+    message=r"Relying on Driver's destructor to close the session is deprecated.*",
+)
+warnings.filterwarnings(
+    "ignore",
+    category=DeprecationWarning,
+    module=r"neo4j\.?_sync\.driver",
+)
 
 
 @pytest.fixture(autouse=True)
@@ -10,6 +23,14 @@ def mock_env(monkeypatch):
     mock_key = "AIza" + "0" * 35
     monkeypatch.setenv("GEMINI_API_KEY", mock_key)
     monkeypatch.setenv("GEMINI_MODEL_NAME", "gemini-3-pro-preview")
+
+
+@pytest.fixture(autouse=True)
+def clear_neo4j_env(monkeypatch):
+    """Ensure Neo4j drivers are not implicitly created during tests."""
+    for var in ("NEO4J_URI", "NEO4J_USER", "NEO4J_PASSWORD"):
+        monkeypatch.delenv(var, raising=False)
+    return None
 
 
 @pytest.fixture

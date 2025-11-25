@@ -2,10 +2,12 @@ from __future__ import annotations
 # mypy: ignore-errors
 
 import asyncio
-import os
 import logging
+import os
 import time
-from contextlib import contextmanager
+import weakref
+import atexit
+from contextlib import contextmanager, suppress
 from typing import Dict, Any, List, Optional, cast, no_type_check
 
 import google.generativeai as genai
@@ -22,6 +24,24 @@ from src.config import AppConfig
 logger = logging.getLogger(__name__)
 
 load_dotenv()
+
+
+class _SafeDriver:
+    """Wrapper to ensure Neo4j sync driver is always closed."""
+
+    def __init__(self, driver: Driver):
+        self._driver = driver
+
+    def __getattr__(self, name: str):
+        return getattr(self._driver, name)
+
+    def close(self) -> None:
+        if self._driver:
+            self._driver.close()
+
+    def __del__(self):
+        with suppress(Exception):
+            self.close()
 
 
 def require_env(var: str) -> str:
@@ -73,6 +93,8 @@ class QAKnowledgeGraph:
         )
         self._graph_provider: Optional[GraphProvider] = provider
         self._graph: Optional[Driver] = None
+        self._graph_finalizer: Optional[weakref.finalize] = None
+        self._atexit_registered = False
 
         if provider is None:
             self.neo4j_uri = neo4j_uri or require_env("NEO4J_URI")
@@ -80,9 +102,15 @@ class QAKnowledgeGraph:
             self.neo4j_password = neo4j_password or require_env("NEO4J_PASSWORD")
 
             try:
-                self._graph = GraphDatabase.driver(
-                    self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
+                self._graph = _SafeDriver(
+                    GraphDatabase.driver(
+                        self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
+                    )
                 )
+                self._graph_finalizer = weakref.finalize(self._graph, self._graph.close)
+                if not self._atexit_registered:
+                    atexit.register(self.close)
+                    self._atexit_registered = True
             except Neo4jError as e:
                 raise RuntimeError(f"Neo4j 연결 실패: {e}")
         else:
@@ -91,9 +119,15 @@ class QAKnowledgeGraph:
             self.neo4j_user = neo4j_user or os.getenv("NEO4J_USER")
             self.neo4j_password = neo4j_password or os.getenv("NEO4J_PASSWORD")
             if self.neo4j_uri and self.neo4j_user and self.neo4j_password:
-                self._graph = GraphDatabase.driver(
-                    self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
+                self._graph = _SafeDriver(
+                    GraphDatabase.driver(
+                        self.neo4j_uri, auth=(self.neo4j_user, self.neo4j_password)
+                    )
                 )
+                self._graph_finalizer = weakref.finalize(self._graph, self._graph.close)
+                if not self._atexit_registered:
+                    atexit.register(self.close)
+                    self._atexit_registered = True
 
         self._vector_store = None
         self._init_vector_store()
@@ -238,15 +272,35 @@ class QAKnowledgeGraph:
 
     def close(self):
         if self._graph:
-            self._graph.close()
+            with suppress(Exception):
+                self._graph.close()
+            self._graph = None
+        if self._graph_finalizer and self._graph_finalizer.alive:
+            with suppress(Exception):
+                self._graph_finalizer()
+            self._graph_finalizer = None
         provider = self._graph_provider
         if provider:
-            from contextlib import suppress
+            try:
+                try:
+                    loop = asyncio.get_running_loop()
+                    running = True
+                except RuntimeError:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    running = False
 
-            with suppress(Exception):
-                asyncio.get_event_loop().run_until_complete(
-                    cast(GraphProvider, provider).close()
-                )
+                close_coro = cast(GraphProvider, provider).close()
+                if running and loop.is_running():
+                    loop.create_task(close_coro)
+                else:
+                    loop.run_until_complete(close_coro)
+                    if not running:
+                        loop.close()
+                        asyncio.set_event_loop(None)
+            except Exception:
+                pass
+            self._graph_provider = None
 
     @contextmanager
     def graph_session(self):
@@ -287,6 +341,10 @@ class QAKnowledgeGraph:
 
         logger.debug("graph_session: graph not available; yielding None")
         yield None
+
+    def __del__(self):
+        with suppress(Exception):
+            self.close()
 
 
 if __name__ == "__main__":

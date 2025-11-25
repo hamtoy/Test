@@ -58,3 +58,21 @@ def test_validate_session_empty_turns():
         "ok": False,
         "issues": ["turns가 비어있습니다."],
     }
+
+
+def test_del_closes_graph():
+    class _Graph:
+        def __init__(self):
+            self.closed = 0
+
+        def close(self):
+            self.closed += 1
+
+    kg = object.__new__(QAKnowledgeGraph)
+    graph = _Graph()
+    kg._graph = graph
+    kg._graph_provider = None
+    kg._graph_finalizer = None
+
+    kg.__del__()  # 직접 호출해 close 동작 확인
+    assert graph.closed == 1
