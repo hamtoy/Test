@@ -527,13 +527,16 @@ class GeminiAgent:
             if finish_reason and finish_reason.upper() not in {"STOP", "MAX_TOKENS"}:
                 safety_info = result.safety_ratings or ""
                 raise SafetyFilterError(
-                    "Blocked by safety filter or other reason: %s.%s" % (finish_reason, safety_info)
+                    "Blocked by safety filter or other reason: %s.%s"
+                    % (finish_reason, safety_info)
                 )
             return result.content
 
         protos = self._protos()
         self.logger.debug(
-            "API Call - Model: %s, Prompt Length: %s", self.config.model_name, len(prompt_text)
+            "API Call - Model: %s, Prompt Length: %s",
+            self.config.model_name,
+            len(prompt_text),
         )
         start = time.perf_counter()
         response = await model.generate_content_async(
@@ -586,7 +589,8 @@ class GeminiAgent:
                     safety_info,
                 )
                 raise SafetyFilterError(
-                    "Blocked by safety filter or other reason: %s.%s" % (finish_reason, safety_info)
+                    "Blocked by safety filter or other reason: %s.%s"
+                    % (finish_reason, safety_info)
                 )
 
         try:
@@ -655,12 +659,16 @@ class GeminiAgent:
             return result.queries if result.queries else []
         except ValidationError as e:
             self.logger.error(
-                "Query Validation Failed: %s. Response: %s...", e, cleaned_response[:200]
+                "Query Validation Failed: %s. Response: %s...",
+                e,
+                cleaned_response[:200],
             )
             return []
         except json.JSONDecodeError as e:
             self.logger.error(
-                "Query JSON Parse Failed: %s. Response: %s...", e, cleaned_response[:200]
+                "Query JSON Parse Failed: %s. Response: %s...",
+                e,
+                cleaned_response[:200],
             )
             return []
         except (TypeError, KeyError, AttributeError) as e:
@@ -742,12 +750,16 @@ class GeminiAgent:
             return result
         except ValidationError as e:
             self.logger.error(
-                "Evaluation Validation Failed: %s. Response: %s...", e, cleaned_response[:200]
+                "Evaluation Validation Failed: %s. Response: %s...",
+                e,
+                cleaned_response[:200],
             )
             raise ValidationFailedError("Evaluation validation failed: %s" % e) from e
         except json.JSONDecodeError as e:
             self.logger.error(
-                "Evaluation JSON Parse Failed: %s. Response: %s...", e, cleaned_response[:200]
+                "Evaluation JSON Parse Failed: %s. Response: %s...",
+                e,
+                cleaned_response[:200],
             )
             raise ValidationFailedError("Evaluation JSON parsing failed: %s" % e) from e
 

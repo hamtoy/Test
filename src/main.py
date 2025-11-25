@@ -715,7 +715,9 @@ async def main():
         # 워크플로우 실행 (모드에 따라 interactive 설정)
         # CHAT 모드이거나 --interactive 플래그가 있으면 대화형 모드
         is_interactive = (args.mode == "CHAT") or args.interactive
-        checkpoint_path = resolve_checkpoint_path(config.output_dir, args.checkpoint_file)
+        checkpoint_path = resolve_checkpoint_path(
+            config.output_dir, args.checkpoint_file
+        )
 
         await execute_workflow(
             agent,
@@ -806,4 +808,3 @@ if __name__ == "__main__":
     except Exception as e:  # noqa: BLE001 - Top-level handler must catch all exceptions
         logging.critical("Critical error: %s", e, exc_info=True)
         sys.exit(1)
-
