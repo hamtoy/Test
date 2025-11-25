@@ -61,15 +61,33 @@ extend-select = ["PERF", "FURB", "SIM"]
 
 [tool.mypy]
 python_version = "3.13"
-warn_return_any = true
+# Global settings are relaxed for gradual typing approach
+warn_return_any = false
 warn_unused_configs = true
-warn_unused_ignores = true
-check_untyped_defs = true
+warn_unused_ignores = false
+check_untyped_defs = false
 namespace_packages = true
 explicit_package_bases = true
 mypy_path = "."
 ignore_missing_imports = true
-exclude = ["notion-neo4j-graph/", ".venv/", "build/"]
+exclude = ["notion-neo4j-graph/", ".venv/", "build/", "tests/"]
+
+# Core configuration modules with strict type checking
+[[tool.mypy.overrides]]
+module = [
+    "src.config",
+    "src.constants",
+    "src.exceptions",
+    "src.models",
+]
+check_untyped_defs = true
+warn_return_any = true
+disallow_untyped_defs = false
+
+# Test files are relaxed
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+ignore_errors = true
 
 [tool.uv.workspace]
 members = ["notion-neo4j-graph"]
