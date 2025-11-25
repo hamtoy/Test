@@ -1,14 +1,37 @@
 """Backward compatibility - use src.config.constants instead."""
 import warnings
 
+from src.config.constants import (
+    BUDGET_WARNING_THRESHOLDS,
+    COST_PANEL_TEMPLATE,
+    DEFAULT_RPM_LIMIT,
+    DEFAULT_RPM_WINDOW_SECONDS,
+    ERROR_MESSAGES,
+    GEMINI_API_KEY_LENGTH,
+    LOG_MESSAGES,
+    MIN_CACHE_TOKENS,
+    PANEL_TITLE_BUDGET,
+    PANEL_TITLE_COST,
+    PANEL_TITLE_QUERIES,
+    PANEL_TURN_BODY_TEMPLATE,
+    PANEL_TURN_TITLE_TEMPLATE,
+    PRICING_TIERS,
+    PROGRESS_DONE_TEMPLATE,
+    PROGRESS_FAILED_TEMPLATE,
+    PROGRESS_PROCESSING_TEMPLATE,
+    PROGRESS_RESTORED_TEMPLATE,
+    PROGRESS_WAITING_TEMPLATE,
+    PROMPT_EDIT_CANDIDATES,
+    SENSITIVE_PATTERN,
+    USER_INTERRUPT_MESSAGE,
+)
+
 warnings.warn(
     "Importing from 'src.constants' is deprecated. "
     "Use 'from src.config.constants import ...' instead.",
     DeprecationWarning,
     stacklevel=2,
 )
-
-from src.config.constants import *
 
 __all__ = [
     "PRICING_TIERS",
