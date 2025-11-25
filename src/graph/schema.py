@@ -1,4 +1,5 @@
 """그래프 스키마 정의."""
+
 from __future__ import annotations
 
 from typing import Any

@@ -1,4 +1,5 @@
 """개별 턴 처리."""
+
 from __future__ import annotations
 
 import logging

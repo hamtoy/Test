@@ -1,4 +1,5 @@
 """그래프 연결을 위한 매핑 데이터."""
+
 from __future__ import annotations
 
 # 제약-키워드 매핑
