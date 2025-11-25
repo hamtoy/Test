@@ -4,9 +4,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-driver = GraphDatabase.driver(
-    os.getenv("NEO4J_URI"), auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD"))
-)
+uri = os.getenv("NEO4J_URI")
+user = os.getenv("NEO4J_USER")
+password = os.getenv("NEO4J_PASSWORD")
+
+if uri is None or user is None or password is None:
+    raise EnvironmentError("Missing NEO4J environment variables")
+
+driver = GraphDatabase.driver(uri, auth=(user, password))
 
 session = driver.session()
 
@@ -37,6 +42,9 @@ stats = session.run("""
         sum(CASE WHEN r.is_deleted = true THEN 1 ELSE 0 END) as deleted_rules,
         sum(CASE WHEN r.is_deleted = false OR r.is_deleted IS NULL THEN 1 ELSE 0 END) as active_rules
 """).single()
+
+if stats is None:
+    raise RuntimeError("Statistics query returned no results")
 
 print(f"Total Rules: {stats['total_rules']}")
 print(f"Deleted Rules: {stats['deleted_rules']}")

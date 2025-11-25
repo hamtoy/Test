@@ -4,9 +4,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-driver = GraphDatabase.driver(
-    os.getenv("NEO4J_URI"), auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD"))
-)
+uri = os.getenv("NEO4J_URI")
+user = os.getenv("NEO4J_USER")
+password = os.getenv("NEO4J_PASSWORD")
+
+if uri is None or user is None or password is None:
+    raise EnvironmentError("Missing NEO4J environment variables")
+
+driver = GraphDatabase.driver(uri, auth=(user, password))
 
 session = driver.session()
 
@@ -24,6 +29,9 @@ stats = session.run("""
         sum(CASE WHEN deleted_status = false THEN 1 ELSE 0 END) as active
 """).single()
 
+if stats is None:
+    raise RuntimeError("Rules query returned no results")
+
 print("📋 Rules:")
 print(f"  Total: {stats['total']}")
 print(f"  Active: {stats['active']}")
@@ -39,6 +47,9 @@ stats2 = session.run("""
         sum(CASE WHEN deleted_status = true THEN 1 ELSE 0 END) as deleted,
         sum(CASE WHEN deleted_status = false THEN 1 ELSE 0 END) as active
 """).single()
+
+if stats2 is None:
+    raise RuntimeError("Constraints query returned no results")
 
 print("\n⚠️ Constraints:")
 print(f"  Total: {stats2['total']}")
