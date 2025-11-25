@@ -231,7 +231,7 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
                 return ValidationResult(allowed=False, reason=str(exc))
         return ValidationResult(allowed=True, penalty=penalty)
 
-    async def propose(_node):
+    async def propose(_node: Any) -> list[str]:
         # 복수 브랜치 제안: LLM 제안 우선, 실패 시 기본값
         candidates: list[str] = []
         if lats_agent:
@@ -284,7 +284,7 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
             dedup.append(f"clarify:{task.request_id}")
         return dedup[:3]
 
-    async def evaluate(node):
+    async def evaluate(node: Any) -> float:
         # ActionExecutor 인스턴스 생성 (LLM provider 주입)
         executor = ActionExecutor(llm_provider=llm_provider)
 

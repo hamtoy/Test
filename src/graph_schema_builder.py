@@ -25,11 +25,11 @@ class QAGraphBuilder:
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
         self.logger = logging.getLogger(__name__)
 
-    def close(self):
+    def close(self) -> None:
         if self.driver:
             self.driver.close()
 
-    def create_schema_constraints(self):
+    def create_schema_constraints(self) -> None:
         """고유 제약 추가 (존재 시 무시)."""
         with self.driver.session() as session:
             session.run(
@@ -55,7 +55,7 @@ class QAGraphBuilder:
             )
         self.logger.info("스키마 고유 제약 생성/확인 완료")
 
-    def extract_rules_from_notion(self):
+    def extract_rules_from_notion(self) -> None:
         """Notion 문서에서 규칙 추출 및 그래프화 (중복 방지 MERGE)."""
         with self.driver.session() as session:
             # 1. Find headings
@@ -128,7 +128,7 @@ class QAGraphBuilder:
                     created += 1
             print(f"✅ 규칙 {created}개 추출/병합 완료")
 
-    def extract_query_types(self):
+    def extract_query_types(self) -> None:
         """질의 유형 정의 추출."""
         query_types: List[Dict[str, Any]] = [
             {
@@ -172,7 +172,7 @@ class QAGraphBuilder:
                 )
         print(f"✅ 질의 유형 {len(query_types)}개 생성/병합")
 
-    def extract_constraints(self):
+    def extract_constraints(self) -> None:
         """제약 조건 추출."""
         constraints: List[Dict[str, Any]] = [
             {
@@ -217,7 +217,7 @@ class QAGraphBuilder:
                 )
         print(f"✅ 제약 조건 {len(constraints)}개 생성/병합")
 
-    def link_rules_to_constraints(self):
+    def link_rules_to_constraints(self) -> None:
         """규칙과 제약 조건 연결(기본 포함 매칭 + 키워드 기반 보강)."""
         # 키워드 기반 보강 매핑 (필요 시 여기에 추가)
         constraint_keywords = {
@@ -275,7 +275,7 @@ class QAGraphBuilder:
             ).single()["links"]
         print(f"✅ 규칙-제약 연결 {count}개 생성/병합")
 
-    def extract_examples(self):
+    def extract_examples(self) -> None:
         """예시 추출 (❌/⭕ 패턴) 및 중복 방지."""
         with self.driver.session() as session:
             result = session.run(
@@ -317,7 +317,7 @@ class QAGraphBuilder:
                 for text, t in examples[:3]:
                     print(f"   [{t}] {text}...")
 
-    def link_examples_to_rules(self):
+    def link_examples_to_rules(self) -> None:
         """예시와 규칙 연결 (텍스트 포함 + 수동 매핑 기반)."""
         with self.driver.session() as session:
             # 긍정 예시: DEMONSTRATES
@@ -385,7 +385,7 @@ class QAGraphBuilder:
             ).single()["links"]
         print(f"✅ 예시-규칙 연결 {count}개 생성/병합 (수동 매핑 포함)")
 
-    def create_templates(self):
+    def create_templates(self) -> None:
         """템플릿 노드 및 제약/규칙 연결."""
         templates = [
             {
@@ -447,7 +447,7 @@ class QAGraphBuilder:
                     )
         print(f"✅ 템플릿 {len(templates)}개 생성/연결")
 
-    def create_error_patterns(self):
+    def create_error_patterns(self) -> None:
         """금지 패턴 노드 생성."""
         patterns = [
             {
@@ -488,7 +488,7 @@ class QAGraphBuilder:
                 )
         print(f"✅ 금지 패턴 {len(patterns)}개 생성/병합")
 
-    def create_best_practices(self):
+    def create_best_practices(self) -> None:
         """모범 사례 노드 생성."""
         practices = [
             {
@@ -532,7 +532,7 @@ class QAGraphBuilder:
                 )
         print(f"✅ 모범 사례 {len(practices)}개 생성/연결")
 
-    def link_rules_to_query_types(self):
+    def link_rules_to_query_types(self) -> None:
         """Rule을 QueryType과 연계 (키워드 기반 간단 매핑)."""
         mappings = [
             ("explanation", ["전체 설명", "설명문", "full explanation", "본문 전체"]),
@@ -570,7 +570,7 @@ class QAGraphBuilder:
         print("✅ Rule→QueryType 매핑 (키워드 확장) 완료")
 
 
-def main():
+def main() -> None:
     uri = require_env("NEO4J_URI")
     user = require_env("NEO4J_USER")
     password = require_env("NEO4J_PASSWORD")

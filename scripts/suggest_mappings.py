@@ -1,9 +1,10 @@
 import json
 import re
 from difflib import SequenceMatcher
+from typing import Any
 
 
-def normalize_text(text):
+def normalize_text(text: str | None) -> str:
     """텍스트 정규화 (공백, 특수문자 제거)"""
     if not text:
         return ""
@@ -12,7 +13,7 @@ def normalize_text(text):
     return text.lower().strip()
 
 
-def find_keywords(text):
+def find_keywords(text: str | None) -> set[str]:
     """텍스트에서 주요 키워드 추출"""
     if not text:
         return set()
@@ -42,7 +43,7 @@ def find_keywords(text):
     return words - stopwords
 
 
-def calculate_similarity(text1, text2):
+def calculate_similarity(text1: str, text2: str) -> float:
     """두 텍스트 간 유사도 계산"""
     norm1 = normalize_text(text1)
     norm2 = normalize_text(text2)
@@ -63,7 +64,7 @@ def calculate_similarity(text1, text2):
     return (seq_sim * 0.4) + (keyword_sim * 0.4) + (substring_sim * 0.2)
 
 
-def suggest_mappings():
+def suggest_mappings() -> list[dict[str, Any]]:
     with open("rules_export.json", "r", encoding="utf-8") as f:
         rules = json.load(f)
 
