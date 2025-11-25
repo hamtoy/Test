@@ -2,22 +2,21 @@
 통과된 QA 질문-답변을 Neo4j Example 노드로 저장하는 스크립트
 """
 
-from neo4j import GraphDatabase
 import hashlib
 import re
-from typing import List, Dict
+from typing import Dict, List
+
 from dotenv import load_dotenv
-import os
+
+from src.neo4j_utils import get_neo4j_driver_from_env
 
 load_dotenv()
 
 
 class QAExampleImporter:
     def __init__(self):
-        self.driver = GraphDatabase.driver(
-            os.getenv("NEO4J_URI"),
-            auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD")),
-        )
+        self._safe_driver = get_neo4j_driver_from_env()
+        self.driver = self._safe_driver.driver
 
     def parse_qa_text(self, text: str) -> List[Dict]:
         """
@@ -100,7 +99,7 @@ class QAExampleImporter:
             print(f"✅ {len(qa_pairs)}개 Example 저장 완료!")
 
     def close(self):
-        self.driver.close()
+        self._safe_driver.close()
 
 
 # 사용 예시

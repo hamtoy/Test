@@ -1,10 +1,15 @@
+"""Neo4j 연결 유틸리티 모듈."""
+
 from __future__ import annotations
 
 import atexit
+import os
 from contextlib import suppress
 from typing import Callable, Optional
 
 from neo4j import GraphDatabase, Driver
+
+__all__ = ["SafeDriver", "create_sync_driver", "get_neo4j_driver_from_env"]
 
 
 class SafeDriver:
@@ -18,6 +23,13 @@ class SafeDriver:
         self._register_atexit = register_atexit
         if register_atexit:
             atexit.register(self.close)
+
+    @property
+    def driver(self) -> Driver:
+        """내부 Neo4j Driver 인스턴스에 대한 접근자."""
+        if self._driver is None:
+            raise RuntimeError("Driver already closed")
+        return self._driver
 
     def session(self, *args, **kwargs):
         if self._driver is None:
@@ -60,3 +72,31 @@ def create_sync_driver(
     factory = graph_db_factory or GraphDatabase.driver
     driver = factory(uri, auth=(user, password))
     return SafeDriver(driver, register_atexit=register_atexit)
+
+
+def get_neo4j_driver_from_env(*, register_atexit: bool = False) -> SafeDriver:
+    """
+    환경 변수에서 Neo4j 연결 정보를 읽어 SafeDriver 생성.
+
+    환경 변수:
+        NEO4J_URI: Neo4j 서버 URI
+        NEO4J_USER: 사용자 이름
+        NEO4J_PASSWORD: 비밀번호
+
+    Raises:
+        EnvironmentError: 필수 환경 변수 누락 시
+
+    Returns:
+        SafeDriver 인스턴스
+    """
+    uri = os.getenv("NEO4J_URI")
+    user = os.getenv("NEO4J_USER")
+    password = os.getenv("NEO4J_PASSWORD")
+
+    if uri is None or user is None or password is None:
+        raise EnvironmentError(
+            "Missing required Neo4j environment variables: "
+            "NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD"
+        )
+
+    return create_sync_driver(uri, user, password, register_atexit=register_atexit)

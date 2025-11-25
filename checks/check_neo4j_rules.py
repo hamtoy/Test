@@ -1,23 +1,12 @@
 """Neo4j Rule 노드 샘플 조회 및 통계 스크립트."""
 
-import os
-
 from dotenv import load_dotenv
-from neo4j import GraphDatabase
+
+from src.neo4j_utils import get_neo4j_driver_from_env
 
 load_dotenv()
 
-uri = os.getenv("NEO4J_URI")
-user = os.getenv("NEO4J_USER")
-password = os.getenv("NEO4J_PASSWORD")
-
-if uri is None or user is None or password is None:
-    raise EnvironmentError("Missing NEO4J environment variables")
-
-with (
-    GraphDatabase.driver(uri, auth=(user, password)) as driver,
-    driver.session() as session,
-):
+with get_neo4j_driver_from_env() as driver, driver.session() as session:
     # Rule 노드 조회
     print("\n=== Neo4j Rules (Sample) ===")
     result = session.run("""
