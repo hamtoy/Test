@@ -38,8 +38,11 @@ pip install -e .
 ### 3. 실행
 
 ```bash
-# 기본 워크플로우 실행
+# 기본 워크플로우 실행 (AUTO 모드)
 python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json
+
+# 통합 파이프라인 실행 (그래프 + 세션 검증)
+python -m src.main --integrated-pipeline --pipeline-meta examples/session_input.json
 ```
 
 ## 선택 사항

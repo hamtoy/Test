@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 import os
 import re
 from contextlib import suppress
+from pathlib import Path
 from typing import Dict, List, Any
 
 from dotenv import load_dotenv
@@ -160,22 +162,30 @@ class IntegratedQAPipeline:
             self.template_gen.close()
 
 
-if __name__ == "__main__":
+def run_integrated_pipeline(meta_path: Path) -> Dict[str, Any]:
+    """
+    파일에서 메타데이터를 읽어 통합 파이프라인을 실행합니다.
+
+    Args:
+        meta_path: 이미지 메타데이터 JSON 경로
+
+    Returns:
+        세션 딕셔너리 {"turns": [...], "context": {...}}
+    """
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
     pipeline = IntegratedQAPipeline()
+    try:
+        session = pipeline.create_session(meta)
+        return session
+    finally:
+        pipeline.close()
 
-    image_meta = {
-        "image_path": "report.png",
-        "has_table_chart": True,
-        "text_density": 0.85,
-        "language_hint": "ko",
-        "session_turns": 4,
-        "must_include_reasoning": True,
-    }
 
-    session = pipeline.create_session(image_meta)
+if __name__ == "__main__":
+    root = Path(__file__).resolve().parents[1]
+    default_meta = root / "examples" / "session_input.json"
+    session = run_integrated_pipeline(default_meta)
     print("📋 생성된 세션:")
     for i, turn in enumerate(session["turns"], 1):
         print(f"\n{i}. {turn['type']}")
         print(f"   프롬프트 길이: {len(turn['prompt'])} chars")
-
-    pipeline.close()

@@ -279,10 +279,12 @@ python -m src.list_models
 - OCR 텍스트: `data/inputs/input_ocr.txt`
 - 후보 답변: `data/inputs/input_candidates.json`
 
-### 실행
+### 실행 (단일 엔트리)
+
+모든 실행은 `python -m src.main`으로 통합되었습니다. 모드를 플래그로 선택하세요.
 
 ```bash
-# 기본 실행
+# 기본 실행 (AUTO)
 python -m src.main
 
 # CHAT 모드 (질의 생성 후 후보 편집 가능)
@@ -291,8 +293,11 @@ python -m src.main --mode CHAT --intent "요약"
 # 사용자 지정 입력 파일
 python -m src.main --ocr-file custom_ocr.txt --cand-file custom_candidates.json
 
-# 샘플 데이터 사용
-python -m src.main --ocr-file input_ocr.txt --cand-file input_candidates.json
+# 샘플 데이터 (Quick Start)
+python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json
+
+# 통합 파이프라인 (그래프 + 세션 검증)
+python -m src.main --integrated-pipeline --pipeline-meta examples/session_input.json
 ```
 
 ## 명령줄 옵션
@@ -314,6 +319,8 @@ python -m src.main --help
 - `--checkpoint-file`: 체크포인트 경로 지정 (기본: `data/outputs/checkpoint.jsonl`)
 - `--log-level`: 로그 레벨 override (`DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`)
 - `--analyze-cache`: 캐시 통계 요약을 출력하고 종료 (`CACHE_STATS_FILE` 기반)
+- `--integrated-pipeline`: Gemini 워크플로우 대신 그래프/세션 통합 파이프라인을 실행
+- `--pipeline-meta`: 통합 파이프라인에서 사용할 메타데이터 JSON 경로 (기본: `examples/session_input.json`)
 
 ## 출력 및 로그
 

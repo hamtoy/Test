@@ -716,6 +716,17 @@ async def main():
         action="store_true",
         help="Print cache stats summary and exit",
     )
+    core_group.add_argument(
+        "--integrated-pipeline",
+        action="store_true",
+        help="Run integrated QA pipeline (graph + validation) instead of the standard workflow",
+    )
+    core_group.add_argument(
+        "--pipeline-meta",
+        type=str,
+        default="examples/session_input.json",
+        help="Path to JSON metadata file for integrated pipeline mode",
+    )
 
     # ... (rest of arguments)
 
@@ -724,6 +735,27 @@ async def main():
     # ... (logging setup)
     logger, log_listener = setup_logging(log_level=args.log_level)
     start_time = datetime.now(timezone.utc)
+
+    # Integrated pipeline quick path (skip Gemini workflow)
+    if args.integrated_pipeline:
+        try:
+            meta_path = Path(args.pipeline_meta)
+            if not meta_path.is_absolute():
+                meta_path = Path(__file__).resolve().parents[1] / meta_path
+            from src.integrated_qa_pipeline import run_integrated_pipeline
+
+            session = run_integrated_pipeline(meta_path)
+            console.print("[bold green]Integrated pipeline completed[/bold green]")
+            for i, turn in enumerate(session.get("turns", []), 1):
+                console.print(
+                    f"{i}. {turn.get('type')}: {turn.get('prompt','')[:80]}..."
+                )
+        except Exception as e:  # noqa: BLE001
+            logger.critical(f"[FATAL] Integrated pipeline failed: {e}")
+            log_listener.stop()
+            sys.exit(1)
+        log_listener.stop()
+        return
 
     # ... (config & resource loading)
     try:
