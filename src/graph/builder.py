@@ -1,19 +1,30 @@
+"""QA 그래프 빌더."""
 from __future__ import annotations
 
-import os
-import sys
 import hashlib
 import logging
+import os
+import sys
 from typing import Any, Dict, List
 
+from dotenv import load_dotenv
 from neo4j import GraphDatabase
 from neo4j.exceptions import Neo4jError
-from dotenv import load_dotenv
+
+from .mappings import CONSTRAINT_KEYWORDS, EXAMPLE_RULE_MAPPINGS, QUERY_TYPE_KEYWORDS
+from .schema import (
+    BEST_PRACTICES,
+    CONSTRAINTS,
+    ERROR_PATTERNS,
+    QUERY_TYPES,
+    TEMPLATES,
+)
 
 load_dotenv()
 
 
 def require_env(var: str) -> str:
+    """환경 변수를 요구하고 반환합니다."""
     val = os.getenv(var)
     if not val:
         raise EnvironmentError(f"환경 변수 {var}가 설정되지 않았습니다 (.env 확인).")
@@ -21,7 +32,9 @@ def require_env(var: str) -> str:
 
 
 class QAGraphBuilder:
-    def __init__(self, uri: str, user: str, password: str):
+    """Neo4j QA 그래프 구축 클래스."""
+
+    def __init__(self, uri: str, user: str, password: str) -> None:
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
         self.logger = logging.getLogger(__name__)
 
@@ -130,34 +143,8 @@ class QAGraphBuilder:
 
     def extract_query_types(self) -> None:
         """질의 유형 정의 추출."""
-        query_types: List[Dict[str, Any]] = [
-            {
-                "name": "explanation",
-                "korean": "전체 설명문",
-                "limit": 1,
-                "requires_reconstruction": True,
-            },
-            {
-                "name": "summary",
-                "korean": "전체 요약문",
-                "limit": 1,
-                "requires_reconstruction": True,
-            },
-            {
-                "name": "target",
-                "korean": "이미지 내 타겟",
-                "limit": None,
-                "requires_reconstruction": False,
-            },
-            {
-                "name": "reasoning",
-                "korean": "추론 질의",
-                "limit": 1,
-                "requires_reconstruction": False,
-            },
-        ]
         with self.driver.session() as session:
-            for qt in query_types:
+            for qt in QUERY_TYPES:
                 session.run(
                     """
                     MERGE (q:QueryType {name: $name})
@@ -170,39 +157,12 @@ class QAGraphBuilder:
                     limit=qt["limit"],
                     reconstruction=qt["requires_reconstruction"],
                 )
-        print(f"✅ 질의 유형 {len(query_types)}개 생성/병합")
+        print(f"✅ 질의 유형 {len(QUERY_TYPES)}개 생성/병합")
 
     def extract_constraints(self) -> None:
         """제약 조건 추출."""
-        constraints: List[Dict[str, Any]] = [
-            {
-                "id": "session_turns",
-                "description": "세션당 3-4턴만 허용",
-                "type": "count",
-                "min": 3,
-                "max": 4,
-            },
-            {
-                "id": "explanation_summary_limit",
-                "description": "설명문/요약문 중 하나만 포함",
-                "type": "exclusivity",
-                "exception": "4턴 세션에서만 둘 다 허용",
-            },
-            {
-                "id": "calculation_limit",
-                "description": "계산 요청 질의 1회 제한",
-                "type": "count",
-                "max": 1,
-            },
-            {
-                "id": "table_chart_prohibition",
-                "description": "표/그래프 참조 금지",
-                "type": "prohibition",
-                "pattern": r"(표|그래프)(에 따르면|에서)",
-            },
-        ]
         with self.driver.session() as session:
-            for c in constraints:
+            for c in CONSTRAINTS:
                 session.run(
                     """
                     MERGE (c:Constraint {id: $id})
@@ -215,42 +175,10 @@ class QAGraphBuilder:
                     type=c["type"],
                     props=c,
                 )
-        print(f"✅ 제약 조건 {len(constraints)}개 생성/병합")
+        print(f"✅ 제약 조건 {len(CONSTRAINTS)}개 생성/병합")
 
     def link_rules_to_constraints(self) -> None:
         """규칙과 제약 조건 연결(기본 포함 매칭 + 키워드 기반 보강)."""
-        # 키워드 기반 보강 매핑 (필요 시 여기에 추가)
-        constraint_keywords = {
-            "session_turns": ["3-4", "3턴", "4턴", "턴만", "3~4", "turn limit"],
-            "explanation_summary_limit": [
-                "설명문/요약문",
-                "둘 다",
-                "동시",
-                "설명과 요약",
-                "full image 설명",
-                "전체 이미지 요약",
-            ],
-            "calculation_limit": [
-                "계산",
-                "연산",
-                "계산 요청",
-                "수식",
-                "sum",
-                "average",
-                "평균값",
-            ],
-            "table_chart_prohibition": [
-                "표",
-                "그래프",
-                "차트",
-                "테이블",
-                "table",
-                "chart",
-                "graph",
-                "표 참고",
-                "그래프 참고",
-            ],
-        }
         with self.driver.session() as session:
             session.run(
                 """
@@ -260,7 +188,7 @@ class QAGraphBuilder:
                 """
             )
             # 키워드 기반 추가 연결
-            for cid, keywords in constraint_keywords.items():
+            for cid, keywords in CONSTRAINT_KEYWORDS.items():
                 session.run(
                     """
                     MATCH (r:Rule), (c:Constraint {id: $cid})
@@ -341,36 +269,7 @@ class QAGraphBuilder:
             )
 
             # 수동 매핑 테이블 (접두사 포함된 example_id → rule_id 매핑)
-            manual_example_rule_map = {
-                "example_45d38ada918d23b7": "rule_45d38ada918d23b7",  # sim: 0.900
-                "example_cf76634755769349": "rule_cf76634755769349",  # sim: 0.900
-                "example_6d8d778d07679551": "rule_74fb853e8344cdae",  # sim: 0.264
-                "example_3a822c5a7cb6febe": "rule_064a2e85eab0037a",  # sim: 0.219
-                "example_4501bbd1a0ac6eeb": "rule_74fb853e8344cdae",  # sim: 0.217
-                "example_6beb76f2c037af0a": "rule_064a2e85eab0037a",  # sim: 0.211
-                "example_cc7329fc50d5c9c0": "rule_064a2e85eab0037a",  # sim: 0.209
-                "example_5c9030841bc1f28a": "rule_f1b66e7991427573",  # sim: 0.202
-                "example_c2297ccab80815be": "rule_ed715984caa427d9",  # sim: 0.201
-                "example_bac3f6c4e74538cf": "rule_83a25f83293421cb",  # sim: 0.196
-                "example_b9254ad66c943c63": "rule_ed715984caa427d9",  # sim: 0.194
-                "example_361d2e6907476754": "rule_74fb853e8344cdae",  # sim: 0.185
-                "example_f4ff0a927af9dd75": "rule_68126c74e965fc95",  # sim: 0.185
-                "example_e64ff39e4f5ccdae": "rule_68126c74e965fc95",  # sim: 0.185
-                "example_73ec90483d94de4e": "rule_74fb853e8344cdae",  # sim: 0.178
-                "example_fc3b6beb75c97d73": "rule_1ec1943f3b2ac695",  # sim: 0.173
-                "example_aa3a1556c30d903c": "rule_83a25f83293421cb",  # sim: 0.170
-                "example_c8604f69e5419197": "rule_c3ad6e856a5e4eac",  # sim: 0.167
-                "example_3e6f027c10f3ce19": "rule_c377a77caae6c9fc",  # sim: 0.166
-                "example_642e3b1bf4c9c1c6": "rule_74fb853e8344cdae",  # sim: 0.165
-                "example_44d1648296e64007": "rule_1ec1943f3b2ac695",  # sim: 0.156
-                "example_916d03c24e532d7f": "rule_b40a33c04b44a9f8",  # sim: 0.153
-                "example_3fdbe917fdc8da83": "rule_064a2e85eab0037a",  # sim: 0.153
-                "example_04c2e4f5f3b8d07a": "rule_1ec1943f3b2ac695",  # sim: 0.152
-                "example_598798882c9382af": "rule_1ec1943f3b2ac695",  # sim: 0.152
-                "example_c8117a599dc04a8a": "rule_3d37cba5ab431c3c",  # sim: 0.152
-                "example_ee8012b86a054472": "rule_b40a33c04b44a9f8",  # sim: 0.151
-            }
-            for ex_id, rule_id in manual_example_rule_map.items():
+            for ex_id, rule_id in EXAMPLE_RULE_MAPPINGS.items():
                 session.run(
                     """
                     MATCH (e:Example {id: $ex_id}), (r:Rule {id: $rule_id})
@@ -393,38 +292,8 @@ class QAGraphBuilder:
 
     def create_templates(self) -> None:
         """템플릿 노드 및 제약/규칙 연결."""
-        templates = [
-            {
-                "id": "tmpl_explanation",
-                "name": "explanation_system",
-                "enforces": ["session_turns", "table_chart_prohibition"],
-                "includes": [],
-            },
-            {
-                "id": "tmpl_summary",
-                "name": "summary_system",
-                "enforces": [
-                    "session_turns",
-                    "table_chart_prohibition",
-                    "explanation_summary_limit",
-                ],
-                "includes": [],
-            },
-            {
-                "id": "tmpl_target",
-                "name": "target_user",
-                "enforces": ["calculation_limit", "table_chart_prohibition"],
-                "includes": [],
-            },
-            {
-                "id": "tmpl_reasoning",
-                "name": "reasoning_system",
-                "enforces": ["session_turns", "table_chart_prohibition"],
-                "includes": [],
-            },
-        ]
         with self.driver.session() as session:
-            for tmpl in templates:
+            for tmpl in TEMPLATES:
                 session.run(
                     """
                     MERGE (t:Template {id: $id})
@@ -451,37 +320,12 @@ class QAGraphBuilder:
                         tid=tmpl["id"],
                         cid=cid,
                     )
-        print(f"✅ 템플릿 {len(templates)}개 생성/연결")
+        print(f"✅ 템플릿 {len(TEMPLATES)}개 생성/연결")
 
     def create_error_patterns(self) -> None:
         """금지 패턴 노드 생성."""
-        patterns = [
-            {
-                "id": "err_table_ref",
-                "pattern": "(표|그래프)(에 따르면|에서)",
-                "description": "표/그래프 참조",
-            },
-            {
-                "id": "err_definition",
-                "pattern": "용어\\s*(정의|설명)",
-                "description": "용어 정의 질문",
-            },
-            {
-                "id": "err_full_image",
-                "pattern": "전체\\s*이미지\\s*(설명|요약)",
-                "description": "전체 이미지 설명/요약",
-            },
-            {
-                "id": "err_time_reference",
-                "pattern": (
-                    "(.?)(지난달|전일|지난주|주말|최근|올해|내년|연초|"
-                    "last month|yesterday|last week|recently|this year|next year|earlier this year)"
-                ),
-                "description": "시의성 표현은 보고서 기준 시점 명시 필요",
-            },
-        ]
         with self.driver.session() as session:
-            for p in patterns:
+            for p in ERROR_PATTERNS:
                 session.run(
                     """
                     MERGE (e:ErrorPattern {id: $id})
@@ -492,34 +336,12 @@ class QAGraphBuilder:
                     pattern=p["pattern"],
                     desc=p["description"],
                 )
-        print(f"✅ 금지 패턴 {len(patterns)}개 생성/병합")
+        print(f"✅ 금지 패턴 {len(ERROR_PATTERNS)}개 생성/병합")
 
     def create_best_practices(self) -> None:
         """모범 사례 노드 생성."""
-        practices = [
-            {
-                "id": "bp_explanation",
-                "text": "전체 본문을 재구성하되 고유명/숫자 그대로 유지",
-                "applies_to": "explanation",
-            },
-            {
-                "id": "bp_summary",
-                "text": "설명의 20-30% 길이로 핵심만 요약",
-                "applies_to": "summary",
-            },
-            {
-                "id": "bp_reasoning",
-                "text": "명시되지 않은 전망을 근거 기반으로 묻기",
-                "applies_to": "reasoning",
-            },
-            {
-                "id": "bp_target",
-                "text": "중복 위치 피하고 단일 명확한 타겟 질문",
-                "applies_to": "target",
-            },
-        ]
         with self.driver.session() as session:
-            for bp in practices:
+            for bp in BEST_PRACTICES:
                 session.run(
                     """
                     MERGE (b:BestPractice {id: $id})
@@ -536,34 +358,12 @@ class QAGraphBuilder:
                     id=bp["id"],
                     qt=bp["applies_to"],
                 )
-        print(f"✅ 모범 사례 {len(practices)}개 생성/연결")
+        print(f"✅ 모범 사례 {len(BEST_PRACTICES)}개 생성/연결")
 
     def link_rules_to_query_types(self) -> None:
         """Rule을 QueryType과 연계 (키워드 기반 간단 매핑)."""
-        mappings = [
-            ("explanation", ["전체 설명", "설명문", "full explanation", "본문 전체"]),
-            ("summary", ["요약", "summary", "짧게"]),
-            ("target", ["질문", "타겟", "target", "단일 항목"]),
-            (
-                "reasoning",
-                [
-                    "추론",
-                    "전망",
-                    "예측",
-                    "분석",
-                    "금리",
-                    "물가",
-                    "심리",
-                    "수요",
-                    "공급",
-                    "rate",
-                    "inflation",
-                    "outlook",
-                ],
-            ),
-        ]
         with self.driver.session() as session:
-            for qt, keywords in mappings:
+            for qt, keywords in QUERY_TYPE_KEYWORDS.items():
                 session.run(
                     """
                     MATCH (r:Rule), (q:QueryType {name: $qt})
@@ -577,6 +377,7 @@ class QAGraphBuilder:
 
 
 def main() -> None:
+    """QA 그래프 스키마 구축 메인 함수."""
     uri = require_env("NEO4J_URI")
     user = require_env("NEO4J_USER")
     password = require_env("NEO4J_PASSWORD")

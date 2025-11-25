@@ -4,7 +4,7 @@ import types
 
 import pytest
 
-from src.graph_schema_builder import QAGraphBuilder, require_env
+from src.graph import QAGraphBuilder, require_env
 
 
 def test_require_env_missing(monkeypatch):
