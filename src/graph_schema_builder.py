@@ -270,9 +270,12 @@ class QAGraphBuilder:
                     cid=cid,
                     keywords=keywords,
                 )
-            count = session.run(
+            result = session.run(
                 "MATCH (r:Rule)-[:ENFORCES]->(c:Constraint) RETURN count(*) AS links"
-            ).single()["links"]
+            ).single()
+            if result is None:
+                raise RuntimeError("Failed to count rule-constraint links")
+            count = result["links"]
         print(f"✅ 규칙-제약 연결 {count}개 생성/병합")
 
     def extract_examples(self) -> None:
@@ -377,12 +380,15 @@ class QAGraphBuilder:
                     rule_id=rule_id,
                 )
 
-            count = session.run(
+            result = session.run(
                 """
                 MATCH (e:Example)-[rel]->(r:Rule)
                 RETURN count(rel) AS links
                 """
-            ).single()["links"]
+            ).single()
+            if result is None:
+                raise RuntimeError("Failed to count example-rule links")
+            count = result["links"]
         print(f"✅ 예시-규칙 연결 {count}개 생성/병합 (수동 매핑 포함)")
 
     def create_templates(self) -> None:
