@@ -1,4 +1,5 @@
 """Core package - fundamental data models and interfaces."""
+
 from src.core.models import (
     CandidateID,
     EvaluationItem,

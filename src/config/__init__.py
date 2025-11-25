@@ -1,4 +1,5 @@
 """Configuration package - centralized settings management."""
+
 from src.config.settings import AppConfig
 from src.config.constants import (
     ERROR_MESSAGES,

@@ -1,4 +1,5 @@
 """Backward compatibility - use src.core.models instead."""
+
 import warnings
 
 from src.core.models import (

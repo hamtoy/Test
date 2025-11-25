@@ -1,4 +1,5 @@
 """Backward compatibility - use src.config.exceptions instead."""
+
 import warnings
 
 from src.config.exceptions import (

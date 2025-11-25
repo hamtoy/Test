@@ -1,4 +1,5 @@
 """Backward compatibility - use src.config.constants instead."""
+
 import warnings
 
 from src.config.constants import (
