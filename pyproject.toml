@@ -5,9 +5,9 @@ description = "Enterprise-grade workflow system for evaluating and rewriting Q&A
 readme = "README.md"
 requires-python = ">=3.10, <3.14"
 dependencies = [
-    "google-generativeai>=0.8.3",
+    "google-generativeai>=0.8.3,<1.0.0",
     "python-dotenv>=1.0.1",
-    "faststream[redis]>=0.4.10",
+    "faststream[redis]>=0.4.10,<1.0.0",
     "aiofiles>=23.2.1",
     "pydantic>=2.0.0",
     "tenacity>=8.2.0",
@@ -16,12 +16,11 @@ dependencies = [
     "rich>=13.0.0",
     "aiolimiter>=1.1.0",
     "python-json-logger>=2.0.7",
-    "langchain>=1.0.8",
-    "langchain-community>=0.4.1",
-    "langchain-neo4j>=0.6.0",
-    "langchain-openai>=1.0.3",
+    "langchain>=1.0.8,<2.0.0",
+    "langchain-community>=0.4.1,<1.0.0",
+    "langchain-neo4j>=0.6.0,<1.0.0",
+    "langchain-openai>=1.0.3,<2.0.0",
     "pillow>=10.0.0",
-    "redis>=5.0.0",
 ]
 
 [project.optional-dependencies]
@@ -62,8 +61,10 @@ extend-select = ["PERF", "FURB", "SIM"]
 
 [tool.mypy]
 python_version = "3.13"
-warn_return_any = false
+warn_return_any = true
 warn_unused_configs = true
+warn_unused_ignores = true
+check_untyped_defs = true
 namespace_packages = true
 explicit_package_bases = true
 mypy_path = "."
