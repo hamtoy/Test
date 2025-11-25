@@ -14,12 +14,14 @@ class SafeDriver:
     """
 
     def __init__(self, driver: Driver, *, register_atexit: bool = False):
-        self._driver = driver
+        self._driver: Optional[Driver] = driver
         self._register_atexit = register_atexit
         if register_atexit:
             atexit.register(self.close)
 
     def session(self, *args, **kwargs):
+        if self._driver is None:
+            raise RuntimeError("Driver already closed")
         return self._driver.session(*args, **kwargs)
 
     def close(self) -> None:
@@ -36,6 +38,8 @@ class SafeDriver:
         self.close()
 
     def __getattr__(self, name: str):
+        if self._driver is None:
+            raise AttributeError(name)
         return getattr(self._driver, name)
 
     def __del__(self):
