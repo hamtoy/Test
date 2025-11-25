@@ -431,6 +431,7 @@ class GeminiAgent:
             exceptions.ResourceExhausted,
             exceptions.ServiceUnavailable,
             exceptions.DeadlineExceeded,
+            exceptions.Cancelled,  # Handle 499 "operation cancelled" errors
             TimeoutError,
         )
 
