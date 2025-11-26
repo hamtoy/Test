@@ -1,7 +1,7 @@
 import types
 
 
-import src.gemini_model_client as gmc
+import src.llm.gemini as gmc
 
 
 def _fake_genai(monkeypatch):

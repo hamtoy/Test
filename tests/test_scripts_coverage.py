@@ -31,7 +31,11 @@ def test_list_models_script(monkeypatch):
         builtins, "exit", lambda code=0: captured.append(f"exit:{code}")
     )
 
-    import src.list_models as lm
+    # Clear module cache to ensure fresh import
+    sys.modules.pop("src.llm.list_models", None)
+    sys.modules.pop("src.list_models", None)
+
+    import src.llm.list_models as lm
 
     importlib.reload(lm)
     assert captured
@@ -88,7 +92,11 @@ def test_qa_generator_script(monkeypatch):
         lambda *args, **kwargs: captured.append(" ".join(str(a) for a in args)),
     )
 
-    import src.qa_generator as qg
+    # Clear module cache to ensure fresh import
+    sys.modules.pop("src.qa.generator", None)
+    sys.modules.pop("src.qa_generator", None)
+
+    import src.qa.generator as qg
 
     importlib.reload(qg)
     assert "QA Results" in files.get("qa_result_4pairs.md", io.StringIO()).getvalue()

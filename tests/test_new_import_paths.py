@@ -96,11 +96,11 @@ class TestNewImportPaths:
 
     def test_workflow_imports(self):
         """Test imports from src.workflow package."""
-        from src.workflow.executor import WorkflowExecutor
-        from src.workflow.processor import WorkflowProcessor
+        from src.workflow.executor import execute_workflow
+        from src.workflow.processor import process_single_query
 
-        assert WorkflowExecutor is not None
-        assert WorkflowProcessor is not None
+        assert execute_workflow is not None
+        assert process_single_query is not None
 
     def test_features_imports(self):
         """Test imports from src.features package."""
@@ -112,9 +112,9 @@ class TestNewImportPaths:
 
     def test_analysis_imports(self):
         """Test imports from src.analysis package."""
-        from src.analysis.cross_validation import DocumentComparer
+        from src.analysis.cross_validation import CrossValidationSystem
 
-        assert DocumentComparer is not None
+        assert CrossValidationSystem is not None
 
     def test_import_equivalence(self):
         """Test that old and new imports refer to the same objects."""

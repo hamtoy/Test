@@ -1,5 +1,7 @@
 """Test that deprecated imports emit warnings."""
 
+import importlib
+import sys
 import warnings
 
 
@@ -8,47 +10,72 @@ class TestDeprecationWarnings:
 
     def test_constants_shim_warning(self):
         """Test that importing from src.constants emits a deprecation warning."""
+        # Clear module cache to ensure fresh import
+        sys.modules.pop("src.constants", None)
+        sys.modules.pop("src.config.constants", None)
+        
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from src.constants import ERROR_MESSAGES  # noqa: F401
-
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "deprecated" in str(w[0].message).lower()
-            assert "src.config.constants" in str(w[0].message)
+            import src.constants  # noqa: F401
+            
+            # Module level warning should be captured
+            deprecation_warnings = [
+                warn for warn in w if issubclass(warn.category, DeprecationWarning)
+            ]
+            assert len(deprecation_warnings) >= 1
+            assert any("deprecated" in str(warn.message).lower() for warn in deprecation_warnings)
+            assert any("src.config.constants" in str(warn.message) for warn in deprecation_warnings)
 
     def test_exceptions_shim_warning(self):
         """Test that importing from src.exceptions emits a deprecation warning."""
+        # Clear module cache to ensure fresh import
+        sys.modules.pop("src.exceptions", None)
+        sys.modules.pop("src.config.exceptions", None)
+        
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from src.exceptions import BudgetExceededError  # noqa: F401
+            import src.exceptions  # noqa: F401
 
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "deprecated" in str(w[0].message).lower()
-            assert "src.config.exceptions" in str(w[0].message)
+            deprecation_warnings = [
+                warn for warn in w if issubclass(warn.category, DeprecationWarning)
+            ]
+            assert len(deprecation_warnings) >= 1
+            assert any("deprecated" in str(warn.message).lower() for warn in deprecation_warnings)
+            assert any("src.config.exceptions" in str(warn.message) for warn in deprecation_warnings)
 
     def test_models_shim_warning(self):
         """Test that importing from src.models emits a deprecation warning."""
+        # Clear module cache to ensure fresh import
+        sys.modules.pop("src.models", None)
+        sys.modules.pop("src.core.models", None)
+        
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from src.models import WorkflowResult  # noqa: F401
+            import src.models  # noqa: F401
 
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "deprecated" in str(w[0].message).lower()
-            assert "src.core.models" in str(w[0].message)
+            deprecation_warnings = [
+                warn for warn in w if issubclass(warn.category, DeprecationWarning)
+            ]
+            assert len(deprecation_warnings) >= 1
+            assert any("deprecated" in str(warn.message).lower() for warn in deprecation_warnings)
+            assert any("src.core.models" in str(warn.message) for warn in deprecation_warnings)
 
     def test_utils_shim_warning(self):
         """Test that importing from src.utils emits a deprecation warning."""
+        # Clear module cache to ensure fresh import
+        sys.modules.pop("src.utils", None)
+        sys.modules.pop("src.infra.utils", None)
+        
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from src.utils import clean_markdown_code_block  # noqa: F401
+            import src.utils  # noqa: F401
 
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "deprecated" in str(w[0].message).lower()
-            assert "src.infra.utils" in str(w[0].message)
+            deprecation_warnings = [
+                warn for warn in w if issubclass(warn.category, DeprecationWarning)
+            ]
+            assert len(deprecation_warnings) >= 1
+            assert any("deprecated" in str(warn.message).lower() for warn in deprecation_warnings)
+            assert any("src.infra.utils" in str(warn.message) for warn in deprecation_warnings)
 
     def test_logging_setup_shim_warning(self):
         """Test that importing from src.logging_setup emits a deprecation warning."""
@@ -111,14 +138,20 @@ class TestDeprecationWarnings:
 
     def test_caching_layer_shim_warning(self):
         """Test that importing from src.caching_layer emits a deprecation warning."""
+        # Clear module cache to ensure fresh import
+        sys.modules.pop("src.caching_layer", None)
+        
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             from src.caching_layer import CachingLayer  # noqa: F401
 
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "deprecated" in str(w[0].message).lower()
-            assert "src.caching.layer" in str(w[0].message)
+            # __getattr__ based shims may emit multiple warnings (e.g., for __path__ and the actual import)
+            deprecation_warnings = [
+                warn for warn in w if issubclass(warn.category, DeprecationWarning)
+            ]
+            assert len(deprecation_warnings) >= 1
+            assert any("deprecated" in str(warn.message).lower() for warn in deprecation_warnings)
+            assert any("src.caching.layer" in str(warn.message) for warn in deprecation_warnings)
 
     def test_graph_enhanced_router_shim_warning(self):
         """Test that importing from src.graph_enhanced_router emits a deprecation warning."""

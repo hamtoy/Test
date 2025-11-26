@@ -6,14 +6,14 @@ import types
 
 from neo4j.exceptions import Neo4jError
 
-import src.adaptive_difficulty as adaptive_difficulty
-import src.caching_layer as caching_layer
-import src.cross_validation as cross_validation
-import src.dynamic_example_selector as dynamic_example_selector
-import src.health_check as health_check
-import src.logging_setup as logging_setup
-import src.real_time_constraint_enforcer as rtce
-import src.smart_autocomplete as smart_autocomplete
+import src.features.difficulty as adaptive_difficulty
+import src.caching.layer as caching_layer
+import src.analysis.cross_validation as cross_validation
+import src.processing.example_selector as dynamic_example_selector
+import src.infra.health as health_check
+import src.infra.logging as logging_setup
+import src.infra.constraints as rtce
+import src.features.autocomplete as smart_autocomplete
 
 
 def test_smart_autocomplete_handles_missing_graph():
@@ -210,7 +210,8 @@ def test_list_models_exits_without_key(monkeypatch):
     )
 
     sys.modules.pop("src.list_models", None)
-    import src.list_models as lm
+    sys.modules.pop("src.llm.list_models", None)
+    import src.llm.list_models as lm
 
     importlib.reload(lm)
     assert any("No API key" in msg for msg in captured)

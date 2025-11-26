@@ -2,7 +2,7 @@ import types
 import pytest
 from builtins import EnvironmentError
 
-import src.semantic_analysis as sa
+import src.analysis.semantic as sa
 
 
 def test_tokenize_filters_stopwords_and_length():
