@@ -78,8 +78,8 @@ class DynamicTemplateGenerator:
             "reasoning": "system/text_image_qa_reasoning_system.j2",
             "target": "user/text_image_qa_target_user.j2",
         }
-        template_name = template_map.get(query_type, "templates/base_system.j2")
-        fallback = "templates/base_system.j2"
+        template_name = template_map.get(query_type, "base_system.j2")
+        fallback = "base_system.j2"
         try:
             template = self.jinja_env.get_template(template_name)
         except TemplateNotFound as exc:
