@@ -215,7 +215,9 @@ def test_multi_agent_qa_system(monkeypatch):
     fake_kg = _FakeKG()
     fake_kg._graph = types.SimpleNamespace(session=lambda: _FakeRuleSession())
 
-    # Import the actual module to patch it (not the shim)
+    # Import the actual module (not the shim) so we can patch it before it's used.
+    # This must be done here, not at the top, to ensure the monkeypatch takes effect
+    # before MultiAgentQASystem imports GeminiModelClient from this module.
     from src.qa import multi_agent as multi_agent_module
     
     monkeypatch.setattr(multi_agent_module, "GeminiModelClient", lambda: _FakeLLM())
