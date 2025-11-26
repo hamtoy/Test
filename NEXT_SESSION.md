@@ -1,31 +1,4 @@
-# Next Session: Mypy Strict Type Enhancement
-
-## 📍 Current Status
-
-- **Errors**: 155 remaining (down from 180)
-- **Commits**: 3 pushed to main
-- **Completion**: 14% (Phase 1 partially complete)
-
-## 🎯 Next Session Goals
-
-### Priority 1: Complete Phase 1 (Remaining 155 errors)
-
-**Target Packages** (in order):
-
-1. **agent/** (34 errors) - Already started
-   - `core.py` - Add return types to methods
-   - `cost_tracker.py` - Add return types
-   - `cache_manager.py` - Type annotations
-   - `rate_limiter.py` - Type annotations
-
-2. **infra/** (32 errors) - Already started
-   - `neo4j.py` - Add function type annotations
-   - `worker.py` - Fix dict type parameters
-   - `budget.py` - Add annotations
-
-3. **analysis/** (15 errors)
-   - `semantic.py` - Add Counter[str] type parameters
-   - `document_compare.py` - Add Dict[str, Any] parameters
+- `document_compare.py` - Add Dict[str, Any] parameters
 
 4. **llm/** (14 errors)
    - Add type annotations to generate(), evaluate(), rewrite()
@@ -94,6 +67,48 @@ Once Phase 1 is complete:
 - qa/ (13 errors)
 - analysis/ (15 errors)
 - processing/ (9 errors)
+
+## 📋 Session Workflow
+
+### Session Start (5 min)
+
+```powershell
+# 1. Get latest code
+git pull origin main
+
+# 2. Save current error snapshot
+uv run mypy src/ --strict 2>&1 | Out-File mypy_errors.txt
+
+# 3. Check progress
+.\scripts\check_mypy_progress.ps1
+
+# 4. Count errors
+(Get-Content mypy_errors.txt | Select-String "error:").Count
+```
+
+### Work Loop (20-30 min cycles)
+
+**Repeat until target reached:**
+
+1. **Pick error pattern** (e.g., all `no-untyped-def` in agent/)
+2. **Fix 10-15 files** (use templates below)
+3. **Verify**: `uv run mypy src/ --strict`
+4. **Test**: `uv run pytest tests/ -q`
+5. **Commit**: `git add . && git commit -m "fix(types): add return types to agent/"`
+6. **Progress check**: `.\scripts\check_mypy_progress.ps1`
+
+### Session End (10 min)
+
+```powershell
+# 1. Final check
+uv run mypy src/ --strict
+
+# 2. Push
+git push origin main
+
+# 3. Record progress
+# Update: 155 → X errors (Y fixed, Z% complete)
+```
 
 ## 💡 Tips for Next Session
 
