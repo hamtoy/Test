@@ -389,28 +389,28 @@ class GeminiAgent:
             retry=retry_if_exception_type(retry_exceptions),
             reraise=True,
         )
-        def _get_retry_attempt(func: object) -> int:
-            """Extract attempt number from tenacity retry statistics."""
-            retry_obj = getattr(func, "retry", None)
-            stats_dict: Dict[str, Any] = {}
-            if retry_obj is not None and hasattr(retry_obj, "statistics"):
-                stats_dict = retry_obj.statistics
-            return stats_dict.get("attempt_number", 1) or 1
-
         async def _execute_with_retry() -> str:
+            def _get_retry_attempt() -> int:
+                """Extract attempt number from tenacity retry statistics."""
+                retry_obj = getattr(_execute_with_retry, "retry", None)
+                stats_dict: Dict[str, Any] = {}
+                if retry_obj is not None and hasattr(retry_obj, "statistics"):
+                    stats_dict = retry_obj.statistics
+                return stats_dict.get("attempt_number", 1) or 1
+
             if self._rate_limiter:
                 async with self._rate_limiter, self._semaphore:
                     try:
                         return await self._execute_api_call(model, prompt_text)
                     except retry_exceptions:
-                        attempt = _get_retry_attempt(_execute_with_retry)
+                        attempt = _get_retry_attempt()
                         await _adaptive_backoff(attempt)
                         raise
             async with self._semaphore:
                 try:
                     return await self._execute_api_call(model, prompt_text)
                 except retry_exceptions:
-                    attempt = _get_retry_attempt(_execute_with_retry)
+                    attempt = _get_retry_attempt()
                     await _adaptive_backoff(attempt)
                     raise
 
