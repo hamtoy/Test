@@ -38,7 +38,7 @@ def test_dynamic_template_generator_fallback_and_checklist(monkeypatch):
 
     env = Environment(
         loader=DictLoader(
-            {"templates/base_system.j2": "{{query_type_korean}}|{{rules|length}}"}
+            {"base_system.j2": "{{query_type_korean}}|{{rules|length}}"}
         )
     )
     generator = dtg.DynamicTemplateGenerator("uri", "user", "pw")
