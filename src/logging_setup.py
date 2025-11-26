@@ -2,7 +2,7 @@
 
 import warnings
 
-from src.infra.logging import *
+from src.infra.logging import *  # noqa: F403
 
 warnings.warn(
     "Importing from 'src.logging_setup' is deprecated. "

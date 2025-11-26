@@ -2,7 +2,7 @@
 
 import warnings
 
-from src.infra.neo4j import *
+from src.infra.neo4j import *  # noqa: F403
 
 warnings.warn(
     "Importing from 'src.neo4j_utils' is deprecated. "

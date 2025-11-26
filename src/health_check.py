@@ -2,7 +2,7 @@
 
 import warnings
 
-from src.infra.health import *
+from src.infra.health import *  # noqa: F403
 
 warnings.warn(
     "Importing from 'src.health_check' is deprecated. "
