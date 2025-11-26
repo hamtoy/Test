@@ -32,10 +32,10 @@ def test_health_check_report(monkeypatch):
     monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
     monkeypatch.setenv("NEO4J_USER", "neo4j")
     monkeypatch.setenv("NEO4J_PASSWORD", "password")
-    
+
     # Import the actual health module to patch the right namespace
     from src.infra import health as infra_health
-    
+
     monkeypatch.setattr(infra_health, "check_neo4j_connection", lambda kg=None: True)
     res = health_check.health_check()
     assert res["status"] == "healthy"
