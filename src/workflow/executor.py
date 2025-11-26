@@ -25,7 +25,7 @@ from src.constants import (
     PROGRESS_WAITING_TEMPLATE,
     PROMPT_EDIT_CANDIDATES,
 )
-from src.data_loader import reload_data_if_needed
+from src.processing.loader import reload_data_if_needed
 from src.exceptions import (
     BudgetExceededError,
     CacheCreationError,

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from neo4j import GraphDatabase
 from src.qa.rag_system import CustomGeminiEmbeddings, require_env
 from src.neo4j_utils import create_sync_driver, SafeDriver
-from src.gemini_model_client import GeminiModelClient
+from src.llm.gemini import GeminiModelClient
 
 load_dotenv()
 
@@ -115,7 +115,7 @@ class MemoryAugmentedQASystem:
             logging.getLogger(__name__).warning("Interaction log failed: %s", exc)
 
     def close(self) -> None:
-        if hasattr(self, '_driver') and self._driver:
+        if hasattr(self, "_driver") and self._driver:
             self._driver.close()
 
     def __enter__(self) -> "MemoryAugmentedQASystem":

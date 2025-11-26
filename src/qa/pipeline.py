@@ -10,7 +10,7 @@ from typing import Dict, List, Any
 from dotenv import load_dotenv
 
 from src.qa.rag_system import QAKnowledgeGraph
-from src.dynamic_template_generator import DynamicTemplateGenerator
+from src.processing.template_generator import DynamicTemplateGenerator
 from scripts.build_session import SessionContext, build_session
 from checks.validate_session import validate_turns
 from checks.detect_forbidden_patterns import find_violations

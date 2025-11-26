@@ -6,7 +6,7 @@ from neo4j.exceptions import Neo4jError
 
 import logging
 
-from src.gemini_model_client import GeminiModelClient
+from src.llm.gemini import GeminiModelClient
 from src.qa_rag_system import QAKnowledgeGraph
 
 logger = logging.getLogger(__name__)

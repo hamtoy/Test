@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib
 import sys
 import types
 from typing import Any, Dict
@@ -97,16 +96,24 @@ def test_generate_qa_with_all_enhancements(monkeypatch):
 
     # Patch the actual modules where the classes are defined/imported
     from src.qa import quality
-    
+
     monkeypatch.setattr(quality, "QAKnowledgeGraph", FakeKG, raising=True)
-    monkeypatch.setattr(quality, "AdvancedContextAugmentation", FakeAugmenter, raising=True)
-    monkeypatch.setattr(quality, "RealTimeConstraintEnforcer", FakeEnforcer, raising=True)
-    monkeypatch.setattr(quality, "AdaptiveDifficultyAdjuster", FakeAdjuster, raising=True)
+    monkeypatch.setattr(
+        quality, "AdvancedContextAugmentation", FakeAugmenter, raising=True
+    )
+    monkeypatch.setattr(
+        quality, "RealTimeConstraintEnforcer", FakeEnforcer, raising=True
+    )
+    monkeypatch.setattr(
+        quality, "AdaptiveDifficultyAdjuster", FakeAdjuster, raising=True
+    )
     monkeypatch.setattr(quality, "CrossValidationSystem", FakeValidator, raising=True)
     monkeypatch.setattr(
         quality, "DynamicExampleSelector", FakeExampleSelector, raising=True
     )
-    monkeypatch.setattr(quality, "MultimodalUnderstanding", FakeMultimodal, raising=True)
+    monkeypatch.setattr(
+        quality, "MultimodalUnderstanding", FakeMultimodal, raising=True
+    )
     monkeypatch.setattr(quality, "GeminiModelClient", FakeLLM, raising=True)
 
     system = quality.IntegratedQualitySystem("bolt://fake", "user", "pass")

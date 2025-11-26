@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import types
 from src import self_correcting_chain
-from src import ultimate_langchain_qa_system as ulqa
+from src.llm import langchain_system as ulqa
 
 
 def test_self_correcting_chain_stops_on_yes(monkeypatch):

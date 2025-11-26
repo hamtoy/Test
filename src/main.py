@@ -15,7 +15,7 @@ from src.cache_analytics import analyze_cache_stats, print_cache_report
 from src.cli import parse_args, resolve_checkpoint_path
 from src.config import AppConfig
 from src.constants import LOG_MESSAGES, USER_INTERRUPT_MESSAGE
-from src.data_loader import load_input_data
+from src.processing.loader import load_input_data
 from src.exceptions import (
     APIRateLimitError,
     BudgetExceededError,

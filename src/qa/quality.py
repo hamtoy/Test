@@ -3,13 +3,13 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from src.adaptive_difficulty import AdaptiveDifficultyAdjuster
-from src.advanced_context_augmentation import AdvancedContextAugmentation
-from src.cross_validation import CrossValidationSystem
-from src.dynamic_example_selector import DynamicExampleSelector
+from src.processing.context_augmentation import AdvancedContextAugmentation
+from src.analysis.cross_validation import CrossValidationSystem
+from src.processing.example_selector import DynamicExampleSelector
 from src.multimodal_understanding import MultimodalUnderstanding
 from src.qa.rag_system import QAKnowledgeGraph
 from src.real_time_constraint_enforcer import RealTimeConstraintEnforcer
-from src.gemini_model_client import GeminiModelClient
+from src.llm.gemini import GeminiModelClient
 
 
 class IntegratedQualitySystem:
