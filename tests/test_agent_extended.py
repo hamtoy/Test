@@ -81,9 +81,11 @@ def test_agent_cache_budget_and_pricing(monkeypatch, tmp_path):
             self.cache_ttl_minutes = 1
             self.budget_limit_usd = 1.0
 
-    # pricing tiers stub
+    # pricing tiers stub - patch on src.agent module so _get_pricing_tiers() finds it
+    import src.agent as agent_mod
     monkeypatch.setattr(
-        "src.agent.cost_tracker.PRICING_TIERS",
+        agent_mod,
+        "PRICING_TIERS",
         {"tier-model": [{"max_input_tokens": None, "input_rate": 1, "output_rate": 2}]},
     )
     monkeypatch.setattr("src.agent.rate_limiter.DEFAULT_RPM_LIMIT", 10)

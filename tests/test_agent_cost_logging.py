@@ -59,7 +59,9 @@ async def test_execute_api_call_logs_metrics(monkeypatch, tmp_path):
     def _log_metrics(logger, **kwargs):
         logged.update(kwargs)
 
-    monkeypatch.setattr("src.logging_setup.log_metrics", _log_metrics)
+    # Patch src.agent.log_metrics so _get_log_metrics() finds it
+    import src.agent as agent_mod
+    monkeypatch.setattr(agent_mod, "log_metrics", _log_metrics)
 
     class _Resp:
         def __init__(self):
