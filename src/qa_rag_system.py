@@ -1,4 +1,5 @@
 """Backward compatibility - use src.qa.rag_system instead."""
+
 import warnings
 
 
@@ -10,9 +11,11 @@ def __getattr__(name):
         stacklevel=2,
     )
     from src.qa import rag_system
+
     return getattr(rag_system, name)
 
 
 def __dir__():
     from src.qa import rag_system
+
     return dir(rag_system)

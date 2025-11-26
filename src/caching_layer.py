@@ -1,4 +1,5 @@
 """Backward compatibility - use src.caching.layer instead."""
+
 import warnings
 
 
@@ -10,9 +11,11 @@ def __getattr__(name):
         stacklevel=2,
     )
     from src.caching import layer
+
     return getattr(layer, name)
 
 
 def __dir__():
     from src.caching import layer
+
     return dir(layer)

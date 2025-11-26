@@ -1,4 +1,5 @@
 """Backward compatibility - use src.caching.analytics instead."""
+
 import warnings
 
 
@@ -10,9 +11,11 @@ def __getattr__(name):
         stacklevel=2,
     )
     from src.caching import analytics
+
     return getattr(analytics, name)
 
 
 def __dir__():
     from src.caching import analytics
+
     return dir(analytics)

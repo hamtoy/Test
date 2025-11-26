@@ -1,4 +1,5 @@
 """Backward compatibility - use src.caching.redis_cache instead."""
+
 import warnings
 
 
@@ -10,9 +11,11 @@ def __getattr__(name):
         stacklevel=2,
     )
     from src.caching import redis_cache
+
     return getattr(redis_cache, name)
 
 
 def __dir__():
     from src.caching import redis_cache
+
     return dir(redis_cache)

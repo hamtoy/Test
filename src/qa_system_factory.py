@@ -1,4 +1,5 @@
 """Backward compatibility - use src.qa.factory instead."""
+
 import warnings
 
 
@@ -10,9 +11,11 @@ def __getattr__(name):
         stacklevel=2,
     )
     from src.qa import factory
+
     return getattr(factory, name)
 
 
 def __dir__():
     from src.qa import factory
+
     return dir(factory)
