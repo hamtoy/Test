@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Optional
 
-from src.gemini_model_client import GeminiModelClient
+from src.llm.gemini import GeminiModelClient
 from src.graph_enhanced_router import GraphEnhancedRouter
-from src.lcel_optimized_chain import LCELOptimizedChain
+from src.llm.lcel_chain import LCELOptimizedChain
 from src.qa.memory_augmented import MemoryAugmentedQASystem
 from src.qa.multi_agent import MultiAgentQASystem
 from src.qa.rag_system import QAKnowledgeGraph

@@ -1,20 +1,20 @@
-import os
-import google.generativeai as genai
-from dotenv import load_dotenv
+"""
+Backward compatibility shim for list_models.
 
-load_dotenv()
+This module has been moved to src.llm.list_models.
+This file provides backward compatibility by re-exporting from the new location.
+"""
 
-api_key = os.getenv("GEMINI_API_KEY")
-if not api_key:
-    print("No API key found in .env (GEMINI_API_KEY)")
-    exit(1)
+from __future__ import annotations
 
-genai.configure(api_key=api_key)
+import warnings
 
-print("Listing models for configured Gemini key...")
-try:
-    for m in genai.list_models():
-        if "generateContent" in m.supported_generation_methods:
-            print(m.name)
-except Exception as e:  # noqa: BLE001
-    print(f"Error listing models: {e}")
+# Re-export all public symbols from the new location
+from src.llm.list_models import *  # noqa: F403, F401
+
+warnings.warn(
+    "Importing from 'src.list_models' is deprecated. "
+    "Use 'from src.llm.list_models' instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)

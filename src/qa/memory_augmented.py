@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from neo4j import GraphDatabase
 from src.qa.rag_system import CustomGeminiEmbeddings, require_env
 from src.neo4j_utils import create_sync_driver, SafeDriver
-from src.gemini_model_client import GeminiModelClient
+from src.llm.gemini import GeminiModelClient
 
 load_dotenv()
 

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from src.cross_validation import CrossValidationSystem
-from src.dynamic_example_selector import DynamicExampleSelector
-from src.gemini_model_client import GeminiModelClient
+from src.analysis.cross_validation import CrossValidationSystem
+from src.processing.example_selector import DynamicExampleSelector
+from src.llm.gemini import GeminiModelClient
 from src.qa.rag_system import QAKnowledgeGraph
 
 

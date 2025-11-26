@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from src.gemini_model_client import GeminiModelClient
+from src.llm.gemini import GeminiModelClient
 from src.qa_rag_system import QAKnowledgeGraph
 
 
