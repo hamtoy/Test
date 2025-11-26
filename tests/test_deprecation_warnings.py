@@ -151,6 +151,7 @@ class TestDeprecationWarnings:
             ]
             assert len(deprecation_warnings) >= 1
             assert any("deprecated" in str(warn.message).lower() for warn in deprecation_warnings)
+            assert any("src.caching.layer" in str(warn.message) for warn in deprecation_warnings)
 
     def test_graph_enhanced_router_shim_warning(self):
         """Test that importing from src.graph_enhanced_router emits a deprecation warning."""
