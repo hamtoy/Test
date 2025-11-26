@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import google.generativeai.caching as caching
+    pass
 
 # Assuming AppConfig is defined elsewhere in the project
 from src.config import AppConfig
