@@ -1,18 +1,26 @@
-class APIRateLimitError(Exception):
-    """Raised when API rate limit is exceeded."""
+"""Backward compatibility - use src.config.exceptions instead."""
 
+import warnings
 
-class ValidationFailedError(Exception):
-    """Raised when data validation fails."""
+from src.config.exceptions import (
+    APIRateLimitError,
+    BudgetExceededError,
+    CacheCreationError,
+    SafetyFilterError,
+    ValidationFailedError,
+)
 
+warnings.warn(
+    "Importing from 'src.exceptions' is deprecated. "
+    "Use 'from src.config.exceptions import ...' instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-class CacheCreationError(Exception):
-    """Raised when context cache creation fails."""
-
-
-class SafetyFilterError(Exception):
-    """Raised when generation is blocked by safety filters or non-STOP finish reasons."""
-
-
-class BudgetExceededError(Exception):
-    """Raised when total cost exceeds configured budget."""
+__all__ = [
+    "APIRateLimitError",
+    "ValidationFailedError",
+    "CacheCreationError",
+    "SafetyFilterError",
+    "BudgetExceededError",
+]

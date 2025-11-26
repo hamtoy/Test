@@ -1,43 +1,89 @@
-"""비용 추적 및 예산 관리 모듈."""
+# -*- coding: utf-8 -*-
+"""비용 추적 모듈.
+
+API 호출 비용 계산 및 예산 관리 기능 제공.
+"""
 
 from __future__ import annotations
 
 import logging
-from typing import Set
+import sys
+from typing import TYPE_CHECKING
 
-from src.constants import PRICING_TIERS, BUDGET_WARNING_THRESHOLDS
+from src import constants as _constants
 from src.exceptions import BudgetExceededError
+
+if TYPE_CHECKING:
+    from src.config import AppConfig
+
+
+def _get_pricing_tiers():
+    """PRICING_TIERS를 동적으로 가져옴 (테스트 패칭 지원)."""
+    agent_mod = sys.modules.get("src.agent")
+    if agent_mod and hasattr(agent_mod, "PRICING_TIERS"):
+        return agent_mod.PRICING_TIERS
+    return _constants.PRICING_TIERS
+
+
+def _get_budget_warning_thresholds():
+    """BUDGET_WARNING_THRESHOLDS를 동적으로 가져옴 (테스트 패칭 지원)."""
+    agent_mod = sys.modules.get("src.agent")
+    if agent_mod and hasattr(agent_mod, "BUDGET_WARNING_THRESHOLDS"):
+        return agent_mod.BUDGET_WARNING_THRESHOLDS
+    return _constants.BUDGET_WARNING_THRESHOLDS
 
 
 class CostTracker:
-    """API 비용 추적 및 예산 관리."""
+    """API 비용 추적 및 예산 관리 클래스.
 
-    def __init__(self, model_name: str, budget_limit_usd: float | None = None):
-        self.model_name = model_name.lower()
-        self.budget_limit_usd = budget_limit_usd
+    토큰 사용량에 기반한 비용 계산과 예산 초과 감지를 담당합니다.
+    """
+
+    def __init__(self, config: "AppConfig") -> None:
+        """CostTracker 초기화.
+
+        Args:
+            config: 애플리케이션 설정 (모델명, 예산 한도 등)
+        """
+        self.config = config
+        self.logger = logging.getLogger("GeminiWorkflow")
         self.total_input_tokens = 0
         self.total_output_tokens = 0
-        self._budget_warned_thresholds: Set[int] = set()
-        self.logger = logging.getLogger(__name__)
+        self._budget_warned_thresholds: set[int] = set()
 
-    def record_usage(self, input_tokens: int, output_tokens: int) -> None:
-        """토큰 사용량 기록."""
+    def add_tokens(self, input_tokens: int, output_tokens: int) -> None:
+        """토큰 사용량 누적.
+
+        Args:
+            input_tokens: 입력 토큰 수
+            output_tokens: 출력 토큰 수
+        """
         self.total_input_tokens += input_tokens
         self.total_output_tokens += output_tokens
 
+    # Backward compatibility: alias for tests expecting record_usage
+    def record_usage(self, input_tokens: int, output_tokens: int) -> None:
+        """토큰 사용량 기록 (하위 호환성 wrapper)."""
+        self.add_tokens(input_tokens, output_tokens)
+
     def get_total_cost(self) -> float:
+        """세션의 총 API 비용 계산 (USD).
+
+        모델별 단가를 constants에 정의된 티어로 계산합니다.
+
+        Returns:
+            총 비용 (USD)
+
+        Raises:
+            ValueError: 지원하지 않는 모델이거나 티어 매칭 실패 시
         """
-        세션의 총 API 비용 계산 (USD)
-        모델별 단가를 constants에 정의된 티어로 계산 (입력 토큰 기반)
-        """
-        tiers = PRICING_TIERS.get(self.model_name)
+        model_name = self.config.model_name.lower()
+        pricing_tiers = _get_pricing_tiers()
+        tiers = pricing_tiers.get(model_name)
         if not tiers:
-            # Fallback or raise? Original code raised ValueError
-            raise ValueError(f"Unsupported model for pricing: {self.model_name}")
+            raise ValueError(f"Unsupported model for pricing: {model_name}")
 
-        input_rate = None
-        output_rate = None
-
+        input_rate = output_rate = None
         for tier in tiers:
             max_tokens = tier["max_input_tokens"]
             if max_tokens is None or self.total_input_tokens <= max_tokens:
@@ -47,7 +93,8 @@ class CostTracker:
 
         if input_rate is None or output_rate is None:
             raise ValueError(
-                f"No pricing tier matched for model '{self.model_name}' and tokens {self.total_input_tokens}"
+                f"No pricing tier matched for model '{model_name}' "
+                f"and tokens {self.total_input_tokens}"
             )
 
         input_cost = (self.total_input_tokens / 1_000_000) * input_rate
@@ -55,19 +102,30 @@ class CostTracker:
         return input_cost + output_cost
 
     def get_budget_usage_percent(self) -> float:
-        """Return budget usage percent; 0 if no budget configured."""
-        if not self.budget_limit_usd:
+        """예산 사용률 반환.
+
+        Returns:
+            예산 사용률 (%). 예산 미설정 시 0.0
+        """
+        if not self.config.budget_limit_usd:
             return 0.0
-        return (self.get_total_cost() / self.budget_limit_usd) * 100
+        return (self.get_total_cost() / self.config.budget_limit_usd) * 100
 
     def check_budget(self) -> None:
-        """Raise if total cost exceeds budget."""
-        if not self.budget_limit_usd:
+        """예산 초과 여부 확인.
+
+        경고 임계치 도달 시 로깅하고, 예산 초과 시 예외 발생.
+
+        Raises:
+            BudgetExceededError: 예산 초과 시
+        """
+        if not self.config.budget_limit_usd:
             return
         total = self.get_total_cost()
         usage_pct = self.get_budget_usage_percent()
 
-        for threshold, level in BUDGET_WARNING_THRESHOLDS:
+        budget_thresholds = _get_budget_warning_thresholds()
+        for threshold, level in budget_thresholds:
             if (
                 usage_pct >= threshold
                 and threshold not in self._budget_warned_thresholds
@@ -79,7 +137,8 @@ class CostTracker:
                 )
                 self._budget_warned_thresholds.add(threshold)
 
-        if total > self.budget_limit_usd:
+        if total > self.config.budget_limit_usd:
             raise BudgetExceededError(
-                f"Session cost ${total:.4f} exceeded budget ${self.budget_limit_usd:.2f}"
+                f"Session cost ${total:.4f} exceeded budget "
+                f"${self.config.budget_limit_usd:.2f}"
             )

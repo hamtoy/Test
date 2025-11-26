@@ -1,7 +1,8 @@
 import asyncio
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
-from src.main import execute_workflow, _gather_results
+from src.workflow import execute_workflow
+from src.workflow.executor import _gather_results
 from src.models import EvaluationResultSchema, EvaluationItem
 from src.exceptions import BudgetExceededError
 
@@ -34,11 +35,13 @@ async def test_execute_workflow_success(mock_agent, mock_logger):
     eval_result = EvaluationResultSchema(best_candidate="A", evaluations=[eval_item])
     mock_agent.evaluate_responses.return_value = eval_result
 
-    with patch("src.main.reload_data_if_needed", new_callable=AsyncMock) as mock_reload:
+    with patch(
+        "src.workflow.executor.reload_data_if_needed", new_callable=AsyncMock
+    ) as mock_reload:
         mock_reload.return_value = (ocr_text, candidates)
 
         # Mock save_result_to_file to avoid file I/O
-        with patch("src.main.save_result_to_file") as mock_save:
+        with patch("src.workflow.processor.save_result_to_file") as mock_save:
             results = await execute_workflow(
                 agent=mock_agent,
                 ocr_text=ocr_text,
@@ -84,7 +87,9 @@ async def test_execute_workflow_budget_exceeded(mock_logger):
     mock_agent.get_budget_usage_percent = MagicMock(return_value=95.0)
     mock_agent.create_context_cache = AsyncMock(return_value=None)
 
-    with patch("src.main.reload_data_if_needed", new_callable=AsyncMock) as mock_reload:
+    with patch(
+        "src.workflow.executor.reload_data_if_needed", new_callable=AsyncMock
+    ) as mock_reload:
         mock_reload.return_value = ("ocr", {"A": "a"})
 
         results = await execute_workflow(
@@ -121,8 +126,10 @@ async def test_execute_workflow_interactive_skip_reload(mock_agent, mock_logger)
     mock_agent.rewrite_best_answer = AsyncMock(return_value="rewritten")
 
     with (
-        patch("src.main.Confirm.ask", return_value=False),
-        patch("src.main.reload_data_if_needed", new_callable=AsyncMock) as mock_reload,
+        patch("src.workflow.executor.Confirm.ask", return_value=False),
+        patch(
+            "src.workflow.executor.reload_data_if_needed", new_callable=AsyncMock
+        ) as mock_reload,
     ):
         mock_reload.return_value = ("ocr", {"A": "a"})
 
