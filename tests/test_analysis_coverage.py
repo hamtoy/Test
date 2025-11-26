@@ -152,10 +152,10 @@ def test_adaptive_difficulty(monkeypatch):
 
 
 def test_semantic_analysis_utils_simple():
-    tokens = semantic_analysis.tokenize("Alpha, beta! 그리고 and 123")
+    tokens = semantic.tokenize("Alpha, beta! 그리고 and 123")
     assert "alpha" in tokens and "beta" in tokens
 
-    counts = semantic_analysis.count_keywords(["alpha alpha", "beta"])
+    counts = semantic.count_keywords(["alpha alpha", "beta"])
     assert (
         counts["alpha"] >= 1 or "alpha" not in counts
     )  # MIN_FREQ may filter low counts
