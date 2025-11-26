@@ -53,15 +53,19 @@ def test_integrated_qa_pipeline_create_and_validate(monkeypatch):
 
     # Patch the actual module where classes are imported
     from src.qa import pipeline
-    
+
     monkeypatch.setattr(pipeline, "QAKnowledgeGraph", _FakeKG)
     monkeypatch.setattr(pipeline, "DynamicTemplateGenerator", _FakeTemplateGen)
     monkeypatch.setattr(pipeline, "build_session", _fake_build_session)
     monkeypatch.setattr(pipeline, "find_violations", _fake_find_violations)
-    monkeypatch.setattr(pipeline, "validate_turns", lambda *_args, **_kwargs: {"ok": True})
+    monkeypatch.setattr(
+        pipeline, "validate_turns", lambda *_args, **_kwargs: {"ok": True}
+    )
 
     pipeline_obj = pipeline.IntegratedQAPipeline()
-    session = pipeline_obj.create_session({"text_density": 0.8, "has_table_chart": False})
+    session = pipeline_obj.create_session(
+        {"text_density": 0.8, "has_table_chart": False}
+    )
     assert session["turns"][0]["prompt"] == "prompt-explanation"
 
     validation = pipeline_obj.validate_output("explanation", "forbidden text")

@@ -104,6 +104,6 @@ def test_main_shows_error_on_missing_env(monkeypatch, capsys):
     monkeypatch.setattr("os.getenv", lambda *_a, **_k: None)
     import runpy
 
-    runpy.run_module("src.dynamic_template_generator", run_name="__main__")
+    runpy.run_module("src.processing.template_generator", run_name="__main__")
     out = capsys.readouterr().out
     assert "실패" in out or "환경 변수" in out

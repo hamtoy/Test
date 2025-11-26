@@ -83,6 +83,7 @@ def test_agent_cache_budget_and_pricing(monkeypatch, tmp_path):
 
     # pricing tiers stub - patch on src.agent module so _get_pricing_tiers() finds it
     import src.agent as agent_mod
+
     monkeypatch.setattr(
         agent_mod,
         "PRICING_TIERS",

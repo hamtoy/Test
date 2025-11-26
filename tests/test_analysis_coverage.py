@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 import types
-from src import semantic_analysis
+from src.analysis import semantic
 from src import smart_autocomplete
-from src import dynamic_example_selector
+from src.processing import example_selector
 from src import adaptive_difficulty
 
 
 def test_semantic_analysis_utils(monkeypatch):
-    monkeypatch.setattr(semantic_analysis, "MIN_FREQ", 1)
-    tokens = semantic_analysis.tokenize("This is a Sample sample text with 숫자123")
+    monkeypatch.setattr(semantic, "MIN_FREQ", 1)
+    tokens = semantic.tokenize("This is a Sample sample text with 숫자123")
     assert "sample" in tokens
 
-    counter = semantic_analysis.count_keywords(["alpha beta alpha", "beta gamma"])
+    counter = semantic.count_keywords(["alpha beta alpha", "beta gamma"])
     assert counter["alpha"] >= 1
 
     store = []
@@ -51,8 +51,8 @@ def test_semantic_analysis_utils(monkeypatch):
             return self.session_obj
 
     driver = _SADriver()
-    semantic_analysis.create_topics(driver, [("alpha", 3)])
-    semantic_analysis.link_blocks_to_topics(
+    semantic.create_topics(driver, [("alpha", 3)])
+    semantic.link_blocks_to_topics(
         driver, [{"id": "b1", "content": "alpha beta"}], [("alpha", 3)]
     )
 
@@ -119,7 +119,7 @@ def test_dynamic_example_selector(monkeypatch):
         def __init__(self):
             self._graph = types.SimpleNamespace(session=lambda: _DESession())
 
-    selector = dynamic_example_selector.DynamicExampleSelector(_DEKG())
+    selector = example_selector.DynamicExampleSelector(_DEKG())
     examples = selector.select_best_examples(
         "explanation", {"text_density": 0.8, "has_table_chart": True}, k=1
     )

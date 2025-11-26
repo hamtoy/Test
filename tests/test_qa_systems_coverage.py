@@ -119,10 +119,10 @@ def test_memory_augmented_qa(monkeypatch):
     class _FakeSafeDriver:
         def __init__(self, *args, **kwargs):
             self._driver = _FakeDriver()
-            
+
         def session(self):
             return _FakeSession()
-            
+
         def close(self):
             return None
 
@@ -168,9 +168,7 @@ def test_memory_augmented_qa(monkeypatch):
     )
 
     system = memory_augmented_qa.MemoryAugmentedQASystem(
-        neo4j_uri="bolt://fake",
-        user="user",
-        password="pass"
+        neo4j_uri="bolt://fake", user="user", password="pass"
     )
     resp = system.ask_with_memory("무엇을 해야 하나요?")
     assert resp == "answer"
