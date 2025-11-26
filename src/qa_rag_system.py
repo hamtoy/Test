@@ -1,9 +1,10 @@
 """Backward compatibility - use src.qa.rag_system instead."""
 
 import warnings
+from typing import Any
 
 
-def __getattr__(name: str) -> object:
+def __getattr__(name: str) -> Any:
     warnings.warn(
         f"Importing '{name}' from 'src.qa_rag_system' is deprecated. "
         "Use 'from src.qa.rag_system import ...' instead.",

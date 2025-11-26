@@ -1,5 +1,7 @@
 """Caching package - cache management and analytics."""
 
+from typing import Any
+
 __all__ = [
     "CachingLayer",
     "analyze_cache_stats",
@@ -8,7 +10,7 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str) -> object:
+def __getattr__(name: str) -> Any:
     """Lazy import to avoid circular dependencies."""
     if name == "CachingLayer":
         from src.caching.layer import CachingLayer

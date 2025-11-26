@@ -1,9 +1,10 @@
 """Backward compatibility - use src.qa.multi_agent instead."""
 
 import warnings
+from typing import Any
 
 
-def __getattr__(name: str) -> object:
+def __getattr__(name: str) -> Any:
     warnings.warn(
         f"Importing '{name}' from 'src.multi_agent_qa_system' is deprecated. "
         "Use 'from src.qa.multi_agent import ...' instead.",

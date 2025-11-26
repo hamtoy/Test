@@ -1,5 +1,7 @@
 """Q&A System package - question answering and RAG systems."""
 
+from typing import Any
+
 __all__ = [
     "QAKnowledgeGraph",
     "QASystemFactory",
@@ -10,7 +12,7 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str) -> object:
+def __getattr__(name: str) -> Any:
     """Lazy import to avoid circular dependencies."""
     if name == "QAKnowledgeGraph":
         from src.qa.rag_system import QAKnowledgeGraph

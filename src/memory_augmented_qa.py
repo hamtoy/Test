@@ -1,9 +1,10 @@
 """Backward compatibility - use src.qa.memory_augmented instead."""
 
 import warnings
+from typing import Any
 
 
-def __getattr__(name: str) -> object:
+def __getattr__(name: str) -> Any:
     warnings.warn(
         f"Importing '{name}' from 'src.memory_augmented_qa' is deprecated. "
         "Use 'from src.qa.memory_augmented import ...' instead.",
