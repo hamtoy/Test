@@ -11,7 +11,7 @@ from types import SimpleNamespace
 from dotenv import load_dotenv
 
 from src.agent import GeminiAgent
-from src.cache_analytics import analyze_cache_stats, print_cache_report
+from src.caching.analytics import analyze_cache_stats, print_cache_report
 from src.cli import parse_args, resolve_checkpoint_path
 from src.config import AppConfig
 from src.config.constants import LOG_MESSAGES, USER_INTERRUPT_MESSAGE
