@@ -15,6 +15,36 @@ from src.core.interfaces import ProviderError, RateLimitError, SafetyBlockedErro
 from src.features.lats import LATSSearcher, SearchState, ValidationResult
 from src.features.action_executor import ActionExecutor
 
+# Export private functions for backward compatibility with tests
+__all__ = [
+    "app",
+    "broker",
+    "config",
+    "redis_client",
+    "llm_provider",
+    "lats_agent",
+    "graph_provider",
+    "setup_redis",
+    "close_redis",
+    "check_rate_limit",
+    "ensure_redis_ready",
+    "OCRTask",
+    "DLQMessage",
+    "handle_ocr_task",
+    "_append_jsonl",
+    "_process_task",
+    "_run_task_with_lats",
+    # Re-export imported classes for test compatibility
+    "RateLimitError",
+    "SafetyBlockedError",
+    "ProviderError",
+    "SearchState",
+    "ValidationResult",
+    "LATSSearcher",
+    "ActionExecutor",
+    "GeminiAgent",
+]
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("worker")
