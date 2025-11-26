@@ -1,5 +1,6 @@
 """Test that deprecated imports emit warnings."""
 
+import importlib
 import sys
 import warnings
 
@@ -11,10 +12,11 @@ class TestDeprecationWarnings:
         """Test that importing from src.constants emits a deprecation warning."""
         # Clear module cache to ensure fresh import
         sys.modules.pop("src.constants", None)
+        sys.modules.pop("src.config.constants", None)
         
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from src import constants  # noqa: F401
+            import src.constants  # noqa: F401
             
             # Module level warning should be captured
             deprecation_warnings = [
@@ -28,10 +30,11 @@ class TestDeprecationWarnings:
         """Test that importing from src.exceptions emits a deprecation warning."""
         # Clear module cache to ensure fresh import
         sys.modules.pop("src.exceptions", None)
+        sys.modules.pop("src.config.exceptions", None)
         
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from src import exceptions  # noqa: F401
+            import src.exceptions  # noqa: F401
 
             deprecation_warnings = [
                 warn for warn in w if issubclass(warn.category, DeprecationWarning)
@@ -44,10 +47,11 @@ class TestDeprecationWarnings:
         """Test that importing from src.models emits a deprecation warning."""
         # Clear module cache to ensure fresh import
         sys.modules.pop("src.models", None)
+        sys.modules.pop("src.core.models", None)
         
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from src import models  # noqa: F401
+            import src.models  # noqa: F401
 
             deprecation_warnings = [
                 warn for warn in w if issubclass(warn.category, DeprecationWarning)
@@ -60,10 +64,11 @@ class TestDeprecationWarnings:
         """Test that importing from src.utils emits a deprecation warning."""
         # Clear module cache to ensure fresh import
         sys.modules.pop("src.utils", None)
+        sys.modules.pop("src.infra.utils", None)
         
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from src import utils  # noqa: F401
+            import src.utils  # noqa: F401
 
             deprecation_warnings = [
                 warn for warn in w if issubclass(warn.category, DeprecationWarning)
