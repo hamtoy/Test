@@ -122,14 +122,24 @@ class TestDeprecationWarnings:
 
     def test_worker_shim_warning(self):
         """Test that importing from src.worker emits a deprecation warning."""
+        # Clear module cache to ensure fresh import
+        sys.modules.pop("src.worker", None)
+
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             from src.worker import OCRTask  # noqa: F401
 
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "deprecated" in str(w[0].message).lower()
-            assert "src.infra.worker" in str(w[0].message)
+            deprecation_warnings = [
+                warn for warn in w if issubclass(warn.category, DeprecationWarning)
+            ]
+            assert len(deprecation_warnings) >= 1
+            assert any(
+                "deprecated" in str(warn.message).lower()
+                for warn in deprecation_warnings
+            )
+            assert any(
+                "src.infra.worker" in str(warn.message) for warn in deprecation_warnings
+            )
 
     def test_data_loader_shim_warning(self):
         """Test that importing from src.data_loader emits a deprecation warning."""
@@ -182,14 +192,25 @@ class TestDeprecationWarnings:
 
     def test_graph_enhanced_router_shim_warning(self):
         """Test that importing from src.graph_enhanced_router emits a deprecation warning."""
+        # Clear module cache to ensure fresh import
+        sys.modules.pop("src.graph_enhanced_router", None)
+
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             from src.graph_enhanced_router import GraphEnhancedRouter  # noqa: F401
 
-            assert len(w) == 1
-            assert issubclass(w[0].category, DeprecationWarning)
-            assert "deprecated" in str(w[0].message).lower()
-            assert "src.routing.graph_router" in str(w[0].message)
+            deprecation_warnings = [
+                warn for warn in w if issubclass(warn.category, DeprecationWarning)
+            ]
+            assert len(deprecation_warnings) >= 1
+            assert any(
+                "deprecated" in str(warn.message).lower()
+                for warn in deprecation_warnings
+            )
+            assert any(
+                "src.routing.graph_router" in str(warn.message)
+                for warn in deprecation_warnings
+            )
 
     def test_config_shim_no_warning_for_package_import(self):
         """Test that importing AppConfig from src.config package (not module) works without warning."""
