@@ -1,4 +1,5 @@
 """Backward compatibility - use src.qa.pipeline instead."""
+
 import warnings
 
 
@@ -10,9 +11,11 @@ def __getattr__(name):
         stacklevel=2,
     )
     from src.qa import pipeline
+
     return getattr(pipeline, name)
 
 
 def __dir__():
     from src.qa import pipeline
+
     return dir(pipeline)
