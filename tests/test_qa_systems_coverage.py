@@ -219,7 +219,7 @@ def test_multi_agent_qa_system(monkeypatch):
     # This must be done here, not at the top, to ensure the monkeypatch takes effect
     # before MultiAgentQASystem imports GeminiModelClient from this module.
     from src.qa import multi_agent as multi_agent_module
-    
+
     monkeypatch.setattr(multi_agent_module, "GeminiModelClient", lambda: _FakeLLM())
     monkeypatch.setattr(
         multi_agent_module,
