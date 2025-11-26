@@ -2,7 +2,7 @@
 
 import warnings
 
-from src.infra.budget import *
+from src.infra.budget import *  # noqa: F403
 
 warnings.warn(
     "Importing from 'src.budget_tracker' is deprecated. "

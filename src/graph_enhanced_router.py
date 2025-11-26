@@ -2,7 +2,7 @@
 
 import warnings
 
-from src.routing.graph_router import *
+from src.routing.graph_router import *  # noqa: F403
 
 warnings.warn(
     "Importing from 'src.graph_enhanced_router' is deprecated. "

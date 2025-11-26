@@ -2,7 +2,7 @@
 
 import warnings
 
-from src.infra.constraints import *
+from src.infra.constraints import *  # noqa: F403
 
 warnings.warn(
     "Importing from 'src.real_time_constraint_enforcer' is deprecated. "

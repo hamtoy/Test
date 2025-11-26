@@ -2,7 +2,7 @@
 
 import warnings
 
-from src.features.multimodal import *
+from src.features.multimodal import *  # noqa: F403
 
 warnings.warn(
     "Importing from 'src.multimodal_understanding' is deprecated. "

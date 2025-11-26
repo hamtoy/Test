@@ -2,7 +2,7 @@
 
 import warnings
 
-from src.infra.worker import *
+from src.infra.worker import *  # noqa: F403
 
 warnings.warn(
     "Importing from 'src.worker' is deprecated. "

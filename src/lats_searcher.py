@@ -2,7 +2,7 @@
 
 import warnings
 
-from src.features.lats import *
+from src.features.lats import *  # noqa: F403
 
 warnings.warn(
     "Importing from 'src.lats_searcher' is deprecated. "

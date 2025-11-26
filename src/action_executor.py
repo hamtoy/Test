@@ -2,7 +2,7 @@
 
 import warnings
 
-from src.features.action_executor import *
+from src.features.action_executor import *  # noqa: F403
 
 warnings.warn(
     "Importing from 'src.action_executor' is deprecated. "

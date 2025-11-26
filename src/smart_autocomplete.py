@@ -2,7 +2,7 @@
 
 import warnings
 
-from src.features.autocomplete import *
+from src.features.autocomplete import *  # noqa: F403
 
 warnings.warn(
     "Importing from 'src.smart_autocomplete' is deprecated. "

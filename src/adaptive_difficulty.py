@@ -2,7 +2,7 @@
 
 import warnings
 
-from src.features.difficulty import *
+from src.features.difficulty import *  # noqa: F403
 
 warnings.warn(
     "Importing from 'src.adaptive_difficulty' is deprecated. "

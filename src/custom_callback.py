@@ -2,7 +2,7 @@
 
 import warnings
 
-from src.infra.callbacks import *
+from src.infra.callbacks import *  # noqa: F403
 
 warnings.warn(
     "Importing from 'src.custom_callback' is deprecated. "

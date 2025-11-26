@@ -2,7 +2,7 @@
 
 import warnings
 
-from src.infra.utils import *
+from src.infra.utils import *  # noqa: F403
 
 warnings.warn(
     "Importing from 'src.utils' is deprecated. "
