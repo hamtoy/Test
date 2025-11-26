@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from src import utils
-from src.models import WorkflowResult
+from src.core.models import WorkflowResult
 
 
 @pytest.mark.asyncio

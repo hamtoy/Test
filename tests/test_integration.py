@@ -3,7 +3,7 @@ import logging
 import pytest
 
 from src.workflow import execute_workflow
-from src.models import EvaluationItem, EvaluationResultSchema
+from src.core.models import EvaluationItem, EvaluationResultSchema
 
 VALID_API_KEY = "AIza" + "A" * 35
 
@@ -98,7 +98,7 @@ async def test_execute_workflow_resume(monkeypatch, tmp_path):
     checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Preload checkpoint entry
-    from src.models import WorkflowResult
+    from src.core.models import WorkflowResult
 
     existing = WorkflowResult(
         turn_id=1,

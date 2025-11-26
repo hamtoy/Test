@@ -1,4 +1,4 @@
-from src.models import EvaluationResultSchema
+from src.core.models import EvaluationResultSchema
 
 
 def test_get_best_candidate_when_evaluations_empty_defaults_to_a():

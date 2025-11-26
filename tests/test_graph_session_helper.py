@@ -1,6 +1,6 @@
 import asyncio
 
-from src.qa_rag_system import QAKnowledgeGraph
+from src.qa.rag_system import QAKnowledgeGraph
 from src.core.interfaces import GraphProvider
 
 

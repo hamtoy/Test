@@ -26,6 +26,7 @@ project_root/
 ├── .pre-commit-config.yaml # pre-commit 훅 설정
 ├── README.md               # 문서
 ├── UV_GUIDE.md             # UV 패키지 매니저 가이드
+├── MIGRATION.md            # Import path 마이그레이션 가이드
 ├── checks/                 # Session 검증
 │   ├── detect_forbidden_patterns.py
 │   └── validate_session.py
@@ -43,15 +44,83 @@ project_root/
 │   ├── auto_profile.py
 │   ├── compare_runs.py
 │   └── ...
-├── src/                    # 소스 코드
-│   ├── agent.py            # Gemini API 인터페이스
-│   ├── main.py             # 메인 워크플로우
-│   ├── worker.py           # LATS 워커(FastStream + Redis 캐시/예산 추적)
-│   ├── qa_system_factory.py# QA 컴포넌트 팩토리(DI/공유 인스턴스)
-│   ├── qa_rag_system.py    # RAG + Graph QA 시스템
-│   ├── config.py           # 설정 관리
-│   ├── models.py           # Pydantic 모델
-│   └── ...
+├── src/                    # 소스 코드 (모듈화된 패키지 구조)
+│   ├── main.py             # 메인 워크플로우 진입점
+│   ├── cli.py              # CLI 인터페이스
+│   │
+│   ├── agent/              # AI Agent 핵심 기능
+│   │   ├── core.py         # GeminiAgent 클래스
+│   │   ├── cost_tracker.py # 비용 추적
+│   │   ├── cache_manager.py# 캐시 관리
+│   │   └── rate_limiter.py # Rate limiting
+│   │
+│   ├── config/             # 설정 및 상수
+│   │   ├── settings.py     # AppConfig
+│   │   ├── constants.py    # 상수 정의
+│   │   └── exceptions.py   # 예외 클래스
+│   │
+│   ├── core/               # 핵심 인터페이스와 모델
+│   │   ├── models.py       # Pydantic 모델
+│   │   ├── interfaces.py   # 인터페이스 정의
+│   │   ├── prompts.py      # 프롬프트 관리
+│   │   └── schema.py       # 스키마 정의
+│   │
+│   ├── qa/                 # Q&A 및 RAG 시스템
+│   │   ├── rag_system.py   # QAKnowledgeGraph
+│   │   ├── generator.py    # Q&A 생성
+│   │   ├── factory.py      # QA 시스템 팩토리
+│   │   ├── pipeline.py     # 통합 파이프라인
+│   │   ├── quality.py      # 품질 시스템
+│   │   ├── memory_augmented.py
+│   │   └── multi_agent.py
+│   │
+│   ├── caching/            # 캐시 관리
+│   │   ├── layer.py        # CachingLayer
+│   │   ├── analytics.py    # 캐시 분석
+│   │   └── redis_eval.py   # Redis 평가 캐시
+│   │
+│   ├── llm/                # LLM 클라이언트 및 체인
+│   │   ├── gemini.py       # GeminiModelClient
+│   │   ├── lcel_chain.py   # LCEL 최적화 체인
+│   │   ├── langchain_system.py
+│   │   └── list_models.py
+│   │
+│   ├── analysis/           # 의미 분석 및 검증
+│   │   ├── semantic.py     # 의미 분석
+│   │   ├── cross_validation.py
+│   │   └── comparison.py
+│   │
+│   ├── processing/         # 데이터 로딩 및 변환
+│   │   ├── loader.py       # 데이터 로더
+│   │   ├── template_generator.py
+│   │   ├── example_selector.py
+│   │   └── context_augmentation.py
+│   │
+│   ├── features/           # 추가 기능
+│   │   ├── autocomplete.py
+│   │   ├── multimodal.py
+│   │   ├── self_correcting.py
+│   │   ├── lats_searcher.py
+│   │   ├── difficulty.py
+│   │   └── action_executor.py
+│   │
+│   ├── infra/              # 인프라 및 유틸리티
+│   │   ├── utils.py        # 공통 유틸리티
+│   │   ├── logging.py      # 로깅 설정
+│   │   ├── budget.py       # 예산 추적
+│   │   ├── neo4j.py        # Neo4j 유틸리티
+│   │   ├── worker.py       # LATS 워커
+│   │   ├── health.py       # 헬스체크
+│   │   ├── callbacks.py    # 콜백
+│   │   └── constraints.py  # 제약 조건
+│   │
+│   ├── routing/            # 요청 라우팅
+│   │   └── graph_router.py # GraphEnhancedRouter
+│   │
+│   ├── graph/              # 그래프 스키마 및 빌드
+│   ├── ui/                 # 사용자 인터페이스
+│   └── workflow/           # 워크플로우 실행
+│
 ├── templates/              # Jinja2 템플릿 (15개)
 │   ├── system/             # 시스템 프롬프트
 │   ├── user/               # 사용자 프롬프트
@@ -163,6 +232,58 @@ uv sync --extra dev    # 개발/테스트/문서 의존성 포함
 ```
 
 자세한 내용은 [UV_GUIDE.md](UV_GUIDE.md)를 참조하세요.
+
+## 📦 Import 가이드
+
+프로젝트는 모듈화된 패키지 구조를 사용합니다. 권장 import 패턴:
+
+### 설정 및 상수
+```python
+from src.config import AppConfig                    # 앱 설정
+from src.config.constants import ERROR_MESSAGES     # 상수
+from src.config.exceptions import BudgetExceededError  # 예외
+```
+
+### 핵심 모델 및 인터페이스
+```python
+from src.core.models import WorkflowResult, EvaluationResultSchema
+from src.core.interfaces import IAgent
+```
+
+### Agent
+```python
+from src.agent import GeminiAgent
+from src.agent.cost_tracker import CostTracker
+```
+
+### Q&A 시스템
+```python
+from src.qa.rag_system import QAKnowledgeGraph
+from src.qa.generator import QAGenerator
+from src.qa.factory import QASystemFactory
+```
+
+### LLM 클라이언트
+```python
+from src.llm.gemini import GeminiModelClient
+from src.llm.langchain_system import UltimateLangChainQASystem
+```
+
+### 인프라 및 유틸리티
+```python
+from src.infra.utils import clean_markdown_code_block
+from src.infra.logging import setup_logging, log_metrics
+from src.infra.neo4j import SafeDriver, create_sync_driver
+```
+
+### 캐싱
+```python
+from src.caching.layer import CachingLayer
+from src.caching.analytics import analyze_cache_stats
+```
+
+> **참고**: 이전 버전의 import 경로(예: `from src.utils import ...`)는 여전히 작동하지만 deprecation 경고가 표시됩니다.  
+> 마이그레이션 가이드는 [MIGRATION.md](MIGRATION.md)를 참조하세요.
 
 ## ⚡️ Quick Start (샘플 데이터)
 

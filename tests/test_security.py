@@ -1,5 +1,5 @@
 import logging
-from src.logging_setup import SensitiveDataFilter
+from src.infra.logging import SensitiveDataFilter
 
 
 class TestSecurity:

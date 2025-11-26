@@ -19,7 +19,7 @@ from checks.validate_session import validate_turns
 from src.core.interfaces import GraphProvider
 from src.core.factory import get_graph_provider
 from src.config import AppConfig
-from src.neo4j_utils import SafeDriver, create_sync_driver
+from src.infra.neo4j import SafeDriver, create_sync_driver
 
 logger = logging.getLogger(__name__)
 

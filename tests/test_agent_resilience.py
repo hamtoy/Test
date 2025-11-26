@@ -5,7 +5,7 @@ import pytest
 
 from src.agent import GeminiAgent
 from src.config import AppConfig
-from src.exceptions import APIRateLimitError
+from src.config.exceptions import APIRateLimitError
 
 VALID_API_KEY = "AIza" + "D" * 35
 

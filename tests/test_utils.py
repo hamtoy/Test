@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
-from src.utils import (
+from src.infra.utils import (
     load_file_async,
     parse_raw_candidates,
     clean_markdown_code_block,

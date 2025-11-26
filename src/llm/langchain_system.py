@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from src.llm.gemini import GeminiModelClient
-from src.graph_enhanced_router import GraphEnhancedRouter
+from src.routing.graph_router import GraphEnhancedRouter
 from src.llm.lcel_chain import LCELOptimizedChain
 from src.memory_augmented_qa import MemoryAugmentedQASystem
 from src.multi_agent_qa_system import MultiAgentQASystem
-from src.qa_rag_system import QAKnowledgeGraph
+from src.qa.rag_system import QAKnowledgeGraph
 from src.qa_system_factory import QASystemFactory
 from src.self_correcting_chain import SelfCorrectingQAChain
 

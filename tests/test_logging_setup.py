@@ -4,7 +4,7 @@ from logging.handlers import RotatingFileHandler
 from pythonjsonlogger.json import JsonFormatter
 from rich.logging import RichHandler
 
-from src.logging_setup import (
+from src.infra.logging import (
     SensitiveDataFilter,
     _build_file_handler,
     _resolve_log_level,

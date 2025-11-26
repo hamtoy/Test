@@ -4,7 +4,7 @@ import re
 from difflib import SequenceMatcher
 from typing import Dict, Iterable, List
 
-from src.qa_rag_system import QAKnowledgeGraph
+from src.qa.rag_system import QAKnowledgeGraph
 
 
 class RealTimeConstraintEnforcer:

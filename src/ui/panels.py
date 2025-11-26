@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, List
 from rich.console import Console
 from rich.panel import Panel
 
-from src.constants import (
+from src.config.constants import (
     COST_PANEL_TEMPLATE,
     PANEL_TITLE_BUDGET,
     PANEL_TITLE_COST,

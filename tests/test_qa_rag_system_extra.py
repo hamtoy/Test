@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from src.qa_rag_system import QAKnowledgeGraph
+from src.qa.rag_system import QAKnowledgeGraph
 
 
 class _FakeVectorStore:

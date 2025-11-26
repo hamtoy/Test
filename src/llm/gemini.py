@@ -16,7 +16,7 @@ import google.generativeai as genai
 from google.api_core import exceptions as google_exceptions
 from dotenv import load_dotenv
 
-from src.logging_setup import log_metrics
+from src.infra.logging import log_metrics
 
 load_dotenv()
 

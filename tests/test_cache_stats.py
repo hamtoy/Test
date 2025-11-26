@@ -1,6 +1,6 @@
 import json
 
-from src.utils import write_cache_stats
+from src.infra.utils import write_cache_stats
 
 
 def test_write_cache_stats_trims_entries(tmp_path):

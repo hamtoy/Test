@@ -18,7 +18,7 @@ from rich.progress import (
 from rich.prompt import Confirm
 
 from src.config import AppConfig
-from src.constants import (
+from src.config.constants import (
     LOG_MESSAGES,
     PANEL_TITLE_BUDGET,
     PROGRESS_RESTORED_TEMPLATE,
@@ -26,14 +26,14 @@ from src.constants import (
     PROMPT_EDIT_CANDIDATES,
 )
 from src.processing.loader import reload_data_if_needed
-from src.exceptions import (
+from src.config.exceptions import (
     BudgetExceededError,
     CacheCreationError,
     ValidationFailedError,
 )
-from src.models import WorkflowResult
+from src.core.models import WorkflowResult
 from src.ui import console
-from src.utils import load_checkpoint
+from src.infra.utils import load_checkpoint
 
 from .context import WorkflowContext
 from .processor import process_single_query
@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 
 def _warn_budget_thresholds(agent: GeminiAgent, logger: logging.Logger) -> None:
     """Emit one-time budget warnings at configured thresholds."""
-    from src.constants import BUDGET_WARNING_THRESHOLDS
+    from src.config.constants import BUDGET_WARNING_THRESHOLDS
 
     usage = agent.get_budget_usage_percent()
     for threshold, severity in BUDGET_WARNING_THRESHOLDS:

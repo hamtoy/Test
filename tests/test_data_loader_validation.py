@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from src.data_loader import load_input_data
-from src.exceptions import ValidationFailedError
+from src.processing.loader import load_input_data
+from src.config.exceptions import ValidationFailedError
 
 
 @pytest.mark.asyncio

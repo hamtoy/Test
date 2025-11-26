@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 from rich.panel import Panel
 
-from src.constants import (
+from src.config.constants import (
     LOG_MESSAGES,
     PANEL_TURN_BODY_TEMPLATE,
     PANEL_TURN_TITLE_TEMPLATE,
@@ -16,15 +16,15 @@ from src.constants import (
     PROGRESS_FAILED_TEMPLATE,
     PROGRESS_PROCESSING_TEMPLATE,
 )
-from src.exceptions import (
+from src.config.exceptions import (
     APIRateLimitError,
     BudgetExceededError,
     SafetyFilterError,
     ValidationFailedError,
 )
-from src.models import WorkflowResult
+from src.core.models import WorkflowResult
 from src.ui import console
-from src.utils import append_checkpoint, safe_json_parse
+from src.infra.utils import append_checkpoint, safe_json_parse
 
 from .context import WorkflowContext
 

@@ -7,7 +7,7 @@ import pytest
 from jinja2 import DictLoader, Environment
 
 from src.agent import GeminiAgent
-from src.exceptions import BudgetExceededError
+from src.config.exceptions import BudgetExceededError
 from src.config import AppConfig
 
 VALID_API_KEY = "AIza" + "D" * 35

@@ -8,8 +8,8 @@ from contextlib import suppress
 from neo4j import GraphDatabase
 from langchain.callbacks.base import BaseCallbackHandler
 
-from src.qa_rag_system import require_env
-from src.neo4j_utils import create_sync_driver, SafeDriver
+from src.qa.rag_system import require_env
+from src.infra.neo4j import create_sync_driver, SafeDriver
 
 
 class Neo4jLoggingCallback(BaseCallbackHandler):

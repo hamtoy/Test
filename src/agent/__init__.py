@@ -9,7 +9,7 @@ constants, and utility functions for backward compatibility.
 from src.agent.core import GeminiAgent
 
 # Exceptions (re-export for legacy imports)
-from src.exceptions import (
+from src.config.exceptions import (
     APIRateLimitError,
     BudgetExceededError,
     CacheCreationError,
@@ -18,14 +18,14 @@ from src.exceptions import (
 )
 
 # Constants
-from src.constants import (
+from src.config.constants import (
     DEFAULT_RPM_LIMIT,
     DEFAULT_RPM_WINDOW_SECONDS,
     PRICING_TIERS,
 )
 
 # Logging utility
-from src.logging_setup import log_metrics
+from src.infra.logging import log_metrics
 
 # Sub‑components
 from .cache_manager import CacheManager

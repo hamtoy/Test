@@ -7,7 +7,7 @@ import logging
 
 from neo4j.exceptions import Neo4jError
 
-from src.qa_rag_system import QAKnowledgeGraph
+from src.qa.rag_system import QAKnowledgeGraph
 
 
 def check_neo4j_connection(kg: QAKnowledgeGraph | None = None) -> bool:

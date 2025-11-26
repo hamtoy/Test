@@ -11,7 +11,7 @@ import asyncio
 import logging
 from typing import Optional, TYPE_CHECKING
 
-from src.constants import DEFAULT_RPM_LIMIT, DEFAULT_RPM_WINDOW_SECONDS
+from src.config.constants import DEFAULT_RPM_LIMIT, DEFAULT_RPM_WINDOW_SECONDS
 
 if TYPE_CHECKING:
     from aiolimiter import AsyncLimiter

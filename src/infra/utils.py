@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 
 import aiofiles  # type: ignore[import-untyped]
 
-from src.models import WorkflowResult
+from src.core.models import WorkflowResult
 
 
 async def load_file_async(file_path: Path) -> str:
