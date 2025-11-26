@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import types
 
-import src.gemini_model_client as gmc
+import src.llm.gemini as gmc
 
 
 def test_generate_logs_metrics(monkeypatch):
@@ -11,7 +11,7 @@ def test_generate_logs_metrics(monkeypatch):
     def _log_metrics(logger, **kwargs):
         captured.update(kwargs)
 
-    monkeypatch.setattr("src.gemini_model_client.log_metrics", _log_metrics)
+    monkeypatch.setattr("src.llm.gemini.log_metrics", _log_metrics)
     monkeypatch.setattr(gmc, "require_env", lambda name: "key")
 
     class _Usage:
@@ -45,7 +45,7 @@ def test_evaluate_and_rewrite_log_metrics(monkeypatch):
     def _log_metrics(logger, **kwargs):
         captured.append(kwargs)
 
-    monkeypatch.setattr("src.gemini_model_client.log_metrics", _log_metrics)
+    monkeypatch.setattr("src.llm.gemini.log_metrics", _log_metrics)
     monkeypatch.setattr(gmc, "require_env", lambda name: "key")
 
     class _Usage:

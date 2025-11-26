@@ -5,7 +5,7 @@ import logging
 import pytest
 from neo4j.exceptions import Neo4jError
 
-import src.semantic_analysis as sa
+import src.analysis.semantic as sa
 
 
 def test_main_handles_neo4j_error(monkeypatch):
