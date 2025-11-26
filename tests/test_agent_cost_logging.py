@@ -59,7 +59,9 @@ async def test_execute_api_call_logs_metrics(monkeypatch, tmp_path):
     def _log_metrics(logger, **kwargs):
         logged.update(kwargs)
 
-    monkeypatch.setattr("src.logging_setup.log_metrics", _log_metrics)
+    # Patch src.agent.log_metrics so _get_log_metrics() finds it
+    import src.agent as agent_mod
+    monkeypatch.setattr(agent_mod, "log_metrics", _log_metrics)
 
     class _Resp:
         def __init__(self):
@@ -86,7 +88,7 @@ async def test_execute_api_call_logs_metrics(monkeypatch, tmp_path):
 
 def test_get_total_cost_unknown_model(monkeypatch, tmp_path):
     agent = _make_agent(monkeypatch, tmp_path)
-    agent.cost_tracker.model_name = "unknown-model"
+    agent._cost_tracker.model_name = "unknown-model"
     agent.total_input_tokens = 10
     agent.total_output_tokens = 5
     with pytest.raises(ValueError):

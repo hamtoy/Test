@@ -13,7 +13,7 @@ from neo4j.exceptions import Neo4jError
 
 from src import cross_validation
 from src import dynamic_template_generator as dtg
-from src import qa_rag_system
+from src.qa import rag_system as qa_rag_system
 from src import semantic_analysis
 from src.agent import GeminiAgent
 from src.config import AppConfig

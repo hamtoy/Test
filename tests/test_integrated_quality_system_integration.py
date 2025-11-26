@@ -28,8 +28,6 @@ def test_generate_qa_with_all_enhancements(monkeypatch):
     sys.modules["PIL"] = fake_pil
     sys.modules["PIL.Image"] = _FakeImageModule
 
-    iqs = importlib.import_module("src.integrated_quality_system")
-
     class FakeKG:
         def __init__(self, *_, **__):
             self._graph = None
@@ -97,18 +95,21 @@ def test_generate_qa_with_all_enhancements(monkeypatch):
         def generate(self, prompt: str, role: str = "generator") -> str:
             return "fake-llm-output"
 
-    monkeypatch.setattr(iqs, "QAKnowledgeGraph", FakeKG, raising=True)
-    monkeypatch.setattr(iqs, "AdvancedContextAugmentation", FakeAugmenter, raising=True)
-    monkeypatch.setattr(iqs, "RealTimeConstraintEnforcer", FakeEnforcer, raising=True)
-    monkeypatch.setattr(iqs, "AdaptiveDifficultyAdjuster", FakeAdjuster, raising=True)
-    monkeypatch.setattr(iqs, "CrossValidationSystem", FakeValidator, raising=True)
+    # Patch the actual modules where the classes are defined/imported
+    from src.qa import quality
+    
+    monkeypatch.setattr(quality, "QAKnowledgeGraph", FakeKG, raising=True)
+    monkeypatch.setattr(quality, "AdvancedContextAugmentation", FakeAugmenter, raising=True)
+    monkeypatch.setattr(quality, "RealTimeConstraintEnforcer", FakeEnforcer, raising=True)
+    monkeypatch.setattr(quality, "AdaptiveDifficultyAdjuster", FakeAdjuster, raising=True)
+    monkeypatch.setattr(quality, "CrossValidationSystem", FakeValidator, raising=True)
     monkeypatch.setattr(
-        iqs, "DynamicExampleSelector", FakeExampleSelector, raising=True
+        quality, "DynamicExampleSelector", FakeExampleSelector, raising=True
     )
-    monkeypatch.setattr(iqs, "MultimodalUnderstanding", FakeMultimodal, raising=True)
-    monkeypatch.setattr(iqs, "GeminiModelClient", FakeLLM, raising=True)
+    monkeypatch.setattr(quality, "MultimodalUnderstanding", FakeMultimodal, raising=True)
+    monkeypatch.setattr(quality, "GeminiModelClient", FakeLLM, raising=True)
 
-    system = iqs.IntegratedQualitySystem("bolt://fake", "user", "pass")
+    system = quality.IntegratedQualitySystem("bolt://fake", "user", "pass")
     result = system.generate_qa_with_all_enhancements("fake.jpg", "explanation")
 
     assert result["output"] == "fake-llm-output"

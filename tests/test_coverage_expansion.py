@@ -266,7 +266,13 @@ def test_caching_layer_import_fallback(monkeypatch):
             raise ImportError("missing redis")
         return original_import(name, *args, **kwargs)
 
+    # Remove all caching and redis modules from cache
     monkeypatch.delitem(sys.modules, "src.caching_layer", raising=False)
+    monkeypatch.delitem(sys.modules, "src.caching.layer", raising=False)
+    monkeypatch.delitem(sys.modules, "src.caching", raising=False)
+    monkeypatch.delitem(sys.modules, "redis", raising=False)
+    monkeypatch.delitem(sys.modules, "redis.client", raising=False)
+    monkeypatch.delitem(sys.modules, "redis.connection", raising=False)
     monkeypatch.setattr(builtins, "__import__", _fake_import)
     module = importlib.import_module("src.caching_layer")
     assert module.redis is None
