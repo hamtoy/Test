@@ -6,6 +6,7 @@ from src import cross_validation
 from src import lcel_optimized_chain
 from src import memory_augmented_qa
 from src import multi_agent_qa_system
+from src.qa import memory_augmented
 
 
 def test_cross_validation_scoring(monkeypatch):
@@ -115,6 +116,16 @@ def test_memory_augmented_qa(monkeypatch):
         def close(self):
             return None
 
+    class _FakeSafeDriver:
+        def __init__(self, *args, **kwargs):
+            self._driver = _FakeDriver()
+            
+        def session(self):
+            return _FakeSession()
+            
+        def close(self):
+            return None
+
     class _GraphDB:
         @staticmethod
         def driver(*_args, **_kwargs):
@@ -134,14 +145,33 @@ def test_memory_augmented_qa(monkeypatch):
         "langchain_neo4j",
         types.SimpleNamespace(Neo4jVector=_FakeNeo4jVector),
     )
-    monkeypatch.setattr(memory_augmented_qa, "GraphDatabase", _GraphDB)
+    monkeypatch.setattr(memory_augmented, "GraphDatabase", _GraphDB)
     monkeypatch.setattr(
-        memory_augmented_qa,
+        memory_augmented,
         "GeminiModelClient",
         lambda: types.SimpleNamespace(generate=lambda *_a, **_k: "answer"),
     )
+    monkeypatch.setattr(
+        memory_augmented,
+        "create_sync_driver",
+        lambda *args, **kwargs: _FakeSafeDriver(),
+    )
+    monkeypatch.setattr(
+        memory_augmented,
+        "CustomGeminiEmbeddings",
+        lambda **kwargs: types.SimpleNamespace(),
+    )
+    monkeypatch.setattr(
+        memory_augmented,
+        "require_env",
+        lambda key: "fake-key",
+    )
 
-    system = memory_augmented_qa.MemoryAugmentedQASystem()
+    system = memory_augmented_qa.MemoryAugmentedQASystem(
+        neo4j_uri="bolt://fake",
+        user="user",
+        password="pass"
+    )
     resp = system.ask_with_memory("무엇을 해야 하나요?")
     assert resp == "answer"
     assert system.history[-1]["q"] == "무엇을 해야 하나요?"

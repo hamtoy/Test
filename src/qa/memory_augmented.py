@@ -115,7 +115,7 @@ class MemoryAugmentedQASystem:
             logging.getLogger(__name__).warning("Interaction log failed: %s", exc)
 
     def close(self) -> None:
-        if self._driver:
+        if hasattr(self, '_driver') and self._driver:
             self._driver.close()
 
     def __enter__(self) -> "MemoryAugmentedQASystem":

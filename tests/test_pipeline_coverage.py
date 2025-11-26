@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import types
-from src import integrated_qa_pipeline as iqap
-from src import real_time_constraint_enforcer as rtce
 
 
 def test_integrated_qa_pipeline_create_and_validate(monkeypatch):
@@ -52,20 +50,23 @@ def test_integrated_qa_pipeline_create_and_validate(monkeypatch):
             return [{"type": "forbidden_pattern", "match": "forbidden"}]
         return []
 
-    monkeypatch.setattr(iqap, "QAKnowledgeGraph", _FakeKG)
-    monkeypatch.setattr(iqap, "DynamicTemplateGenerator", _FakeTemplateGen)
-    monkeypatch.setattr(iqap, "build_session", _fake_build_session)
-    monkeypatch.setattr(iqap, "find_violations", _fake_find_violations)
-    monkeypatch.setattr(iqap, "validate_turns", lambda *_args, **_kwargs: {"ok": True})
+    # Patch the actual module where classes are imported
+    from src.qa import pipeline
+    
+    monkeypatch.setattr(pipeline, "QAKnowledgeGraph", _FakeKG)
+    monkeypatch.setattr(pipeline, "DynamicTemplateGenerator", _FakeTemplateGen)
+    monkeypatch.setattr(pipeline, "build_session", _fake_build_session)
+    monkeypatch.setattr(pipeline, "find_violations", _fake_find_violations)
+    monkeypatch.setattr(pipeline, "validate_turns", lambda *_args, **_kwargs: {"ok": True})
 
-    pipeline = iqap.IntegratedQAPipeline()
-    session = pipeline.create_session({"text_density": 0.8, "has_table_chart": False})
+    pipeline_obj = pipeline.IntegratedQAPipeline()
+    session = pipeline_obj.create_session({"text_density": 0.8, "has_table_chart": False})
     assert session["turns"][0]["prompt"] == "prompt-explanation"
 
-    validation = pipeline.validate_output("explanation", "forbidden text")
+    validation = pipeline_obj.validate_output("explanation", "forbidden text")
     assert validation["violations"]  # includes forbidden_pattern + error pattern
     assert validation["missing_rules_hint"]
-    pipeline.close()
+    pipeline_obj.close()
 
 
 def test_real_time_constraint_enforcer_stream_and_validate():
