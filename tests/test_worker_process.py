@@ -4,7 +4,6 @@ import types
 import pytest
 
 # For BudgetTracker monkeypatching in LATS tests
-import src.budget_tracker as budget_tracker
 
 # Ensure required env is present for AppConfig during import
 os.environ.setdefault("GEMINI_API_KEY", "AIza" + "0" * 35)
@@ -283,7 +282,9 @@ async def test_handle_ocr_task_lats_toggle(monkeypatch):
     monkeypatch.setattr(infra_worker.config, "enable_lats", True, raising=False)
 
     written: list[dict] = []
-    monkeypatch.setattr(infra_worker, "_append_jsonl", lambda _p, rec: written.append(rec))
+    monkeypatch.setattr(
+        infra_worker, "_append_jsonl", lambda _p, rec: written.append(rec)
+    )
 
     class _Broker:
         def __init__(self):
@@ -347,7 +348,9 @@ async def test_handle_ocr_task_lats_budget_exit(monkeypatch):
     monkeypatch.setattr(infra_worker, "llm_provider", None, raising=False)
 
     written: list[dict] = []
-    monkeypatch.setattr(infra_worker, "_append_jsonl", lambda _p, rec: written.append(rec))
+    monkeypatch.setattr(
+        infra_worker, "_append_jsonl", lambda _p, rec: written.append(rec)
+    )
 
     class _Broker:
         def __init__(self):

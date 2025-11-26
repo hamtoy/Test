@@ -3,7 +3,6 @@
 import warnings
 
 
-
 class TestDeprecationWarnings:
     """Test that deprecated shim imports emit DeprecationWarning."""
 

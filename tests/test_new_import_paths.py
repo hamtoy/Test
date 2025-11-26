@@ -1,7 +1,6 @@
 """Test that new import paths work correctly."""
 
 
-
 class TestNewImportPaths:
     """Test that new import paths work correctly without warnings."""
 
