@@ -5,6 +5,7 @@ import warnings
 import sys
 import types
 from typing import Any, cast
+from unittest.mock import MagicMock, AsyncMock
 
 # Neo4j sync driver emits a noisy deprecation warning when GC closes a driver.
 warnings.filterwarnings(
@@ -124,3 +125,42 @@ def mock_neo4j_driver(mock_neo4j_session):
 def mock_knowledge_graph(mock_neo4j_session):
     """KnowledgeGraph mock fixture."""
     return MockKnowledgeGraph(mock_neo4j_session)
+
+
+@pytest.fixture
+def mock_gemini_client(monkeypatch):
+    """Mock Gemini API client for testing."""
+    mock_client = MagicMock()
+
+    # Mock generate response
+    mock_response = MagicMock()
+    mock_response.text = "Mocked response text"
+    mock_response.usage_metadata = MagicMock(
+        prompt_token_count=10,
+        candidates_token_count=20,
+        total_token_count=30,
+    )
+
+    mock_client.generate_content.return_value = mock_response
+    mock_client.generate_content_async = AsyncMock(return_value=mock_response)
+
+    # Mock model info
+    mock_client.model_name = "gemini-1.5-flash"
+    mock_client._model = MagicMock()
+
+    return mock_client
+
+
+@pytest.fixture
+def mock_genai(monkeypatch, mock_gemini_client):
+    """Mock google.generativeai module."""
+    mock_genai = MagicMock()
+    mock_genai.GenerativeModel.return_value = mock_gemini_client._model
+    mock_genai.configure = MagicMock()
+
+    monkeypatch.setattr(
+        "google.generativeai.GenerativeModel", mock_genai.GenerativeModel
+    )
+    monkeypatch.setattr("google.generativeai.configure", mock_genai.configure)
+
+    return mock_genai

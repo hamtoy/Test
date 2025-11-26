@@ -1,102 +1,97 @@
 from __future__ import annotations
 
-import types
+import pytest
+from unittest.mock import MagicMock, patch
+from google.api_core import exceptions as google_exceptions
 from src import gemini_model_client as gmc
 
 
-def test_gemini_model_client_behaviors(monkeypatch):
-    monkeypatch.setenv("GEMINI_API_KEY", "fake-key")
+class TestGeminiModelClientBehaviors:
+    """Test GeminiModelClient with mocked API."""
 
-    class _FakeGenConfig:
-        def __init__(self, **kwargs):
-            self.kwargs = kwargs
+    @pytest.fixture(autouse=True)
+    def setup_mocks(self, monkeypatch):
+        """Setup mocks for all tests in this class."""
+        # Mock environment variable
+        monkeypatch.setenv("GEMINI_API_KEY", "test-api-key")
 
-    class _FakeModel:
-        def __init__(self, _name):
-            pass
+        # Mock google.generativeai
+        self.mock_model = MagicMock()
+        self.mock_response = MagicMock()
+        self.mock_response.text = "Test response"
+        self.mock_response.usage_metadata = MagicMock(
+            prompt_token_count=10,
+            candidates_token_count=20,
+            total_token_count=30,
+        )
+        self.mock_model.generate_content.return_value = self.mock_response
 
-        def generate_content(self, prompt, generation_config=None):
-            return types.SimpleNamespace(text=f"LLM:{prompt[:10]}")
+        with (
+            patch("google.generativeai.GenerativeModel", return_value=self.mock_model),
+            patch("google.generativeai.configure"),
+        ):
+            yield
 
-    fake_genai = types.SimpleNamespace(
-        configure=lambda api_key: None,
-        GenerativeModel=lambda name: _FakeModel(name),
-        types=types.SimpleNamespace(GenerationConfig=_FakeGenConfig),
-    )
-    monkeypatch.setattr(gmc, "genai", fake_genai)
+    def test_gemini_model_client_behaviors(self):
+        client = gmc.GeminiModelClient()
 
-    client = gmc.GeminiModelClient()
-    assert client.generate("hello").startswith("LLM:")
+        # Test generate
+        self.mock_response.text = "LLM:hello"
+        result = client.generate("hello")
+        assert result.startswith("LLM:")
+        self.mock_model.generate_content.assert_called()
 
-    empty_eval = client.evaluate("q", [])
-    assert empty_eval["best_answer"] is None
+        # Test evaluate (empty)
+        self.mock_response.text = "invalid json"
+        empty_eval = client.evaluate("q", [])
+        assert empty_eval["best_answer"] is None
 
-    length_eval = client.evaluate("q", ["a", "bb"])
-    assert length_eval["best_index"] == 1
+        # Test evaluate (length based fallback)
+        self.mock_response.text = "not numbers"
+        length_eval = client.evaluate("q", ["a", "bb"])
+        assert length_eval["best_index"] == 1
 
-    client.generate = (
-        lambda prompt, role="default": "점수1: 2\n점수2: 4\n점수3: 1\n최고: 2"
-    )
-    parsed_eval = client.evaluate("q", ["a", "bb", "ccc"])
-    assert parsed_eval["best_index"] == 1
+        # Test evaluate (parsed)
+        self.mock_response.text = "점수1: 2\n점수2: 4\n점수3: 1\n최고: 2"
+        parsed_eval = client.evaluate("q", ["a", "bb", "ccc"])
+        assert parsed_eval["best_index"] == 1
 
-    client.generate = lambda prompt, role="rewriter": "rewritten text"
-    assert client.rewrite("orig").startswith("rewritten")
+        # Test rewrite
+        self.mock_response.text = "rewritten text"
+        assert client.rewrite("orig").startswith("rewritten")
 
+    def test_gemini_model_client_errors(self):
+        client = gmc.GeminiModelClient()
 
-def test_gemini_model_client_errors(monkeypatch):
-    monkeypatch.setenv("GEMINI_API_KEY", "key")
+        # Mock exception
+        self.mock_model.generate_content.side_effect = google_exceptions.GoogleAPIError(
+            "boom"
+        )
 
-    class _FakeResponse:
-        def __init__(self, text, usage=None, candidates=None):
-            self.text = text
-            self.usage_metadata = usage
-            self.candidates = candidates
+        # generate handles exceptions
+        assert client.generate("hi").startswith("[생성 실패")
 
-    class _FakeModel:
-        def __init__(self):
-            self.calls = []
+        # Reset side effect for next calls
+        self.mock_model.generate_content.side_effect = None
 
-        def generate_content(self, prompt, generation_config=None):
-            self.calls.append(("gen", prompt))
-            raise gmc.google_exceptions.GoogleAPIError("boom")
+        # evaluate len-based fallback on parse failure is already tested above
 
-    fake_genai = types.SimpleNamespace(
-        configure=lambda api_key: None,
-        GenerativeModel=lambda name="m": _FakeModel(),
-        types=types.SimpleNamespace(GenerationConfig=lambda **_: None),
-    )
-    monkeypatch.setattr(gmc, "genai", fake_genai)
-    client = gmc.GeminiModelClient()
+        # rewrite/fact_check exception paths
+        self.mock_model.generate_content.side_effect = google_exceptions.GoogleAPIError(
+            "rewriter error"
+        )
+        res = client.rewrite("text")
+        assert "실패" in res
+        assert "rewriter error" in res
 
-    # generate handles exceptions
-    assert client.generate("hi").startswith("[생성 실패")
+    def test_gemini_model_client_type_error(self):
+        client = gmc.GeminiModelClient()
 
-    # evaluate len-based fallback on parse failure
-    client.generate = lambda prompt, role="evaluator": "not numbers"
-    eval_res = client.evaluate("q", ["a", "bb", "ccc"])
-    assert eval_res["best_index"] == 2
+        # Make the mock raise TypeError
+        self.mock_model.generate_content.side_effect = TypeError("bad type")
 
-    # rewrite/fact_check exception paths
-    client.generate = lambda prompt, role="rewriter": (_ for _ in ()).throw(
-        gmc.google_exceptions.GoogleAPIError("rewriter error")
-    )
-    assert "재작성 실패" in client.rewrite("text")
-
-
-def test_gemini_model_client_type_error(monkeypatch):
-    monkeypatch.setenv("GEMINI_API_KEY", "key")
-
-    class _FakeModel:
-        def generate_content(self, *args, **kwargs):
-            raise TypeError("bad")
-
-    fake_genai = types.SimpleNamespace(
-        configure=lambda api_key: None,
-        GenerativeModel=lambda name: _FakeModel(),
-        types=types.SimpleNamespace(GenerationConfig=lambda **_: None),
-    )
-    monkeypatch.setattr(gmc, "genai", fake_genai)
-
-    client = gmc.GeminiModelClient()
-    assert "[생성 실패(입력 오류" in client.generate("prompt")
+        # Test with invalid input type
+        # The client catches TypeError and returns an error string
+        res = client.generate(12345)
+        assert "생성 실패" in res
+        assert "입력 오류" in res

@@ -238,6 +238,7 @@ uv sync --extra dev    # 개발/테스트/문서 의존성 포함
 프로젝트는 모듈화된 패키지 구조를 사용합니다. 권장 import 패턴:
 
 ### 설정 및 상수
+
 ```python
 from src.config import AppConfig                    # 앱 설정
 from src.config.constants import ERROR_MESSAGES     # 상수
@@ -245,18 +246,21 @@ from src.config.exceptions import BudgetExceededError  # 예외
 ```
 
 ### 핵심 모델 및 인터페이스
+
 ```python
 from src.core.models import WorkflowResult, EvaluationResultSchema
 from src.core.interfaces import IAgent
 ```
 
 ### Agent
+
 ```python
 from src.agent import GeminiAgent
 from src.agent.cost_tracker import CostTracker
 ```
 
 ### Q&A 시스템
+
 ```python
 from src.qa.rag_system import QAKnowledgeGraph
 from src.qa.generator import QAGenerator
@@ -264,12 +268,14 @@ from src.qa.factory import QASystemFactory
 ```
 
 ### LLM 클라이언트
+
 ```python
 from src.llm.gemini import GeminiModelClient
 from src.llm.langchain_system import UltimateLangChainQASystem
 ```
 
 ### 인프라 및 유틸리티
+
 ```python
 from src.infra.utils import clean_markdown_code_block
 from src.infra.logging import setup_logging, log_metrics
@@ -277,6 +283,7 @@ from src.infra.neo4j import SafeDriver, create_sync_driver
 ```
 
 ### 캐싱
+
 ```python
 from src.caching.layer import CachingLayer
 from src.caching.analytics import analyze_cache_stats
@@ -679,8 +686,11 @@ results = await asyncio.gather(*[
 ## 문서
 
 - **[UV_GUIDE.md](UV_GUIDE.md)**: UV 패키지 매니저 사용 가이드
-- **[CONTRIBUTING.md](CONTRIBUTING.md)**: 기여 가이드라인
+- **[CONTRIBUTING.md](docs/CONTRIBUTING.md)**: 기여 가이드라인
 - **[DEPLOYMENT_VERIFIED.md](DEPLOYMENT_VERIFIED.md)**: 배포 검증 내역
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: 시스템 아키텍처
+- **[API.md](docs/API.md)**: API 레퍼런스
+- **[DEPRECATION.md](DEPRECATION.md)**: Deprecation 정책 및 일정
 - **Sphinx 문서**: `docs/` 디렉토리에서 `make html` 실행
 
 ## 즉시 실행 가능 - QA 시스템 구축

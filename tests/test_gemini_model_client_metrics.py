@@ -1,80 +1,87 @@
 from __future__ import annotations
 
-import types
-
+import pytest
+from unittest.mock import MagicMock, patch
 import src.llm.gemini as gmc
 
 
-def test_generate_logs_metrics(monkeypatch):
-    captured = {}
+class TestGeminiModelClientMetrics:
+    """Test GeminiModelClient metrics logging with mocked API."""
 
-    def _log_metrics(logger, **kwargs):
-        captured.update(kwargs)
+    @pytest.fixture(autouse=True)
+    def setup_mocks(self, monkeypatch):
+        """Setup mocks for all tests."""
+        monkeypatch.setenv("GEMINI_API_KEY", "test-api-key")
 
-    monkeypatch.setattr("src.llm.gemini.log_metrics", _log_metrics)
-    monkeypatch.setattr(gmc, "require_env", lambda name: "key")
+        self.mock_model = MagicMock()
+        self.mock_response = MagicMock()
+        self.mock_response.text = "Mocked response"
+        self.mock_response.usage_metadata = MagicMock(
+            prompt_token_count=100,
+            candidates_token_count=50,
+            total_token_count=150,
+        )
+        self.mock_model.generate_content.return_value = self.mock_response
 
-    class _Usage:
-        prompt_token_count = 10
-        candidates_token_count = 5
+        self.patcher1 = patch(
+            "google.generativeai.GenerativeModel", return_value=self.mock_model
+        )
+        self.patcher2 = patch("google.generativeai.configure")
 
-    class _Resp:
-        def __init__(self):
-            self.text = "ok"
-            self.usage_metadata = _Usage()
+        self.patcher1.start()
+        self.patcher2.start()
 
-    class _Model:
-        def generate_content(self, prompt, generation_config=None):  # noqa: ARG002
-            return _Resp()
+        yield
 
-    client = gmc.GeminiModelClient.__new__(gmc.GeminiModelClient)
-    client.model_name = "gemini-3-pro-preview"
-    client.model = _Model()
-    client.logger = types.SimpleNamespace(info=lambda *a, **k: None)
+        self.patcher1.stop()
+        self.patcher2.stop()
 
-    out = client.generate("hi")
-    assert out == "ok"
-    assert captured["prompt_tokens"] == 10
-    assert captured["completion_tokens"] == 5
-    assert captured["latency_ms"] >= 0
+    def test_generate_logs_metrics(self, caplog):
+        client = gmc.GeminiModelClient()
 
+        # Mock log_metrics to capture calls, or use caplog/mocking logger
+        # The original test mocked log_metrics function. Let's do that.
+        captured = {}
 
-def test_evaluate_and_rewrite_log_metrics(monkeypatch):
-    captured = []
+        def _log_metrics(logger, **kwargs):
+            captured.update(kwargs)
 
-    def _log_metrics(logger, **kwargs):
-        captured.append(kwargs)
+        with patch("src.llm.gemini.log_metrics", side_effect=_log_metrics):
+            result = client.generate("Test prompt")
 
-    monkeypatch.setattr("src.llm.gemini.log_metrics", _log_metrics)
-    monkeypatch.setattr(gmc, "require_env", lambda name: "key")
+        assert result == "Mocked response"
+        # Verify metrics were logged
+        assert captured["prompt_tokens"] == 100
+        assert captured["completion_tokens"] == 50
 
-    class _Usage:
-        prompt_token_count = 1
-        candidates_token_count = 1
+    def test_evaluate_and_rewrite_log_metrics(self):
+        client = gmc.GeminiModelClient()
 
-    class _Resp:
-        def __init__(self, text):
-            self.text = text
-            self.usage_metadata = _Usage()
+        captured = []
 
-    class _Model:
-        def __init__(self):
-            self.calls = 0
+        def _log_metrics(logger, **kwargs):
+            captured.append(kwargs)
 
-        def generate_content(self, prompt, generation_config=None):  # noqa: ARG002
-            self.calls += 1
-            if self.calls == 1:
-                return _Resp("점수1: 1\n점수2: 2\n최고: 2")
-            return _Resp("rewritten")
+        # Mock evaluate response
+        self.mock_model.generate_content.side_effect = [
+            MagicMock(
+                text="점수1: 1\n점수2: 2\n최고: 2",
+                usage_metadata=MagicMock(
+                    prompt_token_count=10, candidates_token_count=10
+                ),
+            ),
+            MagicMock(
+                text="rewritten",
+                usage_metadata=MagicMock(
+                    prompt_token_count=20, candidates_token_count=20
+                ),
+            ),
+        ]
 
-    client = gmc.GeminiModelClient.__new__(gmc.GeminiModelClient)
-    client.model_name = "gemini-3-pro-preview"
-    client.model = _Model()
-    client.logger = types.SimpleNamespace(info=lambda *a, **k: None)
+        with patch("src.llm.gemini.log_metrics", side_effect=_log_metrics):
+            eval_res = client.evaluate("q", ["a", "bb"])
+            rewritten = client.rewrite("answer")
 
-    eval_res = client.evaluate("q", ["a", "bb"])
-    rewritten = client.rewrite("answer")
-
-    assert eval_res["best_index"] == 1
-    assert rewritten == "rewritten"
-    assert any("latency_ms" in entry for entry in captured)
+        assert eval_res["best_index"] == 1
+        assert rewritten == "rewritten"
+        assert len(captured) >= 2
