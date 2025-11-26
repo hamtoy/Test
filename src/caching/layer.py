@@ -4,7 +4,7 @@ import json
 from typing import Any, Dict, List, Optional, Protocol, Sequence, cast
 
 try:
-    import redis  # type: ignore[import-not-found]
+    import redis
 except ImportError:  # redis가 없을 때도 동작하도록
     redis = None  # type: ignore[assignment]
 
@@ -57,7 +57,9 @@ class CachingLayer:
             cached = self.redis.get(cache_key)
             if cached:
                 try:
-                    return json.loads(cast(str | bytes, cached))
+                    return cast(
+                        List[Dict[str, str]], json.loads(cast(str | bytes, cached))
+                    )
                 except json.JSONDecodeError:
                     pass
 

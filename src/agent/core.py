@@ -11,7 +11,7 @@ import json
 import logging
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, cast
 
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, ValidationError
@@ -44,11 +44,11 @@ if TYPE_CHECKING:
     from src.core.interfaces import LLMProvider
 
 
-def _get_log_metrics():
+def _get_log_metrics() -> Callable[..., None]:
     """log_metrics를 동적으로 가져옴 (테스트 패칭 지원)."""
     agent_mod = sys.modules.get("src.agent")
     if agent_mod and hasattr(agent_mod, "log_metrics"):
-        return agent_mod.log_metrics
+        return cast(Callable[..., None], agent_mod.log_metrics)
     return _log_metrics
 
 
@@ -183,13 +183,13 @@ class GeminiAgent:
     # ==================== Google API 레이지 임포트 ====================
 
     @property
-    def _genai(self):
+    def _genai(self) -> Any:
         import google.generativeai as genai
 
         return genai
 
     @property
-    def _caching(self):
+    def _caching(self) -> Any:
         cached = globals().get("caching")
         if cached is not None:
             return cached
@@ -199,7 +199,7 @@ class GeminiAgent:
         return caching
 
     @staticmethod
-    def _google_exceptions():
+    def _google_exceptions() -> Any:
         from google.api_core import exceptions as google_exceptions
 
         return google_exceptions
@@ -215,13 +215,13 @@ class GeminiAgent:
         return exc.__class__.__name__ == "ResourceExhausted"
 
     @staticmethod
-    def _protos():
+    def _protos() -> Any:
         from google.generativeai import protos
 
         return protos
 
     @staticmethod
-    def _harm_types():
+    def _harm_types() -> tuple[Any, Any]:
         from google.generativeai.types import HarmBlockThreshold, HarmCategory
 
         return HarmBlockThreshold, HarmCategory
@@ -244,7 +244,7 @@ class GeminiAgent:
         """캐시 사용량 추적."""
         self._cache_manager.track_cache_usage(cached)
 
-    def _local_cache_manifest_path(self):
+    def _local_cache_manifest_path(self) -> Any:
         """로컬 캐시 매니페스트 경로."""
         return self._cache_manager._local_cache_manifest_path()
 
@@ -252,9 +252,7 @@ class GeminiAgent:
         """만료된 캐시 정리."""
         self._cache_manager.cleanup_expired_cache(ttl_minutes)
 
-    def _load_local_cache(
-        self, fingerprint: str, ttl_minutes: int
-    ) -> Optional["caching.CachedContent"]:
+    def _load_local_cache(self, fingerprint: str, ttl_minutes: int) -> Any:
         """로컬 캐시 로드."""
         return self._cache_manager.load_local_cache(
             fingerprint, ttl_minutes, self._caching
@@ -273,7 +271,7 @@ class GeminiAgent:
         system_prompt: str,
         response_schema: type[BaseModel] | None = None,
         cached_content: Optional["caching.CachedContent"] = None,
-    ) -> "genai.GenerativeModel":
+    ) -> Any:
         """GenerativeModel 인스턴스를 생성하는 팩토리 메서드."""
         generation_config: Dict[str, object] = {
             "temperature": self.config.temperature,
@@ -308,9 +306,7 @@ class GeminiAgent:
 
     # ==================== Context Cache ====================
 
-    async def create_context_cache(
-        self, ocr_text: str
-    ) -> Optional["caching.CachedContent"]:
+    async def create_context_cache(self, ocr_text: str) -> Any:
         """OCR 텍스트를 기반으로 Gemini Context Cache 생성."""
         system_prompt = self.jinja_env.get_template("prompt_eval.j2").render()
         combined_content = system_prompt + "\n\n" + ocr_text
@@ -327,7 +323,8 @@ class GeminiAgent:
 
         def _count_tokens() -> int:
             model = self._genai.GenerativeModel(self.config.model_name)
-            return model.count_tokens(combined_content).total_tokens
+            result: int = model.count_tokens(combined_content).total_tokens
+            return result
 
         token_count = await loop.run_in_executor(None, _count_tokens)
         self.logger.info("Total Tokens for Caching: %s", token_count)
@@ -338,7 +335,7 @@ class GeminiAgent:
 
         try:
 
-            def _create_cache():
+            def _create_cache() -> Any:
                 return self._caching.CachedContent.create(
                     model=self.config.model_name,
                     display_name="ocr_context_cache",
@@ -367,9 +364,7 @@ class GeminiAgent:
 
     # ==================== API 호출 ====================
 
-    async def _call_api_with_retry(
-        self, model: "genai.GenerativeModel", prompt_text: str
-    ) -> str:
+    async def _call_api_with_retry(self, model: Any, prompt_text: str) -> str:
         """재시도 로직이 포함된 API 호출."""
         exceptions = self._google_exceptions()
         retry_exceptions = (
@@ -394,22 +389,28 @@ class GeminiAgent:
             retry=retry_if_exception_type(retry_exceptions),
             reraise=True,
         )
-        async def _execute_with_retry():
+        async def _execute_with_retry() -> str:
+            def _get_retry_attempt() -> int:
+                """Extract attempt number from tenacity retry statistics."""
+                retry_obj = getattr(_execute_with_retry, "retry", None)
+                stats_dict: Dict[str, Any] = {}
+                if retry_obj is not None and hasattr(retry_obj, "statistics"):
+                    stats_dict = retry_obj.statistics
+                return stats_dict.get("attempt_number", 1) or 1
+
             if self._rate_limiter:
                 async with self._rate_limiter, self._semaphore:
                     try:
                         return await self._execute_api_call(model, prompt_text)
                     except retry_exceptions:
-                        stats = getattr(_execute_with_retry.retry, "statistics", {})
-                        attempt = stats.get("attempt_number", 1) or 1
+                        attempt = _get_retry_attempt()
                         await _adaptive_backoff(attempt)
                         raise
             async with self._semaphore:
                 try:
                     return await self._execute_api_call(model, prompt_text)
                 except retry_exceptions:
-                    stats = getattr(_execute_with_retry.retry, "statistics", {})
-                    attempt = stats.get("attempt_number", 1) or 1
+                    attempt = _get_retry_attempt()
                     await _adaptive_backoff(attempt)
                     raise
 
@@ -419,9 +420,7 @@ class GeminiAgent:
             self.api_failures += 1
             raise
 
-    async def _execute_api_call(
-        self, model: "genai.GenerativeModel", prompt_text: str
-    ) -> str:
+    async def _execute_api_call(self, model: Any, prompt_text: str) -> str:
         """실제 API 호출 로직."""
         if self.llm_provider:
             start = time.perf_counter()
@@ -521,7 +520,7 @@ class GeminiAgent:
                 )
 
         try:
-            return response.text
+            return str(response.text)
         except ValueError:
             safety_info = ""
             if hasattr(response, "prompt_feedback") and response.prompt_feedback:
@@ -533,7 +532,7 @@ class GeminiAgent:
             if response.candidates and response.candidates[0].content.parts:
                 parts = response.candidates[0].content.parts
                 if len(parts) > 0 and hasattr(parts[0], "text"):
-                    return parts[0].text
+                    return str(parts[0].text)
 
             raise SafetyFilterError(error_msg)
 
@@ -715,7 +714,7 @@ class GeminiAgent:
         self._cost_tracker.check_budget()
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     if name == "caching":
         import google.generativeai.caching as caching_mod
 

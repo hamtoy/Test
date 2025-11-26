@@ -15,7 +15,9 @@ class RealTimeConstraintEnforcer:
     def __init__(self, kg: QAKnowledgeGraph):
         self.kg = kg
 
-    def stream_with_validation(self, generator: Iterable[str], query_type: str):
+    def stream_with_validation(
+        self, generator: Iterable[str], query_type: str
+    ) -> Iterable[Dict[str, object]]:
         """
         LLM 출력을 스트리밍하면서 실시간 검증.
         chunk 단위로 content/violation 이벤트를 생성합니다.
@@ -83,7 +85,7 @@ class RealTimeConstraintEnforcer:
         """
 
         try:
-            with self.kg.graph_session() as session:  # type: ignore[union-attr]
+            with self.kg.graph_session() as session:
                 if session is None:
                     import logging
 

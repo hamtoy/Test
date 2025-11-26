@@ -79,9 +79,9 @@ class CrossValidationSystem:
                     return {"score": 0.5, "grounded": False, "note": "graph 없음"}
                 session_ctx = graph.session
             else:
-                session_ctx = graph_session  # type: ignore[assignment]
+                session_ctx = graph_session
 
-            with session_ctx() as session:  # type: ignore[misc]
+            with session_ctx() as session:
                 if session is None:
                     self.logger.debug("Grounding check skipped: graph unavailable")
                     return {"score": 0.5, "grounded": False, "note": "graph 없음"}
@@ -144,9 +144,9 @@ class CrossValidationSystem:
                     raise RuntimeError("graph missing")
                 session_ctx = graph.session
             else:
-                session_ctx = graph_session  # type: ignore[assignment]
+                session_ctx = graph_session
 
-            with session_ctx() as session:  # type: ignore[misc]
+            with session_ctx() as session:
                 if session is None:
                     self.logger.debug("ErrorPattern check skipped: graph unavailable")
                     raise RuntimeError("graph missing")

@@ -103,7 +103,7 @@ class CacheManager:
 
     def load_local_cache(
         self, fingerprint: str, ttl_minutes: int, caching_module: Any
-    ) -> Optional["caching.CachedContent"]:
+    ) -> Any:
         """Load a cached entry if it exists and is not expired.
 
         Args:
@@ -166,9 +166,7 @@ class CacheManager:
         """Legacy wrapper that forwards to :meth:`cleanup_expired_cache`."""
         self.cleanup_expired_cache(ttl_minutes or self.config.cache_ttl_minutes)
 
-    def load_cached(
-        self, fingerprint: str, caching_module: Any
-    ) -> Optional["caching.CachedContent"]:
+    def load_cached(self, fingerprint: str, caching_module: Any) -> Any:
         """Legacy wrapper for loading cache without explicit TTL."""
         return self.load_local_cache(
             fingerprint, self.config.cache_ttl_minutes, caching_module

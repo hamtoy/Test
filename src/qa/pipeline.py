@@ -5,7 +5,7 @@ import os
 import re
 from contextlib import suppress
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 from dotenv import load_dotenv
 
@@ -28,7 +28,7 @@ def require_env(var: str) -> str:
 class IntegratedQAPipeline:
     """Graph-backed QA session builder and validator."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.neo4j_uri = require_env("NEO4J_URI")
         self.neo4j_user = require_env("NEO4J_USER")
         self.neo4j_password = require_env("NEO4J_PASSWORD")
@@ -40,7 +40,7 @@ class IntegratedQAPipeline:
             self.neo4j_password,
         )
 
-    def create_session(self, image_meta: dict) -> Dict[str, Any]:
+    def create_session(self, image_meta: Dict[str, Any]) -> Dict[str, Any]:
         """
         그래프 기반 컨텍스트로 세션을 생성하고 검증합니다.
 
@@ -58,10 +58,11 @@ class IntegratedQAPipeline:
 
         # 세션 빌드 (calc/포커스/금지 패턴 포함)
         turns = build_session(ctx, validate=True)
-        session = {"turns": [t.__dict__ for t in turns], "context": ctx_data}
+        turns_list: List[Dict[str, Any]] = [t.__dict__ for t in turns]
+        session: Dict[str, Any] = {"turns": turns_list, "context": ctx_data}
 
         # 추가: 각 턴에 렌더된 프롬프트를 template generator로 재구성 (Rule/Constraint 주입)
-        for turn in session["turns"]:
+        for turn in turns_list:
             turn["prompt"] = self.template_gen.generate_prompt_for_query_type(
                 turn["type"], ctx_data
             )
@@ -69,7 +70,7 @@ class IntegratedQAPipeline:
         # 렌더링 후 금지 패턴 재검사
         post_violations = [
             f"turn {idx} ({turn['type']}): {v['type']} -> {v['match']}"
-            for idx, turn in enumerate(session["turns"], 1)
+            for idx, turn in enumerate(turns_list, 1)
             for v in find_violations(turn["prompt"])
         ]
         if post_violations:
@@ -82,7 +83,7 @@ class IntegratedQAPipeline:
 
         return session
 
-    def _build_session_context(self, image_meta: dict) -> dict:
+    def _build_session_context(self, image_meta: Dict[str, Any]) -> Dict[str, Any]:
         """
         SessionContext 스키마에 맞게 메타데이터를 변환하고 기본값을 채웁니다.
 
@@ -155,7 +156,7 @@ class IntegratedQAPipeline:
             "missing_rules_hint": missing_rules[:3],
         }
 
-    def close(self):
+    def close(self) -> None:
         with suppress(Exception):
             self.kg.close()
         with suppress(Exception):

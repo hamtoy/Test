@@ -12,7 +12,7 @@ from src.qa.rag_system import require_env
 from src.infra.neo4j import create_sync_driver, SafeDriver
 
 
-class Neo4jLoggingCallback(BaseCallbackHandler):
+class Neo4jLoggingCallback(BaseCallbackHandler):  # type: ignore[misc]
     """
     LangChain 콜백 이벤트를 Neo4j에 기록합니다.
     """
@@ -35,7 +35,9 @@ class Neo4jLoggingCallback(BaseCallbackHandler):
             graph_db_factory=GraphDatabase.driver,
         )
 
-    def on_llm_start(self, serialized: Dict[str, Any], prompts: List[str], **kwargs):
+    def on_llm_start(
+        self, serialized: Dict[str, Any], prompts: List[str], **kwargs: Any
+    ) -> None:
         """LLM 호출 시작."""
         try:
             with self.driver.session() as session:
@@ -53,7 +55,7 @@ class Neo4jLoggingCallback(BaseCallbackHandler):
         except Exception as exc:  # pragma: no cover - logging only
             logging.getLogger(__name__).warning("LLM start log failed: %s", exc)
 
-    def on_llm_end(self, response: Any, **kwargs):
+    def on_llm_end(self, response: Any, **kwargs: Any) -> None:
         """LLM 호출 종료."""
         try:
             with self.driver.session() as session:
@@ -74,7 +76,7 @@ class Neo4jLoggingCallback(BaseCallbackHandler):
         except Exception as exc:  # pragma: no cover - logging only
             logging.getLogger(__name__).warning("LLM end log failed: %s", exc)
 
-    def on_chain_error(self, error: Exception, **kwargs):
+    def on_chain_error(self, error: Exception, **kwargs: Any) -> None:
         """체인/LLM 에러 기록."""
         try:
             with self.driver.session() as session:
@@ -92,17 +94,17 @@ class Neo4jLoggingCallback(BaseCallbackHandler):
         except Exception as exc:  # pragma: no cover - logging only
             logging.getLogger(__name__).warning("LLM chain error log failed: %s", exc)
 
-    def close(self):
+    def close(self) -> None:
         if self.driver:
             self.driver.close()
 
     def __enter__(self) -> "Neo4jLoggingCallback":
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
         self.close()
 
-    def __del__(self):
+    def __del__(self) -> None:
         with suppress(Exception):
             self.close()
 

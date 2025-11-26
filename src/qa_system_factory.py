@@ -1,9 +1,10 @@
 """Backward compatibility - use src.qa.factory instead."""
 
 import warnings
+from typing import Any
 
 
-def __getattr__(name):
+def __getattr__(name: str) -> Any:
     warnings.warn(
         f"Importing '{name}' from 'src.qa_system_factory' is deprecated. "
         "Use 'from src.qa.factory import ...' instead.",
@@ -15,7 +16,7 @@ def __getattr__(name):
     return getattr(factory, name)
 
 
-def __dir__():
+def __dir__() -> list[str]:
     from src.qa import factory
 
     return dir(factory)

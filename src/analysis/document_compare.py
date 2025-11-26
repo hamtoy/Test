@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
@@ -28,7 +28,7 @@ def require_env(var: str) -> str:
     return value
 
 
-def compare_structure(driver) -> List[Dict]:
+def compare_structure(driver: Any) -> List[Dict[str, Any]]:
     """페이지별 블록 구조 요약."""
     query = """
     MATCH (p:Page)
@@ -51,7 +51,7 @@ def compare_structure(driver) -> List[Dict]:
         ]
 
 
-def find_common_content(driver, limit: int = 10) -> List[Tuple[str, List[str]]]:
+def find_common_content(driver: Any, limit: int = 10) -> List[Tuple[str, List[str]]]:
     """
     여러 페이지에서 동일하게 등장하는 블록 콘텐츠 찾기.
     content별로 그룹화하여 카티전 곱을 피함.
