@@ -31,7 +31,7 @@ from src.workflow import execute_workflow
 genai = SimpleNamespace(configure=lambda *_args, **_kwargs: None)
 
 
-async def main():
+async def main() -> None:
     """Main workflow orchestrator using CLI module for argument parsing"""
     # Parse arguments using cli.py module
     args = parse_args()

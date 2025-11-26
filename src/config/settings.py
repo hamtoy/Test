@@ -65,6 +65,10 @@ class AppConfig(BaseSettings):
         extra="ignore",
     )
 
+    def __init__(self, **data: Any) -> None:
+        """Initialize AppConfig from environment variables or provided data."""
+        super().__init__(**data)
+
     @field_validator("api_key")
     @classmethod
     def validate_api_key(cls, v: str) -> str:
