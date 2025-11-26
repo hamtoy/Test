@@ -252,9 +252,7 @@ class GeminiAgent:
         """만료된 캐시 정리."""
         self._cache_manager.cleanup_expired_cache(ttl_minutes)
 
-    def _load_local_cache(
-        self, fingerprint: str, ttl_minutes: int
-    ) -> Any:
+    def _load_local_cache(self, fingerprint: str, ttl_minutes: int) -> Any:
         """로컬 캐시 로드."""
         return self._cache_manager.load_local_cache(
             fingerprint, ttl_minutes, self._caching
@@ -308,9 +306,7 @@ class GeminiAgent:
 
     # ==================== Context Cache ====================
 
-    async def create_context_cache(
-        self, ocr_text: str
-    ) -> Any:
+    async def create_context_cache(self, ocr_text: str) -> Any:
         """OCR 텍스트를 기반으로 Gemini Context Cache 생성."""
         system_prompt = self.jinja_env.get_template("prompt_eval.j2").render()
         combined_content = system_prompt + "\n\n" + ocr_text
@@ -368,9 +364,7 @@ class GeminiAgent:
 
     # ==================== API 호출 ====================
 
-    async def _call_api_with_retry(
-        self, model: Any, prompt_text: str
-    ) -> str:
+    async def _call_api_with_retry(self, model: Any, prompt_text: str) -> str:
         """재시도 로직이 포함된 API 호출."""
         exceptions = self._google_exceptions()
         retry_exceptions = (
@@ -395,7 +389,6 @@ class GeminiAgent:
             retry=retry_if_exception_type(retry_exceptions),
             reraise=True,
         )
-
         def _get_retry_attempt(func: object) -> int:
             """Extract attempt number from tenacity retry statistics."""
             retry_obj = getattr(func, "retry", None)
@@ -427,9 +420,7 @@ class GeminiAgent:
             self.api_failures += 1
             raise
 
-    async def _execute_api_call(
-        self, model: Any, prompt_text: str
-    ) -> str:
+    async def _execute_api_call(self, model: Any, prompt_text: str) -> str:
         """실제 API 호출 로직."""
         if self.llm_provider:
             start = time.perf_counter()

@@ -21,7 +21,9 @@ class SmartAutocomplete:
     def __init__(self, kg: QAKnowledgeGraph):
         self.kg = kg
 
-    def suggest_next_query_type(self, current_session: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def suggest_next_query_type(
+        self, current_session: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """
         현재 세션의 사용 타입/회수 기반으로 다음 질의 유형을 추천.
         session_limit를 초과한 유형은 제외, 사용되지 않은 유형 우선.

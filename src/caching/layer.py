@@ -57,7 +57,9 @@ class CachingLayer:
             cached = self.redis.get(cache_key)
             if cached:
                 try:
-                    return cast(List[Dict[str, str]], json.loads(cast(str | bytes, cached)))
+                    return cast(
+                        List[Dict[str, str]], json.loads(cast(str | bytes, cached))
+                    )
                 except json.JSONDecodeError:
                     pass
 
