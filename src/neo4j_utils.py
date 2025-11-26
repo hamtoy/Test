@@ -1,4 +1,5 @@
 """Backward compatibility - use src.infra.neo4j instead."""
+
 import warnings
 
 from src.infra.neo4j import *

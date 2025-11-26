@@ -1,4 +1,5 @@
 """Backward compatibility - use src.routing.graph_router instead."""
+
 import warnings
 
 from src.routing.graph_router import *

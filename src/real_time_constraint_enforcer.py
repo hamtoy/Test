@@ -1,4 +1,5 @@
 """Backward compatibility - use src.infra.constraints instead."""
+
 import warnings
 
 from src.infra.constraints import *

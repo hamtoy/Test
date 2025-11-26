@@ -1,4 +1,5 @@
 """Backward compatibility - use src.features.multimodal instead."""
+
 import warnings
 
 from src.features.multimodal import *

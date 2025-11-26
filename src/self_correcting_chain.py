@@ -1,4 +1,5 @@
 """Backward compatibility - use src.features.self_correcting instead."""
+
 import warnings
 
 from src.features.self_correcting import *

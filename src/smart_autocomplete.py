@@ -1,4 +1,5 @@
 """Backward compatibility - use src.features.autocomplete instead."""
+
 import warnings
 
 from src.features.autocomplete import *

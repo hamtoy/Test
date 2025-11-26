@@ -1,4 +1,5 @@
 """Backward compatibility - use src.infra.logging instead."""
+
 import warnings
 
 from src.infra.logging import *

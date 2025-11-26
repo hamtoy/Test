@@ -1,4 +1,5 @@
 """Backward compatibility - use src.features.difficulty instead."""
+
 import warnings
 
 from src.features.difficulty import *

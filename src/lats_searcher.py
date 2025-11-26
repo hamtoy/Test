@@ -1,4 +1,5 @@
 """Backward compatibility - use src.features.lats instead."""
+
 import warnings
 
 from src.features.lats import *

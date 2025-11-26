@@ -1,4 +1,5 @@
 """Backward compatibility - use src.infra.budget instead."""
+
 import warnings
 
 from src.infra.budget import *

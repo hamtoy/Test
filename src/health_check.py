@@ -1,4 +1,5 @@
 """Backward compatibility - use src.infra.health instead."""
+
 import warnings
 
 from src.infra.health import *

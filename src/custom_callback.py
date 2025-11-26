@@ -1,4 +1,5 @@
 """Backward compatibility - use src.infra.callbacks instead."""
+
 import warnings
 
 from src.infra.callbacks import *

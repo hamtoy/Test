@@ -1,4 +1,5 @@
 """Backward compatibility - use src.infra.worker instead."""
+
 import warnings
 
 from src.infra.worker import *
