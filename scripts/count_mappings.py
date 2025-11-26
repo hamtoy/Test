@@ -4,7 +4,7 @@ import logging
 
 from dotenv import load_dotenv
 
-from src.neo4j_utils import get_neo4j_driver_from_env
+from src.infra.neo4j import get_neo4j_driver_from_env
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -14,17 +14,17 @@ from src.agent import GeminiAgent
 from src.cache_analytics import analyze_cache_stats, print_cache_report
 from src.cli import parse_args, resolve_checkpoint_path
 from src.config import AppConfig
-from src.constants import LOG_MESSAGES, USER_INTERRUPT_MESSAGE
+from src.config.constants import LOG_MESSAGES, USER_INTERRUPT_MESSAGE
 from src.processing.loader import load_input_data
-from src.exceptions import (
+from src.config.exceptions import (
     APIRateLimitError,
     BudgetExceededError,
     SafetyFilterError,
     ValidationFailedError,
 )
-from src.logging_setup import log_metrics, setup_logging
+from src.infra.logging import log_metrics, setup_logging
 from src.ui import console, render_budget_panel, render_cost_panel
-from src.utils import write_cache_stats
+from src.infra.utils import write_cache_stats
 from src.workflow import execute_workflow
 
 

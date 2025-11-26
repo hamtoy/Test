@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from src.logging_setup import log_metrics
+from src.infra.logging import log_metrics
 
 
 def test_log_metrics_tokens_and_cache(caplog):

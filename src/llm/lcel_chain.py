@@ -13,7 +13,7 @@ from langchain_core.runnables import (
 )
 
 from src.llm.gemini import GeminiModelClient
-from src.qa_rag_system import QAKnowledgeGraph
+from src.qa.rag_system import QAKnowledgeGraph
 
 logger = logging.getLogger(__name__)
 

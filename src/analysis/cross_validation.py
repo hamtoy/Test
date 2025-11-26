@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 
 from neo4j.exceptions import Neo4jError
 
-from src.qa_rag_system import QAKnowledgeGraph
+from src.qa.rag_system import QAKnowledgeGraph
 
 
 class CrossValidationSystem:

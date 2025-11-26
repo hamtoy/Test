@@ -6,7 +6,7 @@ import os
 from langchain_core.prompts import PromptTemplate
 from langchain_community.graphs import Neo4jGraph
 from langchain_community.vectorstores import Neo4jVector
-from src.qa_rag_system import CustomGeminiEmbeddings
+from src.qa.rag_system import CustomGeminiEmbeddings
 
 
 class AdvancedContextAugmentation:

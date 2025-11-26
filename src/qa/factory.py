@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from src.llm.gemini import GeminiModelClient
-from src.graph_enhanced_router import GraphEnhancedRouter
+from src.routing.graph_router import GraphEnhancedRouter
 from src.llm.lcel_chain import LCELOptimizedChain
 from src.qa.memory_augmented import MemoryAugmentedQASystem
 from src.qa.multi_agent import MultiAgentQASystem

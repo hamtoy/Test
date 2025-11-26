@@ -16,7 +16,7 @@ import os
 import time
 from typing import Any, List
 
-from src.qa_rag_system import QAKnowledgeGraph
+from src.qa.rag_system import QAKnowledgeGraph
 
 
 def _maybe_env(name: str) -> str | None:

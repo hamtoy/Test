@@ -1,7 +1,7 @@
 import json
 import types
 
-from src.caching_layer import CachingLayer
+from src.caching.layer import CachingLayer
 
 
 class _FakeSession:

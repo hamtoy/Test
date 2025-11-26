@@ -7,7 +7,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from faststream.redis import RedisBroker
 from src.config import AppConfig
-from src.worker import OCRTask
+from src.infra.worker import OCRTask
 
 
 async def main():

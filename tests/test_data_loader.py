@@ -1,6 +1,6 @@
 import pytest
-from src.data_loader import validate_candidates, load_input_data
-from src.exceptions import ValidationFailedError
+from src.processing.loader import validate_candidates, load_input_data
+from src.config.exceptions import ValidationFailedError
 
 
 def test_validate_candidates_success():

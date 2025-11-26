@@ -6,7 +6,7 @@ from typing import List, Dict
 import logging
 
 from checks.detect_forbidden_patterns import find_violations
-from src.qa_rag_system import QAKnowledgeGraph
+from src.qa.rag_system import QAKnowledgeGraph
 
 logger = logging.getLogger(__name__)
 

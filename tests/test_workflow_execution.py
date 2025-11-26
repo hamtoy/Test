@@ -3,8 +3,8 @@ import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 from src.workflow import execute_workflow
 from src.workflow.executor import _gather_results
-from src.models import EvaluationResultSchema, EvaluationItem
-from src.exceptions import BudgetExceededError
+from src.core.models import EvaluationResultSchema, EvaluationItem
+from src.config.exceptions import BudgetExceededError
 
 
 @pytest.fixture

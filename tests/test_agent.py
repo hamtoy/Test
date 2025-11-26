@@ -3,7 +3,7 @@ import asyncio
 from unittest.mock import MagicMock, AsyncMock, PropertyMock, patch
 from src.agent import GeminiAgent
 from src.config import AppConfig
-from src.models import EvaluationResultSchema
+from src.core.models import EvaluationResultSchema
 
 
 class TestGeminiAgent:

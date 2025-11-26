@@ -2,7 +2,7 @@ import types
 
 from neo4j.exceptions import Neo4jError
 
-from src.graph_enhanced_router import GraphEnhancedRouter
+from src.routing.graph_router import GraphEnhancedRouter
 
 
 class _FakeLLM:
