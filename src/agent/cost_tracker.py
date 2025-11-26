@@ -50,6 +50,17 @@ class CostTracker:
         self.total_input_tokens = 0
         self.total_output_tokens = 0
         self._budget_warned_thresholds: set[int] = set()
+        self._model_name_override: str | None = None
+
+    @property
+    def model_name(self) -> str:
+        """모델명 반환 (테스트에서 오버라이드 가능)."""
+        return self._model_name_override or self.config.model_name
+
+    @model_name.setter
+    def model_name(self, value: str) -> None:
+        """모델명 설정 (테스트 지원)."""
+        self._model_name_override = value
 
     def add_tokens(self, input_tokens: int, output_tokens: int) -> None:
         """토큰 사용량 누적.
@@ -77,7 +88,7 @@ class CostTracker:
         Raises:
             ValueError: 지원하지 않는 모델이거나 티어 매칭 실패 시
         """
-        model_name = self.config.model_name.lower()
+        model_name = self.model_name.lower()
         pricing_tiers = _get_pricing_tiers()
         tiers = pricing_tiers.get(model_name)
         if not tiers:
