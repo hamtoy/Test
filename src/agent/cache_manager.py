@@ -12,10 +12,7 @@ import hashlib
 import json
 import logging
 from pathlib import Path
-from typing import Any, Optional, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    pass
+from typing import Any, Optional
 
 # Assuming AppConfig is defined elsewhere in the project
 from src.config import AppConfig

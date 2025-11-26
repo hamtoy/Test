@@ -46,8 +46,7 @@ class CustomGeminiEmbeddings(Embeddings):
         result = genai.embed_content(  # type: ignore[attr-defined]
             model=self.model, content=text, task_type="retrieval_query"
         )
-        embedding: List[float] = list(result["embedding"])
-        return embedding
+        return list(result["embedding"])
 
 
 class QAKnowledgeGraph:
@@ -72,7 +71,7 @@ class QAKnowledgeGraph:
         )
         self._graph_provider: Optional[GraphProvider] = provider
         self._graph: Optional[SafeDriver] = None
-        self._graph_finalizer: "weakref.finalize[..., SafeDriver] | None" = None
+        self._graph_finalizer: Optional[weakref.finalize[..., SafeDriver]] = None
         self.neo4j_uri: Optional[str] = None
         self.neo4j_user: Optional[str] = None
         self.neo4j_password: Optional[str] = None
