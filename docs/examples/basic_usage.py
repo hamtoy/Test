@@ -1,15 +1,13 @@
 """Basic usage examples for the package."""
 
-from src.config import AppConfig
+from src.config import AppConfig  # noqa: F401
 from src.agent import GeminiAgent  # noqa: F401
 from src.infra.utils import clean_markdown_code_block
 from src.infra.logging import setup_logging
 
 # Configuration
-config = AppConfig(
-    model_name="gemini-1.5-flash",
-    temperature=0.7,
-)
+# AppConfig loads from environment variables (.env)
+# config = AppConfig()
 
 # Agent
 # Note: GeminiAgent requires GEMINI_API_KEY environment variable
@@ -24,6 +22,8 @@ config = AppConfig(
 # print(answer)
 
 # Utilities
-setup_logging(level="INFO")
+# Setup logging (uses env vars or defaults)
+logger, listener = setup_logging(log_level="INFO")
 cleaned = clean_markdown_code_block("```python\nprint('hello')\n```")
 print(f"Cleaned code: {cleaned}")
+listener.stop()
