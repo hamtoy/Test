@@ -1,5 +1,7 @@
 """Backward compatibility - use src.qa.generator instead."""
 
+from src.qa.generator import *  # noqa: F401, F403
+
 import warnings
 
 warnings.warn(
@@ -8,5 +10,3 @@ warnings.warn(
     DeprecationWarning,
     stacklevel=2,
 )
-
-from src.qa.generator import *  # noqa: F401, F403
