@@ -6,6 +6,14 @@ from tests.conftest import MockDriver
 
 
 def test_dynamic_template_generator_fallback_and_checklist(monkeypatch):
+    # Set required environment variables for Neo4j
+    monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
+    monkeypatch.setenv("NEO4J_USER", "neo4j")
+    monkeypatch.setenv("NEO4J_PASSWORD", "password")
+    
+    # Import the actual template_generator module to patch the right namespace
+    from src.processing import template_generator
+    
     driver = MockDriver(
         [
             [
@@ -26,7 +34,7 @@ def test_dynamic_template_generator_fallback_and_checklist(monkeypatch):
         def driver(*_args, **_kwargs):
             return driver
 
-    monkeypatch.setattr(dtg, "GraphDatabase", _GraphDB)
+    monkeypatch.setattr(template_generator, "GraphDatabase", _GraphDB)
 
     env = Environment(
         loader=DictLoader(

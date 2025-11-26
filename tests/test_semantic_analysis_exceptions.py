@@ -9,18 +9,24 @@ import src.semantic_analysis as sa
 
 
 def test_main_handles_neo4j_error(monkeypatch):
-    monkeypatch.setattr(sa, "require_env", lambda name: "x")
+    # Import the actual semantic module to patch the right namespace
+    from src.analysis import semantic as analysis_semantic
+    
+    monkeypatch.setattr(analysis_semantic, "require_env", lambda name: "x")
 
     def _raise(*_a, **_k):
         raise Neo4jError("boom")
 
-    monkeypatch.setattr(sa.GraphDatabase, "driver", _raise)
+    monkeypatch.setattr(analysis_semantic.GraphDatabase, "driver", _raise)
     with pytest.raises(SystemExit):
         sa.main()
 
 
 def test_main_no_blocks_returns(monkeypatch, caplog):
-    monkeypatch.setattr(sa, "require_env", lambda name: "x")
+    # Import the actual semantic module to patch the right namespace
+    from src.analysis import semantic as analysis_semantic
+    
+    monkeypatch.setattr(analysis_semantic, "require_env", lambda name: "x")
 
     class _Session:
         def __enter__(self):
@@ -42,8 +48,8 @@ def test_main_no_blocks_returns(monkeypatch, caplog):
         def close(self):
             self.closed = True
 
-    monkeypatch.setattr(sa.GraphDatabase, "driver", lambda *a, **k: _Driver())
-    monkeypatch.setattr(sa, "fetch_blocks", lambda driver: [])
+    monkeypatch.setattr(analysis_semantic.GraphDatabase, "driver", lambda *a, **k: _Driver())
+    monkeypatch.setattr(analysis_semantic, "fetch_blocks", lambda driver: [])
 
     with caplog.at_level(logging.INFO):
         sa.main()

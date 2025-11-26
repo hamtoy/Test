@@ -173,27 +173,36 @@ async def test_worker_setup_and_close_redis(monkeypatch):
         async def close(self):
             self.closed = True
 
+        async def ping(self):
+            return True
+
+    # Import the actual worker module to patch the right namespace
+    from src.infra import worker as infra_worker
+
     monkeypatch.setitem(
         sys.modules,
         "redis.asyncio",
         types.SimpleNamespace(Redis=_Redis),
     )
-    monkeypatch.setattr(worker, "redis_client", None, raising=False)
-    await worker.setup_redis()
-    assert worker.redis_client is not None
-    await worker.close_redis()
-    assert worker.redis_client.closed is True
+    monkeypatch.setattr(infra_worker, "redis_client", None, raising=False)
+    await infra_worker.setup_redis()
+    assert infra_worker.redis_client is not None
+    await infra_worker.close_redis()
+    assert infra_worker.redis_client.closed is True
 
 
 @pytest.mark.asyncio
 async def test_worker_ensure_redis_ready_failure(monkeypatch):
+    # Import the actual worker module to patch the right namespace
+    from src.infra import worker as infra_worker
+
     class _Redis:
         async def ping(self):
             return False
 
-    monkeypatch.setattr(worker, "redis_client", _Redis(), raising=False)
+    monkeypatch.setattr(infra_worker, "redis_client", _Redis(), raising=False)
     with pytest.raises(RuntimeError):
-        await worker.ensure_redis_ready()
+        await infra_worker.ensure_redis_ready()
 
 
 def test_worker_append_jsonl(tmp_path, monkeypatch):

@@ -25,6 +25,9 @@ from src import multimodal_understanding as mmu  # noqa: E402
 
 
 def test_multimodal_understanding_uses_fakes(monkeypatch):
+    # Import the actual multimodal module to patch the right namespace
+    from src.features import multimodal as features_multimodal
+    
     fake_saved = {}
 
     class _FakeSession:
@@ -50,10 +53,10 @@ def test_multimodal_understanding_uses_fakes(monkeypatch):
         height = 20
 
     monkeypatch.setattr(
-        mmu, "Image", types.SimpleNamespace(open=lambda path: _FakeImg())
+        features_multimodal, "Image", types.SimpleNamespace(open=lambda path: _FakeImg())
     )
     monkeypatch.setattr(
-        mmu,
+        features_multimodal,
         "pytesseract",
         types.SimpleNamespace(image_to_string=lambda img, lang=None: "alpha beta beta"),
     )
