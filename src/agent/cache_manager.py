@@ -164,14 +164,14 @@ class CacheManager:
     # ---------------------------------------------------------------------
     def cleanup_expired(self, ttl_minutes: Optional[int] = None) -> None:
         """Legacy wrapper that forwards to :meth:`cleanup_expired_cache`."""
-        self.cleanup_expired_cache(ttl_minutes or self.config.ttl_minutes)
+        self.cleanup_expired_cache(ttl_minutes or self.config.cache_ttl_minutes)
 
     def load_cached(
         self, fingerprint: str, caching_module: Any
     ) -> Optional["caching.CachedContent"]:
         """Legacy wrapper for loading cache without explicit TTL."""
         return self.load_local_cache(
-            fingerprint, self.config.ttl_minutes, caching_module
+            fingerprint, self.config.cache_ttl_minutes, caching_module
         )
 
     def store_cache(self, fingerprint: str, cache_name: str, ttl_minutes: int) -> None:
