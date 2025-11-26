@@ -38,6 +38,14 @@ def test_compare_documents_helpers(monkeypatch):
 
 
 def test_health_check_with_stub(monkeypatch):
+    # Set required environment variables for Neo4j
+    monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
+    monkeypatch.setenv("NEO4J_USER", "neo4j")
+    monkeypatch.setenv("NEO4J_PASSWORD", "password")
+    
+    # Import the actual health module to patch the right namespace
+    from src.infra import health as infra_health
+    
     class _HealthSession:
         def __enter__(self):
             return self
@@ -51,9 +59,9 @@ def test_health_check_with_stub(monkeypatch):
     fake_kg = types.SimpleNamespace(
         _graph=types.SimpleNamespace(session=lambda: _HealthSession())
     )
-    assert health_check.check_neo4j_connection(fake_kg) is True
+    assert infra_health.check_neo4j_connection(fake_kg) is True
 
-    monkeypatch.setattr(health_check, "check_neo4j_connection", lambda *_a, **_k: True)
+    monkeypatch.setattr(infra_health, "check_neo4j_connection", lambda *_a, **_k: True)
     report = health_check.health_check()
     assert report["status"] == "healthy"
 
@@ -62,6 +70,9 @@ def test_compare_documents_main_flow(monkeypatch, capsys):
     monkeypatch.setenv("NEO4J_URI", "bolt://fake")
     monkeypatch.setenv("NEO4J_USER", "user")
     monkeypatch.setenv("NEO4J_PASSWORD", "pass")
+
+    # Import the actual document_compare module to patch the right namespace
+    from src.analysis import document_compare
 
     class _Session:
         def __enter__(self):
@@ -92,7 +103,7 @@ def test_compare_documents_main_flow(monkeypatch, capsys):
             return None
 
     monkeypatch.setattr(
-        compare_documents,
+        document_compare,
         "GraphDatabase",
         types.SimpleNamespace(driver=lambda uri, auth: _Driver()),
     )
