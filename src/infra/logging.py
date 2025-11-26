@@ -26,13 +26,13 @@ class SensitiveDataFilter(logging.Filter):
 
     sensitive_regex = re.compile(SENSITIVE_PATTERN)
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
         msg = record.getMessage()
         if "AIza" in msg:
             record.msg = self.sensitive_regex.sub("[FILTERED_API_KEY]", msg)
 
             if record.args:
-                new_args = []
+                new_args: list[object] = []
                 for arg in record.args:
                     if isinstance(arg, str):
                         new_args.append(

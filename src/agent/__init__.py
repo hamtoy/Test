@@ -5,6 +5,8 @@ Provides the main GeminiAgent class and re-exports common exceptions,
 constants, and utility functions for backward compatibility.
 """
 
+from typing import Any
+
 # Core agent class
 from src.agent.core import GeminiAgent
 
@@ -53,7 +55,7 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     """Lazy import for optional caching module.
 
     Allows ``from src.agent import caching`` without importing the heavy

@@ -25,7 +25,7 @@ class EvaluationResultSchema(BaseModel):
     )
 
     @model_validator(mode="after")
-    def validate_best_candidate(self):
+    def validate_best_candidate(self) -> "EvaluationResultSchema":
         """LLM이 주장한 best_candidate와 실제 점수가 일치하는지 검증.
 
         불일치 시 자동 수정하여 downstream 에러를 방지합니다 (Hallucination Detection).

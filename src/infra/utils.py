@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-import aiofiles  # type: ignore[import-untyped]
+import aiofiles
 
 from src.core.models import WorkflowResult
 
