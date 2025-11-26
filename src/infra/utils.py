@@ -244,3 +244,15 @@ async def append_checkpoint(path: Path, result: WorkflowResult) -> None:
             await f.write(json.dumps(result.model_dump(), ensure_ascii=False) + "\n")
     except OSError:
         return
+
+
+__all__ = [
+    "load_file_async",
+    "parse_raw_candidates",
+    "clean_markdown_code_block",
+    "safe_json_parse",
+    "write_cache_stats",
+    "load_checkpoint",
+    "append_checkpoint",
+    "_find_in_nested",
+]

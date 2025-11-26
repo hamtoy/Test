@@ -192,3 +192,13 @@ def log_metrics(
         metrics["api_failures"] = api_failures
 
     logger.info("metrics", extra={"metrics": metrics})
+
+
+__all__ = [
+    "setup_logging",
+    "log_metrics",
+    "SensitiveDataFilter",
+    "_resolve_log_level",
+    "_build_file_handler",
+    "_build_console_handler",
+]
