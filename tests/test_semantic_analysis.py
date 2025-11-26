@@ -14,7 +14,10 @@ def test_tokenize_filters_stopwords_and_length():
 
 
 def test_count_keywords_respects_min_freq(monkeypatch):
-    monkeypatch.setattr(sa, "MIN_FREQ", 2)
+    # Import the actual semantic module to patch the right namespace
+    from src.analysis import semantic as analysis_semantic
+    
+    monkeypatch.setattr(analysis_semantic, "MIN_FREQ", 2)
     contents = ["apple banana apple", "banana cherry", "apple"]
     counter = sa.count_keywords(contents)
     assert counter["apple"] == 3
@@ -41,6 +44,9 @@ def test_create_topics_no_keywords(monkeypatch):
 
 
 def test_link_blocks_creates_links(monkeypatch):
+    # Import the actual semantic module to patch the right namespace
+    from src.analysis import semantic as analysis_semantic
+    
     captured = []
 
     class _Session:
@@ -67,9 +73,9 @@ def test_link_blocks_creates_links(monkeypatch):
     ]
     topics = [("apple", 3), ("banana", 2)]
 
-    monkeypatch.setattr(sa, "REL_BATCH_SIZE", 2)
+    monkeypatch.setattr(analysis_semantic, "REL_BATCH_SIZE", 2)
     # Patch tokenization to identity split for simplicity
-    monkeypatch.setattr(sa, "tokenize", lambda text: text.split())
+    monkeypatch.setattr(analysis_semantic, "tokenize", lambda text: text.split())
     _orig_session_run = _Session.execute_write
 
     def _execute_write(self, fn, batch):
@@ -86,8 +92,11 @@ def test_link_blocks_creates_links(monkeypatch):
 
 
 def test_main_env_missing_exits(monkeypatch, capsys):
+    # Import the actual semantic module to patch the right namespace
+    from src.analysis import semantic as analysis_semantic
+    
     monkeypatch.setattr(
-        sa, "require_env", lambda name: (_ for _ in ()).throw(EnvironmentError(name))
+        analysis_semantic, "require_env", lambda name: (_ for _ in ()).throw(EnvironmentError(name))
     )
     with pytest.raises(SystemExit):
         sa.main()
