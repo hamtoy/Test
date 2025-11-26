@@ -34,9 +34,9 @@ class GeminiModelClient:
 
     def __init__(self) -> None:
         api_key = require_env("GEMINI_API_KEY")
-        genai.configure(api_key=api_key)
+        genai.configure(api_key=api_key)  # type: ignore[attr-defined]
         self.model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-3-pro-preview")
-        self.model = genai.GenerativeModel(self.model_name)
+        self.model = genai.GenerativeModel(self.model_name)  # type: ignore[attr-defined]
         genai_logger = getattr(genai, "_logging", None)
         if genai_logger and getattr(genai_logger, "logger", None):
             self.logger = genai_logger.logger
@@ -68,12 +68,12 @@ class GeminiModelClient:
             if hasattr(response, "usage_metadata") and response.usage_metadata:
                 usage = response.usage_metadata
                 log_metrics(
-                    self.logger,  # type: ignore[attr-defined]
+                    self.logger,
                     latency_ms=latency_ms,
                     prompt_tokens=usage.prompt_token_count,
                     completion_tokens=usage.candidates_token_count,
                 )
-            return response.text
+            return str(response.text)
         except google_exceptions.GoogleAPIError as e:
             return f"[생성 실패: {e}]"
         except (ValueError, TypeError) as e:

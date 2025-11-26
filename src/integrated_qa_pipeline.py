@@ -3,7 +3,7 @@
 import warnings
 
 
-def __getattr__(name):
+def __getattr__(name: str) -> object:
     warnings.warn(
         f"Importing '{name}' from 'src.integrated_qa_pipeline' is deprecated. "
         "Use 'from src.qa.pipeline import ...' instead.",
@@ -15,7 +15,7 @@ def __getattr__(name):
     return getattr(pipeline, name)
 
 
-def __dir__():
+def __dir__() -> list[str]:
     from src.qa import pipeline
 
     return dir(pipeline)

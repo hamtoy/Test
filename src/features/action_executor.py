@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 
 class ActionExecutor:
@@ -13,7 +13,7 @@ class ActionExecutor:
 
     def __init__(self, llm_provider: Optional[Any] = None):
         self.llm_provider = llm_provider
-        self.last_llm_usage: Optional[dict] = None
+        self.last_llm_usage: Optional[Dict[str, Any]] = None
 
     async def execute_action(
         self, *, action: str, text: str, max_length: int = 120, use_llm: bool = False

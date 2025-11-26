@@ -5,10 +5,10 @@ from typing import Any, Dict, Optional
 from src.llm.gemini import GeminiModelClient
 from src.routing.graph_router import GraphEnhancedRouter
 from src.llm.lcel_chain import LCELOptimizedChain
-from src.memory_augmented_qa import MemoryAugmentedQASystem
-from src.multi_agent_qa_system import MultiAgentQASystem
+from src.qa.memory_augmented import MemoryAugmentedQASystem
+from src.qa.multi_agent import MultiAgentQASystem
 from src.qa.rag_system import QAKnowledgeGraph
-from src.qa_system_factory import QASystemFactory
+from src.qa.factory import QASystemFactory
 from src.self_correcting_chain import SelfCorrectingQAChain
 
 
@@ -19,6 +19,13 @@ class UltimateLangChainQASystem:
     Uses QASystemFactory for component creation to reduce coupling
     and improve maintainability.
     """
+
+    kg: Any
+    memory_system: Any
+    agent_system: Any
+    correcting_chain: Any
+    router: Any
+    lcel_chain: Any
 
     def __init__(
         self,
@@ -46,7 +53,7 @@ class UltimateLangChainQASystem:
             self.lcel_chain = components["lcel_chain"]
             return
 
-        def _construct(cls, *args):
+        def _construct(cls: type[Any], *args: Any) -> Any:
             try:
                 return cls(*args)
             except TypeError:

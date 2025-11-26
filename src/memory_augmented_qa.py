@@ -3,7 +3,7 @@
 import warnings
 
 
-def __getattr__(name):
+def __getattr__(name: str) -> object:
     warnings.warn(
         f"Importing '{name}' from 'src.memory_augmented_qa' is deprecated. "
         "Use 'from src.qa.memory_augmented import ...' instead.",
@@ -15,7 +15,7 @@ def __getattr__(name):
     return getattr(memory_augmented, name)
 
 
-def __dir__():
+def __dir__() -> list[str]:
     from src.qa import memory_augmented
 
     return dir(memory_augmented)

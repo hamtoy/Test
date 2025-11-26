@@ -246,7 +246,7 @@ class QAKnowledgeGraph:
         except Exception as exc:  # noqa: BLE001
             return {"ok": False, "issues": [f"컨텍스트 검증 실패: {exc}"]}
 
-    def close(self):
+    def close(self) -> None:
         if self._graph:
             with suppress(Exception):
                 self._graph.close()

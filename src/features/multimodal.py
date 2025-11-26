@@ -60,9 +60,9 @@ class MultimodalUnderstanding:
                     return metadata
                 session_ctx = graph.session
             else:
-                session_ctx = graph_session  # type: ignore[assignment]
+                session_ctx = graph_session
 
-            with session_ctx() as session:  # type: ignore[misc]
+            with session_ctx() as session:
                 if session is None:
                     return metadata
                 session.run(

@@ -10,7 +10,7 @@ __all__ = [
 ]
 
 
-def __getattr__(name):
+def __getattr__(name: str) -> object:
     """Lazy import to avoid circular dependencies."""
     if name == "QAKnowledgeGraph":
         from src.qa.rag_system import QAKnowledgeGraph

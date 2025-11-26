@@ -53,7 +53,7 @@ logger = logging.getLogger("worker")
 MODEL_COST_PER_TOKEN = 1e-6
 
 # Load config (environment-driven; ignore call-arg check for BaseSettings)
-config = AppConfig()  # type: ignore[call-arg]
+config = AppConfig()
 
 # Initialize Broker and Redis Client
 broker = RedisBroker(config.redis_url)
@@ -62,7 +62,7 @@ redis_client = None
 
 
 @app.on_startup
-async def setup_redis():
+async def setup_redis() -> None:
     global redis_client
     from redis.asyncio import Redis
 
@@ -70,7 +70,7 @@ async def setup_redis():
 
 
 @app.on_shutdown
-async def close_redis():
+async def close_redis() -> None:
     if redis_client:
         await redis_client.close()
 
@@ -110,7 +110,7 @@ class DLQMessage(BaseModel):
     )
 
 
-def _append_jsonl(path: Path, record: dict) -> None:
+def _append_jsonl(path: Path, record: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -127,7 +127,7 @@ async def check_rate_limit(key: str, limit: int, window: int) -> bool:
     current = await redis_client.incr(key)
     if current == 1:
         await redis_client.expire(key, window)
-    return current <= limit
+    return bool(current <= limit)
 
 
 async def ensure_redis_ready() -> None:
@@ -143,7 +143,7 @@ async def ensure_redis_ready() -> None:
         raise
 
 
-async def _process_task(task: OCRTask) -> dict:
+async def _process_task(task: OCRTask) -> Dict[str, Any]:
     """
     Minimal OCR/LLM processing stub.
     - Reads text if the path is a .txt file; otherwise uses filename as content.
@@ -179,7 +179,7 @@ async def _process_task(task: OCRTask) -> dict:
     }
 
 
-async def _run_task_with_lats(task: OCRTask) -> dict:
+async def _run_task_with_lats(task: OCRTask) -> Dict[str, Any]:
     """LATS 토글 시 사용되는 경량 트리 탐색 래퍼."""
     from src.infra.budget import BudgetTracker
     from src.caching.redis_cache import RedisEvalCache
@@ -222,7 +222,7 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
         if graph_provider:
             try:
                 session_ctx = graph_provider.session()
-                async with session_ctx as session:  # type: ignore[union-attr]
+                async with session_ctx as session:
                     # 금지 패턴 + 간단한 제약 검증 (실제 규칙으로 확장 가능)
                     blocked = any(
                         bad in action.lower() for bad in ["drop ", "delete ", "remove "]
@@ -329,7 +329,7 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
         if cached_score is not None:
             # Use cached score directly
             node.state = node.state.update_budget(tokens=tokens)
-            return cached_score + node.reward
+            return float(cached_score + node.reward)
 
         # 액션 실행: 실제 출력물 생성
         action_output = await executor.execute_action(
@@ -404,7 +404,7 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
         # 캐시에 저장
         await eval_cache.set(cache_key, final_score)
 
-        return final_score + node.reward
+        return float(final_score + node.reward)
 
     searcher = LATSSearcher(
         llm_provider=llm_provider,
@@ -423,7 +423,7 @@ async def _run_task_with_lats(task: OCRTask) -> dict:
 
 
 @broker.subscriber("ocr_task")  # Low concurrency for pilot
-async def handle_ocr_task(task: OCRTask):
+async def handle_ocr_task(task: OCRTask) -> None:
     try:
         await ensure_redis_ready()
     except Exception as exc:  # noqa: BLE001

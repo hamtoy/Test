@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Dict, Optional
 
 from src.llm.gemini import GeminiModelClient
 from src.routing.graph_router import GraphEnhancedRouter
@@ -121,7 +121,7 @@ class QASystemFactory:
             self.get_model_client(),
         )
 
-    def create_all_components(self) -> dict:
+    def create_all_components(self) -> Dict[str, object]:
         """
         Create all QA system components at once.
 

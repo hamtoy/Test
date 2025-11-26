@@ -29,7 +29,7 @@ from src.infra.utils import append_checkpoint, safe_json_parse
 from .context import WorkflowContext
 
 
-def save_result_to_file(result: WorkflowResult, config) -> None:
+def save_result_to_file(result: WorkflowResult, config: Any) -> None:
     """결과를 Markdown 파일로 저장 (하드코딩 제거)"""
     assert result.evaluation is not None
     output_dir = config.output_dir

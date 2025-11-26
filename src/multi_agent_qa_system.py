@@ -3,7 +3,7 @@
 import warnings
 
 
-def __getattr__(name):
+def __getattr__(name: str) -> object:
     warnings.warn(
         f"Importing '{name}' from 'src.multi_agent_qa_system' is deprecated. "
         "Use 'from src.qa.multi_agent import ...' instead.",
@@ -15,7 +15,7 @@ def __getattr__(name):
     return getattr(multi_agent, name)
 
 
-def __dir__():
+def __dir__() -> list[str]:
     from src.qa import multi_agent
 
     return dir(multi_agent)

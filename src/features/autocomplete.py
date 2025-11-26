@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import List, Dict
+from typing import Any, Dict, List
 
 import logging
 
@@ -21,7 +21,7 @@ class SmartAutocomplete:
     def __init__(self, kg: QAKnowledgeGraph):
         self.kg = kg
 
-    def suggest_next_query_type(self, current_session: List[Dict]) -> List[Dict]:
+    def suggest_next_query_type(self, current_session: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         현재 세션의 사용 타입/회수 기반으로 다음 질의 유형을 추천.
         session_limit를 초과한 유형은 제외, 사용되지 않은 유형 우선.
@@ -42,9 +42,9 @@ class SmartAutocomplete:
                 return []
             session_ctx = graph.session
         else:
-            session_ctx = graph_session  # type: ignore[assignment]
+            session_ctx = graph_session
 
-        with session_ctx() as session:  # type: ignore[misc]
+        with session_ctx() as session:
             if session is None:
                 logger.debug("SmartAutocomplete: graph unavailable, no suggestions")
                 return []
@@ -89,13 +89,13 @@ class SmartAutocomplete:
             graph = getattr(self.kg, "_graph", None)
             session_ctx = graph.session if graph is not None else None
         else:
-            session_ctx = graph_session  # type: ignore[assignment]
+            session_ctx = graph_session
 
         if session_ctx is None:
             logger.debug("SmartAutocomplete: graph unavailable, skip constraint checks")
             return {"violations": violations, "suggestions": suggestions}
 
-        with session_ctx() as session:  # type: ignore[misc]
+        with session_ctx() as session:
             if session is None:
                 logger.debug(
                     "SmartAutocomplete: graph unavailable, skip constraint checks"
