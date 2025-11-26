@@ -75,7 +75,7 @@ async def test_create_context_cache_raises(monkeypatch, tmp_path):
 
 def test_cost_error_unknown_model(monkeypatch, tmp_path):
     agent = _agent(monkeypatch, tmp_path)
-    agent.cost_tracker.model_name = "unknown-model"
+    agent._cost_tracker.model_name = "unknown-model"
     agent.total_input_tokens = 1000
     agent.total_output_tokens = 10
     with pytest.raises(ValueError):

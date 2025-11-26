@@ -88,7 +88,7 @@ async def test_execute_api_call_logs_metrics(monkeypatch, tmp_path):
 
 def test_get_total_cost_unknown_model(monkeypatch, tmp_path):
     agent = _make_agent(monkeypatch, tmp_path)
-    agent.cost_tracker.model_name = "unknown-model"
+    agent._cost_tracker.model_name = "unknown-model"
     agent.total_input_tokens = 10
     agent.total_output_tokens = 5
     with pytest.raises(ValueError):
