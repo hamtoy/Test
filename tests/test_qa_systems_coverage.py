@@ -215,14 +215,17 @@ def test_multi_agent_qa_system(monkeypatch):
     fake_kg = _FakeKG()
     fake_kg._graph = types.SimpleNamespace(session=lambda: _FakeRuleSession())
 
-    monkeypatch.setattr(multi_agent_qa_system, "GeminiModelClient", lambda: _FakeLLM())
+    # Import the actual module to patch it (not the shim)
+    from src.qa import multi_agent as multi_agent_module
+    
+    monkeypatch.setattr(multi_agent_module, "GeminiModelClient", lambda: _FakeLLM())
     monkeypatch.setattr(
-        multi_agent_qa_system,
+        multi_agent_module,
         "DynamicExampleSelector",
         lambda kg: _FakeExampleSelector(),
     )
     monkeypatch.setattr(
-        multi_agent_qa_system, "CrossValidationSystem", lambda kg: _FakeValidator()
+        multi_agent_module, "CrossValidationSystem", lambda kg: _FakeValidator()
     )
 
     system = multi_agent_qa_system.MultiAgentQASystem(fake_kg)

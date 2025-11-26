@@ -10,7 +10,7 @@ import logging
 import sys
 from typing import TYPE_CHECKING
 
-from src import constants as _constants
+from src.config import constants as _constants
 from src.config.exceptions import BudgetExceededError
 
 if TYPE_CHECKING:
