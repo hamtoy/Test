@@ -1,0 +1,147 @@
+name: v3.0 Compatibility Check
+
+on:
+  push:
+    branches: [main, master, release/v3.0]
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  check-no-shims:
+    runs-on: ubuntu-latest
+    name: Verify No Shim Usage
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.4.x"
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Verify no deprecated imports in production code
+        run: |
+          echo "🔍 Checking for deprecated imports..."
+          uv run python scripts/verify_v3_readiness.py
+          echo "✅ No deprecated imports detected in production code"
+
+      - name: Enforce type hints (core modules)
+        run: |
+          echo "🔍 Checking type hints in core modules..."
+          uv run python scripts/enforce_type_hints.py
+          echo "✅ All core modules have complete type hints"
+
+  test-pure-package-imports:
+    runs-on: ubuntu-latest
+    name: Test Package Imports
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.4.x"
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Test v3.0 public API imports
+        run: |
+          echo "🔍 Testing v3.0 public API imports..."
+          uv run python -c "
+          from src import __version__
+          from src.agent import GeminiAgent
+          from src.core.models import WorkflowResult, EvaluationResultSchema, QueryResult
+          from src.config import AppConfig
+          from src.config.exceptions import BudgetExceededError, APIRateLimitError, ValidationFailedError
+          print(f'✅ All v3.0 imports successful (version: {__version__})')
+          "
+
+      - name: Verify deprecated imports emit warnings
+        run: |
+          echo "🔍 Verifying deprecation warnings..."
+          uv run python -c "
+          import warnings
+          warnings.simplefilter('error', DeprecationWarning)
+          try:
+              from src import gemini_model_client
+              print('❌ Expected DeprecationWarning was not raised')
+              exit(1)
+          except DeprecationWarning as e:
+              print('✅ Deprecated import correctly raises warning')
+          "
+
+  mypy-strict:
+    runs-on: ubuntu-latest
+    name: Mypy Strict Mode
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.4.x"
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run mypy on core modules
+        run: |
+          echo "🔍 Running mypy strict mode on core modules..."
+          uv run mypy src/core/ src/agent/ src/config/ --strict --ignore-missing-imports
+          echo "✅ Mypy strict mode passed for core modules"
+
+  version-check:
+    runs-on: ubuntu-latest
+    name: Version Verification
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Verify Python version guard
+        run: |
+          echo "🔍 Verifying Python version guard..."
+          python -c "
+          import sys
+          # Check that src/__init__.py has version guard
+          with open('src/__init__.py', 'r') as f:
+              content = f.read()
+          
+          if 'sys.version_info < (3, 10)' not in content:
+              print('❌ Missing Python 3.10+ version guard in src/__init__.py')
+              sys.exit(1)
+          
+          if '__version__ = \"3.0.0\"' not in content:
+              print('❌ Missing or incorrect version in src/__init__.py')
+              sys.exit(1)
+          
+          print('✅ Version guard and version string verified')
+          "

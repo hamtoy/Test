@@ -62,6 +62,7 @@ extend-select = ["PERF", "FURB", "SIM"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D"]
+"scripts/**" = ["PERF401", "SIM102"]  # Allow simpler patterns in scripts
 
 [tool.mypy]
 python_version = "3.13"
@@ -72,6 +73,12 @@ warn_unused_configs = true
 warn_unused_ignores = true
 check_untyped_defs = true
 
+python_version = "3.10"  # v3.0: Minimum supported version
+# Global settings are relaxed for gradual typing approach
+warn_return_any = false
+warn_unused_configs = true
+warn_unused_ignores = false  # Disabled to allow gradual migration
+check_untyped_defs = false
 namespace_packages = true
 explicit_package_bases = true
 mypy_path = "."
@@ -91,13 +98,32 @@ check_untyped_defs = false
 warn_return_any = false
 
 # 기존 핵심 모듈 유지 (이미 Level 1)
+# v3.0: Core modules with strict type checking
 [[tool.mypy.overrides]]
 module = [
-    "src.config",
-    "src.config.settings",
-    "src.config.constants",
-    "src.config.exceptions",
-    "src.core.models",
+    "src.core.*",
+    "src.agent.*",
+    "src.config.*",
+]
+check_untyped_defs = true
+warn_return_any = true
+disallow_untyped_defs = true  # v3.0: All functions require type hints
+no_implicit_optional = true   # v3.0: No implicit Optional types
+
+# Legacy modules with relaxed type checking (gradual migration)
+[[tool.mypy.overrides]]
+module = [
+    "src.analysis.*",
+    "src.caching.*",
+    "src.features.*",
+    "src.graph.*",
+    "src.infra.*",
+    "src.llm.*",
+    "src.processing.*",
+    "src.qa.*",
+    "src.routing.*",
+    "src.ui.*",
+    "src.workflow.*",
 ]
 check_untyped_defs = true
 warn_return_any = true
