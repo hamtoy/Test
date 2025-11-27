@@ -80,6 +80,8 @@ async def test_main_analyze_cache_quick_path(monkeypatch, tmp_path):
             analyze_cache=True,
             integrated_pipeline=False,
             pipeline_meta="examples/session_input.json",
+            optimize_neo4j=False,
+            drop_existing_indexes=False,
         ),
     )
 
@@ -164,6 +166,8 @@ async def test_main_keep_progress_flag(monkeypatch, tmp_path):
             analyze_cache=False,
             integrated_pipeline=False,
             pipeline_meta="examples/session_input.json",
+            optimize_neo4j=False,
+            drop_existing_indexes=False,
         ),
     )
 
@@ -248,6 +252,8 @@ async def test_main_cache_stats_warning(monkeypatch, tmp_path):
             analyze_cache=False,
             integrated_pipeline=False,
             pipeline_meta="examples/session_input.json",
+            optimize_neo4j=False,
+            drop_existing_indexes=False,
         ),
     )
     monkeypatch.setattr(
@@ -337,6 +343,8 @@ async def test_main_auto_mode_passes_intent(monkeypatch, tmp_path):
             analyze_cache=False,
             integrated_pipeline=False,
             pipeline_meta="examples/session_input.json",
+            optimize_neo4j=False,
+            drop_existing_indexes=False,
         ),
     )
 
@@ -404,6 +412,8 @@ async def test_main_missing_templates_exits(monkeypatch, tmp_path):
             analyze_cache=False,
             integrated_pipeline=False,
             pipeline_meta="examples/session_input.json",
+            optimize_neo4j=False,
+            drop_existing_indexes=False,
         ),
     )
 
