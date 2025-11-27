@@ -331,3 +331,138 @@ results = await asyncio.gather(*tasks)
 - [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md): 환경 설정
 - [PRINCIPLES_REVIEW.md](PRINCIPLES_REVIEW.md): 코드 품질 분석
 - [UV_GUIDE.md](../UV_GUIDE.md): UV 패키지 매니저
+
+<!-- AUTO-GENERATED: v3.0 Package Structure -->
+
+## v3.0 Package Architecture
+
+```mermaid
+graph TD
+    %% v3.0 Package Architecture
+    Main[src/main.py] --> Agent[agent/]
+    Main --> CLI[cli.py]
+    Main --> QA[qa/]
+
+    %% Core Dependencies
+    Agent[agent/] --> Config[config/]
+    Agent[agent/] --> Core[core/]
+    Agent[agent/] --> Caching[caching/]
+    Agent[agent/] --> Infra[infra/]
+    Qa[qa/] --> Llm[llm/]
+    Qa[qa/] --> Core[core/]
+    Qa[qa/] --> Caching[caching/]
+    Qa[qa/] --> Infra[infra/]
+    Workflow[workflow/] --> Agent[agent/]
+    Workflow[workflow/] --> Processing[processing/]
+    Workflow[workflow/] --> Core[core/]
+    Llm[llm/] --> Config[config/]
+    Llm[llm/] --> Core[core/]
+    Processing[processing/] --> Config[config/]
+    Processing[processing/] --> Core[core/]
+    Caching[caching/] --> Config[config/]
+    Routing[routing/] --> Core[core/]
+    Routing[routing/] --> Config[config/]
+    Features[features/] --> Config[config/]
+    Features[features/] --> Core[core/]
+    Analysis[analysis/] --> Core[core/]
+    Infra[infra/] --> Config[config/]
+    Graph[graph/] --> Config[config/]
+    Ui[ui/] --> Config[config/]
+
+    %% v3.0 Public API
+    subgraph PublicAPI["v3.0 Public API"]
+        Agent
+        Config[config/]
+        Core[core/]
+    end
+
+    %% External Services
+    Agent --> Gemini[Gemini API]
+    QA --> Neo4j[(Neo4j Graph)]
+```
+
+### Module Tree
+
+```
+src/
+├── agent/
+    ├── batch_processor.py
+    ├── cache_manager.py
+    ├── core.py
+    ├── cost_tracker.py
+    └── rate_limiter.py
+├── analysis/
+    ├── cross_validation.py
+    ├── document_compare.py
+    └── semantic.py
+├── caching/
+    ├── analytics.py
+    ├── layer.py
+    └── redis_cache.py
+├── config/
+    ├── constants.py
+    ├── exceptions.py
+    └── settings.py
+├── core/
+    ├── adapters.py
+    ├── factory.py
+    ├── interfaces.py
+    ├── models.py
+    └── type_aliases.py
+├── features/
+    ├── action_executor.py
+    ├── autocomplete.py
+    ├── data2neo_extractor.py
+    ├── difficulty.py
+    ├── lats.py
+    ├── multimodal.py
+    └── self_correcting.py
+├── graph/
+    ├── builder.py
+    ├── data2neo_extractor.py
+    ├── entities.py
+    ├── mappings.py
+    └── schema.py
+├── infra/
+    ├── adaptive_limiter.py
+    ├── budget.py
+    ├── callbacks.py
+    ├── constraints.py
+    ├── health.py
+    ├── logging.py
+    ├── neo4j.py
+    ├── neo4j_optimizer.py
+    ├── utils.py
+    └── worker.py
+├── llm/
+    ├── gemini.py
+    ├── langchain_system.py
+    ├── lcel_chain.py
+    └── list_models.py
+├── processing/
+    ├── context_augmentation.py
+    ├── example_selector.py
+    ├── loader.py
+    └── template_generator.py
+├── qa/
+    ├── ab_test.py
+    ├── factory.py
+    ├── generator.py
+    ├── memory_augmented.py
+    ├── multi_agent.py
+    ├── pipeline.py
+    ├── quality.py
+    └── rag_system.py
+├── routing/
+    └── graph_router.py
+├── ui/
+    └── panels.py
+└── workflow/
+    ├── context.py
+    ├── executor.py
+    ├── hybrid_optimizer.py
+    ├── mcts_optimizer.py
+    └── processor.py
+```
+
+<!-- END AUTO-GENERATED -->
