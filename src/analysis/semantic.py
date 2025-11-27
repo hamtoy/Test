@@ -17,7 +17,7 @@ import sys
 import logging
 import re
 from collections import Counter
-from typing import Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
 from dotenv import load_dotenv
 from neo4j import GraphDatabase, Driver
@@ -120,8 +120,8 @@ def tokenize(text: str) -> List[str]:
     return tokens
 
 
-def count_keywords(contents: Iterable[str]) -> Counter:
-    counter: Counter = Counter()
+def count_keywords(contents: Iterable[str]) -> Counter[str]:
+    counter: Counter[str] = Counter()
     for text in contents:
         counter.update(tokenize(text))
     # 빈도 필터
@@ -132,7 +132,7 @@ def count_keywords(contents: Iterable[str]) -> Counter:
 
 
 def create_topics(driver: Driver, keywords: List[Tuple[str, int]]) -> None:
-    def _tx(tx, items):
+    def _tx(tx: Any, items: List[Tuple[str, int]]) -> None:
         tx.run(
             """
             UNWIND $topics AS t
@@ -152,12 +152,12 @@ def create_topics(driver: Driver, keywords: List[Tuple[str, int]]) -> None:
 
 
 def link_blocks_to_topics(
-    driver, blocks: List[Dict], topics: List[Tuple[str, int]]
+    driver: Driver, blocks: List[Dict[str, Any]], topics: List[Tuple[str, int]]
 ) -> None:
     topic_set = {w for w, _ in topics}
     links: List[Dict[str, str]] = []
 
-    def flush(batch: List[Dict[str, str]]):
+    def flush(batch: List[Dict[str, str]]) -> None:
         if not batch:
             return
         with driver.session() as session:
@@ -190,7 +190,7 @@ def link_blocks_to_topics(
     logger.info("Block-Topic 관계 생성 완료")
 
 
-def fetch_blocks(driver) -> List[Dict]:
+def fetch_blocks(driver: Driver) -> List[Dict[str, Any]]:
     with driver.session() as session:
         result = session.run(
             """

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Tuple, List
 
 from src.config import constants as _constants
 from src.config.exceptions import BudgetExceededError
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from src.config import AppConfig
 
 
-def _get_pricing_tiers():
+def _get_pricing_tiers() -> Any:
     """PRICING_TIERS를 동적으로 가져옴 (테스트 패칭 지원)."""
     agent_mod = sys.modules.get("src.agent")
     if agent_mod and hasattr(agent_mod, "PRICING_TIERS"):
@@ -25,11 +25,12 @@ def _get_pricing_tiers():
     return _constants.PRICING_TIERS
 
 
-def _get_budget_warning_thresholds():
+def _get_budget_warning_thresholds() -> List[Tuple[int, str]]:
     """BUDGET_WARNING_THRESHOLDS를 동적으로 가져옴 (테스트 패칭 지원)."""
     agent_mod = sys.modules.get("src.agent")
     if agent_mod and hasattr(agent_mod, "BUDGET_WARNING_THRESHOLDS"):
-        return agent_mod.BUDGET_WARNING_THRESHOLDS
+        result: List[Tuple[int, str]] = agent_mod.BUDGET_WARNING_THRESHOLDS
+        return result
     return _constants.BUDGET_WARNING_THRESHOLDS
 
 
@@ -110,7 +111,7 @@ class CostTracker:
 
         input_cost = (self.total_input_tokens / 1_000_000) * input_rate
         output_cost = (self.total_output_tokens / 1_000_000) * output_rate
-        return input_cost + output_cost
+        return float(input_cost + output_cost)
 
     def get_budget_usage_percent(self) -> float:
         """예산 사용률 반환.

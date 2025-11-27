@@ -39,7 +39,7 @@ def test_dynamic_template_autoescape(monkeypatch):
         types.SimpleNamespace(driver=lambda *a, **k: _FakeDriver()),
     )
     env = Environment(
-        loader=DictLoader({"templates/base_system.j2": "{{ rules[0] }}"}),
+        loader=DictLoader({"base_system.j2": "{{ rules[0] }}"}),
         autoescape=True,
     )
     dtg = DynamicTemplateGenerator.__new__(DynamicTemplateGenerator)

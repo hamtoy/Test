@@ -12,10 +12,7 @@ import hashlib
 import json
 import logging
 from pathlib import Path
-from typing import Any, Optional, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import google.generativeai.caching as caching
+from typing import Any, Optional
 
 # Assuming AppConfig is defined elsewhere in the project
 from src.config import AppConfig
@@ -103,7 +100,7 @@ class CacheManager:
 
     def load_local_cache(
         self, fingerprint: str, ttl_minutes: int, caching_module: Any
-    ) -> Optional["caching.CachedContent"]:
+    ) -> Any:
         """Load a cached entry if it exists and is not expired.
 
         Args:
@@ -166,9 +163,7 @@ class CacheManager:
         """Legacy wrapper that forwards to :meth:`cleanup_expired_cache`."""
         self.cleanup_expired_cache(ttl_minutes or self.config.cache_ttl_minutes)
 
-    def load_cached(
-        self, fingerprint: str, caching_module: Any
-    ) -> Optional["caching.CachedContent"]:
+    def load_cached(self, fingerprint: str, caching_module: Any) -> Any:
         """Legacy wrapper for loading cache without explicit TTL."""
         return self.load_local_cache(
             fingerprint, self.config.cache_ttl_minutes, caching_module

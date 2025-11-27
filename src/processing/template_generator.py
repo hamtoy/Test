@@ -40,17 +40,19 @@ class DynamicTemplateGenerator:
             autoescape=True,
         )
 
-    def close(self):
+    def close(self) -> None:
         if self.driver:
             self.driver.close()
 
-    def _run(self, cypher: str, params: Optional[Dict[str, Any]] = None):
+    def _run(self, cypher: str, params: Optional[Dict[str, Any]] = None) -> List[Any]:
         """Run a Cypher query and return list of records."""
         params = params or {}
         with self.driver.session() as session:
             return list(session.run(cypher, **params))
 
-    def generate_prompt_for_query_type(self, query_type: str, context: dict) -> str:
+    def generate_prompt_for_query_type(
+        self, query_type: str, context: Dict[str, Any]
+    ) -> str:
         """
         질의 유형에 맞는 시스템 템플릿을 그래프 지식과 합쳐 렌더링.
         """
@@ -78,8 +80,8 @@ class DynamicTemplateGenerator:
             "reasoning": "system/text_image_qa_reasoning_system.j2",
             "target": "user/text_image_qa_target_user.j2",
         }
-        template_name = template_map.get(query_type, "templates/base_system.j2")
-        fallback = "templates/base_system.j2"
+        template_name = template_map.get(query_type, "base_system.j2")
+        fallback = "base_system.j2"
         try:
             template = self.jinja_env.get_template(template_name)
         except TemplateNotFound as exc:
@@ -101,12 +103,14 @@ class DynamicTemplateGenerator:
         }
         return template.render(**full_context)
 
-    def generate_validation_checklist(self, session: dict) -> List[Dict]:
+    def generate_validation_checklist(
+        self, session: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """
         세션에 포함된 QueryType에 대해 그래프에서 제약을 수집해 체크리스트 생성.
         """
         query_types = {t.get("type") for t in session.get("turns", []) if t.get("type")}
-        checklist: List[Dict] = []
+        checklist: List[Dict[str, Any]] = []
         cypher = """
         MATCH (qt:QueryType {name: $qt})
         OPTIONAL MATCH (r:Rule)-[:APPLIES_TO]->(qt)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import atexit
 import os
 from contextlib import suppress
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 from neo4j import GraphDatabase, Driver
 
@@ -31,7 +31,7 @@ class SafeDriver:
             raise RuntimeError("Driver already closed")
         return self._driver
 
-    def session(self, *args, **kwargs):
+    def session(self, *args: Any, **kwargs: Any) -> Any:
         if self._driver is None:
             raise RuntimeError("Driver already closed")
         return self._driver.session(*args, **kwargs)
@@ -46,15 +46,15 @@ class SafeDriver:
     def __enter__(self) -> "SafeDriver":
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
         self.close()
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> Any:
         if self._driver is None:
             raise AttributeError(name)
         return getattr(self._driver, name)
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.close()
 
 

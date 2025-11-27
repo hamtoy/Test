@@ -121,8 +121,8 @@ class MemoryAugmentedQASystem:
     def __enter__(self) -> "MemoryAugmentedQASystem":
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
         self.close()
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.close()

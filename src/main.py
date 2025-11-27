@@ -11,7 +11,7 @@ from types import SimpleNamespace
 from dotenv import load_dotenv
 
 from src.agent import GeminiAgent
-from src.cache_analytics import analyze_cache_stats, print_cache_report
+from src.caching.analytics import analyze_cache_stats, print_cache_report
 from src.cli import parse_args, resolve_checkpoint_path
 from src.config import AppConfig
 from src.config.constants import LOG_MESSAGES, USER_INTERRUPT_MESSAGE
@@ -46,7 +46,7 @@ async def main() -> None:
             meta_path = Path(args.pipeline_meta)
             if not meta_path.is_absolute():
                 meta_path = Path(__file__).resolve().parents[1] / meta_path
-            from src.integrated_qa_pipeline import run_integrated_pipeline
+            from src.qa.pipeline import run_integrated_pipeline
 
             session = run_integrated_pipeline(meta_path)
             console.print("[bold green]Integrated pipeline completed[/bold green]")
@@ -66,7 +66,7 @@ async def main() -> None:
         config = AppConfig()
         import google.generativeai as genai
 
-        genai.configure(api_key=config.api_key)
+        genai.configure(api_key=config.api_key)  # type: ignore[attr-defined]
         # ... (jinja env setup)
         from jinja2 import Environment, FileSystemLoader
 

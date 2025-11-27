@@ -34,7 +34,7 @@ class AppConfig(BaseSettings):
     max_concurrency: int = Field(5, alias="GEMINI_MAX_CONCURRENCY")
     cache_size: int = Field(50, alias="GEMINI_CACHE_SIZE")
     temperature: float = Field(0.2, alias="GEMINI_TEMPERATURE")
-    cache_ttl_minutes: int = Field(10, alias="GEMINI_CACHE_TTL_MINUTES")
+    cache_ttl_minutes: int = Field(360, alias="GEMINI_CACHE_TTL_MINUTES")
     log_level: str = Field("INFO", alias="LOG_LEVEL")
     cache_stats_file: str = Field("cache_stats.jsonl", alias="CACHE_STATS_FILE")
     cache_stats_max_entries: int = Field(100, alias="CACHE_STATS_MAX_ENTRIES")

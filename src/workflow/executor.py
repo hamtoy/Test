@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Awaitable, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Awaitable, Dict, List, Optional, cast
 
 from rich.panel import Panel
 from rich.progress import (
@@ -121,7 +121,7 @@ async def _load_candidates(
 
 async def _create_context_cache(
     agent: GeminiAgent, ocr_text: str, logger: logging.Logger
-) -> Optional[caching.CachedContent]:
+) -> Any:
     """OCR 텍스트에 대한 컨텍스트 캐시 생성을 시도합니다.
 
     Args:
@@ -327,7 +327,7 @@ async def execute_workflow(
     display_queries(queries)
 
     # AUTO 모드에서는 프롬프트 건너뛰기
-    config = config or AppConfig()  # type: ignore[call-arg]
+    config = config or AppConfig()
     candidates: Optional[Dict[str, str]] = None
     checkpoint_path = _resolve_checkpoint_path(config, checkpoint_path)
     checkpoint_records = await _load_checkpoint_records(checkpoint_path, resume, logger)
