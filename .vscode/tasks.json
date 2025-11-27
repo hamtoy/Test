@@ -1,0 +1,127 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Check Deprecated Imports",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/migrate_imports.py",
+        "--check",
+        "--path",
+        "${workspaceFolder}"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Fix Deprecated Imports",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/migrate_imports.py",
+        "--fix",
+        "--path",
+        "${workspaceFolder}"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Show Deprecated Import Diff",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/migrate_imports.py",
+        "--check",
+        "--show-diff",
+        "--path",
+        "${workspaceFolder}"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Deprecation Usage Statistics",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/deprecation_stats.py",
+        "--path",
+        "${workspaceFolder}"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Generate Deprecation Report (HTML)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "scripts/deprecation_stats.py",
+        "--path",
+        "${workspaceFolder}",
+        "--html",
+        "${workspaceFolder}/deprecation_report.html"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Tests",
+      "type": "shell",
+      "command": "uv",
+      "args": [
+        "run",
+        "pytest",
+        "-v"
+      ],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Lint with Ruff",
+      "type": "shell",
+      "command": "uv",
+      "args": [
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

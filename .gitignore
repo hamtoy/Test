@@ -27,7 +27,7 @@ env/
 .venv
 
 # IDE
-.vscode/
+# Keep .vscode/ tracked for shared project settings
 .idea/
 *.swp
 *.swo
