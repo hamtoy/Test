@@ -85,6 +85,25 @@ module = ["tests.*"]
 strict = false
 check_untyped_defs = false
 warn_return_any = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_any_generics = false
+disallow_untyped_calls = false
+
+# Scripts, checks, and experiments excluded from strict mode
+[[tool.mypy.overrides]]
+module = [
+    "scripts.*",
+    "checks.*",
+    "experiments.*",
+]
+strict = false
+check_untyped_defs = false
+warn_return_any = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_any_generics = false
+disallow_untyped_calls = false
 
 # Complex packages with relaxed checking (gradual migration)
 [[tool.mypy.overrides]]
