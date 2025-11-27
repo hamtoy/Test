@@ -26,6 +26,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from scripts import LEVEL1_PACKAGES, LEVEL2_PACKAGES
+
 
 @dataclass
 class PackageReport:
@@ -100,7 +102,10 @@ def parse_mypy_output(output: str) -> dict[str, list[dict[str, Any]]]:
         # Parse location
         loc_parts = location.split(":")
         file_path = loc_parts[0]
-        line_num = int(loc_parts[1]) if len(loc_parts) > 1 else 0
+        try:
+            line_num = int(loc_parts[1]) if len(loc_parts) > 1 else 0
+        except ValueError:
+            line_num = 0
 
         errors[file_path].append(
             {
@@ -145,9 +150,8 @@ def create_baseline_report(errors: dict[str, list[dict[str, Any]]]) -> BaselineR
     """
     report = BaselineReport(
         timestamp=datetime.now().isoformat(),
-        level1_packages=["analysis", "caching", "features", "graph", "infra",
-                         "llm", "processing", "qa", "routing", "ui", "workflow"],
-        level2_packages=["agent", "core", "config"],
+        level1_packages=list(LEVEL1_PACKAGES),
+        level2_packages=list(LEVEL2_PACKAGES),
     )
 
     package_reports: dict[str, PackageReport] = {}

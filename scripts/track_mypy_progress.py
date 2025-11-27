@@ -25,6 +25,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from scripts import LEVEL1_PACKAGES, LEVEL2_PACKAGES
+
 
 # ANSI color codes for terminal output
 class Colors:
@@ -86,7 +88,10 @@ def parse_mypy_output(output: str) -> dict[str, list[dict[str, Any]]]:
 
         loc_parts = location.split(":")
         file_path = loc_parts[0]
-        line_num = int(loc_parts[1]) if len(loc_parts) > 1 else 0
+        try:
+            line_num = int(loc_parts[1]) if len(loc_parts) > 1 else 0
+        except ValueError:
+            line_num = 0
 
         errors[file_path].append(
             {
@@ -234,13 +239,8 @@ def main() -> int:
     # Load baseline if available
     baseline = load_baseline(args.baseline)
 
-    # Define package levels
-    level2_packages = ["agent", "core", "config"]
-    level1_packages = ["analysis", "caching", "features", "graph", "infra",
-                       "llm", "processing", "qa", "routing", "ui", "workflow"]
-
     print_section("📦 Level 2 Packages (Strict Mode)")
-    for pkg in level2_packages:
+    for pkg in LEVEL2_PACKAGES:
         current = current_counts.get(pkg, 0)
         if baseline:
             pkg_data = baseline.get("packages", {}).get(pkg, {})
@@ -262,7 +262,7 @@ def main() -> int:
             print(f"  {Colors.RED}❌ {pkg:15}{Colors.RESET} {status}")
 
     print_section("📦 Level 1 Packages")
-    for pkg in level1_packages:
+    for pkg in LEVEL1_PACKAGES:
         current = current_counts.get(pkg, 0)
         if baseline:
             pkg_data = baseline.get("packages", {}).get(pkg, {})
@@ -299,8 +299,8 @@ def main() -> int:
 
     # Summary
     print_section("📋 Summary")
-    level2_errors = sum(current_counts.get(pkg, 0) for pkg in level2_packages)
-    level1_errors = sum(current_counts.get(pkg, 0) for pkg in level1_packages)
+    level2_errors = sum(current_counts.get(pkg, 0) for pkg in LEVEL2_PACKAGES)
+    level1_errors = sum(current_counts.get(pkg, 0) for pkg in LEVEL1_PACKAGES)
 
     if level2_errors == 0:
         print(f"  {Colors.GREEN}✅ Level 2 (Strict): All packages pass!{Colors.RESET}")
