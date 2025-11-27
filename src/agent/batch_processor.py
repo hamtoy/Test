@@ -270,16 +270,14 @@ class BatchProcessor:
             return job
 
         try:
-            # In production, this would call the actual Gemini Batch API:
-            # batch_job = genai.types.BatchJob.create(
-            #     model=self.model_name,
-            #     input_config={"jsonl_file": str(job.input_file_path)},
-            # )
+            # NOTE: This is a mock implementation for the batch submission workflow.
+            # Production integration should use the actual Gemini Batch API when
+            # available, following the official API documentation.
 
             job.status = BatchJobStatus.PROCESSING
             self.logger.info("Submitted batch job: %s", job.job_id)
 
-            # Simulate async processing (in production, this would poll the API)
+            # Simulate async processing (production would poll the actual API)
             if on_complete:
                 on_complete(job)
 
@@ -309,8 +307,7 @@ class BatchProcessor:
         elapsed = 0.0
 
         while elapsed < max_wait_seconds:
-            # In production, this would check the actual job status:
-            # status = genai.types.BatchJob.get(job.job_id)
+            # NOTE: Mock implementation - production should use actual API polling
 
             # Mock implementation: simulate completion after first poll
             if job.status == BatchJobStatus.PROCESSING:
