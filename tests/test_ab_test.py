@@ -208,8 +208,8 @@ class TestPromptExperimentManager:
 
         report = manager._generate_report("test", control_results, treatment_results)
 
-        # Treatment is cheaper but slower
-        assert report["winner"] == "Manual Review Required"
+        # Treatment is cheaper but slower - should indicate trade-off
+        assert "Slower, Lower Cost" in report["winner"]
 
     def test_save_results(self, manager, tmp_path):
         """Test saving experiment results to file."""
@@ -262,3 +262,63 @@ class TestPromptExperimentManager:
         manager.agent.generate_query.assert_called_once()
         call_kwargs = manager.agent.generate_query.call_args.kwargs
         assert call_kwargs["user_intent"] == "Extract info"
+
+    def test_generate_report_no_improvement(self, manager):
+        """Test report when control is better in all dimensions."""
+        control_results = [
+            ExperimentResult(
+                variant_name="control",
+                input_id="1",
+                response="resp",
+                latency=0.5,
+                token_count=50,
+                cost=0.002,
+                success=True,
+            ),
+        ]
+        treatment_results = [
+            ExperimentResult(
+                variant_name="treatment",
+                input_id="1",
+                response="resp",
+                latency=1.0,
+                token_count=100,
+                cost=0.005,
+                success=True,
+            ),
+        ]
+
+        report = manager._generate_report("test", control_results, treatment_results)
+
+        # Control is faster and cheaper
+        assert report["winner"] == "Control (No Improvement)"
+
+    def test_generate_report_faster_higher_cost(self, manager):
+        """Test report when treatment is faster but more expensive."""
+        control_results = [
+            ExperimentResult(
+                variant_name="control",
+                input_id="1",
+                response="resp",
+                latency=1.0,
+                token_count=50,
+                cost=0.002,
+                success=True,
+            ),
+        ]
+        treatment_results = [
+            ExperimentResult(
+                variant_name="treatment",
+                input_id="1",
+                response="resp",
+                latency=0.5,
+                token_count=100,
+                cost=0.005,
+                success=True,
+            ),
+        ]
+
+        report = manager._generate_report("test", control_results, treatment_results)
+
+        # Treatment is faster but more expensive
+        assert "Faster, Higher Cost" in report["winner"]

@@ -18,6 +18,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Cost estimation constants (Gemini API pricing approximation)
+CHARS_PER_TOKEN = 4  # Approximate characters per token
+INPUT_TOKEN_COST = 0.000125  # Cost per input token (in millionths of USD)
+OUTPUT_TOKEN_COST = 0.000375  # Cost per output token (in millionths of USD)
+COST_DIVISOR = 1000  # Divisor to convert to actual USD
+
 
 @dataclass
 class ExperimentResult:
@@ -129,10 +135,12 @@ class PromptExperimentManager:
 
                 latency = time.time() - start_time
 
-                # Calculate cost (simplified estimation)
-                input_tokens = len(item["input_text"]) / 4  # Approximation
-                output_tokens = len(str(response)) / 4
-                cost = (input_tokens * 0.000125 + output_tokens * 0.000375) / 1000
+                # Calculate cost using defined constants
+                input_tokens = len(item["input_text"]) / CHARS_PER_TOKEN
+                output_tokens = len(str(response)) / CHARS_PER_TOKEN
+                cost = (
+                    input_tokens * INPUT_TOKEN_COST + output_tokens * OUTPUT_TOKEN_COST
+                ) / COST_DIVISOR
 
                 results.append(
                     ExperimentResult(
@@ -182,7 +190,7 @@ class PromptExperimentManager:
 
         def avg(items: List[ExperimentResult], key: str) -> float:
             valid = [getattr(i, key) for i in items if i.success]
-            return sum(valid) / len(valid) if valid else 0
+            return sum(valid) / len(valid) if len(valid) > 0 else 0.0
 
         control_success = [i for i in control if i.success]
         treatment_success = [i for i in treatment if i.success]
@@ -205,14 +213,23 @@ class PromptExperimentManager:
             "winner": "TBD",
         }
 
-        # Simple winner determination logic (based on cost and latency)
-        if (
-            report["treatment"]["avg_latency"] < report["control"]["avg_latency"]
-            and report["treatment"]["avg_cost"] < report["control"]["avg_cost"]
-        ):
+        # Winner determination logic with more nuanced comparison
+        control_latency = report["control"]["avg_latency"]
+        treatment_latency = report["treatment"]["avg_latency"]
+        control_cost = report["control"]["avg_cost"]
+        treatment_cost = report["treatment"]["avg_cost"]
+
+        latency_better = treatment_latency < control_latency
+        cost_better = treatment_cost < control_cost
+
+        if latency_better and cost_better:
             report["winner"] = "Treatment (Faster & Cheaper)"
+        elif latency_better and not cost_better:
+            report["winner"] = "Treatment (Faster, Higher Cost) - Manual Review Required"
+        elif not latency_better and cost_better:
+            report["winner"] = "Treatment (Slower, Lower Cost) - Manual Review Required"
         else:
-            report["winner"] = "Manual Review Required"
+            report["winner"] = "Control (No Improvement)"
 
         return report
 
