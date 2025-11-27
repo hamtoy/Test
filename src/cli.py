@@ -182,9 +182,14 @@ async def run_neo4j_optimization(drop_existing: bool = False) -> None:
     neo4j_user = os.getenv("NEO4J_USER")
     neo4j_password = os.getenv("NEO4J_PASSWORD")
 
+    # Assert not None after validation above (required for mypy)
+    assert neo4j_uri is not None
+    assert neo4j_user is not None
+    assert neo4j_password is not None
+
     driver = neo4j.AsyncGraphDatabase.driver(
         neo4j_uri,
-        auth=(neo4j_user, neo4j_password),  # type: ignore[arg-type]
+        auth=(neo4j_user, neo4j_password),
     )
 
     try:
