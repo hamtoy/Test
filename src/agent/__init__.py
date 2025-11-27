@@ -10,6 +10,15 @@ from typing import Any
 # Core agent class
 from src.agent.core import GeminiAgent
 
+# Batch processing (Phase 2: GOpt Integration)
+from src.agent.batch_processor import (
+    BatchJob,
+    BatchJobStatus,
+    BatchProcessor,
+    BatchRequest,
+    BatchResult,
+)
+
 # Exceptions (re-export for legacy imports)
 from src.config.exceptions import (
     APIRateLimitError,
@@ -40,6 +49,12 @@ __all__ = [
     "CacheManager",
     "CostTracker",
     "RateLimiter",
+    # Batch processing (Phase 2)
+    "BatchProcessor",
+    "BatchRequest",
+    "BatchResult",
+    "BatchJob",
+    "BatchJobStatus",
     # Exceptions
     "APIRateLimitError",
     "BudgetExceededError",

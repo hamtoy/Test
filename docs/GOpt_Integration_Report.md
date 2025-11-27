@@ -90,22 +90,63 @@ async def test_generate_query_with_cache(mocker):
     )
 ```
 
-### Phase 2: Batch API Integration (Medium Effort)
+### Phase 2: Batch API Integration (Medium Effort) ✅
 
 **Goal:** Reduce costs by 50% for non-urgent tasks using Gemini Batch API.
 
-**Implementation Plan:**
+**Implementation Status:** COMPLETED
 
-1. **Batch Processor:** Create `src/agent/batch_processor.py`.
-2. **JSONL Builder:** Implement logic to aggregate `OCRTask` items into a JSONL file.
-3. **Submission:** Implement `submit_batch_job` using `genai.types.BatchJob`.
-4. **Polling:** Implement a poller to check job status and retrieve results.
+1. **Batch Processor:** ✅ Created `src/agent/batch_processor.py`.
+2. **JSONL Builder:** ✅ Implemented `BatchRequest.to_jsonl_dict()` and `BatchProcessor.build_jsonl()`.
+3. **Submission:** ✅ Implemented `BatchProcessor.submit_batch_job()` method.
+4. **Polling:** ✅ Implemented `BatchProcessor.poll_batch_job()` method.
+
+**Key Components Implemented:**
+
+- `BatchRequest`: Dataclass for individual batch requests with JSONL format conversion.
+- `BatchResult`: Dataclass for batch job results.
+- `BatchJob`: Dataclass for tracking batch job metadata and status.
+- `BatchJobStatus`: Enum for job status tracking (PENDING, PROCESSING, COMPLETED, FAILED, CANCELLED).
+- `BatchProcessor`: Main class providing:
+  - `create_batch_request()`: Create batch requests with custom parameters.
+  - `build_jsonl()`: Build JSONL files from batch requests.
+  - `create_batch_job()`: Create and track batch jobs.
+  - `submit_batch_job()`: Submit jobs for processing.
+  - `poll_batch_job()`: Poll for job completion.
+  - `get_job()`, `list_jobs()`: Job retrieval and listing.
+  - `cancel_job()`: Cancel pending/processing jobs.
+  - `cleanup_completed_jobs()`: Clean up completed jobs and files.
+
+**Tests:** 26 tests in `tests/test_batch_processor.py` covering all components.
 
 ### JSONL Format Specification
 
 ```jsonl
 {"custom_id": "req-1", "method": "POST", "url": "/v1/models/gemini-3-pro-preview:generateContent", "body": {"contents": [{"parts": [{"text": "..."}]}]}}
 {"custom_id": "req-2", "method": "POST", "url": "/v1/models/gemini-3-pro-preview:generateContent", "body": {"contents": [{"parts": [{"text": "..."}]}]}}
+```
+
+**Usage Example:**
+
+```python
+from src.agent.batch_processor import BatchProcessor
+
+# Initialize processor
+processor = BatchProcessor(output_dir=Path("./batch_output"))
+
+# Create batch requests
+requests = [
+    processor.create_batch_request("OCR text 1", custom_id="task-001"),
+    processor.create_batch_request("OCR text 2", custom_id="task-002"),
+]
+
+# Create and submit batch job
+job = processor.create_batch_job(requests)
+await processor.submit_batch_job(job)
+
+# Poll for completion
+result = await processor.poll_batch_job(job)
+print(f"Job {result.job_id} completed with {len(result.results)} results")
 ```
 
 ## 4. Expected Impact
