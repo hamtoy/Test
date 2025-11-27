@@ -142,6 +142,8 @@ class ExtractionResult(BaseModel):
             persons=[p for p in self.persons if p.confidence >= threshold],
             organizations=[o for o in self.organizations if o.confidence >= threshold],
             dates=[d for d in self.dates if d.confidence >= threshold],
-            document_rules=[r for r in self.document_rules if r.confidence >= threshold],
+            document_rules=[
+                r for r in self.document_rules if r.confidence >= threshold
+            ],
             relationships=self.relationships,  # Keep all relationships for now
         )

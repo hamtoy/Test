@@ -215,9 +215,7 @@ class TestData2NeoExtractor:
         """Test successful entity extraction."""
         mock_response = json.dumps(
             {
-                "persons": [
-                    {"name": "John Doe", "confidence": 0.9, "role": "CEO"}
-                ],
+                "persons": [{"name": "John Doe", "confidence": 0.9, "role": "CEO"}],
                 "organizations": [
                     {"name": "Acme Corp", "confidence": 0.85, "org_type": "company"}
                 ],
@@ -234,7 +232,9 @@ class TestData2NeoExtractor:
         )
         mock_agent._call_api_with_retry.return_value = mock_response
 
-        result = await extractor.extract_entities("Sample OCR text with John Doe, CEO of Acme Corp")
+        result = await extractor.extract_entities(
+            "Sample OCR text with John Doe, CEO of Acme Corp"
+        )
 
         assert len(result.persons) == 1
         assert result.persons[0].name == "John Doe"
@@ -348,9 +348,7 @@ class TestData2NeoExtractor:
 
     def test_infer_relationship_labels(self):
         """Test relationship label inference."""
-        from_label, to_label = Data2NeoExtractor._infer_relationship_labels(
-            "WORKS_AT"
-        )
+        from_label, to_label = Data2NeoExtractor._infer_relationship_labels("WORKS_AT")
         assert from_label == "Person"
         assert to_label == "Organization"
 
@@ -424,9 +422,7 @@ class TestData2NeoExtractorGraphWriting:
             jinja_env=jinja_env,
         )
 
-        result = ExtractionResult(
-            persons=[Person(name="Test", confidence=0.9)]
-        )
+        result = ExtractionResult(persons=[Person(name="Test", confidence=0.9)])
 
         with pytest.raises(RuntimeError, match="GraphProvider not configured"):
             await extractor.write_to_graph(result)

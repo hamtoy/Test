@@ -104,9 +104,7 @@ class Data2NeoExtractor:
 
         # Render prompts
         system_prompt = self._render_system_prompt()
-        user_prompt = self._render_user_prompt(
-            ocr_text, document_path, focus_entities
-        )
+        user_prompt = self._render_user_prompt(ocr_text, document_path, focus_entities)
 
         # Create model and call API
         model = self.agent._create_generative_model(
