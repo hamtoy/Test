@@ -158,9 +158,7 @@ class TestGeminiAgent:
         """Verify generate_query works without cached_content."""
         # Mock internal methods to avoid API calls
         agent._create_generative_model = MagicMock()
-        agent._call_api_with_retry = AsyncMock(
-            return_value='{"queries": ["query1"]}'
-        )
+        agent._call_api_with_retry = AsyncMock(return_value='{"queries": ["query1"]}')
 
         # Mock lazy properties using patch.object
         mock_genai = MagicMock()
