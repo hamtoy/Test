@@ -542,16 +542,31 @@ class GeminiAgent:
         ocr_text: str,
         user_intent: Optional[str] = None,
         cached_content: Optional["caching.CachedContent"] = None,
+        template_name: Optional[str] = None,
     ) -> List[str]:
-        """OCR 텍스트와 사용자 의도에 기반한 전략적 쿼리 생성."""
-        template = self.jinja_env.get_template("query_gen_user.j2")
+        """OCR 텍스트와 사용자 의도에 기반한 전략적 쿼리 생성.
+
+        Args:
+            ocr_text: OCR 텍스트
+            user_intent: 사용자 의도
+            cached_content: 캐시된 컨텐츠
+            template_name: 사용자 템플릿 이름 (A/B 테스트용, None이면 기본 템플릿 사용)
+
+        Returns:
+            생성된 쿼리 목록
+        """
+        # Determine template to use (default or override for A/B testing)
+        user_template_name = template_name or "query_gen_user.j2"
+        system_template_name = "prompt_query_gen.j2"
+
+        template = self.jinja_env.get_template(user_template_name)
         user_prompt = template.render(ocr_text=ocr_text, user_intent=user_intent)
 
         schema_json = json.dumps(
             QueryResult.model_json_schema(), indent=2, ensure_ascii=False
         )
 
-        system_prompt = self.jinja_env.get_template("prompt_query_gen.j2").render(
+        system_prompt = self.jinja_env.get_template(system_template_name).render(
             response_schema=schema_json
         )
 

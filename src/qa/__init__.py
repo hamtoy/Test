@@ -9,6 +9,9 @@ __all__ = [
     "IntegratedQualitySystem",
     "MemoryAugmentedQASystem",
     "MultiAgentQASystem",
+    "ExperimentResult",
+    "ExperimentConfig",
+    "PromptExperimentManager",
 ]
 
 
@@ -38,4 +41,16 @@ def __getattr__(name: str) -> Any:
         from src.qa.multi_agent import MultiAgentQASystem
 
         return MultiAgentQASystem
+    elif name in ("ExperimentResult", "ExperimentConfig", "PromptExperimentManager"):
+        from src.qa.ab_test import (
+            ExperimentConfig,
+            ExperimentResult,
+            PromptExperimentManager,
+        )
+
+        return {
+            "ExperimentResult": ExperimentResult,
+            "ExperimentConfig": ExperimentConfig,
+            "PromptExperimentManager": PromptExperimentManager,
+        }[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

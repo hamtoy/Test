@@ -1,0 +1,11 @@
+{# Structured OCR query template - with explicit formatting instructions #}
+<document>
+  <ocr_content>
+    {{ ocr_text }}
+  </ocr_content>
+  {% if user_intent %}
+  <user_intent>
+    {{ user_intent }}
+  </user_intent>
+  {% endif %}
+</document>
