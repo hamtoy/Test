@@ -55,7 +55,7 @@ jobs:
         run: uv run mypy .
 
       - name: Pytest
-        run: uv run pytest --cov=src --cov-report=xml --cov-fail-under=75
+        run: uv run pytest -s --cov=src --cov-report=xml --cov-fail-under=75
 
       - name: Upload coverage to Codecov (optional)
         uses: codecov/codecov-action@v5
