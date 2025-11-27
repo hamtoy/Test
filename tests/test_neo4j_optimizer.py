@@ -201,9 +201,7 @@ class TestTwoTierIndexManagerDropIndexes:
         assert mock_session.run.call_count == 3
 
         # Verify drop queries
-        drop_calls = [
-            call[0][0] for call in mock_session.run.call_args_list[1:]
-        ]
+        drop_calls = [call[0][0] for call in mock_session.run.call_args_list[1:]]
         assert "DROP INDEX rule_id_idx IF EXISTS" in drop_calls
         assert "DROP INDEX document_id_idx IF EXISTS" in drop_calls
 
@@ -316,9 +314,7 @@ class TestCLIOptimizeNeo4j:
         mock_driver.session = MagicMock(return_value=mock_session)
         mock_driver.close = AsyncMock()
 
-        with patch(
-            "neo4j.AsyncGraphDatabase.driver", return_value=mock_driver
-        ):
+        with patch("neo4j.AsyncGraphDatabase.driver", return_value=mock_driver):
             await run_neo4j_optimization(drop_existing=False)
 
         # Verify driver was closed
@@ -344,9 +340,7 @@ class TestCLIOptimizeNeo4j:
         mock_driver.session = MagicMock(return_value=mock_session)
         mock_driver.close = AsyncMock()
 
-        with patch(
-            "neo4j.AsyncGraphDatabase.driver", return_value=mock_driver
-        ):
+        with patch("neo4j.AsyncGraphDatabase.driver", return_value=mock_driver):
             await run_neo4j_optimization(drop_existing=True)
 
         # Should have called session.run for:

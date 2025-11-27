@@ -13,9 +13,7 @@ from neo4j import AsyncDriver
 logger = logging.getLogger(__name__)
 
 # Pattern to extract index name from CREATE [VECTOR] INDEX statements
-_INDEX_NAME_PATTERN = re.compile(
-    r"CREATE\s+(?:VECTOR\s+)?INDEX\s+(\w+)", re.IGNORECASE
-)
+_INDEX_NAME_PATTERN = re.compile(r"CREATE\s+(?:VECTOR\s+)?INDEX\s+(\w+)", re.IGNORECASE)
 
 
 class TwoTierIndexManager:
@@ -217,9 +215,7 @@ class OptimizedQueries:
         """
 
     @staticmethod
-    def find_related_rules(
-        rule_id: Optional[str] = None, max_depth: int = 2
-    ) -> str:
+    def find_related_rules(rule_id: Optional[str] = None, max_depth: int = 2) -> str:
         """
         Find rules related to a given rule (transitive closure).
         Uses: triad_relates_to_idx
