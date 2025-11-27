@@ -1,127 +1,112 @@
-- `document_compare.py` - Add Dict[str, Any] parameters
+# Next Session: Phase 5-7 (Optional)
 
-4. **llm/** (14 errors)
-   - Add type annotations to generate(), evaluate(), rewrite()
+## 현재 상태 (2025-11-28) ✅
 
-5. **processing/** (9 errors)
-   - `template_generator.py` - Add return types
+- ✅ v3.0.0 릴리스 완료
+- ✅ 테스트 100% 통과 (520/520)
+- ✅ mypy strict 에러 0개
+- ✅ 완벽한 타입 안정성 달성
+- ✅ 27개 shim 파일 제거 완료
+- ✅ 14개 모듈화된 패키지 구조
 
-### Common Error Patterns to Fix
+## 선택적 개선 항목
 
-**Pattern 1: Missing Function Return Types**
+### Phase 5: 테스트 커버리지 90%+ (선택사항)
 
-```python
-# Before
-def method(self):
-    ...
+현재: ~84% → 목표: 90%+
 
-# After
-def method(self) -> None:
-    ...
-```
+우선순위 패키지:
 
-**Pattern 2: Missing Generic Type Parameters**
+- `src/features/` (커버리지 낮음)
+- `src/analysis/` (복잡한 로직)
+- `src/routing/` (엣지 케이스)
 
-```python
-# Before
-def func() -> Dict:
-    ...
-
-# After
-def func() -> Dict[str, Any]:
-    ...
-```
-
-**Pattern 3: Missing Counter Type Parameters**
-
-```python
-# Before
-from collections import Counter
-counts: Counter = Counter()
-
-# After
-from collections import Counter
-counts: Counter[str] = Counter()
-```
-
-## 📋 Verification Commands
-
-After each batch of fixes:
+#### 예상 작업
 
 ```bash
-# Check specific package
-uv run mypy src/agent/ --strict
+# 현재 커버리지 확인
+uv run pytest tests/ --cov=src --cov-report=html
 
-# Check all Phase 1 packages
-uv run mypy src/{main.py,config,core,agent,infra} --strict
-
-# Full check
-uv run mypy src/ --strict
+# HTML 리포트 열기
+start htmlcov/index.html  # Windows
+open htmlcov/index.html   # macOS/Linux
 ```
 
-## 🚀 Phase 2 Preview (After Phase 1)
+작업 흐름:
 
-Once Phase 1 is complete:
+- 주차별 1-2개 패키지 집중
+- 엣지 케이스 위주 테스트 추가
+- pyproject.toml fail_under 85 → 90 상향
 
-- llm/ (14 errors)
-- qa/ (13 errors)
-- analysis/ (15 errors)
-- processing/ (9 errors)
+예상 시간: 세션 3-4회 (각 1-2시간)
 
-## 📋 Session Workflow
+### Phase 6: 성능 최적화 (선택사항)
 
-### Session Start (5 min)
+벤치마크 수립:
 
-```powershell
-# 1. Get latest code
-git pull origin main
+```bash
+# 현재 성능 측정
+python scripts/auto_profile.py src.main --mode AUTO \
+  --ocr-file example_ocr.txt --cand-file example_candidates.json
 
-# 2. Save current error snapshot
-uv run mypy src/ --strict 2>&1 | Out-File mypy_errors.txt
+# 레이턴시 베이스라인
+python scripts/latency_baseline.py --log-file app.log
 
-# 3. Check progress
-.\scripts\check_mypy_progress.ps1
-
-# 4. Count errors
-(Get-Content mypy_errors.txt | Select-String "error:").Count
+# Neo4j 성능 점검
+python scripts/neo4j_benchmark_stub.py
 ```
 
-### Work Loop (20-30 min cycles)
+최적화 타겟:
 
-**Repeat until target reached:**
+1. **Redis 캐싱**
+   - Hit rate 목표: 70%+
+   - TTL 최적화
 
-1. **Pick error pattern** (e.g., all `no-untyped-def` in agent/)
-2. **Fix 10-15 files** (use templates below)
-3. **Verify**: `uv run mypy src/ --strict`
-4. **Test**: `uv run pytest tests/ -q`
-5. **Commit**: `git add . && git commit -m "fix(types): add return types to agent/"`
-6. **Progress check**: `.\scripts\check_mypy_progress.ps1`
+2. **LLM API 호출**
+   - 배치 처리 개선
+   - 병렬 처리 최적화 (현재 5 → 목표 10)
+   - 프롬프트 토큰 효율화
 
-### Session End (10 min)
+3. **벡터 검색**
+   - 인덱스 최적화
+   - 쿼리 성능 튜닝
 
-```powershell
-# 1. Final check
-uv run mypy src/ --strict
+목표 메트릭:
 
-# 2. Push
-git push origin main
+- p50 latency: -20% 감소
+- p90 latency: -30% 감소
+- 토큰 효율: +15% 개선
 
-# 3. Record progress
-# Update: 155 → X errors (Y fixed, Z% complete)
-```
+예상 시간: 세션 2-3회 (각 2-3시간)
 
-## 💡 Tips for Next Session
+### Phase 7: UI/UX 개선 (선택사항)
 
-1. **Batch Processing**: Group similar error types together
-2. **Test Frequently**: Run mypy after every 5-10 file changes
-3. **Use Patterns**: Most errors follow the 3 patterns above
-4. **Commit Often**: Commit every 20-30 fixes
+Rich 콘솔 강화:
 
-## 📂 Files to Focus On
+- 진행 상황 대시보드 (Progress, Table, Panel 통합)
+- 실시간 메트릭 표시
+- 컬러 스키마 개선
 
-High-impact files (fixing these resolves many errors):
+대화형 CLI:
 
-- `src/agent/core.py` (10+ errors)
-- `src/infra/neo4j.py` (5+ errors)
-- `src/analysis/semantic.py` (8+ errors)
-- `src/processing/template_generator.py` (5+ errors)
+- 인터랙티브 선택 메뉴
+- 키보드 단축키
+- 자동 완성 개선
+
+결과 시각화:
+
+- 비용 추이 그래프
+- 캐시 효율 차트
+- 토큰 사용량 통계
+
+예상 시간: 세션 2회 (각 2시간)
+
+## 📋 요약
+
+| Phase | 우선순위 | 예상 시간 | 설명 |
+|-------|---------|----------|------|
+| Phase 5 | 선택 | 2-3주 | 테스트 커버리지 90%+ |
+| Phase 6 | 선택 | 1-2주 | 성능 최적화 |
+| Phase 7 | 선택 | 1주 | UI/UX 개선 |
+
+> **참고**: v3.0.0은 완료된 상태입니다. 위 Phase들은 모두 선택적 개선 항목입니다.
