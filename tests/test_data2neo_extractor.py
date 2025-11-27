@@ -465,3 +465,4 @@ class TestData2NeoExtractorGraphWriting:
         assert counts["persons"] == 0
         assert counts["organizations"] == 0
         mock_graph_provider.create_nodes.assert_not_called()
+
