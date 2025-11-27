@@ -121,6 +121,11 @@ _.error_type  # Error handling
 _.enforcer  # QualityEnhancer attribute
 
 # ============================================================================
+# Processing module
+# ============================================================================
+interactive  # src/processing/loader.py - Reserved for future interactive prompts
+
+# ============================================================================
 # Backwards-compatible classes
 # ============================================================================
 RateLimitManager  # Backwards-compatible alias class
