@@ -18,3 +18,29 @@ repos:
           - --check-untyped-defs
           - --install-types
           - --non-interactive
+
+  - repo: local
+    hooks:
+      - id: vulture
+        name: vulture
+        entry: vulture
+        language: system
+        types: [python]
+        args:
+          - src/
+          - vulture_whitelist.py
+          - --min-confidence=80
+        pass_filenames: false
+
+      - id: autoflake
+        name: autoflake
+        entry: autoflake
+        language: system
+        types: [python]
+        args:
+          - --check
+          - --remove-all-unused-imports
+          - --ignore-pass-statements
+          - --recursive
+          - src/
+        pass_filenames: false
