@@ -92,7 +92,7 @@ class MCTSWorkflowOptimizer:
         except Exception:
             return 0.0
 
-    def _backpropagate(self, node: MCTSNode, reward: float):
+    def _backpropagate(self, node: MCTSNode, reward: float) -> None:
         current: Optional[MCTSNode] = node
         while current:
             current.visits += 1

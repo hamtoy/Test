@@ -82,3 +82,4 @@ test_warnings_quick.py
 # IDE additional
 *.code-workspace
 
+strict_baseline.txt

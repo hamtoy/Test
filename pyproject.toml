@@ -40,6 +40,9 @@ dev = [
     "vulture>=2.11",
     "autoflake>=2.3.0",
     "types-aiofiles>=24.1.0.20240410",
+    "types-redis>=4.6.0",
+    "types-jinja2>=2.11.0",
+    "types-pillow>=10.0.0",
 ]
 
 [project.scripts]
@@ -67,55 +70,59 @@ extend-select = ["PERF", "FURB", "SIM"]
 [tool.mypy]
 python_version = "3.10"  # v3.0: Minimum supported version
 
-# Level 1 전역 활성화
-warn_return_any = true
-warn_unused_configs = true
-warn_unused_ignores = false  # Disabled due to inconsistent stubs in google-generativeai
-check_untyped_defs = true
+# Level 3: Strict mode enabled
+strict = true
+ignore_missing_imports = false
 
 namespace_packages = true
 explicit_package_bases = true
-mypy_path = "."
-ignore_missing_imports = true
+mypy_path = [".", "stubs"]
 exclude = ["notion-neo4j-graph/", ".venv/", "build/", "vulture_whitelist.py"]
 
-# 점진적 적용: 복잡한 패키지 일시 제외
+# Tests excluded from strict mode
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+strict = false
+check_untyped_defs = false
+warn_return_any = false
+
+# Complex packages with relaxed checking (gradual migration)
 [[tool.mypy.overrides]]
 module = [
     "src.analysis.*",
     "src.features.*",
     "src.ui.*",
-    "tests.*",
 ]
+strict = false
 check_untyped_defs = false
 warn_return_any = false
 
-# v3.0: Core modules with strict type checking
+# External libraries without type stubs (permanent exceptions)
 [[tool.mypy.overrides]]
 module = [
-    "src.core.*",
-    "src.agent.*",
-    "src.config.*",
+    "google.generativeai",
+    "google.generativeai.*",
+    "google.ai.generativelanguage_v1beta.*",
+    "tenacity",
+    "tenacity.*",
+    "aiolimiter",
+    "aiolimiter.*",
+    "pytesseract",
+    "pytesseract.*",
 ]
-check_untyped_defs = true
-warn_return_any = true
-disallow_untyped_defs = true  # v3.0: All functions require type hints
-no_implicit_optional = true   # v3.0: No implicit Optional types
+ignore_missing_imports = true
 
-# Legacy modules with relaxed type checking (gradual migration)
+# Langchain modules (use custom stubs + relaxed rules)
 [[tool.mypy.overrides]]
 module = [
-    "src.caching.*",
-    "src.graph.*",
-    "src.infra.*",
-    "src.llm.*",
-    "src.processing.*",
-    "src.qa.*",
-    "src.routing.*",
-    "src.workflow.*",
+    "langchain.*",
+    "langchain_community.*",
+    "langchain_neo4j.*",
+    "langchain_openai.*",
 ]
-check_untyped_defs = true
-warn_return_any = true
+ignore_missing_imports = true
+disallow_untyped_calls = false
+disallow_any_generics = false
 
 [tool.uv.workspace]
 members = ["notion-neo4j-graph"]

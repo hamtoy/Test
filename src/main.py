@@ -66,7 +66,7 @@ async def main() -> None:
         config = AppConfig()
         import google.generativeai as genai
 
-        genai.configure(api_key=config.api_key)
+        genai.configure(api_key=config.api_key)  # type: ignore[attr-defined]
         # ... (jinja env setup)
         from jinja2 import Environment, FileSystemLoader
 
