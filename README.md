@@ -45,8 +45,7 @@ project_root/
 │   ├── compare_runs.py
 │   └── ...
 ├── src/                    # 소스 코드 (모듈화된 패키지 구조)
-│   ├── main.py             # 메인 워크플로우 진입점
-│   ├── cli.py              # CLI 인터페이스
+│   ├── main.py             # 메인 워크플로우 진입점 (대화형 메뉴)
 │   │
 │   ├── agent/              # AI Agent 핵심 기능
 │   │   ├── core.py         # GeminiAgent 클래스
@@ -292,23 +291,30 @@ from src.caching.analytics import analyze_cache_stats
 > **참고**: 이전 버전의 import 경로(예: `from src.utils import ...`)는 여전히 작동하지만 deprecation 경고가 표시됩니다.  
 > 마이그레이션 가이드는 [MIGRATION.md](MIGRATION.md)를 참조하세요.
 
-## ⚡️ Quick Start (샘플 데이터)
+## ⚡️ Quick Start
 
 1) `.env`에서 `GEMINI_API_KEY` 설정  
-2) 샘플 입력 사용:
+2) 대화형 메뉴 실행:
 
 ```bash
-python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --intent "요약"
-# 체크포인트 복구 실행
-python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --resume
+python -m src.main
 ```
 
-### 시나리오 예시 (샘플 데이터)
+실행 후 대화형 메뉴가 표시됩니다:
 
-- 요약: `uv run python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --intent "요약"`
-- 분류/라벨링: `uv run python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --intent "분류"`
-- 체크포인트 재시작: `uv run python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --resume`
-- 개인 사용 시 API 할당량 절약: `.env`에서 `GEMINI_MAX_CONCURRENCY=1`로 낮춰 실행
+```
+═══ Gemini Workflow System ═══
+규칙 준수 리라이팅 · 검수 반려 방지
+
+상태: Neo4j ✓ | LATS ✓
+
+1. 🔄 질의 생성 및 평가
+2. ✅ 검수 (질의/답변)
+3. 📊 캐시 통계 분석
+4. 🚪 종료
+
+선택 [1]:
+```
 
 ### 성능/관측 도구
 
@@ -410,50 +416,54 @@ python -m src.list_models
 - OCR 텍스트: `data/inputs/input_ocr.txt`
 - 후보 답변: `data/inputs/input_candidates.json`
 
-### 실행 (단일 엔트리)
+### 실행 (대화형 메뉴)
 
-모든 실행은 `python -m src.main`으로 통합되었습니다. 모드를 플래그로 선택하세요.
+시스템은 사용자 친화적인 대화형 메뉴 인터페이스를 제공합니다:
 
 ```bash
-# 기본 실행 (AUTO)
 python -m src.main
-
-# CHAT 모드 (질의 생성 후 후보 편집 가능)
-python -m src.main --mode CHAT --intent "요약"
-
-# 사용자 지정 입력 파일
-python -m src.main --ocr-file custom_ocr.txt --cand-file custom_candidates.json
-
-# 샘플 데이터 (Quick Start)
-python -m src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json
-
-# 통합 파이프라인 (그래프 + 세션 검증)
-python -m src.main --integrated-pipeline --pipeline-meta examples/session_input.json
-
-# 통합 파이프라인 (그래프 + 세션 검증)
-python -m src.main --integrated-pipeline --pipeline-meta examples/session_input.json
-
-## 명령줄 옵션
-
-도움말 표시:
-
-```bash
-python -m src.main --help
 ```
 
-주요 옵션:
+### 메뉴 기능
 
-- `--mode`: `AUTO` (기본, 완전 자동) 또는 `CHAT` (질의 생성 후 편집 가능)
-- `--ocr-file`: OCR 입력 파일 경로 (`data/inputs/` 기준)
-- `--cand-file`: 후보 답변 파일 경로 (`data/inputs/` 기준)
-- `--intent`: 추가 사용자 의도
-- `--interactive`: 확인 프롬프트 활성화 (AUTO 모드에서도 적용)
-- `--resume`: 체크포인트(`checkpoint.jsonl`)를 읽어 완료된 질의를 건너뜀
-- `--checkpoint-file`: 체크포인트 경로 지정 (기본: `data/outputs/checkpoint.jsonl`)
-- `--log-level`: 로그 레벨 override (`DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`)
-- `--analyze-cache`: 캐시 통계 요약을 출력하고 종료 (`CACHE_STATS_FILE` 기반)
-- `--integrated-pipeline`: Gemini 워크플로우 대신 그래프/세션 통합 파이프라인을 실행
-- `--pipeline-meta`: 통합 파이프라인에서 사용할 메타데이터 JSON 경로 (기본: `examples/session_input.json`)
+#### 1. 질의 생성 및 평가 🔄
+
+- OCR 파일 및 후보 답변 파일 선택
+- 사용자 의도 입력 (선택사항)
+- 전략적 질의 자동 생성
+- 각 질의에 대한 평가 및 재작성 실행
+
+**사용 방법:**
+
+1. 메뉴에서 `1` 선택
+2. OCR 파일명 입력 (기본: `input_ocr.txt`)
+3. 후보 답변 파일명 입력 (기본: `input_candidates.json`)
+4. 사용자 의도 입력 (선택)
+5. 생성된 질의 확인 후 진행
+
+#### 2. 검수 (질의/답변) ✅
+
+- 질의 검수: 직접 입력 모드 지원 예정
+- 답변 검수: 외부 파일 기반 검수 지원 예정
+
+#### 3. 캐시 통계 분석 📊
+
+- 캐시 hit/miss 비율 확인
+- 비용 절감 효과 분석
+- 토큰 사용 통계
+
+#### 4. 종료 🚪
+
+시스템 종료
+
+### 기능 플래그 자동 감지
+
+시스템은 `.env` 파일에서 다음 기능들을 자동으로 감지하고 메뉴에 표시합니다:
+
+- **Neo4j** (`NEO4J_URI`): 그래프 데이터베이스 연동
+- **LATS** (`ENABLE_LATS=true`): 언어 에이전트 트리 탐색
+- **Data2Neo** (`ENABLE_DATA2NEO=true`): 데이터-Neo4j 변환
+- **Redis** (`REDIS_URL`): 캐시 서버 연동
 
 ## 출력 및 로그
 

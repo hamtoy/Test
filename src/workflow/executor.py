@@ -25,15 +25,15 @@ from src.config.constants import (
     PROGRESS_WAITING_TEMPLATE,
     PROMPT_EDIT_CANDIDATES,
 )
-from src.processing.loader import reload_data_if_needed
 from src.config.exceptions import (
     BudgetExceededError,
     CacheCreationError,
     ValidationFailedError,
 )
 from src.core.models import WorkflowResult
-from src.ui import console
 from src.infra.utils import load_checkpoint
+from src.processing.loader import reload_data_if_needed
+from src.ui.panels import console
 
 from .context import WorkflowContext
 from .processor import process_single_query
@@ -313,7 +313,7 @@ async def execute_workflow(
     Returns:
         각 질의별 평가 결과 리스트
     """
-    from src.ui import display_queries
+    from src.ui.panels import display_queries
 
     # 질의 리스트 생성
     logger.info("질의 리스트 생성 중...")
@@ -389,3 +389,45 @@ async def execute_workflow(
             logger.warning("Cache cleanup failed: %s", e)
 
     return results
+
+
+async def execute_workflow_simple(
+    agent: GeminiAgent,
+    ocr_text: str,
+    candidates: Dict[str, str],
+    config: AppConfig,
+    logger: logging.Logger,
+    query: str,
+    turn_id: int,
+) -> Optional[WorkflowResult]:
+    """대화형 메뉴 전용 간소화 버전
+
+    - 체크포인트 제거
+    - 진행바 제거
+    - 단일 질의만 처리
+    """
+    import contextlib
+
+    cache = None
+    with contextlib.suppress(Exception):
+        cache = await agent.create_context_cache(ocr_text)
+
+    ctx = WorkflowContext(
+        agent=agent,
+        config=config,
+        logger=logger,
+        ocr_text=ocr_text,
+        candidates=candidates,
+        cache=cache,
+        total_turns=1,
+        checkpoint_path=config.output_dir / "checkpoint.jsonl",
+        progress=None,
+    )
+
+    result = await process_single_query(ctx, query, turn_id, None)
+
+    if cache:
+        with contextlib.suppress(Exception):
+            cache.delete()
+
+    return result

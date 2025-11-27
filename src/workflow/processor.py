@@ -23,8 +23,8 @@ from src.config.exceptions import (
     ValidationFailedError,
 )
 from src.core.models import WorkflowResult
-from src.ui import console
 from src.infra.utils import append_checkpoint, safe_json_parse
+from src.ui.panels import console
 
 from .context import WorkflowContext
 
