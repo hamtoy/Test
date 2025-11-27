@@ -9,11 +9,11 @@ if not api_key:
     print("No API key found in .env (GEMINI_API_KEY)")
     exit(1)
 
-genai.configure(api_key=api_key)  # type: ignore[attr-defined]
+genai.configure(api_key=api_key)
 
 print("Listing models for configured Gemini key...")
 try:
-    for m in genai.list_models():  # type: ignore[attr-defined]
+    for m in genai.list_models():
         if "generateContent" in m.supported_generation_methods:
             print(m.name)
 except Exception as e:  # noqa: BLE001

@@ -25,7 +25,7 @@ def count_mappings() -> int:
         record = result.single()
         if record is None:
             raise RuntimeError("Query returned no results")
-        return record["mapping_count"]
+        return int(record["mapping_count"])
 
 
 if __name__ == "__main__":

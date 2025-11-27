@@ -12,7 +12,7 @@ from src.qa.rag_system import require_env
 from src.infra.neo4j import create_sync_driver, SafeDriver
 
 
-class Neo4jLoggingCallback(BaseCallbackHandler):  # type: ignore[misc]
+class Neo4jLoggingCallback(BaseCallbackHandler):
     """
     LangChain 콜백 이벤트를 Neo4j에 기록합니다.
     """
