@@ -68,7 +68,7 @@ jobs:
           exit 1
 
       - name: Load graph schema
-        run: uv run python -m src.graph_schema_builder
+        run: uv run python -m src.graph.builder
 
       - name: Run tests
         run: uv run pytest --maxfail=1 --disable-warnings -q
