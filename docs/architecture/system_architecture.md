@@ -3,13 +3,13 @@
 ```mermaid
 graph TB
     subgraph "Entry Points"
-        CLI[CLI - cli.py]
-        API[FastAPI - main.py]
+        CLI[CLI - src/cli.py]
+        Main[Main - src/main.py]
     end
     
     subgraph "Core Agent Layer"
-        Agent[GeminiAgent<br/>core.py]
-        Cache[CachingLayer<br/>caching_layer.py]
+        Agent[GeminiAgent<br/>src/agent/core.py]
+        Cache[CachingLayer<br/>src/caching/layer.py]
         RateLimit[Rate Limiter<br/>aiolimiter]
     end
     
@@ -25,8 +25,8 @@ graph TB
     end
     
     CLI --> Agent
-    API --> Agent
-    API --> RAG
+    Main --> Agent
+    Main --> RAG
     
     Agent --> Cache
     Cache --> RateLimit
