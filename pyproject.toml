@@ -1,6 +1,6 @@
 [project]
 name = "shining-quasar"
-version = "0.1.0"
+version = "3.0.0"
 description = "Enterprise-grade workflow system for evaluating and rewriting Q&A responses using Google Gemini AI."
 readme = "README.md"
 requires-python = ">=3.10, <3.14"
