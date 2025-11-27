@@ -1,5 +1,48 @@
 # Deprecation Notice
 
+## v2.5 Enhancements ⚠️
+
+Version 2.5 introduces an enhanced deprecation warning system with improved visibility and control.
+
+### Environment Variables
+
+| Variable | Values | Description |
+|----------|--------|-------------|
+| `DEPRECATION_LEVEL` | `normal` (default) | Always show deprecation warnings |
+| | `strict` | Raise `ImportError` for deprecated imports |
+| | `verbose` | Include full stack trace in warnings |
+
+#### Examples
+
+```bash
+# Normal mode (default) - shows warnings
+python your_script.py
+
+# Strict mode - fails on deprecated imports
+DEPRECATION_LEVEL=strict python your_script.py
+
+# Verbose mode - shows detailed stack traces
+DEPRECATION_LEVEL=verbose python your_script.py
+```
+
+### Pre-commit Hook
+
+A new pre-commit hook detects deprecated imports at commit time:
+
+```yaml
+# .pre-commit-config.yaml
+- repo: local
+  hooks:
+    - id: check-deprecated-imports
+      name: Deprecated Import Scanner
+      entry: python scripts/check_deprecated_imports.py
+      language: system
+      types: [python]
+      pass_filenames: true
+```
+
+---
+
 ## v2.x → v3.0 Breaking Changes
 
 The following deprecated import paths will be **removed in v3.0**.
@@ -35,5 +78,31 @@ migrate-imports --fix    # Apply changes
 ### Timeline
 
 - **v2.0**: Deprecated imports work with warnings
-- **v2.5**: Deprecation warnings become errors (optional)
+- **v2.5**: Enhanced deprecation warnings with visibility improvements
 - **v3.0**: Shim files removed, old imports fail
+
+### FAQ
+
+**Q: Why am I seeing more deprecation warnings in v2.5?**
+
+A: Version 2.5 uses `EnhancedDeprecationWarning` which bypasses Python's default warning filter that typically shows each warning only once. This ensures you see all deprecated import usages.
+
+**Q: How do I make my CI fail on deprecated imports?**
+
+A: Set `DEPRECATION_LEVEL=strict` in your CI environment:
+
+```yaml
+# GitHub Actions example
+env:
+  DEPRECATION_LEVEL: strict
+```
+
+**Q: Can I suppress the warnings temporarily?**
+
+A: Yes, but we recommend migrating instead. If needed:
+
+```python
+import warnings
+from src._deprecation import EnhancedDeprecationWarning
+warnings.filterwarnings("ignore", category=EnhancedDeprecationWarning)
+```
