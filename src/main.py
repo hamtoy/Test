@@ -7,6 +7,7 @@ import os
 import sys
 
 from dotenv import load_dotenv
+import google.generativeai as genai
 
 from src.agent import GeminiAgent
 from src.config import AppConfig
@@ -26,8 +27,6 @@ async def main() -> None:
         config = AppConfig()
 
         # Configure Gemini API
-        import google.generativeai as genai
-
         genai.configure(api_key=config.api_key)  # type: ignore[attr-defined]
 
         # Setup Jinja2 environment
