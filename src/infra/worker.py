@@ -14,6 +14,7 @@ from src.core.factory import get_graph_provider, get_llm_provider
 from src.core.interfaces import ProviderError, RateLimitError, SafetyBlockedError
 from src.features.lats import LATSSearcher, SearchState, ValidationResult
 from src.features.action_executor import ActionExecutor
+from src.features.data2neo_extractor import Data2NeoExtractor
 
 # Export private functions for backward compatibility with tests
 __all__ = [
@@ -24,6 +25,7 @@ __all__ = [
     "llm_provider",
     "lats_agent",
     "graph_provider",
+    "data2neo_extractor",
     "setup_redis",
     "close_redis",
     "check_rate_limit",
@@ -34,6 +36,7 @@ __all__ = [
     "_append_jsonl",
     "_process_task",
     "_run_task_with_lats",
+    "_run_data2neo_extraction",
     # Re-export imported classes for test compatibility
     "RateLimitError",
     "SafetyBlockedError",
@@ -43,6 +46,7 @@ __all__ = [
     "LATSSearcher",
     "ActionExecutor",
     "GeminiAgent",
+    "Data2NeoExtractor",
 ]
 
 # Configure logging
@@ -91,6 +95,23 @@ try:
     graph_provider = get_graph_provider(config)
 except Exception as e:  # noqa: BLE001
     logger.debug("Graph provider init skipped: %s", e)
+
+# Data2Neo extractor (optional; enabled via ENABLE_DATA2NEO)
+data2neo_extractor: Optional[Data2NeoExtractor] = None
+if getattr(config, "enable_data2neo", False):
+    try:
+        data2neo_extractor = Data2NeoExtractor(
+            config=config,
+            llm_provider=llm_provider,
+            graph_provider=graph_provider,
+        )
+        logger.info(
+            "Data2Neo extractor initialized (batch_size=%d, confidence=%.2f)",
+            data2neo_extractor.batch_size,
+            data2neo_extractor.confidence_threshold,
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Data2Neo extractor init failed: %s", e)
 
 RESULTS_DIR = Path("data/queue_results")
 
@@ -177,6 +198,74 @@ async def _process_task(task: OCRTask) -> Dict[str, Any]:
         "llm_output": llm_text,
         "processed_at": datetime.now(timezone.utc).isoformat(),
     }
+
+
+async def _run_data2neo_extraction(task: OCRTask) -> Dict[str, Any]:
+    """Extract entities from OCR text and import to Neo4j.
+
+    This function implements the Data2Neo pipeline:
+    1. Read OCR text from file or use placeholder
+    2. Extract entities (Person, Organization, DocumentRule) using LLM
+    3. Import entities and relationships to Neo4j graph
+    4. Return result with extraction statistics
+
+    Args:
+        task: OCR task containing image/text path and metadata
+
+    Returns:
+        Dict with extraction results and statistics
+    """
+    if not data2neo_extractor:
+        logger.warning("Data2Neo extractor not available, falling back to basic task")
+        return await _process_task(task)
+
+    path = Path(task.image_path)
+
+    # Read OCR text
+    if path.suffix.lower() == ".txt" and path.exists():
+        try:
+            content = path.read_text(encoding="utf-8", errors="ignore")
+        except OSError as exc:
+            logger.warning("Failed to read %s: %s", path, exc)
+            content = f"OCR placeholder for {path.name}"
+    else:
+        content = f"OCR placeholder for {path.name}"
+
+    # Skip extraction for placeholder content
+    if content.startswith("OCR placeholder"):
+        logger.info("Skipping Data2Neo extraction for placeholder content")
+        return await _process_task(task)
+
+    try:
+        # Extract and import entities
+        result = await data2neo_extractor.extract_and_import(
+            ocr_text=content,
+            document_path=task.image_path,
+        )
+
+        entity_counts = {}
+        for entity in result.entities:
+            entity_type = entity.type.value
+            entity_counts[entity_type] = entity_counts.get(entity_type, 0) + 1
+
+        return {
+            "request_id": task.request_id,
+            "session_id": task.session_id,
+            "image_path": task.image_path,
+            "ocr_text": content,
+            "data2neo": {
+                "document_id": result.document_id,
+                "entity_count": len(result.entities),
+                "relationship_count": len(result.relationships),
+                "chunk_count": result.chunk_count,
+                "entity_types": entity_counts,
+            },
+            "processed_at": datetime.now(timezone.utc).isoformat(),
+        }
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Data2Neo extraction failed: %s", exc)
+        # Fall back to basic processing
+        return await _process_task(task)
 
 
 async def _run_task_with_lats(task: OCRTask) -> Dict[str, Any]:
@@ -439,7 +528,9 @@ async def handle_ocr_task(task: OCRTask) -> None:
         raise RateLimitError("Global rate limit exceeded")
 
     try:
-        if getattr(config, "enable_lats", False):
+        if getattr(config, "enable_data2neo", False):
+            result = await _run_data2neo_extraction(task)
+        elif getattr(config, "enable_lats", False):
             result = await _run_task_with_lats(task)
         else:
             result = await _process_task(task)

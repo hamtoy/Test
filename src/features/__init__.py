@@ -36,6 +36,14 @@ def __getattr__(name: str) -> Any:
         from src.features.action_executor import ActionExecutor
 
         return ActionExecutor
+    if name == "Data2NeoExtractor":
+        from src.features.data2neo_extractor import Data2NeoExtractor
+
+        return Data2NeoExtractor
+    if name == "create_data2neo_extractor":
+        from src.features.data2neo_extractor import create_data2neo_extractor
+
+        return create_data2neo_extractor
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -48,4 +56,6 @@ __all__ = [
     "AdaptiveDifficulty",
     "AdaptiveDifficultyAdjuster",
     "ActionExecutor",
+    "Data2NeoExtractor",
+    "create_data2neo_extractor",
 ]
