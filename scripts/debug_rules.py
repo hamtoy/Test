@@ -5,17 +5,26 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def debug_rules():
+def debug_rules() -> None:
     uri = os.getenv("NEO4J_URI")
     user = os.getenv("NEO4J_USER")
     password = os.getenv("NEO4J_PASSWORD")
+
+    if uri is None or user is None or password is None:
+        raise RuntimeError(
+            "Missing required Neo4j configuration (NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)"
+        )
 
     driver = GraphDatabase.driver(uri, auth=(user, password))
 
     with driver.session() as session:
         print("=== Checking NEXT relationships ===")
         result = session.run("MATCH ()-[r:NEXT]->() RETURN count(r) AS count")
-        print(f"Total NEXT relationships: {result.single()['count']}")
+        record = result.single()
+        if record is None:
+            print("Total NEXT relationships: No data")
+        else:
+            print(f"Total NEXT relationships: {record['count']}")
 
         print("\n=== Checking Heading Siblings ===")
         query_siblings = """

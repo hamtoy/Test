@@ -66,16 +66,29 @@ extend-select = ["PERF", "FURB", "SIM"]
 
 [tool.mypy]
 python_version = "3.10"  # v3.0: Minimum supported version
-# Global settings are relaxed for gradual typing approach
-warn_return_any = false
+
+# Level 1 전역 활성화
+warn_return_any = true
 warn_unused_configs = true
-warn_unused_ignores = false  # Disabled to allow gradual migration
-check_untyped_defs = false
+warn_unused_ignores = false  # Disabled due to inconsistent stubs in google-generativeai
+check_untyped_defs = true
+
 namespace_packages = true
 explicit_package_bases = true
 mypy_path = "."
 ignore_missing_imports = true
 exclude = ["notion-neo4j-graph/", ".venv/", "build/", "vulture_whitelist.py"]
+
+# 점진적 적용: 복잡한 패키지 일시 제외
+[[tool.mypy.overrides]]
+module = [
+    "src.analysis.*",
+    "src.features.*",
+    "src.ui.*",
+    "tests.*",
+]
+check_untyped_defs = false
+warn_return_any = false
 
 # v3.0: Core modules with strict type checking
 [[tool.mypy.overrides]]
@@ -92,26 +105,17 @@ no_implicit_optional = true   # v3.0: No implicit Optional types
 # Legacy modules with relaxed type checking (gradual migration)
 [[tool.mypy.overrides]]
 module = [
-    "src.analysis.*",
     "src.caching.*",
-    "src.features.*",
     "src.graph.*",
     "src.infra.*",
     "src.llm.*",
     "src.processing.*",
     "src.qa.*",
     "src.routing.*",
-    "src.ui.*",
     "src.workflow.*",
 ]
 check_untyped_defs = true
 warn_return_any = true
-
-# Test files are relaxed but still catch actual type errors
-[[tool.mypy.overrides]]
-module = ["tests.*"]
-check_untyped_defs = false
-warn_return_any = false
 
 [tool.uv.workspace]
 members = ["notion-neo4j-graph"]

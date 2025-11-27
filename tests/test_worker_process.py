@@ -137,7 +137,7 @@ async def test_lats_budget_uses_cost_delta(monkeypatch):
     cost_calls: list[float] = []
     original_update_budget = worker.SearchState.update_budget
 
-    def _spy_update_budget(self, tokens: int = 0, cost: float = 0.0):  # type: ignore[override]
+    def _spy_update_budget(self, tokens: int = 0, cost: float = 0.0):
         cost_calls.append(cost)
         return original_update_budget(self, tokens=tokens, cost=cost)
 

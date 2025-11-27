@@ -232,7 +232,7 @@ async def test_agent_call_api_with_retry(monkeypatch, tmp_path):
             raise TimeoutError("retry me")
         return "ok"
 
-    agent._execute_api_call = _fake_exec  # type: ignore[assignment]
+    agent._execute_api_call = _fake_exec
 
     class _Sem:
         async def __aenter__(self):
