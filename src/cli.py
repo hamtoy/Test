@@ -29,6 +29,8 @@ class CLIArgs:
     analyze_cache: bool
     integrated_pipeline: bool
     pipeline_meta: str
+    optimize_neo4j: bool
+    drop_existing_indexes: bool
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -88,6 +90,16 @@ def create_parser() -> argparse.ArgumentParser:
         type=str,
         default="examples/session_input.json",
         help="Path to JSON metadata file for integrated pipeline mode",
+    )
+    core_group.add_argument(
+        "--optimize-neo4j",
+        action="store_true",
+        help="Optimize Neo4j database with 2-Tier indexing and exit",
+    )
+    core_group.add_argument(
+        "--drop-existing-indexes",
+        action="store_true",
+        help="Drop existing indexes before creating new ones (use with --optimize-neo4j)",
     )
 
     # Input/Output
@@ -159,6 +171,8 @@ def parse_args(argv: Optional[list[str]] = None) -> CLIArgs:
         analyze_cache=args.analyze_cache,
         integrated_pipeline=args.integrated_pipeline,
         pipeline_meta=args.pipeline_meta,
+        optimize_neo4j=args.optimize_neo4j,
+        drop_existing_indexes=args.drop_existing_indexes,
     )
 
 
@@ -176,3 +190,50 @@ def resolve_checkpoint_path(output_dir: Path, checkpoint_file: str) -> Path:
     if not checkpoint_path.is_absolute():
         checkpoint_path = output_dir / checkpoint_path
     return checkpoint_path
+
+
+async def run_neo4j_optimization(drop_existing: bool = False) -> None:
+    """Run Neo4j 2-Tier index optimization.
+
+    Args:
+        drop_existing: If True, drop existing indexes before creating new ones.
+
+    Raises:
+        EnvironmentError: If Neo4j environment variables are not set.
+        Exception: If index creation fails.
+    """
+    import os
+
+    from neo4j import AsyncGraphDatabase
+
+    from src.infra.neo4j_optimizer import TwoTierIndexManager
+
+    uri = os.getenv("NEO4J_URI")
+    user = os.getenv("NEO4J_USER")
+    password = os.getenv("NEO4J_PASSWORD")
+
+    if not uri or not user or not password:
+        raise EnvironmentError(
+            "Missing required Neo4j environment variables: "
+            "NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD"
+        )
+
+    driver = AsyncGraphDatabase.driver(uri, auth=(user, password))
+    try:
+        manager = TwoTierIndexManager(driver)
+
+        if drop_existing:
+            print("⚠️  Dropping existing indexes...")
+            await manager.drop_all_indexes()
+
+        print("🔧 Creating 2-Tier index architecture...")
+        await manager.create_all_indexes()
+
+        indexes = await manager.list_all_indexes()
+        print(f"✅ Created {len(indexes)} indexes")
+
+        for idx in indexes:
+            print(f"  - {idx.get('name', 'unknown')}: {idx.get('type', 'unknown')}")
+
+    finally:
+        await driver.close()
