@@ -155,7 +155,10 @@ def load_baseline(baseline_path: Path) -> dict[str, Any] | None:
         return None
 
     try:
-        return json.loads(baseline_path.read_text())
+        data = json.loads(baseline_path.read_text())
+        if isinstance(data, dict):
+            return data
+        return None
     except json.JSONDecodeError:
         return None
 
