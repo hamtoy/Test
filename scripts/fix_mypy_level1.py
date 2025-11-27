@@ -5,6 +5,7 @@ Level 1 에러 자동 수정 도우미
 import re
 import sys
 from pathlib import Path
+from typing import Any  # noqa: F401
 
 
 def add_return_type_hints(filepath: Path) -> int:

@@ -102,7 +102,7 @@ def generate_report(
     </style>
 </head>
 <body>
-    <h1>mypy Baseline Report - Level 0.5</h1>
+    <h1>mypy Baseline Report - Level 1</h1>
     <p>Generated: {timestamp}</p>
 
     <div class="summary">
