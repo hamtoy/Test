@@ -183,7 +183,8 @@ async def run_neo4j_optimization(drop_existing: bool = False) -> None:
     neo4j_password = os.getenv("NEO4J_PASSWORD")
 
     driver = neo4j.AsyncGraphDatabase.driver(
-        neo4j_uri, auth=(neo4j_user, neo4j_password)  # type: ignore[arg-type]
+        neo4j_uri,
+        auth=(neo4j_user, neo4j_password),  # type: ignore[arg-type]
     )
 
     try:
