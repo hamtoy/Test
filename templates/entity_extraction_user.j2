@@ -1,0 +1,20 @@
+## Document Text (OCR)
+
+```
+{{ ocr_text }}
+```
+
+{% if document_path %}
+## Document Path
+{{ document_path }}
+{% endif %}
+
+{% if focus_entities %}
+## Focus Entities
+Please prioritize extraction of: {{ focus_entities | join(', ') }}
+{% endif %}
+
+## Instructions
+
+Extract all entities and relationships from the above document text.
+Assign confidence scores based on how clearly the entity is mentioned.
