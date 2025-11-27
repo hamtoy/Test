@@ -225,7 +225,9 @@ class PromptExperimentManager:
         if latency_better and cost_better:
             report["winner"] = "Treatment (Faster & Cheaper)"
         elif latency_better and not cost_better:
-            report["winner"] = "Treatment (Faster, Higher Cost) - Manual Review Required"
+            report["winner"] = (
+                "Treatment (Faster, Higher Cost) - Manual Review Required"
+            )
         elif not latency_better and cost_better:
             report["winner"] = "Treatment (Slower, Lower Cost) - Manual Review Required"
         else:
