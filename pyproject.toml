@@ -131,6 +131,11 @@ module = [
 ]
 ignore_missing_imports = true
 
+# Test file that intentionally tests import failures for removed modules
+[[tool.mypy.overrides]]
+module = ["tests.test_deprecation_warnings"]
+ignore_missing_imports = true
+
 # Langchain modules (use custom stubs + relaxed rules)
 [[tool.mypy.overrides]]
 module = [
