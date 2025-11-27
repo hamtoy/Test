@@ -55,6 +55,7 @@ packages = ["src", "scripts", "checks"]
 [tool.ruff]
 fix = true
 unsafe-fixes = false
+exclude = ["vulture_whitelist.py"]
 
 [tool.ruff.lint]
 extend-select = ["PERF", "FURB", "SIM"]
@@ -73,7 +74,7 @@ namespace_packages = true
 explicit_package_bases = true
 mypy_path = "."
 ignore_missing_imports = true
-exclude = ["notion-neo4j-graph/", ".venv/", "build/"]
+exclude = ["notion-neo4j-graph/", ".venv/", "build/", "vulture_whitelist.py"]
 
 # Core configuration modules with strict type checking
 [[tool.mypy.overrides]]
