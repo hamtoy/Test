@@ -60,23 +60,14 @@ def analyze_file(filepath: Path) -> dict[str, int]:
         # Use finditer to count all matches
         matches = list(re.finditer(pattern, content))
         if matches:
-            # Extract module name from pattern - handle escaped dots
-            # The pattern contains \. which represents a literal dot
-            module_match = re.search(r"src\\\.\(?(\\w\+|\w+)", pattern)
+            # Extract module name by normalizing the pattern string
+            # Patterns look like: r"from src\.utils import" or r"import src\.models"
+            # We replace \. with . to get a clean module reference
+            pattern_clean = pattern.replace(r"\.", ".")
+            module_match = re.search(r"src\.(\w+)", pattern_clean)
             if module_match:
-                replacement = "\\w+"
-                group_value = module_match.group(1).replace(replacement, "")
-                module_name = f"src.{group_value}"
-                if not module_name.endswith("."):
-                    module_counts[module_name] += len(matches)
-            else:
-                # Fallback: extract module name by parsing the pattern string
-                # Pattern looks like: r"from src\.utils import" or r"import src\.models"
-                pattern_clean = pattern.replace(r"\.", ".")
-                module_match2 = re.search(r"src\.(\w+)", pattern_clean)
-                if module_match2:
-                    module_name = f"src.{module_match2.group(1)}"
-                    module_counts[module_name] += len(matches)
+                module_name = f"src.{module_match.group(1)}"
+                module_counts[module_name] += len(matches)
 
     return dict(module_counts)
 
