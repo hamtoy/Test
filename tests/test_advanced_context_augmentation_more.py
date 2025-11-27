@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import types
 
-from src.advanced_context_augmentation import AdvancedContextAugmentation
+from src.processing.context_augmentation import AdvancedContextAugmentation
 
 
 def test_augment_without_vector_store(monkeypatch):

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import types
 from src.analysis import semantic
-from src import smart_autocomplete
+from src.features import autocomplete as smart_autocomplete
 from src.processing import example_selector
-from src import adaptive_difficulty
+from src.features import difficulty as adaptive_difficulty
 
 
 def test_semantic_analysis_utils(monkeypatch):

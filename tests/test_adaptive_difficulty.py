@@ -1,6 +1,6 @@
 import types
 
-from src.adaptive_difficulty import AdaptiveDifficultyAdjuster
+from src.features.difficulty import AdaptiveDifficultyAdjuster
 
 
 class _FakeSession:
