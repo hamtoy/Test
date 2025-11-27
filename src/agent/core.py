@@ -39,7 +39,6 @@ from .cost_tracker import CostTracker
 from .rate_limiter import RateLimiter
 
 if TYPE_CHECKING:
-    import google.generativeai as genai
     import google.generativeai.caching as caching
     from src.core.interfaces import LLMProvider
 

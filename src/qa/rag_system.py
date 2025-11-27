@@ -1,5 +1,4 @@
 from __future__ import annotations
-# mypy: ignore-errors
 
 import asyncio
 import logging
@@ -7,7 +6,7 @@ import os
 import time
 import weakref
 from contextlib import contextmanager, suppress
-from typing import Dict, Any, List, Optional, cast, no_type_check
+from typing import Any, Dict, Generator, List, Optional, no_type_check
 
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -36,18 +35,18 @@ def require_env(var: str) -> str:
 class CustomGeminiEmbeddings(Embeddings):
     """Gemini 임베딩 래퍼."""
 
-    def __init__(self, api_key: str, model: str = "models/text-embedding-004"):
-        genai.configure(api_key=api_key)
+    def __init__(self, api_key: str, model: str = "models/text-embedding-004") -> None:
+        genai.configure(api_key=api_key)  # type: ignore[attr-defined]
         self.model = model
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         return [self.embed_query(text) for text in texts]
 
     def embed_query(self, text: str) -> List[float]:
-        result = genai.embed_content(
+        result = genai.embed_content(  # type: ignore[attr-defined]
             model=self.model, content=text, task_type="retrieval_query"
         )
-        return result["embedding"]
+        return list(result["embedding"])
 
 
 class QAKnowledgeGraph:
@@ -65,14 +64,18 @@ class QAKnowledgeGraph:
         neo4j_password: Optional[str] = None,
         graph_provider: Optional[GraphProvider] = None,
         config: Optional[AppConfig] = None,
-    ):
-        cfg = config or AppConfig()  # type: ignore[call-arg]
+    ) -> None:
+        cfg = config or AppConfig()
         provider = (
             graph_provider if graph_provider is not None else get_graph_provider(cfg)
         )
         self._graph_provider: Optional[GraphProvider] = provider
         self._graph: Optional[SafeDriver] = None
-        self._graph_finalizer: Optional[weakref.finalize] = None
+        self._graph_finalizer: Optional[weakref.finalize[..., SafeDriver]] = None
+        self.neo4j_uri: Optional[str] = None
+        self.neo4j_user: Optional[str] = None
+        self.neo4j_password: Optional[str] = None
+        self._vector_store: Any = None
 
         if provider is None:
             self.neo4j_uri = neo4j_uri or require_env("NEO4J_URI")
@@ -105,10 +108,9 @@ class QAKnowledgeGraph:
                 )
                 self._graph_finalizer = weakref.finalize(self._graph, self._graph.close)
 
-        self._vector_store = None
         self._init_vector_store()
 
-    def _init_vector_store(self):
+    def _init_vector_store(self) -> None:
         """
         GEMINI_API_KEY로 임베딩을 생성합니다. 키가 없거나 인덱스가 없으면 건너뜀.
         """
@@ -173,10 +175,10 @@ class QAKnowledgeGraph:
                 records = session.run(cypher, qt=query_type)
                 return [dict(r) for r in records]
 
-        prov = cast(GraphProvider, provider)
+        prov = provider
 
-        async def _run():
-            async with prov.session() as session:  # type: ignore[union-attr]
+        async def _run() -> List[Dict[str, Any]]:
+            async with prov.session() as session:
                 records = await session.run(cypher, qt=query_type)
                 return [dict(r) for r in records]
 
@@ -193,10 +195,10 @@ class QAKnowledgeGraph:
             with self._graph.session() as session:
                 return [dict(r) for r in session.run(cypher, qt=query_type)]
 
-        prov = cast(GraphProvider, provider)
+        prov = provider
 
-        async def _run():
-            async with prov.session() as session:  # type: ignore[union-attr]
+        async def _run() -> List[Dict[str, str]]:
+            async with prov.session() as session:
                 records = await session.run(cypher, qt=query_type)
                 return [dict(r) for r in records]
 
@@ -217,16 +219,16 @@ class QAKnowledgeGraph:
             with self._graph.session() as session:
                 return [dict(r) for r in session.run(cypher, limit=limit)]
 
-        prov = cast(GraphProvider, provider)
+        prov = provider
 
-        async def _run():
-            async with prov.session() as session:  # type: ignore[union-attr]
+        async def _run() -> List[Dict[str, str]]:
+            async with prov.session() as session:
                 records = await session.run(cypher, limit=limit)
                 return [dict(r) for r in records]
 
         return asyncio.get_event_loop().run_until_complete(_run())
 
-    def validate_session(self, session: dict) -> Dict[str, Any]:
+    def validate_session(self, session: Dict[str, Any]) -> Dict[str, Any]:
         """
         checks/validate_session 로직을 활용해 세션 구조 검증.
         """
@@ -266,7 +268,7 @@ class QAKnowledgeGraph:
                     asyncio.set_event_loop(loop)
                     running = False
 
-                close_coro = cast(GraphProvider, provider).close()
+                close_coro = provider.close()
                 if running and loop.is_running():
                     loop.create_task(close_coro)
                 else:
@@ -279,7 +281,7 @@ class QAKnowledgeGraph:
             self._graph_provider = None
 
     @contextmanager
-    def graph_session(self):
+    def graph_session(self) -> Generator[Any, None, None]:
         """
         동기 Neo4j 세션 헬퍼.
         - _graph가 있으면 동기 세션 반환
@@ -318,7 +320,7 @@ class QAKnowledgeGraph:
         logger.debug("graph_session: graph not available; yielding None")
         yield None
 
-    def __del__(self):
+    def __del__(self) -> None:
         with suppress(Exception):
             self.close()
 
