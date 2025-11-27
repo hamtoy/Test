@@ -120,6 +120,7 @@ class Data2NeoExtractor:
     graph_provider: Optional["GraphProvider"] = None
     confidence_threshold: float = 0.7
     batch_size: int = 100
+    extraction_temperature: float = 0.1
     _extraction_prompt: str = field(init=False, default="")
 
     def __post_init__(self) -> None:
@@ -128,6 +129,8 @@ class Data2NeoExtractor:
             self.confidence_threshold = self.config.data2neo_confidence
         if hasattr(self.config, "data2neo_batch_size"):
             self.batch_size = self.config.data2neo_batch_size
+        if hasattr(self.config, "data2neo_temperature"):
+            self.extraction_temperature = self.config.data2neo_temperature
 
         self._extraction_prompt = self._build_extraction_prompt()
 
@@ -233,10 +236,32 @@ OCR Text to analyze:
         """
         # Try to extract JSON from the response
         try:
-            # Look for JSON in the response
-            json_match = re.search(r"\{[\s\S]*\}", response_text)
-            if json_match:
-                json_str = json_match.group(0)
+            # First, try to parse the entire response as JSON
+            data = json.loads(response_text.strip())
+            return ExtractedEntitiesSchema.model_validate(data)
+        except (json.JSONDecodeError, ValueError):
+            pass
+
+        try:
+            # Look for JSON in the response - find balanced braces
+            start_idx = response_text.find("{")
+            if start_idx == -1:
+                return ExtractedEntitiesSchema()
+
+            # Find matching closing brace
+            brace_count = 0
+            end_idx = start_idx
+            for i, char in enumerate(response_text[start_idx:], start_idx):
+                if char == "{":
+                    brace_count += 1
+                elif char == "}":
+                    brace_count -= 1
+                    if brace_count == 0:
+                        end_idx = i + 1
+                        break
+
+            if brace_count == 0 and end_idx > start_idx:
+                json_str = response_text[start_idx:end_idx]
                 data = json.loads(json_str)
                 return ExtractedEntitiesSchema.model_validate(data)
         except (json.JSONDecodeError, ValueError) as e:
@@ -360,7 +385,7 @@ OCR Text to analyze:
             try:
                 result = await self.llm_provider.generate_content_async(
                     prompt=prompt,
-                    temperature=0.1,  # Low temperature for consistency
+                    temperature=self.extraction_temperature,
                     max_output_tokens=2048,
                 )
                 schema = self._parse_extraction_response(result.content)
@@ -428,6 +453,9 @@ OCR Text to analyze:
 
         # Create relationships with batching
         if result.relationships:
+            # Build entity ID to label mapping
+            entity_labels = {e.id: e.type.value for e in result.entities}
+
             # Group relationships by type
             rels_by_type: Dict[str, List[Dict[str, Any]]] = {}
             for rel in result.relationships:
@@ -444,12 +472,20 @@ OCR Text to analyze:
                 for i in range(0, len(rels), self.batch_size):
                     batch = rels[i : i + self.batch_size]
                     try:
-                        # Use generic labels for now; could be optimized
+                        # Determine labels from entity mapping, fallback to defaults
+                        first_rel = batch[0] if batch else {}
+                        from_label = entity_labels.get(
+                            first_rel.get("from_id", ""), "Person"
+                        )
+                        to_label = entity_labels.get(
+                            first_rel.get("to_id", ""), "Organization"
+                        )
+
                         count = await self.graph_provider.create_relationships(
                             rels=batch,
                             rel_type=rel_type,
-                            from_label="Person",  # Default; should be dynamic
-                            to_label="Organization",  # Default; should be dynamic
+                            from_label=from_label,
+                            to_label=to_label,
                             from_key="id",
                             to_key="id",
                         )

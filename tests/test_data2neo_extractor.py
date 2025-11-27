@@ -3,6 +3,8 @@
 Tests the entity extraction and Neo4j import functionality.
 """
 
+import json
+
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
@@ -310,8 +312,14 @@ class TestData2NeoExtractor:
         self, mock_config, mock_llm_provider, mock_graph_provider
     ):
         """Test full extraction and import pipeline."""
+        llm_response = {
+            "persons": [{"id": "p1", "name": "John", "role": "Manager"}],
+            "organizations": [{"id": "o1", "name": "Acme"}],
+            "rules": [],
+            "relationships": [{"from_id": "p1", "to_id": "o1", "type": "WORKS_AT"}],
+        }
         mock_llm_provider.generate_content_async.return_value = MagicMock(
-            content='{"persons": [{"id": "p1", "name": "John", "role": "Manager"}], "organizations": [{"id": "o1", "name": "Acme"}], "rules": [], "relationships": [{"from_id": "p1", "to_id": "o1", "type": "WORKS_AT"}]}'
+            content=json.dumps(llm_response)
         )
         extractor = Data2NeoExtractor(
             config=mock_config,

@@ -528,6 +528,8 @@ async def handle_ocr_task(task: OCRTask) -> None:
         raise RateLimitError("Global rate limit exceeded")
 
     try:
+        # Feature flag priority: Data2Neo > LATS > Basic processing
+        # Note: These features are mutually exclusive; only one runs per task
         if getattr(config, "enable_data2neo", False):
             result = await _run_data2neo_extraction(task)
         elif getattr(config, "enable_lats", False):
