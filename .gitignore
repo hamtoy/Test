@@ -85,3 +85,4 @@ test_warnings_quick.py
 
 # v3.0 shim backups
 backup_v3_*/
+strict_baseline.txt
