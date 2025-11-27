@@ -276,6 +276,7 @@ class TestExtractedEntitiesSchema:
         schema = ExtractedEntitiesSchema.model_validate(data)
         assert schema.persons == []
         assert schema.organizations == []
+
     def test_total_entities(self):
         """Test total_entities property."""
         result = ExtractionResult(
@@ -513,6 +514,7 @@ class TestCreateData2NeoExtractor:
         )
         assert extractor.llm_provider == mock_llm_provider
         assert extractor.graph_provider == mock_graph_provider
+
     @pytest.fixture
     def mock_templates(self):
         """Create mock Jinja2 templates."""
