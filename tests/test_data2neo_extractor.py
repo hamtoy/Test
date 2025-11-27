@@ -1,21 +1,40 @@
 """Tests for Data2NeoExtractor module.
 
 Tests the entity extraction and Neo4j import functionality.
+Tests cover:
+- Entity model creation and validation
+- Entity extraction from OCR text
+- Confidence threshold filtering
+- Graph writing (mocked)
+- Error handling
 """
 
 import json
-
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+from jinja2 import Environment, DictLoader
+
+from src.config import AppConfig
 from src.features.data2neo_extractor import (
-    Data2NeoExtractor,
     Entity,
     EntityType,
-    ExtractionResult,
     ExtractedEntitiesSchema,
-    Relationship,
     create_data2neo_extractor,
+)
+from src.features.data2neo_extractor import (
+    Data2NeoExtractor as FeaturesData2NeoExtractor,
+)
+from src.features.data2neo_extractor import ExtractionResult as FeaturesExtractionResult
+from src.features.data2neo_extractor import Relationship as FeaturesRelationship
+from src.graph.data2neo_extractor import Data2NeoExtractor
+from src.graph.entities import (
+    DateEntity,
+    DocumentRule,
+    ExtractionResult,
+    Organization,
+    Person,
+    Relationship,
 )
 
 
@@ -85,7 +104,7 @@ class TestRelationship:
 
     def test_relationship_creation(self):
         """Test basic relationship creation."""
-        rel = Relationship(
+        rel = FeaturesRelationship(
             from_id="person_john",
             to_id="org_acme",
             type="WORKS_AT",
@@ -94,32 +113,6 @@ class TestRelationship:
         assert rel.from_id == "person_john"
         assert rel.to_id == "org_acme"
         assert rel.type == "WORKS_AT"
-"""Tests for the Data2NeoExtractor module.
-
-Tests cover:
-- Entity model creation and validation
-- Entity extraction from OCR text
-- Confidence threshold filtering
-- Graph writing (mocked)
-- Error handling
-"""
-
-import json
-from unittest.mock import AsyncMock, MagicMock
-
-import pytest
-from jinja2 import Environment, DictLoader
-
-from src.config import AppConfig
-from src.graph.data2neo_extractor import Data2NeoExtractor
-from src.graph.entities import (
-    DateEntity,
-    DocumentRule,
-    ExtractionResult,
-    Organization,
-    Person,
-    Relationship,
-)
 
 
 class TestEntityModels:
@@ -221,11 +214,11 @@ class TestEntityModels:
 
 
 class TestExtractionResult:
-    """Tests for ExtractionResult model."""
+    """Tests for ExtractionResult model (from features)."""
 
     def test_extraction_result_default(self):
         """Test default extraction result."""
-        result = ExtractionResult()
+        result = FeaturesExtractionResult()
         assert result.entities == []
         assert result.relationships == []
         assert result.document_id is None
@@ -234,8 +227,8 @@ class TestExtractionResult:
     def test_extraction_result_with_data(self):
         """Test extraction result with data."""
         entity = Entity(id="test", type=EntityType.PERSON, properties={})
-        rel = Relationship(from_id="a", to_id="b", type="REL")
-        result = ExtractionResult(
+        rel = FeaturesRelationship(from_id="a", to_id="b", type="REL")
+        result = FeaturesExtractionResult(
             entities=[entity],
             relationships=[rel],
             document_id="doc_1",
@@ -327,17 +320,17 @@ class TestExtractedEntitiesSchema:
 
 
 class TestData2NeoExtractor:
-    """Tests for Data2NeoExtractor class."""
+    """Tests for Data2NeoExtractor class (from features)."""
 
     def test_extractor_initialization(self, mock_config):
         """Test extractor initialization."""
-        extractor = Data2NeoExtractor(config=mock_config)
+        extractor = FeaturesData2NeoExtractor(config=mock_config)
         assert extractor.confidence_threshold == 0.7
         assert extractor.batch_size == 100
 
     def test_chunk_text_short(self, mock_config):
         """Test chunking short text."""
-        extractor = Data2NeoExtractor(config=mock_config)
+        extractor = FeaturesData2NeoExtractor(config=mock_config)
         text = "Short text"
         chunks = extractor._chunk_text(text)
         assert len(chunks) == 1
@@ -345,27 +338,27 @@ class TestData2NeoExtractor:
 
     def test_chunk_text_long(self, mock_config):
         """Test chunking long text."""
-        extractor = Data2NeoExtractor(config=mock_config)
+        extractor = FeaturesData2NeoExtractor(config=mock_config)
         text = "Paragraph one.\n\n" * 100  # Long text
         chunks = extractor._chunk_text(text, chunk_size=100)
         assert len(chunks) > 1
 
     def test_generate_entity_id(self, mock_config):
         """Test entity ID generation."""
-        extractor = Data2NeoExtractor(config=mock_config)
+        extractor = FeaturesData2NeoExtractor(config=mock_config)
         entity_id = extractor._generate_entity_id("person", "John Doe")
         assert entity_id == "person_john_doe"
 
     def test_generate_entity_id_special_chars(self, mock_config):
         """Test entity ID generation with special characters."""
-        extractor = Data2NeoExtractor(config=mock_config)
+        extractor = FeaturesData2NeoExtractor(config=mock_config)
         entity_id = extractor._generate_entity_id("organization", "Acme, Inc.")
         assert "_" in entity_id
         assert "," not in entity_id
 
     def test_parse_extraction_response_valid(self, mock_config):
         """Test parsing valid JSON response."""
-        extractor = Data2NeoExtractor(config=mock_config)
+        extractor = FeaturesData2NeoExtractor(config=mock_config)
         response = """
         {
             "persons": [{"id": "p1", "name": "John"}],
@@ -380,14 +373,14 @@ class TestData2NeoExtractor:
 
     def test_parse_extraction_response_invalid(self, mock_config):
         """Test parsing invalid response."""
-        extractor = Data2NeoExtractor(config=mock_config)
+        extractor = FeaturesData2NeoExtractor(config=mock_config)
         response = "This is not JSON"
         result = extractor._parse_extraction_response(response)
         assert len(result.persons) == 0
 
     def test_convert_to_entities(self, mock_config):
         """Test converting schema to entities."""
-        extractor = Data2NeoExtractor(config=mock_config)
+        extractor = FeaturesData2NeoExtractor(config=mock_config)
         schema = ExtractedEntitiesSchema(
             persons=[
                 {"id": "p1", "name": "John", "role": "Manager", "confidence": 0.9}
@@ -403,7 +396,7 @@ class TestData2NeoExtractor:
     def test_convert_to_entities_confidence_filter(self, mock_config):
         """Test confidence threshold filtering."""
         mock_config.data2neo_confidence = 0.8
-        extractor = Data2NeoExtractor(config=mock_config)
+        extractor = FeaturesData2NeoExtractor(config=mock_config)
         schema = ExtractedEntitiesSchema(
             persons=[
                 {"id": "p1", "name": "John", "confidence": 0.9},
@@ -417,7 +410,7 @@ class TestData2NeoExtractor:
     @pytest.mark.asyncio
     async def test_extract_entities_no_provider(self, mock_config):
         """Test extraction without LLM provider."""
-        extractor = Data2NeoExtractor(config=mock_config, llm_provider=None)
+        extractor = FeaturesData2NeoExtractor(config=mock_config, llm_provider=None)
         result = await extractor.extract_entities("Test text", "doc_1")
         assert len(result.entities) == 0
         assert result.document_id == "doc_1"
@@ -428,7 +421,7 @@ class TestData2NeoExtractor:
         mock_llm_provider.generate_content_async.return_value = MagicMock(
             content='{"persons": [{"id": "p1", "name": "John"}], "organizations": [], "rules": [], "relationships": []}'
         )
-        extractor = Data2NeoExtractor(
+        extractor = FeaturesData2NeoExtractor(
             config=mock_config, llm_provider=mock_llm_provider
         )
         await extractor.extract_entities("John works at Acme", "doc_1")
@@ -438,8 +431,8 @@ class TestData2NeoExtractor:
     @pytest.mark.asyncio
     async def test_import_to_graph_no_provider(self, mock_config):
         """Test import without graph provider."""
-        extractor = Data2NeoExtractor(config=mock_config, graph_provider=None)
-        result = ExtractionResult(
+        extractor = FeaturesData2NeoExtractor(config=mock_config, graph_provider=None)
+        result = FeaturesExtractionResult(
             entities=[
                 Entity(id="p1", type=EntityType.PERSON, properties={"name": "John"})
             ],
@@ -453,10 +446,10 @@ class TestData2NeoExtractor:
         self, mock_config, mock_graph_provider
     ):
         """Test import with graph provider."""
-        extractor = Data2NeoExtractor(
+        extractor = FeaturesData2NeoExtractor(
             config=mock_config, graph_provider=mock_graph_provider
         )
-        result = ExtractionResult(
+        result = FeaturesExtractionResult(
             entities=[
                 Entity(id="p1", type=EntityType.PERSON, properties={"name": "John"}),
                 Entity(
@@ -464,7 +457,7 @@ class TestData2NeoExtractor:
                 ),
             ],
             relationships=[
-                Relationship(from_id="p1", to_id="o1", type="WORKS_AT"),
+                FeaturesRelationship(from_id="p1", to_id="o1", type="WORKS_AT"),
             ],
         )
         counts = await extractor.import_to_graph(result)
@@ -485,7 +478,7 @@ class TestData2NeoExtractor:
         mock_llm_provider.generate_content_async.return_value = MagicMock(
             content=json.dumps(llm_response)
         )
-        extractor = Data2NeoExtractor(
+        extractor = FeaturesData2NeoExtractor(
             config=mock_config,
             llm_provider=mock_llm_provider,
             graph_provider=mock_graph_provider,
