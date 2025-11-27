@@ -1,12 +1,25 @@
-"""Main package initialization with module shims for backward compatibility.
+"""Main package initialization.
 
-This module provides compatibility shims for modules that were reorganized
-into subpackages. Tests and other code can still import them from src directly.
+This module provides the public API for the shining-quasar package.
+In v3.0, backward-compatibility shim files were removed. Code should import
+from the appropriate subpackages directly.
+
+Example:
+    # Preferred imports (v3.0+)
+    from src.core.models import EvaluationItem, WorkflowResult
+    from src.config.settings import AppConfig
+    from src.config.constants import PRICING_TIERS
+
+    # Module-level aliases (still supported)
+    from src import gemini_model_client
+    from src import list_models
 """
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
+
+__version__ = "3.0.0"
 
 if TYPE_CHECKING:
     # Import types for type checking without circular dependencies
@@ -88,6 +101,7 @@ def __getattr__(name: str) -> Any:
 
 
 __all__ = [
+    "__version__",
     # Module shims for backward compatibility
     "gemini_model_client",
     "lcel_optimized_chain",
