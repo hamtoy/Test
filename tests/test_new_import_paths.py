@@ -125,16 +125,16 @@ class TestNewImportPaths:
             warnings.simplefilter("ignore", DeprecationWarning)
 
             # Import from both old and new paths
-            from src.constants import ERROR_MESSAGES as old_errors
+            from src.config.constants import ERROR_MESSAGES as old_errors
             from src.config.constants import ERROR_MESSAGES as new_errors
 
-            from src.exceptions import BudgetExceededError as old_budget
+            from src.config.exceptions import BudgetExceededError as old_budget
             from src.config.exceptions import BudgetExceededError as new_budget
 
-            from src.models import WorkflowResult as old_workflow
+            from src.core.models import WorkflowResult as old_workflow
             from src.core.models import WorkflowResult as new_workflow
 
-            from src.utils import clean_markdown_code_block as old_clean
+            from src.infra.utils import clean_markdown_code_block as old_clean
             from src.infra.utils import clean_markdown_code_block as new_clean
 
             # Verify they are the same objects

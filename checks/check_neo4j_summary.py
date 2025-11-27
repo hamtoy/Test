@@ -1,7 +1,7 @@
 """Neo4j 데이터베이스 Rule 및 Constraint 통계 조회 스크립트."""
 
 from dotenv import load_dotenv
-from src.neo4j_utils import get_neo4j_driver_from_env
+from src.infra.neo4j import get_neo4j_driver_from_env
 
 load_dotenv()
 
