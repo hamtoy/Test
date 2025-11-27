@@ -1,19 +1,29 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any, Dict
+from typing import Any, Dict, TYPE_CHECKING
 
 import logging
 
 from neo4j.exceptions import Neo4jError
 
-from src.qa.rag_system import QAKnowledgeGraph
+if TYPE_CHECKING:
+    from src.qa.rag_system import QAKnowledgeGraph
 
 
 def check_neo4j_connection(kg: QAKnowledgeGraph | None = None) -> bool:
     """Return True if a simple Neo4j query succeeds."""
-    graph = kg or QAKnowledgeGraph()
-    graph_obj = getattr(graph, "_graph", None)
+    if kg is None:
+        try:
+            from src.qa.rag_system import QAKnowledgeGraph
+
+            kg = QAKnowledgeGraph()
+        except ImportError:
+            logging.getLogger(__name__).warning(
+                "Cannot check Neo4j connection: QAKnowledgeGraph not available"
+            )
+            return False
+    graph_obj = getattr(kg, "_graph", None)
     if graph_obj is None:
         return False
     try:
