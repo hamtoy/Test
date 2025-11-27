@@ -1,9 +1,7 @@
 # vulture_whitelist.py
 # Intentionally unused code that should not be flagged by vulture.
 # This file lists code that appears unused but is actually required.
-
-# Ignore this file from analysis
-pass  # noqa
+# Vulture reads this file to understand which symbols to ignore.
 
 # ============================================================================
 # Pydantic model fields and validators

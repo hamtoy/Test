@@ -21,6 +21,7 @@ repos:
 
   - repo: local
     hooks:
+      # Uses system-installed tools from 'uv sync --extra dev'
       - id: vulture
         name: vulture
         entry: vulture
