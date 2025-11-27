@@ -17,6 +17,37 @@ class TestTwoTierIndexManagerInit:
         assert manager.driver is mock_driver
 
 
+class TestTwoTierIndexManagerExtractName:
+    """Test index name extraction helper."""
+
+    def test_extract_index_name_regular(self) -> None:
+        """Extracts name from regular CREATE INDEX statement."""
+        query = "CREATE INDEX rule_id_idx IF NOT EXISTS FOR (r:Rule) ON (r.id)"
+        name = TwoTierIndexManager._extract_index_name(query)
+        assert name == "rule_id_idx"
+
+    def test_extract_index_name_vector(self) -> None:
+        """Extracts name from CREATE VECTOR INDEX statement."""
+        query = "CREATE VECTOR INDEX chunk_embedding_idx IF NOT EXISTS FOR (c:Chunk) ON (c.embedding)"
+        name = TwoTierIndexManager._extract_index_name(query)
+        assert name == "chunk_embedding_idx"
+
+    def test_extract_index_name_multiline(self) -> None:
+        """Extracts name from multiline query."""
+        query = """
+            CREATE INDEX document_id_idx IF NOT EXISTS
+            FOR (d:Document) ON (d.id)
+        """
+        name = TwoTierIndexManager._extract_index_name(query)
+        assert name == "document_id_idx"
+
+    def test_extract_index_name_invalid(self) -> None:
+        """Returns unknown for invalid queries."""
+        query = "SHOW INDEXES"
+        name = TwoTierIndexManager._extract_index_name(query)
+        assert name == "unknown"
+
+
 class TestTwoTierIndexManagerObjectIndexes:
     """Test Tier 1 object index creation."""
 
