@@ -296,7 +296,7 @@ def test_caching_layer_handles_bad_cache_and_write_error(monkeypatch):
         kg=types.SimpleNamespace(_graph=None), redis_client=None
     )
     layer.redis = _Redis()
-    layer._fetch_rules_from_graph = lambda qt: rows  # type: ignore[attr-defined]
+    layer._fetch_rules_from_graph = lambda qt: rows
     assert layer.get_rules_cached("qt") == rows
 
 

@@ -98,7 +98,7 @@ def example_usage() -> None:
     Requires a valid GEMINI_API_KEY in the environment.
     """
     # AppConfig pulls from environment; ignore call-arg type check for BaseSettings ctor.
-    config = AppConfig()  # type: ignore[call-arg]
+    config = AppConfig()
     cases = [
         ExperimentCase(case_id="1", ocr_text="표가 많은 문서", user_intent="요약"),
         ExperimentCase(case_id="2", ocr_text="계약서 조항", user_intent="검토"),
