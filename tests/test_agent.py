@@ -110,6 +110,83 @@ class TestGeminiAgent:
 
         assert overlap is False
 
+    @pytest.mark.asyncio
+    async def test_generate_query_with_cache(self, agent):
+        """Verify cached_content is passed to _create_generative_model in generate_query."""
+        # Mock internal methods to avoid API calls
+        agent._create_generative_model = MagicMock()
+        agent._call_api_with_retry = AsyncMock(
+            return_value='{"queries": ["query1", "query2"]}'
+        )
+
+        # Mock lazy properties using patch.object
+        mock_genai = MagicMock()
+        mock_caching = MagicMock()
+        mock_cache = MagicMock()
+
+        with (
+            patch.object(
+                GeminiAgent, "_genai", new_callable=PropertyMock
+            ) as mock_genai_prop,
+            patch.object(
+                GeminiAgent, "_caching", new_callable=PropertyMock
+            ) as mock_caching_prop,
+        ):
+            mock_genai_prop.return_value = mock_genai
+            mock_caching_prop.return_value = mock_caching
+
+            # Test with cache
+            queries = await agent.generate_query(
+                "OCR text...",
+                cached_content=mock_cache,
+            )
+
+            # Verify cached_content is passed to _create_generative_model
+            agent._create_generative_model.assert_called_once()
+            call_kwargs = agent._create_generative_model.call_args
+            assert call_kwargs[1]["cached_content"] == mock_cache
+
+            # Verify cache usage is tracked (cache provided = hit)
+            assert agent.cache_hits == 1
+            assert agent.cache_misses == 0
+
+            # Verify queries returned correctly
+            assert queries == ["query1", "query2"]
+
+    @pytest.mark.asyncio
+    async def test_generate_query_without_cache(self, agent):
+        """Verify generate_query works without cached_content."""
+        # Mock internal methods to avoid API calls
+        agent._create_generative_model = MagicMock()
+        agent._call_api_with_retry = AsyncMock(return_value='{"queries": ["query1"]}')
+
+        # Mock lazy properties using patch.object
+        mock_genai = MagicMock()
+        mock_caching = MagicMock()
+
+        with (
+            patch.object(
+                GeminiAgent, "_genai", new_callable=PropertyMock
+            ) as mock_genai_prop,
+            patch.object(
+                GeminiAgent, "_caching", new_callable=PropertyMock
+            ) as mock_caching_prop,
+        ):
+            mock_genai_prop.return_value = mock_genai
+            mock_caching_prop.return_value = mock_caching
+
+            # Test without cache
+            await agent.generate_query("OCR text...")
+
+            # Verify cached_content is None in _create_generative_model
+            agent._create_generative_model.assert_called_once()
+            call_kwargs = agent._create_generative_model.call_args
+            assert call_kwargs[1]["cached_content"] is None
+
+            # Verify cache usage is tracked (cache not provided = miss)
+            assert agent.cache_hits == 0
+            assert agent.cache_misses == 1
+
     def test_budget_usage_and_enforcement(self, agent):
         agent.total_input_tokens = 500_000
         agent.total_output_tokens = 250_000
