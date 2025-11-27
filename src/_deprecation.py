@@ -21,10 +21,6 @@ from __future__ import annotations
 import inspect
 import os
 import warnings
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from types import ModuleType
 
 __all__ = ["EnhancedDeprecationWarning", "warn_deprecated"]
 
@@ -94,8 +90,6 @@ def warn_deprecated(
     new_path: str,
     removal_version: str = "v3.0",
     stacklevel: int = 2,
-    *,
-    module: ModuleType | None = None,
 ) -> None:
     """Emit an enhanced deprecation warning for deprecated import paths.
 
@@ -107,7 +101,6 @@ def warn_deprecated(
         new_path: The recommended new import path (e.g., "src.core.models").
         removal_version: Version when the deprecated path will be removed.
         stacklevel: Number of stack levels to skip for warning location.
-        module: Optional module object for additional context.
 
     Raises:
         ImportError: When DEPRECATION_LEVEL=strict, instead of just warning.
