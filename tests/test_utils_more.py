@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from src import utils
+from src.infra import utils
 from src.core.models import WorkflowResult
 
 

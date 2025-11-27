@@ -1,6 +1,6 @@
 import types
 
-from src.advanced_context_augmentation import AdvancedContextAugmentation
+from src.processing.context_augmentation import AdvancedContextAugmentation
 
 
 class _FakeSingle:

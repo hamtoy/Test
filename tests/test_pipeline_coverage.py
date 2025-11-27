@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import types
-from src import real_time_constraint_enforcer as rtce
+from src.infra import constraints as rtce
 
 
 def test_integrated_qa_pipeline_create_and_validate(monkeypatch):

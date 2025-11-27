@@ -1,7 +1,6 @@
 """Graph 패키지.
 
-기존 import 경로 유지:
-    from src.graph_schema_builder import QAGraphBuilder  # ❌ 구버전
+v3.0: 기존 import 경로는 더 이상 지원되지 않습니다.
     from src.graph import QAGraphBuilder                 # ✅ 신버전
 """
 

@@ -6,7 +6,7 @@ from typing import Any, List, Optional
 import pytest
 
 from src.core.interfaces import GenerationResult, LLMProvider
-from src.lats_searcher import (
+from src.features.lats import (
     LATSSearcher,
     SearchNode,
     SearchState,

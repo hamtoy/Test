@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import types
-from src import advanced_context_augmentation as aca
+from src.processing import context_augmentation as aca
 
 
 def test_advanced_context_augmentation_vector_index(monkeypatch):

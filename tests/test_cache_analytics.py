@@ -1,4 +1,4 @@
-from src.cache_analytics import analyze_cache_stats, calculate_savings
+from src.caching.analytics import analyze_cache_stats, calculate_savings
 
 
 def test_calculate_savings_zero_when_no_hits():

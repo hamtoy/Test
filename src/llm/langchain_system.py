@@ -9,7 +9,7 @@ from src.qa.memory_augmented import MemoryAugmentedQASystem
 from src.qa.multi_agent import MultiAgentQASystem
 from src.qa.rag_system import QAKnowledgeGraph
 from src.qa.factory import QASystemFactory
-from src.self_correcting_chain import SelfCorrectingQAChain
+from src.features.self_correcting import SelfCorrectingQAChain
 
 
 class UltimateLangChainQASystem:

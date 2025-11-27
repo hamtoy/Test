@@ -82,4 +82,7 @@ test_warnings_quick.py
 # IDE additional
 *.code-workspace
 
+
+# v3.0 shim backups
+backup_v3_*/
 strict_baseline.txt

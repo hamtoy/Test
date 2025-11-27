@@ -21,7 +21,7 @@ class _StubPytesseract(types.ModuleType):
 
 sys.modules["pytesseract"] = _StubPytesseract("pytesseract")
 
-from src import multimodal_understanding as mmu  # noqa: E402
+from src.features import multimodal as mmu  # noqa: E402
 
 
 def test_multimodal_understanding_uses_fakes(monkeypatch):

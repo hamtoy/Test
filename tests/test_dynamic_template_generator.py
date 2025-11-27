@@ -2,7 +2,7 @@ import logging
 import pytest
 from jinja2 import TemplateNotFound
 
-from src.dynamic_template_generator import DynamicTemplateGenerator
+from src.processing.template_generator import DynamicTemplateGenerator
 
 
 class _FakeSession:

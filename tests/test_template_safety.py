@@ -4,7 +4,7 @@ import types
 
 from jinja2 import Environment, DictLoader
 
-from src.dynamic_template_generator import DynamicTemplateGenerator
+from src.processing.template_generator import DynamicTemplateGenerator
 
 
 def test_dynamic_template_autoescape(monkeypatch):
@@ -35,7 +35,7 @@ def test_dynamic_template_autoescape(monkeypatch):
             return None
 
     monkeypatch.setattr(
-        "src.dynamic_template_generator.GraphDatabase",
+        "src.processing.template_generator.GraphDatabase",
         types.SimpleNamespace(driver=lambda *a, **k: _FakeDriver()),
     )
     env = Environment(

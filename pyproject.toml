@@ -77,7 +77,7 @@ ignore_missing_imports = false
 namespace_packages = true
 explicit_package_bases = true
 mypy_path = [".", "stubs"]
-exclude = ["notion-neo4j-graph/", ".venv/", "build/", "vulture_whitelist.py"]
+exclude = ["notion-neo4j-graph/", ".venv/", "build/", "vulture_whitelist.py", "tests/test_deprecation_warnings.py"]
 
 # Tests excluded from strict mode
 [[tool.mypy.overrides]]
@@ -129,6 +129,11 @@ module = [
     "pytesseract",
     "pytesseract.*",
 ]
+ignore_missing_imports = true
+
+# Test file that intentionally tests import failures for removed modules
+[[tool.mypy.overrides]]
+module = ["tests.test_deprecation_warnings"]
 ignore_missing_imports = true
 
 # Langchain modules (use custom stubs + relaxed rules)

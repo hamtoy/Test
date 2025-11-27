@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from src.adaptive_difficulty import AdaptiveDifficultyAdjuster
+from src.features.difficulty import AdaptiveDifficultyAdjuster
 from src.processing.context_augmentation import AdvancedContextAugmentation
 from src.analysis.cross_validation import CrossValidationSystem
 from src.processing.example_selector import DynamicExampleSelector
-from src.multimodal_understanding import MultimodalUnderstanding
+from src.features.multimodal import MultimodalUnderstanding
 from src.qa.rag_system import QAKnowledgeGraph
-from src.real_time_constraint_enforcer import RealTimeConstraintEnforcer
+from src.infra.constraints import RealTimeConstraintEnforcer
 from src.llm.gemini import GeminiModelClient
 
 
