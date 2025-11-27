@@ -82,7 +82,9 @@ class TestBatchRequest:
 
         result = request.to_jsonl_dict()
 
-        assert result["body"]["systemInstruction"]["parts"][0]["text"] == "System context"
+        assert (
+            result["body"]["systemInstruction"]["parts"][0]["text"] == "System context"
+        )
 
 
 class TestBatchResult:

@@ -65,9 +65,7 @@ class BatchRequest:
         }
 
         if self.system_instruction:
-            body["systemInstruction"] = {
-                "parts": [{"text": self.system_instruction}]
-            }
+            body["systemInstruction"] = {"parts": [{"text": self.system_instruction}]}
 
         return {
             "custom_id": self.custom_id,
@@ -98,9 +96,7 @@ class BatchJob:
     results: List[BatchResult] = field(default_factory=list)
     input_file_path: Optional[Path] = None
     output_file_path: Optional[Path] = None
-    created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
     error_message: Optional[str] = None
 
@@ -111,10 +107,16 @@ class BatchJob:
             "status": self.status.value,
             "request_count": len(self.requests),
             "result_count": len(self.results),
-            "input_file_path": str(self.input_file_path) if self.input_file_path else None,
-            "output_file_path": str(self.output_file_path) if self.output_file_path else None,
+            "input_file_path": str(self.input_file_path)
+            if self.input_file_path
+            else None,
+            "output_file_path": str(self.output_file_path)
+            if self.output_file_path
+            else None,
             "created_at": self.created_at.isoformat(),
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completed_at": self.completed_at.isoformat()
+            if self.completed_at
+            else None,
             "error_message": self.error_message,
         }
 
@@ -154,9 +156,7 @@ class BatchProcessor:
 
         # Model name from config or default
         self.model_name = (
-            getattr(config, "model_name", None)
-            if config
-            else "gemini-3-pro-preview"
+            getattr(config, "model_name", None) if config else "gemini-3-pro-preview"
         ) or "gemini-3-pro-preview"
 
     def create_batch_request(
@@ -189,9 +189,7 @@ class BatchProcessor:
         max_tokens = max_output_tokens
         if max_tokens is None:
             max_tokens = (
-                getattr(self.config, "max_output_tokens", 2048)
-                if self.config
-                else 2048
+                getattr(self.config, "max_output_tokens", 2048) if self.config else 2048
             )
 
         return BatchRequest(
@@ -221,7 +219,9 @@ class BatchProcessor:
                 line = json.dumps(req.to_jsonl_dict(), ensure_ascii=False)
                 f.write(line + "\n")
 
-        self.logger.info("Created JSONL file: %s with %d requests", file_path, len(requests))
+        self.logger.info(
+            "Created JSONL file: %s with %d requests", file_path, len(requests)
+        )
         return file_path
 
     def create_batch_job(self, requests: List[BatchRequest]) -> BatchJob:
@@ -244,7 +244,9 @@ class BatchProcessor:
         )
 
         self._active_jobs[job_id] = job
-        self.logger.info("Created batch job: %s with %d requests", job_id, len(requests))
+        self.logger.info(
+            "Created batch job: %s with %d requests", job_id, len(requests)
+        )
         return job
 
     async def submit_batch_job(
@@ -401,7 +403,12 @@ class BatchProcessor:
         completed_ids = [
             job_id
             for job_id, job in self._active_jobs.items()
-            if job.status in (BatchJobStatus.COMPLETED, BatchJobStatus.FAILED, BatchJobStatus.CANCELLED)
+            if job.status
+            in (
+                BatchJobStatus.COMPLETED,
+                BatchJobStatus.FAILED,
+                BatchJobStatus.CANCELLED,
+            )
         ]
 
         for job_id in completed_ids:
