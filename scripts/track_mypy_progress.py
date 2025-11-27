@@ -305,12 +305,16 @@ def main() -> int:
     if level2_errors == 0:
         print(f"  {Colors.GREEN}✅ Level 2 (Strict): All packages pass!{Colors.RESET}")
     else:
-        print(f"  {Colors.RED}❌ Level 2 (Strict): {level2_errors} errors remaining{Colors.RESET}")
+        print(
+            f"  {Colors.RED}❌ Level 2 (Strict): {level2_errors} errors remaining{Colors.RESET}"
+        )
 
     if level1_errors == 0:
         print(f"  {Colors.GREEN}✅ Level 1: All packages pass!{Colors.RESET}")
     else:
-        print(f"  {Colors.YELLOW}⚠️  Level 1: {level1_errors} errors remaining{Colors.RESET}")
+        print(
+            f"  {Colors.YELLOW}⚠️  Level 1: {level1_errors} errors remaining{Colors.RESET}"
+        )
 
     print()
     return 0 if total_current == 0 else 1

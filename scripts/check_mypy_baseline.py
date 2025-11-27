@@ -237,7 +237,7 @@ def generate_html_report(report: BaselineReport, output_path: Path) -> None:
     <h1>📊 Mypy Baseline Report</h1>
     <div class="summary">
         <p><strong>Generated:</strong> {report.timestamp}</p>
-        <p><strong>Total Errors:</strong> <span class="error-count {'success' if report.total_errors == 0 else ''}">{report.total_errors}</span></p>
+        <p><strong>Total Errors:</strong> <span class="error-count {"success" if report.total_errors == 0 else ""}">{report.total_errors}</span></p>
         <p><strong>Files with Errors:</strong> {report.total_files}</p>
     </div>
 
@@ -252,7 +252,7 @@ def generate_html_report(report: BaselineReport, output_path: Path) -> None:
         <h3>{pkg.name}</h3>
         <p>Errors: <strong>{pkg.error_count}</strong></p>
         <div class="error-types">
-            {''.join(f'<span class="error-type">{code}: {count}</span>' for code, count in pkg.errors_by_type.items())}
+            {"".join(f'<span class="error-type">{code}: {count}</span>' for code, count in pkg.errors_by_type.items())}
         </div>
     </div>
 """
@@ -276,7 +276,7 @@ def generate_html_report(report: BaselineReport, output_path: Path) -> None:
         <h3>{pkg.name}</h3>
         <p>Errors: <strong>{pkg.error_count}</strong></p>
         <div class="error-types">
-            {''.join(f'<span class="error-type">{code}: {count}</span>' for code, count in pkg.errors_by_type.items())}
+            {"".join(f'<span class="error-type">{code}: {count}</span>' for code, count in pkg.errors_by_type.items())}
         </div>
     </div>
 """
