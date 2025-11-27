@@ -1,20 +1,17 @@
 """
-Backward compatibility shim for data_loader.
-
-This module has been moved to src.processing.loader.
-This file provides backward compatibility by re-exporting from the new location.
+⚠️ DEPRECATED: This module is deprecated since v2.0.
+Use 'src.processing.loader' instead. Will be removed in v3.0.
 """
 
 from __future__ import annotations
 
-import warnings
+from src._deprecation import warn_deprecated
 
 # Re-export all public symbols from the new location
 from src.processing.loader import *  # noqa: F403, F401
 
-warnings.warn(
-    "Importing from 'src.data_loader' is deprecated. "
-    "Use 'from src.processing.loader import DataLoader' instead.",
-    DeprecationWarning,
-    stacklevel=2,
+warn_deprecated(
+    old_path="src.data_loader",
+    new_path="src.processing.loader",
+    removal_version="v3.0",
 )

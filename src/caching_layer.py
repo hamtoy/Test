@@ -1,14 +1,17 @@
-"""Backward compatibility - use src.caching.layer instead."""
+"""
+⚠️ DEPRECATED: This module is deprecated since v2.0.
+Use 'src.caching.layer' instead. Will be removed in v3.0.
+"""
 
-import warnings
 from typing import Any
 
+from src._deprecation import warn_deprecated
+
 # Emit warning immediately on module import
-warnings.warn(
-    "Importing from 'src.caching_layer' is deprecated. "
-    "Use 'from src.caching.layer import ...' instead.",
-    DeprecationWarning,
-    stacklevel=2,
+warn_deprecated(
+    old_path="src.caching_layer",
+    new_path="src.caching.layer",
+    removal_version="v3.0",
 )
 
 

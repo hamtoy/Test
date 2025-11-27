@@ -1,7 +1,9 @@
-"""Backward compatibility - use src.core.models instead."""
+"""
+⚠️ DEPRECATED: This module is deprecated since v2.0.
+Use 'src.core.models' instead. Will be removed in v3.0.
+"""
 
-import warnings
-
+from src._deprecation import warn_deprecated
 from src.core.models import (
     CandidateID,
     EvaluationItem,
@@ -10,11 +12,10 @@ from src.core.models import (
     WorkflowResult,
 )
 
-warnings.warn(
-    "Importing from 'src.models' is deprecated. "
-    "Use 'from src.core.models import ...' instead.",
-    DeprecationWarning,
-    stacklevel=2,
+warn_deprecated(
+    old_path="src.models",
+    new_path="src.core.models",
+    removal_version="v3.0",
 )
 
 __all__ = [

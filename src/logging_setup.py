@@ -1,12 +1,13 @@
-"""Backward compatibility - use src.infra.logging instead."""
+"""
+⚠️ DEPRECATED: This module is deprecated since v2.0.
+Use 'src.infra.logging' instead. Will be removed in v3.0.
+"""
 
-import warnings
-
+from src._deprecation import warn_deprecated
 from src.infra.logging import *  # noqa: F403
 
-warnings.warn(
-    "Importing from 'src.logging_setup' is deprecated. "
-    "Use 'from src.infra.logging import setup_logging, log_metrics' instead.",
-    DeprecationWarning,
-    stacklevel=2,
+warn_deprecated(
+    old_path="src.logging_setup",
+    new_path="src.infra.logging",
+    removal_version="v3.0",
 )

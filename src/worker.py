@@ -1,12 +1,13 @@
-"""Backward compatibility - use src.infra.worker instead."""
+"""
+⚠️ DEPRECATED: This module is deprecated since v2.0.
+Use 'src.infra.worker' instead. Will be removed in v3.0.
+"""
 
-import warnings
-
+from src._deprecation import warn_deprecated
 from src.infra.worker import *  # noqa: F403
 
-warnings.warn(
-    "Importing from 'src.worker' is deprecated. "
-    "Use 'from src.infra.worker import ...' instead.",
-    DeprecationWarning,
-    stacklevel=2,
+warn_deprecated(
+    old_path="src.worker",
+    new_path="src.infra.worker",
+    removal_version="v3.0",
 )

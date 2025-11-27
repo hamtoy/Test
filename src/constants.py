@@ -1,7 +1,9 @@
-"""Backward compatibility - use src.config.constants instead."""
+"""
+⚠️ DEPRECATED: This module is deprecated since v2.0.
+Use 'src.config.constants' instead. Will be removed in v3.0.
+"""
 
-import warnings
-
+from src._deprecation import warn_deprecated
 from src.config.constants import (
     BUDGET_WARNING_THRESHOLDS,
     COST_PANEL_TEMPLATE,
@@ -27,11 +29,10 @@ from src.config.constants import (
     USER_INTERRUPT_MESSAGE,
 )
 
-warnings.warn(
-    "Importing from 'src.constants' is deprecated. "
-    "Use 'from src.config.constants import ...' instead.",
-    DeprecationWarning,
-    stacklevel=2,
+warn_deprecated(
+    old_path="src.constants",
+    new_path="src.config.constants",
+    removal_version="v3.0",
 )
 
 __all__ = [

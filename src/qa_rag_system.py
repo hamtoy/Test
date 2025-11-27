@@ -1,15 +1,18 @@
-"""Backward compatibility - use src.qa.rag_system instead."""
+"""
+⚠️ DEPRECATED: This module is deprecated since v2.0.
+Use 'src.qa.rag_system' instead. Will be removed in v3.0.
+"""
 
-import warnings
 from typing import Any
+
+from src._deprecation import warn_deprecated
 
 
 def __getattr__(name: str) -> Any:
-    warnings.warn(
-        f"Importing '{name}' from 'src.qa_rag_system' is deprecated. "
-        "Use 'from src.qa.rag_system import ...' instead.",
-        DeprecationWarning,
-        stacklevel=2,
+    warn_deprecated(
+        old_path="src.qa_rag_system",
+        new_path="src.qa.rag_system",
+        removal_version="v3.0",
     )
     from src.qa import rag_system
 

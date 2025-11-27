@@ -1,12 +1,13 @@
-"""Backward compatibility - use src.infra.utils instead."""
+"""
+⚠️ DEPRECATED: This module is deprecated since v2.0.
+Use 'src.infra.utils' instead. Will be removed in v3.0.
+"""
 
-import warnings
-
+from src._deprecation import warn_deprecated
 from src.infra.utils import *  # noqa: F403
 
-warnings.warn(
-    "Importing from 'src.utils' is deprecated. "
-    "Use 'from src.infra.utils import ...' instead.",
-    DeprecationWarning,
-    stacklevel=2,
+warn_deprecated(
+    old_path="src.utils",
+    new_path="src.infra.utils",
+    removal_version="v3.0",
 )

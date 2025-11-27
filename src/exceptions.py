@@ -1,7 +1,9 @@
-"""Backward compatibility - use src.config.exceptions instead."""
+"""
+⚠️ DEPRECATED: This module is deprecated since v2.0.
+Use 'src.config.exceptions' instead. Will be removed in v3.0.
+"""
 
-import warnings
-
+from src._deprecation import warn_deprecated
 from src.config.exceptions import (
     APIRateLimitError,
     BudgetExceededError,
@@ -10,11 +12,10 @@ from src.config.exceptions import (
     ValidationFailedError,
 )
 
-warnings.warn(
-    "Importing from 'src.exceptions' is deprecated. "
-    "Use 'from src.config.exceptions import ...' instead.",
-    DeprecationWarning,
-    stacklevel=2,
+warn_deprecated(
+    old_path="src.exceptions",
+    new_path="src.config.exceptions",
+    removal_version="v3.0",
 )
 
 __all__ = [

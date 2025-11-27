@@ -45,3 +45,11 @@ repos:
           - --recursive
           - src/
         pass_filenames: false
+
+      - id: check-deprecated-imports
+        name: Deprecated Import Scanner
+        description: Check for deprecated import patterns that should be migrated
+        entry: python scripts/check_deprecated_imports.py
+        language: system
+        types: [python]
+        pass_filenames: true
