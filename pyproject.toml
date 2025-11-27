@@ -65,18 +65,32 @@ extend-select = ["PERF", "FURB", "SIM"]
 
 [tool.mypy]
 python_version = "3.13"
-# Global settings are relaxed for gradual typing approach
-warn_return_any = false
+
+# Level 1 전역 활성화
+warn_return_any = true
 warn_unused_configs = true
-warn_unused_ignores = false
-check_untyped_defs = false
+warn_unused_ignores = true
+check_untyped_defs = true
+
 namespace_packages = true
 explicit_package_bases = true
 mypy_path = "."
 ignore_missing_imports = true
 exclude = ["notion-neo4j-graph/", ".venv/", "build/", "vulture_whitelist.py"]
 
-# Core configuration modules with strict type checking
+# 점진적 적용: 복잡한 패키지 일시 제외
+[[tool.mypy.overrides]]
+module = [
+    "src.analysis.*",
+    "src.features.*",
+    "src.workflow.*",
+    "src.ui.*",
+    "tests.*",
+]
+check_untyped_defs = false
+warn_return_any = false
+
+# 기존 핵심 모듈 유지 (이미 Level 1)
 [[tool.mypy.overrides]]
 module = [
     "src.config",
@@ -87,12 +101,6 @@ module = [
 ]
 check_untyped_defs = true
 warn_return_any = true
-
-# Test files are relaxed but still catch actual type errors
-[[tool.mypy.overrides]]
-module = ["tests.*"]
-check_untyped_defs = false
-warn_return_any = false
 
 [tool.uv.workspace]
 members = ["notion-neo4j-graph"]
