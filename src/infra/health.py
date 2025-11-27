@@ -5,14 +5,20 @@ from typing import Any, Dict, TYPE_CHECKING
 
 import logging
 
-from neo4j.exceptions import Neo4jError
-
 if TYPE_CHECKING:
     from src.qa.rag_system import QAKnowledgeGraph
 
 
 def check_neo4j_connection(kg: QAKnowledgeGraph | None = None) -> bool:
     """Return True if a simple Neo4j query succeeds."""
+    try:
+        from neo4j.exceptions import Neo4jError
+    except ImportError:
+        logging.getLogger(__name__).warning(
+            "Cannot check Neo4j connection: neo4j package not available"
+        )
+        return False
+
     if kg is None:
         try:
             from src.qa.rag_system import QAKnowledgeGraph
