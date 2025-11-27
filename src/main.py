@@ -10,11 +10,18 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 
 from src.agent import GeminiAgent
+from src.caching.analytics import analyze_cache_stats  # noqa: F401 - Used by tests
+from src.caching.analytics import print_cache_report  # noqa: F401 - Used by tests
+from src.cli import parse_args  # noqa: F401 - Used by tests
 from src.config import AppConfig
 from src.config.constants import USER_INTERRUPT_MESSAGE
 from src.infra.logging import setup_logging
+from src.infra.utils import write_cache_stats  # noqa: F401 - Used by tests
+from src.processing.loader import load_input_data  # noqa: F401 - Used by tests
 from src.ui import console
 from src.ui.interactive_menu import interactive_main
+from src.ui.panels import render_cost_panel  # noqa: F401 - Used by tests
+from src.workflow import execute_workflow  # noqa: F401 - Used by tests
 
 
 async def main() -> None:
