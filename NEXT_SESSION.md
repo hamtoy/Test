@@ -64,7 +64,7 @@ python scripts/neo4j_benchmark_stub.py
 
 2. **LLM API 호출**
    - 배치 처리 개선
-   - 병렬 처리 최적화 (current: 5 → 10?)
+   - 병렬 처리 최적화 (현재 5 → 목표 10)
    - 프롬프트 토큰 효율화
 
 3. **벡터 검색**
