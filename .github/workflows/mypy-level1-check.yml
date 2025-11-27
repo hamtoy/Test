@@ -15,16 +15,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
-name: mypy Level 1 Check
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-
-permissions:
-  contents: read
 
 jobs:
   mypy-check:
@@ -79,31 +69,3 @@ jobs:
             mypy_report.json
             mypy_report.html
           retention-days: 7
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install dependencies
-        run: |
-          pip install uv
-          uv sync --extra dev
-
-      - name: Run mypy Level 1
-        run: |
-          uv run mypy src/ --config-file pyproject.toml
-
-      - name: Generate baseline report
-        if: failure()
-        run: |
-          uv run python scripts/check_mypy_baseline.py
-
-      - name: Upload report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: mypy-report
-          path: mypy_baseline_report.html
