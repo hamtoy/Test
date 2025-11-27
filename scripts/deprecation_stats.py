@@ -151,7 +151,9 @@ def generate_summary_text(stats: UsageStats) -> str:
 
 
 def generate_report(
-    stats: UsageStats, output_path: Path | None = None, title: str = "Deprecation Report"
+    stats: UsageStats,
+    output_path: Path | None = None,
+    title: str = "Deprecation Report",
 ) -> str:
     """Generate an HTML report from usage statistics.
 
@@ -273,15 +275,15 @@ def generate_report(
 
         <div class="summary">
             <div class="stat-card">
-                <div class="stat-value">{stats['total_calls']}</div>
+                <div class="stat-value">{stats["total_calls"]}</div>
                 <div class="stat-label">Total Deprecated Calls</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">{stats['unique_callers']}</div>
+                <div class="stat-value">{stats["unique_callers"]}</div>
                 <div class="stat-label">Files with Deprecations</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">{len(stats['by_module'])}</div>
+                <div class="stat-value">{len(stats["by_module"])}</div>
                 <div class="stat-label">Deprecated Modules Used</div>
             </div>
         </div>

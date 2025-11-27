@@ -107,9 +107,7 @@ def generate_diff(result: MigrationResult) -> str:
     return "".join(diff)
 
 
-def collect_files(
-    path: Path, exclude_patterns: list[str] | None = None
-) -> list[Path]:
+def collect_files(path: Path, exclude_patterns: list[str] | None = None) -> list[Path]:
     """Collect Python files to process."""
     if exclude_patterns is None:
         exclude_patterns = []
@@ -138,9 +136,7 @@ def main(args: list[str] | None = None) -> int:
         "--check", action="store_true", help="Dry run, show what would be changed"
     )
     parser.add_argument("--fix", action="store_true", help="Apply changes to files")
-    parser.add_argument(
-        "--path", default=".", help="Path to scan (file or directory)"
-    )
+    parser.add_argument("--path", default=".", help="Path to scan (file or directory)")
     parser.add_argument(
         "--exclude",
         action="append",

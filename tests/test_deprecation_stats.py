@@ -20,9 +20,7 @@ class TestAnalyzeFile:
 
     def test_no_deprecations(self):
         """Test file with no deprecated imports."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("from src.config.constants import FOO\n")
             f.flush()
             filepath = Path(f.name)
@@ -35,9 +33,7 @@ class TestAnalyzeFile:
 
     def test_single_deprecation(self):
         """Test file with a single deprecated import."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("from src.utils import helper\n")
             f.flush()
             filepath = Path(f.name)
@@ -51,13 +47,8 @@ class TestAnalyzeFile:
 
     def test_multiple_deprecations_same_module(self):
         """Test file with multiple deprecated imports from same module."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as f:
-            f.write(
-                "from src.utils import helper\n"
-                "from src.utils import another\n"
-            )
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write("from src.utils import helper\nfrom src.utils import another\n")
             f.flush()
             filepath = Path(f.name)
 
@@ -70,13 +61,8 @@ class TestAnalyzeFile:
 
     def test_multiple_deprecations_different_modules(self):
         """Test file with deprecated imports from different modules."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as f:
-            f.write(
-                "from src.utils import helper\n"
-                "from src.constants import CONST\n"
-            )
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write("from src.utils import helper\nfrom src.constants import CONST\n")
             f.flush()
             filepath = Path(f.name)
 

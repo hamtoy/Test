@@ -45,9 +45,7 @@ class TestMigrateFile:
 
     def test_no_changes_needed(self):
         """Test file with no deprecated imports."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("from src.config.constants import FOO\n")
             f.flush()
             filepath = Path(f.name)
@@ -62,9 +60,7 @@ class TestMigrateFile:
 
     def test_detect_deprecated_import(self):
         """Test detection of deprecated import in check mode."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("from src.utils import some_function\n")
             f.flush()
             filepath = Path(f.name)
@@ -75,17 +71,13 @@ class TestMigrateFile:
             assert result.has_changes is True
             assert len(result.changes) == 1
             # Original content should remain unchanged
-            assert (
-                filepath.read_text() == "from src.utils import some_function\n"
-            )
+            assert filepath.read_text() == "from src.utils import some_function\n"
         finally:
             filepath.unlink()
 
     def test_fix_deprecated_import(self):
         """Test fixing deprecated import."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("from src.utils import some_function\n")
             f.flush()
             filepath = Path(f.name)
@@ -95,22 +87,14 @@ class TestMigrateFile:
             assert result is not None
             assert result.has_changes is True
             # Content should be updated
-            assert (
-                filepath.read_text()
-                == "from src.infra.utils import some_function\n"
-            )
+            assert filepath.read_text() == "from src.infra.utils import some_function\n"
         finally:
             filepath.unlink()
 
     def test_multiple_imports_in_file(self):
         """Test file with multiple deprecated imports."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as f:
-            f.write(
-                "from src.utils import helper\n"
-                "from src.constants import CONST\n"
-            )
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write("from src.utils import helper\nfrom src.constants import CONST\n")
             f.flush()
             filepath = Path(f.name)
 
@@ -142,9 +126,7 @@ class TestMigrateFile:
 
     def test_unicode_decode_error_returns_none(self):
         """Test that binary files are skipped."""
-        with tempfile.NamedTemporaryFile(
-            mode="wb", suffix=".py", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=".py", delete=False) as f:
             f.write(b"\xff\xfe")  # Invalid UTF-8
             filepath = Path(f.name)
 
@@ -189,9 +171,7 @@ class TestCollectFiles:
 
     def test_collect_single_file(self):
         """Test collecting a single file."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("# test\n")
             filepath = Path(f.name)
 
@@ -246,9 +226,7 @@ class TestMain:
         """Test check mode with no deprecated imports."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
-            (tmppath / "main.py").write_text(
-                "from src.config.constants import FOO\n"
-            )
+            (tmppath / "main.py").write_text("from src.config.constants import FOO\n")
 
             exit_code = main(["--check", "--path", str(tmppath)])
 
@@ -268,10 +246,7 @@ class TestMain:
             captured = capsys.readouterr()
             assert "would be modified" in captured.out
             # File should not be changed
-            assert (
-                (tmppath / "main.py").read_text()
-                == "from src.utils import helper\n"
-            )
+            assert (tmppath / "main.py").read_text() == "from src.utils import helper\n"
 
     def test_fix_mode_applies_changes(self, capsys):
         """Test fix mode applies changes."""
@@ -293,9 +268,7 @@ class TestMain:
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
             (tmppath / "main.py").write_text("from src.utils import helper\n")
-            (tmppath / "test_main.py").write_text(
-                "from src.utils import helper\n"
-            )
+            (tmppath / "test_main.py").write_text("from src.utils import helper\n")
 
             exit_code = main(
                 ["--check", "--path", str(tmppath), "--exclude", "test_*.py"]
@@ -312,9 +285,7 @@ class TestMain:
             tmppath = Path(tmpdir)
             (tmppath / "main.py").write_text("from src.utils import helper\n")
 
-            exit_code = main(
-                ["--check", "--path", str(tmppath), "--show-diff"]
-            )
+            exit_code = main(["--check", "--path", str(tmppath), "--show-diff"])
 
             assert exit_code == 0
             captured = capsys.readouterr()
@@ -331,10 +302,7 @@ class TestMain:
 
             assert exit_code == 0
             # File should not be changed
-            assert (
-                (tmppath / "main.py").read_text()
-                == "from src.utils import helper\n"
-            )
+            assert (tmppath / "main.py").read_text() == "from src.utils import helper\n"
 
 
 class TestMigrationResult:
