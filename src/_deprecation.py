@@ -53,6 +53,7 @@ def _get_caller_info(stacklevel: int = 3) -> str:
     Returns:
         A formatted string with caller file, line, and function name.
     """
+    frame = None
     try:
         frame = inspect.currentframe()
         if frame is None:
@@ -72,7 +73,8 @@ def _get_caller_info(stacklevel: int = 3) -> str:
     except (AttributeError, ValueError):
         return ""
     finally:
-        del frame
+        if frame is not None:
+            del frame
 
 
 def _get_deprecation_level() -> str:

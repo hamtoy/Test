@@ -119,14 +119,19 @@ class TestWarnDeprecated:
         if "src._deprecation" in sys.modules:
             del sys.modules["src._deprecation"]
 
-        from src._deprecation import warn_deprecated
+        from src._deprecation import EnhancedDeprecationWarning, warn_deprecated
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             warn_deprecated("src.old", "src.new")
 
-            assert len(w) >= 1
-            message = str(w[-1].message)
+            deprecation_warnings = [
+                warn
+                for warn in w
+                if issubclass(warn.category, EnhancedDeprecationWarning)
+            ]
+            assert len(deprecation_warnings) >= 1
+            message = str(deprecation_warnings[-1].message)
             assert "Called from:" in message
 
     def test_deprecation_level_case_insensitive(self):
