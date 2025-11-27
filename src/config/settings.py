@@ -54,6 +54,11 @@ class AppConfig(BaseSettings):
     neo4j_password: str | None = Field(None, alias="NEO4J_PASSWORD")
     enable_lats: bool = Field(False, alias="ENABLE_LATS")
 
+    # Data2Neo Configuration
+    enable_data2neo: bool = Field(False, alias="ENABLE_DATA2NEO")
+    data2neo_batch_size: int = Field(100, alias="DATA2NEO_BATCH_SIZE")
+    data2neo_confidence: float = Field(0.7, alias="DATA2NEO_CONFIDENCE_THRESHOLD")
+
     # Async Queue Configuration
     redis_url: str = Field(
         "redis://localhost:6379", description="Redis URL for FastStream"

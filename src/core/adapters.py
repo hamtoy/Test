@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 import google.generativeai as genai
 from google.api_core import exceptions as google_exceptions
@@ -121,8 +121,9 @@ class GeminiProvider(LLMProvider):
 class Neo4jProvider(GraphProvider):
     """Neo4j implementation of GraphProvider using AsyncGraphDatabase."""
 
-    def __init__(self, uri: str, auth: tuple[str, str]):
+    def __init__(self, uri: str, auth: tuple[str, str], *, batch_size: int = 100):
         self._driver = AsyncGraphDatabase.driver(uri, auth=auth)
+        self._batch_size = batch_size
 
     @asynccontextmanager
     async def session(self) -> AsyncIterator[Any]:
@@ -143,3 +144,107 @@ class Neo4jProvider(GraphProvider):
             raise ProviderError(
                 f"Neo4j connectivity check failed: {e}", original_error=e
             ) from e
+
+    async def create_nodes(
+        self,
+        nodes: List[Dict[str, Any]],
+        label: str,
+        merge_on: str = "id",
+        merge_keys: Optional[List[str]] = None,
+    ) -> int:
+        """
+        Batch create or merge nodes using UNWIND for efficiency.
+
+        Args:
+            nodes: List of node property dictionaries.
+            label: Node label (e.g., "Person", "Organization").
+            merge_on: Primary key for MERGE operation (default: "id").
+            merge_keys: Additional keys for merge matching.
+
+        Returns:
+            Number of nodes created or merged.
+        """
+        if not nodes:
+            return 0
+
+        # Build merge keys
+        keys = [merge_on] + (merge_keys or [])
+        merge_clause = ", ".join(f"{k}: node.{k}" for k in keys)
+
+        # Build SET clause for remaining properties
+        set_props = [k for k in nodes[0] if k not in keys]
+        set_clause = ", ".join(f"n.{k} = node.{k}" for k in set_props)
+
+        query = f"""
+        UNWIND $nodes AS node
+        MERGE (n:{label} {{{merge_clause}}})
+        """
+        if set_clause:
+            query += f"SET {set_clause}\n"
+        query += "RETURN count(n) AS count"
+
+        total_count = 0
+        async with self.session() as session:
+            # Process in batches
+            for i in range(0, len(nodes), self._batch_size):
+                batch = nodes[i : i + self._batch_size]
+                result = await session.run(query, nodes=batch)
+                record = await result.single()
+                if record:
+                    total_count += record["count"]
+
+        return total_count
+
+    async def create_relationships(
+        self,
+        rels: List[Dict[str, Any]],
+        rel_type: str,
+        from_label: str,
+        to_label: str,
+        from_key: str = "id",
+        to_key: str = "id",
+    ) -> int:
+        """
+        Batch create relationships between nodes.
+
+        Args:
+            rels: List of relationship dictionaries containing
+                  'from_id', 'to_id', and optional properties.
+            rel_type: Relationship type (e.g., "WORKS_AT", "REFERENCES").
+            from_label: Label of the source node.
+            to_label: Label of the target node.
+            from_key: Key to match source node (default: "id").
+            to_key: Key to match target node (default: "id").
+
+        Returns:
+            Number of relationships created.
+        """
+        if not rels:
+            return 0
+
+        # Extract property keys (excluding from_id and to_id)
+        prop_keys = [k for k in rels[0] if k not in ("from_id", "to_id")]
+        props_clause = ", ".join(f"{k}: rel.{k}" for k in prop_keys)
+
+        query = f"""
+        UNWIND $rels AS rel
+        MATCH (a:{from_label} {{{from_key}: rel.from_id}})
+        MATCH (b:{to_label} {{{to_key}: rel.to_id}})
+        MERGE (a)-[r:{rel_type}"""
+
+        if props_clause:
+            query += f" {{{props_clause}}}"
+        query += """]->(b)
+        RETURN count(r) AS count"""
+
+        total_count = 0
+        async with self.session() as session:
+            # Process in batches
+            for i in range(0, len(rels), self._batch_size):
+                batch = rels[i : i + self._batch_size]
+                result = await session.run(query, rels=batch)
+                record = await result.single()
+                if record:
+                    total_count += record["count"]
+
+        return total_count

@@ -4,12 +4,19 @@ from __future__ import annotations
 
 import atexit
 import os
-from contextlib import suppress
-from typing import Any, Callable, Optional
+from contextlib import asynccontextmanager, suppress
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional
 
-from neo4j import GraphDatabase, Driver
+from neo4j import AsyncGraphDatabase, AsyncDriver, GraphDatabase, Driver
 
-__all__ = ["SafeDriver", "create_sync_driver", "get_neo4j_driver_from_env"]
+from src.core.interfaces import GraphProvider
+
+__all__ = [
+    "SafeDriver",
+    "create_sync_driver",
+    "get_neo4j_driver_from_env",
+    "Neo4jGraphProvider",
+]
 
 
 class SafeDriver:
@@ -100,3 +107,175 @@ def get_neo4j_driver_from_env(*, register_atexit: bool = False) -> SafeDriver:
         )
 
     return create_sync_driver(uri, user, password, register_atexit=register_atexit)
+
+
+class Neo4jGraphProvider(GraphProvider):
+    """
+    Neo4j implementation of GraphProvider with async support.
+
+    Supports both read operations (session, verify_connectivity) and
+    write operations (create_nodes, create_relationships) for Data2Neo pipeline.
+    """
+
+    def __init__(
+        self,
+        uri: str,
+        user: str,
+        password: str,
+        *,
+        batch_size: int = 100,
+    ) -> None:
+        """
+        Initialize Neo4jGraphProvider.
+
+        Args:
+            uri: Neo4j server URI (e.g., "bolt://localhost:7687").
+            user: Neo4j username.
+            password: Neo4j password.
+            batch_size: Default batch size for write operations.
+        """
+        self._uri = uri
+        self._user = user
+        self._password = password
+        self._batch_size = batch_size
+        self._driver: Optional[AsyncDriver] = None
+
+    async def _get_driver(self) -> AsyncDriver:
+        """Lazily initialize and return the async driver."""
+        if self._driver is None:
+            self._driver = AsyncGraphDatabase.driver(
+                self._uri, auth=(self._user, self._password)
+            )
+        return self._driver
+
+    @asynccontextmanager
+    async def _session_context(self) -> AsyncIterator[Any]:
+        """Async context manager for database session."""
+        driver = await self._get_driver()
+        async with driver.session() as session:
+            yield session
+
+    def session(self) -> Any:
+        """
+        Returns an async context manager for a database session.
+
+        Usage:
+            async with provider.session() as session:
+                result = await session.run("MATCH (n) RETURN n LIMIT 10")
+        """
+        return self._session_context()
+
+    async def close(self) -> None:
+        """Closes the provider connection."""
+        if self._driver is not None:
+            await self._driver.close()
+            self._driver = None
+
+    async def verify_connectivity(self) -> None:
+        """Verifies connection to the database."""
+        driver = await self._get_driver()
+        await driver.verify_connectivity()
+
+    async def create_nodes(
+        self,
+        nodes: List[Dict[str, Any]],
+        label: str,
+        merge_on: str = "id",
+        merge_keys: Optional[List[str]] = None,
+    ) -> int:
+        """
+        Batch create or merge nodes using UNWIND for efficiency.
+
+        Args:
+            nodes: List of node property dictionaries.
+            label: Node label (e.g., "Person", "Organization").
+            merge_on: Primary key for MERGE operation (default: "id").
+            merge_keys: Additional keys for merge matching.
+
+        Returns:
+            Number of nodes created or merged.
+        """
+        if not nodes:
+            return 0
+
+        # Build merge keys
+        keys = [merge_on] + (merge_keys or [])
+        merge_clause = ", ".join(f"{k}: node.{k}" for k in keys)
+
+        # Build SET clause for remaining properties
+        set_props = [k for k in nodes[0] if k not in keys]
+        set_clause = ", ".join(f"n.{k} = node.{k}" for k in set_props)
+
+        query = f"""
+        UNWIND $nodes AS node
+        MERGE (n:{label} {{{merge_clause}}})
+        """
+        if set_clause:
+            query += f"SET {set_clause}\n"
+        query += "RETURN count(n) AS count"
+
+        total_count = 0
+        async with self.session() as session:
+            # Process in batches
+            for i in range(0, len(nodes), self._batch_size):
+                batch = nodes[i : i + self._batch_size]
+                result = await session.run(query, nodes=batch)
+                record = await result.single()
+                if record:
+                    total_count += record["count"]
+
+        return total_count
+
+    async def create_relationships(
+        self,
+        rels: List[Dict[str, Any]],
+        rel_type: str,
+        from_label: str,
+        to_label: str,
+        from_key: str = "id",
+        to_key: str = "id",
+    ) -> int:
+        """
+        Batch create relationships between nodes.
+
+        Args:
+            rels: List of relationship dictionaries containing
+                  'from_id', 'to_id', and optional properties.
+            rel_type: Relationship type (e.g., "WORKS_AT", "REFERENCES").
+            from_label: Label of the source node.
+            to_label: Label of the target node.
+            from_key: Key to match source node (default: "id").
+            to_key: Key to match target node (default: "id").
+
+        Returns:
+            Number of relationships created.
+        """
+        if not rels:
+            return 0
+
+        # Extract property keys (excluding from_id and to_id)
+        prop_keys = [k for k in rels[0] if k not in ("from_id", "to_id")]
+        props_clause = ", ".join(f"{k}: rel.{k}" for k in prop_keys)
+
+        query = f"""
+        UNWIND $rels AS rel
+        MATCH (a:{from_label} {{{from_key}: rel.from_id}})
+        MATCH (b:{to_label} {{{to_key}: rel.to_id}})
+        MERGE (a)-[r:{rel_type}"""
+
+        if props_clause:
+            query += f" {{{props_clause}}}"
+        query += """]->(b)
+        RETURN count(r) AS count"""
+
+        total_count = 0
+        async with self.session() as session:
+            # Process in batches
+            for i in range(0, len(rels), self._batch_size):
+                batch = rels[i : i + self._batch_size]
+                result = await session.run(query, rels=batch)
+                record = await result.single()
+                if record:
+                    total_count += record["count"]
+
+        return total_count

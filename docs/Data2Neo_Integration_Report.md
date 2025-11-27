@@ -127,10 +127,32 @@ class AppConfig(BaseSettings):
         print([r for r in s.run('MATCH (n) RETURN DISTINCT labels(n), count(n)')])"
     ```
 
-### Phase 1: Foundation (Week 1)
+### Phase 1: Foundation (Week 1) ✅ COMPLETED
 
-- Implement `create_nodes` and `create_relationships` in `GraphProvider`.
-- Ensure async implementation handles Neo4j sessions correctly.
+- [x] Implement `create_nodes` and `create_relationships` in `GraphProvider`.
+- [x] Ensure async implementation handles Neo4j sessions correctly.
+
+**Implementation Details:**
+
+1. **GraphProvider Interface Extended** (`src/core/interfaces.py`):
+   - Added abstract methods: `create_nodes()` and `create_relationships()`
+   - Batch node creation with MERGE operation support
+   - Relationship creation with custom match keys
+
+2. **Neo4jGraphProvider** (`src/infra/neo4j.py`):
+   - Full async implementation using `AsyncGraphDatabase`
+   - Configurable batch size (default: 100)
+   - UNWIND-based batch processing for efficiency
+   - Proper session management with async context managers
+
+3. **Neo4jProvider** (`src/core/adapters.py`):
+   - Updated to implement new abstract methods
+   - Same batch processing logic as Neo4jGraphProvider
+
+4. **AppConfig** (`src/config/settings.py`):
+   - Added `enable_data2neo` (default: `False`)
+   - Added `data2neo_batch_size` (default: `100`)
+   - Added `data2neo_confidence` threshold (default: `0.7`)
 
 ### Phase 2: Extractor Development (Weeks 2-5)
 

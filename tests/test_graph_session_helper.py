@@ -42,6 +42,26 @@ class _AsyncProvider(GraphProvider):
     async def verify_connectivity(self):
         return None
 
+    async def create_nodes(
+        self,
+        nodes,
+        label,
+        merge_on="id",
+        merge_keys=None,
+    ):
+        return len(nodes)
+
+    async def create_relationships(
+        self,
+        rels,
+        rel_type,
+        from_label,
+        to_label,
+        from_key="id",
+        to_key="id",
+    ):
+        return len(rels)
+
 
 def test_graph_session_with_sync_graph():
     kg = object.__new__(QAKnowledgeGraph)

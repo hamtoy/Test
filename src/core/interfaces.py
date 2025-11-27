@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -105,4 +105,53 @@ class GraphProvider(ABC):
     @abstractmethod
     async def verify_connectivity(self) -> None:
         """Verifies connection to the database."""
+        pass
+
+    @abstractmethod
+    async def create_nodes(
+        self,
+        nodes: List[Dict[str, Any]],
+        label: str,
+        merge_on: str = "id",
+        merge_keys: Optional[List[str]] = None,
+    ) -> int:
+        """
+        Batch create or merge nodes.
+
+        Args:
+            nodes: List of node property dictionaries.
+            label: Node label (e.g., "Person", "Organization").
+            merge_on: Primary key for MERGE operation (default: "id").
+            merge_keys: Additional keys for merge matching.
+
+        Returns:
+            Number of nodes created or merged.
+        """
+        pass
+
+    @abstractmethod
+    async def create_relationships(
+        self,
+        rels: List[Dict[str, Any]],
+        rel_type: str,
+        from_label: str,
+        to_label: str,
+        from_key: str = "id",
+        to_key: str = "id",
+    ) -> int:
+        """
+        Batch create relationships between nodes.
+
+        Args:
+            rels: List of relationship dictionaries containing
+                  'from_id', 'to_id', and optional properties.
+            rel_type: Relationship type (e.g., "WORKS_AT", "REFERENCES").
+            from_label: Label of the source node.
+            to_label: Label of the target node.
+            from_key: Key to match source node (default: "id").
+            to_key: Key to match target node (default: "id").
+
+        Returns:
+            Number of relationships created.
+        """
         pass
