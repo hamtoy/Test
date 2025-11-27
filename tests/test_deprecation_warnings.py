@@ -100,9 +100,11 @@ class TestDeprecationWarnings:
 
     def test_logging_setup_shim_warning(self):
         """Test that importing from src.logging_setup emits a deprecation warning."""
+        sys.modules.pop("src.logging_setup", None)
+
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from src.infra.logging import setup_logging  # noqa: F401
+            import src.logging_setup  # noqa: F401
 
             assert len(w) == 1
             assert issubclass(w[0].category, DeprecationWarning)
@@ -111,9 +113,11 @@ class TestDeprecationWarnings:
 
     def test_neo4j_utils_shim_warning(self):
         """Test that importing from src.neo4j_utils emits a deprecation warning."""
+        sys.modules.pop("src.neo4j_utils", None)
+
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from src.infra.neo4j import SafeDriver  # noqa: F401
+            import src.neo4j_utils  # noqa: F401
 
             assert len(w) == 1
             assert issubclass(w[0].category, DeprecationWarning)
@@ -127,7 +131,7 @@ class TestDeprecationWarnings:
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from src.infra.worker import OCRTask  # noqa: F401
+            import src.worker  # noqa: F401
 
             deprecation_warnings = [
                 warn for warn in w if issubclass(warn.category, DeprecationWarning)
@@ -143,9 +147,11 @@ class TestDeprecationWarnings:
 
     def test_data_loader_shim_warning(self):
         """Test that importing from src.data_loader emits a deprecation warning."""
+        sys.modules.pop("src.data_loader", None)
+
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from src.processing.loader import load_input_data  # noqa: F401
+            import src.data_loader  # noqa: F401
 
             assert len(w) == 1
             assert issubclass(w[0].category, DeprecationWarning)
@@ -174,7 +180,7 @@ class TestDeprecationWarnings:
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from src.caching.layer import CachingLayer  # noqa: F401
+            import src.caching_layer  # noqa: F401
 
             # __getattr__ based shims may emit multiple warnings (e.g., for __path__ and the actual import)
             deprecation_warnings = [
@@ -197,7 +203,7 @@ class TestDeprecationWarnings:
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            from src.routing.graph_router import GraphEnhancedRouter  # noqa: F401
+            import src.graph_enhanced_router  # noqa: F401
 
             deprecation_warnings = [
                 warn for warn in w if issubclass(warn.category, DeprecationWarning)
