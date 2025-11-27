@@ -10,10 +10,6 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    pass
 
 # List of 24 shim files to be removed in v3.0
 SHIM_FILES = [
