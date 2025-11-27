@@ -70,7 +70,7 @@ python_version = "3.10"  # v3.0: Minimum supported version
 # Level 1 전역 활성화
 warn_return_any = true
 warn_unused_configs = true
-warn_unused_ignores = true
+warn_unused_ignores = false  # Disabled due to inconsistent stubs in google-generativeai
 check_untyped_defs = true
 
 namespace_packages = true

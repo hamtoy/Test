@@ -27,9 +27,9 @@ class GeminiProvider(LLMProvider):
     """Gemini implementation of LLMProvider."""
 
     def __init__(self, api_key: str, model_name: str = "gemini-1.5-pro"):
-        genai.configure(api_key=api_key)
+        genai.configure(api_key=api_key)  # type: ignore[attr-defined]
         self.model_name = model_name
-        self._model = genai.GenerativeModel(model_name)
+        self._model = genai.GenerativeModel(model_name)  # type: ignore[attr-defined]
 
     async def generate_content_async(
         self,
@@ -53,7 +53,7 @@ class GeminiProvider(LLMProvider):
         # as it's set at initialization time for GenerativeModel.
         model = self._model
         if system_instruction:
-            model = genai.GenerativeModel(
+            model = genai.GenerativeModel(  # type: ignore[attr-defined]
                 self.model_name, system_instruction=system_instruction
             )
 
