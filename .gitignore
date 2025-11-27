@@ -74,6 +74,9 @@ mypy_output*.txt
 coverage_report.txt
 performance_baseline.txt
 output.txt
+test_output.txt
+pytest_output.txt
+test_warnings_quick.py
 
 # IDE additional
 *.code-workspace
