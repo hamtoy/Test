@@ -243,7 +243,7 @@ async def _run_data2neo_extraction(task: OCRTask) -> Dict[str, Any]:
             document_path=task.image_path,
         )
 
-        entity_counts = {}
+        entity_counts: Dict[str, int] = {}
         for entity in result.entities:
             entity_type = entity.type.value
             entity_counts[entity_type] = entity_counts.get(entity_type, 0) + 1
