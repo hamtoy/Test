@@ -142,9 +142,7 @@ def scan_modules(
             if not strict:
                 # In non-strict mode, only count return type issues
                 issues = [
-                    (line, msg)
-                    for line, msg in issues
-                    if "Missing return type" in msg
+                    (line, msg) for line, msg in issues if "Missing return type" in msg
                 ]
 
             if issues:
@@ -183,7 +181,9 @@ def main(args: list[str] | None = None) -> int:
     print("🔍 v3.0 Type Hints Enforcement Check")
     print("=" * 50)
     print(f"Checking modules: {', '.join(parsed_args.modules)}")
-    print(f"Mode: {'Strict (all annotations)' if parsed_args.strict else 'Standard (return types only)'}")
+    print(
+        f"Mode: {'Strict (all annotations)' if parsed_args.strict else 'Standard (return types only)'}"
+    )
     print()
 
     total_issues, results = scan_modules(parsed_args.modules, parsed_args.strict)

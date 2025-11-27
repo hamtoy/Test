@@ -73,9 +73,7 @@ def run_command(
 
     try:
         if capture_output:
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, check=False
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, check=False)
             output = result.stdout + result.stderr
             return result.returncode == 0, output
         else:

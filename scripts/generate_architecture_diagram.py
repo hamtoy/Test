@@ -143,7 +143,7 @@ def generate_mermaid_diagram(structure: Dict[str, List[str]]) -> str:
         [
             "",
             "    %% v3.0 Public API",
-            "    subgraph PublicAPI[\"v3.0 Public API\"]",
+            '    subgraph PublicAPI["v3.0 Public API"]',
             "        Agent",
             "        Config[config/]",
             "        Core[core/]",
@@ -289,7 +289,9 @@ def main(args: list[str] | None = None) -> int:
         return 0
 
     if parsed_args.output:
-        output_content = f"# v3.0 Package Architecture\n\n{diagram}\n\n## Module Tree\n\n{tree}\n"
+        output_content = (
+            f"# v3.0 Package Architecture\n\n{diagram}\n\n## Module Tree\n\n{tree}\n"
+        )
         parsed_args.output.write_text(output_content, encoding="utf-8")
         print(f"✅ Diagram written to {parsed_args.output}")
     else:
