@@ -3,33 +3,33 @@
 ```mermaid
 graph TD
     subgraph "Application Layer"
-        CLI[cli.py]
-        API[main.py]
+        CLI[src/cli.py]
+        Main[src/main.py]
     end
     
     subgraph "Agent Layer"
-        Core[agent/core.py]
-        Batch[agent/batch_processor.py]
-        Cache[agent/caching_layer.py]
+        Core[src/agent/core.py]
+        Batch[src/agent/batch_processor.py]
+        Cache[src/caching/layer.py]
     end
     
     subgraph "QA Layer"
-        RAG[qa/rag_system.py]
+        RAG[src/qa/rag_system.py]
     end
     
     subgraph "Infrastructure Layer"
-        Neo4jUtil[infra/neo4j_utils.py]
-        Utils[infra/utils.py]
+        Neo4jUtil[src/infra/neo4j.py]
+        Utils[src/infra/utils.py]
     end
     
     subgraph "Config Layer"
-        Settings[config/settings.py]
-        Interfaces[core/interfaces.py]
+        Settings[src/config/settings.py]
+        Interfaces[src/core/interfaces.py]
     end
     
     CLI --> Core
-    API --> Core
-    API --> RAG
+    Main --> Core
+    Main --> RAG
     
     Core --> Cache
     Core --> Settings
