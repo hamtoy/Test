@@ -538,7 +538,10 @@ class GeminiAgent:
     # ==================== Query 생성 ====================
 
     async def generate_query(
-        self, ocr_text: str, user_intent: Optional[str] = None
+        self,
+        ocr_text: str,
+        user_intent: Optional[str] = None,
+        cached_content: Optional["caching.CachedContent"] = None,
     ) -> List[str]:
         """OCR 텍스트와 사용자 의도에 기반한 전략적 쿼리 생성."""
         template = self.jinja_env.get_template("query_gen_user.j2")
@@ -553,8 +556,10 @@ class GeminiAgent:
         )
 
         model = self._create_generative_model(
-            system_prompt, response_schema=QueryResult
+            system_prompt, response_schema=QueryResult, cached_content=cached_content
         )
+
+        self._track_cache_usage(cached_content is not None)
 
         try:
             response_text = await self._call_api_with_retry(model, user_prompt)
