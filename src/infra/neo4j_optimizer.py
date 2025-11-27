@@ -197,14 +197,14 @@ class OptimizedQueries:
     """
 
     @staticmethod
-    def find_rules_by_document(document_id: Optional[str] = None) -> str:
+    def find_rules_by_document(_document_id: Optional[str] = None) -> str:
         """
         Find all rules associated with a document.
         Uses: rule_id_idx + triad_document_rule_idx
 
         Args:
-            document_id: Optional document ID (for documentation only,
-                        the actual value should be passed as a parameter).
+            _document_id: Optional document ID (for documentation only,
+                         the actual value should be passed as a parameter).
 
         Returns:
             Cypher query string with $document_id parameter placeholder.
@@ -215,14 +215,14 @@ class OptimizedQueries:
         """
 
     @staticmethod
-    def find_related_rules(rule_id: Optional[str] = None, max_depth: int = 2) -> str:
+    def find_related_rules(_rule_id: Optional[str] = None, max_depth: int = 2) -> str:
         """
         Find rules related to a given rule (transitive closure).
         Uses: triad_relates_to_idx
 
         Args:
-            rule_id: Optional rule ID (for documentation only,
-                    the actual value should be passed as a parameter).
+            _rule_id: Optional rule ID (for documentation only,
+                     the actual value should be passed as a parameter).
             max_depth: Maximum traversal depth (default: 2).
 
         Returns:
@@ -236,16 +236,16 @@ class OptimizedQueries:
 
     @staticmethod
     def semantic_search_with_graph(
-        embedding: Optional[List[float]] = None, k: int = 10
+        _embedding: Optional[List[float]] = None, _k: int = 10
     ) -> str:
         """
         Hybrid search: Vector similarity + Graph traversal.
         Uses: chunk_embedding_idx + triad_has_chunk_idx
 
         Args:
-            embedding: Optional embedding vector (for documentation only,
-                      the actual value should be passed as a parameter).
-            k: Number of top results to return (default: 10).
+            _embedding: Optional embedding vector (for documentation only,
+                       the actual value should be passed as a parameter).
+            _k: Number of top results to return (default: 10).
 
         Returns:
             Cypher query string with $k and $embedding parameter placeholders.

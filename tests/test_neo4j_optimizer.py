@@ -275,7 +275,7 @@ class TestOptimizedQueries:
 
     def test_semantic_search_with_graph(self) -> None:
         """Generates correct hybrid search query."""
-        query = OptimizedQueries.semantic_search_with_graph(k=5)
+        query = OptimizedQueries.semantic_search_with_graph(_k=5)
         assert "$k" in query
         assert "$embedding" in query
         assert "chunk_embedding_idx" in query
