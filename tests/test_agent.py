@@ -146,7 +146,7 @@ class TestGeminiAgent:
             call_kwargs = agent._create_generative_model.call_args
             assert call_kwargs[1]["cached_content"] == mock_cache
 
-            # Verify cache hit is tracked
+            # Verify cache usage is tracked (cache provided = hit)
             assert agent.cache_hits == 1
             assert agent.cache_misses == 0
 
@@ -185,7 +185,7 @@ class TestGeminiAgent:
             call_kwargs = agent._create_generative_model.call_args
             assert call_kwargs[1]["cached_content"] is None
 
-            # Verify cache miss is tracked
+            # Verify cache usage is tracked (cache not provided = miss)
             assert agent.cache_hits == 0
             assert agent.cache_misses == 1
 
