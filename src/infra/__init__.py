@@ -66,6 +66,16 @@ def __getattr__(name: str) -> Any:
 
         return Neo4jLoggingCallback
 
+    # adaptive_limiter.py exports
+    if name == "AdaptiveRateLimiter":
+        from src.infra.adaptive_limiter import AdaptiveRateLimiter
+
+        return AdaptiveRateLimiter
+    if name == "AdaptiveStats":
+        from src.infra.adaptive_limiter import AdaptiveStats
+
+        return AdaptiveStats
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -82,4 +92,6 @@ __all__ = [
     "RealTimeConstraintEnforcer",
     "CustomCallback",
     "Neo4jLoggingCallback",
+    "AdaptiveRateLimiter",
+    "AdaptiveStats",
 ]
