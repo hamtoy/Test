@@ -76,6 +76,16 @@ def __getattr__(name: str) -> Any:
 
         return AdaptiveStats
 
+    # neo4j_optimizer.py exports
+    if name == "TwoTierIndexManager":
+        from src.infra.neo4j_optimizer import TwoTierIndexManager
+
+        return TwoTierIndexManager
+    if name == "OptimizedQueries":
+        from src.infra.neo4j_optimizer import OptimizedQueries
+
+        return OptimizedQueries
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -94,4 +104,6 @@ __all__ = [
     "Neo4jLoggingCallback",
     "AdaptiveRateLimiter",
     "AdaptiveStats",
+    "TwoTierIndexManager",
+    "OptimizedQueries",
 ]
