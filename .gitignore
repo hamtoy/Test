@@ -71,6 +71,7 @@ cache_stats.jsonl
 
 # Analysis outputs
 mypy_output*.txt
+mypy_baseline_report.html
 coverage_report.txt
 performance_baseline.txt
 output.txt

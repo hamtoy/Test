@@ -34,9 +34,9 @@ class GeminiModelClient:
 
     def __init__(self) -> None:
         api_key = require_env("GEMINI_API_KEY")
-        genai.configure(api_key=api_key)  # type: ignore[attr-defined]
+        genai.configure(api_key=api_key)
         self.model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-3-pro-preview")
-        self.model = genai.GenerativeModel(self.model_name)  # type: ignore[attr-defined]
+        self.model = genai.GenerativeModel(self.model_name)
         genai_logger = getattr(genai, "_logging", None)
         if genai_logger and getattr(genai_logger, "logger", None):
             self.logger = genai_logger.logger

@@ -46,7 +46,7 @@ class MCTSWorkflowOptimizer:
 
     async def optimize_workflow(self, query: str) -> Dict[str, Any]:
         """Run MCTS to find the best template for the query."""
-        root = MCTSNode(state="ROOT", untried_actions=self.templates.copy())  # type: ignore
+        root = MCTSNode(state="ROOT", untried_actions=self.templates.copy())
 
         for _ in range(self.iterations):
             node = self._select(root)
@@ -73,7 +73,7 @@ class MCTSWorkflowOptimizer:
 
     def _expand(self, node: MCTSNode) -> MCTSNode:
         action = node.untried_actions.pop()
-        child = MCTSNode(state=action, parent=node, untried_actions=[])  # type: ignore
+        child = MCTSNode(state=action, parent=node, untried_actions=[])
         node.children.append(child)
         return child
 

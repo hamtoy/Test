@@ -100,7 +100,7 @@ class TestGeminiAgent:
             active = False
             return "ok"
 
-        agent._execute_api_call = fake_execute  # type: ignore
+        agent._execute_api_call = fake_execute
 
         model = object()
         await asyncio.gather(
