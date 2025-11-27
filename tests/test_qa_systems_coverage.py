@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import types
 import sys
-from src import cross_validation
-from src import lcel_optimized_chain
-from src import memory_augmented_qa
-from src import multi_agent_qa_system
+from src.analysis import cross_validation
+from src.llm import lcel_chain as lcel_optimized_chain
+from src.qa import memory_augmented as memory_augmented_qa
+from src.qa import multi_agent as multi_agent_qa_system
 from src.qa import memory_augmented
 
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from jinja2 import DictLoader, Environment
-from src import dynamic_template_generator as dtg
+from src.processing import template_generator as dtg
 from tests.conftest import MockDriver
 
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import types
 import sys
-from src import qa_rag_system as qrs
+from src.qa import rag_system as qrs
 
 
 def test_qa_rag_system_embeddings_and_rules(monkeypatch):

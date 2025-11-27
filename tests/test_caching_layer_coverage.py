@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import types
-from src import caching_layer
+from src.caching import layer as caching_layer
 
 
 def test_caching_layer_prefers_cache_and_invalidates(monkeypatch):

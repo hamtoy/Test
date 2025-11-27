@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import types
-from src import self_correcting_chain
+from src.features import self_correcting as self_correcting_chain
 from src.llm import langchain_system as ulqa
 
 

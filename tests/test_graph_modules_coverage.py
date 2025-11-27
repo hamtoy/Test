@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import types
 from src.graph import builder as graph
-from src import graph_enhanced_router
-from src import custom_callback
+from src.routing import graph_router as graph_enhanced_router
+from src.infra import callbacks as custom_callback
 
 
 def test_graph_schema_builder_runs_with_stubbed_driver(monkeypatch):

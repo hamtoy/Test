@@ -9,7 +9,7 @@ import pytest
 os.environ.setdefault("GEMINI_API_KEY", "AIza" + "0" * 35)
 
 pytest.importorskip("faststream")
-from src import worker  # noqa: E402
+from src.infra import worker  # noqa: E402
 
 
 @pytest.mark.asyncio

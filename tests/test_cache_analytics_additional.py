@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from src import cache_analytics
+from src.caching import analytics as cache_analytics
 
 
 def test_calculate_savings_zero_for_unknown_model():

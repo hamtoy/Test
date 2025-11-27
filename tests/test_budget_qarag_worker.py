@@ -9,9 +9,9 @@ import pytest
 # Ensure required env is present for AppConfig during import
 os.environ.setdefault("GEMINI_API_KEY", "AIza" + "0" * 35)
 
-from src import budget_tracker
-from src import qa_rag_system
-from src import worker
+from src.infra import budget as budget_tracker
+from src.qa import rag_system as qa_rag_system
+from src.infra import worker
 
 
 def test_budget_tracker_stats_and_budget():
