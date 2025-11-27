@@ -44,7 +44,12 @@ class SafetySettings(TypedDict, total=False):
 
 
 class GenerateContentResponse:
-    """Protocol-like class for Gemini API response."""
+    """
+    Data class representing the structure of a Gemini API response.
+
+    This is not a protocol but a reference class showing the expected
+    response structure. Actual responses from the API will be typed as Any.
+    """
 
     text: str
     candidates: list[Any]
@@ -121,12 +126,17 @@ def embed_content(
         task_type: Type of embedding task
 
     Returns:
-        Dictionary containing the embedding result
+        Dictionary containing the embedding result with 'embedding' key
     """
     result: Any = genai.embed_content(  # type: ignore[attr-defined]
         model=model, content=content, task_type=task_type
     )
-    return dict(result)
+    # The result is a dict-like object with 'embedding' key
+    # We convert to dict to provide a concrete return type
+    if hasattr(result, "keys"):
+        return dict(result)
+    # Fallback: wrap in dict if result is the embedding directly
+    return {"embedding": result}
 
 
 __all__ = [
