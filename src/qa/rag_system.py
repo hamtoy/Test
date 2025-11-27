@@ -36,14 +36,14 @@ class CustomGeminiEmbeddings(Embeddings):
     """Gemini 임베딩 래퍼."""
 
     def __init__(self, api_key: str, model: str = "models/text-embedding-004") -> None:
-        genai.configure(api_key=api_key)
+        genai.configure(api_key=api_key)  # type: ignore[attr-defined]
         self.model = model
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         return [self.embed_query(text) for text in texts]
 
     def embed_query(self, text: str) -> List[float]:
-        result = genai.embed_content(
+        result = genai.embed_content(  # type: ignore[attr-defined]
             model=self.model, content=text, task_type="retrieval_query"
         )
         return list(result["embedding"])

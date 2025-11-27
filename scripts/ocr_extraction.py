@@ -62,7 +62,7 @@ def _preprocess_image(
 
 
 def _extract_with_retries(
-    model: genai.GenerativeModel,
+    model: "genai.GenerativeModel",  # type: ignore[name-defined]
     img_path: Path,
     preprocess: bool = True,
     max_retries: int = MAX_RETRIES,
@@ -104,8 +104,8 @@ def extract_text_from_images(
         print("Error: GEMINI_API_KEY not found in environment variables.")
         return
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(model_name)
+    genai.configure(api_key=api_key)  # type: ignore[attr-defined]
+    model = genai.GenerativeModel(model_name)  # type: ignore[attr-defined]
 
     _write_header(output_file, jsonl_file)
 

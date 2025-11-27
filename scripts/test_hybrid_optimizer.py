@@ -36,7 +36,7 @@ async def main():
 
                 return Result()
 
-        agent = MockAgent()  # type: ignore
+        agent = MockAgent()
 
     templates = ["ocr_v1.j2", "ocr_v2.j2", "rag_simple.j2"]
 
