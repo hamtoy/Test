@@ -8,6 +8,7 @@ to optimize throughput while preventing 429 Too Many Requests errors.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import time
 from contextlib import asynccontextmanager
@@ -15,6 +16,9 @@ from dataclasses import dataclass
 from typing import AsyncIterator
 
 logger = logging.getLogger(__name__)
+
+# Polling interval for checking slot availability (seconds)
+_POLL_INTERVAL = 0.1
 
 
 @dataclass
@@ -57,11 +61,11 @@ class AdaptiveRateLimiter:
         self._target_latency = target_latency
         self._window_size = window_size
 
-        self._semaphore = asyncio.Semaphore(int(self._current_limit))
         self._latencies: list[float] = []
         self._errors = 0
         self._lock = asyncio.Lock()
         self._active_count = 0
+        self._condition = asyncio.Condition(self._lock)
 
         # Statistics
         self.stats = AdaptiveStats()
@@ -79,9 +83,9 @@ class AdaptiveRateLimiter:
         avg_latency = sum(self._latencies) / len(self._latencies)
         self.stats.avg_latency = avg_latency
 
-        # Vegas Algorithm Logic
-        # 레이턴시가 목표보다 낮으면(빠르면) -> 속도 증가
-        # 레이턴시가 목표보다 높으면(느리면) -> 속도 감소
+        # Vegas Algorithm Logic:
+        # If latency is below target (fast) -> increase rate
+        # If latency is above target (slow) -> decrease rate
 
         if self._errors > 0:
             # Error occurred: Multiplicative Decrease (halve the limit)
@@ -117,30 +121,36 @@ class AdaptiveRateLimiter:
         Raises:
             Exception: Re-raises any exception from the wrapped code
         """
-        # Wait until active count is below current limit
-        while True:
-            async with self._lock:
-                if self._active_count < self.current_limit:
-                    self._active_count += 1
-                    break
-            await asyncio.sleep(0.1)
+        # Wait until a slot becomes available using condition variable
+        async with self._condition:
+            while self._active_count >= self.current_limit:
+                # Use wait_for with timeout to periodically re-check the dynamic limit
+                with contextlib.suppress(TimeoutError):
+                    await asyncio.wait_for(
+                        self._condition.wait(), timeout=_POLL_INTERVAL
+                    )
+            self._active_count += 1
 
         start_time = time.monotonic()
         error_occurred = False
 
         try:
             yield
-            self.stats.success_count += 1
+            async with self._lock:
+                self.stats.success_count += 1
         except Exception:
             error_occurred = True
-            self._errors += 1
-            self.stats.throttle_count += 1
+            async with self._lock:
+                self._errors += 1
+                self.stats.throttle_count += 1
             raise
         finally:
             latency = time.monotonic() - start_time
 
-            async with self._lock:
+            async with self._condition:
                 self._active_count -= 1
                 self._latencies.append(latency)
                 if len(self._latencies) >= self._window_size or error_occurred:
                     await self._update_limits()
+                # Notify waiting coroutines that a slot is available
+                self._condition.notify()
