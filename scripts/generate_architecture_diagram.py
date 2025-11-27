@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import re
 import sys
 from pathlib import Path
 from typing import Dict, List, Set
@@ -223,8 +224,6 @@ def update_architecture_md(diagram: str, tree: str) -> bool:
 
     if start_marker in content and end_marker in content:
         # Replace existing auto-generated section
-        import re
-
         pattern = re.escape(start_marker) + r".*?" + re.escape(end_marker)
         content = re.sub(pattern, new_section, content, flags=re.DOTALL)
     else:

@@ -62,7 +62,7 @@ def _emit_deprecation_warning(name: str, new_path: str) -> None:
         f"Importing '{name}' from 'src' is deprecated and will be removed in v4.0. "
         f"Use 'from {new_path} import ...' instead.",
         DeprecationWarning,
-        stacklevel=4,
+        stacklevel=3,
     )
 
 
