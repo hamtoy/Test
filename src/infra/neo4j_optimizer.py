@@ -74,6 +74,9 @@ class TwoTierIndexManager:
             CREATE INDEX chunk_id_idx IF NOT EXISTS
             FOR (c:Chunk) ON (c.id)
             """,
+            # Vector index for embedding similarity search.
+            # Note: Backticks around property names are Neo4j's required syntax
+            # for index configuration options (not JSON).
             """
             CREATE VECTOR INDEX chunk_embedding_idx IF NOT EXISTS
             FOR (c:Chunk) ON (c.embedding)

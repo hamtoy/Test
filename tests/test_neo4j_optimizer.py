@@ -4,6 +4,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from src.cli import parse_args, run_neo4j_optimization
 from src.infra.neo4j_optimizer import TwoTierIndexManager, OptimizedQueries
 
 
@@ -291,8 +292,6 @@ class TestCLIOptimizeNeo4j:
     @pytest.mark.asyncio
     async def test_run_neo4j_optimization_missing_env(self) -> None:
         """Raises error when environment variables are missing."""
-        from src.cli import run_neo4j_optimization
-
         with pytest.raises(EnvironmentError) as exc_info:
             await run_neo4j_optimization()
 
@@ -301,8 +300,6 @@ class TestCLIOptimizeNeo4j:
     @pytest.mark.asyncio
     async def test_run_neo4j_optimization_success(self, monkeypatch) -> None:
         """Successfully runs optimization with valid env."""
-        from src.cli import run_neo4j_optimization
-
         monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
         monkeypatch.setenv("NEO4J_USER", "neo4j")
         monkeypatch.setenv("NEO4J_PASSWORD", "password")
@@ -330,8 +327,6 @@ class TestCLIOptimizeNeo4j:
     @pytest.mark.asyncio
     async def test_run_neo4j_optimization_with_drop(self, monkeypatch) -> None:
         """Drops existing indexes when flag is set."""
-        from src.cli import run_neo4j_optimization
-
         monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
         monkeypatch.setenv("NEO4J_USER", "neo4j")
         monkeypatch.setenv("NEO4J_PASSWORD", "password")
@@ -366,16 +361,12 @@ class TestCLIArgsOptimizeNeo4j:
 
     def test_parse_args_optimize_neo4j(self) -> None:
         """Parses --optimize-neo4j flag."""
-        from src.cli import parse_args
-
         args = parse_args(["--optimize-neo4j"])
         assert args.optimize_neo4j is True
         assert args.drop_existing_indexes is False
 
     def test_parse_args_drop_existing(self) -> None:
         """Parses --drop-existing-indexes flag."""
-        from src.cli import parse_args
-
         args = parse_args(["--optimize-neo4j", "--drop-existing-indexes"])
         assert args.optimize_neo4j is True
         assert args.drop_existing_indexes is True
