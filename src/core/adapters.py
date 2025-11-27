@@ -156,13 +156,18 @@ class Neo4jProvider(GraphProvider):
         Batch create or merge nodes using UNWIND for efficiency.
 
         Args:
-            nodes: List of node property dictionaries.
+            nodes: List of node property dictionaries. All nodes should have
+                   the same property keys for consistent schema handling.
             label: Node label (e.g., "Person", "Organization").
             merge_on: Primary key for MERGE operation (default: "id").
             merge_keys: Additional keys for merge matching.
 
         Returns:
             Number of nodes created or merged.
+
+        Note:
+            This method assumes all nodes in the list have consistent property
+            keys. The first node's keys are used to build the SET clause.
         """
         if not nodes:
             return 0
@@ -209,7 +214,8 @@ class Neo4jProvider(GraphProvider):
 
         Args:
             rels: List of relationship dictionaries containing
-                  'from_id', 'to_id', and optional properties.
+                  'from_id', 'to_id', and optional properties. All relationships
+                  should have the same property keys for consistent schema handling.
             rel_type: Relationship type (e.g., "WORKS_AT", "REFERENCES").
             from_label: Label of the source node.
             to_label: Label of the target node.
@@ -218,6 +224,11 @@ class Neo4jProvider(GraphProvider):
 
         Returns:
             Number of relationships created.
+
+        Note:
+            This method assumes all relationships in the list have consistent
+            property keys. The first relationship's keys are used to build
+            the property clause.
         """
         if not rels:
             return 0
