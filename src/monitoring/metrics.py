@@ -140,8 +140,11 @@ def get_metrics() -> bytes:
         Prometheus 텍스트 형식의 메트릭 데이터
     """
     result = generate_latest()
+    # prometheus_client returns bytes, but we handle str for safety
     if isinstance(result, bytes):
         return result
+    if isinstance(result, str):
+        return result.encode("utf-8")
     return b"# Unable to generate metrics\n"
 
 

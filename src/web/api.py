@@ -476,8 +476,6 @@ async def liveness_endpoint() -> Dict[str, Any]:
 @app.get("/metrics")
 async def metrics_endpoint() -> Response:
     """Prometheus metrics endpoint"""
-    from fastapi.responses import Response
-
     from src.monitoring.metrics import get_metrics
 
     return Response(content=get_metrics(), media_type="text/plain")

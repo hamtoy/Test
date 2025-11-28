@@ -8,6 +8,10 @@ on:
       - 'pyproject.toml'
       - 'src/**'
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   build:
     runs-on: ubuntu-latest

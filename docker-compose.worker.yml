@@ -1,5 +1,10 @@
 # Production LATS Worker configuration
 # Lightweight deployment for worker processes
+#
+# IMPORTANT: Create a .env.production file with your production secrets.
+# DO NOT commit this file to version control.
+# Consider using Docker secrets or environment-specific configuration
+# management for sensitive values in production deployments.
 
 version: "3.8"
 

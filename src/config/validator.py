@@ -137,8 +137,10 @@ class EnvValidator:
 
         # REDIS_URL 검증 (선택)
         redis_url = os.getenv("REDIS_URL")
-        if redis_url and not redis_url.startswith("redis://"):
-            errors.append(("REDIS_URL", "Must start with 'redis://'"))
+        if redis_url and not (
+            redis_url.startswith("redis://") or redis_url.startswith("rediss://")
+        ):
+            errors.append(("REDIS_URL", "Must start with 'redis://' or 'rediss://'"))
 
         # LOG_LEVEL 검증 (선택)
         log_level = os.getenv("LOG_LEVEL")
