@@ -17,7 +17,7 @@ except ImportError:
 
     # 스텁 구현
     class Counter:  # type: ignore[no-redef]
-        def __init__(self, name: str, doc: str, labelnames: list[str] | None = None):
+        def __init__(self, name: str, doc: str, _labelnames: list[str] | None = None):
             self._name = name
             self._values: Dict[tuple[str, ...], float] = {}
 
@@ -28,7 +28,7 @@ except ImportError:
             pass
 
     class Histogram:  # type: ignore[no-redef]
-        def __init__(self, name: str, doc: str, labelnames: list[str] | None = None):
+        def __init__(self, name: str, doc: str, _labelnames: list[str] | None = None):
             self._name = name
 
         def labels(self, *args: str) -> "Histogram":
@@ -38,7 +38,7 @@ except ImportError:
             pass
 
     class Gauge:  # type: ignore[no-redef]
-        def __init__(self, name: str, doc: str, labelnames: list[str] | None = None):
+        def __init__(self, name: str, doc: str, _labelnames: list[str] | None = None):
             self._name = name
             self._value = 0.0
 
