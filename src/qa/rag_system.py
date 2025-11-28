@@ -7,7 +7,16 @@ import os
 import time
 import weakref
 from contextlib import contextmanager, suppress
-from typing import Any, Coroutine, Dict, Generator, List, Optional, TypeVar, no_type_check
+from typing import (
+    Any,
+    Coroutine,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    TypeVar,
+    no_type_check,
+)
 
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -63,6 +72,7 @@ def _run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         future = executor.submit(run_in_thread)
         return future.result()
+
 
 load_dotenv()
 
