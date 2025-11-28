@@ -1,3 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA 생성 - Gemini QA System</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>🤖 Gemini QA System</h1>
+        <nav>
+            <a href="/qa" class="active">QA 생성</a>
+            <a href="/eval">외부 평가</a>
+            <a href="/workspace">워크스페이스</a>
+            <a href="/multimodal">이미지 분석</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="card">
+            <h2>QA 생성</h2>
+            <form id="qa-form">
+                <div class="form-group">
+                    <label for="mode">생성 모드</label>
+                    <select id="mode" name="mode">
+                        <option value="batch">4타입 일괄 생성</option>
+                        <option value="single">단일 타입 생성</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="qtype-group" style="display:none;">
+                    <label for="qtype">질의 타입</label>
+                    <select id="qtype" name="qtype">
+                        <option value="global_explanation">전체 설명</option>
+                        <option value="reasoning">추론</option>
+                        <option value="target_short">대상 단답형</option>
+                        <option value="target_long">대상 장문형</option>
+                    </select>
+                </div>
+
+                <button type="submit">생성하기</button>
+            </form>
+        </section>
+
+        <section class="card" id="result-section" style="display:none;">
+            <h2>결과</h2>
+            <div id="result"></div>
+        </section>
+    </main>
+
+    <script>
+        const modeSelect = document.getElementById('mode');
+        const qtypeGroup = document.getElementById('qtype-group');
+
+        modeSelect.addEventListener('change', function() {
+            qtypeGroup.style.display = this.value === 'single' ? 'block' : 'none';
+        });
+
+        document.getElementById('qa-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const mode = document.getElementById('mode').value;
+            const qtype = document.getElementById('qtype').value;
+
+            const body = { mode };
+            if (mode === 'single') {
+                body.qtype = qtype;
+            }
+
+            try {
+                const res = await fetch('/api/qa/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await res.json();
+
+                const resultSection = document.getElementById('result-section');
+                const resultDiv = document.getElementById('result');
+
+                if (res.ok) {
+                    let html = '';
+                    if (data.mode === 'batch' && data.pairs) {
+                        data.pairs.forEach(pair => {
+                            html += `<div class="qa-pair">
+                                <h3>[${pair.type}]</h3>
+                                <p><strong>질의:</strong> ${pair.query}</p>
+                                <p><strong>답변:</strong> ${pair.answer}</p>
+                            </div>`;
+                        });
+                    } else if (data.pair) {
+                        html = `<div class="qa-pair">
+                            <h3>[${data.pair.type}]</h3>
+                            <p><strong>질의:</strong> ${data.pair.query}</p>
+                            <p><strong>답변:</strong> ${data.pair.answer}</p>
+                        </div>`;
+                    }
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">${data.detail || '오류가 발생했습니다.'}</p>`;
+                }
+
+                resultSection.style.display = 'block';
+            } catch (err) {
+                console.error(err);
+                alert('요청 실패: ' + err.message);
+            }
+        });
+    </script>
+</body>
+</html>
 {% extends "layout.html" %}
 
 {% block content %}

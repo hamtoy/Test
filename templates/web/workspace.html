@@ -1,3 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>워크스페이스 - Gemini QA System</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>🤖 Gemini QA System</h1>
+        <nav>
+            <a href="/qa">QA 생성</a>
+            <a href="/eval">외부 평가</a>
+            <a href="/workspace" class="active">워크스페이스</a>
+            <a href="/multimodal">이미지 분석</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="card">
+            <h2>워크스페이스</h2>
+            <p>답변을 검수하거나 자유롭게 수정할 수 있습니다.</p>
+            <form id="workspace-form">
+                <div class="form-group">
+                    <label for="mode">모드</label>
+                    <select id="mode" name="mode">
+                        <option value="inspect">검수 (자동 교정)</option>
+                        <option value="edit">자유 수정</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="query">질의 (선택)</label>
+                    <textarea id="query" name="query" rows="2"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="answer">답변</label>
+                    <textarea id="answer" name="answer" rows="5" required></textarea>
+                </div>
+
+                <div class="form-group" id="edit-request-group" style="display:none;">
+                    <label for="edit-request">수정 요청</label>
+                    <textarea id="edit-request" name="edit_request" rows="2"></textarea>
+                </div>
+
+                <button type="submit">실행</button>
+            </form>
+        </section>
+
+        <section class="card" id="result-section" style="display:none;">
+            <h2>결과</h2>
+            <div id="result"></div>
+        </section>
+    </main>
+
+    <script>
+        const modeSelect = document.getElementById('mode');
+        const editRequestGroup = document.getElementById('edit-request-group');
+
+        modeSelect.addEventListener('change', function() {
+            editRequestGroup.style.display = this.value === 'edit' ? 'block' : 'none';
+        });
+
+        document.getElementById('workspace-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const mode = document.getElementById('mode').value;
+            const query = document.getElementById('query').value;
+            const answer = document.getElementById('answer').value;
+            const editRequest = document.getElementById('edit-request').value;
+
+            const body = { mode, query, answer };
+            if (mode === 'edit') {
+                body.edit_request = editRequest;
+            }
+
+            try {
+                const res = await fetch('/api/workspace', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await res.json();
+
+                const resultSection = document.getElementById('result-section');
+                const resultDiv = document.getElementById('result');
+
+                if (res.ok) {
+                    let html = `<h3>${data.mode === 'inspect' ? '검수' : '수정'} 결과</h3>`;
+                    html += `<div class="diff">
+                        <div class="original">
+                            <h4>원본</h4>
+                            <pre>${data.result.original}</pre>
+                        </div>
+                        <div class="modified">
+                            <h4>${data.mode === 'inspect' ? '교정됨' : '수정됨'}</h4>
+                            <pre>${data.result.fixed || data.result.edited}</pre>
+                        </div>
+                    </div>`;
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">${data.detail || '오류가 발생했습니다.'}</p>`;
+                }
+
+                resultSection.style.display = 'block';
+            } catch (err) {
+                console.error(err);
+                alert('요청 실패: ' + err.message);
+            }
+        });
+    </script>
+</body>
+</html>
 {% extends "layout.html" %}
 
 {% block content %}
