@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any, Dict
 
 from src.qa.rag_system import QAKnowledgeGraph
@@ -13,6 +14,72 @@ class AdaptiveDifficultyAdjuster:
 
     def __init__(self, kg: QAKnowledgeGraph):
         self.kg = kg
+
+    def analyze_text_complexity(self, text: str) -> Dict[str, Any]:
+        """
+        OCR 텍스트를 분석하여 복잡도를 추정합니다.
+
+        Args:
+            text: OCR 텍스트 문자열.
+
+        Returns:
+            complexity dict: text_density, has_structure, word_count, level 등.
+        """
+        if not text:
+            return {
+                "text_density": 0.0,
+                "has_structure": False,
+                "word_count": 0,
+                "level": "simple",
+                "recommended_turns": 3,
+                "reasoning_possible": False,
+            }
+
+        # 기본 텍스트 분석
+        words = text.split()
+        word_count = len(words)
+        char_count = len(text.replace(" ", ""))
+
+        # 구조적 패턴 감지 (표, 숫자, 특수문자)
+        has_table_pattern = bool(re.search(r"[\|┃┼━─]", text))
+        has_numbers = bool(re.search(r"\d+[.,]?\d*%?", text))
+        has_bullet = bool(re.search(r"[•·‧▪▸►→]", text))
+
+        # 텍스트 밀도 계산 (단어 수 기반)
+        # 짧은 텍스트: < 100 단어, 중간: 100-300, 복잡: > 300
+        if word_count < 100:
+            text_density = 0.3
+        elif word_count < 300:
+            text_density = 0.5
+        else:
+            text_density = 0.8
+
+        # 복잡도 레벨 및 추론 가능성 결정
+        if text_density < 0.4:
+            level = "simple"
+            recommended_turns = 3
+            reasoning_possible = False  # 짧은 텍스트는 추론 불가
+        elif text_density < 0.7:
+            level = "medium"
+            recommended_turns = 3
+            reasoning_possible = True
+        else:
+            level = "complex"
+            recommended_turns = 4
+            reasoning_possible = True
+
+        complexity: Dict[str, Any] = {
+            "text_density": text_density,
+            "has_structure": has_table_pattern or has_bullet,
+            "has_numbers": has_numbers,
+            "word_count": word_count,
+            "char_count": char_count,
+            "level": level,
+            "recommended_turns": recommended_turns,
+            "reasoning_possible": reasoning_possible,
+        }
+
+        return complexity
 
     def analyze_image_complexity(self, image_meta: Dict[str, Any]) -> Dict[str, Any]:
         """
