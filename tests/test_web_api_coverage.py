@@ -6,6 +6,7 @@ import os
 import sys
 import types
 from datetime import datetime, timezone
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -16,7 +17,7 @@ os.environ.setdefault("GEMINI_MODEL_NAME", "gemini-3-pro-preview")
 
 # Mock pytesseract before importing web.api
 pytesseract_mock = types.ModuleType("pytesseract")
-pytesseract_mock.image_to_string = MagicMock(return_value="")
+pytesseract_mock.image_to_string: Any = MagicMock(return_value="")
 sys.modules["pytesseract"] = pytesseract_mock
 
 from fastapi.testclient import TestClient  # noqa: E402
