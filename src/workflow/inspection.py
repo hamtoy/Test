@@ -44,7 +44,7 @@ async def inspect_query(
 
     # 3. Self-Correcting 자기 교정
     if kg:
-        corrector = SelfCorrectingQAChain(kg, agent.llm_provider)
+        corrector = SelfCorrectingQAChain(kg)
         result = corrector.generate_with_self_correction(query_type, context)
         final_query = str(result.get("output", query))
     else:
@@ -94,7 +94,7 @@ async def inspect_answer(
     context_with_answer["query"] = query
 
     if kg:
-        corrector = SelfCorrectingQAChain(kg, agent.llm_provider)
+        corrector = SelfCorrectingQAChain(kg)
         result = corrector.generate_with_self_correction(
             query_type, context_with_answer
         )

@@ -14,7 +14,6 @@ from rich.table import Table
 from src.agent import GeminiAgent
 from src.analysis.cross_validation import CrossValidationSystem
 from src.caching.analytics import analyze_cache_stats, print_cache_report
-from src.caching.redis_cache import RedisEvalCache
 from src.config import AppConfig
 from src.core.models import WorkflowResult
 from src.features.difficulty import AdaptiveDifficultyAdjuster
@@ -244,7 +243,6 @@ async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> Non
     # 리소스 초기화
     kg = QAKnowledgeGraph() if config.neo4j_uri else None
     lats = LATSSearcher(agent.llm_provider) if config.enable_lats else None
-    cache = RedisEvalCache(ttl=3600) if config.redis_url else None
     difficulty = AdaptiveDifficultyAdjuster(kg) if kg else None
 
     try:
@@ -258,9 +256,7 @@ async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> Non
             # Context 구성 (필요 시 사용자 입력 추가 가능)
             context = {"type": "general"}
 
-            result = await inspect_query(
-                agent, query, context, kg, lats, difficulty, cache
-            )
+            result = await inspect_query(agent, query, context, kg, lats, difficulty)
 
             progress.update(task, description="[green]✓ 검수 완료[/green]")
 
@@ -271,19 +267,6 @@ async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> Non
     finally:
         if kg:
             kg.close()
-        if cache:
-            await cache.clear()  # Close connection if needed, but RedisEvalCache doesn't have close() in the snippet provided.
-            # Actually RedisEvalCache doesn't have close method in previous view.
-            # It uses redis_client passed in or creates one?
-            # The snippet showed `self.redis = redis_client`.
-            # If we create it here, we might need to handle connection lifecycle if it created one internally.
-            # But `RedisEvalCache` init takes `redis_client`.
-            # If we pass None, it uses memory.
-            # If `config.redis_url` is set, we should probably create a redis client.
-            # However, `RedisEvalCache` doesn't seem to create its own client from URL in `__init__`.
-            # It expects a client.
-            # Let's check `src/caching/redis_cache.py` again.
-            pass
 
 
 async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> None:
@@ -300,7 +283,6 @@ async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> No
     # 리소스 초기화
     kg = QAKnowledgeGraph() if config.neo4j_uri else None
     lats = LATSSearcher(agent.llm_provider) if config.enable_lats else None
-    cache = RedisEvalCache(ttl=3600) if config.redis_url else None
     validator = CrossValidationSystem(kg) if kg else None
 
     try:
@@ -314,7 +296,7 @@ async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> No
             context = {"type": "general", "image_meta": {}}
 
             result = await inspect_answer(
-                agent, answer, query, ocr_text, context, kg, lats, validator, cache
+                agent, answer, query, ocr_text, context, kg, lats, validator
             )
 
             progress.update(task, description="[green]✓ 검수 완료[/green]")
