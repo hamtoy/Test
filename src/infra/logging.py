@@ -146,6 +146,63 @@ def setup_logging(
     return logging.getLogger("GeminiWorkflow"), listener
 
 
+def get_log_level() -> int:
+    """환경에 따른 로그 레벨 결정
+
+    Returns:
+        로그 레벨 (logging.DEBUG, logging.INFO 등)
+    """
+    env = os.getenv("ENVIRONMENT", "development")
+
+    level_map = {
+        "development": logging.DEBUG,
+        "staging": logging.INFO,
+        "production": logging.WARNING,
+    }
+
+    # LOG_LEVEL_OVERRIDE가 있으면 우선 적용
+    override = os.getenv("LOG_LEVEL_OVERRIDE")
+    if override:
+        level = getattr(logging, override.upper(), None)
+        if isinstance(level, int):
+            return level
+
+    return level_map.get(env, logging.INFO)
+
+
+def set_log_level(level: str) -> bool:
+    """런타임에 로그 레벨 동적 변경
+
+    Args:
+        level: 로그 레벨 문자열 (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+
+    Returns:
+        성공 시 True, 실패 시 False
+    """
+    valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    if level.upper() not in valid_levels:
+        return False
+
+    new_level = getattr(logging, level.upper())
+    logging.getLogger().setLevel(new_level)
+
+    # 모든 핸들러의 레벨도 업데이트
+    for handler in logging.getLogger().handlers:
+        handler.setLevel(new_level)
+
+    return True
+
+
+def get_current_log_level() -> str:
+    """현재 로그 레벨 반환
+
+    Returns:
+        현재 로그 레벨 문자열
+    """
+    level = logging.getLogger().level
+    return logging.getLevelName(level)
+
+
 def log_metrics(
     logger: logging.Logger,
     *,
@@ -201,4 +258,7 @@ __all__ = [
     "_resolve_log_level",
     "_build_file_handler",
     "_build_console_handler",
+    "get_log_level",
+    "set_log_level",
+    "get_current_log_level",
 ]

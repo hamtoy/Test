@@ -1,20 +1,50 @@
+# Production LATS Worker configuration
+# Lightweight deployment for worker processes
+#
+# IMPORTANT: Create a .env.production file with your production secrets.
+# DO NOT commit this file to version control.
+# Consider using Docker secrets or environment-specific configuration
+# management for sensitive values in production deployments.
+
 version: "3.8"
 
 services:
+  # Redis for task queue
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
-  worker:
-    image: python:3.13-slim
-    working_dir: /app
     volumes:
-      - .:/app
+      - redis_prod_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  # LATS Worker
+  worker:
+    image: ghcr.io/hamtoy/test:latest
+    command: python -m src.infra.worker
+    env_file:
+      - .env.production
     environment:
       - PYTHONUNBUFFERED=1
       - REDIS_URL=redis://redis:6379
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-    command: bash -c "pip install uv && uv run python -m src.worker"
+      - ENVIRONMENT=production
     depends_on:
-      - redis
-    restart: unless-stopped
+      redis:
+        condition: service_healthy
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "1.0"
+        reservations:
+          memory: 512M
+          cpus: "0.5"
+
+volumes:
+  redis_prod_data:
+    driver: local

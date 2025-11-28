@@ -784,6 +784,71 @@ python scripts/render_prompt.py --template system/text_image_qa_explanation_syst
 
 ---
 
+## 🐳 Docker 실행
+
+### 개발 환경
+
+```bash
+# 전체 스택 실행
+docker-compose up -d
+
+# 로그 확인
+docker-compose logs -f app
+
+# 종료
+docker-compose down
+```
+
+### 프로덕션 배포
+
+```bash
+# 이미지 pull
+docker pull ghcr.io/hamtoy/test:latest
+
+# 실행
+docker run -d \
+  --name shining-quasar \
+  -e GEMINI_API_KEY=your_key \
+  -e REDIS_URL=redis://redis:6379 \
+  -e NEO4J_URI=bolt://neo4j:7687 \
+  -p 8000:8000 \
+  ghcr.io/hamtoy/test:latest
+```
+
+### Docker Compose 워커
+
+프로덕션 LATS 워커 실행:
+
+```bash
+docker-compose -f docker-compose.worker.yml up -d
+```
+
+---
+
+## 📊 모니터링
+
+### 헬스체크
+
+- `GET /health` - 전체 시스템 상태 (Redis, Neo4j, Gemini API, 디스크, 메모리)
+- `GET /health/ready` - Kubernetes readiness probe (Redis, Neo4j만 체크)
+- `GET /health/live` - Kubernetes liveness probe (프로세스 생존 확인)
+
+### 메트릭
+
+- `GET /metrics` - Prometheus 메트릭 엔드포인트
+
+### 환경 변수
+
+| 변수 | 기본값 | 설명 |
+|------|--------|------|
+| `ENVIRONMENT` | `development` | 환경 (development/staging/production) |
+| `LOG_LEVEL_OVERRIDE` | - | 로그 레벨 강제 지정 |
+| `GEMINI_API_KEY` | 필수 | Gemini API 키 |
+| `REDIS_URL` | - | Redis 연결 URL |
+| `NEO4J_URI` | - | Neo4j 연결 URI |
+
+---
+
 ## 라이선스
 
 MIT License
