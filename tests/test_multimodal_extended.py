@@ -103,7 +103,9 @@ def test_multimodal_with_graph_session(monkeypatch):
     monkeypatch.setattr(
         features_multimodal,
         "pytesseract",
-        types.SimpleNamespace(image_to_string=lambda img, lang=None: "test text content"),
+        types.SimpleNamespace(
+            image_to_string=lambda img, lang=None: "test text content"
+        ),
     )
 
     analyzer = mmu.MultimodalUnderstanding(_KG())
@@ -264,6 +266,7 @@ def test_detect_chart(monkeypatch):
 
 def test_extract_topics_empty_text():
     """Test topic extraction with empty text."""
+
     class _KG:
         pass
 
@@ -275,6 +278,7 @@ def test_extract_topics_empty_text():
 
 def test_extract_topics_short_words():
     """Test topic extraction filters out short words."""
+
     class _KG:
         pass
 
@@ -287,6 +291,7 @@ def test_extract_topics_short_words():
 
 def test_extract_topics_frequency():
     """Test topic extraction returns most common words."""
+
     class _KG:
         pass
 

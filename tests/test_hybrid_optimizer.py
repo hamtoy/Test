@@ -40,7 +40,7 @@ class TestHybridWorkflowOptimizer:
                 return_value={"best_template": "template_a", "score": 0.8}
             )
             MockMCTS.return_value = mock_mcts_instance
-            
+
             opt = HybridWorkflowOptimizer(mock_agent, templates)
             # Store mocks for verification
             opt._mock_lats = mock_lats_instance
@@ -51,19 +51,19 @@ class TestHybridWorkflowOptimizer:
         """Test complexity detection for LATS keywords."""
         # Test 'why' keyword
         assert optimizer._detect_complexity("Why does this happen?") == "lats"
-        
+
         # Test 'explain' keyword
         assert optimizer._detect_complexity("Explain the process") == "lats"
-        
+
         # Test 'reason' keyword
         assert optimizer._detect_complexity("What is the reason?") == "lats"
-        
+
         # Test 'compare' keyword
         assert optimizer._detect_complexity("Compare A and B") == "lats"
-        
+
         # Test 'analyze' keyword
         assert optimizer._detect_complexity("Analyze this data") == "lats"
-        
+
         # Test 'relationship' keyword
         assert optimizer._detect_complexity("What is the relationship?") == "lats"
 
@@ -92,7 +92,7 @@ class TestHybridWorkflowOptimizer:
     async def test_optimize_lats_mode(self, optimizer):
         """Test optimization with explicit LATS mode."""
         result = await optimizer.optimize("Test query", mode="lats")
-        
+
         assert result["optimizer"] == "LATS"
         assert result["strategy"] == "Reasoning Tree"
         assert "result" in result
@@ -108,7 +108,7 @@ class TestHybridWorkflowOptimizer:
     async def test_optimize_mcts_mode(self, optimizer):
         """Test optimization with explicit MCTS mode."""
         result = await optimizer.optimize("Test query", mode="mcts")
-        
+
         assert result["optimizer"] == "MCTS"
         assert result["strategy"] == "Template Selection"
         assert result["best_template"] == "template_a"
@@ -119,7 +119,7 @@ class TestHybridWorkflowOptimizer:
     async def test_optimize_auto_mode_selects_lats(self, optimizer):
         """Test auto mode selects LATS for complex queries."""
         result = await optimizer.optimize("Why does this happen?", mode="auto")
-        
+
         assert result["optimizer"] == "LATS"
         optimizer._mock_lats.run.assert_called_once()
 
@@ -127,27 +127,29 @@ class TestHybridWorkflowOptimizer:
     async def test_optimize_auto_mode_selects_mcts(self, optimizer):
         """Test auto mode selects MCTS for simple queries."""
         result = await optimizer.optimize("What is X?", mode="auto")
-        
+
         assert result["optimizer"] == "MCTS"
         optimizer._mock_mcts.optimize_workflow.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_optimize_auto_default_fallback(self, mock_agent, templates):
         """Test auto mode defaults to mcts when detection returns unknown."""
-        with patch("src.workflow.hybrid_optimizer.LATSSearcher") as mock_lats, \
-             patch("src.workflow.hybrid_optimizer.MCTSWorkflowOptimizer") as mock_mcts:
+        with (
+            patch("src.workflow.hybrid_optimizer.LATSSearcher") as mock_lats,
+            patch("src.workflow.hybrid_optimizer.MCTSWorkflowOptimizer") as mock_mcts,
+        ):
             mock_lats_instance = MagicMock()
             mock_lats_instance.run = AsyncMock(return_value={})
             mock_lats.return_value = mock_lats_instance
-            
+
             mock_mcts_instance = MagicMock()
             mock_mcts_instance.optimize_workflow = AsyncMock(
                 return_value={"best_template": "t", "score": 0.5}
             )
             mock_mcts.return_value = mock_mcts_instance
-            
+
             opt = HybridWorkflowOptimizer(mock_agent, templates)
-            
+
             # Patch _detect_complexity to return something other than lats/mcts
             with patch.object(opt, "_detect_complexity", return_value="unknown"):
                 result = await opt.optimize("query", mode="auto")
@@ -161,11 +163,13 @@ class TestHybridWorkflowOptimizerInit:
         """Test that initialization creates LATS searcher."""
         mock_agent = MagicMock()
         mock_agent.llm_provider = MagicMock()
-        
-        with patch("src.workflow.hybrid_optimizer.LATSSearcher") as mock_lats, \
-             patch("src.workflow.hybrid_optimizer.MCTSWorkflowOptimizer"):
+
+        with (
+            patch("src.workflow.hybrid_optimizer.LATSSearcher") as mock_lats,
+            patch("src.workflow.hybrid_optimizer.MCTSWorkflowOptimizer"),
+        ):
             HybridWorkflowOptimizer(mock_agent, ["template"])
-            
+
             mock_lats.assert_called_once_with(llm_provider=mock_agent.llm_provider)
 
     def test_init_creates_mcts(self):
@@ -173,11 +177,13 @@ class TestHybridWorkflowOptimizerInit:
         mock_agent = MagicMock()
         mock_agent.llm_provider = MagicMock()
         templates = ["template_a", "template_b"]
-        
-        with patch("src.workflow.hybrid_optimizer.LATSSearcher"), \
-             patch("src.workflow.hybrid_optimizer.MCTSWorkflowOptimizer") as mock_mcts:
+
+        with (
+            patch("src.workflow.hybrid_optimizer.LATSSearcher"),
+            patch("src.workflow.hybrid_optimizer.MCTSWorkflowOptimizer") as mock_mcts,
+        ):
             HybridWorkflowOptimizer(mock_agent, templates)
-            
+
             mock_mcts.assert_called_once_with(mock_agent, templates)
 
 

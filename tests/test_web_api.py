@@ -295,7 +295,9 @@ class TestMultimodalApi:
 
     def test_analyze_image_with_gif(self, client):
         """Test image analysis with GIF file."""
-        files = {"file": ("test.gif", io.BytesIO(b"GIF89a" + b"\x00" * 100), "image/gif")}
+        files = {
+            "file": ("test.gif", io.BytesIO(b"GIF89a" + b"\x00" * 100), "image/gif")
+        }
         response = client.post("/api/multimodal/analyze", files=files)
         assert response.status_code == 200
         data = response.json()

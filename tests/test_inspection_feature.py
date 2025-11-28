@@ -272,7 +272,9 @@ async def test_inspect_query_without_kg(mock_agent, mock_components):
 
 
 @pytest.mark.asyncio
-async def test_inspect_query_with_cache_miss_and_save(mock_agent, mock_components, mock_cache):
+async def test_inspect_query_with_cache_miss_and_save(
+    mock_agent, mock_components, mock_cache
+):
     """Test query inspection caches result after processing."""
     kg, lats, difficulty, _ = mock_components
 
@@ -333,7 +335,14 @@ async def test_inspect_answer_without_kg(mock_agent, mock_components):
     context = {"type": "general"}
 
     result = await inspect_answer(
-        mock_agent, answer, query, ocr_text, context, kg=None, lats=lats, validator=validator
+        mock_agent,
+        answer,
+        query,
+        ocr_text,
+        context,
+        kg=None,
+        lats=lats,
+        validator=validator,
     )
 
     # Without kg, original answer is returned
@@ -353,7 +362,15 @@ async def test_inspect_answer_with_cache_hit(mock_agent, mock_components, mock_c
         context = {"type": "general"}
 
         result = await inspect_answer(
-            mock_agent, answer, query, ocr_text, context, kg, lats, validator, mock_cache
+            mock_agent,
+            answer,
+            query,
+            ocr_text,
+            context,
+            kg,
+            lats,
+            validator,
+            mock_cache,
         )
 
         assert result == "Original Answer"
@@ -377,7 +394,15 @@ async def test_inspect_answer_with_cache_save(mock_agent, mock_components, mock_
         context = {"type": "general"}
 
         result = await inspect_answer(
-            mock_agent, answer, query, ocr_text, context, kg, lats, validator, mock_cache
+            mock_agent,
+            answer,
+            query,
+            ocr_text,
+            context,
+            kg,
+            lats,
+            validator,
+            mock_cache,
         )
 
         assert result == "Corrected Answer"
@@ -425,7 +450,13 @@ async def test_inspect_query_with_context_none(mock_agent, mock_components):
         ocr_text = "OCR text"
 
         result = await inspect_query(
-            mock_agent, query, ocr_text, context=None, kg=kg, lats=lats, difficulty=difficulty
+            mock_agent,
+            query,
+            ocr_text,
+            context=None,
+            kg=kg,
+            lats=lats,
+            difficulty=difficulty,
         )
 
         assert result == "Corrected Query"
@@ -447,7 +478,14 @@ async def test_inspect_answer_with_context_none(mock_agent, mock_components):
         ocr_text = "OCR text"
 
         result = await inspect_answer(
-            mock_agent, answer, query, ocr_text, context=None, kg=kg, lats=lats, validator=validator
+            mock_agent,
+            answer,
+            query,
+            ocr_text,
+            context=None,
+            kg=kg,
+            lats=lats,
+            validator=validator,
         )
 
         assert result == "Corrected Answer"
