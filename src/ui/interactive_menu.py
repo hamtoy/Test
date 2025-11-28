@@ -374,7 +374,7 @@ async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> No
             context = {"type": "general", "image_meta": {}}
 
             fixed_answer = await inspect_answer(
-                agent, answer, query, ocr_text, context, kg, lats, validator
+                agent, answer, query, ocr_text, context, kg, lats, validator, cache
             )
 
             # 결과 저장
