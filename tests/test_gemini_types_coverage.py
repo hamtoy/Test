@@ -157,7 +157,6 @@ class TestEmbedContent:
 
         mock_result = MagicMock()
         mock_result.keys.return_value = ["embedding"]
-        mock_result.__iter__ = MagicMock(return_value=iter(["embedding"]))
         mock_result.__getitem__ = MagicMock(return_value=[0.1, 0.2, 0.3])
         mock_embed.return_value = mock_result
 
