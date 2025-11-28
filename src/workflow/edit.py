@@ -18,6 +18,7 @@ async def edit_content(
     query: str,
     edit_request: str,
     kg: Optional[QAKnowledgeGraph] = None,
+    cache: Optional[Any] = None,
 ) -> str:
     """
     사용자의 간결한 요청(edit_request)을 반영하여 answer 내용을 수정한다.
@@ -29,10 +30,13 @@ async def edit_content(
         query: 관련 질의 (문맥 강화용, 선택적)
         edit_request: 사용자의 수정 요청 문장
         kg: Neo4j 지식 그래프 (규칙 로드용, 선택적)
+        cache: 캐시 인스턴스 (선택적, 현재 미사용)
 
     Returns:
         수정된 답변 문자열
     """
+    # Note: cache parameter is reserved for future use
+    _ = cache
     # 1. 규칙/가이드라인 (선택적으로 Neo4j에서 가져올 수 있음)
     rules_summary = ""
     if kg:
