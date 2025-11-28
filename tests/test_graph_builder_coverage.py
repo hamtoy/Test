@@ -45,7 +45,9 @@ class TestQAGraphBuilder:
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
-            mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+            mock_driver.session.return_value.__enter__ = MagicMock(
+                return_value=mock_session
+            )
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
@@ -62,7 +64,9 @@ class TestQAGraphBuilder:
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
-            mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+            mock_driver.session.return_value.__enter__ = MagicMock(
+                return_value=mock_session
+            )
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
@@ -81,7 +85,9 @@ class TestQAGraphBuilder:
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
-            mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+            mock_driver.session.return_value.__enter__ = MagicMock(
+                return_value=mock_session
+            )
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
@@ -99,7 +105,9 @@ class TestQAGraphBuilder:
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
-            mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+            mock_driver.session.return_value.__enter__ = MagicMock(
+                return_value=mock_session
+            )
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
@@ -124,7 +132,9 @@ class TestQAGraphBuilder:
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
-            mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+            mock_driver.session.return_value.__enter__ = MagicMock(
+                return_value=mock_session
+            )
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
@@ -137,7 +147,9 @@ class TestQAGraphBuilder:
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
-            with pytest.raises(RuntimeError, match="Failed to count rule-constraint links"):
+            with pytest.raises(
+                RuntimeError, match="Failed to count rule-constraint links"
+            ):
                 builder.link_rules_to_constraints()
 
     def test_extract_examples(self):
@@ -145,7 +157,9 @@ class TestQAGraphBuilder:
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
-            mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+            mock_driver.session.return_value.__enter__ = MagicMock(
+                return_value=mock_session
+            )
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
@@ -173,7 +187,9 @@ class TestQAGraphBuilder:
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
-            mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+            mock_driver.session.return_value.__enter__ = MagicMock(
+                return_value=mock_session
+            )
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
@@ -197,7 +213,9 @@ class TestQAGraphBuilder:
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
-            mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+            mock_driver.session.return_value.__enter__ = MagicMock(
+                return_value=mock_session
+            )
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
@@ -209,7 +227,9 @@ class TestQAGraphBuilder:
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
-            with pytest.raises(RuntimeError, match="Failed to count example-rule links"):
+            with pytest.raises(
+                RuntimeError, match="Failed to count example-rule links"
+            ):
                 builder.link_examples_to_rules()
 
     def test_create_templates(self):
@@ -217,7 +237,9 @@ class TestQAGraphBuilder:
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
-            mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+            mock_driver.session.return_value.__enter__ = MagicMock(
+                return_value=mock_session
+            )
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
@@ -236,7 +258,9 @@ class TestQAGraphBuilder:
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
-            mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+            mock_driver.session.return_value.__enter__ = MagicMock(
+                return_value=mock_session
+            )
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
@@ -254,7 +278,9 @@ class TestQAGraphBuilder:
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
-            mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+            mock_driver.session.return_value.__enter__ = MagicMock(
+                return_value=mock_session
+            )
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
@@ -273,7 +299,9 @@ class TestQAGraphBuilder:
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
-            mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+            mock_driver.session.return_value.__enter__ = MagicMock(
+                return_value=mock_session
+            )
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
@@ -323,7 +351,9 @@ class TestExtractRulesFromNotion:
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
-            mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+            mock_driver.session.return_value.__enter__ = MagicMock(
+                return_value=mock_session
+            )
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
@@ -338,10 +368,20 @@ class TestExtractRulesFromNotion:
             ]
 
             # Mock siblings query - returns iterator of records
-            mock_sibling1 = {"id": "b1", "content": "규칙 내용 길이가 10자 이상입니다", "type": "paragraph"}
-            mock_sibling2 = {"id": "b2", "content": "또 다른 규칙입니다 길이가 충분함", "type": "bulleted_list_item"}
+            mock_sibling1 = {
+                "id": "b1",
+                "content": "규칙 내용 길이가 10자 이상입니다",
+                "type": "paragraph",
+            }
+            mock_sibling2 = {
+                "id": "b2",
+                "content": "또 다른 규칙입니다 길이가 충분함",
+                "type": "bulleted_list_item",
+            }
             mock_siblings_result = MagicMock()
-            mock_siblings_result.__iter__ = MagicMock(return_value=iter([mock_sibling1, mock_sibling2]))
+            mock_siblings_result.__iter__ = MagicMock(
+                return_value=iter([mock_sibling1, mock_sibling2])
+            )
 
             # Set up the mock to return different results for different queries
             # First call returns headings, second returns siblings, then MERGE calls return None
@@ -364,7 +404,9 @@ class TestExtractRulesFromNotion:
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
-            mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+            mock_driver.session.return_value.__enter__ = MagicMock(
+                return_value=mock_session
+            )
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
@@ -375,7 +417,9 @@ class TestExtractRulesFromNotion:
 
             mock_siblings_result = MagicMock()
             mock_siblings_result.__iter__ = MagicMock(
-                return_value=iter([{"id": "b1", "content": "짧은", "type": "paragraph"}])
+                return_value=iter(
+                    [{"id": "b1", "content": "짧은", "type": "paragraph"}]
+                )
             )
 
             mock_session.run.side_effect = [mock_headings_result, mock_siblings_result]
@@ -403,7 +447,9 @@ class TestMainFunction:
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
-            mock_driver.session.return_value.__enter__ = MagicMock(return_value=mock_session)
+            mock_driver.session.return_value.__enter__ = MagicMock(
+                return_value=mock_session
+            )
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 

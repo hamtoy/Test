@@ -174,9 +174,7 @@ class TestGenerateSingleQA:
         mock_agent.generate_query = AsyncMock(return_value=["생성된 질의"])
 
         with patch("src.web.api.kg", None):
-            result = await generate_single_qa(
-                mock_agent, "OCR 텍스트", "reasoning"
-            )
+            result = await generate_single_qa(mock_agent, "OCR 텍스트", "reasoning")
 
             assert "type" in result
             assert result["type"] == "reasoning"
@@ -204,15 +202,20 @@ class TestGenerateSingleQA:
 
         mock_kg = MagicMock()
         mock_template_gen = MagicMock()
-        mock_template_gen.generate_prompt_for_query_type.return_value = "템플릿 프롬프트"
+        mock_template_gen.generate_prompt_for_query_type.return_value = (
+            "템플릿 프롬프트"
+        )
 
         monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
         monkeypatch.setenv("NEO4J_USER", "neo4j")
         monkeypatch.setenv("NEO4J_PASSWORD", "password")
 
-        with patch("src.web.api.kg", mock_kg), patch(
-            "src.processing.template_generator.DynamicTemplateGenerator",
-            return_value=mock_template_gen,
+        with (
+            patch("src.web.api.kg", mock_kg),
+            patch(
+                "src.processing.template_generator.DynamicTemplateGenerator",
+                return_value=mock_template_gen,
+            ),
         ):
             result = await generate_single_qa(
                 mock_agent, "OCR 텍스트", "global_explanation"
@@ -456,7 +459,9 @@ class TestEvalApiExtended:
             with patch("src.web.api.config") as mock_config:
                 mock_config.input_dir = inputs_dir
 
-                with patch("src.workflow.external_eval.evaluate_external_answers") as mock_eval:
+                with patch(
+                    "src.workflow.external_eval.evaluate_external_answers"
+                ) as mock_eval:
                     mock_eval.return_value = [
                         {"candidate_id": "A", "score": 0.9},
                         {"candidate_id": "B", "score": 0.7},

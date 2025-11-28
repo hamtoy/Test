@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock, patch
 
 
-
 class TestAdvancedContextAugmentation:
     """Tests for AdvancedContextAugmentation class."""
 
@@ -13,7 +12,9 @@ class TestAdvancedContextAugmentation:
             mock_graph.return_value = MagicMock()
 
             with patch.dict("os.environ", {}, clear=True):
-                from src.processing.context_augmentation import AdvancedContextAugmentation
+                from src.processing.context_augmentation import (
+                    AdvancedContextAugmentation,
+                )
 
                 aug = AdvancedContextAugmentation(
                     neo4j_uri="bolt://localhost:7687",
@@ -154,7 +155,9 @@ class TestAugmentPromptWithSimilarCases:
             mock_session.run.return_value = mock_result
 
             with patch.dict("os.environ", {}, clear=True):
-                from src.processing.context_augmentation import AdvancedContextAugmentation
+                from src.processing.context_augmentation import (
+                    AdvancedContextAugmentation,
+                )
 
                 aug = AdvancedContextAugmentation(
                     neo4j_uri="bolt://localhost:7687",
@@ -187,7 +190,9 @@ class TestAugmentPromptWithSimilarCases:
             )
 
             with patch.dict("os.environ", {}, clear=True):
-                from src.processing.context_augmentation import AdvancedContextAugmentation
+                from src.processing.context_augmentation import (
+                    AdvancedContextAugmentation,
+                )
 
                 aug = AdvancedContextAugmentation(
                     neo4j_uri="bolt://localhost:7687",
@@ -259,7 +264,9 @@ class TestAugmentPromptWithSimilarCases:
             mock_session.run.return_value = mock_result
 
             with patch.dict("os.environ", {}, clear=True):
-                from src.processing.context_augmentation import AdvancedContextAugmentation
+                from src.processing.context_augmentation import (
+                    AdvancedContextAugmentation,
+                )
 
                 aug = AdvancedContextAugmentation(
                     neo4j_uri="bolt://localhost:7687",
@@ -299,7 +306,9 @@ class TestGenerateWithAugmentation:
             mock_session.run.return_value = mock_result
 
             with patch.dict("os.environ", {}, clear=True):
-                from src.processing.context_augmentation import AdvancedContextAugmentation
+                from src.processing.context_augmentation import (
+                    AdvancedContextAugmentation,
+                )
 
                 aug = AdvancedContextAugmentation(
                     neo4j_uri="bolt://localhost:7687",
@@ -348,7 +357,11 @@ class TestGenerateWithAugmentation:
 
             mock_result = MagicMock()
             mock_result.data.return_value = [
-                {"rule": "중요한 규칙", "priority": 1, "examples": ["예시 1", "예시 2"]},
+                {
+                    "rule": "중요한 규칙",
+                    "priority": 1,
+                    "examples": ["예시 1", "예시 2"],
+                },
             ]
             mock_session.run.return_value = mock_result
 
@@ -391,7 +404,9 @@ class TestGenerateWithAugmentation:
             mock_session.run.return_value = mock_result
 
             with patch.dict("os.environ", {}, clear=True):
-                from src.processing.context_augmentation import AdvancedContextAugmentation
+                from src.processing.context_augmentation import (
+                    AdvancedContextAugmentation,
+                )
 
                 aug = AdvancedContextAugmentation(
                     neo4j_uri="bolt://localhost:7687",
@@ -471,7 +486,9 @@ class TestSimilarCasesExtraction:
             mock_session.run.return_value = mock_result
 
             with patch.dict("os.environ", {}, clear=True):
-                from src.processing.context_augmentation import AdvancedContextAugmentation
+                from src.processing.context_augmentation import (
+                    AdvancedContextAugmentation,
+                )
 
                 aug = AdvancedContextAugmentation(
                     neo4j_uri="bolt://localhost:7687",
@@ -510,7 +527,9 @@ class TestSimilarCasesExtraction:
             mock_session.run.return_value = mock_result
 
             with patch.dict("os.environ", {}, clear=True):
-                from src.processing.context_augmentation import AdvancedContextAugmentation
+                from src.processing.context_augmentation import (
+                    AdvancedContextAugmentation,
+                )
 
                 aug = AdvancedContextAugmentation(
                     neo4j_uri="bolt://localhost:7687",
