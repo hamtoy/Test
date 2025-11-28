@@ -1,6 +1,5 @@
 """Tests for src/llm/gemini_types.py to improve coverage."""
 
-import pytest
 from unittest.mock import MagicMock, patch
 
 
