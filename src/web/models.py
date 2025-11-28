@@ -63,6 +63,9 @@ class WorkspaceRequest(BaseModel):
     query: Optional[str] = Field("", description="질의 (선택)")
     answer: str = Field(..., description="검수/수정할 답변")
     edit_request: Optional[str] = Field("", description="edit 모드일 때 수정 요청")
+    inspector_comment: Optional[str] = Field(
+        "", description="검수자 코멘트 (모든 모드에서 선택적으로 입력 가능)"
+    )
 
 
 class WorkspaceResponse(BaseModel):

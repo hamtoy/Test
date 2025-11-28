@@ -333,3 +333,134 @@ class TestMultimodalApi:
         assert response.status_code == 200
         data = response.json()
         assert data["filename"] == "test.gif"
+
+
+class TestLogReviewSession:
+    """Tests for log_review_session helper function."""
+
+    def test_log_review_session_creates_directory(self, tmp_path):
+        """Test that log_review_session creates the log directory if it doesn't exist."""
+        from src.web.api import log_review_session
+        import json
+        from datetime import datetime, timezone
+
+        # Patch REPO_ROOT to use tmp_path
+        with patch("src.web.api.REPO_ROOT", tmp_path):
+            log_review_session(
+                mode="inspect",
+                question="테스트 질문",
+                answer_before="수정 전 답변",
+                answer_after="수정 후 답변",
+                edit_request_used="",
+                inspector_comment="테스트 코멘트",
+            )
+
+            # Check that the directory was created
+            log_dir = tmp_path / "data" / "outputs" / "review_logs"
+            assert log_dir.exists()
+
+            # Check that the log file was created
+            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            log_file = log_dir / f"review_{today}.jsonl"
+            assert log_file.exists()
+
+            # Verify log content
+            with open(log_file, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            assert len(lines) == 1
+            log_entry = json.loads(lines[0])
+            assert log_entry["mode"] == "inspect"
+            assert log_entry["question"] == "테스트 질문"
+            assert log_entry["answer_before"] == "수정 전 답변"
+            assert log_entry["answer_after"] == "수정 후 답변"
+            assert log_entry["edit_request_used"] == ""
+            assert log_entry["inspector_comment"] == "테스트 코멘트"
+            assert "timestamp" in log_entry
+
+    def test_log_review_session_appends_multiple_entries(self, tmp_path):
+        """Test that log_review_session appends multiple entries to the same file."""
+        from src.web.api import log_review_session
+        import json
+        from datetime import datetime, timezone
+
+        with patch("src.web.api.REPO_ROOT", tmp_path):
+            # Log first entry
+            log_review_session(
+                mode="inspect",
+                question="Q1",
+                answer_before="A1 before",
+                answer_after="A1 after",
+                edit_request_used="",
+                inspector_comment="C1",
+            )
+
+            # Log second entry
+            log_review_session(
+                mode="edit",
+                question="Q2",
+                answer_before="A2 before",
+                answer_after="A2 after",
+                edit_request_used="수정 요청",
+                inspector_comment="C2",
+            )
+
+            # Verify both entries are in the file
+            log_dir = tmp_path / "data" / "outputs" / "review_logs"
+            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            log_file = log_dir / f"review_{today}.jsonl"
+
+            with open(log_file, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            assert len(lines) == 2
+
+            entry1 = json.loads(lines[0])
+            entry2 = json.loads(lines[1])
+            assert entry1["mode"] == "inspect"
+            assert entry2["mode"] == "edit"
+            assert entry2["edit_request_used"] == "수정 요청"
+
+    def test_log_review_session_handles_empty_strings(self, tmp_path):
+        """Test that log_review_session accepts empty strings for all fields."""
+        from src.web.api import log_review_session
+        import json
+        from datetime import datetime, timezone
+
+        with patch("src.web.api.REPO_ROOT", tmp_path):
+            log_review_session(
+                mode="inspect",
+                question="",
+                answer_before="",
+                answer_after="",
+                edit_request_used="",
+                inspector_comment="",
+            )
+
+            log_dir = tmp_path / "data" / "outputs" / "review_logs"
+            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            log_file = log_dir / f"review_{today}.jsonl"
+
+            with open(log_file, "r", encoding="utf-8") as f:
+                log_entry = json.loads(f.readline())
+
+            assert log_entry["question"] == ""
+            assert log_entry["answer_before"] == ""
+            assert log_entry["answer_after"] == ""
+            assert log_entry["edit_request_used"] == ""
+            assert log_entry["inspector_comment"] == ""
+
+    def test_log_review_session_failure_does_not_raise(self, tmp_path):
+        """Test that log_review_session failure doesn't raise an exception."""
+        from src.web.api import log_review_session
+
+        # Patch REPO_ROOT to an invalid path (read-only or non-existent)
+        with patch("src.web.api.REPO_ROOT", "/nonexistent/path"):
+            # Should not raise even though it can't write
+            log_review_session(
+                mode="inspect",
+                question="Q",
+                answer_before="A",
+                answer_after="B",
+                edit_request_used="",
+                inspector_comment="C",
+            )
+            # If we get here, the function handled the error gracefully

@@ -178,6 +178,30 @@ class TestWorkspaceRequest:
         with pytest.raises(ValidationError):
             WorkspaceRequest(mode="invalid", answer="답변")
 
+    def test_inspector_comment_with_value(self):
+        """Test inspector_comment field with value."""
+        request = WorkspaceRequest(
+            mode="inspect",
+            answer="답변",
+            inspector_comment="검수자 코멘트입니다",
+        )
+        assert request.inspector_comment == "검수자 코멘트입니다"
+
+    def test_inspector_comment_default_empty(self):
+        """Test inspector_comment defaults to empty string."""
+        request = WorkspaceRequest(mode="inspect", answer="답변")
+        assert request.inspector_comment == ""
+
+    def test_inspector_comment_in_edit_mode(self):
+        """Test inspector_comment works in edit mode too."""
+        request = WorkspaceRequest(
+            mode="edit",
+            answer="수정할 답변",
+            edit_request="더 간결하게",
+            inspector_comment="수정 이유 설명",
+        )
+        assert request.inspector_comment == "수정 이유 설명"
+
 
 class TestWorkspaceResponse:
     """Tests for WorkspaceResponse model."""
