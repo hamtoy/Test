@@ -41,7 +41,9 @@ class TestCheckRedis:
 
         # Test the exception handling branch by mocking redis.asyncio.from_url
         # to raise ImportError, simulating the case when redis is not installed
-        with patch("redis.asyncio.from_url", side_effect=ImportError("redis not installed")):
+        with patch(
+            "redis.asyncio.from_url", side_effect=ImportError("redis not installed")
+        ):
             from src.infra.health import check_redis
 
             result = await check_redis()

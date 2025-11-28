@@ -1,6 +1,5 @@
 """Tests for src/config/validator.py to improve coverage."""
 
-
 import pytest
 
 from src.config.validator import EnvValidator, ValidationError, validate_environment
@@ -21,9 +20,10 @@ class TestEnvValidator:
         validator = EnvValidator()
         with pytest.raises(ValidationError) as exc:
             validator.validate_gemini_api_key("WRONG" + "A" * 34)
-        assert "Must start with 'AIza'" in str(exc.value) or "must start with" in str(
-            exc.value
-        ).lower()
+        assert (
+            "Must start with 'AIza'" in str(exc.value)
+            or "must start with" in str(exc.value).lower()
+        )
 
     def test_validate_gemini_api_key_invalid_length(self):
         """Test API key with invalid length."""
