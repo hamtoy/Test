@@ -527,7 +527,6 @@ class QAKnowledgeGraph:
             r.type_hint = $type_hint,
             r.batch_id = $batch_id,
             r.updated_at = $timestamp
-        RETURN r.created_at = $timestamp AS created
         """
 
         provider = self._graph_provider
