@@ -28,11 +28,12 @@ from src.ui.panels import (
     render_budget_panel,
     render_cost_panel,
 )
+from src.workflow.edit import edit_content
 from src.workflow.executor import execute_workflow_simple
 from src.workflow.inspection import inspect_answer, inspect_query
 
 # Constants
-MENU_CHOICES = ["1", "2", "3", "4"]
+MENU_CHOICES = ["1", "2", "3", "4", "5"]
 DEFAULT_OCR_PATH = "data/inputs/input_ocr.txt"
 
 
@@ -65,8 +66,9 @@ def show_main_menu() -> int:
 
     console.print("1. 🔄 질의 생성 및 평가")
     console.print("2. ✅ 검수 (질의/답변)")
-    console.print("3. 📊 캐시 통계 분석")
-    console.print("4. 🚪 종료\n")
+    console.print("3. ✏️ 수정 (사용자 요청 기반 재작성)")
+    console.print("4. 📊 캐시 통계 분석")
+    console.print("5. 🚪 종료\n")
 
     choice = Prompt.ask("선택", choices=MENU_CHOICES, default="1")
     return int(choice) - 1
@@ -391,6 +393,108 @@ async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> No
             kg.close()
 
 
+async def _handle_edit_menu(agent: GeminiAgent, config: AppConfig) -> None:
+    """
+    수정 메뉴 핸들러 (사용자 요청 기반 재작성)
+
+    UX 원칙:
+    - 답변 파일 입력
+    - OCR 자동 로드
+    - 질의 선택 입력
+    - 간결한 수정 요청 한 줄 입력
+    - 결과 파일 저장 (CLI 출력 없음)
+    """
+    console.print(Panel("✏️ 수정 모드: 간결한 요청으로 내용 재작성", style="cyan"))
+
+    # [1] 답변 파일 입력
+    answer_file_str = Prompt.ask("\n📂 수정할 답변 파일 경로")
+    answer_file = Path(answer_file_str.strip())
+
+    if not answer_file.exists():
+        console.print(f"[red]❌ 파일을 찾을 수 없습니다: {answer_file}[/red]")
+        return
+
+    answer_text = answer_file.read_text(encoding="utf-8")
+    if not answer_text.strip():
+        console.print("[yellow]답변 파일이 비어있습니다.[/yellow]")
+        return
+
+    # [2] OCR 자동 로드
+    ocr_text = ""
+    ocr_file = Path(DEFAULT_OCR_PATH)
+    if ocr_file.exists():
+        console.print(f"[dim]📄 OCR 자동 로드: {ocr_file}[/dim]")
+        ocr_text = ocr_file.read_text(encoding="utf-8")
+    else:
+        # OCR 파일이 없으면 사용자에게 경로 입력 요청 (한 번만)
+        ocr_path_input = Prompt.ask("📄 OCR 파일 경로 (없으면 Enter)", default="")
+        if ocr_path_input:
+            ocr_path = Path(ocr_path_input.strip())
+            if ocr_path.exists():
+                ocr_text = ocr_path.read_text(encoding="utf-8")
+            else:
+                console.print(
+                    f"[yellow]OCR 파일을 찾을 수 없습니다: {ocr_path}[/yellow]"
+                )
+        if not ocr_text:
+            console.print("[dim]⚠ OCR 텍스트 없음 (컨텍스트 없이 수정합니다)[/dim]")
+
+    # [3] 질의 입력 (선택)
+    query = ""
+    if Prompt.ask("❓ 질의를 문맥에 포함할까요?", choices=["y", "n"], default="n").lower() == "y":
+        query = Prompt.ask("   ❓ 질의 내용")
+
+    # [4] 수정 요청 입력 (핵심)
+    edit_request = Prompt.ask("\n✏️ 어떻게 수정할까요? (한 줄)")
+    if not edit_request.strip():
+        console.print("[red]❌ 수정 요청이 없습니다.[/red]")
+        return
+
+    # 리소스 초기화
+    kg = QAKnowledgeGraph() if config.neo4j_uri else None
+    cache: Optional[RedisEvalCache] = None
+    if os.getenv("REDIS_URL"):
+        cache = RedisEvalCache()
+
+    try:
+        # [5] 수정 실행
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_dir = Path("data/outputs")
+        output_path = output_dir / f"edited_{timestamp}.md"
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("[cyan]요청에 따라 내용 수정 중...", total=None)
+
+            edited_text = await edit_content(
+                agent=agent,
+                answer=answer_text,
+                ocr_text=ocr_text,
+                query=query,
+                edit_request=edit_request.strip(),
+                kg=kg,
+                cache=cache,
+            )
+
+            # 결과 저장
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(edited_text, encoding="utf-8")
+
+            progress.update(task, completed=100, description="[green]✓ 완료[/green]")
+
+        console.print("\n✅ [bold green]수정 완료[/bold green]")
+        console.print(f"💾 저장됨: {output_path}")
+
+    except Exception as e:
+        console.print(f"[red]❌ 수정 중 오류 발생: {e}[/red]")
+    finally:
+        if kg:
+            kg.close()
+
+
 def show_cache_statistics(config: AppConfig) -> None:
     """캐시 통계 분석"""
     console.print("\n[bold]캐시 통계 분석[/bold]")
@@ -465,9 +569,11 @@ async def interactive_main(
                     await _handle_query_inspection(agent, config)
                 else:
                     await _handle_answer_inspection(agent, config)
-            elif choice == 2:  # 3. 캐시 통계
+            elif choice == 2:  # 3. 수정
+                await _handle_edit_menu(agent, config)
+            elif choice == 3:  # 4. 캐시 통계
                 show_cache_statistics(config)
-            elif choice == 3:  # 4. 종료
+            elif choice == 4:  # 5. 종료
                 console.print("[bold]시스템을 종료합니다. 안녕히 가세요! 👋[/bold]")
                 sys.exit(0)
         except KeyboardInterrupt:  # noqa: PERF203 - Required for graceful error recovery in UI loop
