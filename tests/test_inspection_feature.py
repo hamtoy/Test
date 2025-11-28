@@ -24,19 +24,15 @@ def mock_components():
     difficulty = MagicMock()
     difficulty.analyze_image_complexity.return_value = {"level": "medium"}
 
-    cache = MagicMock()
-    cache.get = AsyncMock(return_value=None)
-    cache.set = AsyncMock()
-
     validator = MagicMock()
     validator.cross_validate_qa_pair.return_value = {"overall_score": 0.8}
 
-    return kg, lats, difficulty, cache, validator
+    return kg, lats, difficulty, validator
 
 
 @pytest.mark.asyncio
 async def test_inspect_query(mock_agent, mock_components):
-    kg, lats, difficulty, cache, _ = mock_components
+    kg, lats, difficulty, _ = mock_components
 
     # Mock SelfCorrectingQAChain
     with patch("src.workflow.inspection.SelfCorrectingQAChain") as MockChain:
@@ -49,18 +45,16 @@ async def test_inspect_query(mock_agent, mock_components):
         query = "Original Query"
 
         result = await inspect_query(
-            mock_agent, query, context, kg, lats, difficulty, cache
+            mock_agent, query, context, kg, lats, difficulty
         )
 
         assert result == "Corrected Query"
-        cache.get.assert_called_once()
-        cache.set.assert_called_once()
         difficulty.analyze_image_complexity.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_inspect_answer(mock_agent, mock_components):
-    kg, lats, _, cache, validator = mock_components
+    kg, lats, _, validator = mock_components
 
     with patch("src.workflow.inspection.SelfCorrectingQAChain") as MockChain:
         chain_instance = MockChain.return_value
@@ -74,10 +68,8 @@ async def test_inspect_answer(mock_agent, mock_components):
         ocr_text = "OCR"
 
         result = await inspect_answer(
-            mock_agent, answer, query, ocr_text, context, kg, lats, validator, cache
+            mock_agent, answer, query, ocr_text, context, kg, lats, validator
         )
 
         assert result == "Corrected Answer"
-        cache.get.assert_called_once()
-        cache.set.assert_called_once()
         validator.cross_validate_qa_pair.assert_called_once()

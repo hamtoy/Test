@@ -259,7 +259,7 @@ async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> Non
             context = {"type": "general"}
 
             result = await inspect_query(
-                agent, query, context, kg, lats, difficulty, cache
+                agent, query, context, kg, lats, difficulty
             )
 
             progress.update(task, description="[green]✓ 검수 완료[/green]")
@@ -314,7 +314,7 @@ async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> No
             context = {"type": "general", "image_meta": {}}
 
             result = await inspect_answer(
-                agent, answer, query, ocr_text, context, kg, lats, validator, cache
+                agent, answer, query, ocr_text, context, kg, lats, validator
             )
 
             progress.update(task, description="[green]✓ 검수 완료[/green]")
