@@ -1,6 +1,6 @@
 """Tests for the edit workflow module."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -15,15 +15,6 @@ def mock_agent():
     agent._create_generative_model = MagicMock(return_value=MagicMock())
     agent._call_api_with_retry = AsyncMock(return_value="수정된 답변 텍스트")
     return agent
-
-
-@pytest.fixture
-def mock_cache():
-    """Create a mock Redis cache."""
-    cache = MagicMock()
-    cache.get = AsyncMock(return_value=None)  # No cache hit
-    cache.set = AsyncMock()
-    return cache
 
 
 @pytest.fixture
@@ -104,45 +95,6 @@ async def test_edit_content_with_kg(mock_agent, mock_kg):
 
 
 @pytest.mark.asyncio
-async def test_edit_content_with_cache_miss(mock_agent, mock_cache):
-    """Test edit content with cache miss."""
-    mock_cache.get = AsyncMock(return_value=None)  # Cache miss
-
-    result = await edit_content(
-        agent=mock_agent,
-        answer="원본 답변",
-        ocr_text="OCR",
-        query="",
-        edit_request="수정해줘",
-        cache=mock_cache,
-    )
-
-    assert result == "수정된 답변 텍스트"
-    mock_cache.get.assert_called_once()
-    mock_cache.set.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_edit_content_with_cache_hit_marker(mock_agent, mock_cache):
-    """Test edit content with cache hit (marker value)."""
-    # Cache returns a float marker (not a string), so we should still process
-    mock_cache.get = AsyncMock(return_value=1.0)
-
-    result = await edit_content(
-        agent=mock_agent,
-        answer="원본 답변",
-        ocr_text="OCR",
-        query="",
-        edit_request="수정해줘",
-        cache=mock_cache,
-    )
-
-    # Should still call API since cache value is not a string
-    assert result == "수정된 답변 텍스트"
-    mock_agent._call_api_with_retry.assert_called_once()
-
-
-@pytest.mark.asyncio
 async def test_edit_content_with_kg_error(mock_agent, mock_kg):
     """Test edit content handles knowledge graph errors gracefully."""
     mock_kg.get_constraints_for_query_type = MagicMock(
@@ -204,3 +156,20 @@ async def test_edit_content_strips_whitespace(mock_agent):
     )
 
     assert result == "수정된 텍스트"
+
+
+@pytest.mark.asyncio
+async def test_edit_content_with_kg_rules_in_prompt(mock_agent, mock_kg):
+    """Test that knowledge graph rules appear in the prompt."""
+    await edit_content(
+        agent=mock_agent,
+        answer="답변",
+        ocr_text="OCR",
+        query="",
+        edit_request="수정",
+        kg=mock_kg,
+    )
+
+    user_prompt = mock_agent._call_api_with_retry.call_args[0][1]
+    assert "- Rule 1" in user_prompt
+    assert "- Rule 2" in user_prompt

@@ -452,9 +452,6 @@ async def _handle_edit_menu(agent: GeminiAgent, config: AppConfig) -> None:
 
     # 리소스 초기화
     kg = QAKnowledgeGraph() if config.neo4j_uri else None
-    cache: Optional[RedisEvalCache] = None
-    if os.getenv("REDIS_URL"):
-        cache = RedisEvalCache()
 
     try:
         # [5] 수정 실행
@@ -476,7 +473,6 @@ async def _handle_edit_menu(agent: GeminiAgent, config: AppConfig) -> None:
                 query=query,
                 edit_request=edit_request.strip(),
                 kg=kg,
-                cache=cache,
             )
 
             # 결과 저장
