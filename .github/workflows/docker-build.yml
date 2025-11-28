@@ -81,5 +81,7 @@ jobs:
       
       - name: Verify Docker Compose syntax
         run: |
+          # Create empty .env file for compose config validation
+          touch .env
           docker compose -f docker-compose.yml config
           docker compose -f docker-compose.worker.yml config
