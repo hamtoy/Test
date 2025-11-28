@@ -577,9 +577,7 @@ async def interactive_main(
             elif choice == 4:  # 5. 종료
                 console.print("[bold]시스템을 종료합니다. 안녕히 가세요! 👋[/bold]")
                 sys.exit(0)
-        except (
-            KeyboardInterrupt
-        ):  # noqa: PERF203 - Required for graceful error recovery in UI loop
+        except KeyboardInterrupt:  # noqa: PERF203
             console.print("\n[yellow]⚠ 작업을 중단하시겠습니까?[/yellow]")
             if Confirm.ask("메인 메뉴로 돌아가기", default=True):
                 console.print("[dim]→ 메인 메뉴로 이동합니다[/dim]\n")
