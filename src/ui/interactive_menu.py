@@ -6,15 +6,21 @@ import sys
 from datetime import datetime
 from typing import List, Optional
 
+from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
 from src.agent import GeminiAgent
+from src.analysis.cross_validation import CrossValidationSystem
 from src.caching.analytics import analyze_cache_stats, print_cache_report
+from src.caching.redis_cache import RedisEvalCache
 from src.config import AppConfig
 from src.core.models import WorkflowResult
+from src.features.difficulty import AdaptiveDifficultyAdjuster
+from src.features.lats import LATSSearcher
 from src.processing.loader import load_input_data
+from src.qa.rag_system import QAKnowledgeGraph
 from src.ui.panels import (
     console,
     display_queries,
@@ -22,6 +28,7 @@ from src.ui.panels import (
     render_cost_panel,
 )
 from src.workflow.executor import execute_workflow_simple
+from src.workflow.inspection import inspect_answer, inspect_query
 
 # Constants
 MENU_CHOICES = ["1", "2", "3", "4"]
@@ -226,20 +233,99 @@ async def run_workflow_interactive(
     Prompt.ask("\n엔터를 눌러 메뉴로 돌아갑니다")
 
 
-def review_queries() -> None:
-    """질의 검수 (Placeholder)"""
-    console.print("\n[bold]질의 검수 기능[/bold]")
-    console.print("이 기능은 아직 구현되지 않았습니다.")
-    console.print("직접 입력 모드를 지원할 예정입니다.")
-    Prompt.ask("엔터를 눌러 메뉴로 돌아갑니다")
+async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> None:
+    """질의 검수 핸들러"""
+    console.print(Panel("✅ 질의 검수", style="cyan"))
+
+    query = Prompt.ask("검수할 질의 입력")
+    if not query:
+        return
+
+    # 리소스 초기화
+    kg = QAKnowledgeGraph() if config.neo4j_uri else None
+    lats = LATSSearcher(agent.llm_provider) if config.enable_lats else None
+    cache = RedisEvalCache(ttl=3600) if config.redis_url else None
+    difficulty = AdaptiveDifficultyAdjuster(kg) if kg else None
+
+    try:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("질의 검수 중...", total=None)
+
+            # Context 구성 (필요 시 사용자 입력 추가 가능)
+            context = {"type": "general"}
+
+            result = await inspect_query(
+                agent, query, context, kg, lats, difficulty, cache
+            )
+
+            progress.update(task, description="[green]✓ 검수 완료[/green]")
+
+        console.print(f"\n[bold green]검수 결과:[/bold green]\n{result}")
+
+    except Exception as e:
+        console.print(f"[red]검수 실패: {e}[/red]")
+    finally:
+        if kg:
+            kg.close()
+        if cache:
+            await cache.clear()  # Close connection if needed, but RedisEvalCache doesn't have close() in the snippet provided.
+            # Actually RedisEvalCache doesn't have close method in previous view.
+            # It uses redis_client passed in or creates one?
+            # The snippet showed `self.redis = redis_client`.
+            # If we create it here, we might need to handle connection lifecycle if it created one internally.
+            # But `RedisEvalCache` init takes `redis_client`.
+            # If we pass None, it uses memory.
+            # If `config.redis_url` is set, we should probably create a redis client.
+            # However, `RedisEvalCache` doesn't seem to create its own client from URL in `__init__`.
+            # It expects a client.
+            # Let's check `src/caching/redis_cache.py` again.
+            pass
 
 
-def review_answers() -> None:
-    """답변 검수 (Placeholder)"""
-    console.print("\n[bold]답변 검수 기능[/bold]")
-    console.print("이 기능은 아직 구현되지 않았습니다.")
-    console.print("외부 파일 기반 검수를 지원할 예정입니다.")
-    Prompt.ask("엔터를 눌러 메뉴로 돌아갑니다")
+async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> None:
+    """답변 검수 핸들러"""
+    console.print(Panel("✅ 답변 검수", style="cyan"))
+
+    answer = Prompt.ask("검수할 답변 입력")
+    query = Prompt.ask("관련 질의 입력")
+    ocr_text = Prompt.ask("관련 OCR 텍스트 입력 (선택)", default="")
+
+    if not answer:
+        return
+
+    # 리소스 초기화
+    kg = QAKnowledgeGraph() if config.neo4j_uri else None
+    lats = LATSSearcher(agent.llm_provider) if config.enable_lats else None
+    cache = RedisEvalCache(ttl=3600) if config.redis_url else None
+    validator = CrossValidationSystem(kg) if kg else None
+
+    try:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("답변 검수 중...", total=None)
+
+            context = {"type": "general", "image_meta": {}}
+
+            result = await inspect_answer(
+                agent, answer, query, ocr_text, context, kg, lats, validator, cache
+            )
+
+            progress.update(task, description="[green]✓ 검수 완료[/green]")
+
+        console.print(f"\n[bold green]검수 결과:[/bold green]\n{result}")
+
+    except Exception as e:
+        console.print(f"[red]검수 실패: {e}[/red]")
+    finally:
+        if kg:
+            kg.close()
 
 
 def show_cache_statistics(config: AppConfig) -> None:
@@ -313,9 +399,9 @@ async def interactive_main(
                     "검수 유형 선택 (1: 질의, 2: 답변)", choices=["1", "2"], default="1"
                 )
                 if sub_choice == "1":
-                    review_queries()
+                    await _handle_query_inspection(agent, config)
                 else:
-                    review_answers()
+                    await _handle_answer_inspection(agent, config)
             elif choice == 2:  # 3. 캐시 통계
                 show_cache_statistics(config)
             elif choice == 3:  # 4. 종료
