@@ -232,7 +232,6 @@ def test_multimodal_exception_handling(monkeypatch):
 
 def test_detect_table(monkeypatch):
     """Test table detection method."""
-    from src.features import multimodal as features_multimodal
 
     class _KG:
         pass
@@ -249,7 +248,6 @@ def test_detect_table(monkeypatch):
 
 def test_detect_chart(monkeypatch):
     """Test chart detection method."""
-    from src.features import multimodal as features_multimodal
 
     class _KG:
         pass
