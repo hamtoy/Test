@@ -83,3 +83,96 @@
     </script>
 </body>
 </html>
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="split-layout">
+    <!-- 왼쪽: 업로드 영역 -->
+    <div class="left-panel">
+        <h2>🖼️ 이미지 업로드</h2>
+        
+        <div id="drop-zone" class="drop-zone">
+            <p>이미지를 드래그하거나 클릭하세요</p>
+            <input type="file" id="file-input" accept="image/*" style="display:none">
+        </div>
+
+        <button id="analyze-btn" class="btn-primary" disabled>🔍 분석 실행</button>
+
+        <div id="preview-area"></div>
+    </div>
+
+    <!-- 오른쪽: 분석 결과 -->
+    <div class="right-panel">
+        <h2>📊 분석 결과</h2>
+        <div id="analysis-results" class="results-area"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let selectedFile = null;
+
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const analyzeBtn = document.getElementById('analyze-btn');
+
+    // 클릭 시 파일 선택
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    // 드래그 앤 드롭
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#4CAF50';
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.style.borderColor = '#666';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = '#666';
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
+    });
+
+    // 파일 선택
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFile(e.target.files[0]);
+        }
+    });
+
+    function handleFile(file) {
+        if (!file.type.startsWith('image/')) {
+            alert('이미지 파일만 업로드 가능합니다.');
+            return;
+        }
+
+        selectedFile = file;
+        analyzeBtn.disabled = false;
+
+        // 미리보기 - DOM method로 안전하게 생성
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const previewArea = document.getElementById('preview-area');
+            previewArea.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.cssText = 'max-width:100%; margin-top:10px;';
+            previewArea.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // 분석 실행
+    analyzeBtn.addEventListener('click', async () => {
+        if (!selectedFile) return;
+        await analyzeImage(selectedFile);
+    });
+</script>
+{% endblock %}

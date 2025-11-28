@@ -111,3 +111,67 @@
     </script>
 </body>
 </html>
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="split-layout">
+    <!-- 왼쪽: OCR 영역 -->
+    <div class="left-panel">
+        <h2>📄 OCR 텍스트</h2>
+        <div id="ocr-preview" class="ocr-box">로딩 중...</div>
+    </div>
+
+    <!-- 오른쪽: 생성 컨트롤 + 결과 -->
+    <div class="right-panel">
+        <div class="control-box">
+            <h2>⚙️ 생성 옵션</h2>
+            
+            <label>
+                <input type="radio" name="mode" value="batch" checked>
+                4타입 일괄 생성
+            </label>
+            
+            <label>
+                <input type="radio" name="mode" value="single">
+                타입별 생성
+            </label>
+
+            <div id="type-selector" style="display:none; margin-top: 10px;">
+                <select id="qtype">
+                    <option value="global_explanation">전반 설명</option>
+                    <option value="reasoning">추론</option>
+                    <option value="target_short">타겟 짧은 답변</option>
+                    <option value="target_long">타겟 긴 답변</option>
+                </select>
+            </div>
+
+            <button id="generate-btn" class="btn-primary">🚀 생성 실행</button>
+        </div>
+
+        <div id="results" class="results-area"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // OCR 로드
+    loadOCR();
+
+    // 모드 선택 시 타입 셀렉터 토글
+    document.querySelectorAll('input[name="mode"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const selector = document.getElementById('type-selector');
+            selector.style.display = e.target.value === 'single' ? 'block' : 'none';
+        });
+    });
+
+    // 생성 버튼
+    document.getElementById('generate-btn').addEventListener('click', async () => {
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const qtype = mode === 'single' ? document.getElementById('qtype').value : null;
+        
+        await generateQA(mode, qtype);
+    });
+</script>
+{% endblock %}

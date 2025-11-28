@@ -23,6 +23,47 @@ header {
 header h1 {
     font-size: 1.5rem;
     margin-bottom: 1rem;
+/* 다크 모드 기본 */
+:root {
+    --bg: #1a1a1a;
+    --panel: #2a2a2a;
+    --border: #444;
+    --text: #e0e0e0;
+    --text-dim: #999;
+    --primary: #4CAF50;
+    --primary-hover: #45a049;
+    --danger: #f44336;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* 헤더 */
+header {
+    background: var(--panel);
+    border-bottom: 2px solid var(--border);
+    padding: 15px 0;
+}
+
+header h1 {
+    font-size: 24px;
+    margin-bottom: 10px;
 }
 
 nav {
@@ -219,4 +260,270 @@ dd {
         padding: 0.4rem 0.8rem;
         font-size: 0.9rem;
     }
+    gap: 15px;
+}
+
+.nav-link {
+    color: var(--text);
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.nav-link:hover {
+    background: var(--border);
+}
+
+/* 메인 레이아웃 */
+main {
+    padding: 20px 0;
+}
+
+.split-layout {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 20px;
+    min-height: 80vh;
+}
+
+.left-panel, .right-panel {
+    background: var(--panel);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+/* OCR 박스 */
+.ocr-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 15px;
+    max-height: 70vh;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+}
+
+/* 컨트롤 박스 */
+.control-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.control-box h2 {
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.control-box label {
+    display: block;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.control-box input[type="radio"] {
+    margin-right: 8px;
+}
+
+.control-box select {
+    width: 100%;
+    padding: 8px;
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+
+/* 버튼 */
+.btn-primary {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    width: 100%;
+    margin-top: 10px;
+    transition: background 0.2s;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+}
+
+.btn-primary:disabled {
+    background: var(--border);
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: var(--border);
+    color: var(--text);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #555;
+}
+
+/* 폼 */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.form-group input[type="text"],
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.form-group textarea {
+    resize: vertical;
+}
+
+/* 결과 영역 */
+.results-area {
+    margin-top: 20px;
+}
+
+.result-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.result-card h3 {
+    margin-bottom: 10px;
+    color: var(--primary);
+}
+
+.result-card pre {
+    background: var(--panel);
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    font-size: 13px;
+}
+
+.result-card button {
+    margin-top: 10px;
+}
+
+/* 드롭존 */
+.drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 60px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    margin-bottom: 15px;
+}
+
+.drop-zone:hover {
+    border-color: var(--primary);
+}
+
+.drop-zone p {
+    color: var(--text-dim);
+    font-size: 16px;
+}
+
+/* 테이블 */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+table th, table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+table th {
+    background: var(--bg);
+    font-weight: bold;
+}
+
+table tr:hover {
+    background: var(--bg);
+}
+
+.best-answer {
+    background: rgba(76, 175, 80, 0.2) !important;
+}
+
+/* 푸터 */
+footer {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+}
+
+/* 로딩 스피너 */
+.loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 스크롤바 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }

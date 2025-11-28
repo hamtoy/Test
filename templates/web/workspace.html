@@ -114,3 +114,83 @@
     </script>
 </body>
 </html>
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="split-layout">
+    <!-- 왼쪽: OCR 영역 -->
+    <div class="left-panel">
+        <h2>📄 OCR 텍스트</h2>
+        <div id="ocr-preview" class="ocr-box">로딩 중...</div>
+    </div>
+
+    <!-- 오른쪽: 워크스페이스 -->
+    <div class="right-panel">
+        <h2>✍️ 워크스페이스</h2>
+        
+        <div class="form-group">
+            <label>질의 (선택)</label>
+            <input type="text" id="query" placeholder="질의 내용">
+        </div>
+
+        <div class="form-group">
+            <label>답변/텍스트</label>
+            <textarea id="answer" rows="8"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>모드 선택</label>
+            <label>
+                <input type="radio" name="mode" value="inspect" checked>
+                검수 모드 (자동 교정)
+            </label>
+            <label>
+                <input type="radio" name="mode" value="edit">
+                자유 수정 모드
+            </label>
+        </div>
+
+        <div id="edit-request-box" style="display:none;" class="form-group">
+            <label>수정 요청</label>
+            <input type="text" id="edit-request" placeholder="예: 더 간결하게">
+        </div>
+
+        <button id="execute-btn" class="btn-primary">▶️ 실행</button>
+
+        <div id="workspace-results" class="results-area"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    loadOCR();
+
+    // 모드 선택 시 수정 요청 박스 토글
+    document.querySelectorAll('input[name="mode"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const box = document.getElementById('edit-request-box');
+            box.style.display = e.target.value === 'edit' ? 'block' : 'none';
+        });
+    });
+
+    document.getElementById('execute-btn').addEventListener('click', async () => {
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        const query = document.getElementById('query').value;
+        const answer = document.getElementById('answer').value;
+        const editRequest = document.getElementById('edit-request').value;
+
+        if (!answer.trim()) {
+            alert('답변을 입력해주세요.');
+            return;
+        }
+
+        if (mode === 'edit' && !editRequest.trim()) {
+            alert('수정 요청을 입력해주세요.');
+            return;
+        }
+
+        await executeWorkspace(mode, query, answer, editRequest);
+    });
+</script>
+{% endblock %}
