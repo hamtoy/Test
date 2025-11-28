@@ -43,11 +43,18 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, TypedDict
 
+from typing_extensions import NotRequired
+
 # GeminiModelClient 임포트 (LLM 호출용)
 from src.llm.gemini import GeminiModelClient
 
+# 설정 상수
+MIN_MEANINGFUL_COMMENT_LENGTH = 5  # 의미 있는 코멘트로 간주하기 위한 최소 길이
+MAX_COMMENTS_FOR_LLM = 100  # LLM에 전달할 최대 코멘트 수
+LLM_TEMPERATURE = 0.3  # LLM 호출 시 사용할 temperature
 
-class PromotedRule(TypedDict, total=False):
+
+class PromotedRule(TypedDict):
     """승격된 규칙의 타입 정의.
 
     Attributes:
@@ -61,10 +68,10 @@ class PromotedRule(TypedDict, total=False):
 
     rule: str
     type_hint: str
-    constraint: str
-    best_practice: str
-    before: str
-    after: str
+    constraint: NotRequired[str]
+    best_practice: NotRequired[str]
+    before: NotRequired[str]
+    after: NotRequired[str]
 
 
 def get_review_logs_dir() -> Path:
@@ -181,7 +188,7 @@ def _is_meaningful_comment(value: Any) -> bool:
     if not stripped:
         return False
     # 너무 짧은 코멘트 제외 (예: "ok", "y" 등)
-    return len(stripped) >= 5
+    return len(stripped) >= MIN_MEANINGFUL_COMMENT_LENGTH
 
 
 def build_llm_prompt(comments: list[str]) -> str:
@@ -193,7 +200,9 @@ def build_llm_prompt(comments: list[str]) -> str:
     Returns:
         str: LLM 프롬프트 문자열
     """
-    comments_text = "\n".join(f"- {c}" for c in comments[:100])  # 최대 100개로 제한
+    comments_text = "\n".join(
+        f"- {c}" for c in comments[:MAX_COMMENTS_FOR_LLM]
+    )  # 최대 코멘트 수 제한
 
     prompt = f"""다음은 검수자가 남긴 코멘트와 수정 요청 목록입니다.
 이 코멘트들을 분석하여 자주 등장하는 패턴을 군집화하고,
@@ -267,10 +276,12 @@ def parse_llm_response(response_text: str) -> list[PromotedRule]:
         result: list[PromotedRule] = []
         for item in parsed:
             if isinstance(item, dict) and "rule" in item and "type_hint" in item:
-                rule_entry: PromotedRule = {
+                # 필수 필드만으로 시작
+                rule_entry: dict[str, str] = {
                     "rule": str(item.get("rule", "")),
                     "type_hint": str(item.get("type_hint", "")),
                 }
+                # 선택 필드 추가
                 if "constraint" in item:
                     rule_entry["constraint"] = str(item["constraint"])
                 if "best_practice" in item:
@@ -279,7 +290,8 @@ def parse_llm_response(response_text: str) -> list[PromotedRule]:
                     rule_entry["before"] = str(item["before"])
                 if "after" in item:
                     rule_entry["after"] = str(item["after"])
-                result.append(rule_entry)
+                # PromotedRule로 캐스팅
+                result.append(rule_entry)  # type: ignore[arg-type]
 
         return result
     except json.JSONDecodeError:
@@ -329,7 +341,7 @@ def run_promote_rules(days: int = 7) -> list[PromotedRule]:
     prompt = build_llm_prompt(comments)
     print("LLM에 패턴 분석 요청 중...")
 
-    response = client.generate(prompt, temperature=0.3)
+    response = client.generate(prompt, temperature=LLM_TEMPERATURE)
 
     if response.startswith("[생성 실패"):
         print(f"LLM 호출 실패: {response}")
