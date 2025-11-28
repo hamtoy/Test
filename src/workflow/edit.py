@@ -40,13 +40,19 @@ async def edit_content(
             rules: List[Dict[str, Any]] = kg.get_constraints_for_query_type("general")
             if rules:
                 rules_summary = "\n".join(
-                    [f"- {r.get('description', '')}" for r in rules if r.get("description")]
+                    [
+                        f"- {r.get('description', '')}"
+                        for r in rules
+                        if r.get("description")
+                    ]
                 )
         except Exception as e:
             logger.warning("Failed to load rules from knowledge graph: %s", e)
 
     # 2. 프롬프트 구성
-    system_prompt = "너는 사용자의 요청에 맞춰 텍스트를 자연스럽게 수정하는 어시스턴트다."
+    system_prompt = (
+        "너는 사용자의 요청에 맞춰 텍스트를 자연스럽게 수정하는 어시스턴트다."
+    )
 
     user_prompt = f"""다음은 이미지에서 추출한 OCR 텍스트와, 그 OCR을 바탕으로 작성된 답변입니다.
 

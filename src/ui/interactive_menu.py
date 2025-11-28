@@ -441,7 +441,12 @@ async def _handle_edit_menu(agent: GeminiAgent, config: AppConfig) -> None:
 
     # [3] 질의 입력 (선택)
     query = ""
-    if Prompt.ask("❓ 질의를 문맥에 포함할까요?", choices=["y", "n"], default="n").lower() == "y":
+    if (
+        Prompt.ask(
+            "❓ 질의를 문맥에 포함할까요?", choices=["y", "n"], default="n"
+        ).lower()
+        == "y"
+    ):
         query = Prompt.ask("   ❓ 질의 내용")
 
     # [4] 수정 요청 입력 (핵심)
@@ -572,7 +577,9 @@ async def interactive_main(
             elif choice == 4:  # 5. 종료
                 console.print("[bold]시스템을 종료합니다. 안녕히 가세요! 👋[/bold]")
                 sys.exit(0)
-        except KeyboardInterrupt:  # noqa: PERF203 - Required for graceful error recovery in UI loop
+        except (
+            KeyboardInterrupt
+        ):  # noqa: PERF203 - Required for graceful error recovery in UI loop
             console.print("\n[yellow]⚠ 작업을 중단하시겠습니까?[/yellow]")
             if Confirm.ask("메인 메뉴로 돌아가기", default=True):
                 console.print("[dim]→ 메인 메뉴로 이동합니다[/dim]\n")
