@@ -1,7 +1,6 @@
 """Tests for src/monitoring/metrics.py to improve coverage."""
 
 
-
 class TestStubImplementations:
     """Tests for stub implementations when prometheus_client is not available."""
 

@@ -142,10 +142,14 @@ class TestShowCacheStatistics:
         mock_config = MagicMock()
         mock_config.cache_stats_path = Path("/tmp/test_cache.jsonl")
 
-        with patch("src.ui.interactive_menu.console") as mock_console, patch(
-            "src.ui.interactive_menu.analyze_cache_stats",
-            side_effect=Exception("File not found"),
-        ), patch("src.ui.interactive_menu.Prompt.ask", return_value=""):
+        with (
+            patch("src.ui.interactive_menu.console") as mock_console,
+            patch(
+                "src.ui.interactive_menu.analyze_cache_stats",
+                side_effect=Exception("File not found"),
+            ),
+            patch("src.ui.interactive_menu.Prompt.ask", return_value=""),
+        ):
             show_cache_statistics(mock_config)
 
             # Should print error message

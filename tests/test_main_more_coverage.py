@@ -52,10 +52,11 @@ class TestMainFunction:
 
         mock_logger = MagicMock()
 
-        with patch(
-            "src.main.setup_logging", return_value=(mock_logger, mock_log_listener)
-        ), patch(
-            "src.main.AppConfig", side_effect=ValueError("Config error")
+        with (
+            patch(
+                "src.main.setup_logging", return_value=(mock_logger, mock_log_listener)
+            ),
+            patch("src.main.AppConfig", side_effect=ValueError("Config error")),
         ):
             from src.main import main
 
@@ -81,12 +82,15 @@ class TestMainFunction:
         mock_config.template_dir = tmp_path / "nonexistent_templates"
 
         with (
-            patch("src.main.setup_logging", return_value=(mock_logger, mock_log_listener)),
+            patch(
+                "src.main.setup_logging", return_value=(mock_logger, mock_log_listener)
+            ),
             patch("src.main.AppConfig", return_value=mock_config),
             patch("src.main.genai"),
             pytest.raises(SystemExit) as exc,
         ):
             from src.main import main
+
             await main()
         assert exc.value.code == 1
 
@@ -115,13 +119,18 @@ class TestMainFunction:
         mock_agent = MagicMock()
 
         with (
-            patch("src.main.setup_logging", return_value=(mock_logger, mock_log_listener)),
+            patch(
+                "src.main.setup_logging", return_value=(mock_logger, mock_log_listener)
+            ),
             patch("src.main.AppConfig", return_value=mock_config),
             patch("src.main.genai"),
             patch("src.main.GeminiAgent", return_value=mock_agent),
-            patch("src.main.interactive_main", new_callable=AsyncMock) as mock_interactive,
+            patch(
+                "src.main.interactive_main", new_callable=AsyncMock
+            ) as mock_interactive,
         ):
             from src.main import main
+
             await main()
 
             # Verify interactive_main was called
@@ -141,9 +150,12 @@ class TestMainFunction:
 
         mock_logger = MagicMock()
 
-        with patch(
-            "src.main.setup_logging", return_value=(mock_logger, mock_log_listener)
-        ), patch("src.main.AppConfig", side_effect=OSError("Permission denied")):
+        with (
+            patch(
+                "src.main.setup_logging", return_value=(mock_logger, mock_log_listener)
+            ),
+            patch("src.main.AppConfig", side_effect=OSError("Permission denied")),
+        ):
             from src.main import main
 
             with pytest.raises(SystemExit) as exc:
@@ -162,7 +174,9 @@ class TestMainEntryPoint:
         mock_policy = MagicMock()
 
         with (
-            patch.object(asyncio, "WindowsSelectorEventLoopPolicy", mock_policy, create=True),
+            patch.object(
+                asyncio, "WindowsSelectorEventLoopPolicy", mock_policy, create=True
+            ),
             patch.object(asyncio, "set_event_loop_policy") as mock_set_policy,
         ):
             # Import and check if policy was applied
