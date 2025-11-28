@@ -339,7 +339,9 @@ async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> No
             if ocr_path.exists():
                 ocr_text = ocr_path.read_text(encoding="utf-8")
             else:
-                console.print(f"[yellow]OCR 파일을 찾을 수 없습니다: {ocr_path}[/yellow]")
+                console.print(
+                    f"[yellow]OCR 파일을 찾을 수 없습니다: {ocr_path}[/yellow]"
+                )
 
     # [3] 질의 여부 (선택)
     query = ""

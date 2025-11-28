@@ -74,7 +74,9 @@ async def inspect_query(
     if kg:
         rules: List[Dict[str, str]] = kg.get_constraints_for_query_type(query_type)
         if rules:
-            rule_lines = [r.get("description", "") for r in rules if r.get("description")]
+            rule_lines = [
+                r.get("description", "") for r in rules if r.get("description")
+            ]
             context_prompt += "\n[규칙]\n" + "\n".join(rule_lines)
 
     if context.get("complexity"):
@@ -164,7 +166,9 @@ async def inspect_answer(
             if k in ocr_keywords:
                 matched_keywords += v
 
-        coverage = matched_keywords / total_ocr_keywords if total_ocr_keywords > 0 else 1.0
+        coverage = (
+            matched_keywords / total_ocr_keywords if total_ocr_keywords > 0 else 1.0
+        )
         if coverage < 0.6:
             logger.warning(f"Low keyword coverage: {coverage:.2f}")
             context["low_coverage"] = True
