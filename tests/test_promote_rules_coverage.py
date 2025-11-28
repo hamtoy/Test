@@ -153,7 +153,7 @@ class TestExtractCommentsFromFiles:
 
         log_file = tmp_path / "test.jsonl"
         log_file.write_text(
-            "invalid json line\n" '{"inspector_comment": "유효한 코멘트입니다"}\n'
+            'invalid json line\n{"inspector_comment": "유효한 코멘트입니다"}\n'
         )
 
         result = extract_comments_from_files([log_file])
