@@ -71,12 +71,15 @@
         selectedFile = file;
         analyzeBtn.disabled = false;
 
-        // 미리보기
+        // 미리보기 - DOM method로 안전하게 생성
         const reader = new FileReader();
         reader.onload = (e) => {
-            document.getElementById('preview-area').innerHTML = `
-                <img src="${e.target.result}" style="max-width:100%; margin-top:10px;">
-            `;
+            const previewArea = document.getElementById('preview-area');
+            previewArea.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.cssText = 'max-width:100%; margin-top:10px;';
+            previewArea.appendChild(img);
         };
         reader.readAsDataURL(file);
     }

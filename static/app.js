@@ -91,29 +91,48 @@ function createQACard(pair, index) {
     const card = document.createElement('div');
     card.className = 'result-card';
     
-    card.innerHTML = `
-        <h3>[${index}] ${pair.type}</h3>
-        <p><strong>질의:</strong> ${pair.query}</p>
-        <details>
-            <summary style="cursor:pointer; color: var(--primary)">답변 보기</summary>
-            <pre>${pair.answer}</pre>
-        </details>
-        <button class="btn-secondary" onclick="sendToWorkspace('${escapeHtml(pair.query)}', '${escapeHtml(pair.answer)}')">
-            워크스페이스로 보내기 →
-        </button>
-    `;
+    // Create elements safely using DOM methods
+    const h3 = document.createElement('h3');
+    h3.textContent = `[${index}] ${pair.type}`;
+    
+    const p = document.createElement('p');
+    const strong = document.createElement('strong');
+    strong.textContent = '질의:';
+    p.appendChild(strong);
+    p.appendChild(document.createTextNode(' ' + pair.query));
+    
+    const details = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.style.cursor = 'pointer';
+    summary.style.color = 'var(--primary)';
+    summary.textContent = '답변 보기';
+    const pre = document.createElement('pre');
+    pre.textContent = pair.answer;
+    details.appendChild(summary);
+    details.appendChild(pre);
+    
+    const button = document.createElement('button');
+    button.className = 'btn-secondary';
+    button.textContent = '워크스페이스로 보내기 →';
+    // Store data in dataset for safe access
+    button.dataset.query = pair.query;
+    button.dataset.answer = pair.answer;
+    button.addEventListener('click', function() {
+        sendToWorkspace(this.dataset.query, this.dataset.answer);
+    });
+    
+    card.appendChild(h3);
+    card.appendChild(p);
+    card.appendChild(details);
+    card.appendChild(button);
     
     return card;
 }
 
 function escapeHtml(text) {
-    return text.replace(/[&<>"']/g, (m) => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    })[m]);
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function sendToWorkspace(query, answer) {
@@ -201,12 +220,20 @@ async function executeWorkspace(mode, query, answer, editRequest) {
 
         const resultText = data.result.fixed || data.result.edited;
         
-        card.innerHTML = `
-            <pre>${resultText}</pre>
-            <button class="btn-secondary" onclick="copyToClipboard(\`${resultText.replace(/`/g, '\\`')}\`)">
-                📋 클립보드 복사
-            </button>
-        `;
+        // Create elements safely using DOM methods
+        const pre = document.createElement('pre');
+        pre.textContent = resultText;
+        
+        const button = document.createElement('button');
+        button.className = 'btn-secondary';
+        button.textContent = '📋 클립보드 복사';
+        button.dataset.text = resultText;
+        button.addEventListener('click', function() {
+            copyToClipboard(this.dataset.text);
+        });
+        
+        card.appendChild(pre);
+        card.appendChild(button);
 
         resultsDiv.appendChild(card);
     } catch (error) {
@@ -246,27 +273,74 @@ function displayAnalysisResults(data) {
     const resultsDiv = document.getElementById('analysis-results');
     const meta = data.metadata;
 
-    resultsDiv.innerHTML = `
-        <div class="result-card">
-            <h3>메타데이터</h3>
-            <p><strong>파일명:</strong> ${data.filename}</p>
-            <p><strong>표/그래프:</strong> ${meta.has_table_chart ? '✅' : '❌'}</p>
-            <p><strong>텍스트 밀도:</strong> ${meta.text_density.toFixed(2)}</p>
-            <p><strong>주요 토픽:</strong></p>
-            <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px;">
-                ${meta.topics.map(t => `<span style="background: var(--primary); padding: 4px 8px; border-radius: 4px; font-size: 12px;">${t}</span>`).join('')}
-            </div>
-        </div>
-
-        <div class="result-card">
-            <h3>추출된 텍스트</h3>
-            <details>
-                <summary style="cursor:pointer; color: var(--primary)">텍스트 보기</summary>
-                <pre>${meta.extracted_text}</pre>
-            </details>
-            <button class="btn-primary" onclick="window.location.href='/qa'">
-                QA 생성으로 보내기 →
-            </button>
-        </div>
-    `;
+    // Clear and rebuild using DOM methods for safety
+    resultsDiv.innerHTML = '';
+    
+    // First result card - metadata
+    const metaCard = document.createElement('div');
+    metaCard.className = 'result-card';
+    
+    const h3Meta = document.createElement('h3');
+    h3Meta.textContent = '메타데이터';
+    metaCard.appendChild(h3Meta);
+    
+    const pFilename = document.createElement('p');
+    pFilename.innerHTML = '<strong>파일명:</strong> ';
+    pFilename.appendChild(document.createTextNode(data.filename));
+    metaCard.appendChild(pFilename);
+    
+    const pTableChart = document.createElement('p');
+    pTableChart.innerHTML = '<strong>표/그래프:</strong> ';
+    pTableChart.appendChild(document.createTextNode(meta.has_table_chart ? '✅' : '❌'));
+    metaCard.appendChild(pTableChart);
+    
+    const pDensity = document.createElement('p');
+    pDensity.innerHTML = '<strong>텍스트 밀도:</strong> ';
+    pDensity.appendChild(document.createTextNode(meta.text_density.toFixed(2)));
+    metaCard.appendChild(pDensity);
+    
+    const pTopics = document.createElement('p');
+    pTopics.innerHTML = '<strong>주요 토픽:</strong>';
+    metaCard.appendChild(pTopics);
+    
+    const topicsDiv = document.createElement('div');
+    topicsDiv.style.cssText = 'display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px;';
+    meta.topics.forEach(topic => {
+        const span = document.createElement('span');
+        span.style.cssText = 'background: var(--primary); padding: 4px 8px; border-radius: 4px; font-size: 12px;';
+        span.textContent = topic;
+        topicsDiv.appendChild(span);
+    });
+    metaCard.appendChild(topicsDiv);
+    
+    resultsDiv.appendChild(metaCard);
+    
+    // Second result card - extracted text
+    const textCard = document.createElement('div');
+    textCard.className = 'result-card';
+    
+    const h3Text = document.createElement('h3');
+    h3Text.textContent = '추출된 텍스트';
+    textCard.appendChild(h3Text);
+    
+    const details = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.style.cssText = 'cursor: pointer; color: var(--primary);';
+    summary.textContent = '텍스트 보기';
+    details.appendChild(summary);
+    
+    const pre = document.createElement('pre');
+    pre.textContent = meta.extracted_text;
+    details.appendChild(pre);
+    textCard.appendChild(details);
+    
+    const qaButton = document.createElement('button');
+    qaButton.className = 'btn-primary';
+    qaButton.textContent = 'QA 생성으로 보내기 →';
+    qaButton.addEventListener('click', function() {
+        window.location.href = '/qa';
+    });
+    textCard.appendChild(qaButton);
+    
+    resultsDiv.appendChild(textCard);
 }

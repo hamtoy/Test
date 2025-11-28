@@ -48,25 +48,25 @@ api_router = APIRouter(prefix="/api")
 @app.get("/qa", response_class=HTMLResponse)
 async def qa_page(request: Request) -> HTMLResponse:
     """Render QA generation page."""
-    return templates.TemplateResponse(request, "qa.html")
+    return templates.TemplateResponse(request=request, name="qa.html")
 
 
 @app.get("/eval", response_class=HTMLResponse)
 async def eval_page(request: Request) -> HTMLResponse:
     """Render evaluation page."""
-    return templates.TemplateResponse(request, "eval.html")
+    return templates.TemplateResponse(request=request, name="eval.html")
 
 
 @app.get("/workspace", response_class=HTMLResponse)
 async def workspace_page(request: Request) -> HTMLResponse:
     """Render workspace page."""
-    return templates.TemplateResponse(request, "workspace.html")
+    return templates.TemplateResponse(request=request, name="workspace.html")
 
 
 @app.get("/multimodal", response_class=HTMLResponse)
 async def multimodal_page(request: Request) -> HTMLResponse:
     """Render multimodal/image analysis page."""
-    return templates.TemplateResponse(request, "multimodal.html")
+    return templates.TemplateResponse(request=request, name="multimodal.html")
 
 
 # =============================================================================
