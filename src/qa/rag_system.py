@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import logging
 import os
 import time
 import weakref
 from contextlib import contextmanager, suppress
-from typing import Any, Dict, Generator, List, Optional, no_type_check
+from typing import Any, Coroutine, Dict, Generator, List, Optional, TypeVar, no_type_check
 
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -21,6 +22,43 @@ from src.config import AppConfig
 from src.infra.neo4j import SafeDriver, create_sync_driver
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
+
+
+def _run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
+    """
+    Run an async coroutine from sync context, handling the case where
+    an event loop is already running.
+
+    If there's already a running event loop (e.g., called from async context),
+    run the coroutine in a separate thread to avoid "event loop already running" error.
+    """
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # No running loop, create one and run
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+            asyncio.set_event_loop(None)
+
+    # Loop is already running - run in a separate thread
+    def run_in_thread() -> T:
+        new_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(new_loop)
+        try:
+            return new_loop.run_until_complete(coro)
+        finally:
+            new_loop.close()
+            asyncio.set_event_loop(None)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(run_in_thread)
+        return future.result()
 
 load_dotenv()
 
@@ -182,7 +220,7 @@ class QAKnowledgeGraph:
                 records = await session.run(cypher, qt=query_type)
                 return [dict(r) for r in records]
 
-        return asyncio.get_event_loop().run_until_complete(_run())
+        return _run_async_safely(_run())
 
     @no_type_check
     def get_best_practices(self, query_type: str) -> List[Dict[str, str]]:
@@ -202,7 +240,7 @@ class QAKnowledgeGraph:
                 records = await session.run(cypher, qt=query_type)
                 return [dict(r) for r in records]
 
-        return asyncio.get_event_loop().run_until_complete(_run())
+        return _run_async_safely(_run())
 
     @no_type_check
     def get_examples(self, limit: int = 5) -> List[Dict[str, str]]:
@@ -226,7 +264,7 @@ class QAKnowledgeGraph:
                 records = await session.run(cypher, limit=limit)
                 return [dict(r) for r in records]
 
-        return asyncio.get_event_loop().run_until_complete(_run())
+        return _run_async_safely(_run())
 
     def validate_session(self, session: Dict[str, Any]) -> Dict[str, Any]:
         """
