@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -87,6 +89,60 @@ async def init_resources() -> None:
     if mm is None and kg is not None:
         mm = MultimodalUnderstanding(kg=kg)
         logger.info("MultimodalUnderstanding 초기화 완료")
+
+
+def log_review_session(
+    mode: Literal["inspect", "edit"],
+    question: str,
+    answer_before: str,
+    answer_after: str,
+    edit_request_used: str,
+    inspector_comment: str,
+) -> None:
+    """검수/수정 세션 로그를 JSONL 파일에 기록.
+
+    로그 파일 경로: data/outputs/review_logs/review_YYYY-MM-DD.jsonl
+
+    Args:
+        mode: 작업 모드 ("inspect" 또는 "edit")
+        question: 질의 내용 (빈 문자열 허용)
+        answer_before: 수정 전 답변
+        answer_after: 수정 후 답변
+        edit_request_used: 수정 요청 내용 (inspect 모드에서는 빈 문자열)
+        inspector_comment: 검수자 코멘트 (빈 문자열 허용)
+
+    Note:
+        이 함수는 메인 기능에 영향을 주지 않도록 모든 예외를 내부에서 처리하고,
+        실패 시 콘솔에 경고만 남깁니다.
+    """
+    try:
+        # 로그 디렉터리 경로 설정 및 자동 생성
+        log_dir = REPO_ROOT / "data" / "outputs" / "review_logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+
+        # 현재 날짜 기반 로그 파일명
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        log_file = log_dir / f"review_{today}.jsonl"
+
+        # 로그 엔트리 생성
+        timestamp = datetime.now(timezone.utc).isoformat()
+        log_entry = {
+            "timestamp": timestamp,
+            "mode": mode,
+            "question": question,
+            "answer_before": answer_before,
+            "answer_after": answer_after,
+            "edit_request_used": edit_request_used,
+            "inspector_comment": inspector_comment,
+        }
+
+        # JSONL 형식으로 append
+        with open(log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+    except Exception as e:
+        # 로그 기록 실패 시 경고만 출력, 메인 기능에 영향 없음
+        logger.warning(f"검수 로그 기록 실패: {e}")
 
 
 # ============================================================================
@@ -270,6 +326,17 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
                 validator=None,
                 cache=None,
             )
+
+            # 검수 로그 기록 (실패해도 메인 응답에 영향 없음)
+            log_review_session(
+                mode="inspect",
+                question=body.query or "",
+                answer_before=body.answer,
+                answer_after=fixed,
+                edit_request_used="",
+                inspector_comment=body.inspector_comment or "",
+            )
+
             return {
                 "mode": "inspect",
                 "result": {
@@ -295,6 +362,17 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
                 kg=kg,
                 cache=None,
             )
+
+            # 수정 로그 기록 (실패해도 메인 응답에 영향 없음)
+            log_review_session(
+                mode="edit",
+                question=body.query or "",
+                answer_before=body.answer,
+                answer_after=edited,
+                edit_request_used=body.edit_request,
+                inspector_comment=body.inspector_comment or "",
+            )
+
             return {
                 "mode": "edit",
                 "result": {
