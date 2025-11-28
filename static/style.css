@@ -1,3 +1,5 @@
+/* Gemini QA System - Web Interface Styles */
+
 /* 다크 모드 기본 */
 :root {
     --bg: #1a1a1a;
@@ -33,7 +35,7 @@ body {
 header {
     background: var(--panel);
     border-bottom: 2px solid var(--border);
-    padding: 15px 0;
+    padding: 15px 20px;
 }
 
 header h1 {
@@ -44,9 +46,10 @@ header h1 {
 nav {
     display: flex;
     gap: 15px;
+    flex-wrap: wrap;
 }
 
-.nav-link {
+nav a, .nav-link {
     color: var(--text);
     text-decoration: none;
     padding: 8px 16px;
@@ -54,13 +57,13 @@ nav {
     transition: background 0.2s;
 }
 
-.nav-link:hover {
+nav a:hover, .nav-link:hover {
     background: var(--border);
 }
 
 /* 메인 레이아웃 */
 main {
-    padding: 20px 0;
+    padding: 20px;
 }
 
 .split-layout {
@@ -309,4 +312,20 @@ footer {
 
 ::-webkit-scrollbar-thumb:hover {
     background: #555;
+}
+
+/* 반응형 */
+@media (max-width: 800px) {
+    .split-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    nav {
+        gap: 10px;
+    }
+    
+    nav a {
+        padding: 6px 12px;
+        font-size: 14px;
+    }
 }

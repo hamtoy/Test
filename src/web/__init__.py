@@ -1,35 +1,27 @@
-"""Web module for the Gemini QA System."""
+"""Web API package for HTTP server."""
 
-from .api import app
-from .models import (
-    EvalRequest,
-    EvalResponse,
+from src.web.api import app
+from src.web.models import (
+    EvalExternalRequest,
+    EvalExternalResponse,
     EvalResult,
-    ImageAnalysisResponse,
-    ImageMetadata,
-    OCRResponse,
-    QABatchResponse,
-    QAGenerateRequest,
+    GenerateQARequest,
+    GenerateQAResponse,
+    MultimodalResponse,
     QAPair,
-    QASingleResponse,
     WorkspaceRequest,
     WorkspaceResponse,
-    WorkspaceResult,
 )
 
 __all__ = [
     "app",
-    "EvalRequest",
-    "EvalResponse",
-    "EvalResult",
-    "ImageAnalysisResponse",
-    "ImageMetadata",
-    "OCRResponse",
-    "QABatchResponse",
-    "QAGenerateRequest",
+    "GenerateQARequest",
+    "GenerateQAResponse",
     "QAPair",
-    "QASingleResponse",
+    "EvalExternalRequest",
+    "EvalExternalResponse",
+    "EvalResult",
     "WorkspaceRequest",
     "WorkspaceResponse",
-    "WorkspaceResult",
+    "MultimodalResponse",
 ]
