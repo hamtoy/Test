@@ -1,6 +1,5 @@
 """Tests for src/monitoring/metrics.py to improve coverage."""
 
-import pytest
 
 
 class TestStubImplementations:

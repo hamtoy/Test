@@ -2,7 +2,6 @@
 
 import asyncio
 import os
-import sys
 from unittest.mock import patch, MagicMock, AsyncMock
 
 import pytest
@@ -55,15 +54,14 @@ class TestMainFunction:
 
         with patch(
             "src.main.setup_logging", return_value=(mock_logger, mock_log_listener)
+        ), patch(
+            "src.main.AppConfig", side_effect=ValueError("Config error")
         ):
-            with patch(
-                "src.main.AppConfig", side_effect=ValueError("Config error")
-            ):
-                from src.main import main
+            from src.main import main
 
-                with pytest.raises(SystemExit) as exc:
-                    await main()
-                assert exc.value.code == 1
+            with pytest.raises(SystemExit) as exc:
+                await main()
+            assert exc.value.code == 1
 
     @pytest.mark.asyncio
     async def test_main_template_not_found(self, monkeypatch, tmp_path):
@@ -82,16 +80,15 @@ class TestMainFunction:
         mock_config.api_key = valid_key
         mock_config.template_dir = tmp_path / "nonexistent_templates"
 
-        with patch(
-            "src.main.setup_logging", return_value=(mock_logger, mock_log_listener)
+        with (
+            patch("src.main.setup_logging", return_value=(mock_logger, mock_log_listener)),
+            patch("src.main.AppConfig", return_value=mock_config),
+            patch("src.main.genai"),
+            pytest.raises(SystemExit) as exc,
         ):
-            with patch("src.main.AppConfig", return_value=mock_config):
-                with patch("src.main.genai") as mock_genai:
-                    from src.main import main
-
-                    with pytest.raises(SystemExit) as exc:
-                        await main()
-                    assert exc.value.code == 1
+            from src.main import main
+            await main()
+        assert exc.value.code == 1
 
     @pytest.mark.asyncio
     async def test_main_success_flow(self, monkeypatch, tmp_path):
@@ -117,22 +114,19 @@ class TestMainFunction:
 
         mock_agent = MagicMock()
 
-        with patch(
-            "src.main.setup_logging", return_value=(mock_logger, mock_log_listener)
+        with (
+            patch("src.main.setup_logging", return_value=(mock_logger, mock_log_listener)),
+            patch("src.main.AppConfig", return_value=mock_config),
+            patch("src.main.genai"),
+            patch("src.main.GeminiAgent", return_value=mock_agent),
+            patch("src.main.interactive_main", new_callable=AsyncMock) as mock_interactive,
         ):
-            with patch("src.main.AppConfig", return_value=mock_config):
-                with patch("src.main.genai") as mock_genai:
-                    with patch("src.main.GeminiAgent", return_value=mock_agent):
-                        with patch(
-                            "src.main.interactive_main", new_callable=AsyncMock
-                        ) as mock_interactive:
-                            from src.main import main
+            from src.main import main
+            await main()
 
-                            await main()
-
-                            # Verify interactive_main was called
-                            mock_interactive.assert_called_once()
-                            mock_log_listener.stop.assert_called_once()
+            # Verify interactive_main was called
+            mock_interactive.assert_called_once()
+            mock_log_listener.stop.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_main_os_error(self, monkeypatch, tmp_path):
@@ -149,13 +143,12 @@ class TestMainFunction:
 
         with patch(
             "src.main.setup_logging", return_value=(mock_logger, mock_log_listener)
-        ):
-            with patch("src.main.AppConfig", side_effect=OSError("Permission denied")):
-                from src.main import main
+        ), patch("src.main.AppConfig", side_effect=OSError("Permission denied")):
+            from src.main import main
 
-                with pytest.raises(SystemExit) as exc:
-                    await main()
-                assert exc.value.code == 1
+            with pytest.raises(SystemExit) as exc:
+                await main()
+            assert exc.value.code == 1
 
 
 class TestMainEntryPoint:
@@ -168,14 +161,16 @@ class TestMainEntryPoint:
 
         mock_policy = MagicMock()
 
-        with patch.object(asyncio, "WindowsSelectorEventLoopPolicy", mock_policy, create=True):
-            with patch.object(asyncio, "set_event_loop_policy") as mock_set_policy:
-                # Import and check if policy was applied
-                # This is a simplified test since we can't easily test the __main__ block
-                if hasattr(asyncio, "WindowsSelectorEventLoopPolicy"):
-                    policy = asyncio.WindowsSelectorEventLoopPolicy()
-                    asyncio.set_event_loop_policy(policy)
-                    mock_set_policy.assert_called()
+        with (
+            patch.object(asyncio, "WindowsSelectorEventLoopPolicy", mock_policy, create=True),
+            patch.object(asyncio, "set_event_loop_policy") as mock_set_policy,
+        ):
+            # Import and check if policy was applied
+            # This is a simplified test since we can't easily test the __main__ block
+            if hasattr(asyncio, "WindowsSelectorEventLoopPolicy"):
+                policy = asyncio.WindowsSelectorEventLoopPolicy()
+                asyncio.set_event_loop_policy(policy)
+                mock_set_policy.assert_called()
 
     def test_non_windows_event_loop_policy(self, monkeypatch):
         """Test non-Windows event loop policy (no change needed)."""
@@ -203,4 +198,4 @@ class TestConsoleOutput:
         # Check it's the constant from config
         from src.config.constants import USER_INTERRUPT_MESSAGE as expected
 
-        assert USER_INTERRUPT_MESSAGE == expected
+        assert expected == USER_INTERRUPT_MESSAGE

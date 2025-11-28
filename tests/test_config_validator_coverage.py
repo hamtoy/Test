@@ -1,7 +1,5 @@
 """Tests for src/config/validator.py to improve coverage."""
 
-import os
-from unittest.mock import patch
 
 import pytest
 
