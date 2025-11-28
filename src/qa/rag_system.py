@@ -33,9 +33,13 @@ def _run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
 
     If there's already a running event loop (e.g., called from async context),
     run the coroutine in a separate thread to avoid "event loop already running" error.
+
+    Note: This follows the same pattern as close() in this module.
+    Setting event loop to None after loop.close() is intentional to clean up
+    thread-local state. For the thread case, this only affects the worker thread.
     """
     try:
-        loop = asyncio.get_running_loop()
+        asyncio.get_running_loop()
     except RuntimeError:
         # No running loop, create one and run
         loop = asyncio.new_event_loop()
