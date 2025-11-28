@@ -170,7 +170,9 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"생성 실패: {str(e)}")
 
 
-async def generate_single_qa(agent: GeminiAgent, ocr_text: str, qtype: str) -> Dict[str, Any]:
+async def generate_single_qa(
+    agent: GeminiAgent, ocr_text: str, qtype: str
+) -> Dict[str, Any]:
     """단일 QA 생성 헬퍼"""
     from src.processing.template_generator import DynamicTemplateGenerator
 
@@ -187,6 +189,7 @@ async def generate_single_qa(agent: GeminiAgent, ocr_text: str, qtype: str) -> D
     if kg is not None:
         try:
             import os
+
             template_gen = DynamicTemplateGenerator(
                 neo4j_uri=os.getenv("NEO4J_URI", ""),
                 neo4j_user=os.getenv("NEO4J_USER", ""),
@@ -279,7 +282,9 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
         else:
             # 자유 수정 모드
             if not body.edit_request:
-                raise HTTPException(status_code=400, detail="edit_request가 필요합니다.")
+                raise HTTPException(
+                    status_code=400, detail="edit_request가 필요합니다."
+                )
 
             edited = await edit_content(
                 agent=agent,
@@ -308,7 +313,9 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
 async def api_analyze_image(file: UploadFile = File(...)) -> Dict[str, Any]:
     """이미지 업로드 + OCR + 구조 분석"""
     if mm is None:
-        raise HTTPException(status_code=500, detail="Multimodal 기능 비활성화 (Neo4j 필요)")
+        raise HTTPException(
+            status_code=500, detail="Multimodal 기능 비활성화 (Neo4j 필요)"
+        )
 
     # 파일 검증
     if not file.content_type or not file.content_type.startswith("image/"):

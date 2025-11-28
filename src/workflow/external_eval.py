@@ -80,18 +80,22 @@ async def evaluate_external_answers(
                 elif line_stripped.startswith("피드백:"):
                     feedback = line_stripped.replace("피드백:", "").strip()
 
-            results.append({
-                "candidate_id": candidate_id,
-                "score": score,
-                "feedback": feedback,
-            })
+            results.append(
+                {
+                    "candidate_id": candidate_id,
+                    "score": score,
+                    "feedback": feedback,
+                }
+            )
 
         except Exception as e:
             logger.error(f"답변 {candidate_id} 평가 실패: {e}")
-            results.append({
-                "candidate_id": candidate_id,
-                "score": 0,
-                "feedback": f"평가 실패: {str(e)}",
-            })
+            results.append(
+                {
+                    "candidate_id": candidate_id,
+                    "score": 0,
+                    "feedback": f"평가 실패: {str(e)}",
+                }
+            )
 
     return results
