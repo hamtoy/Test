@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional
+from typing import Any, AsyncIterator, Dict, Literal, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -34,11 +35,21 @@ agent: Optional[GeminiAgent] = None
 kg: Optional[QAKnowledgeGraph] = None
 mm: Optional[MultimodalUnderstanding] = None
 
+# 정적 파일 & 템플릿 경로
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """서버 시작/종료 시 리소스 관리"""
+    await init_resources()
+    yield
+
+
 # FastAPI 앱
-app = FastAPI(title="Gemini QA System", version="1.0.0")
+app = FastAPI(title="Gemini QA System", version="1.0.0", lifespan=lifespan)
 
 # 정적 파일 & 템플릿
-REPO_ROOT = Path(__file__).resolve().parents[2]
 app.mount("/static", StaticFiles(directory=str(REPO_ROOT / "static")), name="static")
 templates = Jinja2Templates(directory=str(REPO_ROOT / "templates" / "web"))
 
@@ -150,12 +161,6 @@ def log_review_session(
 # ============================================================================
 
 
-@app.on_event("startup")
-async def startup_event() -> None:
-    """서버 시작 시 리소스 초기화"""
-    await init_resources()
-
-
 @app.get("/", response_class=RedirectResponse)
 async def root() -> str:
     """루트 경로 → /qa로 리다이렉트"""
@@ -165,25 +170,25 @@ async def root() -> str:
 @app.get("/qa", response_class=HTMLResponse)
 async def page_qa(request: Request) -> HTMLResponse:
     """QA 생성 페이지"""
-    return templates.TemplateResponse("qa.html", {"request": request})
+    return templates.TemplateResponse(request, "qa.html")
 
 
 @app.get("/eval", response_class=HTMLResponse)
 async def page_eval(request: Request) -> HTMLResponse:
     """외부 답변 평가 페이지"""
-    return templates.TemplateResponse("eval.html", {"request": request})
+    return templates.TemplateResponse(request, "eval.html")
 
 
 @app.get("/workspace", response_class=HTMLResponse)
 async def page_workspace(request: Request) -> HTMLResponse:
     """워크스페이스 페이지"""
-    return templates.TemplateResponse("workspace.html", {"request": request})
+    return templates.TemplateResponse(request, "workspace.html")
 
 
 @app.get("/multimodal", response_class=HTMLResponse)
 async def page_multimodal(request: Request) -> HTMLResponse:
     """이미지 분석 페이지"""
-    return templates.TemplateResponse("multimodal.html", {"request": request})
+    return templates.TemplateResponse(request, "multimodal.html")
 
 
 @app.get("/api/ocr")
