@@ -82,6 +82,54 @@ def test_qakg_constraints_with_provider(monkeypatch):
     kg.close()
 
 
+@pytest.mark.asyncio
+async def test_qakg_constraints_from_async_context(monkeypatch):
+    """Test that get_constraints_for_query_type works when called from async context.
+
+    This tests the fix for the "This event loop is already running" error
+    when the method is called from within an async function (e.g., interactive_menu).
+    """
+
+    class _Session:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return False
+
+        async def run(self, *_args, **_kwargs):
+            return [{"id": "c1", "description": "d", "type": "t", "pattern": "p"}]
+
+    class _Provider:
+        def session(self):
+            return _Session()
+
+        async def close(self):
+            return None
+
+    monkeypatch.setattr(
+        qa_rag_system, "AppConfig", lambda *args, **kwargs: types.SimpleNamespace()
+    )
+    monkeypatch.setattr(
+        qa_rag_system,
+        "GraphDatabase",
+        types.SimpleNamespace(
+            driver=lambda *a, **k: types.SimpleNamespace(
+                session=lambda: types.SimpleNamespace(close=lambda: None),
+                close=lambda: None,
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        qa_rag_system, "os", types.SimpleNamespace(getenv=lambda *a, **k: None)
+    )
+    kg = qa_rag_system.QAKnowledgeGraph(graph_provider=_Provider())
+    # This should NOT raise "This event loop is already running"
+    cons = kg.get_constraints_for_query_type("qt")
+    assert cons and cons[0]["id"] == "c1"
+    kg.close()
+
+
 def test_qakg_graph_session_when_loop_running(monkeypatch):
     class _Provider:
         def session(self):
