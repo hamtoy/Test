@@ -153,8 +153,7 @@ class TestExtractCommentsFromFiles:
 
         log_file = tmp_path / "test.jsonl"
         log_file.write_text(
-            'invalid json line\n'
-            '{"inspector_comment": "유효한 코멘트입니다"}\n'
+            "invalid json line\n" '{"inspector_comment": "유효한 코멘트입니다"}\n'
         )
 
         result = extract_comments_from_files([log_file])
@@ -210,7 +209,7 @@ class TestParseLLMResponse:
         """Test parses valid JSON response."""
         from src.automation.promote_rules import parse_llm_response
 
-        response = '''```json
+        response = """```json
 [
   {
     "rule": "날짜 형식 통일",
@@ -220,7 +219,7 @@ class TestParseLLMResponse:
     "after": "2024-01-15"
   }
 ]
-```'''
+```"""
 
         result = parse_llm_response(response)
 
@@ -233,7 +232,7 @@ class TestParseLLMResponse:
         """Test parses JSON without markdown code block."""
         from src.automation.promote_rules import parse_llm_response
 
-        response = '''[{"rule": "테스트 규칙", "type_hint": "string"}]'''
+        response = """[{"rule": "테스트 규칙", "type_hint": "string"}]"""
 
         result = parse_llm_response(response)
 
@@ -254,10 +253,10 @@ class TestParseLLMResponse:
         """Test skips items missing required fields."""
         from src.automation.promote_rules import parse_llm_response
 
-        response = '''[
+        response = """[
           {"rule": "규칙만 있음"},
           {"rule": "완전한 규칙", "type_hint": "string"}
-        ]'''
+        ]"""
 
         result = parse_llm_response(response)
 
