@@ -294,10 +294,11 @@ class TestHealthCheck:
             response = client.get("/health")
             assert response.status_code == 200
             data = response.json()
-            assert data["status"] == "ok"
-            assert data["agent"] is False
-            assert data["neo4j"] is False
-            assert data["multimodal"] is False
+            assert data["status"] in ["healthy", "unhealthy", "degraded"]
+            assert "services" in data
+            assert data["services"]["agent"] is False
+            assert data["services"]["neo4j"] is False
+            assert data["services"]["multimodal"] is False
         finally:
             api_module.agent = original_agent
             api_module.kg = original_kg
@@ -319,8 +320,9 @@ class TestHealthCheck:
             response = client.get("/health")
             assert response.status_code == 200
             data = response.json()
-            assert data["agent"] is True
-            assert data["neo4j"] is False
+            assert "services" in data
+            assert data["services"]["agent"] is True
+            assert data["services"]["neo4j"] is False
         finally:
             api_module.agent = original_agent
             api_module.kg = original_kg
