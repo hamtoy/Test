@@ -163,7 +163,7 @@ class TestGeminiProvider:
         provider._model.generate_content_async = AsyncMock(return_value=mock_response)
         
         schema = {"type": "object", "properties": {"key": {"type": "string"}}}
-        result = await provider.generate_content_async("Test", response_schema=schema)
+        await provider.generate_content_async("Test", response_schema=schema)
         
         call_args = provider._model.generate_content_async.call_args
         assert call_args.kwargs["generation_config"]["response_mime_type"] == "application/json"

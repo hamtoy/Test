@@ -18,15 +18,14 @@ class TestCheckNeo4jConnection:
                 raise ImportError("No module named 'neo4j'")
             return original_import(name, *args, **kwargs)
         
-        with patch("builtins.__import__", side_effect=mock_import):
-            # Need to reload the module to trigger the import
-            with patch.dict(sys.modules, {"neo4j.exceptions": None}):
-                from src.infra import health
-                # Force re-import to get fresh function
-                import importlib
-                importlib.reload(health)
-                result = health.check_neo4j_connection(None)
-                # Result depends on the module state
+        with patch("builtins.__import__", side_effect=mock_import), \
+             patch.dict(sys.modules, {"neo4j.exceptions": None}):
+            from src.infra import health
+            # Force re-import to get fresh function
+            import importlib
+            importlib.reload(health)
+            health.check_neo4j_connection(None)
+            # Result depends on the module state
 
     def test_with_valid_kg(self):
         """Test with a valid knowledge graph."""
