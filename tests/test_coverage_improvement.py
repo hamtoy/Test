@@ -59,9 +59,7 @@ class TestPromoteRulesRun:
             patch(
                 "src.automation.promote_rules.get_review_logs_dir", return_value=log_dir
             ),
-            patch(
-                "src.automation.promote_rules.get_output_dir", return_value=tmp_path
-            ),
+            patch("src.automation.promote_rules.get_output_dir", return_value=tmp_path),
         ):
             result = run_promote_rules(days=30)
 
@@ -83,10 +81,10 @@ class TestPromoteRulesRun:
             patch(
                 "src.automation.promote_rules.get_review_logs_dir", return_value=log_dir
             ),
+            patch("src.automation.promote_rules.get_output_dir", return_value=tmp_path),
             patch(
-                "src.automation.promote_rules.get_output_dir", return_value=tmp_path
-            ),
-            patch("src.automation.promote_rules.GeminiModelClient") as mock_client_class,
+                "src.automation.promote_rules.GeminiModelClient"
+            ) as mock_client_class,
         ):
             mock_client = MagicMock()
             mock_client.generate.return_value = "[생성 실패: API error"
@@ -106,20 +104,20 @@ class TestPromoteRulesRun:
         log_dir = tmp_path / "review_logs"
         log_dir.mkdir(parents=True)
         log_file = log_dir / "review_2024-01-01.jsonl"
-        log_file.write_text('{"inspector_comment": "날짜 형식을 YYYY-MM-DD로 통일해주세요"}\n')
+        log_file.write_text(
+            '{"inspector_comment": "날짜 형식을 YYYY-MM-DD로 통일해주세요"}\n'
+        )
 
-        llm_response = json.dumps([
-            {"rule": "날짜 형식 통일", "type_hint": "date"}
-        ])
+        llm_response = json.dumps([{"rule": "날짜 형식 통일", "type_hint": "date"}])
 
         with (
             patch(
                 "src.automation.promote_rules.get_review_logs_dir", return_value=log_dir
             ),
+            patch("src.automation.promote_rules.get_output_dir", return_value=tmp_path),
             patch(
-                "src.automation.promote_rules.get_output_dir", return_value=tmp_path
-            ),
-            patch("src.automation.promote_rules.GeminiModelClient") as mock_client_class,
+                "src.automation.promote_rules.GeminiModelClient"
+            ) as mock_client_class,
         ):
             mock_client = MagicMock()
             mock_client.generate.return_value = llm_response
@@ -148,10 +146,10 @@ class TestPromoteRulesRun:
             patch(
                 "src.automation.promote_rules.get_review_logs_dir", return_value=log_dir
             ),
+            patch("src.automation.promote_rules.get_output_dir", return_value=tmp_path),
             patch(
-                "src.automation.promote_rules.get_output_dir", return_value=tmp_path
-            ),
-            patch("src.automation.promote_rules.GeminiModelClient") as mock_client_class,
+                "src.automation.promote_rules.GeminiModelClient"
+            ) as mock_client_class,
         ):
             mock_client = MagicMock()
             mock_client.generate.return_value = "Invalid response without JSON"
@@ -177,17 +175,11 @@ class TestPromoteRulesMain:
         log_file = log_dir / "review_2024-01-01.jsonl"
         log_file.write_text('{"inspector_comment": "테스트 코멘트입니다"}\n')
 
-        llm_response = json.dumps([
-            {"rule": "테스트 규칙", "type_hint": "string"}
-        ])
+        llm_response = json.dumps([{"rule": "테스트 규칙", "type_hint": "string"}])
 
         with (
-            patch.object(
-                promote_rules, "get_review_logs_dir", return_value=log_dir
-            ),
-            patch.object(
-                promote_rules, "get_output_dir", return_value=tmp_path
-            ),
+            patch.object(promote_rules, "get_review_logs_dir", return_value=log_dir),
+            patch.object(promote_rules, "get_output_dir", return_value=tmp_path),
             patch.object(promote_rules, "GeminiModelClient") as mock_client_class,
             pytest.raises(SystemExit) as exc_info,
         ):
@@ -204,9 +196,7 @@ class TestPromoteRulesMain:
         from src.automation import promote_rules
 
         with (
-            patch.object(
-                promote_rules, "get_review_logs_dir", return_value=tmp_path
-            ),
+            patch.object(promote_rules, "get_review_logs_dir", return_value=tmp_path),
             pytest.raises(SystemExit) as exc_info,
         ):
             promote_rules.main()
@@ -224,11 +214,10 @@ class TestPromoteRulesMain:
         log_file.write_text('{"inspector_comment": "테스트 코멘트입니다"}\n')
 
         with (
+            patch.object(promote_rules, "get_review_logs_dir", return_value=log_dir),
             patch.object(
-                promote_rules, "get_review_logs_dir", return_value=log_dir
-            ),
-            patch.object(
-                promote_rules, "GeminiModelClient",
+                promote_rules,
+                "GeminiModelClient",
                 side_effect=EnvironmentError("Missing API key"),
             ),
             pytest.raises(SystemExit) as exc_info,
@@ -406,9 +395,7 @@ class TestWorkerHandleOcrTask:
         monkeypatch.setattr(worker, "_run_data2neo_extraction", mock_data2neo)
 
         written = []
-        monkeypatch.setattr(
-            worker, "_append_jsonl", lambda p, rec: written.append(rec)
-        )
+        monkeypatch.setattr(worker, "_append_jsonl", lambda p, rec: written.append(rec))
 
         class MockBroker:
             published = []
@@ -448,9 +435,7 @@ class TestWorkerHandleOcrTask:
         monkeypatch.setattr(worker, "_process_task", mock_process)
 
         written = []
-        monkeypatch.setattr(
-            worker, "_append_jsonl", lambda p, rec: written.append(rec)
-        )
+        monkeypatch.setattr(worker, "_append_jsonl", lambda p, rec: written.append(rec))
 
         class MockBroker:
             published = []
@@ -778,8 +763,7 @@ class TestWorkflowExecutor:
         # Create checkpoint file
         checkpoint_path = tmp_path / "checkpoint.jsonl"
         checkpoint_path.write_text(
-            '{"query": "Q1", "success": true}\n'
-            '{"query": "Q2", "success": true}\n'
+            '{"query": "Q1", "success": true}\n' '{"query": "Q2", "success": true}\n'
         )
 
         logger = MagicMock()
@@ -915,14 +899,20 @@ class TestWorkflowExecutor:
     async def test_gather_results_filters_none(self):
         """Test _gather_results filters out None results."""
         from src.workflow.executor import _gather_results
-        from src.core.models import WorkflowResult, EvaluationResultSchema, EvaluationItem
+        from src.core.models import (
+            WorkflowResult,
+            EvaluationResultSchema,
+            EvaluationItem,
+        )
 
         async def return_none():
             return None
 
         async def return_result():
             eval_item = EvaluationItem(candidate_id="A", score=90, reason="Good")
-            evaluation = EvaluationResultSchema(best_candidate="A", evaluations=[eval_item])
+            evaluation = EvaluationResultSchema(
+                best_candidate="A", evaluations=[eval_item]
+            )
             return WorkflowResult(
                 turn_id=1,
                 query="Q",
@@ -984,7 +974,9 @@ class TestWorkflowExecutor:
         mock_agent.create_context_cache = AsyncMock(return_value=mock_cache)
 
         eval_item = EvaluationItem(candidate_id="A", score=90, reason="Good")
-        eval_result = EvaluationResultSchema(best_candidate="A", evaluations=[eval_item])
+        eval_result = EvaluationResultSchema(
+            best_candidate="A", evaluations=[eval_item]
+        )
         mock_agent.evaluate_responses = AsyncMock(return_value=eval_result)
         mock_agent.rewrite_best_answer = AsyncMock(return_value="Rewritten")
 
@@ -1026,7 +1018,9 @@ class TestWorkflowExecutor:
         mock_agent.create_context_cache = AsyncMock(return_value=None)
 
         eval_item = EvaluationItem(candidate_id="A", score=90, reason="Good")
-        eval_result = EvaluationResultSchema(best_candidate="A", evaluations=[eval_item])
+        eval_result = EvaluationResultSchema(
+            best_candidate="A", evaluations=[eval_item]
+        )
         mock_agent.evaluate_responses = AsyncMock(return_value=eval_result)
         mock_agent.rewrite_best_answer = AsyncMock(return_value="Rewritten")
 
@@ -1066,6 +1060,7 @@ class TestAnalysisInit:
         from src.analysis.cross_validation import (
             CrossValidationSystem as DirectImport,
         )
+
         assert CrossValidationSystem is DirectImport
 
     def test_getattr_invalid_attribute(self):
