@@ -139,12 +139,12 @@ class TestHealthCheck:
     def test_health_check_timestamp_format(self):
         """Test that timestamp is in ISO format."""
         from src.infra.health import health_check
-        import datetime
+        from datetime import datetime
         
         with patch("src.infra.health.check_neo4j_connection", return_value=True):
             result = health_check()
             
             # Should be parseable as ISO format
             timestamp = result["timestamp"]
-            # ISO format should contain T separator
-            assert "T" in timestamp or timestamp.replace(".", "").replace("-", "").replace(":", "").replace("+", "").isdigit() or "+" in timestamp
+            # Try to parse as ISO format - should not raise
+            datetime.fromisoformat(timestamp.replace("Z", "+00:00"))

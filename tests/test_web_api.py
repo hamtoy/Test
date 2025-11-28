@@ -54,13 +54,9 @@ class TestOCRApi:
 
     def test_get_ocr_file_exists(self, client, tmp_path, monkeypatch):
         """Test getting OCR text when file exists."""
-        # Create a mock ocr.txt file
-        ocr_file = tmp_path / "ocr.txt"
-        ocr_file.write_text("테스트 OCR 텍스트", encoding="utf-8")
-
         # Patch PROJECT_ROOT to use tmp_path
         with patch("src.web.api.PROJECT_ROOT", tmp_path):
-            # Need to create the data directory
+            # Create the data directory and ocr.txt file
             data_dir = tmp_path / "data"
             data_dir.mkdir()
             (data_dir / "ocr.txt").write_text("테스트 OCR 텍스트", encoding="utf-8")
