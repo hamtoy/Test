@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -44,9 +44,7 @@ async def test_inspect_query(mock_agent, mock_components):
         context = {"type": "general", "image_meta": {}}
         query = "Original Query"
 
-        result = await inspect_query(
-            mock_agent, query, context, kg, lats, difficulty
-        )
+        result = await inspect_query(mock_agent, query, context, kg, lats, difficulty)
 
         assert result == "Corrected Query"
         difficulty.analyze_image_complexity.assert_called_once()

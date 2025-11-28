@@ -256,9 +256,7 @@ async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> Non
             # Context 구성 (필요 시 사용자 입력 추가 가능)
             context = {"type": "general"}
 
-            result = await inspect_query(
-                agent, query, context, kg, lats, difficulty
-            )
+            result = await inspect_query(agent, query, context, kg, lats, difficulty)
 
             progress.update(task, description="[green]✓ 검수 완료[/green]")
 
