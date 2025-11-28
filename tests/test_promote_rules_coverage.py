@@ -1,10 +1,6 @@
 """Tests for src/automation/promote_rules.py to improve coverage."""
 
-import json
-import pytest
 from pathlib import Path
-from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
 
 
 class TestHelperFunctions:
