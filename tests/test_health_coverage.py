@@ -37,49 +37,17 @@ class TestCheckRedis:
 
     @pytest.mark.asyncio
     async def test_redis_import_error(self, monkeypatch):
-        """Test when redis package is not installed."""
+        """Test when redis.asyncio.from_url raises ImportError."""
         monkeypatch.setenv("REDIS_URL", "redis://localhost:6379")
 
-        # This tests the ImportError branch in check_redis function
-        # We simulate redis import failure by mocking the module
-        import sys
-        import types
-
-        # Create a mock that raises ImportError when accessed
-        original_modules = dict(sys.modules)
-
-        try:
-            # Remove redis modules to force reimport
-            for key in list(sys.modules.keys()):
-                if key.startswith("redis"):
-                    del sys.modules[key]
-
-            # Create a mock that raises ImportError
-            mock_redis = types.ModuleType("redis")
-            mock_asyncio = types.ModuleType("redis.asyncio")
-
-            def raise_import_error(*args, **kwargs):
-                raise ImportError("redis package not installed")
-
-            mock_asyncio.from_url = raise_import_error
-
-            sys.modules["redis"] = mock_redis
-            sys.modules["redis.asyncio"] = mock_asyncio
-
-            import importlib
-            import src.infra.health
-
-            importlib.reload(src.infra.health)
-
+        # Test the exception handling branch by mocking redis.asyncio.from_url
+        # to raise ImportError, simulating the case when redis is not installed
+        with patch("redis.asyncio.from_url", side_effect=ImportError("redis not installed")):
             from src.infra.health import check_redis
 
             result = await check_redis()
-            # Should return down status due to import/connection error
+            # Should return skipped/down status due to import error
             assert result["status"] in ["skipped", "down"]
-        finally:
-            # Restore original modules
-            sys.modules.clear()
-            sys.modules.update(original_modules)
 
     @pytest.mark.asyncio
     async def test_redis_connection_error(self, monkeypatch):
