@@ -163,9 +163,7 @@ async def workspace_operation(request: WorkspaceRequest) -> WorkspaceResponse:
     if request.mode == "inspect":
         # Mock inspection (auto-correction)
         fixed_text = f"[검수됨] {request.answer}"
-        return WorkspaceResponse(
-            result=WorkspaceResult(fixed=fixed_text, edited=None)
-        )
+        return WorkspaceResponse(result=WorkspaceResult(fixed=fixed_text, edited=None))
 
     if request.mode == "edit":
         if not request.edit_request.strip():
@@ -173,9 +171,7 @@ async def workspace_operation(request: WorkspaceRequest) -> WorkspaceResponse:
 
         # Mock edit operation
         edited_text = f"[{request.edit_request}에 따라 수정됨] {request.answer}"
-        return WorkspaceResponse(
-            result=WorkspaceResult(fixed=None, edited=edited_text)
-        )
+        return WorkspaceResponse(result=WorkspaceResult(fixed=None, edited=edited_text))
 
     raise HTTPException(status_code=400, detail="Invalid mode")
 

@@ -1,6 +1,5 @@
 """Request and Response models for the Gemini QA System Web API."""
 
-
 from pydantic import BaseModel, Field
 
 
