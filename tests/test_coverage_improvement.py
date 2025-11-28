@@ -18,7 +18,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Dict
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest import mock
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -1009,7 +1010,7 @@ class TestWorkflowExecutor:
 
             # Should complete successfully despite cache cleanup error
             assert len(results) == 1
-            logger.warning.assert_any_call("Cache cleanup failed: %s", mock.ANY)
+            logger.warning.assert_any_call("Cache cleanup failed: %s", ANY)
 
     @pytest.mark.asyncio
     async def test_execute_workflow_simple(self, tmp_path):
@@ -1281,7 +1282,3 @@ class TestGraphData2NeoExtractorAdditional:
         assert counts["dates"] == 1
         assert counts["document_rules"] == 1
         assert counts["relationships"] == 1
-
-
-# Import mock at the end to avoid issues
-from unittest import mock
