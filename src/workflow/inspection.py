@@ -51,13 +51,14 @@ async def inspect_query(
         context = {}
     query_type = context.get("type", "general")
 
-    # 1. 캐시 확인
+    # 1. 캐시 확인 (동일 질의 반복 처리 방지)
+    cache_key = f"inspect:qry:{hash(query + ocr_text)}"
     if cache:
-        cache_key = f"inspect:qry:{hash(query + ocr_text)}"
         cached = await cache.get(cache_key)
         if cached is not None:
-            logger.info("Cache hit for query inspection")
-            return str(cached)
+            logger.info("Cache hit for query inspection - returning original query")
+            # 캐시에서 처리 완료 표시만 저장하므로 원본 반환
+            return query
 
     # 2. OCR 기반 난이도 분석
     if difficulty and ocr_text:
@@ -98,10 +99,9 @@ async def inspect_query(
         # kg가 없으면 원본 query 반환
         final_query = query
 
-    # 6. 캐시에 저장
+    # 6. 캐시에 저장 (처리 완료 표시)
     if cache:
-        cache_key = f"inspect:qry:{hash(query + ocr_text)}"
-        await cache.set(cache_key, float(hash(final_query)))
+        await cache.set(cache_key, 1.0)
 
     return final_query
 
@@ -144,14 +144,14 @@ async def inspect_answer(
         context = {}
     query_type = context.get("type", "general")
 
-    # 1. 캐시 확인
+    # 1. 캐시 확인 (긴 답변 처리 비용 절감)
+    cache_key = f"inspect:ans:{hash(answer + query + ocr_text)}"
     if cache:
-        cache_key = f"inspect:ans:{hash(answer + query + ocr_text)}"
         cached = await cache.get(cache_key)
         if cached is not None:
-            logger.info("Cache hit for answer inspection")
-            # 캐시에서 점수만 저장하므로, 실제 답변은 처리 필요
-            pass  # 캐시 로직은 나중에 확장 가능
+            logger.info("Cache hit for answer inspection - returning original answer")
+            # 캐시에서 처리 완료 표시만 저장하므로 원본 반환
+            return answer
 
     # 2. Semantic 키워드 검증 (OCR 이탈 방지)
     if ocr_text:
@@ -196,9 +196,8 @@ async def inspect_answer(
             logger.warning(f"Validation failed: {val_result}")
             context["validation_warning"] = True
 
-    # 5. 캐시에 저장
+    # 5. 캐시에 저장 (처리 완료 표시)
     if cache:
-        cache_key = f"inspect:ans:{hash(answer + query + ocr_text)}"
-        await cache.set(cache_key, 1.0)  # 처리 완료 표시
+        await cache.set(cache_key, 1.0)
 
     return final_answer

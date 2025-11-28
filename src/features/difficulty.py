@@ -54,26 +54,30 @@ class AdaptiveDifficultyAdjuster:
         else:
             text_density = 0.8
 
+        # 복잡도 레벨 및 추론 가능성 결정
+        if text_density < 0.4:
+            level = "simple"
+            recommended_turns = 3
+            reasoning_possible = False  # 짧은 텍스트는 추론 불가
+        elif text_density < 0.7:
+            level = "medium"
+            recommended_turns = 3
+            reasoning_possible = True
+        else:
+            level = "complex"
+            recommended_turns = 4
+            reasoning_possible = True
+
         complexity: Dict[str, Any] = {
             "text_density": text_density,
             "has_structure": has_table_pattern or has_bullet,
             "has_numbers": has_numbers,
             "word_count": word_count,
             "char_count": char_count,
-            "reasoning_possible": True,
+            "level": level,
+            "recommended_turns": recommended_turns,
+            "reasoning_possible": reasoning_possible,
         }
-
-        # 복잡도 레벨 결정
-        if text_density < 0.4:
-            complexity["level"] = "simple"
-            complexity["recommended_turns"] = 3
-            complexity["reasoning_possible"] = False
-        elif text_density < 0.7:
-            complexity["level"] = "medium"
-            complexity["recommended_turns"] = 3
-        else:
-            complexity["level"] = "complex"
-            complexity["recommended_turns"] = 4
 
         return complexity
 

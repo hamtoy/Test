@@ -88,9 +88,9 @@ async def test_inspect_query_without_ocr(mock_agent, mock_components):
 
 @pytest.mark.asyncio
 async def test_inspect_query_with_cache_hit(mock_agent, mock_components, mock_cache):
-    """Test query inspection with cache hit"""
+    """Test query inspection with cache hit - returns original query"""
     kg, lats, difficulty, _ = mock_components
-    mock_cache.get = AsyncMock(return_value=12345.0)  # Cache hit
+    mock_cache.get = AsyncMock(return_value=1.0)  # Cache hit (processed marker)
 
     with patch("src.workflow.inspection.SelfCorrectingQAChain") as MockChain:
         query = "Original Query"
@@ -101,8 +101,8 @@ async def test_inspect_query_with_cache_hit(mock_agent, mock_components, mock_ca
             mock_agent, query, ocr_text, context, kg, lats, difficulty, mock_cache
         )
 
-        # When cache hits, return cached value (as string)
-        assert result == "12345.0"
+        # When cache hits, return original query (already processed)
+        assert result == "Original Query"
         # SelfCorrectingQAChain should not be called when cache hits
         MockChain.assert_not_called()
 
