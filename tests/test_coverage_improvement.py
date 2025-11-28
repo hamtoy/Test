@@ -12,13 +12,8 @@ Note: src/web/api.py tests are in test_web_api.py
 
 import asyncio
 import json
-import os
-import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Dict
-from unittest import mock
 from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import pytest
@@ -279,7 +274,6 @@ class TestWorkerData2Neo:
     async def test_run_data2neo_extraction_success(self, monkeypatch, tmp_path):
         """Test _run_data2neo_extraction with successful extraction."""
         from src.infra import worker
-        from src.features.data2neo_extractor import EntityType
 
         # Create test file
         test_file = tmp_path / "test.txt"
@@ -763,7 +757,7 @@ class TestWorkflowExecutor:
         # Create checkpoint file
         checkpoint_path = tmp_path / "checkpoint.jsonl"
         checkpoint_path.write_text(
-            '{"query": "Q1", "success": true}\n' '{"query": "Q2", "success": true}\n'
+            '{"query": "Q1", "success": true}\n{"query": "Q2", "success": true}\n'
         )
 
         logger = MagicMock()
