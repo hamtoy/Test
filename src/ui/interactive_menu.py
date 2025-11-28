@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 from typing import List, Optional
 
 from rich.panel import Panel
@@ -14,6 +15,7 @@ from rich.table import Table
 from src.agent import GeminiAgent
 from src.analysis.cross_validation import CrossValidationSystem
 from src.caching.analytics import analyze_cache_stats, print_cache_report
+from src.caching.redis_cache import RedisEvalCache
 from src.config import AppConfig
 from src.core.models import WorkflowResult
 from src.features.difficulty import AdaptiveDifficultyAdjuster
@@ -31,6 +33,7 @@ from src.workflow.inspection import inspect_answer, inspect_query
 
 # Constants
 MENU_CHOICES = ["1", "2", "3", "4"]
+DEFAULT_OCR_PATH = "data/inputs/input_ocr.txt"
 
 
 def show_error_with_guide(error_type: str, message: str, solution: str) -> None:
@@ -233,34 +236,63 @@ async def run_workflow_interactive(
 
 
 async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> None:
-    """질의 검수 핸들러"""
-    console.print(Panel("✅ 질의 검수", style="cyan"))
+    """
+    질의 검수 핸들러 (Direct Input -> CLI Output)
 
-    query = Prompt.ask("검수할 질의 입력")
-    if not query:
+    UX 원칙:
+    - 질의 직접 입력 (복붙)
+    - OCR 자동 로드 (난이도 분석용)
+    - 결과 즉시 CLI 출력 (패널)
+    """
+    console.print(Panel("✅ 질의 검수 모드", style="cyan"))
+
+    # [1] 질의 직접 입력
+    query_input = Prompt.ask("\n❓ 질의 입력 (복붙)")
+    if not query_input.strip():
+        console.print("[yellow]질의가 입력되지 않았습니다.[/yellow]")
         return
+
+    # [2] OCR 자동 로드 (난이도 분석용)
+    ocr_text = ""
+    ocr_file = Path(DEFAULT_OCR_PATH)
+    if ocr_file.exists():
+        console.print(f"[dim]📄 OCR 자동 로드: {ocr_file}[/dim]")
+        ocr_text = ocr_file.read_text(encoding="utf-8")
+    else:
+        console.print(f"[dim]OCR 파일 없음: {ocr_file} (난이도 분석 생략)[/dim]")
 
     # 리소스 초기화
     kg = QAKnowledgeGraph() if config.neo4j_uri else None
     lats = LATSSearcher(agent.llm_provider) if config.enable_lats else None
     difficulty = AdaptiveDifficultyAdjuster(kg) if kg else None
+    cache: Optional[RedisEvalCache] = None
+    if os.getenv("REDIS_URL"):
+        cache = RedisEvalCache()
 
     try:
+        # [3] 실행 & 출력
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             console=console,
         ) as progress:
-            task = progress.add_task("질의 검수 중...", total=None)
+            task = progress.add_task("[cyan]최적화 중...", total=None)
 
-            # Context 구성 (필요 시 사용자 입력 추가 가능)
+            # Context 구성
             context = {"type": "general"}
 
-            result = await inspect_query(agent, query, context, kg, lats, difficulty)
+            fixed_query = await inspect_query(
+                agent, query_input, ocr_text, context, kg, lats, difficulty, cache
+            )
 
-            progress.update(task, description="[green]✓ 검수 완료[/green]")
+            progress.update(task, completed=100, description="[green]✓ 완료[/green]")
 
-        console.print(f"\n[bold green]검수 결과:[/bold green]\n{result}")
+        # 결과 즉시 출력 (패널)
+        result_content = (
+            f"[dim]원본: {query_input}[/dim]\n\n"
+            f"[bold green]수정: {fixed_query}[/bold green]"
+        )
+        console.print(Panel(result_content, title="✅ 검수 결과", border_style="green"))
 
     except Exception as e:
         console.print(f"[red]검수 실패: {e}[/red]")
@@ -270,38 +302,85 @@ async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> Non
 
 
 async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> None:
-    """답변 검수 핸들러"""
-    console.print(Panel("✅ 답변 검수", style="cyan"))
+    """
+    답변 검수 핸들러 (File Input -> File Output)
 
-    answer = Prompt.ask("검수할 답변 입력")
-    query = Prompt.ask("관련 질의 입력")
-    ocr_text = Prompt.ask("관련 OCR 텍스트 입력 (선택)", default="")
+    UX 원칙:
+    - 파일 경로 입력 (긴 텍스트)
+    - OCR 자동 로드 (사실 검증용)
+    - 결과 파일 저장 (CLI 출력 없음)
+    """
+    console.print(Panel("✅ 답변 검수 모드", style="cyan"))
 
-    if not answer:
+    # [1] 파일 입력
+    answer_file_str = Prompt.ask("\n📂 답변 파일 경로")
+    answer_file = Path(answer_file_str.strip())
+
+    if not answer_file.exists():
+        console.print(f"[red]파일이 존재하지 않습니다: {answer_file}[/red]")
         return
+
+    answer = answer_file.read_text(encoding="utf-8")
+    if not answer.strip():
+        console.print("[yellow]답변 파일이 비어있습니다.[/yellow]")
+        return
+
+    # [2] OCR 자동 로드 (사실 검증용)
+    ocr_text = ""
+    ocr_file = Path(DEFAULT_OCR_PATH)
+    if ocr_file.exists():
+        console.print(f"[dim]📄 OCR 자동 로드: {ocr_file}[/dim]")
+        ocr_text = ocr_file.read_text(encoding="utf-8")
+    else:
+        # OCR 파일이 없으면 사용자에게 경로 입력 요청
+        ocr_path_input = Prompt.ask("OCR 파일 경로", default="")
+        if ocr_path_input:
+            ocr_path = Path(ocr_path_input.strip())
+            if ocr_path.exists():
+                ocr_text = ocr_path.read_text(encoding="utf-8")
+            else:
+                console.print(f"[yellow]OCR 파일을 찾을 수 없습니다: {ocr_path}[/yellow]")
+
+    # [3] 질의 여부 (선택)
+    query = ""
+    if Prompt.ask("❓ 질의 입력?", choices=["y", "n"], default="n").lower() == "y":
+        query = Prompt.ask("   질의")
 
     # 리소스 초기화
     kg = QAKnowledgeGraph() if config.neo4j_uri else None
     lats = LATSSearcher(agent.llm_provider) if config.enable_lats else None
     validator = CrossValidationSystem(kg) if kg else None
+    cache: Optional[RedisEvalCache] = None
+    if os.getenv("REDIS_URL"):
+        cache = RedisEvalCache()
 
     try:
+        # [4] 실행 & 저장 (CLI 출력 X)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_dir = Path("data/outputs")
+        output_path = output_dir / f"inspected_{timestamp}.md"
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             console=console,
         ) as progress:
-            task = progress.add_task("답변 검수 중...", total=None)
+            task = progress.add_task("[cyan]검수 및 수정 중...", total=None)
 
             context = {"type": "general", "image_meta": {}}
 
-            result = await inspect_answer(
-                agent, answer, query, ocr_text, context, kg, lats, validator
+            fixed_answer = await inspect_answer(
+                agent, answer, query, ocr_text, context, kg, lats, validator, cache
             )
 
-            progress.update(task, description="[green]✓ 검수 완료[/green]")
+            # 결과 저장
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(fixed_answer, encoding="utf-8")
 
-        console.print(f"\n[bold green]검수 결과:[/bold green]\n{result}")
+            progress.update(task, completed=100, description="[green]✓ 완료[/green]")
+
+        console.print("\n✅ [bold green]완료[/bold green]")
+        console.print(f"💾 저장됨: {output_path}")
 
     except Exception as e:
         console.print(f"[red]검수 실패: {e}[/red]")
