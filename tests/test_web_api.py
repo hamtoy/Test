@@ -1,12 +1,14 @@
 """Tests for the web API module."""
 
 import io
+import json
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
-from src.web.api import app
+from src.web.api import app, log_review_session
 
 
 @pytest.fixture
@@ -340,10 +342,6 @@ class TestLogReviewSession:
 
     def test_log_review_session_creates_directory(self, tmp_path):
         """Test that log_review_session creates the log directory if it doesn't exist."""
-        from src.web.api import log_review_session
-        import json
-        from datetime import datetime, timezone
-
         # Patch REPO_ROOT to use tmp_path
         with patch("src.web.api.REPO_ROOT", tmp_path):
             log_review_session(
@@ -379,10 +377,6 @@ class TestLogReviewSession:
 
     def test_log_review_session_appends_multiple_entries(self, tmp_path):
         """Test that log_review_session appends multiple entries to the same file."""
-        from src.web.api import log_review_session
-        import json
-        from datetime import datetime, timezone
-
         with patch("src.web.api.REPO_ROOT", tmp_path):
             # Log first entry
             log_review_session(
@@ -421,10 +415,6 @@ class TestLogReviewSession:
 
     def test_log_review_session_handles_empty_strings(self, tmp_path):
         """Test that log_review_session accepts empty strings for all fields."""
-        from src.web.api import log_review_session
-        import json
-        from datetime import datetime, timezone
-
         with patch("src.web.api.REPO_ROOT", tmp_path):
             log_review_session(
                 mode="inspect",
@@ -450,8 +440,6 @@ class TestLogReviewSession:
 
     def test_log_review_session_failure_does_not_raise(self, tmp_path):
         """Test that log_review_session failure doesn't raise an exception."""
-        from src.web.api import log_review_session
-
         # Patch REPO_ROOT to an invalid path (read-only or non-existent)
         with patch("src.web.api.REPO_ROOT", "/nonexistent/path"):
             # Should not raise even though it can't write
