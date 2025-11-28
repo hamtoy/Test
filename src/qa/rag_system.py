@@ -391,8 +391,18 @@ class QAKnowledgeGraph:
         result: Dict[str, Any] = {
             "success": True,
             "batch_id": batch_id,
-            "created": {"rules": 0, "constraints": 0, "best_practices": 0, "examples": 0},
-            "updated": {"rules": 0, "constraints": 0, "best_practices": 0, "examples": 0},
+            "created": {
+                "rules": 0,
+                "constraints": 0,
+                "best_practices": 0,
+                "examples": 0,
+            },
+            "updated": {
+                "rules": 0,
+                "constraints": 0,
+                "best_practices": 0,
+                "examples": 0,
+            },
             "errors": [],
         }
 
@@ -473,7 +483,9 @@ class QAKnowledgeGraph:
                         result["updated"]["examples"] += 1
 
             except Exception as exc:  # noqa: BLE001
-                result["errors"].append(f"패턴 처리 중 오류 ({pattern.get('id', 'unknown')}): {exc}")
+                result["errors"].append(
+                    f"패턴 처리 중 오류 ({pattern.get('id', 'unknown')}): {exc}"
+                )
                 result["success"] = False
 
         return result
@@ -552,7 +564,11 @@ class QAKnowledgeGraph:
         async def _run() -> Dict[str, bool]:
             async with prov.session() as session:
                 existing = await session.run(check_cypher, id=rule_id)
-                existing_list = [r async for r in existing] if hasattr(existing, "__aiter__") else list(existing)
+                existing_list = (
+                    [r async for r in existing]
+                    if hasattr(existing, "__aiter__")
+                    else list(existing)
+                )
                 is_new = len(existing_list) == 0
 
                 await session.run(
@@ -635,7 +651,11 @@ class QAKnowledgeGraph:
         async def _run() -> Dict[str, bool]:
             async with prov.session() as session:
                 existing = await session.run(check_cypher, id=constraint_id)
-                existing_list = [r async for r in existing] if hasattr(existing, "__aiter__") else list(existing)
+                existing_list = (
+                    [r async for r in existing]
+                    if hasattr(existing, "__aiter__")
+                    else list(existing)
+                )
                 is_new = len(existing_list) == 0
                 await session.run(
                     upsert_cypher,
@@ -717,7 +737,11 @@ class QAKnowledgeGraph:
         async def _run() -> Dict[str, bool]:
             async with prov.session() as session:
                 existing = await session.run(check_cypher, id=bp_id)
-                existing_list = [r async for r in existing] if hasattr(existing, "__aiter__") else list(existing)
+                existing_list = (
+                    [r async for r in existing]
+                    if hasattr(existing, "__aiter__")
+                    else list(existing)
+                )
                 is_new = len(existing_list) == 0
                 await session.run(
                     upsert_cypher,
@@ -804,7 +828,11 @@ class QAKnowledgeGraph:
         async def _run() -> Dict[str, bool]:
             async with prov.session() as session:
                 existing = await session.run(check_cypher, id=example_id)
-                existing_list = [r async for r in existing] if hasattr(existing, "__aiter__") else list(existing)
+                existing_list = (
+                    [r async for r in existing]
+                    if hasattr(existing, "__aiter__")
+                    else list(existing)
+                )
                 is_new = len(existing_list) == 0
                 await session.run(
                     upsert_cypher,
@@ -895,7 +923,11 @@ class QAKnowledgeGraph:
         async def _run() -> Dict[str, Any]:
             async with prov.session() as session:
                 count_result = await session.run(count_cypher, batch_id=batch_id)
-                count_list = [r async for r in count_result] if hasattr(count_result, "__aiter__") else list(count_result)
+                count_list = (
+                    [r async for r in count_result]
+                    if hasattr(count_result, "__aiter__")
+                    else list(count_result)
+                )
                 count = count_list[0]["cnt"] if count_list else 0
                 await session.run(delete_cypher, batch_id=batch_id)
                 return {"success": True, "deleted_count": count}

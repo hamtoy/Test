@@ -45,6 +45,7 @@ class _UpsertFakeSession:
     - 실행된 Cypher 쿼리 및 파라미터를 기록
     - 노드 존재 여부 확인 쿼리에 대한 응답 설정 가능
     """
+
     def __init__(self, existing_nodes=None):
         self.queries = []  # (cypher, params) 튜플 기록
         self.existing_nodes = existing_nodes or set()  # 존재하는 노드 ID 집합
@@ -94,7 +95,7 @@ class _UpsertFakeSession:
                 "id": "rule_001",
                 "created_at": "2024-01-01T12:00:00Z",
                 "updated_at": "2024-01-01T12:00:00Z",
-                "auto_generated": True
+                "auto_generated": True,
             }
             return
 
@@ -104,6 +105,7 @@ class _UpsertFakeSession:
 
 class _UpsertFakeGraph:
     """업서트 테스트를 위한 fake graph driver."""
+
     def __init__(self, existing_nodes=None):
         self.existing_nodes = existing_nodes or set()
         self.sessions = []
@@ -160,6 +162,7 @@ def test_find_relevant_rules_without_vector_store():
 # 자동 생성 규칙 업서트 테스트
 # =========================================================================
 
+
 def test_upsert_auto_generated_rules_creates_new_nodes():
     """새로운 Rule, Constraint, BestPractice, Example 노드 생성 테스트."""
     kg = _make_upsert_kg()
@@ -172,7 +175,7 @@ def test_upsert_auto_generated_rules_creates_new_nodes():
             "constraint": "표/그래프 인용 불가",
             "best_practice": "본문 텍스트만 인용",
             "example_before": "표에 따르면 A=100",
-            "example_after": "A는 100이다"
+            "example_after": "A는 100이다",
         }
     ]
 
@@ -231,7 +234,7 @@ def test_upsert_auto_generated_rules_handles_missing_fields():
     patterns = [
         {"type_hint": "explanation"},  # id, rule 누락
         {"id": "rule_004"},  # rule 누락
-        {"id": "rule_005", "rule": "정상 규칙", "type_hint": "reasoning"}
+        {"id": "rule_005", "rule": "정상 규칙", "type_hint": "reasoning"},
     ]
 
     result = kg.upsert_auto_generated_rules(patterns, batch_id="partial_batch")
@@ -245,9 +248,7 @@ def test_upsert_auto_generated_rules_only_rule():
     """Rule만 있고 다른 필드가 없는 경우 테스트."""
     kg = _make_upsert_kg()
 
-    patterns = [
-        {"id": "rule_only", "rule": "규칙만 있음", "type_hint": "explanation"}
-    ]
+    patterns = [{"id": "rule_only", "rule": "규칙만 있음", "type_hint": "explanation"}]
 
     result = kg.upsert_auto_generated_rules(patterns, batch_id="rule_only_batch")
 
@@ -267,14 +268,14 @@ def test_upsert_auto_generated_rules_with_example_only():
             "id": "rule_ex1",
             "rule": "before만 있는 예시",
             "type_hint": "summary",
-            "example_before": "잘못된 예시"
+            "example_before": "잘못된 예시",
         },
         {
             "id": "rule_ex2",
             "rule": "after만 있는 예시",
             "type_hint": "target",
-            "example_after": "수정된 예시"
-        }
+            "example_after": "수정된 예시",
+        },
     ]
 
     result = kg.upsert_auto_generated_rules(patterns, batch_id="example_batch")
