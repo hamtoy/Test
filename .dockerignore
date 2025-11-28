@@ -1,0 +1,104 @@
+# ===========================================
+# Docker Ignore File
+# Excludes unnecessary files from Docker build
+# ===========================================
+
+# Git and GitHub
+.git
+.github
+.gitignore
+.gitattributes
+
+# IDE and Editor
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Python cache
+*.pyc
+*.pyo
+*.pyd
+__pycache__
+*.py[cod]
+*$py.class
+.Python
+
+# Virtual environments
+.venv
+venv/
+ENV/
+env/
+
+# Testing
+tests/
+.pytest_cache
+.coverage
+htmlcov/
+coverage.xml
+pytest_output.txt
+test_*.py
+
+# Type checking
+.mypy_cache
+mypy_output*.txt
+
+# Linting
+.ruff_cache
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+wheels/
+sdist/
+
+# Data and outputs (keep inputs structure)
+data/outputs/
+data/queue_results/
+*.prof
+profiling_results/
+
+# Logs
+*.log
+app.log
+error.log
+
+# Cache and temp files
+.cache/
+*.jsonl
+!data/inputs/*.jsonl
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Project specific
+notion-neo4j-graph/
+experiments/
+examples/
+checks/
+vulture_whitelist.py
+
+# Analysis outputs
+mypy_baseline_report.html
+coverage_report.txt
+performance_baseline.txt
+output.txt
+
+# Backup files
+backup_v3_*/
+*.bak

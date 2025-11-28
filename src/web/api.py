@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, Literal, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
@@ -438,11 +438,73 @@ async def api_analyze_image(file: UploadFile = File(...)) -> Dict[str, Any]:
 
 
 @app.get("/health")
-async def health_check() -> Dict[str, Any]:
-    """서버 상태 확인"""
-    return {
-        "status": "ok",
+async def health_endpoint() -> Dict[str, Any]:
+    """전체 시스템 상태 확인"""
+    from src.infra.health import health_check_async
+
+    result = await health_check_async()
+    # 추가 정보
+    result["services"] = {
         "agent": agent is not None,
         "neo4j": kg is not None,
         "multimodal": mm is not None,
     }
+    return result
+
+
+@app.get("/health/ready")
+async def readiness_endpoint() -> Dict[str, Any]:
+    """Kubernetes readiness probe"""
+    from src.infra.health import readiness_check
+
+    return await readiness_check()
+
+
+@app.get("/health/live")
+async def liveness_endpoint() -> Dict[str, Any]:
+    """Kubernetes liveness probe"""
+    from src.infra.health import liveness_check
+
+    return await liveness_check()
+
+
+# ============================================================================
+# 메트릭
+# ============================================================================
+
+
+@app.get("/metrics")
+async def metrics_endpoint() -> Response:
+    """Prometheus metrics endpoint"""
+    from fastapi.responses import Response
+
+    from src.monitoring.metrics import get_metrics
+
+    return Response(content=get_metrics(), media_type="text/plain")
+
+
+# ============================================================================
+# 관리자 엔드포인트
+# ============================================================================
+
+
+@app.post("/admin/log-level")
+async def set_log_level_endpoint(level: str) -> Dict[str, str]:
+    """런타임에 로그 레벨 변경 (관리자용)
+
+    Args:
+        level: 새 로그 레벨 (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+
+    Returns:
+        결과 메시지
+    """
+    from src.infra.logging import set_log_level
+
+    valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    if level.upper() not in valid_levels:
+        raise HTTPException(400, f"Invalid level. Use: {valid_levels}")
+
+    if set_log_level(level):
+        return {"message": f"Log level set to {level.upper()}"}
+    else:
+        raise HTTPException(500, "Failed to set log level")

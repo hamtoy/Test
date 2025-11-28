@@ -68,7 +68,7 @@ extend-select = ["PERF", "FURB", "SIM"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D"]
-"scripts/**" = ["PERF401", "SIM102"]  # Allow simpler patterns in scripts
+"scripts/**" = ["PERF401", "PERF203", "SIM102"]  # Allow simpler patterns in scripts
 
 [tool.mypy]
 python_version = "3.10"  # v3.0: Minimum supported version
@@ -131,6 +131,10 @@ module = [
     "aiolimiter.*",
     "pytesseract",
     "pytesseract.*",
+    "prometheus_client",
+    "prometheus_client.*",
+    "psutil",
+    "psutil.*",
 ]
 ignore_missing_imports = true
 
