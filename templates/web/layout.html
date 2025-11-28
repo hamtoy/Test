@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini QA System</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🤖 Gemini QA System</h1>
+            <nav>
+                <a href="/qa" class="nav-link">QA 생성</a>
+                <a href="/eval" class="nav-link">평가</a>
+                <a href="/workspace" class="nav-link">워크스페이스</a>
+                <a href="/multimodal" class="nav-link">이미지 분석</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>Gemini QA System - Local Only</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="split-layout">
+    <!-- 왼쪽: OCR 영역 -->
+    <div class="left-panel">
+        <h2>📄 OCR 텍스트</h2>
+        <div id="ocr-preview" class="ocr-box">로딩 중...</div>
+    </div>
+
+    <!-- 오른쪽: 평가 입력 -->
+    <div class="right-panel">
+        <h2>📊 외부 답변 평가</h2>
+        
+        <div class="form-group">
+            <label>질의</label>
+            <input type="text" id="query" placeholder="질의 내용을 입력하세요">
+        </div>
+
+        <div class="form-group">
+            <label>답변 A</label>
+            <textarea id="answer-a" rows="4"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>답변 B</label>
+            <textarea id="answer-b" rows="4"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>답변 C</label>
+            <textarea id="answer-c" rows="4"></textarea>
+        </div>
+
+        <button id="eval-btn" class="btn-primary">⚖️ 평가 실행</button>
+
+        <div id="eval-results" class="results-area"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    loadOCR();
+
+    document.getElementById('eval-btn').addEventListener('click', async () => {
+        const query = document.getElementById('query').value;
+        const answers = [
+            document.getElementById('answer-a').value,
+            document.getElementById('answer-b').value,
+            document.getElementById('answer-c').value,
+        ];
+
+        if (!query || answers.some(a => !a.trim())) {
+            alert('모든 필드를 입력해주세요.');
+            return;
+        }
+
+        await evaluateAnswers(query, answers);
+    });
+</script>
+{% endblock %}
