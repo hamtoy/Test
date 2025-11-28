@@ -1,6 +1,5 @@
 """Tests for graph/builder.py module to improve coverage."""
 
-import hashlib
 from unittest.mock import MagicMock, patch
 
 import pytest

@@ -1,11 +1,8 @@
 """Tests for main.py module to improve coverage."""
 
 import asyncio
-import logging
 import os
-import sys
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -29,20 +26,22 @@ class TestMainModule:
         mock_logger = MagicMock()
         mock_listener = MagicMock()
 
-        with patch("src.main.setup_logging") as mock_setup_logging:
-            with patch("src.main.AppConfig") as mock_app_config:
-                with patch("src.main.genai") as mock_genai:
-                    with patch("src.main.GeminiAgent") as mock_agent:
-                        with patch("src.main.interactive_main") as mock_interactive:
-                            mock_setup_logging.return_value = (mock_logger, mock_listener)
-                            mock_app_config.return_value = mock_config
-                            mock_interactive.return_value = None
+        with (
+            patch("src.main.setup_logging") as mock_setup_logging,
+            patch("src.main.AppConfig") as mock_app_config,
+            patch("src.main.genai") as mock_genai,
+            patch("src.main.GeminiAgent") as mock_agent,
+            patch("src.main.interactive_main") as mock_interactive,
+        ):
+            mock_setup_logging.return_value = (mock_logger, mock_listener)
+            mock_app_config.return_value = mock_config
+            mock_interactive.return_value = None
 
-                            await main()
+            await main()
 
-                            mock_genai.configure.assert_called_once()
-                            mock_agent.assert_called_once()
-                            mock_listener.stop.assert_called_once()
+            mock_genai.configure.assert_called_once()
+            mock_agent.assert_called_once()
+            mock_listener.stop.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_main_template_dir_missing(self, tmp_path):
@@ -56,18 +55,20 @@ class TestMainModule:
         mock_logger = MagicMock()
         mock_listener = MagicMock()
 
-        with patch("src.main.setup_logging") as mock_setup_logging:
-            with patch("src.main.AppConfig") as mock_app_config:
-                with patch("src.main.genai"):
-                    with patch("src.main.console") as mock_console:
-                        mock_setup_logging.return_value = (mock_logger, mock_listener)
-                        mock_app_config.return_value = mock_config
+        with (
+            patch("src.main.setup_logging") as mock_setup_logging,
+            patch("src.main.AppConfig") as mock_app_config,
+            patch("src.main.genai"),
+            patch("src.main.console"),
+        ):
+            mock_setup_logging.return_value = (mock_logger, mock_listener)
+            mock_app_config.return_value = mock_config
 
-                        with pytest.raises(SystemExit) as exc_info:
-                            await main()
+            with pytest.raises(SystemExit) as exc_info:
+                await main()
 
-                        assert exc_info.value.code == 1
-                        mock_listener.stop.assert_called_once()
+            assert exc_info.value.code == 1
+            mock_listener.stop.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_main_value_error(self, tmp_path):
@@ -77,16 +78,18 @@ class TestMainModule:
         mock_logger = MagicMock()
         mock_listener = MagicMock()
 
-        with patch("src.main.setup_logging") as mock_setup_logging:
-            with patch("src.main.AppConfig") as mock_app_config:
-                with patch("src.main.console"):
-                    mock_setup_logging.return_value = (mock_logger, mock_listener)
-                    mock_app_config.side_effect = ValueError("Invalid config")
+        with (
+            patch("src.main.setup_logging") as mock_setup_logging,
+            patch("src.main.AppConfig") as mock_app_config,
+            patch("src.main.console"),
+        ):
+            mock_setup_logging.return_value = (mock_logger, mock_listener)
+            mock_app_config.side_effect = ValueError("Invalid config")
 
-                    with pytest.raises(SystemExit) as exc_info:
-                        await main()
+            with pytest.raises(SystemExit) as exc_info:
+                await main()
 
-                    assert exc_info.value.code == 1
+            assert exc_info.value.code == 1
 
     @pytest.mark.asyncio
     async def test_main_os_error(self, tmp_path):
@@ -96,16 +99,18 @@ class TestMainModule:
         mock_logger = MagicMock()
         mock_listener = MagicMock()
 
-        with patch("src.main.setup_logging") as mock_setup_logging:
-            with patch("src.main.AppConfig") as mock_app_config:
-                with patch("src.main.console"):
-                    mock_setup_logging.return_value = (mock_logger, mock_listener)
-                    mock_app_config.side_effect = OSError("File system error")
+        with (
+            patch("src.main.setup_logging") as mock_setup_logging,
+            patch("src.main.AppConfig") as mock_app_config,
+            patch("src.main.console"),
+        ):
+            mock_setup_logging.return_value = (mock_logger, mock_listener)
+            mock_app_config.side_effect = OSError("File system error")
 
-                    with pytest.raises(SystemExit) as exc_info:
-                        await main()
+            with pytest.raises(SystemExit) as exc_info:
+                await main()
 
-                    assert exc_info.value.code == 1
+            assert exc_info.value.code == 1
 
 
 class TestMainEntryPoint:
@@ -114,26 +119,28 @@ class TestMainEntryPoint:
     def test_windows_event_loop_policy(self):
         """Test Windows event loop policy is set when on Windows."""
         # This tests the Windows-specific code path
-        with patch.object(os, "name", "nt"):
-            with patch("asyncio.set_event_loop_policy") as mock_set_policy:
-                with patch("asyncio.run") as mock_run:
-                    # Mock WindowsSelectorEventLoopPolicy
-                    mock_policy_class = MagicMock()
-                    with patch.object(
-                        asyncio, "WindowsSelectorEventLoopPolicy", mock_policy_class, create=True
-                    ):
-                        # Import and run the condition check
-                        if os.name == "nt":
-                            try:
-                                policy = getattr(asyncio, "WindowsSelectorEventLoopPolicy", None)
-                                if policy:
-                                    asyncio.set_event_loop_policy(policy())
-                            except AttributeError:
-                                pass
+        with (
+            patch.object(os, "name", "nt"),
+            patch("asyncio.set_event_loop_policy") as mock_set_policy,
+            patch("asyncio.run"),
+        ):
+            # Mock WindowsSelectorEventLoopPolicy
+            mock_policy_class = MagicMock()
+            with patch.object(
+                asyncio, "WindowsSelectorEventLoopPolicy", mock_policy_class, create=True
+            ):
+                # Import and run the condition check
+                if os.name == "nt":
+                    try:
+                        policy = getattr(asyncio, "WindowsSelectorEventLoopPolicy", None)
+                        if policy:
+                            asyncio.set_event_loop_policy(policy())
+                    except AttributeError:
+                        pass
 
-                        # Policy should be set
-                        if hasattr(asyncio, "WindowsSelectorEventLoopPolicy"):
-                            mock_set_policy.assert_called_once()
+                # Policy should be set
+                if hasattr(asyncio, "WindowsSelectorEventLoopPolicy"):
+                    mock_set_policy.assert_called_once()
 
     def test_non_windows_no_policy_change(self):
         """Test that event loop policy is not changed on non-Windows."""

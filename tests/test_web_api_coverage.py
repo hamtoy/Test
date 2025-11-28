@@ -6,8 +6,6 @@ import os
 import sys
 import types
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -21,9 +19,9 @@ pytesseract_mock = types.ModuleType("pytesseract")
 pytesseract_mock.image_to_string = MagicMock(return_value="")
 sys.modules["pytesseract"] = pytesseract_mock
 
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient  # noqa: E402
 
-from src.web.api import (
+from src.web.api import (  # noqa: E402
     app,
     generate_single_qa,
     init_resources,
@@ -116,14 +114,16 @@ class TestInitResources:
                 templates_dir = tmp_path / "templates"
                 templates_dir.mkdir()
 
-                with patch("src.web.api.GeminiAgent") as mock_agent_class:
-                    with patch("src.web.api.QAKnowledgeGraph") as mock_kg_class:
-                        mock_kg_class.side_effect = Exception("No Neo4j")
+                with (
+                    patch("src.web.api.GeminiAgent") as mock_agent_class,
+                    patch("src.web.api.QAKnowledgeGraph") as mock_kg_class,
+                ):
+                    mock_kg_class.side_effect = Exception("No Neo4j")
 
-                        await init_resources()
+                    await init_resources()
 
-                        mock_agent_class.assert_called_once()
-                        assert api_module.agent is not None
+                    mock_agent_class.assert_called_once()
+                    assert api_module.agent is not None
         finally:
             # Restore original state
             api_module.agent = original_agent
@@ -149,13 +149,15 @@ class TestInitResources:
                 templates_dir.mkdir()
 
                 mock_kg = MagicMock()
-                with patch("src.web.api.GeminiAgent"):
-                    with patch("src.web.api.QAKnowledgeGraph", return_value=mock_kg):
-                        with patch("src.web.api.MultimodalUnderstanding") as mock_mm_class:
-                            await init_resources()
+                with (
+                    patch("src.web.api.GeminiAgent"),
+                    patch("src.web.api.QAKnowledgeGraph", return_value=mock_kg),
+                    patch("src.web.api.MultimodalUnderstanding") as mock_mm_class,
+                ):
+                    await init_resources()
 
-                            assert api_module.kg is not None
-                            mock_mm_class.assert_called_once_with(kg=mock_kg)
+                    assert api_module.kg is not None
+                    mock_mm_class.assert_called_once_with(kg=mock_kg)
         finally:
             api_module.agent = original_agent
             api_module.kg = original_kg
@@ -188,9 +190,11 @@ class TestGenerateSingleQA:
         mock_agent = MagicMock()
         mock_agent.generate_query = AsyncMock(return_value=[])
 
-        with patch("src.web.api.kg", None):
-            with pytest.raises(ValueError, match="질의 생성 실패"):
-                await generate_single_qa(mock_agent, "OCR 텍스트", "reasoning")
+        with (
+            patch("src.web.api.kg", None),
+            pytest.raises(ValueError, match="질의 생성 실패"),
+        ):
+            await generate_single_qa(mock_agent, "OCR 텍스트", "reasoning")
 
     @pytest.mark.asyncio
     async def test_generate_single_qa_with_kg(self, monkeypatch):
@@ -206,16 +210,15 @@ class TestGenerateSingleQA:
         monkeypatch.setenv("NEO4J_USER", "neo4j")
         monkeypatch.setenv("NEO4J_PASSWORD", "password")
 
-        with patch("src.web.api.kg", mock_kg):
-            with patch(
-                "src.processing.template_generator.DynamicTemplateGenerator",
-                return_value=mock_template_gen,
-            ):
-                result = await generate_single_qa(
-                    mock_agent, "OCR 텍스트", "global_explanation"
-                )
+        with patch("src.web.api.kg", mock_kg), patch(
+            "src.processing.template_generator.DynamicTemplateGenerator",
+            return_value=mock_template_gen,
+        ):
+            result = await generate_single_qa(
+                mock_agent, "OCR 텍스트", "global_explanation"
+            )
 
-                assert result["type"] == "global_explanation"
+            assert result["type"] == "global_explanation"
 
 
 class TestLogReviewSessionEdgeCases:
@@ -484,7 +487,6 @@ class TestMultimodalApiExtended:
         import src.web.api as api_module
 
         original_mm = api_module.mm
-        original_config_input_dir = None
 
         inputs_dir = tmp_path / "inputs"
         inputs_dir.mkdir()
