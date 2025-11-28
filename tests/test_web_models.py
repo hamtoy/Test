@@ -8,6 +8,8 @@ import sys
 import importlib.util
 
 spec = importlib.util.spec_from_file_location("web_models", "src/web/models.py")
+if spec is None or spec.loader is None:
+    raise ImportError("Could not load spec or loader for src/web/models.py")
 web_models = importlib.util.module_from_spec(spec)
 sys.modules["web_models"] = web_models
 spec.loader.exec_module(web_models)
