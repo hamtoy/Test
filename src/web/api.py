@@ -4,19 +4,19 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, Field
 from starlette.requests import Request
 
 from src.agent import GeminiAgent
 from src.config import AppConfig
 from src.features.multimodal import MultimodalUnderstanding
 from src.qa.rag_system import QAKnowledgeGraph
+from src.web.models import EvalExternalRequest, GenerateQARequest, WorkspaceRequest
 from src.workflow.edit import edit_content
 from src.workflow.inspection import inspect_answer
 
@@ -39,32 +39,6 @@ app = FastAPI(title="Gemini QA System", version="1.0.0")
 REPO_ROOT = Path(__file__).resolve().parents[2]
 app.mount("/static", StaticFiles(directory=str(REPO_ROOT / "static")), name="static")
 templates = Jinja2Templates(directory=str(REPO_ROOT / "templates" / "web"))
-
-
-# ============================================================================
-# 요청/응답 모델
-# ============================================================================
-
-
-class GenerateQARequest(BaseModel):
-    mode: Literal["batch", "single"] = Field(
-        ..., description="batch: 4타입 일괄, single: 단일 타입"
-    )
-    qtype: Optional[Literal["global_explanation", "reasoning", "target_short", "target_long"]] = Field(
-        None, description="mode=single일 때 필수"
-    )
-
-
-class EvalExternalRequest(BaseModel):
-    query: str = Field(..., description="질의 내용")
-    answers: List[str] = Field(..., min_length=3, max_length=3, description="답변 3개")
-
-
-class WorkspaceRequest(BaseModel):
-    mode: Literal["inspect", "edit"] = Field(..., description="inspect: 검수, edit: 자유 수정")
-    query: Optional[str] = Field("", description="질의 (선택)")
-    answer: str = Field(..., description="검수/수정할 답변")
-    edit_request: Optional[str] = Field("", description="edit 모드일 때 수정 요청")
 
 
 # ============================================================================

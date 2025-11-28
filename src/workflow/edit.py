@@ -35,8 +35,9 @@ async def edit_content(
     Returns:
         수정된 답변 문자열
     """
-    # Note: cache parameter is reserved for future use
-    _ = cache
+    # Note: cache parameter is reserved for future use to store/retrieve
+    # previously edited content for deduplication or faster re-editing
+    del cache
     # 1. 규칙/가이드라인 (선택적으로 Neo4j에서 가져올 수 있음)
     rules_summary = ""
     if kg:
