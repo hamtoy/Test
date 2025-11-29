@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 from pathlib import Path
 import types
@@ -30,11 +32,11 @@ def test_create_topics_no_keywords(monkeypatch: pytest.MonkeyPatch) -> None:
     called = False
 
     class _Session:
-        def __enter__(self):
+        def __enter__(self) -> "self.__class__.__name__":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
         def execute_write(self, fn, kw) -> None:
             nonlocal called
@@ -52,11 +54,11 @@ def test_link_blocks_creates_links(monkeypatch: pytest.MonkeyPatch) -> None:
     captured = []
 
     class _Session:
-        def __enter__(self):
+        def __enter__(self) -> "self.__class__.__name__":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
         def execute_write(self, fn, rows) -> None:
             fn(None, rows)  # call lambda in code

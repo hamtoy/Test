@@ -20,11 +20,11 @@ class _Session:
         self.calls: list[tuple[str, dict[str, object]]] = []
         self._data_queue: list[object] = []
 
-    def __enter__(self):
-        return self
+    def __enter__(self) -> "self.__class__.__name__":
+            return self
 
-    def __exit__(self, exc_type, exc, tb):
-        return False
+    def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
     def run(self, query, **params):
         self.calls.append((query.strip(), params))

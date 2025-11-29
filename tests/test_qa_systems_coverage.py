@@ -14,11 +14,11 @@ from src.qa import memory_augmented
 
 def test_cross_validation_scoring(monkeypatch: pytest.MonkeyPatch) -> None:
     class _CVSession:
-        def __enter__(self):
+        def __enter__(self) -> "self.__class__.__name__":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
         def run(self, query, **_kwargs):
             if "collect(b.content)" in query:
@@ -54,11 +54,11 @@ def test_cross_validation_scoring(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_lcel_optimized_chain(monkeypatch: pytest.MonkeyPatch) -> None:
     class _LCELSession:
-        def __enter__(self):
+        def __enter__(self) -> "self.__class__.__name__":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
         def run(self, *_args, **_kwargs):
             return [{"text": "rule text"}]
@@ -103,11 +103,11 @@ def test_memory_augmented_qa(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
     class _FakeSession:
-        def __enter__(self):
+        def __enter__(self) -> "self.__class__.__name__":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
         def run(self, *_args, **_kwargs):
             return None
@@ -206,11 +206,11 @@ def test_multi_agent_qa_system(monkeypatch: pytest.MonkeyPatch) -> None:
             return {"valid": True}
 
     class _FakeRuleSession:
-        def __enter__(self):
+        def __enter__(self) -> "self.__class__.__name__":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
         def run(self, *_args, **_kwargs):
             return [{"text": "rule text"}]

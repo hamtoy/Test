@@ -20,11 +20,11 @@ def test_integrated_qa_pipeline_create_and_validate(monkeypatch: pytest.MonkeyPa
             self.closed = True
 
     class _TemplateSession:
-        def __enter__(self):
+        def __enter__(self) -> "self.__class__.__name__":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
         def run(self, cypher, **_kwargs):
             if "ErrorPattern" in cypher:
@@ -79,11 +79,11 @@ def test_integrated_qa_pipeline_create_and_validate(monkeypatch: pytest.MonkeyPa
 
 def test_real_time_constraint_enforcer_stream_and_validate() -> None:
     class _GraphSession:
-        def __enter__(self):
+        def __enter__(self) -> "self.__class__.__name__":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
         def run(self, *_args, **_kwargs):
             return [{"content": "duplicate text"}]

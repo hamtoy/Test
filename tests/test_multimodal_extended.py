@@ -34,11 +34,11 @@ def test_multimodal_understanding_uses_fakes(monkeypatch: pytest.MonkeyPatch) ->
     fake_saved = {}
 
     class _FakeSession:
-        def __enter__(self):
+        def __enter__(self) -> "self.__class__.__name__":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
         def run(self, _query, **params) -> None:
             fake_saved.update(params)
@@ -81,11 +81,11 @@ def test_multimodal_with_graph_session(monkeypatch: pytest.MonkeyPatch) -> None:
     fake_saved = {}
 
     class _FakeSession:
-        def __enter__(self):
+        def __enter__(self) -> "self.__class__.__name__":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
         def run(self, _query, **params) -> None:
             fake_saved.update(params)
@@ -157,8 +157,8 @@ def test_multimodal_session_returns_none(monkeypatch: pytest.MonkeyPatch) -> Non
         def __enter__(self):
             return None
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
     class _FakeGraph:
         def session(self):
@@ -195,11 +195,11 @@ def test_multimodal_exception_handling(monkeypatch: pytest.MonkeyPatch) -> None:
     from src.features import multimodal as features_multimodal
 
     class _ErrorSession:
-        def __enter__(self):
+        def __enter__(self) -> "self.__class__.__name__":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
         def run(self, _query, **params) -> None:
             raise Exception("Neo4j connection failed")

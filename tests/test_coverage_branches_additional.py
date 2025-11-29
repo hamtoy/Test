@@ -40,31 +40,31 @@ def test_dynamic_template_require_env_missing(monkeypatch: pytest.MonkeyPatch) -
 
 def test_cross_validation_image_grounding_branches(monkeypatch: pytest.MonkeyPatch) -> None:
     class _ErrorSession:
-        def __enter__(self):
+        def __enter__(self) -> "self.__class__.__name__":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
         def run(self, *_args, **_kwargs) -> None:
             raise Neo4jError("boom")
 
     class _EmptySession:
-        def __enter__(self):
+        def __enter__(self) -> "self.__class__.__name__":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
         def run(self, *_args, **_kwargs):
             return types.SimpleNamespace(single=lambda: {"all_content": []})
 
     class _ShortTokenSession:
-        def __enter__(self):
+        def __enter__(self) -> "self.__class__.__name__":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
         def run(self, *_args, **_kwargs):
             return types.SimpleNamespace(single=lambda: {"all_content": ["aa"]})
@@ -95,11 +95,11 @@ def test_cross_validation_image_grounding_branches(monkeypatch: pytest.MonkeyPat
 
 def test_cross_validation_rule_and_novelty_exceptions(monkeypatch: pytest.MonkeyPatch) -> None:
     class _BadSession:
-        def __enter__(self):
+        def __enter__(self) -> "self.__class__.__name__":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
+            return None
 
         def run(self, *_args, **_kwargs) -> None:
             raise Neo4jError("patterns failed")
