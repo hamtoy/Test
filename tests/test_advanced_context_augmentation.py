@@ -48,7 +48,7 @@ class _FakeDriver:
 
 def _make_augmenter(blocks, rules):
     aug = object.__new__(AdvancedContextAugmentation)
-    aug.graph = types.SimpleNamespace(_driver=_FakeDriver(_FakeSingle(blocks, rules)))  # type: ignore[assignment]
+    aug.graph = types.SimpleNamespace(_driver=_FakeDriver(_FakeSingle(blocks, rules)))
     aug.vector_index = None
     return aug
 
