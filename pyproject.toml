@@ -150,6 +150,7 @@ exclude = [
 module = [
     "tests",
     "tests.conftest",
+    "tests.custom_types",
     "tests.types",
     "tests.e2e",
     "tests.e2e.conftest",
@@ -238,6 +239,7 @@ module = [
     "tests.test_new_import_paths",
     "tests.test_package_init_coverage",
     "tests.test_pipeline_coverage",
+    "tests.test_plugins",
     "tests.test_promote_rules_coverage",
     "tests.test_qa_factory",
     "tests.test_qa_rag_extended",
