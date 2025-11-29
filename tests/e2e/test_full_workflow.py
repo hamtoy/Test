@@ -153,7 +153,7 @@ async def test_batch_processing_workflow(full_workflow_agent: MockGeminiAgent) -
     batch_size = 20
     queries = [(f"질문 {i}", "설명") for i in range(batch_size)]
 
-    async def process_one(item: tuple[str, str]) -> MagicMock:
+    async def process_one(item: tuple[str, str]) -> QueryResult:
         ocr, intent = item
         return await full_workflow_agent.generate_query(ocr, intent)
 
