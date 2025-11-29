@@ -87,3 +87,6 @@ test_warnings_quick.py
 backup_v3_*/
 strict_baseline.txt
 .env
+
+# Generated reports
+reports/

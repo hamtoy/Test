@@ -240,5 +240,47 @@ members = ["notion-neo4j-graph"]
 fail_under = 75
 show_missing = true
 
+[tool.pytest.ini_options]
+# Deprecation 경고 필터링 전략
+filterwarnings = [
+    # 기본: 모든 경고를 에러로 취급 (엄격 모드)
+    "error",
+
+    # 외부 라이브러리 경고는 무시 (일시적)
+    "ignore::DeprecationWarning:google.*",
+    "ignore::DeprecationWarning:langchain.*",
+    "ignore::DeprecationWarning:fastapi.*",
+    "ignore::DeprecationWarning:pydantic.*",
+    "ignore::DeprecationWarning:neo4j.*",
+    "ignore::DeprecationWarning:tenacity.*",
+
+    # 우리 코드 내 의도적 deprecation 테스트용 경고는 무시
+    "ignore:Importing.*from 'src' is deprecated:DeprecationWarning",
+
+    # PendingDeprecationWarning은 모니터링만
+    "default::PendingDeprecationWarning",
+
+    # 특정 알려진 경고 무시
+    "ignore:datetime.datetime.utcnow\\(\\) is deprecated:DeprecationWarning",
+    "ignore:Relying on Driver's destructor to close the session is deprecated:DeprecationWarning",
+
+    # pytest 특수 경고 무시 (리소스 정리 관련)
+    "ignore::pytest.PytestUnraisableExceptionWarning",
+
+    # runpy 관련 알려진 경고 (테스트 환경)
+    "ignore:.*found in sys.modules after import.*:RuntimeWarning",
+]
+
+# E2E 테스트 마커 설정
+markers = [
+    "e2e: End-to-end integration tests (deselect with '-m \"not e2e\"')",
+    "slow: Tests that take > 5 seconds (deselect with '-m \"not slow\"')",
+    "requires_redis: Tests requiring Redis connection",
+    "requires_neo4j: Tests requiring Neo4j connection",
+]
+
+# E2E 테스트는 기본적으로 제외 (명시적으로 실행)
+addopts = "-m 'not e2e'"
+
 [dependency-groups]
 dev = ["pre-commit>=4.4.0"]

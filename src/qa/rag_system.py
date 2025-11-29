@@ -16,7 +16,6 @@ from typing import (
     List,
     Optional,
     TypeVar,
-    no_type_check,
 )
 
 import google.generativeai as genai
@@ -202,7 +201,6 @@ class QAKnowledgeGraph:
         logger.info("vector_search_ms=%.2f k=%s query=%s", elapsed_ms, k, query)
         return [doc.page_content for doc in results]
 
-    @no_type_check
     def get_constraints_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
         """
         QueryType과 연결된 제약 조건 조회.
@@ -224,7 +222,7 @@ class QAKnowledgeGraph:
         """
         provider = getattr(self, "_graph_provider", None)
         if provider is None:
-            with self._graph.session() as session:
+            with self._graph.session() as session:  # type: ignore[union-attr]
                 records = session.run(cypher, qt=query_type)
                 return [dict(r) for r in records]
 
@@ -237,7 +235,6 @@ class QAKnowledgeGraph:
 
         return _run_async_safely(_run())
 
-    @no_type_check
     def get_best_practices(self, query_type: str) -> List[Dict[str, str]]:
         cypher = """
         MATCH (qt:QueryType {name: $qt})<-[:APPLIES_TO]-(b:BestPractice)
@@ -245,7 +242,7 @@ class QAKnowledgeGraph:
         """
         provider = getattr(self, "_graph_provider", None)
         if provider is None:
-            with self._graph.session() as session:
+            with self._graph.session() as session:  # type: ignore[union-attr]
                 return [dict(r) for r in session.run(cypher, qt=query_type)]
 
         prov = provider
@@ -257,7 +254,6 @@ class QAKnowledgeGraph:
 
         return _run_async_safely(_run())
 
-    @no_type_check
     def get_examples(self, limit: int = 5) -> List[Dict[str, str]]:
         """
         Example 노드 조회 (현재 Rule과 직접 연결되지 않았으므로 전체에서 샘플링).
@@ -269,7 +265,7 @@ class QAKnowledgeGraph:
         """
         provider = getattr(self, "_graph_provider", None)
         if provider is None:
-            with self._graph.session() as session:
+            with self._graph.session() as session:  # type: ignore[union-attr]
                 return [dict(r) for r in session.run(cypher, limit=limit)]
 
         prov = provider
@@ -331,7 +327,6 @@ class QAKnowledgeGraph:
     # }
     # =========================================================================
 
-    @no_type_check
     def upsert_auto_generated_rules(
         self,
         patterns: List[Dict[str, Any]],
@@ -490,7 +485,6 @@ class QAKnowledgeGraph:
 
         return result
 
-    @no_type_check
     def _upsert_rule_node(
         self,
         rule_id: str,
@@ -543,7 +537,7 @@ class QAKnowledgeGraph:
 
         provider = self._graph_provider
         if provider is None:
-            with self._graph.session() as session:
+            with self._graph.session() as session:  # type: ignore[union-attr]
                 # 존재 여부 확인
                 existing = list(session.run(check_cypher, id=rule_id))
                 is_new = len(existing) == 0
@@ -583,7 +577,6 @@ class QAKnowledgeGraph:
 
         return _run_async_safely(_run())
 
-    @no_type_check
     def _upsert_constraint_node(
         self,
         constraint_id: str,
@@ -633,7 +626,7 @@ class QAKnowledgeGraph:
 
         provider = self._graph_provider
         if provider is None:
-            with self._graph.session() as session:
+            with self._graph.session() as session:  # type: ignore[union-attr]
                 existing = list(session.run(check_cypher, id=constraint_id))
                 is_new = len(existing) == 0
                 session.run(
@@ -669,7 +662,6 @@ class QAKnowledgeGraph:
 
         return _run_async_safely(_run())
 
-    @no_type_check
     def _upsert_best_practice_node(
         self,
         bp_id: str,
@@ -719,7 +711,7 @@ class QAKnowledgeGraph:
 
         provider = self._graph_provider
         if provider is None:
-            with self._graph.session() as session:
+            with self._graph.session() as session:  # type: ignore[union-attr]
                 existing = list(session.run(check_cypher, id=bp_id))
                 is_new = len(existing) == 0
                 session.run(
@@ -755,7 +747,6 @@ class QAKnowledgeGraph:
 
         return _run_async_safely(_run())
 
-    @no_type_check
     def _upsert_example_node(
         self,
         example_id: str,
@@ -809,7 +800,7 @@ class QAKnowledgeGraph:
 
         provider = self._graph_provider
         if provider is None:
-            with self._graph.session() as session:
+            with self._graph.session() as session:  # type: ignore[union-attr]
                 existing = list(session.run(check_cypher, id=example_id))
                 is_new = len(existing) == 0
                 session.run(
@@ -847,7 +838,6 @@ class QAKnowledgeGraph:
 
         return _run_async_safely(_run())
 
-    @no_type_check
     def get_rules_by_batch_id(self, batch_id: str) -> List[Dict[str, Any]]:
         """
         특정 batch_id로 생성된 모든 노드 조회 (롤백 전 확인용).
@@ -876,7 +866,7 @@ class QAKnowledgeGraph:
 
         provider = self._graph_provider
         if provider is None:
-            with self._graph.session() as session:
+            with self._graph.session() as session:  # type: ignore[union-attr]
                 records = session.run(cypher, batch_id=batch_id)
                 return [dict(r) for r in records]
 
@@ -889,7 +879,6 @@ class QAKnowledgeGraph:
 
         return _run_async_safely(_run())
 
-    @no_type_check
     def rollback_batch(self, batch_id: str) -> Dict[str, Any]:
         """
         특정 batch_id로 생성된 모든 노드 삭제 (롤백).
@@ -912,7 +901,7 @@ class QAKnowledgeGraph:
 
         provider = self._graph_provider
         if provider is None:
-            with self._graph.session() as session:
+            with self._graph.session() as session:  # type: ignore[union-attr]
                 count_result = list(session.run(count_cypher, batch_id=batch_id))
                 count = count_result[0]["cnt"] if count_result else 0
                 session.run(delete_cypher, batch_id=batch_id)
