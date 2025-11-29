@@ -8,7 +8,7 @@ from src.config.exceptions import ValidationFailedError
 
 
 @pytest.mark.asyncio
-async def test_load_input_data_valid_candidates(tmp_path: Path):
+async def test_load_input_data_valid_candidates(tmp_path: Path) -> None:
     base_dir = tmp_path
     (base_dir / "input_ocr.txt").write_text("sample ocr text", encoding="utf-8")
     (base_dir / "input_candidates.json").write_text(
@@ -26,7 +26,7 @@ async def test_load_input_data_valid_candidates(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_load_input_data_missing_candidate_key(tmp_path: Path):
+async def test_load_input_data_missing_candidate_key(tmp_path: Path) -> None:
     base_dir = tmp_path
     (base_dir / "input_ocr.txt").write_text("ocr text", encoding="utf-8")
     (base_dir / "input_candidates.json").write_text(
@@ -38,7 +38,7 @@ async def test_load_input_data_missing_candidate_key(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_load_input_data_empty_candidate_content(tmp_path: Path):
+async def test_load_input_data_empty_candidate_content(tmp_path: Path) -> None:
     base_dir = tmp_path
     (base_dir / "input_ocr.txt").write_text("ocr text", encoding="utf-8")
     (base_dir / "input_candidates.json").write_text(
@@ -50,7 +50,7 @@ async def test_load_input_data_empty_candidate_content(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_load_input_data_raw_fallback(tmp_path: Path):
+async def test_load_input_data_raw_fallback(tmp_path: Path) -> None:
     base_dir = tmp_path
     (base_dir / "input_ocr.txt").write_text("ocr text", encoding="utf-8")
     raw_text = "A: alpha\nB: beta\nC: gamma"

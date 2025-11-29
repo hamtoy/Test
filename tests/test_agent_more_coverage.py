@@ -37,7 +37,7 @@ def _make_agent(monkeypatch):
     return GeminiAgent(AppConfig(), jinja_env=_dummy_env())
 
 
-def _patch_protos(monkeypatch):
+def _patch_protos(monkeypatch) -> None:
     class _Finish:
         STOP = "STOP"
         MAX_TOKENS = "MAX_TOKENS"
@@ -53,12 +53,12 @@ def _patch_protos(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_execute_api_call_blocks_on_safety(monkeypatch):
+async def test_execute_api_call_blocks_on_safety(monkeypatch) -> None:
     _patch_protos(monkeypatch)
     agent = _make_agent(monkeypatch)
 
     class _Resp:
-        def __init__(self):
+        def __init__(self) -> None:
             self.candidates = [types.SimpleNamespace(finish_reason="BLOCK")]
             self.prompt_feedback = "PF"
             self.usage_metadata = None
@@ -73,19 +73,19 @@ async def test_execute_api_call_blocks_on_safety(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_execute_api_call_fallbacks_to_candidate_part(monkeypatch):
+async def test_execute_api_call_fallbacks_to_candidate_part(monkeypatch) -> None:
     _patch_protos(monkeypatch)
     agent = _make_agent(monkeypatch)
 
     class _Part:
-        def __init__(self):
+        def __init__(self) -> None:
             self.text = "fallback-text"
 
     class _Content:
         parts = [_Part()]
 
     class _Resp:
-        def __init__(self):
+        def __init__(self) -> None:
             self.candidates = [
                 types.SimpleNamespace(finish_reason="STOP", content=_Content())
             ]
@@ -95,7 +95,7 @@ async def test_execute_api_call_fallbacks_to_candidate_part(monkeypatch):
             )
 
         @property
-        def text(self):
+        def text(self) -> None:
             raise ValueError("no text")
 
     class _Model:
@@ -108,7 +108,7 @@ async def test_execute_api_call_fallbacks_to_candidate_part(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_generate_query_empty_response(monkeypatch):
+async def test_generate_query_empty_response(monkeypatch) -> None:
     agent = _make_agent(monkeypatch)
     monkeypatch.setattr(agent, "_call_api_with_retry", AsyncMock(return_value="   "))
     result = await agent.generate_query("ocr", "user prompt")
@@ -116,7 +116,7 @@ async def test_generate_query_empty_response(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_evaluate_responses_empty_raises(monkeypatch):
+async def test_evaluate_responses_empty_raises(monkeypatch) -> None:
     agent = _make_agent(monkeypatch)
     monkeypatch.setattr(agent, "_call_api_with_retry", AsyncMock(return_value=" "))
     with pytest.raises(ValueError):
@@ -124,7 +124,7 @@ async def test_evaluate_responses_empty_raises(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_rewrite_best_answer_unwraps(monkeypatch):
+async def test_rewrite_best_answer_unwraps(monkeypatch) -> None:
     agent = _make_agent(monkeypatch)
     monkeypatch.setattr(
         agent,

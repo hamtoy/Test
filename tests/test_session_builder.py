@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scripts.build_session import SessionContext, build_session
 
 
-def test_basic_session():
+def test_basic_session() -> None:
     """Test basic 3-turn session without tables."""
     ctx = SessionContext(
         image_path="test.png",
@@ -42,7 +42,7 @@ def test_basic_session():
     print("✓ test_basic_session passed")
 
 
-def test_high_density_4turn():
+def test_high_density_4turn() -> None:
     """Test 4-turn high density session uses summary."""
     ctx = SessionContext(
         image_path="test.png",
@@ -60,7 +60,7 @@ def test_high_density_4turn():
     print("✓ test_high_density_4turn passed")
 
 
-def test_table_chart_case():
+def test_table_chart_case() -> None:
     """Test session with table/chart present."""
     ctx = SessionContext(
         image_path="test.png",
@@ -80,7 +80,7 @@ def test_table_chart_case():
     )
 
 
-def test_invalid_turn_count():
+def test_invalid_turn_count() -> None:
     """Test that invalid turn counts are rejected."""
     ctx = SessionContext(
         image_path="test.png",

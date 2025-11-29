@@ -4,9 +4,9 @@ import types
 import src.llm.gemini as gmc
 
 
-def _fake_genai(monkeypatch):
+def _fake_genai(monkeypatch) -> None:
     class _FakeModel:
-        def __init__(self, name: str):
+        def __init__(self, name: str) -> None:
             self.name = name
 
         def generate_content(self, prompt, generation_config=None):
@@ -20,7 +20,7 @@ def _fake_genai(monkeypatch):
     monkeypatch.setattr(gmc, "genai", fake)
 
 
-def test_evaluate_parses_scores(monkeypatch):
+def test_evaluate_parses_scores(monkeypatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "key")
     _fake_genai(monkeypatch)
 
@@ -37,13 +37,13 @@ def test_evaluate_parses_scores(monkeypatch):
     assert result["notes"].startswith("점수 파싱")
 
 
-def test_evaluate_api_error_fallback(monkeypatch):
+def test_evaluate_api_error_fallback(monkeypatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "key")
     _fake_genai(monkeypatch)
 
     client = gmc.GeminiModelClient()
 
-    def _raise(prompt, role="evaluator"):
+    def _raise(prompt, role="evaluator") -> None:
         raise gmc.google_exceptions.GoogleAPIError("boom")  # type: ignore[attr-defined]
 
     client.generate = _raise  # type: ignore[method-assign, assignment]
@@ -52,13 +52,13 @@ def test_evaluate_api_error_fallback(monkeypatch):
     assert "길이 기반" in result["notes"]
 
 
-def test_rewrite_handles_api_error(monkeypatch):
+def test_rewrite_handles_api_error(monkeypatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "key")
     _fake_genai(monkeypatch)
 
     client = gmc.GeminiModelClient()
 
-    def _raise(prompt, role="rewriter"):
+    def _raise(prompt, role="rewriter") -> None:
         raise gmc.google_exceptions.GoogleAPIError("rewrite error")  # type: ignore[attr-defined]
 
     client.generate = _raise  # type: ignore[method-assign, assignment]

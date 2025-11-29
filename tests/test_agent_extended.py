@@ -10,9 +10,9 @@ import google.generativeai.caching as caching
 
 
 @pytest.mark.asyncio
-async def test_agent_execute_api_call_safety_error(monkeypatch, tmp_path):
+async def test_agent_execute_api_call_safety_error(monkeypatch, tmp_path) -> None:
     class _Config:
-        def __init__(self):
+        def __init__(self) -> None:
             self.model_name = "tier-model"
             self.max_concurrency = 1
             self.temperature = 0.1
@@ -48,7 +48,7 @@ async def test_agent_execute_api_call_safety_error(monkeypatch, tmp_path):
     )()
 
     class _Resp:
-        def __init__(self):
+        def __init__(self) -> None:
             self.candidates = [
                 type(
                     "C",
@@ -66,10 +66,10 @@ async def test_agent_execute_api_call_safety_error(monkeypatch, tmp_path):
         await agent._execute_api_call(_Model(), "prompt")
 
 
-def test_agent_cache_budget_and_pricing(monkeypatch, tmp_path):
+def test_agent_cache_budget_and_pricing(monkeypatch, tmp_path) -> None:
     # Minimal config stub
     class _Config:
-        def __init__(self):
+        def __init__(self) -> None:
             self.max_concurrency = 1
             self.temperature = 0.1
             self.max_output_tokens = 16
@@ -116,9 +116,9 @@ def test_agent_cache_budget_and_pricing(monkeypatch, tmp_path):
         agent.check_budget()
 
 
-def test_agent_local_cache_load_and_store(monkeypatch, tmp_path):
+def test_agent_local_cache_load_and_store(monkeypatch, tmp_path) -> None:
     class _Config:
-        def __init__(self):
+        def __init__(self) -> None:
             self.max_concurrency = 1
             self.temperature = 0.1
             self.max_output_tokens = 16
@@ -152,9 +152,9 @@ def test_agent_local_cache_load_and_store(monkeypatch, tmp_path):
     assert cached is not None
 
 
-def test_agent_get_total_cost_invalid_model(monkeypatch):
+def test_agent_get_total_cost_invalid_model(monkeypatch) -> None:
     class _Config:
-        def __init__(self):
+        def __init__(self) -> None:
             self.model_name = "unknown-model"
             self.max_concurrency = 1
             self.temperature = 0.1
@@ -178,7 +178,7 @@ def test_agent_get_total_cost_invalid_model(monkeypatch):
 
     # Need to update config with temp path
     class _ConfigWithTemp:
-        def __init__(self):
+        def __init__(self) -> None:
             self.model_name = "unknown-model"
             self.max_concurrency = 1
             self.temperature = 0.1
@@ -198,9 +198,9 @@ def test_agent_get_total_cost_invalid_model(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_agent_call_api_with_retry(monkeypatch, tmp_path):
+async def test_agent_call_api_with_retry(monkeypatch, tmp_path) -> None:
     class _Config:
-        def __init__(self):
+        def __init__(self) -> None:
             self.model_name = "tier-model"
             self.max_concurrency = 1
             self.temperature = 0.1

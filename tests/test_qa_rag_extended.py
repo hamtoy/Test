@@ -5,7 +5,7 @@ import sys
 from src.qa import rag_system as qrs
 
 
-def test_qa_rag_system_embeddings_and_rules(monkeypatch):
+def test_qa_rag_system_embeddings_and_rules(monkeypatch) -> None:
     calls: list[str] = []
     monkeypatch.setattr(qrs.genai, "configure", lambda api_key: calls.append("config"))  # type: ignore[attr-defined]
     monkeypatch.setattr(
@@ -28,7 +28,7 @@ def test_qa_rag_system_embeddings_and_rules(monkeypatch):
     assert result == ["rule"]
 
 
-def test_qa_rag_vector_store_init(monkeypatch):
+def test_qa_rag_vector_store_init(monkeypatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "k")
 
     class _FakeNeo4jVector:
@@ -48,12 +48,12 @@ def test_qa_rag_vector_store_init(monkeypatch):
     assert kg._vector_store == "vector"
 
 
-def test_qa_rag_vector_store_handles_errors(monkeypatch):
+def test_qa_rag_vector_store_handles_errors(monkeypatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "k")
 
     class _FakeNeo4jVector:
         @classmethod
-        def from_existing_graph(cls, *args, **kwargs):
+        def from_existing_graph(cls, *args, **kwargs) -> None:
             raise ValueError("bad config")
 
     sys.modules["langchain_neo4j"] = types.SimpleNamespace(Neo4jVector=_FakeNeo4jVector)  # type: ignore[assignment]
@@ -67,13 +67,13 @@ def test_qa_rag_vector_store_handles_errors(monkeypatch):
     assert kg._vector_store is None
 
 
-def test_qa_rag_find_relevant_rules(monkeypatch):
+def test_qa_rag_find_relevant_rules(monkeypatch) -> None:
     kg = qrs.QAKnowledgeGraph.__new__(qrs.QAKnowledgeGraph)
     kg._vector_store = None
     assert kg.find_relevant_rules("q") == []
 
     class _Doc:
-        def __init__(self, text):
+        def __init__(self, text) -> None:
             self.page_content = text
 
     kg._vector_store = types.SimpleNamespace(
@@ -82,9 +82,9 @@ def test_qa_rag_find_relevant_rules(monkeypatch):
     assert kg.find_relevant_rules("q", k=1) == ["r1"]
 
 
-def test_qa_rag_validate_session(monkeypatch):
+def test_qa_rag_validate_session(monkeypatch) -> None:
     class _SessionContext:
-        def __init__(self, **kwargs):
+        def __init__(self, **kwargs) -> None:
             if kwargs.get("fail"):
                 raise TypeError("boom")
 
@@ -104,7 +104,7 @@ def test_qa_rag_validate_session(monkeypatch):
     assert res2["ok"] is False
 
 
-def test_qa_rag_vector_store_skips_without_key(monkeypatch):
+def test_qa_rag_vector_store_skips_without_key(monkeypatch) -> None:
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     kg = qrs.QAKnowledgeGraph.__new__(qrs.QAKnowledgeGraph)
     kg.neo4j_uri = "uri"

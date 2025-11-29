@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 class TestRedisEvalCacheNoRedis:
     """Test RedisEvalCache without Redis (in-memory mode)."""
 
-    def test_init_without_redis(self):
+    def test_init_without_redis(self) -> None:
         """Test initialization without Redis client."""
         from src.caching.redis_cache import RedisEvalCache
 
@@ -19,7 +19,7 @@ class TestRedisEvalCacheNoRedis:
         assert cache.prefix == "lats:eval:"
         assert cache.memory_cache == {}
 
-    def test_init_with_redis(self):
+    def test_init_with_redis(self) -> None:
         """Test initialization with Redis client."""
         from src.caching.redis_cache import RedisEvalCache
 
@@ -31,7 +31,7 @@ class TestRedisEvalCacheNoRedis:
         assert cache.use_redis is True
 
     @pytest.mark.asyncio
-    async def test_get_memory_only(self):
+    async def test_get_memory_only(self) -> None:
         """Test get from memory cache when Redis is not available."""
         from src.caching.redis_cache import RedisEvalCache
 
@@ -42,7 +42,7 @@ class TestRedisEvalCacheNoRedis:
         assert result == 0.95
 
     @pytest.mark.asyncio
-    async def test_get_missing_key(self):
+    async def test_get_missing_key(self) -> None:
         """Test get returns None for missing key."""
         from src.caching.redis_cache import RedisEvalCache
 
@@ -52,7 +52,7 @@ class TestRedisEvalCacheNoRedis:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_set_memory_only(self):
+    async def test_set_memory_only(self) -> None:
         """Test set to memory cache when Redis is not available."""
         from src.caching.redis_cache import RedisEvalCache
 
@@ -63,7 +63,7 @@ class TestRedisEvalCacheNoRedis:
         assert cache.memory_cache["test_key"] == 0.85
 
     @pytest.mark.asyncio
-    async def test_clear_memory_only(self):
+    async def test_clear_memory_only(self) -> None:
         """Test clear memory cache."""
         from src.caching.redis_cache import RedisEvalCache
 
@@ -75,7 +75,7 @@ class TestRedisEvalCacheNoRedis:
 
         assert cache.memory_cache == {}
 
-    def test_get_stats(self):
+    def test_get_stats(self) -> None:
         """Test get_stats returns correct stats."""
         from src.caching.redis_cache import RedisEvalCache
 
@@ -93,7 +93,7 @@ class TestRedisEvalCacheWithRedis:
     """Test RedisEvalCache with Redis mock."""
 
     @pytest.mark.asyncio
-    async def test_get_from_redis(self):
+    async def test_get_from_redis(self) -> None:
         """Test get retrieves from Redis."""
         from src.caching.redis_cache import RedisEvalCache
 
@@ -108,7 +108,7 @@ class TestRedisEvalCacheWithRedis:
         mock_redis.get.assert_called_once_with("lats:eval:test_key")
 
     @pytest.mark.asyncio
-    async def test_get_from_redis_returns_none(self):
+    async def test_get_from_redis_returns_none(self) -> None:
         """Test get returns None when Redis has no value."""
         from src.caching.redis_cache import RedisEvalCache
 
@@ -122,7 +122,7 @@ class TestRedisEvalCacheWithRedis:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_get_redis_error_fallback(self):
+    async def test_get_redis_error_fallback(self) -> None:
         """Test get falls back to memory on Redis error."""
         from src.caching.redis_cache import RedisEvalCache
 
@@ -137,7 +137,7 @@ class TestRedisEvalCacheWithRedis:
         assert result == 0.75
 
     @pytest.mark.asyncio
-    async def test_set_to_redis(self):
+    async def test_set_to_redis(self) -> None:
         """Test set stores in Redis and memory."""
         from src.caching.redis_cache import RedisEvalCache
 
@@ -152,7 +152,7 @@ class TestRedisEvalCacheWithRedis:
         assert cache.memory_cache["test_key"] == 0.85
 
     @pytest.mark.asyncio
-    async def test_set_redis_error_fallback(self):
+    async def test_set_redis_error_fallback(self) -> None:
         """Test set stores in memory only on Redis error."""
         from src.caching.redis_cache import RedisEvalCache
 
@@ -167,7 +167,7 @@ class TestRedisEvalCacheWithRedis:
         assert cache.memory_cache["test_key"] == 0.85
 
     @pytest.mark.asyncio
-    async def test_clear_redis_success(self):
+    async def test_clear_redis_success(self) -> None:
         """Test clear removes all Redis keys."""
         from src.caching.redis_cache import RedisEvalCache
 
@@ -190,7 +190,7 @@ class TestRedisEvalCacheWithRedis:
         assert cache.memory_cache == {}
 
     @pytest.mark.asyncio
-    async def test_clear_redis_error(self):
+    async def test_clear_redis_error(self) -> None:
         """Test clear still clears memory on Redis error."""
         from src.caching.redis_cache import RedisEvalCache
 
@@ -205,7 +205,7 @@ class TestRedisEvalCacheWithRedis:
         # Memory should still be cleared
         assert cache.memory_cache == {}
 
-    def test_get_stats_with_redis(self):
+    def test_get_stats_with_redis(self) -> None:
         """Test get_stats with Redis enabled."""
         from src.caching.redis_cache import RedisEvalCache
 

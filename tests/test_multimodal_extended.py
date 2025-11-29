@@ -24,7 +24,7 @@ sys.modules["pytesseract"] = _StubPytesseract("pytesseract")
 from src.features import multimodal as mmu  # noqa: E402
 
 
-def test_multimodal_understanding_uses_fakes(monkeypatch):
+def test_multimodal_understanding_uses_fakes(monkeypatch) -> None:
     # Import the actual multimodal module to patch the right namespace
     from src.features import multimodal as features_multimodal
 
@@ -37,7 +37,7 @@ def test_multimodal_understanding_uses_fakes(monkeypatch):
         def __exit__(self, exc_type, exc, tb):
             return False
 
-        def run(self, _query, **params):
+        def run(self, _query, **params) -> None:
             fake_saved.update(params)
 
     class _FakeGraph:
@@ -45,7 +45,7 @@ def test_multimodal_understanding_uses_fakes(monkeypatch):
             return _FakeSession()
 
     class _KG:
-        def __init__(self):
+        def __init__(self) -> None:
             self._graph = _FakeGraph()
 
     class _FakeImg:
@@ -71,7 +71,7 @@ def test_multimodal_understanding_uses_fakes(monkeypatch):
     assert fake_saved.get("path") == "fake.png"
 
 
-def test_multimodal_with_graph_session(monkeypatch):
+def test_multimodal_with_graph_session(monkeypatch) -> None:
     """Test multimodal analysis with graph_session attribute."""
     from src.features import multimodal as features_multimodal
 
@@ -84,11 +84,11 @@ def test_multimodal_with_graph_session(monkeypatch):
         def __exit__(self, exc_type, exc, tb):
             return False
 
-        def run(self, _query, **params):
+        def run(self, _query, **params) -> None:
             fake_saved.update(params)
 
     class _KG:
-        def __init__(self):
+        def __init__(self) -> None:
             self.graph_session = lambda: _FakeSession()
 
     class _FakeImg:
@@ -115,7 +115,7 @@ def test_multimodal_with_graph_session(monkeypatch):
     assert meta["path"] == "test.png"
 
 
-def test_multimodal_no_graph(monkeypatch):
+def test_multimodal_no_graph(monkeypatch) -> None:
     """Test multimodal analysis when no graph is available."""
     from src.features import multimodal as features_multimodal
 
@@ -146,7 +146,7 @@ def test_multimodal_no_graph(monkeypatch):
     assert meta["topics"] == ["word"]
 
 
-def test_multimodal_session_returns_none(monkeypatch):
+def test_multimodal_session_returns_none(monkeypatch) -> None:
     """Test multimodal analysis when session context returns None."""
     from src.features import multimodal as features_multimodal
 
@@ -162,7 +162,7 @@ def test_multimodal_session_returns_none(monkeypatch):
             return _NoneSession()
 
     class _KG:
-        def __init__(self):
+        def __init__(self) -> None:
             self._graph = _FakeGraph()
 
     class _FakeImg:
@@ -187,7 +187,7 @@ def test_multimodal_session_returns_none(monkeypatch):
     assert "path" in meta
 
 
-def test_multimodal_exception_handling(monkeypatch):
+def test_multimodal_exception_handling(monkeypatch) -> None:
     """Test multimodal analysis handles exceptions in graph operations."""
     from src.features import multimodal as features_multimodal
 
@@ -198,7 +198,7 @@ def test_multimodal_exception_handling(monkeypatch):
         def __exit__(self, exc_type, exc, tb):
             return False
 
-        def run(self, _query, **params):
+        def run(self, _query, **params) -> None:
             raise Exception("Neo4j connection failed")
 
     class _FakeGraph:
@@ -206,7 +206,7 @@ def test_multimodal_exception_handling(monkeypatch):
             return _ErrorSession()
 
     class _KG:
-        def __init__(self):
+        def __init__(self) -> None:
             self._graph = _FakeGraph()
 
     class _FakeImg:
@@ -232,7 +232,7 @@ def test_multimodal_exception_handling(monkeypatch):
     assert meta["path"] == "test.png"
 
 
-def test_detect_table(monkeypatch):
+def test_detect_table(monkeypatch) -> None:
     """Test table detection method."""
 
     class _KG:
@@ -248,7 +248,7 @@ def test_detect_table(monkeypatch):
     assert result is False
 
 
-def test_detect_chart(monkeypatch):
+def test_detect_chart(monkeypatch) -> None:
     """Test chart detection method."""
 
     class _KG:
@@ -264,7 +264,7 @@ def test_detect_chart(monkeypatch):
     assert result is False
 
 
-def test_extract_topics_empty_text():
+def test_extract_topics_empty_text() -> None:
     """Test topic extraction with empty text."""
 
     class _KG:
@@ -276,7 +276,7 @@ def test_extract_topics_empty_text():
     assert topics == []
 
 
-def test_extract_topics_short_words():
+def test_extract_topics_short_words() -> None:
     """Test topic extraction filters out short words."""
 
     class _KG:
@@ -289,7 +289,7 @@ def test_extract_topics_short_words():
     assert topics == []
 
 
-def test_extract_topics_frequency():
+def test_extract_topics_frequency() -> None:
     """Test topic extraction returns most common words."""
 
     class _KG:

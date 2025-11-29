@@ -27,7 +27,7 @@ import pytest
 class TestPromoteRulesRun:
     """Tests for run_promote_rules main function."""
 
-    def test_run_promote_rules_no_log_files(self, tmp_path, capsys):
+    def test_run_promote_rules_no_log_files(self, tmp_path, capsys) -> None:
         """Test run_promote_rules with no log files."""
         from src.automation.promote_rules import run_promote_rules
 
@@ -40,7 +40,7 @@ class TestPromoteRulesRun:
             captured = capsys.readouterr()
             assert "로그 파일이 없습니다" in captured.out
 
-    def test_run_promote_rules_no_comments(self, tmp_path, capsys):
+    def test_run_promote_rules_no_comments(self, tmp_path, capsys) -> None:
         """Test run_promote_rules with log files but no meaningful comments."""
         from src.automation.promote_rules import run_promote_rules
 
@@ -62,7 +62,7 @@ class TestPromoteRulesRun:
             captured = capsys.readouterr()
             assert "추출된 코멘트가 없습니다" in captured.out
 
-    def test_run_promote_rules_llm_failure(self, tmp_path, capsys):
+    def test_run_promote_rules_llm_failure(self, tmp_path, capsys) -> None:
         """Test run_promote_rules when LLM call fails."""
         from src.automation.promote_rules import run_promote_rules
 
@@ -91,7 +91,7 @@ class TestPromoteRulesRun:
             captured = capsys.readouterr()
             assert "LLM 호출 실패" in captured.out
 
-    def test_run_promote_rules_success(self, tmp_path, capsys):
+    def test_run_promote_rules_success(self, tmp_path, capsys) -> None:
         """Test run_promote_rules with successful LLM response."""
         from src.automation.promote_rules import run_promote_rules
 
@@ -127,7 +127,7 @@ class TestPromoteRulesRun:
             output_files = list(tmp_path.glob("promoted_suggestions_*.json"))
             assert len(output_files) == 1
 
-    def test_run_promote_rules_parse_failure(self, tmp_path, capsys):
+    def test_run_promote_rules_parse_failure(self, tmp_path, capsys) -> None:
         """Test run_promote_rules when LLM response parsing fails."""
         from src.automation.promote_rules import run_promote_rules
 
@@ -160,7 +160,7 @@ class TestPromoteRulesRun:
 class TestPromoteRulesMain:
     """Tests for the main CLI entrypoint."""
 
-    def test_main_success(self, tmp_path, capsys):
+    def test_main_success(self, tmp_path, capsys) -> None:
         """Test main function with successful execution."""
         from src.automation import promote_rules
 
@@ -186,7 +186,7 @@ class TestPromoteRulesMain:
 
         assert exc_info.value.code == 0
 
-    def test_main_no_rules(self, tmp_path, capsys):
+    def test_main_no_rules(self, tmp_path, capsys) -> None:
         """Test main function with no rules found."""
         from src.automation import promote_rules
 
@@ -198,7 +198,7 @@ class TestPromoteRulesMain:
 
         assert exc_info.value.code == 1
 
-    def test_main_environment_error(self, tmp_path, capsys):
+    def test_main_environment_error(self, tmp_path, capsys) -> None:
         """Test main function with environment error."""
         from src.automation import promote_rules
 
@@ -231,7 +231,7 @@ class TestWorkerData2Neo:
     """Tests for Data2Neo extraction in worker."""
 
     @pytest.mark.asyncio
-    async def test_run_data2neo_extraction_no_extractor(self, monkeypatch):
+    async def test_run_data2neo_extraction_no_extractor(self, monkeypatch) -> None:
         """Test _run_data2neo_extraction without extractor falls back."""
         from src.infra import worker
 
@@ -250,7 +250,7 @@ class TestWorkerData2Neo:
     @pytest.mark.asyncio
     async def test_run_data2neo_extraction_placeholder_content(
         self, monkeypatch, tmp_path
-    ):
+    ) -> None:
         """Test _run_data2neo_extraction with placeholder content."""
         from src.infra import worker
 
@@ -271,7 +271,7 @@ class TestWorkerData2Neo:
         assert result["request_id"] == "r2"
 
     @pytest.mark.asyncio
-    async def test_run_data2neo_extraction_success(self, monkeypatch, tmp_path):
+    async def test_run_data2neo_extraction_success(self, monkeypatch, tmp_path) -> None:
         """Test _run_data2neo_extraction with successful extraction."""
         from src.infra import worker
 
@@ -303,7 +303,7 @@ class TestWorkerData2Neo:
         assert result["data2neo"]["entity_count"] == 2
 
     @pytest.mark.asyncio
-    async def test_run_data2neo_extraction_error(self, monkeypatch, tmp_path):
+    async def test_run_data2neo_extraction_error(self, monkeypatch, tmp_path) -> None:
         """Test _run_data2neo_extraction handles extraction error."""
         from src.infra import worker
 
@@ -336,7 +336,7 @@ class TestWorkerRedis:
     """Tests for Redis-related worker functions."""
 
     @pytest.mark.asyncio
-    async def test_ensure_redis_ready_no_client(self, monkeypatch):
+    async def test_ensure_redis_ready_no_client(self, monkeypatch) -> None:
         """Test ensure_redis_ready without redis client."""
         from src.infra import worker
 
@@ -346,7 +346,7 @@ class TestWorkerRedis:
             await worker.ensure_redis_ready()
 
     @pytest.mark.asyncio
-    async def test_ensure_redis_ready_ping_fails(self, monkeypatch):
+    async def test_ensure_redis_ready_ping_fails(self, monkeypatch) -> None:
         """Test ensure_redis_ready when ping returns False."""
         from src.infra import worker
 
@@ -364,11 +364,11 @@ class TestWorkerHandleOcrTask:
     """Tests for handle_ocr_task edge cases."""
 
     @pytest.mark.asyncio
-    async def test_handle_ocr_task_data2neo_toggle(self, monkeypatch):
+    async def test_handle_ocr_task_data2neo_toggle(self, monkeypatch) -> None:
         """Test handle_ocr_task with Data2Neo enabled."""
         from src.infra import worker
 
-        async def mock_ready():
+        async def mock_ready() -> None:
             pass
 
         monkeypatch.setattr(worker, "ensure_redis_ready", mock_ready)
@@ -394,7 +394,7 @@ class TestWorkerHandleOcrTask:
         class MockBroker:
             published = []
 
-            async def publish(self, msg, channel):
+            async def publish(self, msg, channel) -> None:
                 self.published.append((channel, msg))
 
         broker = MockBroker()
@@ -407,11 +407,11 @@ class TestWorkerHandleOcrTask:
         assert written[0]["request_id"] == "d1"
 
     @pytest.mark.asyncio
-    async def test_handle_ocr_task_redis_not_ready(self, monkeypatch):
+    async def test_handle_ocr_task_redis_not_ready(self, monkeypatch) -> None:
         """Test handle_ocr_task continues when Redis not ready."""
         from src.infra import worker
 
-        async def mock_ready_fails():
+        async def mock_ready_fails() -> None:
             raise RuntimeError("Redis not available")
 
         monkeypatch.setattr(worker, "ensure_redis_ready", mock_ready_fails)
@@ -434,7 +434,7 @@ class TestWorkerHandleOcrTask:
         class MockBroker:
             published = []
 
-            async def publish(self, msg, channel):
+            async def publish(self, msg, channel) -> None:
                 self.published.append((channel, msg))
 
         broker = MockBroker()
@@ -455,14 +455,14 @@ class TestMainEntryPoint:
     """Tests for main.py entry point."""
 
     @pytest.mark.asyncio
-    async def test_main_value_error(self, monkeypatch, tmp_path):
+    async def test_main_value_error(self, monkeypatch, tmp_path) -> None:
         """Test main handles ValueError during initialization."""
         import src.main as main_module
 
         template_dir = tmp_path / "templates"
         template_dir.mkdir(parents=True)
 
-        def raise_value_error():
+        def raise_value_error() -> None:
             raise ValueError("Invalid configuration")
 
         monkeypatch.setenv("LOG_FILE", str(tmp_path / "app.log"))
@@ -480,13 +480,13 @@ class TestMainEntryPoint:
         assert exc_info.value.code == 1
 
     @pytest.mark.asyncio
-    async def test_main_file_not_found(self, monkeypatch, tmp_path):
+    async def test_main_file_not_found(self, monkeypatch, tmp_path) -> None:
         """Test main handles FileNotFoundError during initialization."""
         import src.main as main_module
 
         # Create a config that points to non-existent template_dir
         class FakeConfig:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.api_key = "AIza" + "0" * 35
                 self.template_dir = tmp_path / "nonexistent_templates"
                 self.input_dir = tmp_path / "inputs"
@@ -550,7 +550,7 @@ class TestGraphData2NeoExtractor:
     @pytest.mark.asyncio
     async def test_extract_entities_api_error(
         self, mock_config, mock_agent, mock_templates
-    ):
+    ) -> None:
         """Test extract_entities handles API errors."""
         from jinja2 import Environment
 
@@ -571,7 +571,7 @@ class TestGraphData2NeoExtractor:
     @pytest.mark.asyncio
     async def test_write_to_graph_with_dates(
         self, mock_config, mock_agent, mock_templates
-    ):
+    ) -> None:
         """Test write_to_graph writes date entities."""
         from jinja2 import Environment
 
@@ -608,7 +608,7 @@ class TestGraphData2NeoExtractor:
     @pytest.mark.asyncio
     async def test_write_to_graph_with_document_rules(
         self, mock_config, mock_agent, mock_templates
-    ):
+    ) -> None:
         """Test write_to_graph writes document rule entities."""
         from jinja2 import Environment
 
@@ -644,7 +644,7 @@ class TestGraphData2NeoExtractor:
     @pytest.mark.asyncio
     async def test_write_to_graph_relationship_error(
         self, mock_config, mock_agent, mock_templates
-    ):
+    ) -> None:
         """Test write_to_graph handles relationship creation errors."""
         from jinja2 import Environment
 
@@ -682,7 +682,9 @@ class TestGraphData2NeoExtractor:
         assert counts["persons"] == 1
         assert counts["relationships"] == 0  # Failed to create
 
-    def test_parse_partial_result(self, mock_config, mock_agent, mock_templates):
+    def test_parse_partial_result(
+        self, mock_config, mock_agent, mock_templates
+    ) -> None:
         """Test _parse_partial_result handles malformed data."""
         from jinja2 import Environment
 
@@ -738,7 +740,7 @@ class TestWorkflowExecutor:
     """Tests for workflow executor."""
 
     @pytest.mark.asyncio
-    async def test_load_checkpoint_records_no_resume(self):
+    async def test_load_checkpoint_records_no_resume(self) -> None:
         """Test _load_checkpoint_records returns empty when resume is False."""
         from src.workflow.executor import _load_checkpoint_records
 
@@ -750,7 +752,7 @@ class TestWorkflowExecutor:
         assert result == {}
 
     @pytest.mark.asyncio
-    async def test_load_checkpoint_records_with_resume(self, tmp_path):
+    async def test_load_checkpoint_records_with_resume(self, tmp_path) -> None:
         """Test _load_checkpoint_records loads records when resume is True."""
         from src.workflow.executor import _load_checkpoint_records
 
@@ -773,7 +775,7 @@ class TestWorkflowExecutor:
             logger.info.assert_called()
 
     @pytest.mark.asyncio
-    async def test_load_candidates_auto_mode(self, tmp_path):
+    async def test_load_candidates_auto_mode(self, tmp_path) -> None:
         """Test _load_candidates in AUTO mode."""
         from src.workflow.executor import _load_candidates
         from src.config import AppConfig
@@ -799,7 +801,7 @@ class TestWorkflowExecutor:
             logger.info.assert_any_call("AUTO 모드: 데이터 자동 로딩 중...")
 
     @pytest.mark.asyncio
-    async def test_load_candidates_interactive_skip_reload(self, tmp_path):
+    async def test_load_candidates_interactive_skip_reload(self, tmp_path) -> None:
         """Test _load_candidates when user skips reload."""
         from src.workflow.executor import _load_candidates
         from src.config import AppConfig
@@ -828,7 +830,7 @@ class TestWorkflowExecutor:
             logger.info.assert_any_call("재로딩 없이 진행")
 
     @pytest.mark.asyncio
-    async def test_load_candidates_interactive_reload_error(self, tmp_path):
+    async def test_load_candidates_interactive_reload_error(self, tmp_path) -> None:
         """Test _load_candidates handles reload error."""
         from src.workflow.executor import _load_candidates
         from src.config import AppConfig
@@ -857,7 +859,7 @@ class TestWorkflowExecutor:
             logger.error.assert_called()
 
     @pytest.mark.asyncio
-    async def test_create_context_cache_error(self):
+    async def test_create_context_cache_error(self) -> None:
         """Test _create_context_cache handles errors."""
         from src.workflow.executor import _create_context_cache
         from src.config.exceptions import CacheCreationError
@@ -874,11 +876,11 @@ class TestWorkflowExecutor:
         logger.warning.assert_called()
 
     @pytest.mark.asyncio
-    async def test_gather_results_handles_exceptions(self):
+    async def test_gather_results_handles_exceptions(self) -> None:
         """Test _gather_results handles and logs exceptions."""
         from src.workflow.executor import _gather_results
 
-        async def raise_error():
+        async def raise_error() -> None:
             raise ValueError("Task failed")
 
         logger = MagicMock()
@@ -890,7 +892,7 @@ class TestWorkflowExecutor:
         logger.error.assert_called()
 
     @pytest.mark.asyncio
-    async def test_gather_results_filters_none(self):
+    async def test_gather_results_filters_none(self) -> None:
         """Test _gather_results filters out None results."""
         from src.workflow.executor import _gather_results
         from src.core.models import (
@@ -927,7 +929,7 @@ class TestWorkflowExecutor:
         assert len(results) == 1
         assert results[0].query == "Q"
 
-    def test_resolve_checkpoint_path_default(self, tmp_path):
+    def test_resolve_checkpoint_path_default(self, tmp_path) -> None:
         """Test _resolve_checkpoint_path uses default path."""
         from src.workflow.executor import _resolve_checkpoint_path
         from src.config import AppConfig
@@ -939,7 +941,7 @@ class TestWorkflowExecutor:
 
         assert result == tmp_path / "checkpoint.jsonl"
 
-    def test_resolve_checkpoint_path_relative(self, tmp_path):
+    def test_resolve_checkpoint_path_relative(self, tmp_path) -> None:
         """Test _resolve_checkpoint_path handles relative path."""
         from src.workflow.executor import _resolve_checkpoint_path
         from src.config import AppConfig
@@ -952,7 +954,7 @@ class TestWorkflowExecutor:
         assert result == tmp_path / "custom.jsonl"
 
     @pytest.mark.asyncio
-    async def test_execute_workflow_cache_cleanup_error(self):
+    async def test_execute_workflow_cache_cleanup_error(self) -> None:
         """Test execute_workflow handles cache cleanup errors."""
         from src.workflow.executor import execute_workflow
         from src.core.models import EvaluationItem, EvaluationResultSchema
@@ -999,7 +1001,7 @@ class TestWorkflowExecutor:
             logger.warning.assert_any_call("Cache cleanup failed: %s", ANY)
 
     @pytest.mark.asyncio
-    async def test_execute_workflow_simple(self, tmp_path):
+    async def test_execute_workflow_simple(self, tmp_path) -> None:
         """Test execute_workflow_simple."""
         from src.workflow.executor import execute_workflow_simple
         from src.config import AppConfig
@@ -1043,7 +1045,7 @@ class TestWorkflowExecutor:
 class TestAnalysisInit:
     """Tests for analysis package __init__.py."""
 
-    def test_getattr_cross_validation_system(self):
+    def test_getattr_cross_validation_system(self) -> None:
         """Test lazy loading of CrossValidationSystem."""
         from src import analysis
 
@@ -1057,7 +1059,7 @@ class TestAnalysisInit:
 
         assert CrossValidationSystem is DirectImport
 
-    def test_getattr_invalid_attribute(self):
+    def test_getattr_invalid_attribute(self) -> None:
         """Test __getattr__ raises AttributeError for unknown attribute."""
         from src import analysis
 
@@ -1073,7 +1075,7 @@ class TestAnalysisInit:
 class TestInfraUtils:
     """Additional tests for infra utilities."""
 
-    def test_find_in_nested_list(self):
+    def test_find_in_nested_list(self) -> None:
         """Test _find_in_nested with list structures."""
         from src.infra.utils import _find_in_nested
 
@@ -1081,7 +1083,7 @@ class TestInfraUtils:
         result = _find_in_nested(obj, "target")
         assert result == "found"
 
-    def test_find_in_nested_not_found(self):
+    def test_find_in_nested_not_found(self) -> None:
         """Test _find_in_nested when key not found."""
         from src.infra.utils import _find_in_nested
 
@@ -1089,14 +1091,14 @@ class TestInfraUtils:
         result = _find_in_nested(obj, "nonexistent")
         assert result is None
 
-    def test_safe_json_parse_with_raise(self):
+    def test_safe_json_parse_with_raise(self) -> None:
         """Test safe_json_parse with raise_on_error=True."""
         from src.infra.utils import safe_json_parse
 
         with pytest.raises(Exception):
             safe_json_parse("invalid json {", raise_on_error=True)
 
-    def test_safe_json_parse_target_key(self):
+    def test_safe_json_parse_target_key(self) -> None:
         """Test safe_json_parse with target_key extraction."""
         from src.infra.utils import safe_json_parse
 
@@ -1104,7 +1106,7 @@ class TestInfraUtils:
         result = safe_json_parse(text, target_key="target")
         assert result == "value"
 
-    def test_clean_markdown_code_block(self):
+    def test_clean_markdown_code_block(self) -> None:
         """Test clean_markdown_code_block function."""
         from src.infra.utils import clean_markdown_code_block
 
@@ -1127,7 +1129,7 @@ class TestInfraUtils:
 class TestWorkflowExecutorAdditional:
     """Additional tests for workflow executor."""
 
-    def test_warn_budget_thresholds_at_threshold(self):
+    def test_warn_budget_thresholds_at_threshold(self) -> None:
         """Test _warn_budget_thresholds emits warnings at 80% threshold."""
         from src.workflow.executor import _warn_budget_thresholds
 
@@ -1153,7 +1155,7 @@ class TestWorkflowExecutorAdditional:
         assert logger.warning.call_count == 1  # Still 1
 
     @pytest.mark.asyncio
-    async def test_load_candidates_interactive_reload(self, tmp_path):
+    async def test_load_candidates_interactive_reload(self, tmp_path) -> None:
         """Test _load_candidates when user requests reload."""
         from src.workflow.executor import _load_candidates
         from src.config import AppConfig
@@ -1224,7 +1226,7 @@ class TestGraphData2NeoExtractorAdditional:
     @pytest.mark.asyncio
     async def test_write_to_graph_all_entity_types(
         self, mock_config, mock_agent, mock_templates
-    ):
+    ) -> None:
         """Test write_to_graph with all entity types."""
         from jinja2 import Environment
 

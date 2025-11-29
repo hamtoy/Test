@@ -2,7 +2,8 @@
 
 import asyncio
 import os
-from unittest.mock import patch, MagicMock, AsyncMock
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -10,7 +11,7 @@ import pytest
 class TestMainImports:
     """Tests for imports in main.py."""
 
-    def test_imports_are_accessible(self):
+    def test_imports_are_accessible(self) -> None:
         """Test that key imports from main.py are accessible."""
         from src.main import (  # type: ignore[attr-defined]
             parse_args,
@@ -36,7 +37,9 @@ class TestMainFunction:
     """Tests for main function."""
 
     @pytest.mark.asyncio
-    async def test_main_initialization_error(self, monkeypatch, tmp_path):
+    async def test_main_initialization_error(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """Test main function handles initialization errors."""
         # Set up environment
         valid_key = "AIza" + "A" * 35
@@ -65,7 +68,9 @@ class TestMainFunction:
             assert exc.value.code == 1
 
     @pytest.mark.asyncio
-    async def test_main_template_not_found(self, monkeypatch, tmp_path):
+    async def test_main_template_not_found(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """Test main function handles missing templates directory."""
         # Set up environment
         valid_key = "AIza" + "A" * 35
@@ -95,7 +100,9 @@ class TestMainFunction:
         assert exc.value.code == 1
 
     @pytest.mark.asyncio
-    async def test_main_success_flow(self, monkeypatch, tmp_path):
+    async def test_main_success_flow(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """Test main function successful initialization."""
         # Set up environment
         valid_key = "AIza" + "A" * 35
@@ -138,7 +145,9 @@ class TestMainFunction:
             mock_log_listener.stop.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_main_os_error(self, monkeypatch, tmp_path):
+    async def test_main_os_error(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """Test main function handles OSError."""
         # Set up environment
         valid_key = "AIza" + "A" * 35
@@ -166,7 +175,7 @@ class TestMainFunction:
 class TestMainEntryPoint:
     """Tests for __main__ block behavior."""
 
-    def test_windows_event_loop_policy(self, monkeypatch):
+    def test_windows_event_loop_policy(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test Windows event loop policy setting."""
         # Simulate Windows environment
         monkeypatch.setattr(os, "name", "nt")
@@ -186,7 +195,9 @@ class TestMainEntryPoint:
                 asyncio.set_event_loop_policy(policy)
                 mock_set_policy.assert_called()
 
-    def test_non_windows_event_loop_policy(self, monkeypatch):
+    def test_non_windows_event_loop_policy(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test non-Windows event loop policy (no change needed)."""
         # Simulate non-Windows environment
         monkeypatch.setattr(os, "name", "posix")
@@ -199,13 +210,13 @@ class TestMainEntryPoint:
 class TestConsoleOutput:
     """Tests for console output in main module."""
 
-    def test_console_import(self):
+    def test_console_import(self) -> None:
         """Test that console is properly imported."""
         from src.main import console  # type: ignore[attr-defined]
 
         assert console is not None
 
-    def test_user_interrupt_message_import(self):
+    def test_user_interrupt_message_import(self) -> None:
         """Test that USER_INTERRUPT_MESSAGE is properly imported."""
         from src.main import USER_INTERRUPT_MESSAGE  # type: ignore[attr-defined]
 

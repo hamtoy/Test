@@ -9,7 +9,9 @@ class TestCheckRedis:
     """Tests for check_redis function."""
 
     @pytest.mark.asyncio
-    async def test_redis_url_not_configured(self, monkeypatch):
+    async def test_redis_url_not_configured(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test when REDIS_URL is not set."""
         monkeypatch.delenv("REDIS_URL", raising=False)
         from src.infra.health import check_redis
@@ -19,7 +21,9 @@ class TestCheckRedis:
         assert "not configured" in result["reason"]
 
     @pytest.mark.asyncio
-    async def test_redis_connection_success(self, monkeypatch):
+    async def test_redis_connection_success(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test successful Redis connection."""
         monkeypatch.setenv("REDIS_URL", "redis://localhost:6379")
 
@@ -35,7 +39,7 @@ class TestCheckRedis:
             assert "latency_ms" in result
 
     @pytest.mark.asyncio
-    async def test_redis_import_error(self, monkeypatch):
+    async def test_redis_import_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test when redis.asyncio.from_url raises ImportError."""
         monkeypatch.setenv("REDIS_URL", "redis://localhost:6379")
 
@@ -51,7 +55,9 @@ class TestCheckRedis:
             assert result["status"] in ["skipped", "down"]
 
     @pytest.mark.asyncio
-    async def test_redis_connection_error(self, monkeypatch):
+    async def test_redis_connection_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test Redis connection failure."""
         monkeypatch.setenv("REDIS_URL", "redis://localhost:6379")
 
@@ -70,7 +76,9 @@ class TestCheckNeo4j:
     """Tests for check_neo4j function."""
 
     @pytest.mark.asyncio
-    async def test_neo4j_url_not_configured(self, monkeypatch):
+    async def test_neo4j_url_not_configured(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test when NEO4J_URI is not set."""
         monkeypatch.delenv("NEO4J_URI", raising=False)
         from src.infra.health import check_neo4j
@@ -80,7 +88,9 @@ class TestCheckNeo4j:
         assert "not configured" in result["reason"]
 
     @pytest.mark.asyncio
-    async def test_neo4j_connection_success(self, monkeypatch):
+    async def test_neo4j_connection_success(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test successful Neo4j connection."""
         monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
         monkeypatch.setenv("NEO4J_USER", "neo4j")
@@ -105,7 +115,9 @@ class TestCheckNeo4j:
             assert "latency_ms" in result
 
     @pytest.mark.asyncio
-    async def test_neo4j_connection_error(self, monkeypatch):
+    async def test_neo4j_connection_error(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test Neo4j connection failure."""
         monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
 
@@ -123,7 +135,9 @@ class TestCheckGeminiApi:
     """Tests for check_gemini_api function."""
 
     @pytest.mark.asyncio
-    async def test_gemini_api_key_not_set(self, monkeypatch):
+    async def test_gemini_api_key_not_set(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test when GEMINI_API_KEY is not set."""
         monkeypatch.delenv("GEMINI_API_KEY", raising=False)
         from src.infra.health import check_gemini_api
@@ -133,7 +147,9 @@ class TestCheckGeminiApi:
         assert "not configured" in result["error"]
 
     @pytest.mark.asyncio
-    async def test_gemini_api_key_invalid_prefix(self, monkeypatch):
+    async def test_gemini_api_key_invalid_prefix(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test when GEMINI_API_KEY has invalid prefix."""
         monkeypatch.setenv("GEMINI_API_KEY", "INVALID" + "A" * 32)
         from src.infra.health import check_gemini_api
@@ -143,7 +159,9 @@ class TestCheckGeminiApi:
         assert "Invalid API key format" in result["error"]
 
     @pytest.mark.asyncio
-    async def test_gemini_api_key_invalid_length(self, monkeypatch):
+    async def test_gemini_api_key_invalid_length(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test when GEMINI_API_KEY has invalid length."""
         monkeypatch.setenv("GEMINI_API_KEY", "AIza" + "A" * 10)
         from src.infra.health import check_gemini_api
@@ -153,7 +171,7 @@ class TestCheckGeminiApi:
         assert "Invalid API key length" in result["error"]
 
     @pytest.mark.asyncio
-    async def test_gemini_api_key_valid(self, monkeypatch):
+    async def test_gemini_api_key_valid(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test with valid GEMINI_API_KEY."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -169,7 +187,7 @@ class TestCheckDisk:
     """Tests for check_disk function."""
 
     @pytest.mark.asyncio
-    async def test_check_disk_success(self):
+    async def test_check_disk_success(self) -> None:
         """Test successful disk check."""
         with patch("shutil.disk_usage") as mock_usage:
             # 50% usage
@@ -182,7 +200,7 @@ class TestCheckDisk:
             assert "free_gb" in result
 
     @pytest.mark.asyncio
-    async def test_check_disk_warning(self):
+    async def test_check_disk_warning(self) -> None:
         """Test disk check with warning level usage."""
         with patch("shutil.disk_usage") as mock_usage:
             # 92% usage (warning threshold is 90%)
@@ -193,7 +211,7 @@ class TestCheckDisk:
             assert result["status"] == "warning"
 
     @pytest.mark.asyncio
-    async def test_check_disk_critical(self):
+    async def test_check_disk_critical(self) -> None:
         """Test disk check with critical level usage."""
         with patch("shutil.disk_usage") as mock_usage:
             # 96% usage (critical threshold is 95%)
@@ -204,7 +222,7 @@ class TestCheckDisk:
             assert result["status"] == "critical"
 
     @pytest.mark.asyncio
-    async def test_check_disk_error(self):
+    async def test_check_disk_error(self) -> None:
         """Test disk check with error."""
         with patch("shutil.disk_usage", side_effect=OSError("Disk error")):
             from src.infra.health import check_disk
@@ -218,7 +236,7 @@ class TestCheckMemory:
     """Tests for check_memory function."""
 
     @pytest.mark.asyncio
-    async def test_check_memory_with_psutil(self):
+    async def test_check_memory_with_psutil(self) -> None:
         """Test memory check using psutil."""
         mock_memory = MagicMock()
         mock_memory.percent = 50.0
@@ -231,7 +249,7 @@ class TestCheckMemory:
             assert "usage_percent" in result
 
     @pytest.mark.asyncio
-    async def test_check_memory_warning(self):
+    async def test_check_memory_warning(self) -> None:
         """Test memory check with warning level."""
         mock_memory = MagicMock()
         mock_memory.percent = 92.0
@@ -243,7 +261,7 @@ class TestCheckMemory:
             assert result["status"] == "warning"
 
     @pytest.mark.asyncio
-    async def test_check_memory_critical(self):
+    async def test_check_memory_critical(self) -> None:
         """Test memory check with critical level."""
         mock_memory = MagicMock()
         mock_memory.percent = 96.0
@@ -259,7 +277,9 @@ class TestHealthCheckAsync:
     """Tests for health_check_async function."""
 
     @pytest.mark.asyncio
-    async def test_health_check_async_healthy(self, monkeypatch):
+    async def test_health_check_async_healthy(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test async health check when all systems are healthy."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -282,7 +302,9 @@ class TestHealthCheckAsync:
                 assert "timestamp" in result
 
     @pytest.mark.asyncio
-    async def test_health_check_async_unhealthy(self, monkeypatch):
+    async def test_health_check_async_unhealthy(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test async health check when a system is down."""
         monkeypatch.delenv("GEMINI_API_KEY", raising=False)
         monkeypatch.delenv("REDIS_URL", raising=False)
@@ -301,7 +323,9 @@ class TestHealthCheckAsync:
                 assert result["status"] == "unhealthy"
 
     @pytest.mark.asyncio
-    async def test_health_check_async_degraded(self, monkeypatch):
+    async def test_health_check_async_degraded(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test async health check when system is degraded."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -322,7 +346,9 @@ class TestHealthCheckAsync:
                 assert result["status"] == "degraded"
 
     @pytest.mark.asyncio
-    async def test_health_check_async_exception_handling(self, monkeypatch):
+    async def test_health_check_async_exception_handling(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test async health check handles exceptions in checks."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -347,7 +373,7 @@ class TestLivenessCheck:
     """Tests for liveness_check function."""
 
     @pytest.mark.asyncio
-    async def test_liveness_check(self):
+    async def test_liveness_check(self) -> None:
         """Test liveness probe returns ok."""
         from src.infra.health import liveness_check
 
@@ -359,7 +385,7 @@ class TestReadinessCheck:
     """Tests for readiness_check function."""
 
     @pytest.mark.asyncio
-    async def test_readiness_check_ready(self, monkeypatch):
+    async def test_readiness_check_ready(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test readiness check when services are ready."""
         monkeypatch.delenv("REDIS_URL", raising=False)
         monkeypatch.delenv("NEO4J_URI", raising=False)
@@ -371,7 +397,9 @@ class TestReadinessCheck:
         assert "checks" in result
 
     @pytest.mark.asyncio
-    async def test_readiness_check_not_ready(self, monkeypatch):
+    async def test_readiness_check_not_ready(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test readiness check when a service is down."""
         monkeypatch.setenv("REDIS_URL", "redis://localhost:6379")
         monkeypatch.delenv("NEO4J_URI", raising=False)
@@ -387,12 +415,14 @@ class TestReadinessCheck:
             assert result["ready"] is False
 
     @pytest.mark.asyncio
-    async def test_readiness_check_handles_exception(self, monkeypatch):
+    async def test_readiness_check_handles_exception(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test readiness check handles exceptions gracefully."""
         monkeypatch.setenv("REDIS_URL", "redis://localhost:6379")
         monkeypatch.delenv("NEO4J_URI", raising=False)
 
-        async def raise_exception():
+        async def raise_exception() -> None:
             raise RuntimeError("Unexpected error")
 
         with patch("src.infra.health.check_redis", side_effect=raise_exception):

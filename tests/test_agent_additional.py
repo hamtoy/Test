@@ -8,7 +8,7 @@ from src.config import AppConfig
 
 
 class _FakeModel:
-    def __init__(self, text: str):
+    def __init__(self, text: str) -> None:
         self.text = text
 
     def generate_content(self, prompt, generation_config=None):  # noqa: ARG002
@@ -23,7 +23,7 @@ class _FakeModel:
 
 
 class _FakeGenAI:
-    def __init__(self, text: str = "output"):
+    def __init__(self, text: str = "output") -> None:
         self.text = text
 
     def GenerativeModel(
@@ -75,7 +75,7 @@ def fake_config(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_generate_query_handles_no_cache(monkeypatch, fake_config):
+async def test_generate_query_handles_no_cache(monkeypatch, fake_config) -> None:
     agent = GeminiAgent(config=fake_config, jinja_env=None)
     payload = json.dumps({"queries": ["q1", "q2"]})
     monkeypatch.setattr(
@@ -87,13 +87,13 @@ async def test_generate_query_handles_no_cache(monkeypatch, fake_config):
     assert res == ["q1", "q2"]
 
 
-def test_cost_accumulation(monkeypatch, fake_config):
+def test_cost_accumulation(monkeypatch, fake_config) -> None:
     agent = GeminiAgent(config=fake_config, jinja_env=None)
     agent.total_input_tokens = 0
     agent.total_output_tokens = 0
 
     class _FakeResponse:
-        def __init__(self):
+        def __init__(self) -> None:
             self.usage_metadata = types.SimpleNamespace(
                 prompt_token_count=10, candidates_token_count=5
             )

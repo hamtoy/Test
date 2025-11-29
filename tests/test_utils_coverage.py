@@ -6,7 +6,7 @@ from src import compare_documents
 from src import health_check
 
 
-def test_compare_documents_helpers(monkeypatch):
+def test_compare_documents_helpers(monkeypatch) -> None:
     monkeypatch.delenv("MISSING_ENV", raising=False)
     with pytest.raises(EnvironmentError):
         compare_documents.require_env("MISSING_ENV")
@@ -37,7 +37,7 @@ def test_compare_documents_helpers(monkeypatch):
     assert commons[0][1] == ["Doc A", "Doc B"]
 
 
-def test_health_check_with_stub(monkeypatch):
+def test_health_check_with_stub(monkeypatch) -> None:
     # Set required environment variables for Neo4j
     monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
     monkeypatch.setenv("NEO4J_USER", "neo4j")
@@ -66,7 +66,7 @@ def test_health_check_with_stub(monkeypatch):
     assert report["status"] == "healthy"
 
 
-def test_compare_documents_main_flow(monkeypatch, capsys):
+def test_compare_documents_main_flow(monkeypatch, capsys) -> None:
     monkeypatch.setenv("NEO4J_URI", "bolt://fake")
     monkeypatch.setenv("NEO4J_USER", "user")
     monkeypatch.setenv("NEO4J_PASSWORD", "pass")

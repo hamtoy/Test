@@ -28,31 +28,31 @@ WorkspaceResponse = web_models.WorkspaceResponse
 class TestGenerateQARequest:
     """Tests for GenerateQARequest model."""
 
-    def test_batch_mode_valid(self):
+    def test_batch_mode_valid(self) -> None:
         """Test batch mode is valid without qtype."""
         request = GenerateQARequest(mode="batch")
         assert request.mode == "batch"
         assert request.qtype is None
 
-    def test_single_mode_valid(self):
+    def test_single_mode_valid(self) -> None:
         """Test single mode is valid with qtype."""
         request = GenerateQARequest(mode="single", qtype="global_explanation")
         assert request.mode == "single"
         assert request.qtype == "global_explanation"
 
-    def test_single_mode_all_qtypes(self):
+    def test_single_mode_all_qtypes(self) -> None:
         """Test all valid qtype values."""
         qtypes = ["global_explanation", "reasoning", "target_short", "target_long"]
         for qtype in qtypes:
             request = GenerateQARequest(mode="single", qtype=qtype)
             assert request.qtype == qtype
 
-    def test_invalid_mode(self):
+    def test_invalid_mode(self) -> None:
         """Test invalid mode raises validation error."""
         with pytest.raises(ValidationError):
             GenerateQARequest(mode="invalid")
 
-    def test_invalid_qtype(self):
+    def test_invalid_qtype(self) -> None:
         """Test invalid qtype raises validation error."""
         with pytest.raises(ValidationError):
             GenerateQARequest(mode="single", qtype="invalid_type")
@@ -61,7 +61,7 @@ class TestGenerateQARequest:
 class TestQAPair:
     """Tests for QAPair model."""
 
-    def test_valid_qa_pair(self):
+    def test_valid_qa_pair(self) -> None:
         """Test valid QA pair creation."""
         pair = QAPair(type="reasoning", query="질문입니다", answer="답변입니다")
         assert pair.type == "reasoning"
@@ -72,7 +72,7 @@ class TestQAPair:
 class TestGenerateQAResponse:
     """Tests for GenerateQAResponse model."""
 
-    def test_batch_response(self):
+    def test_batch_response(self) -> None:
         """Test batch mode response."""
         pairs = [
             QAPair(type="reasoning", query="Q1", answer="A1"),
@@ -82,7 +82,7 @@ class TestGenerateQAResponse:
         assert response.mode == "batch"
         assert len(response.pairs) == 2
 
-    def test_single_response(self):
+    def test_single_response(self) -> None:
         """Test single mode response."""
         pair = QAPair(type="reasoning", query="Q", answer="A")
         response = GenerateQAResponse(mode="single", pair=pair)
@@ -93,7 +93,7 @@ class TestGenerateQAResponse:
 class TestEvalExternalRequest:
     """Tests for EvalExternalRequest model."""
 
-    def test_valid_request(self):
+    def test_valid_request(self) -> None:
         """Test valid external evaluation request."""
         request = EvalExternalRequest(
             query="테스트 질의",
@@ -102,7 +102,7 @@ class TestEvalExternalRequest:
         assert request.query == "테스트 질의"
         assert len(request.answers) == 3
 
-    def test_too_few_answers(self):
+    def test_too_few_answers(self) -> None:
         """Test that fewer than 3 answers raises error."""
         with pytest.raises(ValidationError):
             EvalExternalRequest(
@@ -110,7 +110,7 @@ class TestEvalExternalRequest:
                 answers=["답변1", "답변2"],  # Only 2 answers
             )
 
-    def test_too_many_answers(self):
+    def test_too_many_answers(self) -> None:
         """Test that more than 3 answers raises error."""
         with pytest.raises(ValidationError):
             EvalExternalRequest(
@@ -122,7 +122,7 @@ class TestEvalExternalRequest:
 class TestEvalResult:
     """Tests for EvalResult model."""
 
-    def test_valid_result(self):
+    def test_valid_result(self) -> None:
         """Test valid evaluation result."""
         result = EvalResult(answer_id="A", score=85, feedback="좋은 답변입니다")
         assert result.answer_id == "A"
@@ -133,7 +133,7 @@ class TestEvalResult:
 class TestEvalExternalResponse:
     """Tests for EvalExternalResponse model."""
 
-    def test_valid_response(self):
+    def test_valid_response(self) -> None:
         """Test valid external evaluation response."""
         results = [
             EvalResult(answer_id="A", score=80, feedback="Good"),
@@ -148,13 +148,13 @@ class TestEvalExternalResponse:
 class TestWorkspaceRequest:
     """Tests for WorkspaceRequest model."""
 
-    def test_inspect_mode(self):
+    def test_inspect_mode(self) -> None:
         """Test inspect mode request."""
         request = WorkspaceRequest(mode="inspect", answer="검수할 답변")
         assert request.mode == "inspect"
         assert request.answer == "검수할 답변"
 
-    def test_edit_mode(self):
+    def test_edit_mode(self) -> None:
         """Test edit mode request."""
         request = WorkspaceRequest(
             mode="edit",
@@ -164,7 +164,7 @@ class TestWorkspaceRequest:
         assert request.mode == "edit"
         assert request.edit_request == "더 간결하게"
 
-    def test_with_query(self):
+    def test_with_query(self) -> None:
         """Test request with optional query."""
         request = WorkspaceRequest(
             mode="inspect",
@@ -173,12 +173,12 @@ class TestWorkspaceRequest:
         )
         assert request.query == "관련 질의"
 
-    def test_invalid_mode(self):
+    def test_invalid_mode(self) -> None:
         """Test invalid mode raises error."""
         with pytest.raises(ValidationError):
             WorkspaceRequest(mode="invalid", answer="답변")
 
-    def test_inspector_comment_with_value(self):
+    def test_inspector_comment_with_value(self) -> None:
         """Test inspector_comment field with value."""
         request = WorkspaceRequest(
             mode="inspect",
@@ -187,12 +187,12 @@ class TestWorkspaceRequest:
         )
         assert request.inspector_comment == "검수자 코멘트입니다"
 
-    def test_inspector_comment_default_empty(self):
+    def test_inspector_comment_default_empty(self) -> None:
         """Test inspector_comment defaults to empty string."""
         request = WorkspaceRequest(mode="inspect", answer="답변")
         assert request.inspector_comment == ""
 
-    def test_inspector_comment_in_edit_mode(self):
+    def test_inspector_comment_in_edit_mode(self) -> None:
         """Test inspector_comment works in edit mode too."""
         request = WorkspaceRequest(
             mode="edit",
@@ -206,7 +206,7 @@ class TestWorkspaceRequest:
 class TestWorkspaceResponse:
     """Tests for WorkspaceResponse model."""
 
-    def test_inspect_response(self):
+    def test_inspect_response(self) -> None:
         """Test inspect mode response."""
         response = WorkspaceResponse(
             mode="inspect",
@@ -215,7 +215,7 @@ class TestWorkspaceResponse:
         assert response.mode == "inspect"
         assert response.result["fixed"] == "수정됨"
 
-    def test_edit_response(self):
+    def test_edit_response(self) -> None:
         """Test edit mode response."""
         response = WorkspaceResponse(
             mode="edit",
@@ -228,7 +228,7 @@ class TestWorkspaceResponse:
 class TestMultimodalResponse:
     """Tests for MultimodalResponse model."""
 
-    def test_valid_response(self):
+    def test_valid_response(self) -> None:
         """Test valid multimodal response."""
         response = MultimodalResponse(
             filename="test.png",

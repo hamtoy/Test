@@ -1,5 +1,6 @@
 """Tests for the QA factory module."""
 
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,7 +10,7 @@ class TestQASystemFactory:
     """Tests for QASystemFactory class."""
 
     @pytest.fixture
-    def factory(self):
+    def factory(self) -> Any:
         """Create a factory instance with mock credentials."""
         with (
             patch("src.qa.factory.QAKnowledgeGraph"),
@@ -23,7 +24,7 @@ class TestQASystemFactory:
                 neo4j_password="password",
             )
 
-    def test_init_without_credentials(self):
+    def test_init_without_credentials(self) -> None:
         """Test factory initialization without credentials."""
         with (
             patch("src.qa.factory.QAKnowledgeGraph"),
@@ -36,7 +37,7 @@ class TestQASystemFactory:
             assert factory.neo4j_user is None
             assert factory.neo4j_password is None
 
-    def test_init_with_credentials(self):
+    def test_init_with_credentials(self) -> None:
         """Test factory initialization with credentials."""
         with (
             patch("src.qa.factory.QAKnowledgeGraph"),
@@ -53,7 +54,7 @@ class TestQASystemFactory:
             assert factory.neo4j_user == "neo4j"
             assert factory.neo4j_password == "password"
 
-    def test_get_knowledge_graph_creates_instance(self):
+    def test_get_knowledge_graph_creates_instance(self) -> None:
         """Test that get_knowledge_graph creates a new instance."""
         with (
             patch("src.qa.factory.QAKnowledgeGraph") as MockKG,
@@ -73,7 +74,7 @@ class TestQASystemFactory:
             assert kg1 is kg2
             MockKG.assert_called_once()
 
-    def test_get_model_client_creates_instance(self):
+    def test_get_model_client_creates_instance(self) -> None:
         """Test that get_model_client creates a new instance."""
         with (
             patch("src.qa.factory.QAKnowledgeGraph"),
@@ -93,7 +94,7 @@ class TestQASystemFactory:
             assert client1 is client2
             MockClient.assert_called_once()
 
-    def test_create_memory_system(self):
+    def test_create_memory_system(self) -> None:
         """Test creation of MemoryAugmentedQASystem."""
         with (
             patch("src.qa.factory.QAKnowledgeGraph"),
@@ -120,7 +121,7 @@ class TestQASystemFactory:
                 "password",
             )
 
-    def test_create_agent_system(self):
+    def test_create_agent_system(self) -> None:
         """Test creation of MultiAgentQASystem."""
         with (
             patch("src.qa.factory.QAKnowledgeGraph") as MockKG,
@@ -142,7 +143,7 @@ class TestQASystemFactory:
             assert result is mock_system
             MockAgent.assert_called_once_with(mock_kg)
 
-    def test_create_correcting_chain(self):
+    def test_create_correcting_chain(self) -> None:
         """Test creation of SelfCorrectingQAChain."""
         with (
             patch("src.qa.factory.QAKnowledgeGraph") as MockKG,
@@ -166,7 +167,7 @@ class TestQASystemFactory:
             assert result is mock_chain
             MockChain.assert_called_once_with(mock_kg, mock_client)
 
-    def test_create_router(self):
+    def test_create_router(self) -> None:
         """Test creation of GraphEnhancedRouter."""
         with (
             patch("src.qa.factory.QAKnowledgeGraph") as MockKG,
@@ -190,7 +191,7 @@ class TestQASystemFactory:
             assert result is mock_router
             MockRouter.assert_called_once_with(mock_kg, mock_client)
 
-    def test_create_lcel_chain(self):
+    def test_create_lcel_chain(self) -> None:
         """Test creation of LCELOptimizedChain."""
         with (
             patch("src.qa.factory.QAKnowledgeGraph") as MockKG,
@@ -214,7 +215,7 @@ class TestQASystemFactory:
             assert result is mock_lcel
             MockLCEL.assert_called_once_with(mock_kg, mock_client)
 
-    def test_create_all_components(self):
+    def test_create_all_components(self) -> None:
         """Test creation of all components at once."""
         with (
             patch("src.qa.factory.QAKnowledgeGraph") as MockKG,

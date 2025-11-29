@@ -7,7 +7,7 @@ from src.processing import example_selector
 from src.features import difficulty as adaptive_difficulty
 
 
-def test_semantic_analysis_utils(monkeypatch):
+def test_semantic_analysis_utils(monkeypatch) -> None:
     monkeypatch.setattr(semantic, "MIN_FREQ", 1)
     tokens = semantic.tokenize("This is a Sample sample text with 숫자123")
     assert "sample" in tokens
@@ -18,17 +18,17 @@ def test_semantic_analysis_utils(monkeypatch):
     store: list[object] = []
 
     class _SATx:
-        def __init__(self, store_ref):
+        def __init__(self, store_ref) -> None:
             self.store_ref = store_ref
 
-        def run(self, _query, topics=None, links=None):
+        def run(self, _query, topics=None, links=None) -> None:
             if topics is not None:
                 self.store_ref.extend(topics)
             if links is not None:
                 self.store_ref.extend(links)
 
     class _SASession:
-        def __init__(self, store_ref):
+        def __init__(self, store_ref) -> None:
             self.store_ref = store_ref
 
         def __enter__(self):
@@ -37,14 +37,14 @@ def test_semantic_analysis_utils(monkeypatch):
         def __exit__(self, exc_type, exc, tb):
             return False
 
-        def execute_write(self, func, items):
+        def execute_write(self, func, items) -> None:
             func(_SATx(self.store_ref), items)
 
         def run(self, *_args, **_kwargs):
             return [{"id": "b1", "content": "alpha beta gamma"}]
 
     class _SADriver:
-        def __init__(self):
+        def __init__(self) -> None:
             self.session_obj = _SASession(store)
 
         def session(self):
@@ -59,7 +59,7 @@ def test_semantic_analysis_utils(monkeypatch):
     )
 
 
-def test_smart_autocomplete(monkeypatch):
+def test_smart_autocomplete(monkeypatch) -> None:
     class _SmartSession:
         def __enter__(self):
             return self
@@ -78,7 +78,7 @@ def test_smart_autocomplete(monkeypatch):
             ]
 
     class _SmartKG:
-        def __init__(self):
+        def __init__(self) -> None:
             self._graph = types.SimpleNamespace(session=lambda: _SmartSession())
 
     monkeypatch.setattr(
@@ -94,9 +94,9 @@ def test_smart_autocomplete(monkeypatch):
     assert compliance["violations"]
 
 
-def test_dynamic_example_selector(monkeypatch):
+def test_dynamic_example_selector(monkeypatch) -> None:
     class _DESession:
-        def __init__(self):
+        def __init__(self) -> None:
             self.updated = []
 
         def __enter__(self):
@@ -118,7 +118,7 @@ def test_dynamic_example_selector(monkeypatch):
             return _Result([])
 
     class _DEKG:
-        def __init__(self):
+        def __init__(self) -> None:
             self._graph = types.SimpleNamespace(session=lambda: _DESession())
 
     selector = example_selector.DynamicExampleSelector(_DEKG())  # type: ignore[arg-type]
@@ -128,7 +128,7 @@ def test_dynamic_example_selector(monkeypatch):
     assert examples
 
 
-def test_adaptive_difficulty(monkeypatch):
+def test_adaptive_difficulty(monkeypatch) -> None:
     class _ADSession:
         def __enter__(self):
             return self
@@ -153,7 +153,7 @@ def test_adaptive_difficulty(monkeypatch):
     assert adjustments["min_length"] >= 300
 
 
-def test_semantic_analysis_utils_simple():
+def test_semantic_analysis_utils_simple() -> None:
     tokens = semantic.tokenize("Alpha, beta! 그리고 and 123")
     assert "alpha" in tokens and "beta" in tokens
 
@@ -163,7 +163,7 @@ def test_semantic_analysis_utils_simple():
     )  # MIN_FREQ may filter low counts
 
 
-def test_adaptive_difficulty_levels(monkeypatch):
+def test_adaptive_difficulty_levels(monkeypatch) -> None:
     class _Session:
         def __enter__(self):
             return self

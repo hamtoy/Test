@@ -1,12 +1,13 @@
 """Tests for src/llm/gemini_types.py to improve coverage."""
 
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 
 class TestGeminiTypes:
     """Test Gemini type wrappers and helper functions."""
 
-    def test_generation_config_typed_dict(self):
+    def test_generation_config_typed_dict(self) -> None:
         """Test GenerationConfig TypedDict."""
         from src.llm.gemini_types import GenerationConfig
 
@@ -19,7 +20,7 @@ class TestGeminiTypes:
         assert config["temperature"] == 0.7
         assert config["max_output_tokens"] == 1024
 
-    def test_safety_settings_typed_dict(self):
+    def test_safety_settings_typed_dict(self) -> None:
         """Test SafetySettings TypedDict."""
         from src.llm.gemini_types import SafetySettings
 
@@ -29,7 +30,7 @@ class TestGeminiTypes:
         }
         assert settings["category"] == "HARM_CATEGORY_HARASSMENT"
 
-    def test_generate_content_response_class(self):
+    def test_generate_content_response_class(self) -> None:
         """Test GenerateContentResponse is a valid class."""
         from src.llm.gemini_types import GenerateContentResponse
 
@@ -43,7 +44,7 @@ class TestConfigureGenai:
     """Test configure_genai wrapper function."""
 
     @patch("google.generativeai.configure")
-    def test_configure_genai(self, mock_configure):
+    def test_configure_genai(self, mock_configure: Any) -> None:
         """Test configure_genai calls genai.configure."""
         from src.llm.gemini_types import configure_genai
 
@@ -56,7 +57,7 @@ class TestCreateGenerativeModel:
     """Test create_generative_model wrapper function."""
 
     @patch("google.generativeai.GenerativeModel")
-    def test_create_model_basic(self, mock_model_class):
+    def test_create_model_basic(self, mock_model_class: Any) -> None:
         """Test creating model with just name."""
         from src.llm.gemini_types import create_generative_model
 
@@ -68,7 +69,7 @@ class TestCreateGenerativeModel:
         assert result is not None
 
     @patch("google.generativeai.GenerativeModel")
-    def test_create_model_with_config(self, mock_model_class):
+    def test_create_model_with_config(self, mock_model_class: Any) -> None:
         """Test creating model with generation config."""
         from src.llm.gemini_types import create_generative_model, GenerationConfig
 
@@ -83,7 +84,7 @@ class TestCreateGenerativeModel:
         assert result is not None
 
     @patch("google.generativeai.GenerativeModel")
-    def test_create_model_with_safety_settings(self, mock_model_class):
+    def test_create_model_with_safety_settings(self, mock_model_class: Any) -> None:
         """Test creating model with safety settings."""
         from src.llm.gemini_types import create_generative_model, SafetySettings
 
@@ -100,7 +101,7 @@ class TestCreateGenerativeModel:
         assert result is not None
 
     @patch("google.generativeai.GenerativeModel")
-    def test_create_model_with_all_options(self, mock_model_class):
+    def test_create_model_with_all_options(self, mock_model_class: Any) -> None:
         """Test creating model with all options."""
         from src.llm.gemini_types import (
             create_generative_model,
@@ -132,7 +133,7 @@ class TestListAvailableModels:
     """Test list_available_models wrapper function."""
 
     @patch("google.generativeai.list_models")
-    def test_list_models(self, mock_list_models):
+    def test_list_models(self, mock_list_models: Any) -> None:
         """Test listing available models."""
         from src.llm.gemini_types import list_available_models
 
@@ -150,7 +151,7 @@ class TestEmbedContent:
     """Test embed_content wrapper function."""
 
     @patch("google.generativeai.embed_content")
-    def test_embed_content_dict_like_result(self, mock_embed):
+    def test_embed_content_dict_like_result(self, mock_embed: Any) -> None:
         """Test embed_content with dict-like result."""
         from src.llm.gemini_types import embed_content
 
@@ -173,7 +174,7 @@ class TestEmbedContent:
         )
 
     @patch("google.generativeai.embed_content")
-    def test_embed_content_raw_result(self, mock_embed):
+    def test_embed_content_raw_result(self, mock_embed: Any) -> None:
         """Test embed_content with raw embedding result."""
         from src.llm.gemini_types import embed_content
 
@@ -188,7 +189,7 @@ class TestEmbedContent:
         assert result == {"embedding": [0.1, 0.2, 0.3]}
 
     @patch("google.generativeai.embed_content")
-    def test_embed_content_default_task_type(self, mock_embed):
+    def test_embed_content_default_task_type(self, mock_embed: Any) -> None:
         """Test embed_content uses default task_type."""
         from src.llm.gemini_types import embed_content
 
@@ -208,7 +209,7 @@ class TestEmbedContent:
 class TestAllExports:
     """Test __all__ exports."""
 
-    def test_all_contains_expected_names(self):
+    def test_all_contains_expected_names(self) -> None:
         """Test __all__ contains expected exports."""
         from src.llm import gemini_types
 

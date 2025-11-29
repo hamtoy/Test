@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, AsyncMock
 
 
 @pytest.mark.asyncio
-async def test_main_analyze_cache_quick_path(monkeypatch, tmp_path):
+async def test_main_analyze_cache_quick_path(monkeypatch, tmp_path) -> None:
     import src.main as main_module
     from src.cli import CLIArgs
 
@@ -18,7 +18,7 @@ async def test_main_analyze_cache_quick_path(monkeypatch, tmp_path):
     calls: dict[str, object] = {}
 
     class FakeConfig:
-        def __init__(self):
+        def __init__(self) -> None:
             self.api_key = "AIza" + "0" * 35
             self.template_dir = template_dir
             self.input_dir = input_dir
@@ -28,7 +28,7 @@ async def test_main_analyze_cache_quick_path(monkeypatch, tmp_path):
             self.cache_stats_max_entries = 3
 
     class FakeAgent:
-        def __init__(self, config, jinja_env):
+        def __init__(self, config, jinja_env) -> None:
             self.total_input_tokens = 0
             self.total_output_tokens = 0
             self.cache_hits = 0
@@ -94,7 +94,7 @@ async def test_main_analyze_cache_quick_path(monkeypatch, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_main_keep_progress_flag(monkeypatch, tmp_path):
+async def test_main_keep_progress_flag(monkeypatch, tmp_path) -> None:
     import src.main as main_module
     from src.cli import CLIArgs
 
@@ -106,7 +106,7 @@ async def test_main_keep_progress_flag(monkeypatch, tmp_path):
     (template_dir / "placeholder.j2").write_text("content", encoding="utf-8")
 
     class FakeConfig:
-        def __init__(self):
+        def __init__(self) -> None:
             self.api_key = "AIza" + "0" * 35
             self.template_dir = template_dir
             self.input_dir = input_dir
@@ -116,7 +116,7 @@ async def test_main_keep_progress_flag(monkeypatch, tmp_path):
             self.cache_stats_max_entries = 3
 
     class FakeAgent:
-        def __init__(self, config, jinja_env):
+        def __init__(self, config, jinja_env) -> None:
             self.total_input_tokens = 0
             self.total_output_tokens = 0
             self.cache_hits = 0
@@ -184,7 +184,7 @@ async def test_main_keep_progress_flag(monkeypatch, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_main_cache_stats_warning(monkeypatch, tmp_path):
+async def test_main_cache_stats_warning(monkeypatch, tmp_path) -> None:
     import src.main as main_module
     from src.cli import CLIArgs
 
@@ -196,7 +196,7 @@ async def test_main_cache_stats_warning(monkeypatch, tmp_path):
     (template_dir / "placeholder.j2").write_text("content", encoding="utf-8")
 
     class FakeConfig:
-        def __init__(self):
+        def __init__(self) -> None:
             self.api_key = "AIza" + "0" * 35
             self.template_dir = template_dir
             self.input_dir = input_dir
@@ -206,7 +206,7 @@ async def test_main_cache_stats_warning(monkeypatch, tmp_path):
             self.cache_stats_max_entries = 3
 
     class FakeAgent:
-        def __init__(self, config, jinja_env):
+        def __init__(self, config, jinja_env) -> None:
             self.total_input_tokens = 0
             self.total_output_tokens = 0
             self.cache_hits = 0
@@ -277,7 +277,7 @@ async def test_main_cache_stats_warning(monkeypatch, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_main_auto_mode_passes_intent(monkeypatch, tmp_path):
+async def test_main_auto_mode_passes_intent(monkeypatch, tmp_path) -> None:
     import src.main as main_module
     from src.cli import CLIArgs
 
@@ -289,7 +289,7 @@ async def test_main_auto_mode_passes_intent(monkeypatch, tmp_path):
     (template_dir / "placeholder.j2").write_text("content", encoding="utf-8")
 
     class FakeConfig:
-        def __init__(self):
+        def __init__(self) -> None:
             self.api_key = "AIza" + "0" * 35
             self.template_dir = template_dir
             self.input_dir = input_dir
@@ -299,7 +299,7 @@ async def test_main_auto_mode_passes_intent(monkeypatch, tmp_path):
             self.cache_stats_max_entries = 3
 
     class FakeAgent:
-        def __init__(self, config, jinja_env):
+        def __init__(self, config, jinja_env) -> None:
             self.total_input_tokens = 0
             self.total_output_tokens = 0
             self.cache_hits = 0
@@ -367,7 +367,7 @@ async def test_main_auto_mode_passes_intent(monkeypatch, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_main_missing_templates_exits(monkeypatch, tmp_path):
+async def test_main_missing_templates_exits(monkeypatch, tmp_path) -> None:
     import src.main as main_module
     from src.cli import CLIArgs
 
@@ -378,7 +378,7 @@ async def test_main_missing_templates_exits(monkeypatch, tmp_path):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     class FakeConfig:
-        def __init__(self):
+        def __init__(self) -> None:
             self.api_key = "AIza" + "0" * 35
             self.template_dir = template_dir
             self.input_dir = input_dir

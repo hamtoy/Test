@@ -1,13 +1,15 @@
 """Tests for src/ui/panels.py to improve coverage."""
 
 from unittest.mock import MagicMock
+
+import pytest
 from rich.panel import Panel
 
 
 class TestRenderCostPanel:
     """Test render_cost_panel function."""
 
-    def test_render_cost_panel_with_get_total_cost(self):
+    def test_render_cost_panel_with_get_total_cost(self) -> None:
         """Test render_cost_panel when agent has get_total_cost method."""
         from src.ui.panels import render_cost_panel
 
@@ -23,7 +25,7 @@ class TestRenderCostPanel:
         assert isinstance(result, Panel)
         mock_agent.get_total_cost.assert_called_once()
 
-    def test_render_cost_panel_without_get_total_cost(self):
+    def test_render_cost_panel_without_get_total_cost(self) -> None:
         """Test render_cost_panel when agent lacks get_total_cost method."""
         from src.ui.panels import render_cost_panel
 
@@ -41,7 +43,7 @@ class TestRenderCostPanel:
 class TestRenderBudgetPanel:
     """Test render_budget_panel function."""
 
-    def test_render_budget_panel_with_method(self):
+    def test_render_budget_panel_with_method(self) -> None:
         """Test render_budget_panel when agent has get_budget_usage_percent."""
         from src.ui.panels import render_budget_panel
 
@@ -53,7 +55,7 @@ class TestRenderBudgetPanel:
         assert isinstance(result, Panel)
         mock_agent.get_budget_usage_percent.assert_called_once()
 
-    def test_render_budget_panel_without_method(self):
+    def test_render_budget_panel_without_method(self) -> None:
         """Test render_budget_panel when agent lacks the method."""
         from src.ui.panels import render_budget_panel
 
@@ -67,7 +69,7 @@ class TestRenderBudgetPanel:
 class TestDisplayQueries:
     """Test display_queries function."""
 
-    def test_display_queries(self, capsys):
+    def test_display_queries(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test display_queries outputs correctly."""
         from src.ui.panels import display_queries
 
@@ -78,7 +80,7 @@ class TestDisplayQueries:
         # Just verify it doesn't raise an error
         # Rich console output is complex to capture
 
-    def test_display_queries_empty(self):
+    def test_display_queries_empty(self) -> None:
         """Test display_queries with empty list."""
         from src.ui.panels import display_queries
 
@@ -91,7 +93,7 @@ class TestDisplayQueries:
 class TestConsoleExport:
     """Test console export."""
 
-    def test_console_is_available(self):
+    def test_console_is_available(self) -> None:
         """Test console is exported and usable."""
         from src.ui.panels import console
 

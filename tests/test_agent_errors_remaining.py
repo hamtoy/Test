@@ -36,7 +36,7 @@ def _agent(monkeypatch, tmp_path: Path):
     return GeminiAgent(config, jinja_env=jinja_env)
 
 
-def test_load_local_cache_bad_manifest(monkeypatch, tmp_path):
+def test_load_local_cache_bad_manifest(monkeypatch, tmp_path) -> None:
     agent = _agent(monkeypatch, tmp_path)
     manifest = agent._local_cache_manifest_path()
     manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -45,7 +45,7 @@ def test_load_local_cache_bad_manifest(monkeypatch, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_create_context_cache_raises(monkeypatch, tmp_path):
+async def test_create_context_cache_raises(monkeypatch, tmp_path) -> None:
     agent = _agent(monkeypatch, tmp_path)
 
     class _Model:
@@ -64,7 +64,7 @@ async def test_create_context_cache_raises(monkeypatch, tmp_path):
     class _Caching:
         class CachedContent:
             @staticmethod
-            def create(**kwargs):
+            def create(**kwargs) -> None:
                 raise RuntimeError("boom")
 
     monkeypatch.setattr(type(agent), "_caching", property(lambda _self: _Caching))
@@ -73,7 +73,7 @@ async def test_create_context_cache_raises(monkeypatch, tmp_path):
         await agent.create_context_cache("text")
 
 
-def test_cost_error_unknown_model(monkeypatch, tmp_path):
+def test_cost_error_unknown_model(monkeypatch, tmp_path) -> None:
     agent = _agent(monkeypatch, tmp_path)
     agent._cost_tracker.model_name = "unknown-model"
     agent.total_input_tokens = 1000

@@ -1,12 +1,15 @@
 """Tests for the health check module."""
 
+from typing import Any
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 class TestCheckNeo4jConnection:
     """Tests for check_neo4j_connection function."""
 
-    def test_neo4j_not_available(self, monkeypatch):
+    def test_neo4j_not_available(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test when neo4j package is not available."""
         # Patch the import to raise ImportError
         import sys
@@ -17,7 +20,7 @@ class TestCheckNeo4jConnection:
             else __import__
         )
 
-        def mock_import(name, *args, **kwargs):
+        def mock_import(name: Any, *args: Any, **kwargs: Any) -> Any:
             if name == "neo4j.exceptions":
                 raise ImportError("No module named 'neo4j'")
             return original_import(name, *args, **kwargs)
@@ -35,7 +38,7 @@ class TestCheckNeo4jConnection:
             health.check_neo4j_connection(None)
             # Result depends on the module state
 
-    def test_with_valid_kg(self):
+    def test_with_valid_kg(self) -> None:
         """Test with a valid knowledge graph."""
         from src.infra.health import check_neo4j_connection
 
@@ -59,7 +62,7 @@ class TestCheckNeo4jConnection:
             result = check_neo4j_connection(mock_kg)
             assert result is True
 
-    def test_with_no_graph_attribute(self):
+    def test_with_no_graph_attribute(self) -> None:
         """Test when kg has no _graph attribute."""
         from src.infra.health import check_neo4j_connection
 
@@ -69,7 +72,7 @@ class TestCheckNeo4jConnection:
         result = check_neo4j_connection(mock_kg)
         assert result is False
 
-    def test_with_neo4j_error(self):
+    def test_with_neo4j_error(self) -> None:
         """Test when Neo4j query fails."""
         from src.infra.health import check_neo4j_connection
 
@@ -95,7 +98,7 @@ class TestCheckNeo4jConnection:
             result = check_neo4j_connection(mock_kg)
             assert result is False
 
-    def test_with_generic_exception(self):
+    def test_with_generic_exception(self) -> None:
         """Test when a generic exception occurs."""
         from src.infra.health import check_neo4j_connection
 
@@ -120,7 +123,7 @@ class TestCheckNeo4jConnection:
 class TestHealthCheck:
     """Tests for health_check function."""
 
-    def test_health_check_healthy(self):
+    def test_health_check_healthy(self) -> None:
         """Test health check when all systems are healthy."""
         from src.infra.health import health_check
 
@@ -131,7 +134,7 @@ class TestHealthCheck:
             assert result["neo4j"] is True
             assert "timestamp" in result
 
-    def test_health_check_unhealthy(self):
+    def test_health_check_unhealthy(self) -> None:
         """Test health check when Neo4j is down."""
         from src.infra.health import health_check
 
@@ -142,7 +145,7 @@ class TestHealthCheck:
             assert result["neo4j"] is False
             assert "timestamp" in result
 
-    def test_health_check_timestamp_format(self):
+    def test_health_check_timestamp_format(self) -> None:
         """Test that timestamp is in ISO format."""
         from src.infra.health import health_check
         from datetime import datetime

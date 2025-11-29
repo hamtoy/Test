@@ -9,7 +9,7 @@ from src.infra.neo4j import Neo4jGraphProvider
 class TestNeo4jGraphProviderInit:
     """Test Neo4jGraphProvider initialization."""
 
-    def test_init_stores_credentials(self):
+    def test_init_stores_credentials(self) -> None:
         """Provider stores connection credentials."""
         provider = Neo4jGraphProvider(
             uri="bolt://localhost:7687",
@@ -23,7 +23,7 @@ class TestNeo4jGraphProviderInit:
         assert provider._batch_size == 50
         assert provider._driver is None
 
-    def test_init_default_batch_size(self):
+    def test_init_default_batch_size(self) -> None:
         """Provider uses default batch size of 100."""
         provider = Neo4jGraphProvider(
             uri="bolt://localhost:7687",
@@ -37,7 +37,7 @@ class TestNeo4jGraphProviderCreateNodes:
     """Test create_nodes method."""
 
     @pytest.mark.asyncio
-    async def test_create_nodes_empty_list(self):
+    async def test_create_nodes_empty_list(self) -> None:
         """Returns 0 when given empty node list."""
         provider = Neo4jGraphProvider(
             uri="bolt://localhost:7687",
@@ -48,7 +48,7 @@ class TestNeo4jGraphProviderCreateNodes:
         assert result == 0
 
     @pytest.mark.asyncio
-    async def test_create_nodes_single_node(self):
+    async def test_create_nodes_single_node(self) -> None:
         """Creates single node correctly."""
         provider = Neo4jGraphProvider(
             uri="bolt://localhost:7687",
@@ -83,7 +83,7 @@ class TestNeo4jGraphProviderCreateNodes:
         assert call_args[1]["nodes"] == nodes
 
     @pytest.mark.asyncio
-    async def test_create_nodes_batch_processing(self):
+    async def test_create_nodes_batch_processing(self) -> None:
         """Processes nodes in batches."""
         provider = Neo4jGraphProvider(
             uri="bolt://localhost:7687",
@@ -124,7 +124,7 @@ class TestNeo4jGraphProviderCreateNodes:
         assert mock_session.run.call_count == 3
 
     @pytest.mark.asyncio
-    async def test_create_nodes_with_merge_keys(self):
+    async def test_create_nodes_with_merge_keys(self) -> None:
         """Uses merge keys correctly in query."""
         provider = Neo4jGraphProvider(
             uri="bolt://localhost:7687",
@@ -163,7 +163,7 @@ class TestNeo4jGraphProviderCreateRelationships:
     """Test create_relationships method."""
 
     @pytest.mark.asyncio
-    async def test_create_relationships_empty_list(self):
+    async def test_create_relationships_empty_list(self) -> None:
         """Returns 0 when given empty relationship list."""
         provider = Neo4jGraphProvider(
             uri="bolt://localhost:7687",
@@ -176,7 +176,7 @@ class TestNeo4jGraphProviderCreateRelationships:
         assert result == 0
 
     @pytest.mark.asyncio
-    async def test_create_relationships_single_rel(self):
+    async def test_create_relationships_single_rel(self) -> None:
         """Creates single relationship correctly."""
         provider = Neo4jGraphProvider(
             uri="bolt://localhost:7687",
@@ -214,7 +214,7 @@ class TestNeo4jGraphProviderCreateRelationships:
         assert "MATCH (b:Organization" in query
 
     @pytest.mark.asyncio
-    async def test_create_relationships_with_properties(self):
+    async def test_create_relationships_with_properties(self) -> None:
         """Creates relationships with properties correctly."""
         provider = Neo4jGraphProvider(
             uri="bolt://localhost:7687",
@@ -250,7 +250,7 @@ class TestNeo4jGraphProviderLifecycle:
     """Test provider lifecycle methods."""
 
     @pytest.mark.asyncio
-    async def test_close_closes_driver(self):
+    async def test_close_closes_driver(self) -> None:
         """Close method closes the driver."""
         provider = Neo4jGraphProvider(
             uri="bolt://localhost:7687",
@@ -269,7 +269,7 @@ class TestNeo4jGraphProviderLifecycle:
         assert provider._driver is None
 
     @pytest.mark.asyncio
-    async def test_close_when_no_driver(self):
+    async def test_close_when_no_driver(self) -> None:
         """Close does nothing when driver is None."""
         provider = Neo4jGraphProvider(
             uri="bolt://localhost:7687",
@@ -282,7 +282,7 @@ class TestNeo4jGraphProviderLifecycle:
         assert provider._driver is None
 
     @pytest.mark.asyncio
-    async def test_verify_connectivity(self):
+    async def test_verify_connectivity(self) -> None:
         """Verify connectivity calls driver method."""
         provider = Neo4jGraphProvider(
             uri="bolt://localhost:7687",
@@ -302,7 +302,7 @@ class TestNeo4jGraphProviderSession:
     """Test session context manager."""
 
     @pytest.mark.asyncio
-    async def test_session_returns_context_manager(self):
+    async def test_session_returns_context_manager(self) -> None:
         """Session method returns async context manager."""
         provider = Neo4jGraphProvider(
             uri="bolt://localhost:7687",

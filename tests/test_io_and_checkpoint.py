@@ -3,9 +3,10 @@ from unittest.mock import MagicMock
 from src.workflow.processor import save_result_to_file
 from src.infra.utils import load_checkpoint, append_checkpoint
 from src.core.models import WorkflowResult, EvaluationResultSchema, EvaluationItem
+from pathlib import Path
 
 
-def test_save_result_to_file(tmp_path):
+def test_save_result_to_file(tmp_path: Path) -> None:
     config = MagicMock()
     config.output_dir = tmp_path
 
@@ -32,7 +33,9 @@ def test_save_result_to_file(tmp_path):
     assert "Rewritten" in content
 
 
-def test_save_result_to_file_io_error(monkeypatch, tmp_path):
+def test_save_result_to_file_io_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     config = MagicMock()
     config.output_dir = tmp_path
 
@@ -55,7 +58,7 @@ def test_save_result_to_file_io_error(monkeypatch, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_checkpoint_roundtrip(tmp_path):
+async def test_checkpoint_roundtrip(tmp_path: Path) -> None:
     path = tmp_path / "checkpoint.jsonl"
     eval_item = EvaluationItem(candidate_id="A", score=90, reason="Good")
     eval_result = EvaluationResultSchema(best_candidate="A", evaluations=[eval_item])

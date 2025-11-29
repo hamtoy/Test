@@ -3,6 +3,8 @@
 import io
 import json
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -12,13 +14,13 @@ from src.web.api import app, log_review_session
 
 
 @pytest.fixture
-def client():
+def client() -> Any:
     """Create test client for the API."""
     return TestClient(app)
 
 
 @pytest.fixture
-def mock_agent():
+def mock_agent() -> Any:
     """Create a mock GeminiAgent for testing."""
     agent = MagicMock()
     agent.generate_content = MagicMock(return_value="Mocked response")
@@ -27,7 +29,7 @@ def mock_agent():
 
 
 @pytest.fixture
-def mock_mm():
+def mock_mm() -> Any:
     """Create a mock MultimodalUnderstanding for testing."""
     mm = MagicMock()
     mm.extract_text_from_image = MagicMock(return_value="Mocked OCR text from image")
@@ -37,31 +39,31 @@ def mock_mm():
 class TestPageRoutes:
     """Tests for page routes."""
 
-    def test_qa_page_root(self, client):
+    def test_qa_page_root(self, client: Any) -> None:
         """Test the root page redirects to QA page."""
         response = client.get("/")
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
 
-    def test_qa_page_explicit(self, client):
+    def test_qa_page_explicit(self, client: Any) -> None:
         """Test the explicit /qa page."""
         response = client.get("/qa")
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
 
-    def test_eval_page(self, client):
+    def test_eval_page(self, client: Any) -> None:
         """Test the evaluation page."""
         response = client.get("/eval")
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
 
-    def test_workspace_page(self, client):
+    def test_workspace_page(self, client: Any) -> None:
         """Test the workspace page."""
         response = client.get("/workspace")
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
 
-    def test_multimodal_page(self, client):
+    def test_multimodal_page(self, client: Any) -> None:
         """Test the multimodal page."""
         response = client.get("/multimodal")
         assert response.status_code == 200
@@ -71,7 +73,9 @@ class TestPageRoutes:
 class TestOCRApi:
     """Tests for OCR API endpoint."""
 
-    def test_get_ocr_file_exists(self, client, tmp_path, monkeypatch):
+    def test_get_ocr_file_exists(
+        self, client: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test getting OCR text when file exists."""
         # Create the inputs directory and input_ocr.txt file
         inputs_dir = tmp_path / "data" / "inputs"
@@ -86,7 +90,7 @@ class TestOCRApi:
             data = response.json()
             assert data["ocr"] == "테스트 OCR 텍스트"
 
-    def test_get_ocr_file_not_exists(self, client, tmp_path):
+    def test_get_ocr_file_not_exists(self, client: Any, tmp_path: Path) -> None:
         """Test getting OCR text when file doesn't exist."""
         # Create empty inputs directory (no ocr file)
         inputs_dir = tmp_path / "data" / "inputs"
@@ -107,7 +111,7 @@ class TestQAGenerateApi:
     """Tests for QA generation API endpoint."""
 
     @pytest.mark.skip(reason="Requires mocked agent with specific response format")
-    def test_generate_batch_qa(self, client):
+    def test_generate_batch_qa(self, client: Any) -> None:
         """Test batch QA generation."""
         response = client.post("/api/qa/generate", json={"mode": "batch"})
         assert response.status_code == 200
@@ -117,7 +121,7 @@ class TestQAGenerateApi:
         assert data["mode"] == "batch"
 
     @pytest.mark.skip(reason="Requires mocked agent with specific response format")
-    def test_generate_single_qa_valid_type(self, client):
+    def test_generate_single_qa_valid_type(self, client: Any) -> None:
         """Test single QA generation with valid type."""
         response = client.post(
             "/api/qa/generate", json={"mode": "single", "qtype": "reasoning"}
@@ -128,13 +132,13 @@ class TestQAGenerateApi:
         assert data["mode"] == "single"
         assert data["pair"]["type"] == "추론"
 
-    def test_generate_single_qa_missing_type(self, client):
+    def test_generate_single_qa_missing_type(self, client: Any) -> None:
         """Test single QA generation with missing type returns 500 when agent is None."""
         response = client.post("/api/qa/generate", json={"mode": "single"})
         # Agent is None so returns 500
         assert response.status_code == 500
 
-    def test_generate_single_qa_invalid_type(self, client):
+    def test_generate_single_qa_invalid_type(self, client: Any) -> None:
         """Test single QA generation with invalid type returns 422 (validation error)."""
         response = client.post(
             "/api/qa/generate", json={"mode": "single", "qtype": "invalid_type"}
@@ -143,7 +147,7 @@ class TestQAGenerateApi:
         assert response.status_code == 422
 
     @pytest.mark.skip(reason="Requires mocked agent with specific response format")
-    def test_generate_single_qa_all_types(self, client):
+    def test_generate_single_qa_all_types(self, client: Any) -> None:
         """Test single QA generation with all valid types."""
         valid_types = [
             ("global_explanation", "전반 설명"),
@@ -164,7 +168,7 @@ class TestEvalApi:
     """Tests for evaluation API endpoint."""
 
     @pytest.mark.skip(reason="Requires mocked agent with specific response format")
-    def test_evaluate_answers(self, client):
+    def test_evaluate_answers(self, client: Any) -> None:
         """Test evaluation of multiple answers."""
         response = client.post(
             "/api/eval/external",
@@ -179,7 +183,7 @@ class TestEvalApi:
         assert "best" in data
         assert len(data["results"]) == 3
 
-    def test_evaluate_no_answers(self, client):
+    def test_evaluate_no_answers(self, client: Any) -> None:
         """Test evaluation with no answers returns 422 (validation error)."""
         response = client.post(
             "/api/eval/external", json={"query": "Test query", "answers": []}
@@ -187,7 +191,7 @@ class TestEvalApi:
         # Pydantic validation requires exactly 3 answers, so empty list fails
         assert response.status_code == 422
 
-    def test_evaluate_wrong_count_answers(self, client):
+    def test_evaluate_wrong_count_answers(self, client: Any) -> None:
         """Test evaluation with wrong number of answers returns 422."""
         # Must be exactly 3 answers per model validation
         answers = [f"Answer {i}" for i in range(10)]
@@ -197,7 +201,7 @@ class TestEvalApi:
         assert response.status_code == 422
 
     @pytest.mark.skip(reason="Requires mocked agent with specific response format")
-    def test_evaluate_score_calculation(self, client):
+    def test_evaluate_score_calculation(self, client: Any) -> None:
         """Test that evaluation returns scores for answers."""
         answers = ["Answer A", "Answer B", "Answer C"]
         response = client.post(
@@ -213,7 +217,7 @@ class TestWorkspaceApi:
     """Tests for workspace API endpoint."""
 
     @pytest.mark.skip(reason="Requires mocked agent")
-    def test_workspace_inspect_mode(self, client):
+    def test_workspace_inspect_mode(self, client: Any) -> None:
         """Test workspace inspect mode."""
         response = client.post(
             "/api/workspace",
@@ -229,7 +233,7 @@ class TestWorkspaceApi:
         assert data["result"]["edited"] is None
 
     @pytest.mark.skip(reason="Requires mocked agent")
-    def test_workspace_edit_mode(self, client):
+    def test_workspace_edit_mode(self, client: Any) -> None:
         """Test workspace edit mode."""
         response = client.post(
             "/api/workspace",
@@ -244,7 +248,7 @@ class TestWorkspaceApi:
         assert "더 간결하게" in data["result"]["edited"]
         assert data["result"]["fixed"] is None
 
-    def test_workspace_edit_mode_empty_request(self, client):
+    def test_workspace_edit_mode_empty_request(self, client: Any) -> None:
         """Test workspace edit mode with empty request returns 500 when agent is None."""
         response = client.post(
             "/api/workspace",
@@ -257,7 +261,7 @@ class TestWorkspaceApi:
         # Agent is None so returns 500 before validation
         assert response.status_code == 500
 
-    def test_workspace_edit_mode_whitespace_request(self, client):
+    def test_workspace_edit_mode_whitespace_request(self, client: Any) -> None:
         """Test workspace edit mode with whitespace-only request returns 500."""
         response = client.post(
             "/api/workspace",
@@ -270,7 +274,7 @@ class TestWorkspaceApi:
         # Agent is None so returns 500
         assert response.status_code == 500
 
-    def test_workspace_invalid_mode(self, client):
+    def test_workspace_invalid_mode(self, client: Any) -> None:
         """Test workspace with invalid mode returns 422 (validation error)."""
         response = client.post(
             "/api/workspace",
@@ -288,7 +292,7 @@ class TestMultimodalApi:
     """Tests for multimodal/image analysis API endpoint."""
 
     @pytest.mark.skip(reason="Requires mocked mm (MultimodalUnderstanding)")
-    def test_analyze_image_valid(self, client):
+    def test_analyze_image_valid(self, client: Any) -> None:
         """Test image analysis with valid image file."""
         # Create a minimal valid image
         image_content = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
@@ -302,7 +306,7 @@ class TestMultimodalApi:
         assert "topics" in data["metadata"]
 
     @pytest.mark.skip(reason="Requires mocked mm (MultimodalUnderstanding)")
-    def test_analyze_image_jpeg(self, client):
+    def test_analyze_image_jpeg(self, client: Any) -> None:
         """Test image analysis with JPEG file."""
         image_content = b"\xff\xd8\xff\xe0" + b"\x00" * 100
         files = {"file": ("test.jpg", io.BytesIO(image_content), "image/jpeg")}
@@ -311,14 +315,14 @@ class TestMultimodalApi:
         data = response.json()
         assert data["filename"] == "test.jpg"
 
-    def test_analyze_non_image_file(self, client):
+    def test_analyze_non_image_file(self, client: Any) -> None:
         """Test image analysis with non-image file returns 500 when mm is None."""
         files = {"file": ("test.txt", io.BytesIO(b"text content"), "text/plain")}
         response = client.post("/api/multimodal/analyze", files=files)
         # mm is None so returns 500 before content type validation
         assert response.status_code == 500
 
-    def test_analyze_image_no_content_type(self, client):
+    def test_analyze_image_no_content_type(self, client: Any) -> None:
         """Test image analysis with file missing content type returns 500."""
         files = {"file": ("test.bin", io.BytesIO(b"binary content"), None)}
         response = client.post("/api/multimodal/analyze", files=files)
@@ -326,7 +330,7 @@ class TestMultimodalApi:
         assert response.status_code == 500
 
     @pytest.mark.skip(reason="Requires mocked mm (MultimodalUnderstanding)")
-    def test_analyze_image_with_gif(self, client):
+    def test_analyze_image_with_gif(self, client: Any) -> None:
         """Test image analysis with GIF file."""
         files = {
             "file": ("test.gif", io.BytesIO(b"GIF89a" + b"\x00" * 100), "image/gif")
@@ -340,7 +344,7 @@ class TestMultimodalApi:
 class TestLogReviewSession:
     """Tests for log_review_session helper function."""
 
-    def test_log_review_session_creates_directory(self, tmp_path):
+    def test_log_review_session_creates_directory(self, tmp_path: Path) -> None:
         """Test that log_review_session creates the log directory if it doesn't exist."""
         # Patch REPO_ROOT to use tmp_path
         with patch("src.web.api.REPO_ROOT", tmp_path):
@@ -375,7 +379,7 @@ class TestLogReviewSession:
             assert log_entry["inspector_comment"] == "테스트 코멘트"
             assert "timestamp" in log_entry
 
-    def test_log_review_session_appends_multiple_entries(self, tmp_path):
+    def test_log_review_session_appends_multiple_entries(self, tmp_path: Path) -> None:
         """Test that log_review_session appends multiple entries to the same file."""
         with patch("src.web.api.REPO_ROOT", tmp_path):
             # Log first entry
@@ -413,7 +417,7 @@ class TestLogReviewSession:
             assert entry2["mode"] == "edit"
             assert entry2["edit_request_used"] == "수정 요청"
 
-    def test_log_review_session_handles_empty_strings(self, tmp_path):
+    def test_log_review_session_handles_empty_strings(self, tmp_path: Path) -> None:
         """Test that log_review_session accepts empty strings for all fields."""
         with patch("src.web.api.REPO_ROOT", tmp_path):
             log_review_session(
@@ -438,7 +442,7 @@ class TestLogReviewSession:
             assert log_entry["edit_request_used"] == ""
             assert log_entry["inspector_comment"] == ""
 
-    def test_log_review_session_failure_does_not_raise(self, tmp_path):
+    def test_log_review_session_failure_does_not_raise(self, tmp_path: Path) -> None:
         """Test that log_review_session failure doesn't raise an exception."""
         # Patch REPO_ROOT to an invalid path (read-only or non-existent)
         with patch("src.web.api.REPO_ROOT", "/nonexistent/path"):

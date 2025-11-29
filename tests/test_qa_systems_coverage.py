@@ -9,7 +9,7 @@ from src.qa import multi_agent as multi_agent_qa_system
 from src.qa import memory_augmented
 
 
-def test_cross_validation_scoring(monkeypatch):
+def test_cross_validation_scoring(monkeypatch) -> None:
     class _CVSession:
         def __enter__(self):
             return self
@@ -29,7 +29,7 @@ def test_cross_validation_scoring(monkeypatch):
             return []
 
     class _FakeKG:
-        def __init__(self):
+        def __init__(self) -> None:
             self._graph = types.SimpleNamespace(session=lambda: _CVSession())
             self._vector_store = None
 
@@ -49,7 +49,7 @@ def test_cross_validation_scoring(monkeypatch):
     assert result["rule_compliance"]["violations"]
 
 
-def test_lcel_optimized_chain(monkeypatch):
+def test_lcel_optimized_chain(monkeypatch) -> None:
     class _LCELSession:
         def __enter__(self):
             return self
@@ -61,7 +61,7 @@ def test_lcel_optimized_chain(monkeypatch):
             return [{"text": "rule text"}]
 
     class _FakeKG:
-        def __init__(self):
+        def __init__(self) -> None:
             self._graph = types.SimpleNamespace(session=lambda: _LCELSession())
 
         def get_examples(self, limit=3):
@@ -93,7 +93,7 @@ def test_lcel_optimized_chain(monkeypatch):
     assert isinstance(output, str)
 
 
-def test_memory_augmented_qa(monkeypatch):
+def test_memory_augmented_qa(monkeypatch) -> None:
     monkeypatch.setattr(memory_augmented_qa, "require_env", lambda _v: "val")
     monkeypatch.setattr(
         memory_augmented_qa, "CustomGeminiEmbeddings", lambda api_key: object()
@@ -117,7 +117,7 @@ def test_memory_augmented_qa(monkeypatch):
             return None
 
     class _FakeSafeDriver:
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args, **kwargs) -> None:
             self._driver = _FakeDriver()
 
         def session(self):
@@ -176,9 +176,9 @@ def test_memory_augmented_qa(monkeypatch):
     system.close()
 
 
-def test_multi_agent_qa_system(monkeypatch):
+def test_multi_agent_qa_system(monkeypatch) -> None:
     class _FakeKG:
-        def __init__(self):
+        def __init__(self) -> None:
             self._graph = types.SimpleNamespace(session=lambda: _FakeRuleSession())
 
         def get_constraints_for_query_type(self, _qt):
@@ -189,14 +189,14 @@ def test_multi_agent_qa_system(monkeypatch):
             return f"output for {role}"
 
     class _FakeExampleSelector:
-        def __init__(self, *_args, **_kwargs):
+        def __init__(self, *_args, **_kwargs) -> None:
             pass
 
         def select_best_examples(self, *_args, **_kwargs):
             return [{"example": "ex"}]
 
     class _FakeValidator:
-        def __init__(self, *_args, **_kwargs):
+        def __init__(self, *_args, **_kwargs) -> None:
             pass
 
         def cross_validate_qa_pair(self, **_kwargs):

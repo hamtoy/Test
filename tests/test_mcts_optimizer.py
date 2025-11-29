@@ -1,6 +1,7 @@
 """Tests for the MCTS workflow optimizer module."""
 
 import math
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -11,7 +12,7 @@ from src.workflow.mcts_optimizer import MCTSNode, MCTSWorkflowOptimizer
 class TestMCTSNode:
     """Tests for MCTSNode dataclass."""
 
-    def test_node_creation(self):
+    def test_node_creation(self) -> None:
         """Test basic node creation."""
         node = MCTSNode(state="test_template")
         assert node.state == "test_template"
@@ -21,35 +22,35 @@ class TestMCTSNode:
         assert node.total_reward == 0.0
         assert node.untried_actions == []
 
-    def test_node_with_parent(self):
+    def test_node_with_parent(self) -> None:
         """Test node creation with parent."""
         parent = MCTSNode(state="ROOT")
         child = MCTSNode(state="child", parent=parent)
         assert child.parent == parent
         assert child.state == "child"
 
-    def test_avg_reward_zero_visits(self):
+    def test_avg_reward_zero_visits(self) -> None:
         """Test avg_reward with zero visits."""
         node = MCTSNode(state="test")
         assert node.avg_reward == 0.0
 
-    def test_avg_reward_with_visits(self):
+    def test_avg_reward_with_visits(self) -> None:
         """Test avg_reward calculation with visits."""
         node = MCTSNode(state="test", visits=4, total_reward=2.0)
         assert node.avg_reward == 0.5
 
-    def test_ucb1_zero_visits(self):
+    def test_ucb1_zero_visits(self) -> None:
         """Test UCB1 returns infinity when node has no visits."""
         parent = MCTSNode(state="root", visits=10)
         child = MCTSNode(state="child", parent=parent, visits=0)
         assert child.ucb1() == float("inf")
 
-    def test_ucb1_no_parent(self):
+    def test_ucb1_no_parent(self) -> None:
         """Test UCB1 returns infinity when node has no parent."""
         node = MCTSNode(state="root", visits=5, total_reward=2.5)
         assert node.ucb1() == float("inf")
 
-    def test_ucb1_calculation(self):
+    def test_ucb1_calculation(self) -> None:
         """Test UCB1 calculation."""
         parent = MCTSNode(state="root", visits=10)
         child = MCTSNode(state="child", parent=parent, visits=4, total_reward=2.0)
@@ -66,24 +67,24 @@ class TestMCTSWorkflowOptimizer:
     """Tests for MCTSWorkflowOptimizer class."""
 
     @pytest.fixture
-    def mock_agent(self):
+    def mock_agent(self) -> Any:
         """Create a mock GeminiAgent."""
         agent = MagicMock()
         agent.llm_provider = MagicMock()
         return agent
 
     @pytest.fixture
-    def templates(self):
+    def templates(self) -> Any:
         """Sample templates for testing."""
         return ["template_a", "template_b", "template_c"]
 
     @pytest.fixture
-    def optimizer(self, mock_agent, templates):
+    def optimizer(self, mock_agent: Any, templates: Any) -> Any:
         """Create an optimizer instance."""
         return MCTSWorkflowOptimizer(mock_agent, templates, iterations=5)
 
     @pytest.mark.asyncio
-    async def test_optimize_workflow_basic(self, optimizer):
+    async def test_optimize_workflow_basic(self, optimizer: Any) -> None:
         """Test basic workflow optimization."""
         result = await optimizer.optimize_workflow("test query")
 
@@ -93,20 +94,22 @@ class TestMCTSWorkflowOptimizer:
         assert result["iterations"] == 5
 
     @pytest.mark.asyncio
-    async def test_optimize_finds_template(self, optimizer, templates):
+    async def test_optimize_finds_template(
+        self, optimizer: Any, templates: Any
+    ) -> None:
         """Test that optimization finds a template from available ones."""
         result = await optimizer.optimize_workflow("Test query")
 
         # Best template should be one of the available templates or ROOT
         assert result["best_template"] in templates or result["best_template"] == "ROOT"
 
-    def test_select_unexpanded_node(self, optimizer):
+    def test_select_unexpanded_node(self, optimizer: Any) -> None:
         """Test _select returns node with untried actions."""
         root = MCTSNode(state="ROOT", untried_actions=["action1"])
         result = optimizer._select(root)
         assert result is root
 
-    def test_select_traverses_tree(self, optimizer):
+    def test_select_traverses_tree(self, optimizer: Any) -> None:
         """Test _select traverses to node with highest UCB1."""
         root = MCTSNode(state="ROOT")
         child1 = MCTSNode(state="child1", parent=root, visits=5, total_reward=2.5)
@@ -118,7 +121,7 @@ class TestMCTSWorkflowOptimizer:
         # Should select child2 (higher reward)
         assert result is child2
 
-    def test_expand(self, optimizer):
+    def test_expand(self, optimizer: Any) -> None:
         """Test _expand creates a new child node."""
         root = MCTSNode(state="ROOT", untried_actions=["action1", "action2"])
         child = optimizer._expand(root)
@@ -129,7 +132,7 @@ class TestMCTSWorkflowOptimizer:
         assert len(root.untried_actions) == 1
 
     @pytest.mark.asyncio
-    async def test_simulate(self, optimizer):
+    async def test_simulate(self, optimizer: Any) -> None:
         """Test _simulate returns a reward."""
         node = MCTSNode(state="template_a")
         reward = await optimizer._simulate(node, "Test query")
@@ -137,7 +140,7 @@ class TestMCTSWorkflowOptimizer:
         # Reward should be between 0 and some positive value
         assert reward >= 0
 
-    def test_backpropagate(self, optimizer):
+    def test_backpropagate(self, optimizer: Any) -> None:
         """Test _backpropagate updates node statistics."""
         root = MCTSNode(state="ROOT")
         child = MCTSNode(state="child", parent=root)
@@ -153,7 +156,7 @@ class TestMCTSWorkflowOptimizer:
         assert root.total_reward == 0.5
 
     @pytest.mark.asyncio
-    async def test_optimize_empty_templates(self, mock_agent):
+    async def test_optimize_empty_templates(self, mock_agent: Any) -> None:
         """Test optimization with no templates."""
         optimizer = MCTSWorkflowOptimizer(mock_agent, [], iterations=3)
         result = await optimizer.optimize_workflow("Test")
@@ -161,7 +164,7 @@ class TestMCTSWorkflowOptimizer:
         assert result["best_template"] == "ROOT"
 
     @pytest.mark.asyncio
-    async def test_optimize_single_template(self, mock_agent):
+    async def test_optimize_single_template(self, mock_agent: Any) -> None:
         """Test optimization with single template."""
         optimizer = MCTSWorkflowOptimizer(mock_agent, ["only_template"], iterations=5)
         result = await optimizer.optimize_workflow("Test")
@@ -170,7 +173,7 @@ class TestMCTSWorkflowOptimizer:
         assert result["best_template"] in ["only_template", "ROOT"]
 
     @pytest.mark.asyncio
-    async def test_simulate_exception_handling(self, optimizer):
+    async def test_simulate_exception_handling(self, optimizer: Any) -> None:
         """Test _simulate handles exceptions gracefully."""
         node = MCTSNode(state="error_template")
 

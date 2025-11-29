@@ -1,33 +1,36 @@
 import json
 import types
+from typing import Any, Generator
+
+import pytest
 
 from src.caching.layer import CachingLayer
 
 
 class _FakeSession:
-    def __init__(self, rows):
+    def __init__(self, rows: Any) -> None:
         self.rows = rows
 
-    def __enter__(self):
+    def __enter__(self) -> Any:
         return self
 
-    def __exit__(self, exc_type, exc, tb):
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> Any:
         return False
 
-    def run(self, cypher, **params):  # noqa: ARG002
+    def run(self, cypher: Any, **params: Any) -> Generator[Any, None, None]:  # noqa: ARG002
         for r in self.rows:
             yield r
 
 
 class _FakeGraph:
-    def __init__(self, rows):
+    def __init__(self, rows: Any) -> None:
         self._rows = rows
 
-    def session(self):
+    def session(self) -> Any:
         return _FakeSession(self._rows)
 
 
-def test_get_rules_cached_without_redis(monkeypatch):
+def test_get_rules_cached_without_redis(monkeypatch: pytest.MonkeyPatch) -> None:
     rows = [{"id": "1", "text": "t1", "section": "s1"}]
     kg = types.SimpleNamespace(_graph=_FakeGraph(rows))
     layer = CachingLayer(kg=kg, redis_client=None)  # type: ignore[arg-type]
@@ -36,25 +39,25 @@ def test_get_rules_cached_without_redis(monkeypatch):
     assert rules == [{"id": "1", "text": "t1", "section": "s1"}]
 
 
-def test_get_rules_cached_with_redis(monkeypatch):
+def test_get_rules_cached_with_redis(monkeypatch: pytest.MonkeyPatch) -> None:
     rows = [{"id": "2", "text": "t2", "section": "s2"}]
     kg = types.SimpleNamespace(_graph=_FakeGraph(rows))
 
     class _FakeRedis:
-        def __init__(self):
-            self.store = {}
+        def __init__(self) -> None:
+            self.store: dict[Any, Any] = {}
             self.deleted = 0
 
-        def get(self, key):
+        def get(self, key: Any) -> Any:
             return self.store.get(key)
 
-        def setex(self, key, ttl, value):
+        def setex(self, key: Any, ttl: Any, value: Any) -> None:
             self.store[key] = value
 
-        def keys(self, pattern):
+        def keys(self, pattern: Any) -> Any:
             return list(self.store.keys())
 
-        def delete(self, *keys):
+        def delete(self, *keys: Any) -> Any:
             self.deleted += len(keys)
             for k in keys:
                 self.store.pop(k, None)

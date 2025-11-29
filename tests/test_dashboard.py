@@ -3,6 +3,7 @@
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -10,7 +11,7 @@ from src.analytics.dashboard import UsageDashboard
 
 
 @pytest.fixture
-def temp_stats_file(tmp_path):
+def temp_stats_file(tmp_path: Path) -> Any:
     """Create a temporary stats file with test data."""
     stats_file = tmp_path / "cache_stats.jsonl"
 
@@ -36,34 +37,34 @@ def temp_stats_file(tmp_path):
 
 
 @pytest.fixture
-def empty_stats_file(tmp_path):
+def empty_stats_file(tmp_path: Path) -> Any:
     """Create an empty stats file."""
     stats_file = tmp_path / "cache_stats.jsonl"
     stats_file.write_text("", encoding="utf-8")
     return stats_file
 
 
-def test_dashboard_init():
+def test_dashboard_init() -> None:
     """Test dashboard initialization with default path."""
     dashboard = UsageDashboard()
     assert dashboard.stats_file == Path("cache_stats.jsonl")
 
 
-def test_dashboard_init_custom_path(tmp_path):
+def test_dashboard_init_custom_path(tmp_path: Path) -> None:
     """Test dashboard initialization with custom path."""
     custom_path = tmp_path / "custom_stats.jsonl"
     dashboard = UsageDashboard(stats_file=custom_path)
     assert dashboard.stats_file == custom_path
 
 
-def test_load_last_n_days_empty(empty_stats_file):
+def test_load_last_n_days_empty(empty_stats_file: Any) -> None:
     """Test loading from empty file."""
     dashboard = UsageDashboard(stats_file=empty_stats_file)
     entries = dashboard._load_last_n_days(7)
     assert entries == []
 
 
-def test_load_last_n_days_missing_file(tmp_path):
+def test_load_last_n_days_missing_file(tmp_path: Path) -> None:
     """Test loading from non-existent file."""
     missing_file = tmp_path / "missing.jsonl"
     dashboard = UsageDashboard(stats_file=missing_file)
@@ -71,14 +72,14 @@ def test_load_last_n_days_missing_file(tmp_path):
     assert entries == []
 
 
-def test_load_last_n_days_with_data(temp_stats_file):
+def test_load_last_n_days_with_data(temp_stats_file: Any) -> None:
     """Test loading entries with data."""
     dashboard = UsageDashboard(stats_file=temp_stats_file)
     entries = dashboard._load_last_n_days(7)
     assert len(entries) > 0
 
 
-def test_generate_weekly_report_no_data(empty_stats_file, tmp_path):
+def test_generate_weekly_report_no_data(empty_stats_file: Any, tmp_path: Path) -> None:
     """Test report generation with no data."""
     dashboard = UsageDashboard(stats_file=empty_stats_file)
     result = dashboard.generate_weekly_report()
@@ -86,7 +87,7 @@ def test_generate_weekly_report_no_data(empty_stats_file, tmp_path):
     assert result["error"] == "데이터 없음"
 
 
-def test_generate_weekly_report_with_data(temp_stats_file, tmp_path):
+def test_generate_weekly_report_with_data(temp_stats_file: Any, tmp_path: Path) -> None:
     """Test report generation with data."""
     dashboard = UsageDashboard(stats_file=temp_stats_file)
 
@@ -112,7 +113,7 @@ def test_generate_weekly_report_with_data(temp_stats_file, tmp_path):
         os.chdir(original_cwd)
 
 
-def test_calc_cache_hit_rate(temp_stats_file):
+def test_calc_cache_hit_rate(temp_stats_file: Any) -> None:
     """Test cache hit rate calculation."""
     dashboard = UsageDashboard(stats_file=temp_stats_file)
     entries = dashboard._load_last_n_days(7)
@@ -121,14 +122,14 @@ def test_calc_cache_hit_rate(temp_stats_file):
     assert hit_rate == 60.0
 
 
-def test_calc_cache_hit_rate_no_data():
+def test_calc_cache_hit_rate_no_data() -> None:
     """Test cache hit rate with no data."""
     dashboard = UsageDashboard()
     hit_rate = dashboard._calc_cache_hit_rate([])
     assert hit_rate == 0.0
 
 
-def test_calc_avg_tokens(temp_stats_file):
+def test_calc_avg_tokens(temp_stats_file: Any) -> None:
     """Test average tokens calculation."""
     dashboard = UsageDashboard(stats_file=temp_stats_file)
     entries = dashboard._load_last_n_days(7)
@@ -137,14 +138,14 @@ def test_calc_avg_tokens(temp_stats_file):
     assert avg_tokens == 20.0
 
 
-def test_calc_avg_tokens_no_queries():
+def test_calc_avg_tokens_no_queries() -> None:
     """Test average tokens with no queries."""
     dashboard = UsageDashboard()
     avg_tokens = dashboard._calc_avg_tokens([])
     assert avg_tokens == 0.0
 
 
-def test_top_features(temp_stats_file):
+def test_top_features(temp_stats_file: Any) -> None:
     """Test top features extraction."""
     dashboard = UsageDashboard(stats_file=temp_stats_file)
     entries = dashboard._load_last_n_days(7)
@@ -155,7 +156,7 @@ def test_top_features(temp_stats_file):
         assert len(top_features[0]) == 2
 
 
-def test_hourly_distribution(temp_stats_file):
+def test_hourly_distribution(temp_stats_file: Any) -> None:
     """Test hourly distribution calculation."""
     dashboard = UsageDashboard(stats_file=temp_stats_file)
     entries = dashboard._load_last_n_days(7)
@@ -165,7 +166,7 @@ def test_hourly_distribution(temp_stats_file):
     assert all(h in distribution for h in range(24))
 
 
-def test_get_today_stats(temp_stats_file):
+def test_get_today_stats(temp_stats_file: Any) -> None:
     """Test getting today's stats."""
     dashboard = UsageDashboard(stats_file=temp_stats_file)
     today_stats = dashboard.get_today_stats()
@@ -174,7 +175,7 @@ def test_get_today_stats(temp_stats_file):
     assert "cache_hit_rate" in today_stats
 
 
-def test_get_week_total_cost(temp_stats_file):
+def test_get_week_total_cost(temp_stats_file: Any) -> None:
     """Test getting week total cost."""
     dashboard = UsageDashboard(stats_file=temp_stats_file)
     total_cost = dashboard.get_week_total_cost()
@@ -182,14 +183,14 @@ def test_get_week_total_cost(temp_stats_file):
     assert total_cost >= 0
 
 
-def test_get_week_avg_quality(temp_stats_file):
+def test_get_week_avg_quality(temp_stats_file: Any) -> None:
     """Test getting week average quality."""
     dashboard = UsageDashboard(stats_file=temp_stats_file)
     avg_quality = dashboard.get_week_avg_quality()
     assert isinstance(avg_quality, float)
 
 
-def test_render_html():
+def test_render_html() -> None:
     """Test HTML rendering."""
     dashboard = UsageDashboard()
     stats = {
@@ -207,7 +208,7 @@ def test_render_html():
     assert "$0.50" in html
 
 
-def test_calc_week_over_week_no_prev_data(temp_stats_file):
+def test_calc_week_over_week_no_prev_data(temp_stats_file: Any) -> None:
     """Test week over week calculation with no previous data."""
     dashboard = UsageDashboard(stats_file=temp_stats_file)
     entries = dashboard._load_last_n_days(7)

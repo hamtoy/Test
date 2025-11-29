@@ -1,7 +1,8 @@
 """Tests for src/ui/interactive_menu.py to improve coverage."""
 
-from unittest.mock import patch, MagicMock
 from pathlib import Path
+from typing import Any
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -11,7 +12,7 @@ from src.core.models import WorkflowResult
 class TestShowErrorWithGuide:
     """Tests for show_error_with_guide function."""
 
-    def test_show_error_with_guide(self, capsys):
+    def test_show_error_with_guide(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test error message display."""
         from src.ui.interactive_menu import show_error_with_guide
 
@@ -25,7 +26,7 @@ class TestShowErrorWithGuide:
 class TestDisplayWorkflowSummary:
     """Tests for _display_workflow_summary function."""
 
-    def test_display_workflow_summary_with_success(self):
+    def test_display_workflow_summary_with_success(self) -> None:
         """Test workflow summary display with successful results."""
         from src.ui.interactive_menu import _display_workflow_summary
         from src.core.models import WorkflowResult
@@ -58,7 +59,7 @@ class TestDisplayWorkflowSummary:
             # Check that console.print was called
             assert mock_console.print.called
 
-    def test_display_workflow_summary_long_query(self):
+    def test_display_workflow_summary_long_query(self) -> None:
         """Test workflow summary with long query text."""
         from src.ui.interactive_menu import _display_workflow_summary
         from src.core.models import WorkflowResult
@@ -88,7 +89,7 @@ class TestDisplayWorkflowSummary:
 
             assert mock_console.print.called
 
-    def test_display_workflow_summary_all_failed(self):
+    def test_display_workflow_summary_all_failed(self) -> None:
         """Test workflow summary with all failed results."""
         from src.ui.interactive_menu import _display_workflow_summary
 
@@ -117,7 +118,7 @@ class TestDisplayWorkflowSummary:
 class TestShowCacheStatistics:
     """Tests for show_cache_statistics function."""
 
-    def test_show_cache_statistics_success(self):
+    def test_show_cache_statistics_success(self) -> None:
         """Test cache statistics display."""
         from src.ui.interactive_menu import show_cache_statistics
 
@@ -137,7 +138,7 @@ class TestShowCacheStatistics:
             mock_analyze.assert_called_once()
             mock_report.assert_called_once()
 
-    def test_show_cache_statistics_error(self):
+    def test_show_cache_statistics_error(self) -> None:
         """Test cache statistics display with error."""
         from src.ui.interactive_menu import show_cache_statistics
 
@@ -164,13 +165,13 @@ class TestShowCacheStatistics:
 class TestConstants:
     """Tests for module constants."""
 
-    def test_menu_choices(self):
+    def test_menu_choices(self) -> None:
         """Test MENU_CHOICES constant."""
         from src.ui.interactive_menu import MENU_CHOICES
 
         assert MENU_CHOICES == ["1", "2", "3", "4", "5"]
 
-    def test_default_ocr_path(self):
+    def test_default_ocr_path(self) -> None:
         """Test DEFAULT_OCR_PATH constant."""
         from src.ui.interactive_menu import DEFAULT_OCR_PATH
 
@@ -180,7 +181,7 @@ class TestConstants:
 class TestShowMainMenu:
     """Tests for show_main_menu function."""
 
-    def test_show_main_menu_basic(self, monkeypatch):
+    def test_show_main_menu_basic(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test main menu display."""
         from src.ui.interactive_menu import show_main_menu
 
@@ -199,7 +200,7 @@ class TestShowMainMenu:
             assert result == 0  # Choice "1" returns 0 (index)
             assert mock_console.clear.called
 
-    def test_show_main_menu_with_flags(self, monkeypatch):
+    def test_show_main_menu_with_flags(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test main menu with feature flags enabled."""
         from src.ui.interactive_menu import show_main_menu
 
@@ -221,7 +222,7 @@ class TestInteractiveMain:
     """Tests for interactive_main function."""
 
     @pytest.mark.asyncio
-    async def test_interactive_main_exit(self):
+    async def test_interactive_main_exit(self) -> None:
         """Test interactive main exits on choice 5."""
         from src.ui.interactive_menu import interactive_main
 
@@ -238,7 +239,7 @@ class TestInteractiveMain:
         assert exc.value.code == 0
 
     @pytest.mark.asyncio
-    async def test_interactive_main_keyboard_interrupt_exit(self):
+    async def test_interactive_main_keyboard_interrupt_exit(self) -> None:
         """Test interactive main handles KeyboardInterrupt and exits."""
         from src.ui.interactive_menu import interactive_main
 
@@ -248,7 +249,7 @@ class TestInteractiveMain:
 
         call_count = 0
 
-        def mock_show_menu():
+        def mock_show_menu() -> Any:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
@@ -265,7 +266,7 @@ class TestInteractiveMain:
         assert exc.value.code == 0
 
     @pytest.mark.asyncio
-    async def test_interactive_main_keyboard_interrupt_continue(self):
+    async def test_interactive_main_keyboard_interrupt_continue(self) -> None:
         """Test interactive main handles KeyboardInterrupt and continues."""
         from src.ui.interactive_menu import interactive_main
 
@@ -275,7 +276,7 @@ class TestInteractiveMain:
 
         call_count = 0
 
-        def mock_show_menu():
+        def mock_show_menu() -> Any:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
@@ -292,7 +293,7 @@ class TestInteractiveMain:
         assert exc.value.code == 0
 
     @pytest.mark.asyncio
-    async def test_interactive_main_unexpected_error(self):
+    async def test_interactive_main_unexpected_error(self) -> None:
         """Test interactive main handles unexpected errors."""
         from src.ui.interactive_menu import interactive_main
 
@@ -302,7 +303,7 @@ class TestInteractiveMain:
 
         call_count = 0
 
-        def mock_show_menu():
+        def mock_show_menu() -> Any:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
@@ -319,7 +320,7 @@ class TestInteractiveMain:
         assert exc.value.code == 0
 
     @pytest.mark.asyncio
-    async def test_interactive_main_cache_statistics_choice(self):
+    async def test_interactive_main_cache_statistics_choice(self) -> None:
         """Test interactive main handles cache statistics choice."""
         from src.ui.interactive_menu import interactive_main
 
@@ -329,7 +330,7 @@ class TestInteractiveMain:
 
         call_count = 0
 
-        def mock_show_menu():
+        def mock_show_menu() -> Any:
             nonlocal call_count
             call_count += 1
             if call_count == 1:
@@ -350,7 +351,7 @@ class TestRunWorkflowInteractive:
     """Tests for run_workflow_interactive function."""
 
     @pytest.mark.asyncio
-    async def test_run_workflow_invalid_api_key(self):
+    async def test_run_workflow_invalid_api_key(self) -> None:
         """Test workflow with invalid API key."""
         from src.ui.interactive_menu import run_workflow_interactive
 
@@ -367,7 +368,7 @@ class TestRunWorkflowInteractive:
             await run_workflow_interactive(mock_agent, mock_config, mock_logger)
 
     @pytest.mark.asyncio
-    async def test_run_workflow_invalid_api_key_format(self):
+    async def test_run_workflow_invalid_api_key_format(self) -> None:
         """Test workflow with invalid API key format."""
         from src.ui.interactive_menu import run_workflow_interactive
 

@@ -22,7 +22,7 @@ def _stub_agent(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_generate_query_rate_limit(monkeypatch):
+async def test_generate_query_rate_limit(monkeypatch) -> None:
     agent = _stub_agent(monkeypatch)
 
     class ResourceExhausted(Exception):
@@ -36,7 +36,7 @@ async def test_generate_query_rate_limit(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_generate_query_empty_response(monkeypatch):
+async def test_generate_query_empty_response(monkeypatch) -> None:
     agent = _stub_agent(monkeypatch)
     monkeypatch.setattr(agent, "_call_api_with_retry", AsyncMock(return_value=""))
 
@@ -45,7 +45,7 @@ async def test_generate_query_empty_response(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_generate_query_invalid_json(monkeypatch):
+async def test_generate_query_invalid_json(monkeypatch) -> None:
     agent = _stub_agent(monkeypatch)
     monkeypatch.setattr(agent, "_call_api_with_retry", AsyncMock(return_value="{bad"))
 

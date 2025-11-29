@@ -4,16 +4,16 @@ import types
 from src.infra import constraints as rtce
 
 
-def test_integrated_qa_pipeline_create_and_validate(monkeypatch):
+def test_integrated_qa_pipeline_create_and_validate(monkeypatch) -> None:
     monkeypatch.setenv("NEO4J_URI", "bolt://fake")
     monkeypatch.setenv("NEO4J_USER", "u")
     monkeypatch.setenv("NEO4J_PASSWORD", "p")
 
     class _FakeKG:
-        def __init__(self, *_args, **_kwargs):
+        def __init__(self, *_args, **_kwargs) -> None:
             self.closed = False
 
-        def close(self):
+        def close(self) -> None:
             self.closed = True
 
     class _TemplateSession:
@@ -31,7 +31,7 @@ def test_integrated_qa_pipeline_create_and_validate(monkeypatch):
             return []
 
     class _FakeTemplateGen:
-        def __init__(self, *_args, **_kwargs):
+        def __init__(self, *_args, **_kwargs) -> None:
             self.driver = types.SimpleNamespace(session=lambda: _TemplateSession())
 
         def generate_prompt_for_query_type(self, query_type, _ctx):
@@ -74,7 +74,7 @@ def test_integrated_qa_pipeline_create_and_validate(monkeypatch):
     pipeline_obj.close()
 
 
-def test_real_time_constraint_enforcer_stream_and_validate():
+def test_real_time_constraint_enforcer_stream_and_validate() -> None:
     class _GraphSession:
         def __enter__(self):
             return self
@@ -86,7 +86,7 @@ def test_real_time_constraint_enforcer_stream_and_validate():
             return [{"content": "duplicate text"}]
 
     class _FakeKG:
-        def __init__(self):
+        def __init__(self) -> None:
             self._graph = types.SimpleNamespace(session=lambda: _GraphSession())
 
         def get_constraints_for_query_type(self, *_args, **_kwargs):

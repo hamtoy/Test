@@ -3,13 +3,14 @@ from __future__ import annotations
 import pytest
 from unittest.mock import MagicMock, patch
 import src.llm.gemini as gmc
+from typing import Any
 
 
 class TestGeminiModelClientMetrics:
     """Test GeminiModelClient metrics logging with mocked API."""
 
     @pytest.fixture(autouse=True)
-    def setup_mocks(self, monkeypatch):
+    def setup_mocks(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Setup mocks for all tests."""
         monkeypatch.setenv("GEMINI_API_KEY", "test-api-key")
 
@@ -36,14 +37,14 @@ class TestGeminiModelClientMetrics:
         self.patcher1.stop()
         self.patcher2.stop()
 
-    def test_generate_logs_metrics(self, caplog):
+    def test_generate_logs_metrics(self, caplog: pytest.LogCaptureFixture) -> None:
         client = gmc.GeminiModelClient()
 
         # Mock log_metrics to capture calls, or use caplog/mocking logger
         # The original test mocked log_metrics function. Let's do that.
         captured = {}
 
-        def _log_metrics(logger, **kwargs):
+        def _log_metrics(logger: Any, **kwargs: Any) -> None:
             captured.update(kwargs)
 
         with patch("src.llm.gemini.log_metrics", side_effect=_log_metrics):
@@ -54,12 +55,12 @@ class TestGeminiModelClientMetrics:
         assert captured["prompt_tokens"] == 100
         assert captured["completion_tokens"] == 50
 
-    def test_evaluate_and_rewrite_log_metrics(self):
+    def test_evaluate_and_rewrite_log_metrics(self) -> None:
         client = gmc.GeminiModelClient()
 
         captured = []
 
-        def _log_metrics(logger, **kwargs):
+        def _log_metrics(logger: Any, **kwargs: Any) -> None:
             captured.append(kwargs)
 
         # Mock evaluate response

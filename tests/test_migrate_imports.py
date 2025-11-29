@@ -19,22 +19,22 @@ from scripts.migrate_imports import (
 class TestShouldExclude:
     """Tests for the should_exclude function."""
 
-    def test_exclude_by_filename_pattern(self):
+    def test_exclude_by_filename_pattern(self) -> None:
         """Test excluding files by filename pattern."""
         filepath = Path("/path/to/test_file.py")
         assert should_exclude(filepath, ["test_*.py"]) is True
 
-    def test_exclude_by_path_pattern(self):
+    def test_exclude_by_path_pattern(self) -> None:
         """Test excluding files by full path pattern."""
         filepath = Path("/path/to/vendor/module.py")
         assert should_exclude(filepath, ["*vendor*"]) is True
 
-    def test_no_exclude_when_no_match(self):
+    def test_no_exclude_when_no_match(self) -> None:
         """Test that non-matching files are not excluded."""
         filepath = Path("/path/to/main.py")
         assert should_exclude(filepath, ["test_*.py", "*vendor*"]) is False
 
-    def test_empty_exclude_patterns(self):
+    def test_empty_exclude_patterns(self) -> None:
         """Test with empty exclude patterns."""
         filepath = Path("/path/to/file.py")
         assert should_exclude(filepath, []) is False
@@ -43,7 +43,7 @@ class TestShouldExclude:
 class TestMigrateFile:
     """Tests for the migrate_file function."""
 
-    def test_no_changes_needed(self):
+    def test_no_changes_needed(self) -> None:
         """Test file with no deprecated imports."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("from src.config.constants import FOO\n")
@@ -58,7 +58,7 @@ class TestMigrateFile:
         finally:
             filepath.unlink()
 
-    def test_detect_deprecated_import(self):
+    def test_detect_deprecated_import(self) -> None:
         """Test detection of deprecated import in check mode."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("from src.utils import some_function\n")
@@ -75,7 +75,7 @@ class TestMigrateFile:
         finally:
             filepath.unlink()
 
-    def test_fix_deprecated_import(self):
+    def test_fix_deprecated_import(self) -> None:
         """Test fixing deprecated import."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("from src.utils import some_function\n")
@@ -91,7 +91,7 @@ class TestMigrateFile:
         finally:
             filepath.unlink()
 
-    def test_multiple_imports_in_file(self):
+    def test_multiple_imports_in_file(self) -> None:
         """Test file with multiple deprecated imports."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("from src.utils import helper\nfrom src.constants import CONST\n")
@@ -109,7 +109,7 @@ class TestMigrateFile:
         finally:
             filepath.unlink()
 
-    def test_exclude_patterns_filter(self):
+    def test_exclude_patterns_filter(self) -> None:
         """Test that excluded files return None."""
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".py", delete=False, prefix="test_"
@@ -124,7 +124,7 @@ class TestMigrateFile:
         finally:
             filepath.unlink()
 
-    def test_unicode_decode_error_returns_none(self):
+    def test_unicode_decode_error_returns_none(self) -> None:
         """Test that binary files are skipped."""
         with tempfile.NamedTemporaryFile(mode="wb", suffix=".py", delete=False) as f:
             f.write(b"\xff\xfe")  # Invalid UTF-8
@@ -140,7 +140,7 @@ class TestMigrateFile:
 class TestGenerateDiff:
     """Tests for the generate_diff function."""
 
-    def test_diff_shows_changes(self):
+    def test_diff_shows_changes(self) -> None:
         """Test that diff correctly shows import changes."""
         result = MigrationResult(
             filepath=Path("test.py"),
@@ -153,7 +153,7 @@ class TestGenerateDiff:
         assert "-from src.utils import helper" in diff
         assert "+from src.infra.utils import helper" in diff
 
-    def test_empty_diff_for_no_changes(self):
+    def test_empty_diff_for_no_changes(self) -> None:
         """Test that no diff is generated when content is the same."""
         result = MigrationResult(
             filepath=Path("test.py"),
@@ -169,7 +169,7 @@ class TestGenerateDiff:
 class TestCollectFiles:
     """Tests for the collect_files function."""
 
-    def test_collect_single_file(self):
+    def test_collect_single_file(self) -> None:
         """Test collecting a single file."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("# test\n")
@@ -182,7 +182,7 @@ class TestCollectFiles:
         finally:
             filepath.unlink()
 
-    def test_collect_files_from_directory(self):
+    def test_collect_files_from_directory(self) -> None:
         """Test collecting Python files from a directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
@@ -194,7 +194,7 @@ class TestCollectFiles:
             assert len(files) == 2
             assert all(f.suffix == ".py" for f in files)
 
-    def test_collect_excludes_pycache(self):
+    def test_collect_excludes_pycache(self) -> None:
         """Test that __pycache__ directories are excluded."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
@@ -207,7 +207,7 @@ class TestCollectFiles:
             assert len(files) == 1
             assert "__pycache__" not in str(files[0])
 
-    def test_collect_with_exclude_patterns(self):
+    def test_collect_with_exclude_patterns(self) -> None:
         """Test collecting files with exclude patterns."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
@@ -222,7 +222,7 @@ class TestCollectFiles:
 class TestMain:
     """Tests for the main function."""
 
-    def test_check_mode_no_changes(self, capsys):
+    def test_check_mode_no_changes(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test check mode with no deprecated imports."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
@@ -234,7 +234,7 @@ class TestMain:
             captured = capsys.readouterr()
             assert "No deprecated imports found" in captured.out
 
-    def test_check_mode_with_changes(self, capsys):
+    def test_check_mode_with_changes(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test check mode with deprecated imports."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
@@ -248,7 +248,7 @@ class TestMain:
             # File should not be changed
             assert (tmppath / "main.py").read_text() == "from src.utils import helper\n"
 
-    def test_fix_mode_applies_changes(self, capsys):
+    def test_fix_mode_applies_changes(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test fix mode applies changes."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
@@ -263,7 +263,7 @@ class TestMain:
             content = (tmppath / "main.py").read_text()
             assert "from src.infra.utils import helper" in content
 
-    def test_exclude_option(self, capsys):
+    def test_exclude_option(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test exclude option filters files."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
@@ -279,7 +279,7 @@ class TestMain:
             # Should only find main.py, not test_main.py
             assert "1 file(s) would be modified" in captured.out
 
-    def test_show_diff_option(self, capsys):
+    def test_show_diff_option(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test show-diff option outputs unified diff."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
@@ -292,7 +292,7 @@ class TestMain:
             assert "-from src.utils import helper" in captured.out
             assert "+from src.infra.utils import helper" in captured.out
 
-    def test_default_to_check_mode(self, capsys):
+    def test_default_to_check_mode(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test that default mode is check (dry-run)."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
@@ -308,7 +308,7 @@ class TestMain:
 class TestMigrationResult:
     """Tests for the MigrationResult class."""
 
-    def test_has_changes_true(self):
+    def test_has_changes_true(self) -> None:
         """Test has_changes returns True when there are changes."""
         result = MigrationResult(
             filepath=Path("test.py"),
@@ -318,7 +318,7 @@ class TestMigrationResult:
         )
         assert result.has_changes is True
 
-    def test_has_changes_false(self):
+    def test_has_changes_false(self) -> None:
         """Test has_changes returns False when there are no changes."""
         result = MigrationResult(
             filepath=Path("test.py"),
@@ -332,7 +332,7 @@ class TestMigrationResult:
 class TestImportMappings:
     """Tests for import mappings coverage."""
 
-    def test_all_mappings_have_valid_regex(self):
+    def test_all_mappings_have_valid_regex(self) -> None:
         """Test that all import mappings have valid regex patterns."""
         import re
 
@@ -351,7 +351,7 @@ class TestImportMappings:
         if errors:
             pytest.fail(f"Invalid regex patterns: {', '.join(errors)}")
 
-    def test_mappings_cover_expected_modules(self):
+    def test_mappings_cover_expected_modules(self) -> None:
         """Test that mappings cover the expected deprecated modules."""
         expected_modules = [
             "utils",

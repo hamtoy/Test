@@ -5,7 +5,7 @@ from src.infra.logging import SensitiveDataFilter
 class TestSecurity:
     """보안 관련 기능 테스트"""
 
-    def test_sensitive_data_filter_masks_api_key(self):
+    def test_sensitive_data_filter_masks_api_key(self) -> None:
         """SensitiveDataFilter가 API Key를 마스킹하는지 확인"""
         filter = SensitiveDataFilter()
 
@@ -29,7 +29,7 @@ class TestSecurity:
         assert "[FILTERED_API_KEY]" in record.msg
         assert fake_key not in record.msg
 
-    def test_sensitive_data_filter_masks_api_key_in_args(self):
+    def test_sensitive_data_filter_masks_api_key_in_args(self) -> None:
         """SensitiveDataFilter가 args에 포함된 API Key도 마스킹하는지 확인"""
         filter = SensitiveDataFilter()
         fake_key = "AIzaSyD-1234567890abcdefghijklmnopqrstu"
@@ -53,7 +53,7 @@ class TestSecurity:
         assert "[FILTERED_API_KEY]" in str(record.args[0])
         assert fake_key not in str(record.args[0])
 
-    def test_sensitive_data_filter_ignores_safe_logs(self):
+    def test_sensitive_data_filter_ignores_safe_logs(self) -> None:
         """민감 정보가 없는 로그는 건드리지 않는지 확인"""
         filter = SensitiveDataFilter()
         safe_msg = "This is a safe log message."

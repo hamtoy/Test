@@ -1,5 +1,6 @@
 """Tests for the core adapters module."""
 
+from typing import Any, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -18,7 +19,7 @@ class TestGeminiProvider:
     """Tests for GeminiProvider class."""
 
     @pytest.fixture
-    def mock_genai(self):
+    def mock_genai(self) -> Generator[MagicMock, None, None]:
         """Create a mock genai module."""
         with patch("src.core.adapters.genai") as mock:
             mock.GenerativeModel = MagicMock()
@@ -26,7 +27,7 @@ class TestGeminiProvider:
             yield mock
 
     @pytest.fixture
-    def provider(self, mock_genai):
+    def provider(self, mock_genai: MagicMock) -> Any:
         """Create a GeminiProvider instance."""
         from src.core.adapters import GeminiProvider
 
@@ -35,7 +36,7 @@ class TestGeminiProvider:
 
         return GeminiProvider(api_key="test-api-key", model_name="gemini-1.5-pro")
 
-    def test_init(self, mock_genai):
+    def test_init(self, mock_genai: MagicMock) -> None:
         """Test GeminiProvider initialization."""
         from src.core.adapters import GeminiProvider
 
@@ -46,7 +47,9 @@ class TestGeminiProvider:
         assert provider.model_name == "gemini-1.5-pro"
 
     @pytest.mark.asyncio
-    async def test_generate_content_basic(self, provider, mock_genai):
+    async def test_generate_content_basic(
+        self, provider: Any, mock_genai: MagicMock
+    ) -> None:
         """Test basic content generation."""
         # Create finish_reason mock properly
         finish_reason = MagicMock()
@@ -74,7 +77,9 @@ class TestGeminiProvider:
         assert result.finish_reason == "STOP"
 
     @pytest.mark.asyncio
-    async def test_generate_content_with_system_instruction(self, provider, mock_genai):
+    async def test_generate_content_with_system_instruction(
+        self, provider: Any, mock_genai: MagicMock
+    ) -> None:
         """Test content generation with system instruction."""
         # Create finish_reason mock properly
         finish_reason = MagicMock()
@@ -111,7 +116,9 @@ class TestGeminiProvider:
         )
 
     @pytest.mark.asyncio
-    async def test_generate_content_with_config(self, provider, mock_genai):
+    async def test_generate_content_with_config(
+        self, provider: Any, mock_genai: MagicMock
+    ) -> None:
         """Test content generation with configuration options."""
         # Create finish_reason mock properly
         finish_reason = MagicMock()
@@ -144,7 +151,9 @@ class TestGeminiProvider:
         assert call_args.kwargs["generation_config"]["max_output_tokens"] == 1000
 
     @pytest.mark.asyncio
-    async def test_generate_content_with_response_schema(self, provider, mock_genai):
+    async def test_generate_content_with_response_schema(
+        self, provider: Any, mock_genai: MagicMock
+    ) -> None:
         """Test content generation with response schema."""
         # Create finish_reason mock properly
         finish_reason = MagicMock()
@@ -175,7 +184,7 @@ class TestGeminiProvider:
         assert call_args.kwargs["generation_config"]["response_schema"] == schema
 
     @pytest.mark.asyncio
-    async def test_generate_content_safety_blocked(self, provider):
+    async def test_generate_content_safety_blocked(self, provider: Any) -> None:
         """Test handling of safety blocked responses."""
         mock_response = MagicMock()
         mock_response.text = ""
@@ -188,7 +197,7 @@ class TestGeminiProvider:
             await provider.generate_content_async("Test prompt")
 
     @pytest.mark.asyncio
-    async def test_generate_content_rate_limit(self, provider):
+    async def test_generate_content_rate_limit(self, provider: Any) -> None:
         """Test handling of rate limit errors."""
         from google.api_core import exceptions as google_exceptions
 
@@ -200,7 +209,7 @@ class TestGeminiProvider:
             await provider.generate_content_async("Test prompt")
 
     @pytest.mark.asyncio
-    async def test_generate_content_context_exceeded(self, provider):
+    async def test_generate_content_context_exceeded(self, provider: Any) -> None:
         """Test handling of context window exceeded errors."""
         from google.api_core import exceptions as google_exceptions
 
@@ -212,7 +221,7 @@ class TestGeminiProvider:
             await provider.generate_content_async("Test prompt")
 
     @pytest.mark.asyncio
-    async def test_generate_content_invalid_argument(self, provider):
+    async def test_generate_content_invalid_argument(self, provider: Any) -> None:
         """Test handling of other invalid argument errors."""
         from google.api_core import exceptions as google_exceptions
 
@@ -224,7 +233,7 @@ class TestGeminiProvider:
             await provider.generate_content_async("Test prompt")
 
     @pytest.mark.asyncio
-    async def test_generate_content_timeout(self, provider):
+    async def test_generate_content_timeout(self, provider: Any) -> None:
         """Test handling of timeout errors."""
         from google.api_core import exceptions as google_exceptions
 
@@ -236,7 +245,7 @@ class TestGeminiProvider:
             await provider.generate_content_async("Test prompt")
 
     @pytest.mark.asyncio
-    async def test_generate_content_generic_error(self, provider):
+    async def test_generate_content_generic_error(self, provider: Any) -> None:
         """Test handling of generic errors."""
         provider._model.generate_content_async = AsyncMock(
             side_effect=Exception("Unknown error")
@@ -246,7 +255,7 @@ class TestGeminiProvider:
             await provider.generate_content_async("Test prompt")
 
     @pytest.mark.asyncio
-    async def test_count_tokens(self, provider):
+    async def test_count_tokens(self, provider: Any) -> None:
         """Test token counting."""
         mock_count = MagicMock()
         mock_count.total_tokens = 100
@@ -258,7 +267,7 @@ class TestGeminiProvider:
         provider._model.count_tokens.assert_called_once_with("Test text")
 
     @pytest.mark.asyncio
-    async def test_count_tokens_error(self, provider):
+    async def test_count_tokens_error(self, provider: Any) -> None:
         """Test token counting error handling."""
         provider._model.count_tokens = MagicMock(side_effect=Exception("Count failed"))
 
@@ -270,7 +279,7 @@ class TestNeo4jProvider:
     """Tests for Neo4jProvider class."""
 
     @pytest.fixture
-    def mock_driver(self):
+    def mock_driver(self) -> Generator[MagicMock, None, None]:
         """Create a mock Neo4j driver."""
         with patch("src.core.adapters.AsyncGraphDatabase") as mock_db:
             mock_driver = MagicMock()
@@ -278,7 +287,7 @@ class TestNeo4jProvider:
             yield mock_driver
 
     @pytest.fixture
-    def provider(self, mock_driver):
+    def provider(self, mock_driver: Any) -> Any:
         """Create a Neo4jProvider instance."""
         from src.core.adapters import Neo4jProvider
 
@@ -288,7 +297,7 @@ class TestNeo4jProvider:
         )
 
     @pytest.mark.asyncio
-    async def test_close(self, provider, mock_driver):
+    async def test_close(self, provider: Any, mock_driver: Any) -> None:
         """Test closing the driver."""
         mock_driver.close = AsyncMock()
 
@@ -297,7 +306,9 @@ class TestNeo4jProvider:
         mock_driver.close.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_verify_connectivity_success(self, provider, mock_driver):
+    async def test_verify_connectivity_success(
+        self, provider: Any, mock_driver: Any
+    ) -> None:
         """Test successful connectivity verification."""
         mock_driver.verify_connectivity = AsyncMock()
 
@@ -306,7 +317,9 @@ class TestNeo4jProvider:
         mock_driver.verify_connectivity.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_verify_connectivity_failure(self, provider, mock_driver):
+    async def test_verify_connectivity_failure(
+        self, provider: Any, mock_driver: Any
+    ) -> None:
         """Test connectivity verification failure."""
         mock_driver.verify_connectivity = AsyncMock(
             side_effect=Exception("Connection failed")
@@ -316,13 +329,13 @@ class TestNeo4jProvider:
             await provider.verify_connectivity()
 
     @pytest.mark.asyncio
-    async def test_create_nodes_empty_list(self, provider):
+    async def test_create_nodes_empty_list(self, provider: Any) -> None:
         """Test creating nodes with empty list."""
         result = await provider.create_nodes([], "TestLabel")
         assert result == 0
 
     @pytest.mark.asyncio
-    async def test_create_nodes_batch(self, provider, mock_driver):
+    async def test_create_nodes_batch(self, provider: Any, mock_driver: Any) -> None:
         """Test creating nodes in batches."""
         mock_session = AsyncMock()
         mock_result = AsyncMock()
@@ -346,13 +359,15 @@ class TestNeo4jProvider:
         mock_session.run.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_create_relationships_empty_list(self, provider):
+    async def test_create_relationships_empty_list(self, provider: Any) -> None:
         """Test creating relationships with empty list."""
         result = await provider.create_relationships([], "RELATES_TO", "From", "To")
         assert result == 0
 
     @pytest.mark.asyncio
-    async def test_create_relationships_batch(self, provider, mock_driver):
+    async def test_create_relationships_batch(
+        self, provider: Any, mock_driver: Any
+    ) -> None:
         """Test creating relationships in batches."""
         mock_session = AsyncMock()
         mock_result = AsyncMock()

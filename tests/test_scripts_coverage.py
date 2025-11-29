@@ -7,11 +7,11 @@ import builtins
 import io
 
 
-def test_list_models_script(monkeypatch):
+def test_list_models_script(monkeypatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "key")
 
     class _FakeModel:
-        def __init__(self, name, methods=None):
+        def __init__(self, name, methods=None) -> None:
             self.name = name
             self.supported_generation_methods = methods or ["generateContent"]
 
@@ -41,7 +41,7 @@ def test_list_models_script(monkeypatch):
     assert captured
 
 
-def test_qa_generator_script(monkeypatch):
+def test_qa_generator_script(monkeypatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "key")
 
     class _FakeCompletions:
@@ -58,11 +58,11 @@ def test_qa_generator_script(monkeypatch):
             )
 
     class _FakeChat:
-        def __init__(self):
+        def __init__(self) -> None:
             self.completions = _FakeCompletions()
 
     class _FakeOpenAI:
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args, **kwargs) -> None:
             self.chat = _FakeChat()
 
     fake_openai_module = types.SimpleNamespace(OpenAI=_FakeOpenAI)

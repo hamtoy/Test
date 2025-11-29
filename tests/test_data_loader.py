@@ -1,27 +1,28 @@
 import pytest
 from src.processing.loader import validate_candidates, load_input_data
 from src.config.exceptions import ValidationFailedError
+from pathlib import Path
 
 
-def test_validate_candidates_success():
+def test_validate_candidates_success() -> None:
     candidates = {"A": "content", "B": "content", "C": "content"}
     validate_candidates(candidates)  # Should not raise
 
 
-def test_validate_candidates_missing_keys():
+def test_validate_candidates_missing_keys() -> None:
     candidates = {"A": "content", "B": "content"}
     with pytest.raises(ValidationFailedError, match="Candidates missing required keys"):
         validate_candidates(candidates)
 
 
-def test_validate_candidates_empty_content():
+def test_validate_candidates_empty_content() -> None:
     candidates = {"A": "", "B": "content", "C": "content"}
     with pytest.raises(ValidationFailedError, match="has empty content"):
         validate_candidates(candidates)
 
 
 @pytest.mark.asyncio
-async def test_load_input_data_success(temp_data_dir):
+async def test_load_input_data_success(temp_data_dir: Path) -> None:
     ocr_text, candidates = await load_input_data(temp_data_dir, "ocr.txt", "cand.json")
 
     assert ocr_text == "Sample OCR"
@@ -29,13 +30,13 @@ async def test_load_input_data_success(temp_data_dir):
 
 
 @pytest.mark.asyncio
-async def test_load_input_data_missing_files(tmp_path):
+async def test_load_input_data_missing_files(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError, match="OCR file missing"):
         await load_input_data(tmp_path, "missing_ocr.txt", "cand.json")
 
 
 @pytest.mark.asyncio
-async def test_load_input_data_empty_ocr(tmp_path):
+async def test_load_input_data_empty_ocr(tmp_path: Path) -> None:
     ocr_file = tmp_path / "ocr.txt"
     ocr_file.write_text("", encoding="utf-8")
     cand_file = tmp_path / "cand.json"
@@ -46,7 +47,7 @@ async def test_load_input_data_empty_ocr(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_load_input_data_raw_text_fallback(tmp_path):
+async def test_load_input_data_raw_text_fallback(tmp_path: Path) -> None:
     ocr_file = tmp_path / "ocr.txt"
     ocr_file.write_text("ocr content", encoding="utf-8")
 
@@ -66,7 +67,7 @@ C: Answer C
 
 
 @pytest.mark.asyncio
-async def test_load_input_data_with_utf8_bom(tmp_path):
+async def test_load_input_data_with_utf8_bom(tmp_path: Path) -> None:
     """Test that files with UTF-8 BOM are handled correctly (Windows compat)."""
     # Write OCR file with UTF-8 BOM
     ocr_file = tmp_path / "ocr.txt"

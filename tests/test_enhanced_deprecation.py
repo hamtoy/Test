@@ -10,13 +10,13 @@ import pytest
 class TestEnhancedDeprecationWarning:
     """Test the EnhancedDeprecationWarning class."""
 
-    def test_warning_class_exists(self):
+    def test_warning_class_exists(self) -> None:
         """Test that EnhancedDeprecationWarning is defined."""
         from src._deprecation import EnhancedDeprecationWarning
 
         assert issubclass(EnhancedDeprecationWarning, DeprecationWarning)
 
-    def test_warning_is_always_shown(self):
+    def test_warning_is_always_shown(self) -> None:
         """Test that EnhancedDeprecationWarning is always visible."""
         from src._deprecation import EnhancedDeprecationWarning
 
@@ -33,17 +33,17 @@ class TestEnhancedDeprecationWarning:
 class TestWarnDeprecated:
     """Test the warn_deprecated function."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Clear environment variable before each test."""
         if "DEPRECATION_LEVEL" in os.environ:
             del os.environ["DEPRECATION_LEVEL"]
 
-    def teardown_method(self):
+    def teardown_method(self) -> None:
         """Clean up environment variable after each test."""
         if "DEPRECATION_LEVEL" in os.environ:
             del os.environ["DEPRECATION_LEVEL"]
 
-    def test_basic_warning(self):
+    def test_basic_warning(self) -> None:
         """Test that warn_deprecated emits a deprecation warning."""
         from src._deprecation import EnhancedDeprecationWarning, warn_deprecated
 
@@ -62,7 +62,7 @@ class TestWarnDeprecated:
             assert "src.core.models" in str(deprecation_warnings[0].message)
             assert "v3.0" in str(deprecation_warnings[0].message)
 
-    def test_warning_message_format(self):
+    def test_warning_message_format(self) -> None:
         """Test that warning message contains all required information."""
         from src._deprecation import EnhancedDeprecationWarning, warn_deprecated
 
@@ -83,7 +83,7 @@ class TestWarnDeprecated:
             assert "v4.0" in message
             assert "v2.0" in message  # Deprecation started version
 
-    def test_deprecation_level_normal(self):
+    def test_deprecation_level_normal(self) -> None:
         """Test that normal level emits warning without raising."""
         os.environ["DEPRECATION_LEVEL"] = "normal"
         from src._deprecation import warn_deprecated
@@ -95,7 +95,7 @@ class TestWarnDeprecated:
 
             assert len(w) >= 1
 
-    def test_deprecation_level_strict_raises_import_error(self):
+    def test_deprecation_level_strict_raises_import_error(self) -> None:
         """Test that strict level raises ImportError."""
         os.environ["DEPRECATION_LEVEL"] = "strict"
 
@@ -111,7 +111,7 @@ class TestWarnDeprecated:
         assert "deprecated" in str(exc_info.value).lower()
         assert "src.new" in str(exc_info.value)
 
-    def test_deprecation_level_verbose_includes_stacktrace(self):
+    def test_deprecation_level_verbose_includes_stacktrace(self) -> None:
         """Test that verbose level includes caller information."""
         os.environ["DEPRECATION_LEVEL"] = "verbose"
 
@@ -134,7 +134,7 @@ class TestWarnDeprecated:
             message = str(deprecation_warnings[-1].message)
             assert "Called from:" in message
 
-    def test_deprecation_level_case_insensitive(self):
+    def test_deprecation_level_case_insensitive(self) -> None:
         """Test that DEPRECATION_LEVEL is case-insensitive."""
         os.environ["DEPRECATION_LEVEL"] = "STRICT"
 
@@ -146,7 +146,7 @@ class TestWarnDeprecated:
         with pytest.raises(ImportError):
             warn_deprecated("src.old", "src.new")
 
-    def test_deprecation_level_invalid_defaults_to_normal(self):
+    def test_deprecation_level_invalid_defaults_to_normal(self) -> None:
         """Test that invalid DEPRECATION_LEVEL defaults to normal."""
         os.environ["DEPRECATION_LEVEL"] = "invalid_value"
 
@@ -162,7 +162,7 @@ class TestWarnDeprecated:
 
             assert len(w) >= 1
 
-    def test_default_removal_version(self):
+    def test_default_removal_version(self) -> None:
         """Test that default removal version is v3.0."""
         from src._deprecation import warn_deprecated
 
@@ -173,7 +173,7 @@ class TestWarnDeprecated:
             assert len(w) >= 1
             assert "v3.0" in str(w[-1].message)
 
-    def test_warning_visibility(self):
+    def test_warning_visibility(self) -> None:
         """Test that warnings are visible even with default Python filters."""
         from src._deprecation import EnhancedDeprecationWarning
 
@@ -189,7 +189,7 @@ class TestWarnDeprecated:
 class TestGetCallerInfo:
     """Test the _get_caller_info helper function."""
 
-    def test_caller_info_format(self):
+    def test_caller_info_format(self) -> None:
         """Test that caller info contains expected elements."""
         from src._deprecation import _get_caller_info
 
@@ -202,17 +202,17 @@ class TestGetCallerInfo:
 class TestGetDeprecationLevel:
     """Test the _get_deprecation_level helper function."""
 
-    def setup_method(self):
+    def setup_method(self) -> None:
         """Clear environment variable before each test."""
         if "DEPRECATION_LEVEL" in os.environ:
             del os.environ["DEPRECATION_LEVEL"]
 
-    def teardown_method(self):
+    def teardown_method(self) -> None:
         """Clean up environment variable after each test."""
         if "DEPRECATION_LEVEL" in os.environ:
             del os.environ["DEPRECATION_LEVEL"]
 
-    def test_default_level_is_normal(self):
+    def test_default_level_is_normal(self) -> None:
         """Test that default level is 'normal' when env var is not set."""
         # Reload module to ensure fresh state
         if "src._deprecation" in sys.modules:
@@ -222,7 +222,7 @@ class TestGetDeprecationLevel:
 
         assert _get_deprecation_level() == "normal"
 
-    def test_strict_level(self):
+    def test_strict_level(self) -> None:
         """Test that strict level is recognized."""
         os.environ["DEPRECATION_LEVEL"] = "strict"
 
@@ -233,7 +233,7 @@ class TestGetDeprecationLevel:
 
         assert _get_deprecation_level() == "strict"
 
-    def test_verbose_level(self):
+    def test_verbose_level(self) -> None:
         """Test that verbose level is recognized."""
         os.environ["DEPRECATION_LEVEL"] = "verbose"
 

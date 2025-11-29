@@ -4,7 +4,7 @@
 class TestStubImplementations:
     """Tests for stub implementations when prometheus_client is not available."""
 
-    def test_counter_stub(self):
+    def test_counter_stub(self) -> None:
         """Test Counter stub implementation."""
         from src.monitoring.metrics import Counter, PROMETHEUS_AVAILABLE  # type: ignore[attr-defined]
 
@@ -18,7 +18,7 @@ class TestStubImplementations:
             labeled.inc()
             labeled.inc(5)
 
-    def test_histogram_stub(self):
+    def test_histogram_stub(self) -> None:
         """Test Histogram stub implementation."""
         from src.monitoring.metrics import Histogram, PROMETHEUS_AVAILABLE  # type: ignore[attr-defined]
 
@@ -31,7 +31,7 @@ class TestStubImplementations:
             # Test observe method (should not raise)
             labeled.observe(1.5)
 
-    def test_gauge_stub(self):
+    def test_gauge_stub(self) -> None:
         """Test Gauge stub implementation."""
         from src.monitoring.metrics import Gauge, PROMETHEUS_AVAILABLE  # type: ignore[attr-defined]
 
@@ -57,61 +57,61 @@ class TestStubImplementations:
 class TestMetricObjects:
     """Test metric object creation."""
 
-    def test_api_calls_total_exists(self):
+    def test_api_calls_total_exists(self) -> None:
         """Test api_calls_total counter exists."""
         from src.monitoring.metrics import api_calls_total
 
         assert api_calls_total is not None
 
-    def test_api_latency_exists(self):
+    def test_api_latency_exists(self) -> None:
         """Test api_latency histogram exists."""
         from src.monitoring.metrics import api_latency
 
         assert api_latency is not None
 
-    def test_api_errors_exists(self):
+    def test_api_errors_exists(self) -> None:
         """Test api_errors counter exists."""
         from src.monitoring.metrics import api_errors
 
         assert api_errors is not None
 
-    def test_cache_hits_exists(self):
+    def test_cache_hits_exists(self) -> None:
         """Test cache_hits counter exists."""
         from src.monitoring.metrics import cache_hits
 
         assert cache_hits is not None
 
-    def test_cache_misses_exists(self):
+    def test_cache_misses_exists(self) -> None:
         """Test cache_misses counter exists."""
         from src.monitoring.metrics import cache_misses
 
         assert cache_misses is not None
 
-    def test_cache_size_exists(self):
+    def test_cache_size_exists(self) -> None:
         """Test cache_size gauge exists."""
         from src.monitoring.metrics import cache_size
 
         assert cache_size is not None
 
-    def test_token_usage_exists(self):
+    def test_token_usage_exists(self) -> None:
         """Test token_usage counter exists."""
         from src.monitoring.metrics import token_usage
 
         assert token_usage is not None
 
-    def test_cost_usd_exists(self):
+    def test_cost_usd_exists(self) -> None:
         """Test cost_usd counter exists."""
         from src.monitoring.metrics import cost_usd
 
         assert cost_usd is not None
 
-    def test_workflow_duration_exists(self):
+    def test_workflow_duration_exists(self) -> None:
         """Test workflow_duration histogram exists."""
         from src.monitoring.metrics import workflow_duration
 
         assert workflow_duration is not None
 
-    def test_workflow_status_exists(self):
+    def test_workflow_status_exists(self) -> None:
         """Test workflow_status counter exists."""
         from src.monitoring.metrics import workflow_status
 
@@ -121,14 +121,14 @@ class TestMetricObjects:
 class TestHelperFunctions:
     """Test helper functions."""
 
-    def test_get_metrics(self):
+    def test_get_metrics(self) -> None:
         """Test get_metrics returns bytes."""
         from src.monitoring.metrics import get_metrics
 
         result = get_metrics()
         assert isinstance(result, bytes)
 
-    def test_record_api_call(self):
+    def test_record_api_call(self) -> None:
         """Test record_api_call does not raise."""
         from src.monitoring.metrics import record_api_call
 
@@ -136,7 +136,7 @@ class TestHelperFunctions:
         record_api_call("gemini-1.5-flash", "success", 1.5)
         record_api_call("gemini-1.5-pro", "error", 0.5)
 
-    def test_record_api_error(self):
+    def test_record_api_error(self) -> None:
         """Test record_api_error does not raise."""
         from src.monitoring.metrics import record_api_error
 
@@ -144,21 +144,21 @@ class TestHelperFunctions:
         record_api_error("gemini-1.5-flash", "timeout")
         record_api_error("gemini-1.5-pro", "rate_limit")
 
-    def test_record_cache_access_hit(self):
+    def test_record_cache_access_hit(self) -> None:
         """Test record_cache_access with cache hit."""
         from src.monitoring.metrics import record_cache_access
 
         # Should not raise regardless of PROMETHEUS_AVAILABLE
         record_cache_access("redis", hit=True)
 
-    def test_record_cache_access_miss(self):
+    def test_record_cache_access_miss(self) -> None:
         """Test record_cache_access with cache miss."""
         from src.monitoring.metrics import record_cache_access
 
         # Should not raise regardless of PROMETHEUS_AVAILABLE
         record_cache_access("redis", hit=False)
 
-    def test_record_token_usage(self):
+    def test_record_token_usage(self) -> None:
         """Test record_token_usage does not raise."""
         from src.monitoring.metrics import record_token_usage
 
@@ -166,7 +166,7 @@ class TestHelperFunctions:
         record_token_usage(100, 50)
         record_token_usage(0, 0)
 
-    def test_record_workflow_completion(self):
+    def test_record_workflow_completion(self) -> None:
         """Test record_workflow_completion does not raise."""
         from src.monitoring.metrics import record_workflow_completion
 
@@ -178,14 +178,14 @@ class TestHelperFunctions:
 class TestModuleExports:
     """Test module exports."""
 
-    def test_module_all_exports(self):
+    def test_module_all_exports(self) -> None:
         """Test __all__ exports are accessible."""
         from src.monitoring import metrics
 
         for name in metrics.__all__:
             assert hasattr(metrics, name), f"Missing export: {name}"
 
-    def test_init_exports(self):
+    def test_init_exports(self) -> None:
         """Test __init__.py exports."""
         from src import monitoring
 
@@ -202,7 +202,7 @@ class TestModuleExports:
 class TestPrometheusAvailability:
     """Test PROMETHEUS_AVAILABLE flag."""
 
-    def test_prometheus_available_is_bool(self):
+    def test_prometheus_available_is_bool(self) -> None:
         """Test PROMETHEUS_AVAILABLE is a boolean."""
         from src.monitoring.metrics import PROMETHEUS_AVAILABLE
 
@@ -212,7 +212,7 @@ class TestPrometheusAvailability:
 class TestGenerateLatestStub:
     """Test generate_latest stub function."""
 
-    def test_generate_latest_stub(self):
+    def test_generate_latest_stub(self) -> None:
         """Test the stub generate_latest function."""
         from src.monitoring import metrics as metrics_module
 

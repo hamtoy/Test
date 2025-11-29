@@ -8,7 +8,7 @@ import pytest
 class TestQAGraphBuilder:
     """Tests for QAGraphBuilder class."""
 
-    def test_init_creates_driver(self):
+    def test_init_creates_driver(self) -> None:
         """Test __init__ creates driver with correct auth."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -27,7 +27,7 @@ class TestQAGraphBuilder:
             )
             assert builder.driver == mock_driver
 
-    def test_close_closes_driver(self):
+    def test_close_closes_driver(self) -> None:
         """Test close method closes the driver."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -40,7 +40,7 @@ class TestQAGraphBuilder:
 
             mock_driver.close.assert_called_once()
 
-    def test_create_schema_constraints(self):
+    def test_create_schema_constraints(self) -> None:
         """Test create_schema_constraints creates all constraints."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -59,7 +59,7 @@ class TestQAGraphBuilder:
             # Should run 7 constraint creation queries
             assert mock_session.run.call_count == 7
 
-    def test_extract_query_types(self):
+    def test_extract_query_types(self) -> None:
         """Test extract_query_types creates QueryType nodes."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -80,7 +80,7 @@ class TestQAGraphBuilder:
             # Should run one query per query type
             assert mock_session.run.call_count == len(QUERY_TYPES)
 
-    def test_extract_constraints(self):
+    def test_extract_constraints(self) -> None:
         """Test extract_constraints creates Constraint nodes."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -100,7 +100,7 @@ class TestQAGraphBuilder:
 
             assert mock_session.run.call_count == len(CONSTRAINTS)
 
-    def test_link_rules_to_constraints(self):
+    def test_link_rules_to_constraints(self) -> None:
         """Test link_rules_to_constraints creates relationships."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -127,7 +127,7 @@ class TestQAGraphBuilder:
             expected_calls = 1 + len(CONSTRAINT_KEYWORDS) + 1
             assert mock_session.run.call_count == expected_calls
 
-    def test_link_rules_to_constraints_no_result(self):
+    def test_link_rules_to_constraints_no_result(self) -> None:
         """Test link_rules_to_constraints handles None result."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -152,7 +152,7 @@ class TestQAGraphBuilder:
             ):
                 builder.link_rules_to_constraints()
 
-    def test_extract_examples(self):
+    def test_extract_examples(self) -> None:
         """Test extract_examples creates Example nodes."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -182,7 +182,7 @@ class TestQAGraphBuilder:
             # Should run initial query + MERGE for each example
             assert mock_session.run.call_count >= 1
 
-    def test_link_examples_to_rules(self):
+    def test_link_examples_to_rules(self) -> None:
         """Test link_examples_to_rules creates relationships."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -208,7 +208,7 @@ class TestQAGraphBuilder:
             expected_min_calls = 2 + len(EXAMPLE_RULE_MAPPINGS) + 1
             assert mock_session.run.call_count >= expected_min_calls
 
-    def test_link_examples_to_rules_no_result(self):
+    def test_link_examples_to_rules_no_result(self) -> None:
         """Test link_examples_to_rules handles None result."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -232,7 +232,7 @@ class TestQAGraphBuilder:
             ):
                 builder.link_examples_to_rules()
 
-    def test_create_templates(self):
+    def test_create_templates(self) -> None:
         """Test create_templates creates Template nodes."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -253,7 +253,7 @@ class TestQAGraphBuilder:
             # Should call session.run multiple times
             assert mock_session.run.call_count > 0
 
-    def test_create_error_patterns(self):
+    def test_create_error_patterns(self) -> None:
         """Test create_error_patterns creates ErrorPattern nodes."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -273,7 +273,7 @@ class TestQAGraphBuilder:
 
             assert mock_session.run.call_count == len(ERROR_PATTERNS)
 
-    def test_create_best_practices(self):
+    def test_create_best_practices(self) -> None:
         """Test create_best_practices creates BestPractice nodes."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -294,7 +294,7 @@ class TestQAGraphBuilder:
             # Should run 2 queries per best practice (CREATE + LINK)
             assert mock_session.run.call_count == len(BEST_PRACTICES) * 2
 
-    def test_link_rules_to_query_types(self):
+    def test_link_rules_to_query_types(self) -> None:
         """Test link_rules_to_query_types creates relationships."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -318,7 +318,7 @@ class TestQAGraphBuilder:
 class TestRequireEnv:
     """Tests for require_env function."""
 
-    def test_require_env_exists(self, monkeypatch):
+    def test_require_env_exists(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test require_env returns value when env var exists."""
         from src.graph.builder import require_env
 
@@ -326,7 +326,7 @@ class TestRequireEnv:
         result = require_env("TEST_VAR")
         assert result == "test_value"
 
-    def test_require_env_missing(self, monkeypatch):
+    def test_require_env_missing(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test require_env raises when env var missing."""
         from src.graph.builder import require_env
 
@@ -334,7 +334,7 @@ class TestRequireEnv:
         with pytest.raises(EnvironmentError, match="MISSING_VAR"):
             require_env("MISSING_VAR")
 
-    def test_require_env_empty(self, monkeypatch):
+    def test_require_env_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test require_env raises when env var is empty."""
         from src.graph.builder import require_env
 
@@ -346,7 +346,7 @@ class TestRequireEnv:
 class TestExtractRulesFromNotion:
     """Tests for extract_rules_from_notion method."""
 
-    def test_extract_rules_from_notion_with_headings(self):
+    def test_extract_rules_from_notion_with_headings(self) -> None:
         """Test extract_rules_from_notion processes headings correctly."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -399,7 +399,7 @@ class TestExtractRulesFromNotion:
             with patch("builtins.print"):
                 builder.extract_rules_from_notion()
 
-    def test_extract_rules_skips_short_content(self):
+    def test_extract_rules_skips_short_content(self) -> None:
         """Test extract_rules_from_notion skips content <= 10 chars."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
@@ -438,7 +438,7 @@ class TestExtractRulesFromNotion:
 class TestMainFunction:
     """Tests for main function."""
 
-    def test_main_success(self, monkeypatch):
+    def test_main_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test main function runs successfully."""
         monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
         monkeypatch.setenv("NEO4J_USER", "neo4j")
@@ -467,7 +467,7 @@ class TestMainFunction:
 
             mock_driver.close.assert_called()
 
-    def test_main_missing_env(self, monkeypatch):
+    def test_main_missing_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test main function exits on missing env vars."""
         monkeypatch.delenv("NEO4J_URI", raising=False)
         monkeypatch.delenv("NEO4J_USER", raising=False)

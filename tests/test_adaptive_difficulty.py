@@ -1,34 +1,35 @@
 import types
 
 from src.features.difficulty import AdaptiveDifficultyAdjuster
+from typing import Any
 
 
 class _FakeSession:
-    def __init__(self, value):
+    def __init__(self, value: Any) -> None:
         self.value = value
 
-    def __enter__(self):
+    def __enter__(self) -> Any:
         return self
 
-    def __exit__(self, exc_type, exc, tb):
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> Any:
         return False
 
-    def run(self, *args, **kwargs):
+    def run(self, *args: Any, **kwargs: Any) -> Any:
         return self
 
-    def single(self):
+    def single(self) -> Any:
         return {"avg_blocks": self.value}
 
 
 class _FakeGraph:
-    def __init__(self, value):
+    def __init__(self, value: Any) -> None:
         self.value = value
 
-    def session(self):
+    def session(self) -> Any:
         return _FakeSession(self.value)
 
 
-def test_analyze_image_complexity_levels():
+def test_analyze_image_complexity_levels() -> None:
     kg = types.SimpleNamespace(_graph=_FakeGraph(5))
     adjuster = AdaptiveDifficultyAdjuster(kg)  # type: ignore[arg-type]
 
@@ -50,7 +51,7 @@ def test_analyze_image_complexity_levels():
     assert comp_complex["estimated_blocks"] == 5.0
 
 
-def test_adjust_query_requirements():
+def test_adjust_query_requirements() -> None:
     kg = types.SimpleNamespace(_graph=_FakeGraph(None))
     adjuster = AdaptiveDifficultyAdjuster(kg)  # type: ignore[arg-type]
 

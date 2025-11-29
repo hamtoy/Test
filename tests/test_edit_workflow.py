@@ -1,5 +1,6 @@
 """Tests for the edit workflow module."""
 
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -9,7 +10,7 @@ from src.workflow.edit import edit_content
 
 
 @pytest.fixture
-def mock_agent():
+def mock_agent() -> Any:
     """Create a mock GeminiAgent."""
     agent = MagicMock(spec=GeminiAgent)
     agent._create_generative_model = MagicMock(return_value=MagicMock())
@@ -18,7 +19,7 @@ def mock_agent():
 
 
 @pytest.fixture
-def mock_kg():
+def mock_kg() -> Any:
     """Create a mock knowledge graph."""
     kg = MagicMock()
     kg.get_constraints_for_query_type = MagicMock(
@@ -28,7 +29,7 @@ def mock_kg():
 
 
 @pytest.mark.asyncio
-async def test_edit_content_basic(mock_agent):
+async def test_edit_content_basic(mock_agent: Any) -> None:
     """Test basic edit content functionality."""
     result = await edit_content(
         agent=mock_agent,
@@ -44,7 +45,7 @@ async def test_edit_content_basic(mock_agent):
 
 
 @pytest.mark.asyncio
-async def test_edit_content_without_ocr(mock_agent):
+async def test_edit_content_without_ocr(mock_agent: Any) -> None:
     """Test edit content without OCR text."""
     result = await edit_content(
         agent=mock_agent,
@@ -62,7 +63,7 @@ async def test_edit_content_without_ocr(mock_agent):
 
 
 @pytest.mark.asyncio
-async def test_edit_content_without_query(mock_agent):
+async def test_edit_content_without_query(mock_agent: Any) -> None:
     """Test edit content without query."""
     result = await edit_content(
         agent=mock_agent,
@@ -79,7 +80,7 @@ async def test_edit_content_without_query(mock_agent):
 
 
 @pytest.mark.asyncio
-async def test_edit_content_with_kg(mock_agent, mock_kg):
+async def test_edit_content_with_kg(mock_agent: Any, mock_kg: Any) -> None:
     """Test edit content with knowledge graph rules."""
     result = await edit_content(
         agent=mock_agent,
@@ -95,7 +96,7 @@ async def test_edit_content_with_kg(mock_agent, mock_kg):
 
 
 @pytest.mark.asyncio
-async def test_edit_content_with_kg_error(mock_agent, mock_kg):
+async def test_edit_content_with_kg_error(mock_agent: Any, mock_kg: Any) -> None:
     """Test edit content handles knowledge graph errors gracefully."""
     mock_kg.get_constraints_for_query_type = MagicMock(
         side_effect=Exception("Neo4j connection failed")
@@ -115,7 +116,7 @@ async def test_edit_content_with_kg_error(mock_agent, mock_kg):
 
 
 @pytest.mark.asyncio
-async def test_edit_content_prompt_structure(mock_agent):
+async def test_edit_content_prompt_structure(mock_agent: Any) -> None:
     """Test that the prompt has the correct structure."""
     await edit_content(
         agent=mock_agent,
@@ -143,7 +144,7 @@ async def test_edit_content_prompt_structure(mock_agent):
 
 
 @pytest.mark.asyncio
-async def test_edit_content_strips_whitespace(mock_agent):
+async def test_edit_content_strips_whitespace(mock_agent: Any) -> None:
     """Test that result is stripped of whitespace."""
     mock_agent._call_api_with_retry = AsyncMock(return_value="  수정된 텍스트  \n\n")
 
@@ -159,7 +160,9 @@ async def test_edit_content_strips_whitespace(mock_agent):
 
 
 @pytest.mark.asyncio
-async def test_edit_content_with_kg_rules_in_prompt(mock_agent, mock_kg):
+async def test_edit_content_with_kg_rules_in_prompt(
+    mock_agent: Any, mock_kg: Any
+) -> None:
     """Test that knowledge graph rules appear in the prompt."""
     await edit_content(
         agent=mock_agent,
