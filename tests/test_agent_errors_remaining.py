@@ -37,7 +37,9 @@ def _agent(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> GeminiAgent:
     return GeminiAgent(config, jinja_env=jinja_env)
 
 
-def test_load_local_cache_bad_manifest(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_load_local_cache_bad_manifest(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     agent = _agent(monkeypatch, tmp_path)
     manifest = agent._local_cache_manifest_path()
     manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -46,7 +48,9 @@ def test_load_local_cache_bad_manifest(monkeypatch: pytest.MonkeyPatch, tmp_path
 
 
 @pytest.mark.asyncio
-async def test_create_context_cache_raises(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+async def test_create_context_cache_raises(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     agent = _agent(monkeypatch, tmp_path)
 
     class _Model:
@@ -74,7 +78,9 @@ async def test_create_context_cache_raises(monkeypatch: pytest.MonkeyPatch, tmp_
         await agent.create_context_cache("text")
 
 
-def test_cost_error_unknown_model(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_cost_error_unknown_model(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     agent = _agent(monkeypatch, tmp_path)
     agent._cost_tracker.model_name = "unknown-model"
     agent.total_input_tokens = 1000

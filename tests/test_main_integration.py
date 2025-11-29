@@ -99,7 +99,9 @@ async def test_main_analyze_cache_quick_path(
 
 
 @pytest.mark.asyncio
-async def test_main_keep_progress_flag(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+async def test_main_keep_progress_flag(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     import src.main as main_module
     from src.cli import CLIArgs
 
@@ -189,7 +191,9 @@ async def test_main_keep_progress_flag(monkeypatch: pytest.MonkeyPatch, tmp_path
 
 
 @pytest.mark.asyncio
-async def test_main_cache_stats_warning(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+async def test_main_cache_stats_warning(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     import src.main as main_module
     from src.cli import CLIArgs
 
@@ -282,7 +286,9 @@ async def test_main_cache_stats_warning(monkeypatch: pytest.MonkeyPatch, tmp_pat
 
 
 @pytest.mark.asyncio
-async def test_main_auto_mode_passes_intent(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+async def test_main_auto_mode_passes_intent(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     import src.main as main_module
     from src.cli import CLIArgs
 
@@ -372,7 +378,9 @@ async def test_main_auto_mode_passes_intent(monkeypatch: pytest.MonkeyPatch, tmp
 
 
 @pytest.mark.asyncio
-async def test_main_missing_templates_exits(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+async def test_main_missing_templates_exits(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     import src.main as main_module
     from src.cli import CLIArgs
 

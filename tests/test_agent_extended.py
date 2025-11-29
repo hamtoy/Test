@@ -252,7 +252,10 @@ async def test_agent_call_api_with_retry(
             return None
 
         async def __aexit__(
-            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
         ) -> bool:
             return False
 

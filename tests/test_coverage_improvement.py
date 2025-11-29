@@ -272,7 +272,9 @@ class TestWorkerData2Neo:
         assert result["request_id"] == "r2"
 
     @pytest.mark.asyncio
-    async def test_run_data2neo_extraction_success(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    async def test_run_data2neo_extraction_success(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """Test _run_data2neo_extraction with successful extraction."""
         from src.infra import worker
 
@@ -304,7 +306,9 @@ class TestWorkerData2Neo:
         assert result["data2neo"]["entity_count"] == 2
 
     @pytest.mark.asyncio
-    async def test_run_data2neo_extraction_error(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    async def test_run_data2neo_extraction_error(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """Test _run_data2neo_extraction handles extraction error."""
         from src.infra import worker
 
@@ -337,7 +341,9 @@ class TestWorkerRedis:
     """Tests for Redis-related worker functions."""
 
     @pytest.mark.asyncio
-    async def test_ensure_redis_ready_no_client(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_ensure_redis_ready_no_client(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test ensure_redis_ready without redis client."""
         from src.infra import worker
 
@@ -347,7 +353,9 @@ class TestWorkerRedis:
             await worker.ensure_redis_ready()
 
     @pytest.mark.asyncio
-    async def test_ensure_redis_ready_ping_fails(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_ensure_redis_ready_ping_fails(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test ensure_redis_ready when ping returns False."""
         from src.infra import worker
 
@@ -365,7 +373,9 @@ class TestWorkerHandleOcrTask:
     """Tests for handle_ocr_task edge cases."""
 
     @pytest.mark.asyncio
-    async def test_handle_ocr_task_data2neo_toggle(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_handle_ocr_task_data2neo_toggle(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test handle_ocr_task with Data2Neo enabled."""
         from src.infra import worker
 
@@ -408,7 +418,9 @@ class TestWorkerHandleOcrTask:
         assert written[0]["request_id"] == "d1"
 
     @pytest.mark.asyncio
-    async def test_handle_ocr_task_redis_not_ready(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_handle_ocr_task_redis_not_ready(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test handle_ocr_task continues when Redis not ready."""
         from src.infra import worker
 
@@ -456,7 +468,9 @@ class TestMainEntryPoint:
     """Tests for main.py entry point."""
 
     @pytest.mark.asyncio
-    async def test_main_value_error(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    async def test_main_value_error(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """Test main handles ValueError during initialization."""
         import src.main as main_module
 
@@ -481,7 +495,9 @@ class TestMainEntryPoint:
         assert exc_info.value.code == 1
 
     @pytest.mark.asyncio
-    async def test_main_file_not_found(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    async def test_main_file_not_found(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """Test main handles FileNotFoundError during initialization."""
         import src.main as main_module
 
@@ -800,7 +816,9 @@ class TestWorkflowExecutor:
             logger.info.assert_any_call("AUTO 모드: 데이터 자동 로딩 중...")
 
     @pytest.mark.asyncio
-    async def test_load_candidates_interactive_skip_reload(self, tmp_path: Path) -> None:
+    async def test_load_candidates_interactive_skip_reload(
+        self, tmp_path: Path
+    ) -> None:
         """Test _load_candidates when user skips reload."""
         from src.workflow.executor import _load_candidates
         from src.config import AppConfig
@@ -829,7 +847,9 @@ class TestWorkflowExecutor:
             logger.info.assert_any_call("재로딩 없이 진행")
 
     @pytest.mark.asyncio
-    async def test_load_candidates_interactive_reload_error(self, tmp_path: Path) -> None:
+    async def test_load_candidates_interactive_reload_error(
+        self, tmp_path: Path
+    ) -> None:
         """Test _load_candidates handles reload error."""
         from src.workflow.executor import _load_candidates
         from src.config import AppConfig

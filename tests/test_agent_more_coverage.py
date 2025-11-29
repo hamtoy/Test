@@ -54,7 +54,9 @@ def _patch_protos(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_execute_api_call_blocks_on_safety(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_execute_api_call_blocks_on_safety(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     _patch_protos(monkeypatch)
     agent = _make_agent(monkeypatch)
 
@@ -76,7 +78,9 @@ async def test_execute_api_call_blocks_on_safety(monkeypatch: pytest.MonkeyPatch
 
 
 @pytest.mark.asyncio
-async def test_execute_api_call_fallbacks_to_candidate_part(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_execute_api_call_fallbacks_to_candidate_part(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     _patch_protos(monkeypatch)
     agent = _make_agent(monkeypatch)
 

@@ -52,7 +52,10 @@ def test_qakg_constraints_with_provider(monkeypatch: pytest.MonkeyPatch) -> None
             return self
 
         async def __aexit__(
-            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
         ) -> bool:
             return False
 
@@ -89,7 +92,9 @@ def test_qakg_constraints_with_provider(monkeypatch: pytest.MonkeyPatch) -> None
 
 
 @pytest.mark.asyncio
-async def test_qakg_constraints_from_async_context(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_qakg_constraints_from_async_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Test that get_constraints_for_query_type works when called from async context.
 
     This tests the fix for the "This event loop is already running" error
@@ -101,7 +106,10 @@ async def test_qakg_constraints_from_async_context(monkeypatch: pytest.MonkeyPat
             return self
 
         async def __aexit__(
-            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
         ) -> bool:
             return False
 
@@ -144,7 +152,10 @@ def test_qakg_graph_session_when_loop_running(monkeypatch: pytest.MonkeyPatch) -
             return object()
 
         async def __aexit__(
-            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
         ) -> bool:
             return False
 
@@ -250,7 +261,9 @@ async def test_worker_setup_and_close_redis(monkeypatch: pytest.MonkeyPatch) -> 
 
 
 @pytest.mark.asyncio
-async def test_worker_ensure_redis_ready_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_worker_ensure_redis_ready_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -263,9 +276,7 @@ async def test_worker_ensure_redis_ready_failure(monkeypatch: pytest.MonkeyPatch
         await infra_worker.ensure_redis_ready()
 
 
-def test_worker_append_jsonl(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_worker_append_jsonl(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     path = tmp_path / "out.jsonl"
     worker._append_jsonl(path, {"a": 1})
     data = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]

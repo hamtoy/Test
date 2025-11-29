@@ -52,9 +52,7 @@ class _FakeGenAI:
 
 
 @pytest.fixture
-def fake_config(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> AppConfig:
+def fake_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> AppConfig:
     # Create dummy templates under PROJECT_ROOT/templates
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
     tdir = tmp_path / "templates"

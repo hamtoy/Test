@@ -26,7 +26,10 @@ def test_semantic_analysis_utils(monkeypatch: pytest.MonkeyPatch) -> None:
             self.store_ref = store_ref
 
         def run(
-            self, _query: str, topics: list[str] | None = None, links: list[str] | None = None
+            self,
+            _query: str,
+            topics: list[str] | None = None,
+            links: list[str] | None = None,
         ) -> None:
             if topics is not None:
                 self.store_ref.extend(topics)
@@ -41,7 +44,10 @@ def test_semantic_analysis_utils(monkeypatch: pytest.MonkeyPatch) -> None:
             return self
 
         def __exit__(
-            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
         ) -> None:
             return None
 
@@ -73,7 +79,10 @@ def test_smart_autocomplete(monkeypatch: pytest.MonkeyPatch) -> None:
             return self
 
         def __exit__(
-            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
         ) -> None:
             return None
 
@@ -113,7 +122,10 @@ def test_dynamic_example_selector(monkeypatch: pytest.MonkeyPatch) -> None:
             return self
 
         def __exit__(
-            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
         ) -> None:
             return None
 
@@ -146,7 +158,10 @@ def test_adaptive_difficulty(monkeypatch: pytest.MonkeyPatch) -> None:
             return self
 
         def __exit__(
-            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
         ) -> None:
             return None
 
@@ -183,7 +198,10 @@ def test_adaptive_difficulty_levels(monkeypatch: pytest.MonkeyPatch) -> None:
             return self
 
         def __exit__(
-            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
         ) -> None:
             return None
 

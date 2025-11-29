@@ -8,7 +8,9 @@ import pytest
 from src.processing import context_augmentation as aca
 
 
-def test_advanced_context_augmentation_vector_index(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_advanced_context_augmentation_vector_index(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class _Doc:
         def __init__(self, text: str) -> None:
             self.page_content = text
@@ -23,7 +25,10 @@ def test_advanced_context_augmentation_vector_index(monkeypatch: pytest.MonkeyPa
             return self
 
         def __exit__(
-            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
         ) -> None:
             return None
 
@@ -56,7 +61,10 @@ def test_advanced_context_augmentation_fallback_graph() -> None:
             return self
 
         def __exit__(
-            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
         ) -> None:
             return None
 

@@ -58,14 +58,18 @@ def test_smart_autocomplete_filters_by_limit() -> None:
     assert all(s["name"] != "summary" for s in suggestions)
 
 
-def test_smart_autocomplete_constraint_missing_graph(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_smart_autocomplete_constraint_missing_graph(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(smart_autocomplete, "find_violations", lambda text: [])
     sa = smart_autocomplete.SmartAutocomplete(types.SimpleNamespace())  # type: ignore[arg-type]
     res = sa.suggest_constraint_compliance("draft", "summary")
     assert res == {"violations": [], "suggestions": []}
 
 
-def test_smart_autocomplete_constraint_session_none(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_smart_autocomplete_constraint_session_none(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(smart_autocomplete, "find_violations", lambda text: [])
 
     class _KG:
@@ -85,7 +89,9 @@ def test_smart_autocomplete_constraint_session_none(monkeypatch: pytest.MonkeyPa
     assert res["suggestions"] == []
 
 
-def test_real_time_constraint_stream_final_validation(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_real_time_constraint_stream_final_validation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class _KG:
         def get_constraints_for_query_type(self, _qt):
             return []
@@ -246,7 +252,9 @@ def test_dynamic_example_selector_session_none(monkeypatch: pytest.MonkeyPatch) 
     assert selector.select_best_examples("qt", {}, k=1) == []
 
 
-def test_dynamic_example_selector_handles_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_dynamic_example_selector_handles_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class _Session:
         def __enter__(self):
             return self
@@ -284,7 +292,9 @@ def test_caching_layer_import_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
     assert module.redis is None
 
 
-def test_caching_layer_handles_bad_cache_and_write_error(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_caching_layer_handles_bad_cache_and_write_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     rows = [{"id": "1", "text": "t1", "section": "s1"}]
 
     class _Redis:

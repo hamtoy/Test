@@ -23,7 +23,9 @@ def _stub_agent(monkeypatch: pytest.MonkeyPatch) -> GeminiAgent:
 
 
 @pytest.mark.asyncio
-async def test_call_api_with_retry_adaptive_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_call_api_with_retry_adaptive_backoff(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     agent = _stub_agent(monkeypatch)
 
     class Boom(Exception):
@@ -45,7 +47,9 @@ async def test_call_api_with_retry_adaptive_backoff(monkeypatch: pytest.MonkeyPa
 
 
 @pytest.mark.asyncio
-async def test_call_api_with_retry_success_after_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_call_api_with_retry_success_after_backoff(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     agent = _stub_agent(monkeypatch)
     attempts = {"n": 0}
 
