@@ -69,7 +69,9 @@ def test_health_check_with_stub(monkeypatch: pytest.MonkeyPatch) -> None:
     assert report["status"] == "healthy"
 
 
-def test_compare_documents_main_flow(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_compare_documents_main_flow(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     monkeypatch.setenv("NEO4J_URI", "bolt://fake")
     monkeypatch.setenv("NEO4J_USER", "user")
     monkeypatch.setenv("NEO4J_PASSWORD", "pass")

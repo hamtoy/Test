@@ -48,7 +48,9 @@ def test_qa_generator_script(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "key")
 
     class _FakeCompletions:
-        def create(self, model: str, messages: list[Any], temperature: int = 0) -> types.SimpleNamespace:
+        def create(
+            self, model: str, messages: list[Any], temperature: int = 0
+        ) -> types.SimpleNamespace:
             content = (
                 "1. 첫 번째 질문\n2. 두 번째 질문\n3. 세 번째 질문\n4. 네 번째 질문"
             )
@@ -79,7 +81,9 @@ def test_qa_generator_script(monkeypatch: pytest.MonkeyPatch) -> None:
             self.seek(0)
             return None
 
-    def _fake_open(path: str, mode: str = "r", encoding: str | None = None) -> io.StringIO:
+    def _fake_open(
+        path: str, mode: str = "r", encoding: str | None = None
+    ) -> io.StringIO:
         if "r" in mode:
             return io.StringIO("prompt")
         buf = _MemoBuffer()

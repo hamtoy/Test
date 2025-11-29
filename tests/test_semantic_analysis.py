@@ -91,7 +91,9 @@ def test_link_blocks_creates_links(monkeypatch: pytest.MonkeyPatch) -> None:
     assert {"block_id": "b1", "topic": "banana"} in captured
 
 
-def test_main_env_missing_exits(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_main_env_missing_exits(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     # Import the actual semantic module to patch the right namespace
     from src.analysis import semantic as analysis_semantic
 

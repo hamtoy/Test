@@ -38,7 +38,9 @@ def test_dynamic_template_require_env_missing(monkeypatch: pytest.MonkeyPatch) -
 # ----------------------------
 
 
-def test_cross_validation_image_grounding_branches(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cross_validation_image_grounding_branches(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class _ErrorSession:
         def __enter__(self) -> "_ErrorSession":
             return self
@@ -93,7 +95,9 @@ def test_cross_validation_image_grounding_branches(monkeypatch: pytest.MonkeyPat
     assert no_page["note"] == "page_id 없음"
 
 
-def test_cross_validation_rule_and_novelty_exceptions(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cross_validation_rule_and_novelty_exceptions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class _BadSession:
         def __enter__(self) -> "_BadSession":
             return self
@@ -129,7 +133,9 @@ def test_cross_validation_rule_and_novelty_exceptions(monkeypatch: pytest.Monkey
 # ----------------------------
 
 
-def test_qa_rag_init_uses_env_and_driver(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_qa_rag_init_uses_env_and_driver(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
 
     monkeypatch.setenv("NEO4J_URI", "bolt://localhost")
     monkeypatch.setenv("NEO4J_USER", "neo4j")
@@ -247,7 +253,9 @@ def _make_config(tmp_path: Path) -> dict[str, str]:
     return monkeypatch_env
 
 
-def test_agent_init_without_aiolimiter(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_agent_init_without_aiolimiter(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
 
     envs = _make_config(tmp_path)
     for k, v in envs.items():
@@ -266,7 +274,9 @@ def test_agent_init_without_aiolimiter(monkeypatch: pytest.MonkeyPatch, tmp_path
     assert agent._rate_limiter is None
 
 
-def test_agent_cleanup_expired_cache(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_agent_cleanup_expired_cache(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     envs = _make_config(tmp_path)
     for k, v in envs.items():
         monkeypatch.setenv(k, v)
@@ -321,7 +331,9 @@ async def test_agent_create_context_cache_skips_when_small(
     assert result is None
 
 
-def test_agent_create_model_with_cached_content(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_agent_create_model_with_cached_content(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
 
     envs = _make_config(tmp_path)
     for k, v in envs.items():

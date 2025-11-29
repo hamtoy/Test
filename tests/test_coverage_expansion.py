@@ -202,9 +202,9 @@ def test_list_models_exits_without_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         os,
         "getenv",
-        lambda key, default=None: None
-        if key == "GEMINI_API_KEY"
-        else original_getenv(key, default),
+        lambda key, default=None: (
+            None if key == "GEMINI_API_KEY" else original_getenv(key, default)
+        ),
     )
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     fake_genai = types.SimpleNamespace(
@@ -231,7 +231,9 @@ def test_list_models_exits_without_key(monkeypatch: pytest.MonkeyPatch) -> None:
     assert any(msg.endswith("exit:1") or msg == "exit:1" for msg in captured)
 
 
-def test_dynamic_example_selector_no_graph_returns_empty(caplog: pytest.LogCaptureFixture) -> None:
+def test_dynamic_example_selector_no_graph_returns_empty(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     caplog.set_level(logging.DEBUG)
     selector = dynamic_example_selector.DynamicExampleSelector(types.SimpleNamespace())  # type: ignore[arg-type]
     assert selector.select_best_examples("qt", {}, k=1) == []
@@ -329,7 +331,9 @@ def test_caching_layer_fetch_without_graph() -> None:
     assert layer._fetch_rules_from_graph("qt") == []
 
 
-def test_adaptive_difficulty_missing_graph_logs(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+def test_adaptive_difficulty_missing_graph_logs(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     caplog.set_level(logging.WARNING)
     adjuster = adaptive_difficulty.AdaptiveDifficultyAdjuster(types.SimpleNamespace())  # type: ignore[arg-type]
     result = adjuster.analyze_image_complexity({"text_density": 0.9})
@@ -385,7 +389,9 @@ def test_cross_validation_grounding_branches(monkeypatch: pytest.MonkeyPatch) ->
 
 def test_cross_validation_rule_compliance_graph_missing() -> None:
     class _KG:
-        def get_constraints_for_query_type(self, *_args: Any, **_kwargs: Any) -> list[Any]:
+        def get_constraints_for_query_type(
+            self, *_args: Any, **_kwargs: Any
+        ) -> list[Any]:
             return []
 
     cvs = cross_validation.CrossValidationSystem(_KG())  # type: ignore[arg-type]

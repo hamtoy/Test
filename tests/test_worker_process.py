@@ -15,8 +15,11 @@ from src.infra import worker  # noqa: E402
 
 
 @pytest.mark.asyncio
-async def test_process_task_without_llm(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_process_task_without_llm(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     from src.infra import worker as infra_worker
+
     txt = tmp_path / "sample.txt"
     txt.write_text("hello world", encoding="utf-8")
     monkeypatch.setattr(infra_worker, "llm_provider", None)
@@ -60,7 +63,9 @@ async def test_ensure_redis_ready(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_check_rate_limit_allows_then_blocks(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_check_rate_limit_allows_then_blocks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from src.infra import worker as infra_worker
 
     class _Redis:
@@ -86,6 +91,7 @@ async def test_check_rate_limit_allows_then_blocks(monkeypatch: pytest.MonkeyPat
 @pytest.mark.asyncio
 async def test_check_rate_limit_fail_open(monkeypatch: pytest.MonkeyPatch) -> None:
     from src.infra import worker as infra_worker
+
     monkeypatch.setattr(infra_worker, "redis_client", None)
     assert await infra_worker.check_rate_limit("k", limit=1, window=1) is True
 
@@ -96,7 +102,9 @@ async def test_lats_budget_uses_cost_delta(monkeypatch: pytest.MonkeyPatch) -> N
     from src.infra import budget as infra_budget
 
     class _FakeLLM:
-        async def generate_content_async(self, prompt: str, **kwargs: Any) -> types.SimpleNamespace:
+        async def generate_content_async(
+            self, prompt: str, **kwargs: Any
+        ) -> types.SimpleNamespace:
             return types.SimpleNamespace(
                 content="ok",
                 usage={"total_tokens": 10, "prompt_tokens": 4, "completion_tokens": 6},
@@ -109,7 +117,9 @@ async def test_lats_budget_uses_cost_delta(monkeypatch: pytest.MonkeyPatch) -> N
         def record_usage(self, usage: dict[str, int]) -> types.SimpleNamespace:
             cost = 0.1
             self.total_cost_usd += cost
-            return types.SimpleNamespace(cost_usd=cost, total_tokens=usage.get("total_tokens", 0))
+            return types.SimpleNamespace(
+                cost_usd=cost, total_tokens=usage.get("total_tokens", 0)
+            )
 
         def get_total_cost(self) -> float:
             return self.total_cost_usd
@@ -136,7 +146,9 @@ async def test_lats_budget_uses_cost_delta(monkeypatch: pytest.MonkeyPatch) -> N
 
 
 @pytest.mark.asyncio
-async def test_handle_ocr_task_success(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+async def test_handle_ocr_task_success(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     from src.infra import worker as infra_worker
 
     async def _ready() -> None:
@@ -156,7 +168,14 @@ async def test_handle_ocr_task_success(monkeypatch: pytest.MonkeyPatch, tmp_path
     monkeypatch.setattr(infra_worker, "_append_jsonl", _append)
 
     async def _proc(_task: Any) -> dict[str, Any]:
-        return {"request_id": "r3", "session_id": "s3", "image_path": "img", "ocr_text": "t", "llm_output": None, "processed_at": "now"}
+        return {
+            "request_id": "r3",
+            "session_id": "s3",
+            "image_path": "img",
+            "ocr_text": "t",
+            "llm_output": None,
+            "processed_at": "now",
+        }
 
     monkeypatch.setattr(infra_worker, "_process_task", _proc)
 
@@ -245,7 +264,9 @@ async def test_handle_ocr_task_lats_toggle(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setattr(infra_worker, "check_rate_limit", _allow)
     monkeypatch.setattr(infra_worker.config, "enable_lats", True, raising=False)
     written: list[dict[str, Any]] = []
-    monkeypatch.setattr(infra_worker, "_append_jsonl", lambda _p, rec: written.append(rec))
+    monkeypatch.setattr(
+        infra_worker, "_append_jsonl", lambda _p, rec: written.append(rec)
+    )
 
     class _Broker:
         def __init__(self) -> None:
@@ -258,7 +279,14 @@ async def test_handle_ocr_task_lats_toggle(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setattr(infra_worker, "broker", broker)
 
     async def _process(task: Any) -> dict[str, Any]:
-        return {"request_id": task.request_id, "session_id": task.session_id, "image_path": task.image_path, "ocr_text": "hello world", "llm_output": None, "processed_at": "now"}
+        return {
+            "request_id": task.request_id,
+            "session_id": task.session_id,
+            "image_path": task.image_path,
+            "ocr_text": "hello world",
+            "llm_output": None,
+            "processed_at": "now",
+        }
 
     monkeypatch.setattr(infra_worker, "_process_task", _process)
     task = worker.OCRTask(request_id="l1", image_path="img", session_id="s-lats")
@@ -268,7 +296,9 @@ async def test_handle_ocr_task_lats_toggle(monkeypatch: pytest.MonkeyPatch) -> N
 
 
 @pytest.mark.asyncio
-async def test_handle_ocr_task_lats_budget_exit(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_handle_ocr_task_lats_budget_exit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from src.infra import worker as infra_worker
 
     async def _ready() -> None:
@@ -284,12 +314,21 @@ async def test_handle_ocr_task_lats_budget_exit(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(infra_worker.config, "budget_limit_usd", 0.0, raising=False)
 
     async def _process(task: Any) -> dict[str, Any]:
-        return {"request_id": task.request_id, "session_id": task.session_id, "image_path": task.image_path, "ocr_text": "hello world", "llm_output": None, "processed_at": "now"}
+        return {
+            "request_id": task.request_id,
+            "session_id": task.session_id,
+            "image_path": task.image_path,
+            "ocr_text": "hello world",
+            "llm_output": None,
+            "processed_at": "now",
+        }
 
     monkeypatch.setattr(infra_worker, "_process_task", _process)
     monkeypatch.setattr(infra_worker, "llm_provider", None, raising=False)
     written: list[dict[str, Any]] = []
-    monkeypatch.setattr(infra_worker, "_append_jsonl", lambda _p, rec: written.append(rec))
+    monkeypatch.setattr(
+        infra_worker, "_append_jsonl", lambda _p, rec: written.append(rec)
+    )
 
     class _Broker:
         def __init__(self) -> None:

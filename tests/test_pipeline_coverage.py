@@ -8,7 +8,9 @@ import pytest
 from src.infra import constraints as rtce
 
 
-def test_integrated_qa_pipeline_create_and_validate(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_integrated_qa_pipeline_create_and_validate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("NEO4J_URI", "bolt://fake")
     monkeypatch.setenv("NEO4J_USER", "u")
     monkeypatch.setenv("NEO4J_PASSWORD", "p")
@@ -44,7 +46,9 @@ def test_integrated_qa_pipeline_create_and_validate(monkeypatch: pytest.MonkeyPa
         def close(self) -> None:
             return None
 
-    def _fake_build_session(_ctx: Any, validate: bool = True) -> list[types.SimpleNamespace]:
+    def _fake_build_session(
+        _ctx: Any, validate: bool = True
+    ) -> list[types.SimpleNamespace]:
         return [
             types.SimpleNamespace(type="explanation", prompt="p1"),
             types.SimpleNamespace(type="target", prompt="p2"),
@@ -93,7 +97,9 @@ def test_real_time_constraint_enforcer_stream_and_validate() -> None:
         def __init__(self) -> None:
             self._graph = types.SimpleNamespace(session=lambda: _GraphSession())
 
-        def get_constraints_for_query_type(self, *_args: Any, **_kwargs: Any) -> list[dict[str, str]]:
+        def get_constraints_for_query_type(
+            self, *_args: Any, **_kwargs: Any
+        ) -> list[dict[str, str]]:
             return [
                 {"type": "prohibition", "pattern": "bad", "description": "no bad words"}
             ]

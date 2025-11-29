@@ -13,7 +13,9 @@ def _fake_genai(monkeypatch: pytest.MonkeyPatch) -> None:
         def __init__(self, name: str) -> None:
             self.name = name
 
-        def generate_content(self, prompt: str, generation_config: Any = None) -> types.SimpleNamespace:
+        def generate_content(
+            self, prompt: str, generation_config: Any = None
+        ) -> types.SimpleNamespace:
             return types.SimpleNamespace(text="dummy")
 
     fake = types.SimpleNamespace(

@@ -136,7 +136,9 @@ def test_memory_augmented_qa(monkeypatch: pytest.MonkeyPatch) -> None:
             return _FakeDriver()
 
     class _FakeVector:
-        def similarity_search(self, *_args: Any, **_kwargs: Any) -> list[types.SimpleNamespace]:
+        def similarity_search(
+            self, *_args: Any, **_kwargs: Any
+        ) -> list[types.SimpleNamespace]:
             return [types.SimpleNamespace(page_content="doc1")]
 
     class _FakeNeo4jVector:
@@ -206,7 +208,9 @@ def test_multi_agent_qa_system(monkeypatch: pytest.MonkeyPatch) -> None:
         def __init__(self, *_args: Any, **_kwargs: Any) -> None:
             pass
 
-        def select_best_examples(self, *_args: Any, **_kwargs: Any) -> list[dict[str, str]]:
+        def select_best_examples(
+            self, *_args: Any, **_kwargs: Any
+        ) -> list[dict[str, str]]:
             return [{"example": "ex"}]
 
     class _FakeValidator:
