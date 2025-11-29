@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from .chunk_processor import AdaptiveChunkProcessor, ChunkConfig, ChunkProcessor, ChunkStats
+from .chunk_processor import (
+    AdaptiveChunkProcessor,
+    ChunkConfig,
+    ChunkProcessor,
+    ChunkStats,
+)
 from .context import WorkflowContext
 from .executor import execute_workflow
 from .inspection import inspect_answer, inspect_query

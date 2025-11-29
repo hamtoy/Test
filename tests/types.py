@@ -15,6 +15,7 @@
 
 from typing import Any, Awaitable, Callable, Protocol, TypeVar
 
+
 # Mock 타입 정의
 class MockRedis(Protocol):
     """Redis 클라이언트 Mock 프로토콜."""

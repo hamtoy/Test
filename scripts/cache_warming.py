@@ -103,7 +103,9 @@ class CacheWarmer:
         # 워밍할 템플릿 결정
         if priority == "all":
             templates = [
-                t for template_list in PRIORITY_TEMPLATES.values() for t in template_list
+                t
+                for template_list in PRIORITY_TEMPLATES.values()
+                for t in template_list
             ]
         else:
             templates = PRIORITY_TEMPLATES.get(priority, [])
