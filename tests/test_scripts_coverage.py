@@ -7,12 +7,14 @@ import builtins
 import io
 from typing import Any
 
+import pytest
 
-def test_list_models_script(monkeypatch) -> None:
+
+def test_list_models_script(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "key")
 
     class _FakeModel:
-        def __init__(self, name, methods=None) -> None:
+        def __init__(self, name: str, methods: list[str] | None = None) -> None:
             self.name = name
             self.supported_generation_methods = methods or ["generateContent"]
 
@@ -22,7 +24,7 @@ def test_list_models_script(monkeypatch) -> None:
     )
     monkeypatch.setitem(sys.modules, "google.generativeai", fake_genai)
 
-    captured = []
+    captured: list[str] = []
     monkeypatch.setattr(
         builtins,
         "print",
@@ -42,11 +44,11 @@ def test_list_models_script(monkeypatch) -> None:
     assert captured
 
 
-def test_qa_generator_script(monkeypatch) -> None:
+def test_qa_generator_script(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "key")
 
     class _FakeCompletions:
-        def create(self, model, messages, temperature=0):
+        def create(self, model: str, messages: list[Any], temperature: int = 0) -> types.SimpleNamespace:
             content = (
                 "1. 첫 번째 질문\n2. 두 번째 질문\n3. 세 번째 질문\n4. 네 번째 질문"
             )
@@ -63,7 +65,7 @@ def test_qa_generator_script(monkeypatch) -> None:
             self.completions = _FakeCompletions()
 
     class _FakeOpenAI:
-        def __init__(self, *args, **kwargs) -> None:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
             self.chat = _FakeChat()
 
     fake_openai_module = types.SimpleNamespace(OpenAI=_FakeOpenAI)
@@ -72,12 +74,12 @@ def test_qa_generator_script(monkeypatch) -> None:
     files: dict[str, Any] = {}
 
     class _MemoBuffer(io.StringIO):
-        def close(self):
+        def close(self) -> None:
             # Keep buffer accessible for assertions
             self.seek(0)
             return None
 
-    def _fake_open(path, mode="r", encoding=None):
+    def _fake_open(path: str, mode: str = "r", encoding: str | None = None) -> io.StringIO:
         if "r" in mode:
             return io.StringIO("prompt")
         buf = _MemoBuffer()
@@ -86,7 +88,7 @@ def test_qa_generator_script(monkeypatch) -> None:
 
     monkeypatch.setattr(builtins, "open", _fake_open)
     monkeypatch.setattr(builtins, "exit", lambda code=0: None)
-    captured = []
+    captured: list[str] = []
     monkeypatch.setattr(
         builtins,
         "print",
