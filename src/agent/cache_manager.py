@@ -14,8 +14,8 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 
-# Assuming AppConfig is defined elsewhere in the project
 from src.config import AppConfig
+from src.config.constants import CacheConfig
 
 
 class CacheManager:
@@ -25,11 +25,56 @@ class CacheManager:
     Compatibility wrappers are provided for legacy signatures.
     """
 
-    def __init__(self, config: AppConfig) -> None:
+    def __init__(
+        self, config: AppConfig, *, min_tokens: Optional[int] = None
+    ) -> None:
         self.config = config
         self.logger = logging.getLogger("GeminiWorkflow")
         self.cache_hits = 0
         self.cache_misses = 0
+        self.min_tokens = (
+            min_tokens
+            if min_tokens is not None
+            else getattr(config, "cache_min_tokens", CacheConfig.MIN_TOKENS_FOR_CACHING)
+        )
+
+    # ---------------------------------------------------------------------
+    # Caching decision logic
+    # ---------------------------------------------------------------------
+    def should_cache(self, prompt_tokens: int) -> bool:
+        """캐싱 활성화 여부 결정.
+
+        Args:
+            prompt_tokens: 프롬프트의 토큰 수
+
+        Returns:
+            True: 캐싱 사용 (2048+ 토큰)
+            False: 일반 API 사용 (2048 미만)
+        """
+        if prompt_tokens < self.min_tokens:
+            self.logger.debug(
+                "캐싱 건너뜀: %d 토큰 (최소 %d 필요, Gemini API 제약)",
+                prompt_tokens,
+                self.min_tokens,
+            )
+            return False
+
+        savings_estimate = self._estimate_savings(prompt_tokens)
+        self.logger.debug(
+            "캐싱 활성화: %d 토큰 (예상 절감: ~%d%%)",
+            prompt_tokens,
+            savings_estimate,
+        )
+        return True
+
+    def _estimate_savings(self, tokens: int) -> int:
+        """대략적인 비용 절감률 추정."""
+        if tokens < 5000:
+            return 50
+        elif tokens < 20000:
+            return 70
+        else:
+            return 85
 
     # ---------------------------------------------------------------------
     # Compatibility layer for older code that used ``track_cache_usage``

@@ -23,7 +23,33 @@ PRICING_TIERS: Final[dict[str, List[PricingTier]]] = {
 GEMINI_API_KEY_LENGTH: Final[int] = 39
 DEFAULT_RPM_LIMIT: Final[int] = 60
 DEFAULT_RPM_WINDOW_SECONDS: Final[int] = 60
-MIN_CACHE_TOKENS: Final[int] = 2048
+
+
+class CacheConfig:
+    """Context Caching 설정.
+
+    Gemini API의 Context Caching 기능에 대한 설정 및 제약사항을 정의합니다.
+
+    References:
+        https://ai.google.dev/gemini-api/docs/caching
+    """
+
+    # Gemini API 제약: 2048 토큰 미만은 캐싱 불가
+    MIN_TOKENS_FOR_CACHING: Final[int] = 2048
+
+    MIN_TOKENS_RATIONALE: Final[str] = """
+    2048 토큰은 Gemini Context Caching API의 최소 임계값입니다.
+    이는 비용 절감의 breakeven point가 아니라, API의 기술적 제약사항입니다.
+
+    - 2048 토큰 이상: 캐싱 API 사용 가능
+    - 2048 토큰 미만: 일반 API로 자동 fallback
+
+    이 값은 변경할 수 없습니다 (Google이 정한 제약).
+    """
+
+
+# Backward compatibility: keep MIN_CACHE_TOKENS as alias
+MIN_CACHE_TOKENS: Final[int] = CacheConfig.MIN_TOKENS_FOR_CACHING
 BUDGET_WARNING_THRESHOLDS: Final[list[tuple[int, str]]] = [
     (80, "WARNING"),
     (90, "HIGH"),

@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 from pathlib import Path
@@ -6,7 +7,14 @@ from typing import Any, Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from src.config.constants import ERROR_MESSAGES, GEMINI_API_KEY_LENGTH, MIN_CACHE_TOKENS
+from src.config.constants import (
+    CacheConfig,
+    ERROR_MESSAGES,
+    GEMINI_API_KEY_LENGTH,
+    MIN_CACHE_TOKENS,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class AppConfig(BaseSettings):
@@ -162,8 +170,27 @@ class AppConfig(BaseSettings):
     @field_validator("cache_min_tokens")
     @classmethod
     def validate_cache_min_tokens(cls, v: int) -> int:
-        if v < 1:
-            raise ValueError("cache_min_tokens must be positive")
+        """Gemini Context Caching API는 2048 토큰 미만을 지원하지 않습니다."""
+        api_min = CacheConfig.MIN_TOKENS_FOR_CACHING
+
+        if v < api_min:
+            logger.warning(
+                "CACHE_MIN_TOKENS=%d는 Gemini API 제약(%d)보다 작습니다. "
+                "캐싱이 작동하지 않을 수 있습니다. %d로 자동 조정합니다.",
+                v,
+                api_min,
+                api_min,
+            )
+            return api_min
+
+        if v > api_min:
+            logger.info(
+                "CACHE_MIN_TOKENS=%d로 설정됨. "
+                "API 최소값(%d)보다 높으므로 일부 요청에서 캐싱이 건너뛰어질 수 있습니다.",
+                v,
+                api_min,
+            )
+
         return v
 
     def model_post_init(self, __context: Any) -> None:
