@@ -86,6 +86,12 @@ def __getattr__(name: str) -> Any:
 
         return OptimizedQueries
 
+    # feature_flags.py exports
+    if name == "FeatureFlags":
+        from src.infra.feature_flags import FeatureFlags
+
+        return FeatureFlags
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -106,4 +112,5 @@ __all__ = [
     "AdaptiveStats",
     "TwoTierIndexManager",
     "OptimizedQueries",
+    "FeatureFlags",
 ]
