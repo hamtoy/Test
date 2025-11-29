@@ -6,6 +6,7 @@ import types
 from pathlib import Path
 import json
 import sys
+from typing import Any
 
 import pytest
 from jinja2 import DictLoader, Environment
@@ -38,8 +39,6 @@ def test_dynamic_template_require_env_missing(monkeypatch: pytest.MonkeyPatch) -
 
 
 def test_cross_validation_image_grounding_branches(monkeypatch: pytest.MonkeyPatch) -> None:
-    from typing import Any
-
     class _ErrorSession:
         def __enter__(self) -> "_ErrorSession":
             return self
@@ -95,8 +94,6 @@ def test_cross_validation_image_grounding_branches(monkeypatch: pytest.MonkeyPat
 
 
 def test_cross_validation_rule_and_novelty_exceptions(monkeypatch: pytest.MonkeyPatch) -> None:
-    from typing import Any
-
     class _BadSession:
         def __enter__(self) -> "_BadSession":
             return self
@@ -133,7 +130,6 @@ def test_cross_validation_rule_and_novelty_exceptions(monkeypatch: pytest.Monkey
 
 
 def test_qa_rag_init_uses_env_and_driver(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    from typing import Any
 
     monkeypatch.setenv("NEO4J_URI", "bolt://localhost")
     monkeypatch.setenv("NEO4J_USER", "neo4j")
@@ -166,7 +162,6 @@ def test_qa_rag_init_uses_env_and_driver(monkeypatch: pytest.MonkeyPatch, tmp_pa
 
 
 def test_qa_rag_init_vector_store_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
-    from typing import Any
 
     # Ensure langchain_neo4j import succeeds with a stub
     class _Neo4jVector:
@@ -197,7 +192,6 @@ def test_qa_rag_init_vector_store_error_paths(monkeypatch: pytest.MonkeyPatch) -
 
 
 def test_qa_rag_validate_session_failure(monkeypatch: pytest.MonkeyPatch) -> None:
-    from typing import Any
 
     kg = object.__new__(qa_rag_system.QAKnowledgeGraph)
 
@@ -254,7 +248,6 @@ def _make_config(tmp_path: Path) -> dict[str, str]:
 
 
 def test_agent_init_without_aiolimiter(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    from typing import Any
 
     envs = _make_config(tmp_path)
     for k, v in envs.items():
@@ -307,7 +300,6 @@ def test_agent_cleanup_expired_cache(monkeypatch: pytest.MonkeyPatch, tmp_path: 
 async def test_agent_create_context_cache_skips_when_small(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    from typing import Any
 
     envs = _make_config(tmp_path)
     for k, v in envs.items():
@@ -330,7 +322,6 @@ async def test_agent_create_context_cache_skips_when_small(
 
 
 def test_agent_create_model_with_cached_content(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    from typing import Any
 
     envs = _make_config(tmp_path)
     for k, v in envs.items():

@@ -4,6 +4,8 @@ import sys
 import types
 from typing import Any
 
+import pytest
+
 
 # Stub external deps before importing targets (with attributes for mypy)
 class _StubPIL(types.ModuleType):
@@ -25,7 +27,7 @@ sys.modules["pytesseract"] = _StubPytesseract("pytesseract")
 from src.features import multimodal as mmu  # noqa: E402
 
 
-def test_multimodal_understanding_uses_fakes(monkeypatch: "pytest.MonkeyPatch") -> None:
+def test_multimodal_understanding_uses_fakes(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual multimodal module to patch the right namespace
     from src.features import multimodal as features_multimodal
 
@@ -70,9 +72,6 @@ def test_multimodal_understanding_uses_fakes(monkeypatch: "pytest.MonkeyPatch") 
     assert meta["has_table_chart"] is False
     assert sorted(meta["topics"]) == ["alpha", "beta"]
     assert fake_saved.get("path") == "fake.png"
-
-
-import pytest  # noqa: E402
 
 
 def test_multimodal_with_graph_session(monkeypatch: pytest.MonkeyPatch) -> None:
