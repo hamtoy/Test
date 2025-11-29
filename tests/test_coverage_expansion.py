@@ -17,7 +17,7 @@ import src.features.autocomplete as smart_autocomplete
 
 
 def test_smart_autocomplete_handles_missing_graph():
-    sa = smart_autocomplete.SmartAutocomplete(types.SimpleNamespace())
+    sa = smart_autocomplete.SmartAutocomplete(types.SimpleNamespace())  # type: ignore[arg-type]
     assert sa.suggest_next_query_type([]) == []
 
 
@@ -33,7 +33,7 @@ def test_smart_autocomplete_session_none(monkeypatch):
 
             return _Ctx()
 
-    sa = smart_autocomplete.SmartAutocomplete(_KG())
+    sa = smart_autocomplete.SmartAutocomplete(_KG())  # type: ignore[arg-type]
     assert sa.suggest_next_query_type([{"type": "summary"}]) == []
 
 
@@ -52,14 +52,14 @@ def test_smart_autocomplete_filters_by_limit():
             ]
 
     kg = types.SimpleNamespace(_graph=types.SimpleNamespace(session=lambda: _Sess()))
-    sa = smart_autocomplete.SmartAutocomplete(kg)
+    sa = smart_autocomplete.SmartAutocomplete(kg)  # type: ignore[arg-type]
     suggestions = sa.suggest_next_query_type([{"type": "summary"}])
     assert all(s["name"] != "summary" for s in suggestions)
 
 
 def test_smart_autocomplete_constraint_missing_graph(monkeypatch):
     monkeypatch.setattr(smart_autocomplete, "find_violations", lambda text: [])
-    sa = smart_autocomplete.SmartAutocomplete(types.SimpleNamespace())
+    sa = smart_autocomplete.SmartAutocomplete(types.SimpleNamespace())  # type: ignore[arg-type]
     res = sa.suggest_constraint_compliance("draft", "summary")
     assert res == {"violations": [], "suggestions": []}
 
@@ -78,7 +78,7 @@ def test_smart_autocomplete_constraint_session_none(monkeypatch):
 
             return _Ctx()
 
-    sa = smart_autocomplete.SmartAutocomplete(_KG())
+    sa = smart_autocomplete.SmartAutocomplete(_KG())  # type: ignore[arg-type]
     res = sa.suggest_constraint_compliance("draft", "summary")
     assert res["violations"] == []
     assert res["suggestions"] == []
@@ -89,7 +89,7 @@ def test_real_time_constraint_stream_final_validation(monkeypatch):
         def get_constraints_for_query_type(self, _qt):
             return []
 
-    enforcer = rtce.RealTimeConstraintEnforcer(_KG())
+    enforcer = rtce.RealTimeConstraintEnforcer(_KG())  # type: ignore[arg-type]
     monkeypatch.setattr(enforcer, "_get_original_blocks", lambda: [])
 
     events = list(enforcer.stream_with_validation(iter(["ok", " text"]), "summary"))
@@ -110,7 +110,7 @@ def test_real_time_constraint_get_original_blocks_no_session():
 
             return _Ctx()
 
-    enforcer = rtce.RealTimeConstraintEnforcer(_KG())
+    enforcer = rtce.RealTimeConstraintEnforcer(_KG())  # type: ignore[arg-type]
     assert enforcer._get_original_blocks() == []
 
 
@@ -126,22 +126,25 @@ def test_real_time_constraint_get_original_blocks_exception():
 
             return _Ctx()
 
-    enforcer = rtce.RealTimeConstraintEnforcer(_KG())
+    enforcer = rtce.RealTimeConstraintEnforcer(_KG())  # type: ignore[arg-type]
     assert enforcer._get_original_blocks() == []
 
 
 def test_real_time_constraint_similarity_issue(monkeypatch):
-    enforcer = rtce.RealTimeConstraintEnforcer(types.SimpleNamespace())
+    enforcer = rtce.RealTimeConstraintEnforcer(types.SimpleNamespace())  # type: ignore[arg-type]
     monkeypatch.setattr(
         enforcer, "_get_original_blocks", lambda: [{"content": "repeat me"}]
     )
     result = enforcer.validate_complete_output("repeat me", "explanation")
-    assert any("너무 유사" in issue for issue in result["issues"])
+    issues = result.get("issues", [])
+    assert isinstance(issues, list)
+    found_similarity = any("너무 유사" in str(issue) for issue in issues)
+    assert found_similarity, "Expected similarity issue not found"
 
 
 def test_health_check_graph_missing():
     kg = types.SimpleNamespace(_graph=None)
-    assert health_check.check_neo4j_connection(kg) is False
+    assert health_check.check_neo4j_connection(kg) is False  # type: ignore[arg-type]
 
 
 def test_health_check_unknown_exception(monkeypatch):
@@ -159,7 +162,7 @@ def test_health_check_unknown_exception(monkeypatch):
             return None
 
     kg = types.SimpleNamespace(_graph=types.SimpleNamespace(session=lambda: _Session()))
-    assert health_check.check_neo4j_connection(kg) is False
+    assert health_check.check_neo4j_connection(kg) is False  # type: ignore[arg-type]
 
 
 def test_sensitive_filter_handles_non_string_args():
@@ -178,7 +181,9 @@ def test_sensitive_filter_handles_non_string_args():
     )
     assert filt.filter(record)
     assert "[FILTERED_API_KEY]" in record.msg
-    assert record.args[-1] == 123
+    args = record.args
+    assert args is not None
+    assert isinstance(args, tuple) and args[-1] == 123
 
 
 def test_list_models_exits_without_key(monkeypatch):
@@ -220,7 +225,7 @@ def test_list_models_exits_without_key(monkeypatch):
 
 def test_dynamic_example_selector_no_graph_returns_empty(caplog):
     caplog.set_level(logging.DEBUG)
-    selector = dynamic_example_selector.DynamicExampleSelector(types.SimpleNamespace())
+    selector = dynamic_example_selector.DynamicExampleSelector(types.SimpleNamespace())  # type: ignore[arg-type]
     assert selector.select_best_examples("qt", {}, k=1) == []
 
 
@@ -236,7 +241,7 @@ def test_dynamic_example_selector_session_none(monkeypatch):
 
             return _Ctx()
 
-    selector = dynamic_example_selector.DynamicExampleSelector(_KG())
+    selector = dynamic_example_selector.DynamicExampleSelector(_KG())  # type: ignore[arg-type]
     assert selector.select_best_examples("qt", {}, k=1) == []
 
 
@@ -255,7 +260,7 @@ def test_dynamic_example_selector_handles_exception(monkeypatch):
         def graph_session(self):
             return _Session
 
-    selector = dynamic_example_selector.DynamicExampleSelector(_KG())
+    selector = dynamic_example_selector.DynamicExampleSelector(_KG())  # type: ignore[arg-type]
     assert selector.select_best_examples("qt", {}, k=1) == []
 
 
@@ -292,42 +297,43 @@ def test_caching_layer_handles_bad_cache_and_write_error(monkeypatch):
             raise RuntimeError("write fail")
 
     layer = caching_layer.CachingLayer(
-        kg=types.SimpleNamespace(_graph=None), redis_client=None
+        kg=types.SimpleNamespace(_graph=None),  # type: ignore[arg-type]
+        redis_client=None,
     )
-    layer.redis = _Redis()
-    layer._fetch_rules_from_graph = lambda qt: rows
+    layer.redis = _Redis()  # type: ignore[assignment]
+    layer._fetch_rules_from_graph = lambda qt: rows  # type: ignore[method-assign, assignment]
     assert layer.get_rules_cached("qt") == rows
 
 
 def test_caching_layer_invalidate_without_redis():
-    layer = caching_layer.CachingLayer(kg=types.SimpleNamespace(_graph=None))
+    layer = caching_layer.CachingLayer(kg=types.SimpleNamespace(_graph=None))  # type: ignore[arg-type]
     assert layer.invalidate_cache() == 0
     layer.redis = types.SimpleNamespace(keys=lambda pattern: [], delete=lambda *k: 0)
     assert layer.invalidate_cache() == 0
 
 
 def test_caching_layer_fetch_without_graph():
-    layer = caching_layer.CachingLayer(kg=types.SimpleNamespace())
+    layer = caching_layer.CachingLayer(kg=types.SimpleNamespace())  # type: ignore[arg-type]
     assert layer._fetch_rules_from_graph("qt") == []
 
 
 def test_adaptive_difficulty_missing_graph_logs(monkeypatch, caplog):
     caplog.set_level(logging.WARNING)
-    adjuster = adaptive_difficulty.AdaptiveDifficultyAdjuster(types.SimpleNamespace())
+    adjuster = adaptive_difficulty.AdaptiveDifficultyAdjuster(types.SimpleNamespace())  # type: ignore[arg-type]
     result = adjuster.analyze_image_complexity({"text_density": 0.9})
     assert result["estimated_blocks"] == 0.0
     assert any("Failed to estimate blocks" in rec.message for rec in caplog.records)
 
 
 def test_adaptive_difficulty_reasoning_requires_evidence():
-    adjuster = adaptive_difficulty.AdaptiveDifficultyAdjuster(types.SimpleNamespace())
+    adjuster = adaptive_difficulty.AdaptiveDifficultyAdjuster(types.SimpleNamespace())  # type: ignore[arg-type]
     complexity = {"reasoning_possible": True, "level": "medium"}
     adjustments = adjuster.adjust_query_requirements(complexity, "reasoning")
     assert adjustments["evidence_required"] is True
 
 
 def test_cross_validation_grounding_branches(monkeypatch):
-    cvs = cross_validation.CrossValidationSystem(types.SimpleNamespace())
+    cvs = cross_validation.CrossValidationSystem(types.SimpleNamespace())  # type: ignore[arg-type]
     res = cvs._check_image_grounding("ans", {"page_id": "p"})
     assert res["note"] == "graph 없음"
 
@@ -342,7 +348,7 @@ def test_cross_validation_grounding_branches(monkeypatch):
         def graph_session(self):
             return _SessionNone()
 
-    cvs2 = cross_validation.CrossValidationSystem(_KG())
+    cvs2 = cross_validation.CrossValidationSystem(_KG())  # type: ignore[arg-type]
     res2 = cvs2._check_image_grounding("ans", {"page_id": "p"})
     assert res2["note"] == "graph 없음"
 
@@ -357,7 +363,7 @@ def test_cross_validation_grounding_branches(monkeypatch):
             raise Neo4jError("neo boom")
 
     cvs3 = cross_validation.CrossValidationSystem(
-        types.SimpleNamespace(
+        types.SimpleNamespace(  # type: ignore[arg-type]
             _graph=types.SimpleNamespace(session=lambda: _NeoSession())
         )
     )
@@ -370,7 +376,7 @@ def test_cross_validation_rule_compliance_graph_missing():
         def get_constraints_for_query_type(self, *_args, **_kwargs):
             return []
 
-    cvs = cross_validation.CrossValidationSystem(_KG())
+    cvs = cross_validation.CrossValidationSystem(_KG())  # type: ignore[arg-type]
     res = cvs._check_rule_compliance("answer", "qt")
     assert res["violations"] == []
 
@@ -385,7 +391,7 @@ def test_cross_validation_novelty_store_paths():
             return [_Similar(0.99)]
 
     cvs_high = cross_validation.CrossValidationSystem(
-        types.SimpleNamespace(_vector_store=_StoreHigh())
+        types.SimpleNamespace(_vector_store=_StoreHigh())  # type: ignore[arg-type]
     )
     res_high = cvs_high._check_novelty("q")
     assert res_high["too_similar"] is True
@@ -395,7 +401,7 @@ def test_cross_validation_novelty_store_paths():
             return []
 
     cvs_empty = cross_validation.CrossValidationSystem(
-        types.SimpleNamespace(_vector_store=_StoreEmpty())
+        types.SimpleNamespace(_vector_store=_StoreEmpty())  # type: ignore[arg-type]
     )
     res_empty = cvs_empty._check_novelty("q")
     assert res_empty["novel"] is True

@@ -165,7 +165,11 @@ class TestDisplayWorkflowSummary:
             mock_table_class.return_value = mock_table
 
             _display_workflow_summary(
-                queries, results, mock_agent, mock_config, timestamp
+                queries,
+                results,  # type: ignore[arg-type]
+                mock_agent,
+                mock_config,
+                timestamp,
             )
 
             # Should print success count
@@ -198,7 +202,11 @@ class TestDisplayWorkflowSummary:
             mock_table_class.return_value = mock_table
 
             _display_workflow_summary(
-                queries, results, mock_agent, mock_config, timestamp
+                queries,
+                results,  # type: ignore[arg-type]
+                mock_agent,
+                mock_config,
+                timestamp,
             )
 
             # Check that add_row was called with truncated query

@@ -14,7 +14,7 @@ REQUIRED_TEMPLATES = [
 
 
 @pytest.fixture
-def jinja_env(monkeypatch):
+def jinja_env(monkeypatch: pytest.MonkeyPatch) -> Environment:
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     config = AppConfig()
     env = Environment(
@@ -24,7 +24,7 @@ def jinja_env(monkeypatch):
     return env
 
 
-def test_required_templates_render(jinja_env):
+def test_required_templates_render(jinja_env: Environment) -> None:
     context = {
         "ocr_text": "sample ocr",
         "user_intent": "intent",

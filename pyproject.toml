@@ -126,6 +126,9 @@ python_version = "3.10"  # v3.0: Minimum supported version
 strict = true
 ignore_missing_imports = false
 
+# Pydantic plugin for better type checking
+plugins = ["pydantic.mypy"]
+
 namespace_packages = true
 explicit_package_bases = true
 mypy_path = [".", "stubs"]
@@ -141,17 +144,22 @@ module = [
     "tests.test_workflow_execution",  # 워크플로우 실행 엔진 테스트
     "tests.test_workflow_processor",  # 워크플로우 프로세서 로직 테스트
     "tests.test_qa_rag_system",       # QA RAG 시스템 통합 테스트
+    # 3단계 마이그레이션 완료된 파일들
+    "tests.test_cache_stats",         # 작은 파일 (582 bytes)
+    "tests.test_templates_render",    # 작은 파일 (926 bytes)
+    "tests.test_cache_analytics",     # 작은 파일 (940 bytes)
 ]
 strict = true
 
 # ===== 3단계: 나머지 테스트 (점진적 마이그레이션) =====
-# Step 2: check_untyped_defs 활성화
+# Step 2: check_untyped_defs 활성화 (완료)
+# Step 3: 파일별로 타입 힌트 추가 후 strict 모드로 이동
 [[tool.mypy.overrides]]
 module = ["tests.*"]
 strict = false
 check_untyped_defs = true  # Step 2: 함수 본문 타입 체크 활성화
 warn_return_any = false
-disallow_untyped_defs = false
+disallow_untyped_defs = false  # Step 3: 파일별로 활성화
 disallow_incomplete_defs = false
 disallow_any_generics = false
 disallow_untyped_calls = false

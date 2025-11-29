@@ -62,7 +62,7 @@ def test_fetch_query_types_error(monkeypatch):
             raise Neo4jError("boom")
 
     router = GraphEnhancedRouter(
-        kg=types.SimpleNamespace(_graph=_BadGraph()),
+        kg=types.SimpleNamespace(_graph=_BadGraph()),  # type: ignore[arg-type]
         llm=_FakeLLM("any"),  # type: ignore[arg-type]
     )
     qtypes = router._fetch_query_types()

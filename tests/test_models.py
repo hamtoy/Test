@@ -14,7 +14,7 @@ def test_model_validation_handles_ties_by_preserving_first_max():
             {"candidate_id": "C", "score": 90, "reason": "Also strong"},
         ],
     }
-    result = EvaluationResultSchema(**data)  # type: ignore[arg-type]
+    result = EvaluationResultSchema(**data)
     # Should not override when claimed best is tied for max
     assert result.best_candidate == "B"
     assert result.get_best_candidate_id() == "B"

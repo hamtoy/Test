@@ -215,7 +215,7 @@ class TestEvaluationModel:
             ],
         }
 
-        result = EvaluationResultSchema(**data)  # type: ignore[arg-type]
+        result = EvaluationResultSchema(**data)
 
         # 검증 후 자동으로 B로 수정되어야 함
         assert result.best_candidate == "B"
@@ -232,7 +232,7 @@ class TestEvaluationModel:
             ],
         }
 
-        result = EvaluationResultSchema(**data)  # type: ignore[arg-type]
+        result = EvaluationResultSchema(**data)
 
         # 올바르므로 그대로 유지
         assert result.best_candidate == "A"
