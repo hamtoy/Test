@@ -3,7 +3,7 @@
 이 모듈은 테스트 코드의 타입 안정성을 높이기 위한 공통 타입 정의를 제공합니다.
 
 사용 예시:
-    from tests.types import MockRedis, ProgressCallbackType
+    from tests.custom_types import MockRedis, ProgressCallbackType
 
     @pytest.fixture
     def mock_redis() -> MockRedis:
