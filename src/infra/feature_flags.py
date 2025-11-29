@@ -142,8 +142,12 @@ class FeatureFlags:
 
             ctx_value = context.get(field)
 
-            if operator == "equals" and ctx_value != value or operator == "not_equals" and ctx_value == value:
-                return False
+            if operator == "equals":
+                if ctx_value != value:
+                    return False
+            elif operator == "not_equals":
+                if ctx_value == value:
+                    return False
             elif operator == "greater_than":
                 if ctx_value is None or ctx_value <= value:
                     return False
