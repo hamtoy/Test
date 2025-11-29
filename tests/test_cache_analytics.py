@@ -1,12 +1,15 @@
+from pathlib import Path
+from typing import Any
+
 from src.caching.analytics import analyze_cache_stats, calculate_savings
 
 
-def test_calculate_savings_zero_when_no_hits():
-    record = {"model": "gemini-3-pro-preview", "cache_hits": 0, "input_tokens": 1000}
+def test_calculate_savings_zero_when_no_hits() -> None:
+    record: dict[str, Any] = {"model": "gemini-3-pro-preview", "cache_hits": 0, "input_tokens": 1000}
     assert calculate_savings(record) == 0.0
 
 
-def test_analyze_cache_stats(tmp_path):
+def test_analyze_cache_stats(tmp_path: Path) -> None:
     path = tmp_path / "cache_stats.jsonl"
     path.write_text(
         "\n".join(
