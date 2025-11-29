@@ -236,7 +236,9 @@ def format_output(result: dict[str, object], output_format: str = "text") -> str
         for key, value in result.items():
             if isinstance(value, dict):
                 lines.append(f"{key}:")
-                lines.extend(f"  {sub_key}: {sub_value}" for sub_key, sub_value in value.items())
+                lines.extend(
+                    f"  {sub_key}: {sub_value}" for sub_key, sub_value in value.items()
+                )
             elif isinstance(value, list):
                 lines.append(f"{key}:")
                 lines.extend(f"  - {item}" for item in value)
