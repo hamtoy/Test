@@ -47,7 +47,7 @@ class _UpsertFakeSession:
     - 노드 존재 여부 확인 쿼리에 대한 응답 설정 가능
     """
 
-    def __init__(self, existing_nodes: Any=None) -> None:
+    def __init__(self, existing_nodes: Any = None) -> None:
         self.queries = []  # (cypher, params) 튜플 기록
         self.existing_nodes = existing_nodes or set()  # 존재하는 노드 ID 집합
 
@@ -107,7 +107,7 @@ class _UpsertFakeSession:
 class _UpsertFakeGraph:
     """업서트 테스트를 위한 fake graph driver."""
 
-    def __init__(self, existing_nodes: Any=None) -> None:
+    def __init__(self, existing_nodes: Any = None) -> None:
         self.existing_nodes = existing_nodes or set()
         self.sessions = []
 
@@ -120,7 +120,7 @@ class _UpsertFakeGraph:
         return None
 
 
-def _make_upsert_kg(existing_nodes: Any=None) -> Any:
+def _make_upsert_kg(existing_nodes: Any = None) -> Any:
     """업서트 테스트용 QAKnowledgeGraph 생성."""
     kg = object.__new__(QAKnowledgeGraph)
     kg._graph = _UpsertFakeGraph(existing_nodes)  # type: ignore[assignment]
