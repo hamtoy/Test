@@ -132,32 +132,24 @@ mypy_path = [".", "stubs"]
 exclude = ["notion-neo4j-graph/", ".venv/", "build/", "vulture_whitelist.py", "tests/test_deprecation_warnings.py"]
 
 # ===== 1단계: 핵심 테스트부터 strict 적용 =====
+# 2단계 파일들이 마이그레이션 완료되어 1단계로 통합됨
 [[tool.mypy.overrides]]
 module = [
     "tests.test_agent",           # 타입 힌트 많음
     "tests.test_caching_layer",   # 단순한 구조
     "tests.test_config_validation",  # Pydantic 기반
+    "tests.test_workflow_execution",  # 워크플로우 실행 엔진 테스트
+    "tests.test_workflow_processor",  # 워크플로우 프로세서 로직 테스트
+    "tests.test_qa_rag_system",       # QA RAG 시스템 통합 테스트
 ]
 strict = true
 
-# ===== 2단계: 중간 난이도 (점진적 규칙 추가 예정) =====
-[[tool.mypy.overrides]]
-module = [
-    "tests.test_workflow_execution",
-    "tests.test_workflow_processor",
-    "tests.test_qa_rag_system",
-]
-strict = false
-warn_unused_ignores = true
-# 점진적으로 활성화 예정:
-# check_untyped_defs = true
-# disallow_untyped_defs = true
-
 # ===== 3단계: 나머지 테스트 (점진적 마이그레이션) =====
+# Step 2: check_untyped_defs 활성화
 [[tool.mypy.overrides]]
 module = ["tests.*"]
 strict = false
-check_untyped_defs = false
+check_untyped_defs = true  # Step 2: 함수 본문 타입 체크 활성화
 warn_return_any = false
 disallow_untyped_defs = false
 disallow_incomplete_defs = false

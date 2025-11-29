@@ -30,7 +30,7 @@ class _FakeGraph:
 
 def test_analyze_image_complexity_levels():
     kg = types.SimpleNamespace(_graph=_FakeGraph(5))
-    adjuster = AdaptiveDifficultyAdjuster(kg)
+    adjuster = AdaptiveDifficultyAdjuster(kg)  # type: ignore[arg-type]
 
     # simple
     comp_simple = adjuster.analyze_image_complexity({"text_density": 0.2})
@@ -52,7 +52,7 @@ def test_analyze_image_complexity_levels():
 
 def test_adjust_query_requirements():
     kg = types.SimpleNamespace(_graph=_FakeGraph(None))
-    adjuster = AdaptiveDifficultyAdjuster(kg)
+    adjuster = AdaptiveDifficultyAdjuster(kg)  # type: ignore[arg-type]
 
     comp_simple = {"level": "simple", "reasoning_possible": False}
     adj_expl = adjuster.adjust_query_requirements(comp_simple, "explanation")

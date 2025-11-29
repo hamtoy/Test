@@ -43,8 +43,8 @@ def test_dynamic_template_autoescape(monkeypatch):
         autoescape=True,
     )
     dtg = DynamicTemplateGenerator.__new__(DynamicTemplateGenerator)
-    dtg.driver = _FakeDriver()
-    dtg.logger = types.SimpleNamespace(warning=lambda *a, **k: None)
+    dtg.driver = _FakeDriver()  # type: ignore[assignment]
+    dtg.logger = types.SimpleNamespace(warning=lambda *a, **k: None)  # type: ignore[assignment]
     dtg.jinja_env = env
     output = dtg.generate_prompt_for_query_type("explanation", {"calc_allowed": False})
     assert "&lt;script&gt;" in output  # escaped

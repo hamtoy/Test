@@ -20,7 +20,7 @@ def test_self_correcting_chain_stops_on_yes(monkeypatch):
                 return "yes, all good"
             return f"{role}-out"
 
-    chain = self_correcting_chain.SelfCorrectingQAChain(_KG(), _LLM())
+    chain = self_correcting_chain.SelfCorrectingQAChain(_KG(), _LLM())  # type: ignore[arg-type]
     result = chain.generate_with_self_correction("explanation", {"ctx": 1})
 
     assert result["iterations"] == 1

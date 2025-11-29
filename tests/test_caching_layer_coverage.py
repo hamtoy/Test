@@ -51,7 +51,7 @@ def test_caching_layer_prefers_cache_and_invalidates(monkeypatch):
 
     monkeypatch.setattr(caching_layer, "redis", object())
     fake_redis = _FakeRedis()
-    layer = caching_layer.CachingLayer(kg, redis_client=fake_redis)
+    layer = caching_layer.CachingLayer(kg, redis_client=fake_redis)  # type: ignore[arg-type]
 
     first = layer.get_rules_cached("summary")
     second = layer.get_rules_cached("summary")

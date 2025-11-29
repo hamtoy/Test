@@ -17,7 +17,7 @@ def test_main_handles_neo4j_error(monkeypatch):
     def _raise(*_a, **_k):
         raise Neo4jError("boom")
 
-    monkeypatch.setattr(analysis_semantic.GraphDatabase, "driver", _raise)
+    monkeypatch.setattr(analysis_semantic.GraphDatabase, "driver", _raise)  # type: ignore[attr-defined]
     with pytest.raises(SystemExit):
         sa.main()
 
@@ -49,7 +49,7 @@ def test_main_no_blocks_returns(monkeypatch, caplog):
             self.closed = True
 
     monkeypatch.setattr(
-        analysis_semantic.GraphDatabase, "driver", lambda *a, **k: _Driver()
+        analysis_semantic.GraphDatabase, "driver", lambda *a, **k: _Driver()  # type: ignore[attr-defined]
     )
     monkeypatch.setattr(analysis_semantic, "fetch_blocks", lambda driver: [])
 

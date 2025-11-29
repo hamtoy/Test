@@ -43,8 +43,8 @@ class TestHybridWorkflowOptimizer:
 
             opt = HybridWorkflowOptimizer(mock_agent, templates)
             # Store mocks for verification
-            opt._mock_lats = mock_lats_instance
-            opt._mock_mcts = mock_mcts_instance
+            opt._mock_lats = mock_lats_instance  # type: ignore[attr-defined]
+            opt._mock_mcts = mock_mcts_instance  # type: ignore[attr-defined]
             return opt
 
     def test_detect_complexity_lats_keywords(self, optimizer):

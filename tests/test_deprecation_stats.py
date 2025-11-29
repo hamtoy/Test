@@ -121,7 +121,7 @@ class TestGenerateSummaryText:
             "files_with_deprecations": ["file1.py", "file2.py"],
         }
 
-        summary = generate_summary_text(stats)
+        summary = generate_summary_text(stats)  # type: ignore[arg-type]
         assert "Total deprecated calls: 10" in summary
         assert "Unique callers: 5" in summary
         assert "src.utils: 6 call(s)" in summary
@@ -135,7 +135,7 @@ class TestGenerateSummaryText:
             "files_with_deprecations": [],
         }
 
-        summary = generate_summary_text(stats)
+        summary = generate_summary_text(stats)  # type: ignore[arg-type]
         assert "Total deprecated calls: 0" in summary
 
 
@@ -151,7 +151,7 @@ class TestGenerateReport:
             "files_with_deprecations": ["src/main.py", "src/helper.py"],
         }
 
-        html = generate_report(stats)
+        html = generate_report(stats)  # type: ignore[arg-type]
         assert "<!DOCTYPE html>" in html
         assert "15" in html  # total calls
         assert "3" in html  # unique callers
@@ -169,7 +169,7 @@ class TestGenerateReport:
                 "files_with_deprecations": ["file.py"],
             }
 
-            generate_report(stats, output_path)
+            generate_report(stats, output_path)  # type: ignore[arg-type]
 
             assert output_path.exists()
             content = output_path.read_text()
@@ -210,7 +210,7 @@ class TestSaveStatsJson:
                 "files_with_deprecations": ["file.py"],
             }
 
-            save_stats_json(stats, output_path)
+            save_stats_json(stats, output_path)  # type: ignore[arg-type]
 
             assert output_path.exists()
             data = json.loads(output_path.read_text())

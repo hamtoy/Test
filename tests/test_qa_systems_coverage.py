@@ -38,7 +38,7 @@ def test_cross_validation_scoring(monkeypatch):
                 {"type": "prohibition", "pattern": "forbidden", "description": "nope"}
             ]
 
-    cvs = cross_validation.CrossValidationSystem(_FakeKG())
+    cvs = cross_validation.CrossValidationSystem(_FakeKG())  # type: ignore[arg-type]
     result = cvs.cross_validate_qa_pair(
         "What is alpha?",
         "forbidden error response with alpha token",
@@ -74,7 +74,7 @@ def test_lcel_optimized_chain(monkeypatch):
         def generate(self, prompt, role="lcel"):
             return f"generated:{role}"
 
-    chain = lcel_optimized_chain.LCELOptimizedChain(_FakeKG(), _FakeLLM())
+    chain = lcel_optimized_chain.LCELOptimizedChain(_FakeKG(), _FakeLLM())  # type: ignore[arg-type]
     merged = chain._merge_context(
         {"rules": ["r"], "examples": ["e"], "constraints": ["c"], "context": {"x": 1}}
     )
@@ -230,7 +230,7 @@ def test_multi_agent_qa_system(monkeypatch):
         multi_agent_module, "CrossValidationSystem", lambda kg: _FakeValidator()
     )
 
-    system = multi_agent_qa_system.MultiAgentQASystem(fake_kg)
+    system = multi_agent_qa_system.MultiAgentQASystem(fake_kg)  # type: ignore[arg-type]
     result = system.collaborative_generate("explanation", {"page_id": "p1"})
     assert result["metadata"]["examples_used"]
     assert result["validation"]["valid"] is True

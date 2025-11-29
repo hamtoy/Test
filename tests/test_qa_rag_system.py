@@ -29,7 +29,7 @@ class _FakeGraph:
 
 def _make_kg(rows):
     kg = object.__new__(QAKnowledgeGraph)
-    kg._graph = _FakeGraph(rows)
+    kg._graph = _FakeGraph(rows)  # type: ignore[assignment]
     kg._graph_provider = None
     kg._graph_finalizer = None
     kg._vector_store = None
@@ -122,7 +122,7 @@ class _UpsertFakeGraph:
 def _make_upsert_kg(existing_nodes=None):
     """업서트 테스트용 QAKnowledgeGraph 생성."""
     kg = object.__new__(QAKnowledgeGraph)
-    kg._graph = _UpsertFakeGraph(existing_nodes)
+    kg._graph = _UpsertFakeGraph(existing_nodes)  # type: ignore[assignment]
     kg._graph_provider = None
     kg._graph_finalizer = None
     kg._vector_store = None

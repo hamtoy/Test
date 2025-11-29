@@ -48,8 +48,8 @@ class _Driver:
 def test_create_schema_and_query_types(monkeypatch):
     driver = _Driver()
     builder = QAGraphBuilder.__new__(QAGraphBuilder)
-    builder.driver = driver
-    builder.logger = types.SimpleNamespace(info=lambda *a, **k: None)
+    builder.driver = driver  # type: ignore[assignment]
+    builder.logger = types.SimpleNamespace(info=lambda *a, **k: None)  # type: ignore[assignment]
 
     builder.create_schema_constraints()
     assert driver.session_obj.calls  # ran multiple constraints
@@ -63,6 +63,6 @@ def test_extract_rules_no_headings(monkeypatch):
     session = driver.session_obj
     session._data_queue.append(types.SimpleNamespace(data=lambda: []))  # headings empty
     builder = QAGraphBuilder.__new__(QAGraphBuilder)
-    builder.driver = driver
-    builder.logger = types.SimpleNamespace(info=lambda *a, **k: None)
+    builder.driver = driver  # type: ignore[assignment]
+    builder.logger = types.SimpleNamespace(info=lambda *a, **k: None)  # type: ignore[assignment]
     builder.extract_rules_from_notion()  # should not raise even with no data

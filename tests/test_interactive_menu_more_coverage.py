@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from src.core.models import WorkflowResult
+
 
 class TestShowErrorWithGuide:
     """Tests for show_error_with_guide function."""
@@ -38,7 +40,7 @@ class TestDisplayWorkflowSummary:
         result1.success = True
         result2 = MagicMock(spec=WorkflowResult)
         result2.success = False
-        results = [result1, result2]
+        results: list[WorkflowResult | None] = [result1, result2]
         timestamp = "20240101_120000"
 
         with (
@@ -69,7 +71,7 @@ class TestDisplayWorkflowSummary:
         queries = [long_query]
         result = MagicMock(spec=WorkflowResult)
         result.success = True
-        results = [result]
+        results: list[WorkflowResult | None] = [result]
         timestamp = "20240101_120000"
 
         with (
@@ -94,7 +96,7 @@ class TestDisplayWorkflowSummary:
         mock_config = MagicMock()
 
         queries = ["query1", "query2"]
-        results = [None, None]  # All failed
+        results: list[WorkflowResult | None] = [None, None]  # All failed
         timestamp = "20240101_120000"
 
         with (

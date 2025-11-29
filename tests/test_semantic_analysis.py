@@ -39,7 +39,7 @@ def test_create_topics_no_keywords(monkeypatch):
             called = True
 
     driver = types.SimpleNamespace(session=lambda: _Session())
-    sa.create_topics(driver, [])
+    sa.create_topics(driver, [])  # type: ignore[arg-type]
     assert called is False  # no write when empty
 
 
@@ -82,9 +82,9 @@ def test_link_blocks_creates_links(monkeypatch):
         # emulate flush calls
         _run(None, {"links": batch})
 
-    _Session.execute_write = _execute_write
+    _Session.execute_write = _execute_write  # type: ignore[method-assign]
 
-    sa.link_blocks_to_topics(_Driver(), blocks, topics)
+    sa.link_blocks_to_topics(_Driver(), blocks, topics)  # type: ignore[arg-type]
 
     assert {"block_id": "b1", "topic": "apple"} in captured
     assert {"block_id": "b2", "topic": "apple"} in captured

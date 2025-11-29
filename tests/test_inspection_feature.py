@@ -432,7 +432,7 @@ async def test_inspect_answer_validation_failure(mock_agent, mock_components):
 
         assert result == "Corrected Answer"
         # Validation warning should be set in context
-        assert context.get("validation_warning") is True
+        assert context.get("validation_warning")  # truthy check instead of identity
 
 
 @pytest.mark.asyncio

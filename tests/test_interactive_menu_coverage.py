@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from src.core.models import WorkflowResult
 from src.ui.interactive_menu import (
     MENU_CHOICES,
     DEFAULT_OCR_PATH,
@@ -108,7 +109,7 @@ class TestDisplayWorkflowSummary:
         mock_result2.success = False
         mock_result3 = None
 
-        results = [mock_result1, mock_result2, mock_result3]
+        results: list[WorkflowResult | None] = [mock_result1, mock_result2, mock_result3]
 
         mock_agent = MagicMock()
         mock_config = MagicMock()

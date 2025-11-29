@@ -14,7 +14,7 @@ class _FakeLLM:
 
 
 def test_route_and_generate_match(monkeypatch):
-    router = GraphEnhancedRouter(kg=types.SimpleNamespace(), llm=_FakeLLM("summary"))
+    router = GraphEnhancedRouter(kg=types.SimpleNamespace(), llm=_FakeLLM("summary"))  # type: ignore[arg-type]
     monkeypatch.setattr(
         router,
         "_fetch_query_types",
@@ -32,7 +32,7 @@ def test_route_and_generate_match(monkeypatch):
 
 
 def test_route_and_generate_fallback_first(monkeypatch):
-    router = GraphEnhancedRouter(kg=types.SimpleNamespace(), llm=_FakeLLM("unknown"))
+    router = GraphEnhancedRouter(kg=types.SimpleNamespace(), llm=_FakeLLM("unknown"))  # type: ignore[arg-type]
     monkeypatch.setattr(
         router,
         "_fetch_query_types",
@@ -50,7 +50,7 @@ def test_route_and_generate_fallback_first(monkeypatch):
 
 
 def test_build_router_prompt_no_qtypes():
-    router = GraphEnhancedRouter(kg=types.SimpleNamespace(), llm=_FakeLLM("any"))
+    router = GraphEnhancedRouter(kg=types.SimpleNamespace(), llm=_FakeLLM("any"))  # type: ignore[arg-type]
     prompt = router._build_router_prompt("input text", [])  # noqa: SLF001
     assert "등록된 QueryType 없음" in prompt
     assert "input text" in prompt
@@ -62,7 +62,7 @@ def test_fetch_query_types_error(monkeypatch):
             raise Neo4jError("boom")
 
     router = GraphEnhancedRouter(
-        kg=types.SimpleNamespace(_graph=_BadGraph()), llm=_FakeLLM("any")
+        kg=types.SimpleNamespace(_graph=_BadGraph()), llm=_FakeLLM("any")  # type: ignore[arg-type]
     )
     qtypes = router._fetch_query_types()
     assert qtypes == []

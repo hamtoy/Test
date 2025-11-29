@@ -76,15 +76,15 @@ def test_cross_validation_image_grounding_branches(monkeypatch):
         def get_constraints_for_query_type(self, _qt):
             return []
 
-    cvs = cross_validation.CrossValidationSystem(_KG(_ErrorSession()))
+    cvs = cross_validation.CrossValidationSystem(_KG(_ErrorSession()))  # type: ignore[arg-type]
     err_note = cvs._check_image_grounding("answer", {"page_id": "p"})
     assert err_note["note"] == "Neo4j 조회 실패"
 
-    cvs = cross_validation.CrossValidationSystem(_KG(_EmptySession()))
+    cvs = cross_validation.CrossValidationSystem(_KG(_EmptySession()))  # type: ignore[arg-type]
     empty_note = cvs._check_image_grounding("answer", {"page_id": "p"})
     assert empty_note["note"] == "본문 콘텐츠 없음"
 
-    cvs = cross_validation.CrossValidationSystem(_KG(_ShortTokenSession()))
+    cvs = cross_validation.CrossValidationSystem(_KG(_ShortTokenSession()))  # type: ignore[arg-type]
     short_note = cvs._check_image_grounding("answer", {"page_id": "p"})
     assert short_note["note"] == "본문 키워드 부족"
 
@@ -115,7 +115,7 @@ def test_cross_validation_rule_and_novelty_exceptions(monkeypatch):
         def get_constraints_for_query_type(self, _qt):
             return [{"type": "prohibition", "pattern": "bad", "description": "desc"}]
 
-    cvs = cross_validation.CrossValidationSystem(_KG())
+    cvs = cross_validation.CrossValidationSystem(_KG())  # type: ignore[arg-type]
     compliance = cvs._check_rule_compliance("bad text", "summary")
     assert compliance["violations"]  # 금지 패턴 적발
 
@@ -167,7 +167,7 @@ def test_qa_rag_init_vector_store_error_paths(monkeypatch):
             raise Neo4jError("vector fail")
 
     neo4j_vector_module = types.ModuleType("langchain_neo4j")
-    neo4j_vector_module.Neo4jVector = _Neo4jVector
+    setattr(neo4j_vector_module, "Neo4jVector", _Neo4jVector)
     monkeypatch.setitem(sys.modules, "langchain_neo4j", neo4j_vector_module)
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
 
@@ -198,7 +198,7 @@ def test_qa_rag_validate_session_failure(monkeypatch):
         raise ValueError("bad ctx")
 
     fake_mod = types.ModuleType("scripts.build_session")
-    fake_mod.SessionContext = _bad_ctx
+    setattr(fake_mod, "SessionContext", _bad_ctx)
     monkeypatch.setitem(sys.modules, "scripts.build_session", fake_mod)
     result = kg.validate_session(
         {"turns": [{"type": "explanation"}], "context": {"foo": "bar"}}
@@ -328,5 +328,5 @@ def test_agent_create_model_with_cached_content(monkeypatch, tmp_path):
 
     stub_genai = types.SimpleNamespace(GenerativeModel=_GenModel)
     monkeypatch.setattr(GeminiAgent, "_genai", property(lambda _self: stub_genai))
-    model = agent._create_generative_model("sys", cached_content=sentinel)
+    model = agent._create_generative_model("sys", cached_content=sentinel)  # type: ignore[arg-type]
     assert model is sentinel

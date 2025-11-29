@@ -307,7 +307,7 @@ class TestPrintSummary:
             }
         ]
 
-        print_summary(rules)
+        print_summary(rules)  # type: ignore[arg-type]
 
         captured = capsys.readouterr()
         assert "날짜 형식 통일" in captured.out

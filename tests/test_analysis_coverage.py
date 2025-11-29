@@ -15,7 +15,7 @@ def test_semantic_analysis_utils(monkeypatch):
     counter = semantic.count_keywords(["alpha beta alpha", "beta gamma"])
     assert counter["alpha"] >= 1
 
-    store = []
+    store: list[object] = []
 
     class _SATx:
         def __init__(self, store_ref):
@@ -51,9 +51,9 @@ def test_semantic_analysis_utils(monkeypatch):
             return self.session_obj
 
     driver = _SADriver()
-    semantic.create_topics(driver, [("alpha", 3)])
+    semantic.create_topics(driver, [("alpha", 3)])  # type: ignore[arg-type]
     semantic.link_blocks_to_topics(
-        driver, [{"id": "b1", "content": "alpha beta"}], [("alpha", 3)]
+        driver, [{"id": "b1", "content": "alpha beta"}], [("alpha", 3)]  # type: ignore[arg-type]
     )
 
 
@@ -84,7 +84,7 @@ def test_smart_autocomplete(monkeypatch):
         "find_violations",
         lambda text: [{"type": "local", "match": text}],
     )
-    sa = smart_autocomplete.SmartAutocomplete(_SmartKG())
+    sa = smart_autocomplete.SmartAutocomplete(_SmartKG())  # type: ignore[arg-type]
     suggestions = sa.suggest_next_query_type([{"type": "summary"}])
     assert any(s["name"] == "explanation" for s in suggestions)
 
@@ -119,7 +119,7 @@ def test_dynamic_example_selector(monkeypatch):
         def __init__(self):
             self._graph = types.SimpleNamespace(session=lambda: _DESession())
 
-    selector = example_selector.DynamicExampleSelector(_DEKG())
+    selector = example_selector.DynamicExampleSelector(_DEKG())  # type: ignore[arg-type]
     examples = selector.select_best_examples(
         "explanation", {"text_density": 0.8, "has_table_chart": True}, k=1
     )
@@ -144,7 +144,7 @@ def test_adaptive_difficulty(monkeypatch):
     fake_kg = types.SimpleNamespace(
         _graph=types.SimpleNamespace(session=lambda: _ADSession())
     )
-    adjuster = adaptive_difficulty.AdaptiveDifficultyAdjuster(fake_kg)
+    adjuster = adaptive_difficulty.AdaptiveDifficultyAdjuster(fake_kg)  # type: ignore[arg-type]
     complexity = adjuster.analyze_image_complexity({"text_density": 0.8})
     assert complexity["estimated_blocks"] == 5
     adjustments = adjuster.adjust_query_requirements(complexity, "explanation")
@@ -177,7 +177,7 @@ def test_adaptive_difficulty_levels(monkeypatch):
             return _R()
 
     kg = types.SimpleNamespace(_graph=types.SimpleNamespace(session=lambda: _Session()))
-    adjuster = adaptive_difficulty.AdaptiveDifficultyAdjuster(kg)
+    adjuster = adaptive_difficulty.AdaptiveDifficultyAdjuster(kg)  # type: ignore[arg-type]
 
     simple = adjuster.analyze_image_complexity({"text_density": 0.1})
     assert simple["level"] == "simple"

@@ -36,7 +36,7 @@ async def test_agent_execute_api_call_safety_error(monkeypatch, tmp_path):
     monkeypatch.setattr("src.agent.rate_limiter.DEFAULT_RPM_LIMIT", 1)
     monkeypatch.setattr("src.agent.rate_limiter.DEFAULT_RPM_WINDOW_SECONDS", 60)
 
-    agent = ag.GeminiAgent(_Config(), jinja_env=None)
+    agent = ag.GeminiAgent(_Config(), jinja_env=None)  # type: ignore[arg-type]
     agent._rate_limiter = None
     agent._semaphore = type(
         "Sem",
@@ -102,7 +102,7 @@ def test_agent_cache_budget_and_pricing(monkeypatch, tmp_path):
     ]:
         (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
 
-    agent = ag.GeminiAgent(_Config(), jinja_env=None)
+    agent = ag.GeminiAgent(_Config(), jinja_env=None)  # type: ignore[arg-type]
 
     # cost calculations
     agent.total_input_tokens = 1_000_000
@@ -139,7 +139,7 @@ def test_agent_local_cache_load_and_store(monkeypatch, tmp_path):
     ]:
         (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
 
-    agent = ag.GeminiAgent(_Config(), jinja_env=None)
+    agent = ag.GeminiAgent(_Config(), jinja_env=None)  # type: ignore[arg-type]
     fp = "abc"
     # Avoid calling CachedContent.get in _load_local_cache
     monkeypatch.setattr(
@@ -190,7 +190,7 @@ def test_agent_get_total_cost_invalid_model(monkeypatch):
             self.cache_ttl_minutes = 1
             self.budget_limit_usd = None
 
-    agent = ag.GeminiAgent(_ConfigWithTemp(), jinja_env=None)
+    agent = ag.GeminiAgent(_ConfigWithTemp(), jinja_env=None)  # type: ignore[arg-type]
     agent.total_input_tokens = 10
     agent.total_output_tokens = 10
     with pytest.raises(ValueError):
@@ -221,7 +221,7 @@ async def test_agent_call_api_with_retry(monkeypatch, tmp_path):
     ]:
         (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
 
-    agent = ag.GeminiAgent(_Config(), jinja_env=None)
+    agent = ag.GeminiAgent(_Config(), jinja_env=None)  # type: ignore[arg-type]
     agent._rate_limiter = None
 
     attempts = {"n": 0}
@@ -232,7 +232,7 @@ async def test_agent_call_api_with_retry(monkeypatch, tmp_path):
             raise TimeoutError("retry me")
         return "ok"
 
-    agent._execute_api_call = _fake_exec
+    agent._execute_api_call = _fake_exec  # type: ignore[method-assign]
 
     class _Sem:
         async def __aenter__(self):
@@ -241,7 +241,7 @@ async def test_agent_call_api_with_retry(monkeypatch, tmp_path):
         async def __aexit__(self, exc_type, exc, tb):
             return False
 
-    agent._semaphore = _Sem()
+    agent._semaphore = _Sem()  # type: ignore[assignment]
 
     class _Model:
         pass

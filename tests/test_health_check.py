@@ -24,7 +24,7 @@ class _BadGraph:
 
 def test_check_neo4j_connection_false_on_error():
     kg = types.SimpleNamespace(_graph=_BadGraph())
-    assert health_check.check_neo4j_connection(kg) is False
+    assert health_check.check_neo4j_connection(kg) is False  # type: ignore[arg-type]
 
 
 def test_health_check_report(monkeypatch):
