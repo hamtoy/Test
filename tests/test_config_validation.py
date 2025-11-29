@@ -70,3 +70,49 @@ def test_cache_stats_path_and_limit(tmp_path, monkeypatch):
 
     with pytest.raises(ValidationError):
         AppConfig(GEMINI_API_KEY=VALID_API_KEY, CACHE_STATS_MAX_ENTRIES=0)
+
+
+def test_rag_dependencies_validation_missing_uri():
+    """Test that RAG validation fails when URI is missing but enable_rag is True."""
+    with pytest.raises(ValidationError) as excinfo:
+        AppConfig(
+            GEMINI_API_KEY=VALID_API_KEY,
+            ENABLE_RAG=True,
+        )
+    assert "RAG 사용 시 필수" in str(excinfo.value)
+    assert "neo4j_uri" in str(excinfo.value)
+
+
+def test_rag_dependencies_validation_missing_password():
+    """Test that RAG validation fails when password is missing."""
+    with pytest.raises(ValidationError) as excinfo:
+        AppConfig(
+            GEMINI_API_KEY=VALID_API_KEY,
+            NEO4J_URI="bolt://localhost:7687",
+            NEO4J_USER="neo4j",
+        )
+    assert "RAG 사용 시 필수" in str(excinfo.value)
+    assert "neo4j_password" in str(excinfo.value)
+
+
+def test_rag_dependencies_validation_valid():
+    """Test that RAG validation passes when all fields are set."""
+    config = AppConfig(
+        GEMINI_API_KEY=VALID_API_KEY,
+        ENABLE_RAG=True,
+        NEO4J_URI="bolt://localhost:7687",
+        NEO4J_USER="neo4j",
+        NEO4J_PASSWORD="password",
+    )
+    assert config.enable_rag is True
+    assert config.neo4j_uri == "bolt://localhost:7687"
+
+
+def test_rag_disabled_no_validation():
+    """Test that RAG validation is skipped when ENABLE_RAG is False and no Neo4j URI."""
+    config = AppConfig(
+        GEMINI_API_KEY=VALID_API_KEY,
+        ENABLE_RAG=False,
+    )
+    assert config.enable_rag is False
+    assert config.neo4j_uri is None

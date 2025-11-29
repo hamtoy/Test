@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 from dataclasses import dataclass
 from typing import List, Optional
@@ -19,6 +20,7 @@ class CLIArgs:
 
     mode: str = "AUTO"
     interactive: bool = False
+    non_interactive: bool = False
     ocr_file: str = "input_ocr.txt"
     cand_file: str = "input_candidates.json"
     intent: Optional[str] = None
@@ -33,6 +35,10 @@ class CLIArgs:
     pipeline_meta: str = "examples/session_input.json"
     optimize_neo4j: bool = False
     drop_existing_indexes: bool = False
+    output: Optional[str] = None
+    output_format: str = "text"
+    verbose: bool = False
+    quiet: bool = False
 
 
 def parse_args(args: Optional[List[str]] = None) -> CLIArgs:
@@ -47,19 +53,38 @@ def parse_args(args: Optional[List[str]] = None) -> CLIArgs:
     parser = argparse.ArgumentParser(
         description="Gemini Workflow System CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Interactive mode (default)
+  python -m src.main
+
+  # Non-interactive mode for CI/CD
+  python -m src.main --non-interactive --mode generate --ocr-file input.txt --output result.json --format json
+
+  # Analyze cache statistics
+  python -m src.main --analyze-cache
+
+  # Resume from checkpoint
+  python -m src.main --resume --checkpoint-file checkpoint.jsonl
+        """,
     )
 
     parser.add_argument(
         "--mode",
         type=str,
         default="AUTO",
-        choices=["AUTO", "MANUAL", "BATCH"],
+        choices=["AUTO", "MANUAL", "BATCH", "generate", "evaluate", "inspect"],
         help="Workflow mode (default: AUTO)",
     )
     parser.add_argument(
         "--interactive",
         action="store_true",
         help="Enable interactive mode",
+    )
+    parser.add_argument(
+        "--non-interactive",
+        action="store_true",
+        help="CI/CD용 비대화형 모드 - 자동 실행",
     )
     parser.add_argument(
         "--ocr-file",
@@ -138,12 +163,40 @@ def parse_args(args: Optional[List[str]] = None) -> CLIArgs:
         action="store_true",
         help="Drop existing indexes before optimization",
     )
+    parser.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        default=None,
+        help="Output file path (for non-interactive mode)",
+    )
+    parser.add_argument(
+        "--format",
+        dest="output_format",
+        type=str,
+        default="text",
+        choices=["text", "json"],
+        help="Output format (default: text)",
+    )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Enable verbose output",
+    )
+    parser.add_argument(
+        "--quiet",
+        "-q",
+        action="store_true",
+        help="Suppress non-essential output",
+    )
 
     parsed = parser.parse_args(args)
 
     return CLIArgs(
         mode=parsed.mode,
         interactive=parsed.interactive,
+        non_interactive=parsed.non_interactive,
         ocr_file=parsed.ocr_file,
         cand_file=parsed.cand_file,
         intent=parsed.intent,
@@ -158,7 +211,31 @@ def parse_args(args: Optional[List[str]] = None) -> CLIArgs:
         pipeline_meta=parsed.pipeline_meta,
         optimize_neo4j=parsed.optimize_neo4j,
         drop_existing_indexes=parsed.drop_existing_indexes,
+        output=parsed.output,
+        output_format=parsed.output_format,
+        verbose=parsed.verbose,
+        quiet=parsed.quiet,
     )
+
+
+def format_output(result: dict[str, object], output_format: str = "text") -> str:
+    """Format result for output.
+
+    Args:
+        result: Result dictionary to format.
+        output_format: Output format ('text' or 'json').
+
+    Returns:
+        Formatted output string.
+    """
+    if output_format == "json":
+        return json.dumps(result, ensure_ascii=False, indent=2)
+    else:
+        # Text format
+        lines = []
+        for key, value in result.items():
+            lines.append(f"{key}: {value}")
+        return "\n".join(lines)
 
 
 async def run_neo4j_optimization(drop_existing: bool = False) -> None:

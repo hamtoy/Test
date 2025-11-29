@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.config.constants import ERROR_MESSAGES, GEMINI_API_KEY_LENGTH, MIN_CACHE_TOKENS
@@ -42,6 +42,9 @@ class AppConfig(BaseSettings):
     budget_limit_usd: float | None = Field(None, alias="BUDGET_LIMIT_USD")
     cache_min_tokens: int = Field(MIN_CACHE_TOKENS, alias="GEMINI_CACHE_MIN_TOKENS")
 
+    # RAG Configuration
+    enable_rag: bool = Field(False, alias="ENABLE_RAG")
+
     # Provider Configuration
     llm_provider_type: str = Field(
         "gemini", description="LLM provider type (gemini, etc.)"
@@ -73,6 +76,20 @@ class AppConfig(BaseSettings):
     def __init__(self, **data: Any) -> None:
         """Initialize AppConfig from environment variables or provided data."""
         super().__init__(**data)
+
+    @model_validator(mode="after")
+    def check_rag_dependencies(self) -> "AppConfig":
+        """RAG 기능 활성화 시 Neo4j 설정 확인"""
+        # If enable_rag is True or neo4j_uri is set, check other required fields
+        if self.enable_rag or self.neo4j_uri:
+            required_fields = ["neo4j_uri", "neo4j_user", "neo4j_password"]
+            missing = [f for f in required_fields if not getattr(self, f, None)]
+            if missing:
+                raise ValueError(
+                    f"RAG 사용 시 필수: {', '.join(missing)}\n"
+                    f"또는 .env에서 NEO4J_* 변수와 ENABLE_RAG를 제거하세요"
+                )
+        return self
 
     @field_validator("api_key")
     @classmethod
