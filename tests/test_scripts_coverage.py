@@ -5,6 +5,7 @@ import sys
 import importlib
 import builtins
 import io
+from typing import Any
 
 
 def test_list_models_script(monkeypatch) -> None:
