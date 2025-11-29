@@ -259,6 +259,7 @@ module = [
     "tests.test_template_safety",
     "tests.test_templates_render",
     "tests.test_type_aliases_coverage",
+    "tests.test_ui_comprehensive_coverage",
     "tests.test_ui_panels_coverage",
     "tests.test_utils",
     "tests.test_utils_additional",
