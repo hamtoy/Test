@@ -4,6 +4,7 @@ import asyncio
 import datetime
 import logging
 import os
+import sys
 import time
 from typing import Any, Dict, TYPE_CHECKING
 
@@ -12,9 +13,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# 타임아웃 설정 (초)
+DEFAULT_TIMEOUT = 3.0
+
 
 async def check_redis() -> Dict[str, Any]:
-    """Redis 연결 및 응답 시간 확인
+    """Redis 연결 및 응답 시간 확인 (타임아웃 3초)
 
     Returns:
         Redis 상태 정보 딕셔너리
@@ -26,13 +30,21 @@ async def check_redis() -> Dict[str, Any]:
     try:
         import redis.asyncio as aioredis
 
-        start = time.perf_counter()
-        client = aioredis.from_url(redis_url)
-        await client.ping()
-        latency_ms = (time.perf_counter() - start) * 1000
-        await client.close()
+        async def _check_redis() -> Dict[str, Any]:
+            start = time.perf_counter()
+            client = aioredis.from_url(redis_url)
+            await client.ping()
+            latency_ms = (time.perf_counter() - start) * 1000
+            await client.close()
+            return {
+                "status": "up",
+                "latency_ms": round(latency_ms, 2),
+                "message": "Redis is healthy",
+            }
 
-        return {"status": "up", "latency_ms": round(latency_ms, 2)}
+        return await asyncio.wait_for(_check_redis(), timeout=DEFAULT_TIMEOUT)
+    except asyncio.TimeoutError:
+        return {"status": "down", "error": f"Timeout (>{DEFAULT_TIMEOUT}s)"}
     except ImportError:
         return {"status": "skipped", "reason": "redis package not installed"}
     except Exception as exc:
@@ -41,7 +53,7 @@ async def check_redis() -> Dict[str, Any]:
 
 
 async def check_neo4j() -> Dict[str, Any]:
-    """Neo4j 연결 및 쿼리 테스트
+    """Neo4j 연결 및 쿼리 테스트 (타임아웃 3초)
 
     Returns:
         Neo4j 상태 정보 딕셔너리
@@ -51,24 +63,57 @@ async def check_neo4j() -> Dict[str, Any]:
         return {"status": "skipped", "reason": "NEO4J_URI not configured"}
 
     try:
-        from neo4j import GraphDatabase
+        import importlib.util
+
+        if importlib.util.find_spec("neo4j") is None:
+            return {"status": "skipped", "reason": "neo4j package not installed"}
 
         neo4j_user = os.getenv("NEO4J_USER", "neo4j")
         neo4j_password = os.getenv("NEO4J_PASSWORD", "")
 
         start = time.perf_counter()
-        driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
-        with driver.session() as session:
-            session.run("RETURN 1").single()
-        latency_ms = (time.perf_counter() - start) * 1000
-        driver.close()
 
-        return {"status": "up", "latency_ms": round(latency_ms, 2)}
+        # run_in_executor로 동기 Neo4j 호출을 비동기로 래핑
+        loop = asyncio.get_event_loop()
+
+        async def _check_neo4j() -> bool:
+            return await loop.run_in_executor(
+                None,
+                lambda: _sync_check_neo4j(neo4j_uri, neo4j_user, neo4j_password),
+            )
+
+        result = await asyncio.wait_for(_check_neo4j(), timeout=DEFAULT_TIMEOUT)
+
+        if result:
+            latency_ms = (time.perf_counter() - start) * 1000
+            return {
+                "status": "up",
+                "latency_ms": round(latency_ms, 2),
+                "message": "Neo4j is healthy",
+            }
+        else:
+            return {"status": "down", "error": "Connection check failed"}
+    except asyncio.TimeoutError:
+        return {"status": "down", "error": f"Timeout (>{DEFAULT_TIMEOUT}s)"}
     except ImportError:
         return {"status": "skipped", "reason": "neo4j package not installed"}
     except Exception as exc:
         logger.warning("Neo4j health check failed: %s", exc)
         return {"status": "down", "error": str(exc)}
+
+
+def _sync_check_neo4j(uri: str, user: str, password: str) -> bool:
+    """동기적으로 Neo4j 연결 확인"""
+    try:
+        from neo4j import GraphDatabase
+
+        driver = GraphDatabase.driver(uri, auth=(user, password))
+        with driver.session() as session:
+            session.run("RETURN 1").single()
+        driver.close()
+        return True
+    except Exception:
+        return False
 
 
 async def check_gemini_api() -> Dict[str, Any]:
@@ -89,6 +134,48 @@ async def check_gemini_api() -> Dict[str, Any]:
         return {"status": "down", "error": f"Invalid API key length: {len(api_key)}"}
 
     return {"status": "up", "key_prefix": api_key[:8] + "..."}
+
+
+async def check_dependencies() -> Dict[str, Any]:
+    """필수 의존성 버전 확인
+
+    Returns:
+        의존성 버전 정보 딕셔너리
+    """
+    deps: Dict[str, str | None] = {
+        "python": sys.version.split()[0],
+    }
+
+    # pydantic 버전
+    try:
+        import pydantic
+
+        deps["pydantic"] = pydantic.__version__
+    except ImportError:
+        deps["pydantic"] = None
+
+    # google-generativeai 버전
+    try:
+        import google.generativeai
+
+        deps["google-generativeai"] = getattr(
+            google.generativeai, "__version__", "unknown"
+        )
+    except ImportError:
+        deps["google-generativeai"] = None
+
+    # fastapi 버전
+    try:
+        import fastapi
+
+        deps["fastapi"] = fastapi.__version__
+    except ImportError:
+        deps["fastapi"] = None
+
+    return {
+        "status": "up",
+        "dependencies": deps,
+    }
 
 
 async def check_disk() -> Dict[str, Any]:
@@ -175,6 +262,7 @@ async def health_check_async() -> Dict[str, Any]:
         check_gemini_api(),
         check_disk(),
         check_memory(),
+        check_dependencies(),
         return_exceptions=True,
     )
 
@@ -190,7 +278,7 @@ async def health_check_async() -> Dict[str, Any]:
 
     # 전체 상태 결정
     all_statuses = [c.get("status", "unknown") for c in check_results]
-    if "down" in all_statuses or "critical" in all_statuses:
+    if "down" in all_statuses or "critical" in all_statuses or "error" in all_statuses:
         overall_status = "unhealthy"
     elif "warning" in all_statuses:
         overall_status = "degraded"
@@ -205,6 +293,7 @@ async def health_check_async() -> Dict[str, Any]:
             "gemini": check_results[2],
             "disk": check_results[3],
             "memory": check_results[4],
+            "dependencies": check_results[5],
         },
         "version": "3.0.0",
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
@@ -313,4 +402,6 @@ __all__ = [
     "check_gemini_api",
     "check_disk",
     "check_memory",
+    "check_dependencies",
+    "DEFAULT_TIMEOUT",
 ]
