@@ -3,6 +3,7 @@ import logging.handlers
 import os
 import queue
 import re
+from datetime import datetime
 from typing import Any, Tuple
 
 from pythonjsonlogger.json import JsonFormatter
@@ -251,6 +252,126 @@ def log_metrics(
     logger.info("metrics", extra={"metrics": metrics})
 
 
+class StructuredLogger:
+    """구조화된 로깅을 위한 래퍼 클래스
+
+    API 호출, 캐시 이벤트 등을 표준화된 형식으로 로깅합니다.
+    """
+
+    def __init__(self, name: str):
+        """StructuredLogger 초기화
+
+        Args:
+            name: 로거 이름
+        """
+        self.logger = logging.getLogger(name)
+
+    def log_api_call(
+        self,
+        model: str,
+        prompt_tokens: int,
+        response_tokens: int,
+        latency_ms: float,
+        status: str,
+    ) -> None:
+        """API 호출 로그 (분석 용이)
+
+        Args:
+            model: 모델 이름
+            prompt_tokens: 프롬프트 토큰 수
+            response_tokens: 응답 토큰 수
+            latency_ms: 응답 시간 (밀리초)
+            status: 상태 (success, error 등)
+        """
+        self.logger.info(
+            "api_call",
+            extra={
+                "event_type": "api_call",
+                "model": model,
+                "prompt_tokens": prompt_tokens,
+                "response_tokens": response_tokens,
+                "latency_ms": latency_ms,
+                "status": status,
+                "timestamp": datetime.now().isoformat(),
+            },
+        )
+
+    def log_cache_event(
+        self,
+        cache_key: str,
+        hit: bool,
+        ttl_remaining: int | None = None,
+    ) -> None:
+        """캐시 이벤트 로그
+
+        Args:
+            cache_key: 캐시 키
+            hit: 캐시 히트 여부
+            ttl_remaining: 남은 TTL (초)
+        """
+        self.logger.debug(
+            "cache_event",
+            extra={
+                "event_type": "cache",
+                "cache_key": cache_key,
+                "hit": hit,
+                "ttl_remaining": ttl_remaining,
+                "timestamp": datetime.now().isoformat(),
+            },
+        )
+
+    def log_error(
+        self,
+        error_type: str,
+        message: str,
+        context: dict[str, Any] | None = None,
+    ) -> None:
+        """에러 로그
+
+        Args:
+            error_type: 에러 유형
+            message: 에러 메시지
+            context: 추가 컨텍스트 정보
+        """
+        extra: dict[str, Any] = {
+            "event_type": "error",
+            "error_type": error_type,
+            "timestamp": datetime.now().isoformat(),
+        }
+        if context:
+            extra["context"] = context
+
+        self.logger.error(message, extra=extra)
+
+    def log_workflow(
+        self,
+        workflow_name: str,
+        stage: str,
+        duration_ms: float | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        """워크플로우 진행 로그
+
+        Args:
+            workflow_name: 워크플로우 이름
+            stage: 단계 (started, completed, failed 등)
+            duration_ms: 소요 시간 (밀리초)
+            metadata: 추가 메타데이터
+        """
+        extra: dict[str, Any] = {
+            "event_type": "workflow",
+            "workflow_name": workflow_name,
+            "stage": stage,
+            "timestamp": datetime.now().isoformat(),
+        }
+        if duration_ms is not None:
+            extra["duration_ms"] = duration_ms
+        if metadata:
+            extra["metadata"] = metadata
+
+        self.logger.info(f"workflow:{workflow_name}:{stage}", extra=extra)
+
+
 __all__ = [
     "setup_logging",
     "log_metrics",
@@ -261,4 +382,5 @@ __all__ = [
     "get_log_level",
     "set_log_level",
     "get_current_log_level",
+    "StructuredLogger",
 ]
