@@ -9,7 +9,13 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Coroutine
+from typing import Any, Callable, Coroutine, TypeAlias
+
+# 테스트 함수 타입 별칭
+# (test_data, config) -> Coroutine returning result dict
+TestFunction: TypeAlias = Callable[
+    [Any, dict[str, Any]], Coroutine[Any, Any, dict[str, Any]]
+]
 
 
 @dataclass
@@ -67,7 +73,7 @@ class ABTest:
 
     async def run(
         self,
-        test_func: Callable[[Any, dict[str, Any]], Coroutine[Any, Any, dict[str, Any]]],
+        test_func: TestFunction,
         test_data: list[Any],
         runs_per_variant: int = 10,
     ) -> None:
@@ -204,7 +210,7 @@ class ABTest:
 def run_ab_test(
     name: str,
     variants: list[Variant],
-    test_func: Callable[[Any, dict[str, Any]], Coroutine[Any, Any, dict[str, Any]]],
+    test_func: TestFunction,
     test_data: list[Any],
     runs_per_variant: int = 10,
 ) -> ABTest:
@@ -230,4 +236,5 @@ __all__ = [
     "ExperimentResult",
     "ABTest",
     "run_ab_test",
+    "TestFunction",
 ]

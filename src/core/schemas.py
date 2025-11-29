@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class OCRInput(BaseModel):
@@ -61,18 +61,12 @@ class QAGenerationRequest(BaseModel):
         Literal["global_explanation", "reasoning", "target_short", "target_long"] | None
     ) = None
 
-    @field_validator("qtype")
-    @classmethod
-    def check_qtype_for_single(
-        cls,
-        v: str | None,
-        info: object,
-    ) -> str | None:
-        # Pydantic v2에서는 info.data로 접근
-        data = getattr(info, "data", {})
-        if data.get("mode") == "single" and not v:
+    @model_validator(mode="after")
+    def check_qtype_for_single(self) -> "QAGenerationRequest":
+        """single 모드에서는 qtype이 필수입니다."""
+        if self.mode == "single" and self.qtype is None:
             raise ValueError("single 모드에서는 qtype 필수")
-        return v
+        return self
 
 
 __all__ = [

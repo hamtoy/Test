@@ -57,8 +57,13 @@ def estimate_cost(
     total_output = query_gen_output + eval_output + rewrite_output
 
     # 비용 계산 (gemini-3-pro-preview 기준)
-    input_cost = (total_input / 1_000_000) * 2.00
-    output_cost = (total_output / 1_000_000) * 12.00
+    # NOTE: 가격은 변경될 수 있습니다. 최신 가격은 Google AI Studio 참조:
+    # https://ai.google.dev/pricing
+    input_price_per_million = 2.00  # $2.00 per 1M input tokens
+    output_price_per_million = 12.00  # $12.00 per 1M output tokens
+
+    input_cost = (total_input / 1_000_000) * input_price_per_million
+    output_cost = (total_output / 1_000_000) * output_price_per_million
     total_cost = input_cost + output_cost
 
     print(f"\n📄 입력 파일: {ocr_file}")

@@ -3,6 +3,7 @@ import logging.handlers
 import os
 import queue
 import re
+from datetime import datetime
 from typing import Any, Tuple
 
 from pythonjsonlogger.json import JsonFormatter
@@ -282,8 +283,6 @@ class StructuredLogger:
             latency_ms: 응답 시간 (밀리초)
             status: 상태 (success, error 등)
         """
-        from datetime import datetime
-
         self.logger.info(
             "api_call",
             extra={
@@ -310,8 +309,6 @@ class StructuredLogger:
             hit: 캐시 히트 여부
             ttl_remaining: 남은 TTL (초)
         """
-        from datetime import datetime
-
         self.logger.debug(
             "cache_event",
             extra={
@@ -336,8 +333,6 @@ class StructuredLogger:
             message: 에러 메시지
             context: 추가 컨텍스트 정보
         """
-        from datetime import datetime
-
         extra: dict[str, Any] = {
             "event_type": "error",
             "error_type": error_type,
@@ -363,8 +358,6 @@ class StructuredLogger:
             duration_ms: 소요 시간 (밀리초)
             metadata: 추가 메타데이터
         """
-        from datetime import datetime
-
         extra: dict[str, Any] = {
             "event_type": "workflow",
             "workflow_name": workflow_name,

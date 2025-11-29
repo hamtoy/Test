@@ -24,10 +24,18 @@ def load_plugin(file_path: Path) -> list[type["Plugin"]]:
 
     Returns:
         발견된 Plugin 서브클래스 리스트
+
+    Note:
+        모듈 이름으로 file_path.stem을 사용합니다.
+        다른 디렉토리에서 같은 이름의 플러그인 파일을 로드할 경우
+        이름 충돌이 발생할 수 있습니다.
     """
     from src.plugins.base import Plugin
 
-    spec = importlib.util.spec_from_file_location(file_path.stem, file_path)
+    # 고유한 모듈 이름 생성 (경로 기반)
+    module_name = f"plugin_{file_path.stem}_{hash(str(file_path.absolute())) % 10000}"
+
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
     if spec is None or spec.loader is None:
         logger.warning("Failed to load plugin spec: %s", file_path)
         return []
