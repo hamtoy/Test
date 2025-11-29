@@ -145,10 +145,11 @@ module = [
 strict = true
 
 # ===== 3단계: 나머지 테스트 (점진적 마이그레이션) =====
+# Step 2: check_untyped_defs 활성화
 [[tool.mypy.overrides]]
 module = ["tests.*"]
 strict = false
-check_untyped_defs = false
+check_untyped_defs = true  # Step 2: 함수 본문 타입 체크 활성화
 warn_return_any = false
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
