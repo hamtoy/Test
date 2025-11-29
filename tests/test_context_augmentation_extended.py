@@ -29,10 +29,10 @@ def test_advanced_context_augmentation_vector_index(monkeypatch):
             return _Session()
 
     aug = aca.AdvancedContextAugmentation.__new__(aca.AdvancedContextAugmentation)
-    aug.vector_index = types.SimpleNamespace(
+    aug.vector_index = types.SimpleNamespace(  # type: ignore[assignment]
         similarity_search=lambda q, k=5: [_Doc("doc")]
     )
-    aug.graph = types.SimpleNamespace(_driver=_Driver())
+    aug.graph = types.SimpleNamespace(_driver=_Driver())  # type: ignore[assignment]
 
     out = aug.augment_prompt_with_similar_cases("q", "explanation")
     assert out["similar_cases"] == ["doc"]
@@ -61,7 +61,7 @@ def test_advanced_context_augmentation_fallback_graph():
 
     aug = aca.AdvancedContextAugmentation.__new__(aca.AdvancedContextAugmentation)
     aug.vector_index = None
-    aug.graph = types.SimpleNamespace(
+    aug.graph = types.SimpleNamespace(  # type: ignore[assignment]
         _driver=types.SimpleNamespace(session=lambda: _Session())
     )
 
