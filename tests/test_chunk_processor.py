@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
 
 import pytest
 
@@ -147,7 +146,7 @@ class TestChunkProcessor:
 
         # fail_fast=True이면 예외가 전파되지 않고 None이 반환됨
         # (청크 재시도 로직 내에서 처리됨)
-        results = await processor.process_batch(items, failing_process)
+        await processor.process_batch(items, failing_process)
 
         # 청크 전체가 실패로 처리됨
         stats = processor.get_stats()

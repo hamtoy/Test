@@ -114,7 +114,7 @@ class CacheWarmer:
 
         self.stats.total = len(templates)
 
-        print(f"🔥 Cache Warming Started")
+        print("🔥 Cache Warming Started")
         print(f"   Priority: {priority}")
         print(f"   Templates: {len(templates)}")
         print()
