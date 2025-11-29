@@ -1,3 +1,4 @@
+import pytest
 """Tests for src/ui/panels.py to improve coverage."""
 
 from unittest.mock import MagicMock

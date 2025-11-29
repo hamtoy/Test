@@ -1,5 +1,6 @@
 """Tests for processing/context_augmentation.py module to improve coverage."""
 
+import pytest
 from unittest.mock import MagicMock, patch
 
 
@@ -47,7 +48,7 @@ class TestAdvancedContextAugmentation:
             assert aug.vector_index is not None
             mock_vector.from_existing_graph.assert_called_once()
 
-    def test_init_with_env_gemini_key(self, monkeypatch) -> None:
+    def test_init_with_env_gemini_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test initialization uses GEMINI_API_KEY from environment."""
         monkeypatch.setenv("GEMINI_API_KEY", "AIza" + "0" * 35)
 

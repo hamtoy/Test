@@ -1,3 +1,4 @@
+import pytest
 """Tests for the deprecation_stats.py script."""
 
 import json
