@@ -1,5 +1,3 @@
-from typing import Any
-from pathlib import Path
 from __future__ import annotations
 
 import pytest
@@ -8,17 +6,17 @@ from src import compare_documents
 from src import health_check
 
 
-def test_compare_documents_helpers(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_compare_documents_helpers(monkeypatch) -> None:
     monkeypatch.delenv("MISSING_ENV", raising=False)
     with pytest.raises(EnvironmentError):
         compare_documents.require_env("MISSING_ENV")
 
     class _CompareSession:
-        def __enter__(self) -> "self.__class__.__name__":
+        def __enter__(self):
             return self
 
-        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+        def __exit__(self, exc_type, exc, tb):
+            return False
 
         def run(self, query, **_kwargs):
             if "ORDER BY total_blocks" in query:
@@ -39,7 +37,7 @@ def test_compare_documents_helpers(monkeypatch: pytest.MonkeyPatch) -> None:
     assert commons[0][1] == ["Doc A", "Doc B"]
 
 
-def test_health_check_with_stub(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_health_check_with_stub(monkeypatch) -> None:
     # Set required environment variables for Neo4j
     monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
     monkeypatch.setenv("NEO4J_USER", "neo4j")
@@ -49,11 +47,11 @@ def test_health_check_with_stub(monkeypatch: pytest.MonkeyPatch) -> None:
     from src.infra import health as infra_health
 
     class _HealthSession:
-        def __enter__(self) -> "self.__class__.__name__":
+        def __enter__(self):
             return self
 
-        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+        def __exit__(self, exc_type, exc, tb):
+            return False
 
         def run(self, *_args, **_kwargs):
             return types.SimpleNamespace(single=lambda: 1)
@@ -77,11 +75,11 @@ def test_compare_documents_main_flow(monkeypatch, capsys) -> None:
     from src.analysis import document_compare
 
     class _Session:
-        def __enter__(self) -> "self.__class__.__name__":
+        def __enter__(self):
             return self
 
-        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+        def __exit__(self, exc_type, exc, tb):
+            return False
 
         def run(self, query, **kwargs):
             if "collect(DISTINCT b.type)" in query:

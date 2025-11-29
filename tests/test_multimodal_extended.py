@@ -1,6 +1,3 @@
-import pytest
-from typing import Any
-from pathlib import Path
 from __future__ import annotations
 
 import sys
@@ -27,18 +24,18 @@ sys.modules["pytesseract"] = _StubPytesseract("pytesseract")
 from src.features import multimodal as mmu  # noqa: E402
 
 
-def test_multimodal_understanding_uses_fakes(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_multimodal_understanding_uses_fakes(monkeypatch) -> None:
     # Import the actual multimodal module to patch the right namespace
     from src.features import multimodal as features_multimodal
 
     fake_saved = {}
 
     class _FakeSession:
-        def __enter__(self) -> "self.__class__.__name__":
+        def __enter__(self):
             return self
 
-        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+        def __exit__(self, exc_type, exc, tb):
+            return False
 
         def run(self, _query, **params) -> None:
             fake_saved.update(params)
@@ -74,18 +71,18 @@ def test_multimodal_understanding_uses_fakes(monkeypatch: pytest.MonkeyPatch) ->
     assert fake_saved.get("path") == "fake.png"
 
 
-def test_multimodal_with_graph_session(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_multimodal_with_graph_session(monkeypatch) -> None:
     """Test multimodal analysis with graph_session attribute."""
     from src.features import multimodal as features_multimodal
 
     fake_saved = {}
 
     class _FakeSession:
-        def __enter__(self) -> "self.__class__.__name__":
+        def __enter__(self):
             return self
 
-        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+        def __exit__(self, exc_type, exc, tb):
+            return False
 
         def run(self, _query, **params) -> None:
             fake_saved.update(params)
@@ -118,7 +115,7 @@ def test_multimodal_with_graph_session(monkeypatch: pytest.MonkeyPatch) -> None:
     assert meta["path"] == "test.png"
 
 
-def test_multimodal_no_graph(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_multimodal_no_graph(monkeypatch) -> None:
     """Test multimodal analysis when no graph is available."""
     from src.features import multimodal as features_multimodal
 
@@ -149,7 +146,7 @@ def test_multimodal_no_graph(monkeypatch: pytest.MonkeyPatch) -> None:
     assert meta["topics"] == ["word"]
 
 
-def test_multimodal_session_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_multimodal_session_returns_none(monkeypatch) -> None:
     """Test multimodal analysis when session context returns None."""
     from src.features import multimodal as features_multimodal
 
@@ -157,8 +154,8 @@ def test_multimodal_session_returns_none(monkeypatch: pytest.MonkeyPatch) -> Non
         def __enter__(self):
             return None
 
-        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+        def __exit__(self, exc_type, exc, tb):
+            return False
 
     class _FakeGraph:
         def session(self):
@@ -190,16 +187,16 @@ def test_multimodal_session_returns_none(monkeypatch: pytest.MonkeyPatch) -> Non
     assert "path" in meta
 
 
-def test_multimodal_exception_handling(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_multimodal_exception_handling(monkeypatch) -> None:
     """Test multimodal analysis handles exceptions in graph operations."""
     from src.features import multimodal as features_multimodal
 
     class _ErrorSession:
-        def __enter__(self) -> "self.__class__.__name__":
+        def __enter__(self):
             return self
 
-        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+        def __exit__(self, exc_type, exc, tb):
+            return False
 
         def run(self, _query, **params) -> None:
             raise Exception("Neo4j connection failed")
@@ -235,7 +232,7 @@ def test_multimodal_exception_handling(monkeypatch: pytest.MonkeyPatch) -> None:
     assert meta["path"] == "test.png"
 
 
-def test_detect_table(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_detect_table(monkeypatch) -> None:
     """Test table detection method."""
 
     class _KG:
@@ -251,7 +248,7 @@ def test_detect_table(monkeypatch: pytest.MonkeyPatch) -> None:
     assert result is False
 
 
-def test_detect_chart(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_detect_chart(monkeypatch) -> None:
     """Test chart detection method."""
 
     class _KG:

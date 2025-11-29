@@ -1,6 +1,3 @@
-import pytest
-from typing import Any
-from pathlib import Path
 from __future__ import annotations
 
 import types
@@ -12,13 +9,13 @@ from src.qa import multi_agent as multi_agent_qa_system
 from src.qa import memory_augmented
 
 
-def test_cross_validation_scoring(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cross_validation_scoring(monkeypatch) -> None:
     class _CVSession:
-        def __enter__(self) -> "self.__class__.__name__":
+        def __enter__(self):
             return self
 
-        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+        def __exit__(self, exc_type, exc, tb):
+            return False
 
         def run(self, query, **_kwargs):
             if "collect(b.content)" in query:
@@ -52,13 +49,13 @@ def test_cross_validation_scoring(monkeypatch: pytest.MonkeyPatch) -> None:
     assert result["rule_compliance"]["violations"]
 
 
-def test_lcel_optimized_chain(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_lcel_optimized_chain(monkeypatch) -> None:
     class _LCELSession:
-        def __enter__(self) -> "self.__class__.__name__":
+        def __enter__(self):
             return self
 
-        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+        def __exit__(self, exc_type, exc, tb):
+            return False
 
         def run(self, *_args, **_kwargs):
             return [{"text": "rule text"}]
@@ -96,18 +93,18 @@ def test_lcel_optimized_chain(monkeypatch: pytest.MonkeyPatch) -> None:
     assert isinstance(output, str)
 
 
-def test_memory_augmented_qa(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_memory_augmented_qa(monkeypatch) -> None:
     monkeypatch.setattr(memory_augmented_qa, "require_env", lambda _v: "val")
     monkeypatch.setattr(
         memory_augmented_qa, "CustomGeminiEmbeddings", lambda api_key: object()
     )
 
     class _FakeSession:
-        def __enter__(self) -> "self.__class__.__name__":
+        def __enter__(self):
             return self
 
-        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+        def __exit__(self, exc_type, exc, tb):
+            return False
 
         def run(self, *_args, **_kwargs):
             return None
@@ -179,7 +176,7 @@ def test_memory_augmented_qa(monkeypatch: pytest.MonkeyPatch) -> None:
     system.close()
 
 
-def test_multi_agent_qa_system(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_multi_agent_qa_system(monkeypatch) -> None:
     class _FakeKG:
         def __init__(self) -> None:
             self._graph = types.SimpleNamespace(session=lambda: _FakeRuleSession())
@@ -206,11 +203,11 @@ def test_multi_agent_qa_system(monkeypatch: pytest.MonkeyPatch) -> None:
             return {"valid": True}
 
     class _FakeRuleSession:
-        def __enter__(self) -> "self.__class__.__name__":
+        def __enter__(self):
             return self
 
-        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+        def __exit__(self, exc_type, exc, tb):
+            return False
 
         def run(self, *_args, **_kwargs):
             return [{"text": "rule text"}]

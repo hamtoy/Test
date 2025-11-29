@@ -1,13 +1,10 @@
-import pytest
-from typing import Any
-from pathlib import Path
 from __future__ import annotations
 
 import types
 from src.infra import constraints as rtce
 
 
-def test_integrated_qa_pipeline_create_and_validate(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_integrated_qa_pipeline_create_and_validate(monkeypatch) -> None:
     monkeypatch.setenv("NEO4J_URI", "bolt://fake")
     monkeypatch.setenv("NEO4J_USER", "u")
     monkeypatch.setenv("NEO4J_PASSWORD", "p")
@@ -20,11 +17,11 @@ def test_integrated_qa_pipeline_create_and_validate(monkeypatch: pytest.MonkeyPa
             self.closed = True
 
     class _TemplateSession:
-        def __enter__(self) -> "self.__class__.__name__":
+        def __enter__(self):
             return self
 
-        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+        def __exit__(self, exc_type, exc, tb):
+            return False
 
         def run(self, cypher, **_kwargs):
             if "ErrorPattern" in cypher:
@@ -79,11 +76,11 @@ def test_integrated_qa_pipeline_create_and_validate(monkeypatch: pytest.MonkeyPa
 
 def test_real_time_constraint_enforcer_stream_and_validate() -> None:
     class _GraphSession:
-        def __enter__(self) -> "self.__class__.__name__":
+        def __enter__(self):
             return self
 
-        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+        def __exit__(self, exc_type, exc, tb):
+            return False
 
         def run(self, *_args, **_kwargs):
             return [{"content": "duplicate text"}]

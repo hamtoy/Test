@@ -1,7 +1,3 @@
-from __future__ import annotations
-
-from typing import Any
-from pathlib import Path
 import types
 import pytest
 from builtins import EnvironmentError
@@ -17,7 +13,7 @@ def test_tokenize_filters_stopwords_and_length() -> None:
     assert "the" not in tokens and "it" not in tokens and "그리고" not in tokens
 
 
-def test_count_keywords_respects_min_freq(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_count_keywords_respects_min_freq(monkeypatch) -> None:
     # Import the actual semantic module to patch the right namespace
     from src.analysis import semantic as analysis_semantic
 
@@ -28,15 +24,15 @@ def test_count_keywords_respects_min_freq(monkeypatch: pytest.MonkeyPatch) -> No
     assert "cherry" not in counter  # freq 1 < MIN_FREQ
 
 
-def test_create_topics_no_keywords(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_create_topics_no_keywords(monkeypatch) -> None:
     called = False
 
     class _Session:
-        def __enter__(self) -> "self.__class__.__name__":
+        def __enter__(self):
             return self
 
-        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+        def __exit__(self, exc_type, exc, tb):
+            return False
 
         def execute_write(self, fn, kw) -> None:
             nonlocal called
@@ -47,18 +43,18 @@ def test_create_topics_no_keywords(monkeypatch: pytest.MonkeyPatch) -> None:
     assert called is False  # no write when empty
 
 
-def test_link_blocks_creates_links(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_link_blocks_creates_links(monkeypatch) -> None:
     # Import the actual semantic module to patch the right namespace
     from src.analysis import semantic as analysis_semantic
 
     captured = []
 
     class _Session:
-        def __enter__(self) -> "self.__class__.__name__":
+        def __enter__(self):
             return self
 
-        def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+        def __exit__(self, exc_type, exc, tb):
+            return False
 
         def execute_write(self, fn, rows) -> None:
             fn(None, rows)  # call lambda in code

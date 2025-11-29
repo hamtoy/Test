@@ -1,5 +1,3 @@
-from typing import Any
-from pathlib import Path
 from __future__ import annotations
 
 import types
@@ -9,7 +7,7 @@ import pytest
 from src.graph import QAGraphBuilder, require_env
 
 
-def test_require_env_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_require_env_missing(monkeypatch) -> None:
     monkeypatch.delenv("NEO4J_URI", raising=False)
     with pytest.raises(EnvironmentError):
         require_env("NEO4J_URI")
@@ -20,11 +18,11 @@ class _Session:
         self.calls: list[tuple[str, dict[str, object]]] = []
         self._data_queue: list[object] = []
 
-    def __enter__(self) -> "self.__class__.__name__":
-            return self
+    def __enter__(self):
+        return self
 
-    def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
-            return None
+    def __exit__(self, exc_type, exc, tb):
+        return False
 
     def run(self, query, **params):
         self.calls.append((query.strip(), params))
@@ -47,7 +45,7 @@ class _Driver:
         return None
 
 
-def test_create_schema_and_query_types(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_create_schema_and_query_types(monkeypatch) -> None:
     driver = _Driver()
     builder = QAGraphBuilder.__new__(QAGraphBuilder)
     builder.driver = driver  # type: ignore[assignment]
@@ -60,7 +58,7 @@ def test_create_schema_and_query_types(monkeypatch: pytest.MonkeyPatch) -> None:
     assert any("MERGE (q:QueryType" in q for q, _ in driver.session_obj.calls)
 
 
-def test_extract_rules_no_headings(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_extract_rules_no_headings(monkeypatch) -> None:
     driver = _Driver()
     session = driver.session_obj
     session._data_queue.append(types.SimpleNamespace(data=lambda: []))  # headings empty
