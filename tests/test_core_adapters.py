@@ -1,6 +1,6 @@
 """Tests for the core adapters module."""
 
-from typing import Any
+from typing import Any, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -19,7 +19,7 @@ class TestGeminiProvider:
     """Tests for GeminiProvider class."""
 
     @pytest.fixture
-    def mock_genai(self) -> None:
+    def mock_genai(self) -> Generator[MagicMock, None, None]:
         """Create a mock genai module."""
         with patch("src.core.adapters.genai") as mock:
             mock.GenerativeModel = MagicMock()
@@ -279,7 +279,7 @@ class TestNeo4jProvider:
     """Tests for Neo4jProvider class."""
 
     @pytest.fixture
-    def mock_driver(self) -> None:
+    def mock_driver(self) -> Generator[MagicMock, None, None]:
         """Create a mock Neo4j driver."""
         with patch("src.core.adapters.AsyncGraphDatabase") as mock_db:
             mock_driver = MagicMock()

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, AsyncMock, PropertyMock, patch
 from src.agent import GeminiAgent
 from src.config import AppConfig
 from src.core.models import EvaluationResultSchema
-from typing import Any
+from typing import Any, Generator
 from pathlib import Path
 
 
@@ -244,7 +244,7 @@ class TestEvaluationModel:
 
 # pytest 실행 시 asyncio 이벤트 루프 자동 설정
 @pytest.fixture(scope="session")
-def event_loop() -> None:
+def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
     """세션 전체에 동일한 이벤트 루프 사용"""
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop

@@ -36,7 +36,7 @@ def test_caching_layer_prefers_cache_and_invalidates(
 
     class _FakeRedis:
         def __init__(self) -> None:
-            self.store = {}
+            self.store: dict[Any, Any] = {}
 
         def get(self, key: Any) -> Any:
             return self.store.get(key)

@@ -1,6 +1,6 @@
 import json
 import types
-from typing import Any
+from typing import Any, Generator
 
 import pytest
 
@@ -17,7 +17,7 @@ class _FakeSession:
     def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> Any:
         return False
 
-    def run(self, cypher: Any, **params: Any) -> None:  # noqa: ARG002
+    def run(self, cypher: Any, **params: Any) -> Generator[Any, None, None]:  # noqa: ARG002
         for r in self.rows:
             yield r
 
@@ -45,7 +45,7 @@ def test_get_rules_cached_with_redis(monkeypatch: pytest.MonkeyPatch) -> None:
 
     class _FakeRedis:
         def __init__(self) -> None:
-            self.store = {}
+            self.store: dict[Any, Any] = {}
             self.deleted = 0
 
         def get(self, key: Any) -> Any:

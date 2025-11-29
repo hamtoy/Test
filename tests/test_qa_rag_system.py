@@ -1,5 +1,5 @@
 from src.qa.rag_system import QAKnowledgeGraph
-from typing import Any
+from typing import Any, Generator
 
 
 class _FakeSession:
@@ -12,7 +12,7 @@ class _FakeSession:
     def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> Any:
         return False
 
-    def run(self, cypher: Any, **params: Any) -> None:  # noqa: ARG002
+    def run(self, cypher: Any, **params: Any) -> Generator[Any, None, None]:  # noqa: ARG002
         for r in self.rows:
             yield r
 
@@ -48,7 +48,7 @@ class _UpsertFakeSession:
     """
 
     def __init__(self, existing_nodes: Any = None) -> None:
-        self.queries = []  # (cypher, params) 튜플 기록
+        self.queries: list[tuple[Any, Any]] = []  # (cypher, params) 튜플 기록
         self.existing_nodes = existing_nodes or set()  # 존재하는 노드 ID 집합
 
     def __enter__(self) -> Any:
@@ -64,7 +64,7 @@ class _UpsertFakeSession:
         # generator wrapper 반환
         return self._generate_results(cypher, params)
 
-    def _generate_results(self, cypher: Any, params: Any) -> None:
+    def _generate_results(self, cypher: Any, params: Any) -> Generator[dict[str, Any], None, None]:
         """결과를 yield하는 내부 generator."""
         # 존재 여부 확인 쿼리 처리
         if "MATCH (r:Rule {id: $id}) RETURN" in cypher:
@@ -109,7 +109,7 @@ class _UpsertFakeGraph:
 
     def __init__(self, existing_nodes: Any = None) -> None:
         self.existing_nodes = existing_nodes or set()
-        self.sessions = []
+        self.sessions: list[_UpsertFakeSession] = []
 
     def session(self) -> Any:
         s = _UpsertFakeSession(self.existing_nodes)

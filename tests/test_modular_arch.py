@@ -1,14 +1,14 @@
 import pytest
+from typing import Any, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 from src.core.interfaces import GenerationResult, SafetyBlockedError
 from src.core.adapters import GeminiProvider
 from src.core.factory import get_llm_provider, get_graph_provider
 from src.config import AppConfig
-from typing import Any
 
 
 @pytest.fixture
-def mock_genai_model() -> None:
+def mock_genai_model() -> Generator[MagicMock, None, None]:
     with patch("google.generativeai.GenerativeModel") as mock:
         yield mock
 
