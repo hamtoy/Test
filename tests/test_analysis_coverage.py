@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import types
+from typing import Any
+
+import pytest
+
 from src.analysis import semantic
 from src.features import autocomplete as smart_autocomplete
 from src.processing import example_selector
 from src.features import difficulty as adaptive_difficulty
 
 
-def test_semantic_analysis_utils(monkeypatch) -> None:
+def test_semantic_analysis_utils(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(semantic, "MIN_FREQ", 1)
     tokens = semantic.tokenize("This is a Sample sample text with 숫자123")
     assert "sample" in tokens
@@ -18,36 +22,46 @@ def test_semantic_analysis_utils(monkeypatch) -> None:
     store: list[object] = []
 
     class _SATx:
-        def __init__(self, store_ref) -> None:
+        def __init__(self, store_ref: list[object]) -> None:
             self.store_ref = store_ref
 
-        def run(self, _query, topics=None, links=None) -> None:
+        def run(
+            self,
+            _query: str,
+            topics: list[str] | None = None,
+            links: list[str] | None = None,
+        ) -> None:
             if topics is not None:
                 self.store_ref.extend(topics)
             if links is not None:
                 self.store_ref.extend(links)
 
     class _SASession:
-        def __init__(self, store_ref) -> None:
+        def __init__(self, store_ref: list[object]) -> None:
             self.store_ref = store_ref
 
-        def __enter__(self):
+        def __enter__(self) -> "_SASession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
+        ) -> None:
+            return None
 
-        def execute_write(self, func, items) -> None:
+        def execute_write(self, func: Any, items: list[Any]) -> None:
             func(_SATx(self.store_ref), items)
 
-        def run(self, *_args, **_kwargs):
+        def run(self, *_args: Any, **_kwargs: Any) -> list[dict[str, str]]:
             return [{"id": "b1", "content": "alpha beta gamma"}]
 
     class _SADriver:
         def __init__(self) -> None:
             self.session_obj = _SASession(store)
 
-        def session(self):
+        def session(self) -> _SASession:
             return self.session_obj
 
     driver = _SADriver()
@@ -59,15 +73,20 @@ def test_semantic_analysis_utils(monkeypatch) -> None:
     )
 
 
-def test_smart_autocomplete(monkeypatch) -> None:
+def test_smart_autocomplete(monkeypatch: pytest.MonkeyPatch) -> None:
     class _SmartSession:
-        def __enter__(self):
+        def __enter__(self) -> "_SmartSession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
+        ) -> None:
+            return None
 
-        def run(self, query, **_kwargs):
+        def run(self, query: str, **_kwargs: Any) -> list[dict[str, str | int]]:
             if "ErrorPattern" in query:
                 return [{"pattern": "bad", "desc": "bad pattern"}]
             if "Constraint" in query:
@@ -94,26 +113,31 @@ def test_smart_autocomplete(monkeypatch) -> None:
     assert compliance["violations"]
 
 
-def test_dynamic_example_selector(monkeypatch) -> None:
+def test_dynamic_example_selector(monkeypatch: pytest.MonkeyPatch) -> None:
     class _DESession:
         def __init__(self) -> None:
             self.updated: list[str] = []
 
-        def __enter__(self):
+        def __enter__(self) -> "_DESession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
+        ) -> None:
+            return None
 
-        def run(self, query, **params):
-            class _Result(list):
-                def data(self_inner):
+        def run(self, query: str, **params: Any) -> list[dict[str, Any]]:
+            class _Result(list[dict[str, Any]]):
+                def data(self_inner: "_Result") -> list[dict[str, Any]]:
                     return list(self_inner)
 
             if "RETURN e.text AS example" in query:
                 return _Result([{"example": "ex", "rate": 0.9, "usage": 0}])
             if "SET e.usage_count" in query:
-                self.updated.append(params["text"])
+                self.updated.append(str(params.get("text", "")))
                 return _Result([])
             return _Result([])
 
@@ -128,17 +152,22 @@ def test_dynamic_example_selector(monkeypatch) -> None:
     assert examples
 
 
-def test_adaptive_difficulty(monkeypatch) -> None:
+def test_adaptive_difficulty(monkeypatch: pytest.MonkeyPatch) -> None:
     class _ADSession:
-        def __enter__(self):
+        def __enter__(self) -> "_ADSession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
+        ) -> None:
+            return None
 
-        def run(self, *_args, **_kwargs):
+        def run(self, *_args: Any, **_kwargs: Any) -> Any:
             class _Result:
-                def single(self_inner):
+                def single(self_inner: "_Result") -> dict[str, int]:
                     return {"avg_blocks": 5}
 
             return _Result()
@@ -163,17 +192,22 @@ def test_semantic_analysis_utils_simple() -> None:
     )  # MIN_FREQ may filter low counts
 
 
-def test_adaptive_difficulty_levels(monkeypatch) -> None:
+def test_adaptive_difficulty_levels(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Session:
-        def __enter__(self):
+        def __enter__(self) -> "_Session":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
+        ) -> None:
+            return None
 
-        def run(self, *_args, **_kwargs):
+        def run(self, *_args: Any, **_kwargs: Any) -> Any:
             class _R:
-                def single(self_inner):
+                def single(self_inner: "_R") -> dict[str, int]:
                     return {"avg_blocks": 3}
 
             return _R()

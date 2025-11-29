@@ -1,6 +1,8 @@
 import hashlib
 import json
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -12,7 +14,9 @@ VALID_API_KEY = "AIza" + "A" * 35
 
 
 @pytest.mark.asyncio
-async def test_create_context_cache_reuses_local(monkeypatch, tmp_path) -> None:
+async def test_create_context_cache_reuses_local(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
     monkeypatch.setenv("LOCAL_CACHE_DIR", str(tmp_path / ".cache"))
@@ -45,7 +49,9 @@ async def test_create_context_cache_reuses_local(monkeypatch, tmp_path) -> None:
     assert cache.name == "cached-content"
 
 
-def test_local_cache_ttl_expiration(monkeypatch, tmp_path) -> None:
+def test_local_cache_ttl_expiration(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
     monkeypatch.setenv("LOCAL_CACHE_DIR", str(tmp_path / ".cache"))
@@ -59,7 +65,7 @@ def test_local_cache_ttl_expiration(monkeypatch, tmp_path) -> None:
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
 
     expired_time = datetime.now(timezone.utc) - timedelta(minutes=15)
-    manifest = {
+    manifest: dict[str, Any] = {
         fingerprint: {
             "name": "cached",
             "created": expired_time.isoformat(),
@@ -71,7 +77,9 @@ def test_local_cache_ttl_expiration(monkeypatch, tmp_path) -> None:
     assert agent._load_local_cache(fingerprint, ttl_minutes=10) is None
 
 
-def test_local_cache_ttl_returns_cache(monkeypatch, tmp_path) -> None:
+def test_local_cache_ttl_returns_cache(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
     monkeypatch.setenv("LOCAL_CACHE_DIR", str(tmp_path / ".cache"))
@@ -85,7 +93,7 @@ def test_local_cache_ttl_returns_cache(monkeypatch, tmp_path) -> None:
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
 
     now = datetime.now(timezone.utc)
-    manifest = {
+    manifest: dict[str, Any] = {
         fingerprint: {
             "name": "cached-keep",
             "created": now.isoformat(),
@@ -106,7 +114,9 @@ def test_local_cache_ttl_returns_cache(monkeypatch, tmp_path) -> None:
     assert cache.name == "cached-keep"
 
 
-def test_local_cache_invalid_manifest(monkeypatch, tmp_path) -> None:
+def test_local_cache_invalid_manifest(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
     monkeypatch.setenv("LOCAL_CACHE_DIR", str(tmp_path / ".cache"))

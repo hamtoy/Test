@@ -1,11 +1,16 @@
-import pytest
+from pathlib import Path
 import sys
 from types import SimpleNamespace
-from unittest.mock import MagicMock, AsyncMock
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 
 @pytest.mark.asyncio
-async def test_main_analyze_cache_quick_path(monkeypatch, tmp_path) -> None:
+async def test_main_analyze_cache_quick_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     import src.main as main_module
     from src.cli import CLIArgs
 
@@ -28,7 +33,7 @@ async def test_main_analyze_cache_quick_path(monkeypatch, tmp_path) -> None:
             self.cache_stats_max_entries = 3
 
     class FakeAgent:
-        def __init__(self, config, jinja_env) -> None:
+        def __init__(self, config: Any, jinja_env: Any) -> None:
             self.total_input_tokens = 0
             self.total_output_tokens = 0
             self.cache_hits = 0
@@ -94,7 +99,9 @@ async def test_main_analyze_cache_quick_path(monkeypatch, tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_main_keep_progress_flag(monkeypatch, tmp_path) -> None:
+async def test_main_keep_progress_flag(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     import src.main as main_module
     from src.cli import CLIArgs
 
@@ -116,7 +123,7 @@ async def test_main_keep_progress_flag(monkeypatch, tmp_path) -> None:
             self.cache_stats_max_entries = 3
 
     class FakeAgent:
-        def __init__(self, config, jinja_env) -> None:
+        def __init__(self, config: Any, jinja_env: Any) -> None:
             self.total_input_tokens = 0
             self.total_output_tokens = 0
             self.cache_hits = 0
@@ -184,7 +191,9 @@ async def test_main_keep_progress_flag(monkeypatch, tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_main_cache_stats_warning(monkeypatch, tmp_path) -> None:
+async def test_main_cache_stats_warning(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     import src.main as main_module
     from src.cli import CLIArgs
 
@@ -206,7 +215,7 @@ async def test_main_cache_stats_warning(monkeypatch, tmp_path) -> None:
             self.cache_stats_max_entries = 3
 
     class FakeAgent:
-        def __init__(self, config, jinja_env) -> None:
+        def __init__(self, config: Any, jinja_env: Any) -> None:
             self.total_input_tokens = 0
             self.total_output_tokens = 0
             self.cache_hits = 0
@@ -277,7 +286,9 @@ async def test_main_cache_stats_warning(monkeypatch, tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_main_auto_mode_passes_intent(monkeypatch, tmp_path) -> None:
+async def test_main_auto_mode_passes_intent(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     import src.main as main_module
     from src.cli import CLIArgs
 
@@ -299,7 +310,7 @@ async def test_main_auto_mode_passes_intent(monkeypatch, tmp_path) -> None:
             self.cache_stats_max_entries = 3
 
     class FakeAgent:
-        def __init__(self, config, jinja_env) -> None:
+        def __init__(self, config: Any, jinja_env: Any) -> None:
             self.total_input_tokens = 0
             self.total_output_tokens = 0
             self.cache_hits = 0
@@ -367,7 +378,9 @@ async def test_main_auto_mode_passes_intent(monkeypatch, tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_main_missing_templates_exits(monkeypatch, tmp_path) -> None:
+async def test_main_missing_templates_exits(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     import src.main as main_module
     from src.cli import CLIArgs
 

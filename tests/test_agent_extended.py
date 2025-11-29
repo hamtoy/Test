@@ -1,16 +1,21 @@
 from __future__ import annotations
 
-import pytest
 import asyncio
+import tempfile
 import types
 from pathlib import Path
-import tempfile
-from src import agent as ag
+from typing import Any
+
 import google.generativeai.caching as caching
+import pytest
+
+from src import agent as ag
 
 
 @pytest.mark.asyncio
-async def test_agent_execute_api_call_safety_error(monkeypatch, tmp_path) -> None:
+async def test_agent_execute_api_call_safety_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     class _Config:
         def __init__(self) -> None:
             self.model_name = "tier-model"
@@ -59,14 +64,18 @@ async def test_agent_execute_api_call_safety_error(monkeypatch, tmp_path) -> Non
             self.usage_metadata = None
 
     class _Model:
-        async def generate_content_async(self, prompt_text, request_options=None):
+        async def generate_content_async(
+            self, prompt_text: str, request_options: Any = None
+        ) -> _Resp:
             return _Resp()
 
     with pytest.raises(ag.SafetyFilterError):
         await agent._execute_api_call(_Model(), "prompt")
 
 
-def test_agent_cache_budget_and_pricing(monkeypatch, tmp_path) -> None:
+def test_agent_cache_budget_and_pricing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     # Minimal config stub
     class _Config:
         def __init__(self) -> None:
@@ -116,7 +125,9 @@ def test_agent_cache_budget_and_pricing(monkeypatch, tmp_path) -> None:
         agent.check_budget()
 
 
-def test_agent_local_cache_load_and_store(monkeypatch, tmp_path) -> None:
+def test_agent_local_cache_load_and_store(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     class _Config:
         def __init__(self) -> None:
             self.max_concurrency = 1
@@ -152,7 +163,7 @@ def test_agent_local_cache_load_and_store(monkeypatch, tmp_path) -> None:
     assert cached is not None
 
 
-def test_agent_get_total_cost_invalid_model(monkeypatch) -> None:
+def test_agent_get_total_cost_invalid_model(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Config:
         def __init__(self) -> None:
             self.model_name = "unknown-model"
@@ -198,7 +209,9 @@ def test_agent_get_total_cost_invalid_model(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_agent_call_api_with_retry(monkeypatch, tmp_path) -> None:
+async def test_agent_call_api_with_retry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     class _Config:
         def __init__(self) -> None:
             self.model_name = "tier-model"
@@ -226,7 +239,7 @@ async def test_agent_call_api_with_retry(monkeypatch, tmp_path) -> None:
 
     attempts = {"n": 0}
 
-    async def _fake_exec(model, prompt_text):
+    async def _fake_exec(model: Any, prompt_text: str) -> str:
         attempts["n"] += 1
         if attempts["n"] < 2:
             raise TimeoutError("retry me")
@@ -235,10 +248,15 @@ async def test_agent_call_api_with_retry(monkeypatch, tmp_path) -> None:
     agent._execute_api_call = _fake_exec  # type: ignore[method-assign]
 
     class _Sem:
-        async def __aenter__(self):
+        async def __aenter__(self) -> None:
             return None
 
-        async def __aexit__(self, exc_type, exc, tb):
+        async def __aexit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
+        ) -> bool:
             return False
 
     agent._semaphore = _Sem()  # type: ignore[assignment]

@@ -202,7 +202,7 @@ class TestGeminiProvider:
         from google.api_core import exceptions as google_exceptions
 
         provider._model.generate_content_async = AsyncMock(
-            side_effect=google_exceptions.ResourceExhausted("Rate limited")
+            side_effect=google_exceptions.ResourceExhausted("Rate limited")  # type: ignore[no-untyped-call]
         )
 
         with pytest.raises(RateLimitError):
@@ -214,7 +214,7 @@ class TestGeminiProvider:
         from google.api_core import exceptions as google_exceptions
 
         provider._model.generate_content_async = AsyncMock(
-            side_effect=google_exceptions.InvalidArgument("token limit exceeded")
+            side_effect=google_exceptions.InvalidArgument("token limit exceeded")  # type: ignore[no-untyped-call]
         )
 
         with pytest.raises(ContextWindowExceededError):
@@ -226,7 +226,7 @@ class TestGeminiProvider:
         from google.api_core import exceptions as google_exceptions
 
         provider._model.generate_content_async = AsyncMock(
-            side_effect=google_exceptions.InvalidArgument("Invalid parameter")
+            side_effect=google_exceptions.InvalidArgument("Invalid parameter")  # type: ignore[no-untyped-call]
         )
 
         with pytest.raises(ProviderError):
@@ -238,7 +238,7 @@ class TestGeminiProvider:
         from google.api_core import exceptions as google_exceptions
 
         provider._model.generate_content_async = AsyncMock(
-            side_effect=google_exceptions.DeadlineExceeded("Timeout")
+            side_effect=google_exceptions.DeadlineExceeded("Timeout")  # type: ignore[no-untyped-call]
         )
 
         with pytest.raises(TimeoutError):

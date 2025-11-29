@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import types
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -13,7 +14,7 @@ from src.config import AppConfig
 VALID_API_KEY = "AIza" + "B" * 35
 
 
-def _dummy_env():
+def _dummy_env() -> Environment:
     return Environment(
         loader=DictLoader(
             {
@@ -27,7 +28,7 @@ def _dummy_env():
     )
 
 
-def _make_agent(monkeypatch):
+def _make_agent(monkeypatch: pytest.MonkeyPatch) -> GeminiAgent:
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     monkeypatch.delenv("BUDGET_LIMIT_USD", raising=False)
     stub_genai = types.SimpleNamespace(
@@ -37,7 +38,7 @@ def _make_agent(monkeypatch):
     return GeminiAgent(AppConfig(), jinja_env=_dummy_env())
 
 
-def _patch_protos(monkeypatch) -> None:
+def _patch_protos(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Finish:
         STOP = "STOP"
         MAX_TOKENS = "MAX_TOKENS"
@@ -53,7 +54,9 @@ def _patch_protos(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_execute_api_call_blocks_on_safety(monkeypatch) -> None:
+async def test_execute_api_call_blocks_on_safety(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     _patch_protos(monkeypatch)
     agent = _make_agent(monkeypatch)
 
@@ -65,7 +68,9 @@ async def test_execute_api_call_blocks_on_safety(monkeypatch) -> None:
 
     class _Model:
         @staticmethod
-        async def generate_content_async(prompt_text, request_options=None):  # noqa: ARG002
+        async def generate_content_async(
+            prompt_text: str, request_options: Any = None
+        ) -> _Resp:  # noqa: ARG002
             return _Resp()
 
     with pytest.raises(SafetyFilterError):
@@ -73,7 +78,9 @@ async def test_execute_api_call_blocks_on_safety(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_execute_api_call_fallbacks_to_candidate_part(monkeypatch) -> None:
+async def test_execute_api_call_fallbacks_to_candidate_part(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     _patch_protos(monkeypatch)
     agent = _make_agent(monkeypatch)
 
@@ -100,7 +107,9 @@ async def test_execute_api_call_fallbacks_to_candidate_part(monkeypatch) -> None
 
     class _Model:
         @staticmethod
-        async def generate_content_async(prompt_text, request_options=None):  # noqa: ARG002
+        async def generate_content_async(
+            prompt_text: str, request_options: Any = None
+        ) -> _Resp:  # noqa: ARG002
             return _Resp()
 
     result = await agent._execute_api_call(_Model(), "p")
@@ -108,7 +117,7 @@ async def test_execute_api_call_fallbacks_to_candidate_part(monkeypatch) -> None
 
 
 @pytest.mark.asyncio
-async def test_generate_query_empty_response(monkeypatch) -> None:
+async def test_generate_query_empty_response(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _make_agent(monkeypatch)
     monkeypatch.setattr(agent, "_call_api_with_retry", AsyncMock(return_value="   "))
     result = await agent.generate_query("ocr", "user prompt")
@@ -116,7 +125,7 @@ async def test_generate_query_empty_response(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_evaluate_responses_empty_raises(monkeypatch) -> None:
+async def test_evaluate_responses_empty_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _make_agent(monkeypatch)
     monkeypatch.setattr(agent, "_call_api_with_retry", AsyncMock(return_value=" "))
     with pytest.raises(ValueError):
@@ -124,7 +133,7 @@ async def test_evaluate_responses_empty_raises(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_rewrite_best_answer_unwraps(monkeypatch) -> None:
+async def test_rewrite_best_answer_unwraps(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _make_agent(monkeypatch)
     monkeypatch.setattr(
         agent,

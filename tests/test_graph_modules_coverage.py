@@ -13,7 +13,7 @@ from src.infra import callbacks as custom_callback
 def test_graph_schema_builder_runs_with_stubbed_driver(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class _Result(list):
+    class _Result(list[Any]):
         def data(self) -> Any:
             return list(self)
 
@@ -147,7 +147,7 @@ def test_custom_callback_logs(monkeypatch: pytest.MonkeyPatch) -> None:
         def close(self) -> Any:
             return None
 
-    store: list = []
+    store: list[Any] = []
 
     class _GraphDB:
         @staticmethod

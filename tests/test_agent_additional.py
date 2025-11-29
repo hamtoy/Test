@@ -1,5 +1,7 @@
-import types
 import json
+import types
+from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -11,12 +13,16 @@ class _FakeModel:
     def __init__(self, text: str) -> None:
         self.text = text
 
-    def generate_content(self, prompt, generation_config=None):  # noqa: ARG002
+    def generate_content(
+        self, prompt: str, generation_config: Any = None
+    ) -> types.SimpleNamespace:  # noqa: ARG002
         return types.SimpleNamespace(
             text=self.text, candidates=None, usage_metadata=None
         )
 
-    async def generate_content_async(self, prompt, request_options=None):  # noqa: ARG002
+    async def generate_content_async(
+        self, prompt: str, request_options: Any = None
+    ) -> types.SimpleNamespace:  # noqa: ARG002
         return types.SimpleNamespace(
             text=self.text, candidates=None, usage_metadata=None
         )
@@ -27,8 +33,11 @@ class _FakeGenAI:
         self.text = text
 
     def GenerativeModel(
-        self, model_name=None, system_instruction=None, generation_config=None
-    ):  # noqa: N802,ARG002
+        self,
+        model_name: str | None = None,
+        system_instruction: str | None = None,
+        generation_config: Any = None,
+    ) -> _FakeModel:  # noqa: N802,ARG002
         return _FakeModel(self.text)
 
     class types:  # noqa: D401
@@ -43,7 +52,7 @@ class _FakeGenAI:
 
 
 @pytest.fixture
-def fake_config(tmp_path, monkeypatch):
+def fake_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> AppConfig:
     # Create dummy templates under PROJECT_ROOT/templates
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
     tdir = tmp_path / "templates"
@@ -75,7 +84,9 @@ def fake_config(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_generate_query_handles_no_cache(monkeypatch, fake_config) -> None:
+async def test_generate_query_handles_no_cache(
+    monkeypatch: pytest.MonkeyPatch, fake_config: AppConfig
+) -> None:
     agent = GeminiAgent(config=fake_config, jinja_env=None)
     payload = json.dumps({"queries": ["q1", "q2"]})
     monkeypatch.setattr(
@@ -87,7 +98,9 @@ async def test_generate_query_handles_no_cache(monkeypatch, fake_config) -> None
     assert res == ["q1", "q2"]
 
 
-def test_cost_accumulation(monkeypatch, fake_config) -> None:
+def test_cost_accumulation(
+    monkeypatch: pytest.MonkeyPatch, fake_config: AppConfig
+) -> None:
     agent = GeminiAgent(config=fake_config, jinja_env=None)
     agent.total_input_tokens = 0
     agent.total_output_tokens = 0

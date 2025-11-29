@@ -10,7 +10,7 @@ from src.config.exceptions import APIRateLimitError
 VALID_API_KEY = "AIza" + "D" * 35
 
 
-def _stub_agent(monkeypatch):
+def _stub_agent(monkeypatch: pytest.MonkeyPatch) -> GeminiAgent:
     """Create a GeminiAgent with a minimal Jinja stub and valid config."""
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     jinja_env = types.SimpleNamespace(
@@ -22,7 +22,7 @@ def _stub_agent(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_generate_query_rate_limit(monkeypatch) -> None:
+async def test_generate_query_rate_limit(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _stub_agent(monkeypatch)
 
     class ResourceExhausted(Exception):
@@ -36,7 +36,7 @@ async def test_generate_query_rate_limit(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_generate_query_empty_response(monkeypatch) -> None:
+async def test_generate_query_empty_response(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _stub_agent(monkeypatch)
     monkeypatch.setattr(agent, "_call_api_with_retry", AsyncMock(return_value=""))
 
@@ -45,7 +45,7 @@ async def test_generate_query_empty_response(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_generate_query_invalid_json(monkeypatch) -> None:
+async def test_generate_query_invalid_json(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _stub_agent(monkeypatch)
     monkeypatch.setattr(agent, "_call_api_with_retry", AsyncMock(return_value="{bad"))
 

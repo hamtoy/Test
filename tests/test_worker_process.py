@@ -1,5 +1,6 @@
 import os
 import types
+from typing import Any
 
 import pytest
 
@@ -174,7 +175,7 @@ async def test_handle_ocr_task_success(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(infra_worker, "check_rate_limit", _allow)
 
     # capture jsonl writes
-    written: list[dict] = []
+    written: list[dict[str, Any]] = []
 
     def _append(_path, record) -> None:
         written.append(record)
@@ -189,7 +190,7 @@ async def test_handle_ocr_task_success(monkeypatch, tmp_path) -> None:
 
     class _Broker:
         def __init__(self) -> None:
-            self.published: list = []
+            self.published: list[Any] = []
 
         async def publish(self, msg, channel) -> None:
             self.published.append((channel, msg))
@@ -247,7 +248,7 @@ async def test_handle_ocr_task_sends_dlq(monkeypatch) -> None:
 
     class _Broker:
         def __init__(self) -> None:
-            self.published: list = []
+            self.published: list[Any] = []
 
         async def publish(self, msg, channel) -> None:
             self.published.append((channel, msg))
@@ -281,14 +282,14 @@ async def test_handle_ocr_task_lats_toggle(monkeypatch) -> None:
 
     monkeypatch.setattr(infra_worker.config, "enable_lats", True, raising=False)
 
-    written: list[dict] = []
+    written: list[dict[str, Any]] = []
     monkeypatch.setattr(
         infra_worker, "_append_jsonl", lambda _p, rec: written.append(rec)
     )
 
     class _Broker:
         def __init__(self) -> None:
-            self.published: list = []
+            self.published: list[Any] = []
 
         async def publish(self, msg, channel) -> None:
             self.published.append((channel, msg))
@@ -347,14 +348,14 @@ async def test_handle_ocr_task_lats_budget_exit(monkeypatch) -> None:
     monkeypatch.setattr(infra_worker, "_process_task", _process)
     monkeypatch.setattr(infra_worker, "llm_provider", None, raising=False)
 
-    written: list[dict] = []
+    written: list[dict[str, Any]] = []
     monkeypatch.setattr(
         infra_worker, "_append_jsonl", lambda _p, rec: written.append(rec)
     )
 
     class _Broker:
         def __init__(self) -> None:
-            self.published: list = []
+            self.published: list[Any] = []
 
         async def publish(self, msg, channel) -> None:
             self.published.append((channel, msg))

@@ -1,31 +1,42 @@
 from __future__ import annotations
 
 import types
+from typing import Any
+
+import pytest
+
 from src.processing import context_augmentation as aca
 
 
-def test_advanced_context_augmentation_vector_index(monkeypatch) -> None:
+def test_advanced_context_augmentation_vector_index(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class _Doc:
-        def __init__(self, text) -> None:
+        def __init__(self, text: str) -> None:
             self.page_content = text
             self.metadata = {"id": 1}
 
     class _Result:
-        def data(self_inner):
+        def data(self_inner: "_Result") -> list[dict[str, Any]]:
             return [{"rule": "R", "priority": 1, "examples": ["ex1"]}]
 
     class _Session:
-        def __enter__(self):
+        def __enter__(self) -> "_Session":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
+        ) -> None:
+            return None
 
-        def run(self, *_args, **_kwargs):
+        def run(self, *_args: Any, **_kwargs: Any) -> _Result:
             return _Result()
 
     class _Driver:
-        def session(self):
+        def session(self) -> _Session:
             return _Session()
 
     aug = aca.AdvancedContextAugmentation.__new__(aca.AdvancedContextAugmentation)
@@ -40,21 +51,26 @@ def test_advanced_context_augmentation_vector_index(monkeypatch) -> None:
 
 
 def test_advanced_context_augmentation_fallback_graph() -> None:
-    record = {
+    record: dict[str, Any] = {
         "blocks": [{"content": "b"}],
         "rules": [{"rule": "r", "priority": 1, "examples": ["e"]}],
     }
 
     class _Session:
-        def __enter__(self):
+        def __enter__(self) -> "_Session":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: Any,
+        ) -> None:
+            return None
 
-        def run(self, *_args, **_kwargs):
+        def run(self, *_args: Any, **_kwargs: Any) -> Any:
             class _Res:
-                def single(self_inner):
+                def single(self_inner: "_Res") -> dict[str, Any]:
                     return record
 
             return _Res()
@@ -70,7 +86,7 @@ def test_advanced_context_augmentation_fallback_graph() -> None:
     assert out["relevant_rules"]
 
 
-def test_generate_with_augmentation_formats(monkeypatch) -> None:
+def test_generate_with_augmentation_formats(monkeypatch: pytest.MonkeyPatch) -> None:
     aug = aca.AdvancedContextAugmentation.__new__(aca.AdvancedContextAugmentation)
     monkeypatch.setattr(
         aug,
