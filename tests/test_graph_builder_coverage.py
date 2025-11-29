@@ -70,7 +70,7 @@ class TestQAGraphBuilder:
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
-            from src.graph.builder import QAGraphBuilder, QUERY_TYPES
+            from src.graph.builder import QAGraphBuilder, QUERY_TYPES  # type: ignore[attr-defined]
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
@@ -91,7 +91,7 @@ class TestQAGraphBuilder:
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
-            from src.graph.builder import QAGraphBuilder, CONSTRAINTS
+            from src.graph.builder import QAGraphBuilder, CONSTRAINTS  # type: ignore[attr-defined]
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
@@ -116,7 +116,7 @@ class TestQAGraphBuilder:
             mock_result.single.return_value = {"links": 5}
             mock_session.run.return_value = mock_result
 
-            from src.graph.builder import QAGraphBuilder, CONSTRAINT_KEYWORDS
+            from src.graph.builder import QAGraphBuilder, CONSTRAINT_KEYWORDS  # type: ignore[attr-defined]
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
@@ -197,7 +197,7 @@ class TestQAGraphBuilder:
             mock_result.single.return_value = {"links": 10}
             mock_session.run.return_value = mock_result
 
-            from src.graph.builder import QAGraphBuilder, EXAMPLE_RULE_MAPPINGS
+            from src.graph.builder import QAGraphBuilder, EXAMPLE_RULE_MAPPINGS  # type: ignore[attr-defined]
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
@@ -264,7 +264,7 @@ class TestQAGraphBuilder:
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
-            from src.graph.builder import QAGraphBuilder, ERROR_PATTERNS
+            from src.graph.builder import QAGraphBuilder, ERROR_PATTERNS  # type: ignore[attr-defined]
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
@@ -284,7 +284,7 @@ class TestQAGraphBuilder:
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
-            from src.graph.builder import QAGraphBuilder, BEST_PRACTICES
+            from src.graph.builder import QAGraphBuilder, BEST_PRACTICES  # type: ignore[attr-defined]
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
@@ -305,7 +305,7 @@ class TestQAGraphBuilder:
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
-            from src.graph.builder import QAGraphBuilder, QUERY_TYPE_KEYWORDS
+            from src.graph.builder import QAGraphBuilder, QUERY_TYPE_KEYWORDS  # type: ignore[attr-defined]
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 

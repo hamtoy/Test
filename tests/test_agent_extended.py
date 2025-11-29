@@ -38,14 +38,14 @@ async def test_agent_execute_api_call_safety_error(monkeypatch, tmp_path):
 
     agent = ag.GeminiAgent(_Config(), jinja_env=None)  # type: ignore[arg-type]
     agent._rate_limiter = None
-    agent._semaphore = type(  # type: ignore[assignment]
+    agent._semaphore = type(
         "Sem",
         (),
         {
             "__aenter__": lambda self: asyncio.sleep(0),
             "__aexit__": lambda self, exc_type, exc, tb: asyncio.sleep(0),
         },
-    )()
+    )()  # type: ignore[assignment]
 
     class _Resp:
         def __init__(self):
