@@ -8,11 +8,10 @@ Run with: pytest -m e2e
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import MagicMock
 
 import pytest
 
-from tests.e2e.conftest import MockGeminiAgent
+from tests.e2e.conftest import MockGeminiAgent, QueryResult
 
 
 @pytest.mark.e2e
