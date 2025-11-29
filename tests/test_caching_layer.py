@@ -30,7 +30,7 @@ class _FakeGraph:
 def test_get_rules_cached_without_redis(monkeypatch):
     rows = [{"id": "1", "text": "t1", "section": "s1"}]
     kg = types.SimpleNamespace(_graph=_FakeGraph(rows))
-    layer = CachingLayer(kg=kg, redis_client=None)
+    layer = CachingLayer(kg=kg, redis_client=None)  # type: ignore[arg-type]
 
     rules = layer.get_rules_cached("explanation")
     assert rules == [{"id": "1", "text": "t1", "section": "s1"}]
@@ -61,7 +61,7 @@ def test_get_rules_cached_with_redis(monkeypatch):
             return self.deleted
 
     r = _FakeRedis()
-    layer = CachingLayer(kg=kg, redis_client=r)
+    layer = CachingLayer(kg=kg, redis_client=r)  # type: ignore[arg-type]
     # Force redis usage even if redis module is absent
     layer.redis = r
 

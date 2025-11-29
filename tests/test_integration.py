@@ -55,7 +55,7 @@ async def test_execute_workflow_e2e(monkeypatch, tmp_path):
     logger = logging.getLogger("GeminiWorkflow")
 
     results = await execute_workflow(
-        agent,
+        agent,  # type: ignore[arg-type]
         ocr_text="ocr body",
         user_intent="intent",
         logger=logger,
@@ -117,7 +117,7 @@ async def test_execute_workflow_resume(monkeypatch, tmp_path):
     logger = logging.getLogger("GeminiWorkflow")
 
     results = await execute_workflow(
-        agent,
+        agent,  # type: ignore[arg-type]
         ocr_text="ocr body",
         user_intent="intent",
         logger=logger,

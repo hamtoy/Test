@@ -100,7 +100,7 @@ class TestGeminiAgent:
             active = False
             return "ok"
 
-        agent._execute_api_call = fake_execute
+        agent._execute_api_call = fake_execute  # type: ignore[method-assign]
 
         model = object()
         await asyncio.gather(
@@ -215,7 +215,7 @@ class TestEvaluationModel:
             ],
         }
 
-        result = EvaluationResultSchema(**data)
+        result = EvaluationResultSchema(**data)  # type: ignore[arg-type]
 
         # 검증 후 자동으로 B로 수정되어야 함
         assert result.best_candidate == "B"
@@ -232,7 +232,7 @@ class TestEvaluationModel:
             ],
         }
 
-        result = EvaluationResultSchema(**data)
+        result = EvaluationResultSchema(**data)  # type: ignore[arg-type]
 
         # 올바르므로 그대로 유지
         assert result.best_candidate == "A"

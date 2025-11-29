@@ -33,7 +33,7 @@ class _FakeDriver:
 class _FakeTemplate:
     def __init__(self, name):
         self.name = name
-        self.last_kwargs = None
+        self.last_kwargs: dict[str, object] | None = None
 
     def render(self, **kwargs):
         self.last_kwargs = kwargs
@@ -54,7 +54,7 @@ class _FakeEnv:
 
 def _make_dtg(rows, env):
     dtg = object.__new__(DynamicTemplateGenerator)
-    dtg.driver = _FakeDriver(rows)
+    dtg.driver = _FakeDriver(rows)  # type: ignore[assignment]
     dtg.logger = logging.getLogger("test")
     dtg.jinja_env = env
     return dtg
@@ -78,6 +78,7 @@ def test_generate_prompt_uses_fallback_and_calc_flag():
     output = dtg.generate_prompt_for_query_type("explanation", context)
 
     assert "fallback-rendered" in output  # fallback template used
+    assert tmpl.last_kwargs is not None
     assert (
         tmpl.last_kwargs["calc_allowed"] is False
     )  # derived from used_calc_query_count

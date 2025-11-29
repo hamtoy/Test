@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 from unittest.mock import patch, AsyncMock, MagicMock
 from src.infra.utils import (
     load_file_async,
@@ -16,7 +17,7 @@ async def test_load_file_async_success():
     mock_file.__aexit__.return_value = None
 
     with patch("aiofiles.open", return_value=mock_file):
-        result = await load_file_async("dummy_path")
+        result = await load_file_async(Path("dummy_path"))
         assert result == mock_content
 
 
@@ -30,7 +31,7 @@ async def test_load_file_async_empty():
         patch("aiofiles.open", return_value=mock_file),
         pytest.raises(ValueError, match="File is empty"),
     ):
-        await load_file_async("dummy_path")
+        await load_file_async(Path("dummy_path"))
 
 
 @pytest.mark.asyncio
@@ -39,7 +40,7 @@ async def test_load_file_async_not_found():
         patch("aiofiles.open", side_effect=FileNotFoundError),
         pytest.raises(FileNotFoundError, match="Critical file missing"),
     ):
-        await load_file_async("dummy_path")
+        await load_file_async(Path("dummy_path"))
 
 
 def test_parse_raw_candidates_valid():

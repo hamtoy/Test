@@ -94,7 +94,7 @@ def test_real_time_constraint_enforcer_stream_and_validate():
                 {"type": "prohibition", "pattern": "bad", "description": "no bad words"}
             ]
 
-    enforcer = rtce.RealTimeConstraintEnforcer(_FakeKG())
+    enforcer = rtce.RealTimeConstraintEnforcer(_FakeKG())  # type: ignore[arg-type]
 
     chunks = list(
         enforcer.stream_with_validation(iter(["bad content", " more"]), "target")

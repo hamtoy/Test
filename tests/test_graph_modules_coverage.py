@@ -103,7 +103,7 @@ def test_graph_enhanced_router(monkeypatch):
         chosen["value"] = user_input
         return "ok"
 
-    router = graph_enhanced_router.GraphEnhancedRouter(_FakeKG(), _FakeLLM())
+    router = graph_enhanced_router.GraphEnhancedRouter(_FakeKG(), _FakeLLM())  # type: ignore[arg-type]
     result = router.route_and_generate("hello", {"summary": _handler})
     assert result["choice"] == "summary"
     assert result["output"] == "ok"

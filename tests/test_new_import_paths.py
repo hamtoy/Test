@@ -72,7 +72,7 @@ class TestNewImportPaths:
 
     def test_processing_imports(self):
         """Test imports from src.processing package."""
-        from src.processing.loader import (
+        from src.processing.loader import (  # type: ignore[attr-defined]
             load_file_async,
             load_input_data,
             parse_raw_candidates,

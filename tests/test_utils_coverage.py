@@ -59,7 +59,7 @@ def test_health_check_with_stub(monkeypatch):
     fake_kg = types.SimpleNamespace(
         _graph=types.SimpleNamespace(session=lambda: _HealthSession())
     )
-    assert infra_health.check_neo4j_connection(fake_kg) is True
+    assert infra_health.check_neo4j_connection(fake_kg) is True  # type: ignore[arg-type]
 
     monkeypatch.setattr(infra_health, "check_neo4j_connection", lambda *_a, **_k: True)
     report = health_check.health_check()

@@ -16,7 +16,7 @@ def _stub_agent(monkeypatch):
     jinja_env = types.SimpleNamespace(
         get_template=lambda name: types.SimpleNamespace(render=lambda **_k: "x")
     )
-    agent = GeminiAgent(AppConfig(), jinja_env=jinja_env)
+    agent = GeminiAgent(AppConfig(), jinja_env=jinja_env)  # type: ignore[arg-type]
     agent._rate_limiter = None  # ensure retry path does not rely on aiolimiter
     return agent
 

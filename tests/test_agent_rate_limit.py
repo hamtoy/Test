@@ -16,7 +16,7 @@ def _stub_agent(monkeypatch):
         get_template=lambda name: types.SimpleNamespace(render=lambda **_k: "x")
     )  # noqa: ARG005
 
-    agent = GeminiAgent(AppConfig(), jinja_env=jinja_env)
+    agent = GeminiAgent(AppConfig(), jinja_env=jinja_env)  # type: ignore[arg-type]
     agent._rate_limiter = None  # explicitly disable to test fallback path
     return agent
 

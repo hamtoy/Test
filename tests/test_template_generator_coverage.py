@@ -46,7 +46,7 @@ def test_dynamic_template_generator_fallback_and_checklist(monkeypatch):
         "explanation", {"calc_allowed": False}
     )
     assert "설명" in prompt
-    generator._run = lambda _cypher, _params=None: [  # noqa: SLF001
+    generator._run = lambda _cypher, _params=None: [  # type: ignore[method-assign, assignment]
         {"item": "규칙을 따를 것", "category": "rule"}
     ]
     checklist = generator.generate_validation_checklist(

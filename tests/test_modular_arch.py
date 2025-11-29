@@ -93,7 +93,7 @@ def test_get_graph_provider_missing():
         neo4j_user = None
         neo4j_password = None
 
-    assert get_graph_provider(_Cfg()) is None
+    assert get_graph_provider(_Cfg()) is None  # type: ignore[arg-type]
 
 
 def test_get_graph_provider_valid():
@@ -103,5 +103,5 @@ def test_get_graph_provider_valid():
         neo4j_user = "u"
         neo4j_password = "p"
 
-    provider = get_graph_provider(_Cfg())
+    provider = get_graph_provider(_Cfg())  # type: ignore[arg-type]
     assert provider is not None

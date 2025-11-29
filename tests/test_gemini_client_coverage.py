@@ -92,6 +92,6 @@ class TestGeminiModelClientBehaviors:
 
         # Test with invalid input type
         # The client catches TypeError and returns an error string
-        res = client.generate(12345)
+        res = client.generate(12345)  # type: ignore[arg-type]
         assert "생성 실패" in res
         assert "입력 오류" in res

@@ -47,7 +47,7 @@ def test_get_constraints_for_query_type_maps_records():
         {"id": "c1", "description": "desc", "type": "prohibition", "pattern": "x"}
     ]
     kg = object.__new__(QAKnowledgeGraph)
-    kg._graph = _FakeGraph(fake_rows)
+    kg._graph = _FakeGraph(fake_rows)  # type: ignore[assignment]
     constraints = kg.get_constraints_for_query_type("any")
     assert constraints == fake_rows
 
@@ -70,7 +70,7 @@ def test_del_closes_graph():
 
     kg = object.__new__(QAKnowledgeGraph)
     graph = _Graph()
-    kg._graph = graph
+    kg._graph = graph  # type: ignore[assignment]
     kg._graph_provider = None
     kg._graph_finalizer = None
 

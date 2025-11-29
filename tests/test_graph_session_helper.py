@@ -65,7 +65,7 @@ class _AsyncProvider(GraphProvider):
 
 def test_graph_session_with_sync_graph():
     kg = object.__new__(QAKnowledgeGraph)
-    kg._graph = _SyncGraph()
+    kg._graph = _SyncGraph()  # type: ignore[assignment]
     with kg.graph_session() as session:
         assert session is not None
         assert session.run("RETURN 1")[0]["ok"] is True

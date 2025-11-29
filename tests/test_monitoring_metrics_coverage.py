@@ -6,7 +6,7 @@ class TestStubImplementations:
 
     def test_counter_stub(self):
         """Test Counter stub implementation."""
-        from src.monitoring.metrics import Counter, PROMETHEUS_AVAILABLE
+        from src.monitoring.metrics import Counter, PROMETHEUS_AVAILABLE  # type: ignore[attr-defined]
 
         if not PROMETHEUS_AVAILABLE:
             counter = Counter("test_counter", "Test counter", ["label1"])
@@ -20,7 +20,7 @@ class TestStubImplementations:
 
     def test_histogram_stub(self):
         """Test Histogram stub implementation."""
-        from src.monitoring.metrics import Histogram, PROMETHEUS_AVAILABLE
+        from src.monitoring.metrics import Histogram, PROMETHEUS_AVAILABLE  # type: ignore[attr-defined]
 
         if not PROMETHEUS_AVAILABLE:
             histogram = Histogram("test_histogram", "Test histogram", ["label1"])
@@ -33,7 +33,7 @@ class TestStubImplementations:
 
     def test_gauge_stub(self):
         """Test Gauge stub implementation."""
-        from src.monitoring.metrics import Gauge, PROMETHEUS_AVAILABLE
+        from src.monitoring.metrics import Gauge, PROMETHEUS_AVAILABLE  # type: ignore[attr-defined]
 
         if not PROMETHEUS_AVAILABLE:
             gauge = Gauge("test_gauge", "Test gauge")
@@ -214,10 +214,10 @@ class TestGenerateLatestStub:
 
     def test_generate_latest_stub(self):
         """Test the stub generate_latest function."""
-        from src.monitoring.metrics import PROMETHEUS_AVAILABLE
+        from src.monitoring.metrics import PROMETHEUS_AVAILABLE  # type: ignore[attr-defined]
 
         if not PROMETHEUS_AVAILABLE:
-            from src.monitoring.metrics import generate_latest
+            from src.monitoring.metrics import generate_latest  # type: ignore[attr-defined]
 
             result = generate_latest()
             assert isinstance(result, bytes)

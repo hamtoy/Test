@@ -82,7 +82,7 @@ class TestDisplayQueries:
         """Test display_queries with empty list."""
         from src.ui.panels import display_queries
 
-        queries = []
+        queries: list[str] = []
 
         # Should not raise an error
         display_queries(queries)
