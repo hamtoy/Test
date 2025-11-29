@@ -76,15 +76,15 @@ def test_cross_validation_image_grounding_branches(monkeypatch):
         def get_constraints_for_query_type(self, _qt):
             return []
 
-    cvs = cross_validation.CrossValidationSystem(_KG(_ErrorSession()))
+    cvs = cross_validation.CrossValidationSystem(_KG(_ErrorSession()))  # type: ignore[arg-type]
     err_note = cvs._check_image_grounding("answer", {"page_id": "p"})
     assert err_note["note"] == "Neo4j 조회 실패"
 
-    cvs = cross_validation.CrossValidationSystem(_KG(_EmptySession()))
+    cvs = cross_validation.CrossValidationSystem(_KG(_EmptySession()))  # type: ignore[arg-type]
     empty_note = cvs._check_image_grounding("answer", {"page_id": "p"})
     assert empty_note["note"] == "본문 콘텐츠 없음"
 
-    cvs = cross_validation.CrossValidationSystem(_KG(_ShortTokenSession()))
+    cvs = cross_validation.CrossValidationSystem(_KG(_ShortTokenSession()))  # type: ignore[arg-type]
     short_note = cvs._check_image_grounding("answer", {"page_id": "p"})
     assert short_note["note"] == "본문 키워드 부족"
 
@@ -115,7 +115,7 @@ def test_cross_validation_rule_and_novelty_exceptions(monkeypatch):
         def get_constraints_for_query_type(self, _qt):
             return [{"type": "prohibition", "pattern": "bad", "description": "desc"}]
 
-    cvs = cross_validation.CrossValidationSystem(_KG())
+    cvs = cross_validation.CrossValidationSystem(_KG())  # type: ignore[arg-type]
     compliance = cvs._check_rule_compliance("bad text", "summary")
     assert compliance["violations"]  # 금지 패턴 적발
 

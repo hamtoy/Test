@@ -160,7 +160,7 @@ def test_qakg_graph_session_when_loop_running(monkeypatch):
     monkeypatch.setattr(
         qa_rag_system, "os", types.SimpleNamespace(getenv=lambda *a, **k: None)
     )
-    kg = qa_rag_system.QAKnowledgeGraph(graph_provider=_Provider())
+    kg = qa_rag_system.QAKnowledgeGraph(graph_provider=_Provider())  # type: ignore[arg-type]
     with kg.graph_session() as session:
         assert session is None
 
@@ -182,13 +182,13 @@ def test_qakg_vector_store_missing_key(monkeypatch):
     monkeypatch.setattr(
         qa_rag_system, "os", types.SimpleNamespace(getenv=lambda *a, **k: None)
     )
-    kg = qa_rag_system.QAKnowledgeGraph(graph_provider=types.SimpleNamespace())
+    kg = qa_rag_system.QAKnowledgeGraph(graph_provider=types.SimpleNamespace())  # type: ignore[arg-type]
     assert kg.find_relevant_rules("q") == []
 
 
 def test_qakg_validate_session_errors(monkeypatch):
     res_empty = qa_rag_system.QAKnowledgeGraph(
-        graph_provider=types.SimpleNamespace()
+        graph_provider=types.SimpleNamespace()  # type: ignore[arg-type]
     ).validate_session({"turns": []})
     assert res_empty["ok"] is False
 
@@ -202,7 +202,7 @@ def test_qakg_validate_session_errors(monkeypatch):
         types.SimpleNamespace(SessionContext=_BadSessionCtx),
     )
     res_bad = qa_rag_system.QAKnowledgeGraph(
-        graph_provider=types.SimpleNamespace()
+        graph_provider=types.SimpleNamespace()  # type: ignore[arg-type]
     ).validate_session({"turns": [{"type": "t"}], "context": {"a": 1}})
     assert res_bad["ok"] is False
 
@@ -236,7 +236,7 @@ async def test_worker_setup_and_close_redis(monkeypatch):
     await infra_worker.setup_redis()
     assert infra_worker.redis_client is not None
     await infra_worker.close_redis()
-    assert infra_worker.redis_client.closed is True
+    assert getattr(infra_worker.redis_client, "closed", False) is True
 
 
 @pytest.mark.asyncio
