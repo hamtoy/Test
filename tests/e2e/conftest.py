@@ -3,13 +3,32 @@ End-to-End 테스트용 Fixture
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
-from unittest.mock import MagicMock
 
 import pytest
 
 if TYPE_CHECKING:
     pass
+
+
+@dataclass
+class QueryResult:
+    """질의 결과 모의 객체"""
+    query: str
+
+
+@dataclass
+class AnswerResult:
+    """답변 결과 모의 객체"""
+    answer: str
+
+
+@dataclass
+class EvaluationResult:
+    """평가 결과 모의 객체"""
+    score: float
+    feedback: str
 
 
 class MockCacheManager:
@@ -60,7 +79,7 @@ class MockGeminiAgent:
 
     async def generate_query(
         self, ocr_text: str, intent: str
-    ) -> MagicMock:
+    ) -> QueryResult:
         """질의 생성"""
         if not ocr_text:
             raise ValueError("OCR text cannot be empty")
@@ -74,8 +93,7 @@ class MockGeminiAgent:
             return cached
 
         # 결과 생성
-        result = MagicMock()
-        result.query = f"Generated query for: {ocr_text}"
+        result = QueryResult(query=f"Generated query for: {ocr_text}")
 
         # 캐시에 저장
         await self.cache_manager.set(cache_key, result)
@@ -84,20 +102,15 @@ class MockGeminiAgent:
 
     async def generate_answer(
         self, query: str, context: str
-    ) -> MagicMock:
+    ) -> AnswerResult:
         """답변 생성"""
-        result = MagicMock()
-        result.answer = f"Answer for query: {query}"
-        return result
+        return AnswerResult(answer=f"Answer for query: {query}")
 
     async def evaluate_answer(
         self, query: str, answer: str
-    ) -> MagicMock:
+    ) -> EvaluationResult:
         """답변 평가"""
-        result = MagicMock()
-        result.score = 0.85
-        result.feedback = "Good answer"
-        return result
+        return EvaluationResult(score=0.85, feedback="Good answer")
 
     async def rewrite_answer(
         self, query: str, answer: str, feedback: str

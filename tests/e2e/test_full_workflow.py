@@ -7,7 +7,7 @@ Run with: pytest -m e2e
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -34,7 +34,7 @@ async def test_complete_qa_workflow(full_workflow_agent: MockGeminiAgent) -> Non
     # ===== Step 1: 질의 생성 =====
     query_result = await full_workflow_agent.generate_query(
         ocr_text=ocr_text,
-        intent=intent,
+        intent=intent
     )
 
     assert query_result is not None
@@ -156,7 +156,7 @@ async def test_batch_processing_workflow(full_workflow_agent: MockGeminiAgent) -
     batch_size = 20
     queries = [(f"질문 {i}", "설명") for i in range(batch_size)]
 
-    async def process_one(item: tuple[str, str]) -> Any:
+    async def process_one(item: tuple[str, str]) -> MagicMock:
         ocr, intent = item
         return await full_workflow_agent.generate_query(ocr, intent)
 
