@@ -11,7 +11,9 @@ class TestGeminiModelClientBehaviors:
     """Test GeminiModelClient with mocked API."""
 
     @pytest.fixture(autouse=True)
-    def setup_mocks(self, monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
+    def setup_mocks(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> Generator[None, None, None]:
         """Setup mocks for all tests in this class."""
         # Mock environment variable
         monkeypatch.setenv("GEMINI_API_KEY", "test-api-key")
