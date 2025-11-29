@@ -6,7 +6,8 @@ from checks.validate_session import validate_turns
 from typing import Any
 
 
-ROOT = Path(__file__).resolve().parents[1]
+# ROOT points to repository root to access examples directory
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def load_ctx(name: str) -> SessionContext:
