@@ -117,6 +117,7 @@ extend-select = ["PERF", "FURB", "SIM"]
 "scripts/**" = ["PERF401", "PERF203", "SIM102"]  # Allow simpler patterns in scripts
 "experiments/**" = ["PERF401", "PERF203", "SIM102"]  # Allow simpler patterns in experiments
 "src/plugins/**" = ["PERF203"]  # Allow try-except in loops for plugin loading
+"src/workflow/chunk_processor.py" = ["PERF203"]  # Allow try-except in retry loops
 
 [tool.mypy]
 python_version = "3.10"  # v3.0: Minimum supported version
@@ -130,7 +131,29 @@ explicit_package_bases = true
 mypy_path = [".", "stubs"]
 exclude = ["notion-neo4j-graph/", ".venv/", "build/", "vulture_whitelist.py", "tests/test_deprecation_warnings.py"]
 
-# Tests excluded from strict mode
+# ===== 1단계: 핵심 테스트부터 strict 적용 =====
+[[tool.mypy.overrides]]
+module = [
+    "tests.test_agent",           # 타입 힌트 많음
+    "tests.test_caching_layer",   # 단순한 구조
+    "tests.test_config_validation",  # Pydantic 기반
+]
+strict = true
+
+# ===== 2단계: 중간 난이도 (점진적 규칙 추가 예정) =====
+[[tool.mypy.overrides]]
+module = [
+    "tests.test_workflow_execution",
+    "tests.test_workflow_processor",
+    "tests.test_qa_rag_system",
+]
+strict = false
+warn_unused_ignores = true
+# 점진적으로 활성화 예정:
+# check_untyped_defs = true
+# disallow_untyped_defs = true
+
+# ===== 3단계: 나머지 테스트 (점진적 마이그레이션) =====
 [[tool.mypy.overrides]]
 module = ["tests.*"]
 strict = false
@@ -140,6 +163,7 @@ disallow_untyped_defs = false
 disallow_incomplete_defs = false
 disallow_any_generics = false
 disallow_untyped_calls = false
+warn_unused_ignores = true
 
 # Scripts, checks, and experiments excluded from strict mode
 [[tool.mypy.overrides]]

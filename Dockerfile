@@ -77,13 +77,18 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "from src.infra.health import health_check; print(health_check())" || exit 1
 
-# Create startup script
+# Create startup script with cache warming support
+# Use SKIP_CACHE_WARMING=true to skip cache warming
 RUN echo '#!/bin/bash\n\
 set -e\n\
-# Optional: Run cache warming\n\
-if [ -f "/app/scripts/cache_warming.py" ]; then\n\
-    python /app/scripts/cache_warming.py 2>/dev/null || echo "Cache warming skipped"\n\
+echo "🚀 Starting Shining Quasar..."\n\
+\n\
+# Cache warming (can be skipped with SKIP_CACHE_WARMING=true)\n\
+if [ "$SKIP_CACHE_WARMING" != "true" ] && [ -f "/app/scripts/cache_warming.py" ]; then\n\
+    echo "🔥 Running cache warming..."\n\
+    timeout 30 python /app/scripts/cache_warming.py high || echo "⚠️  Cache warming failed (non-fatal)"\n\
 fi\n\
+\n\
 # Start the application\n\
 exec "$@"\n\
 ' > /app/start.sh && chmod +x /app/start.sh
