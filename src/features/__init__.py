@@ -44,6 +44,10 @@ def __getattr__(name: str) -> Any:
         from src.features.data2neo_extractor import create_data2neo_extractor
 
         return create_data2neo_extractor
+    if name == "SelfImprovingSystem":
+        from src.features.self_improvement import SelfImprovingSystem
+
+        return SelfImprovingSystem
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -58,4 +62,5 @@ __all__ = [
     "ActionExecutor",
     "Data2NeoExtractor",
     "create_data2neo_extractor",
+    "SelfImprovingSystem",
 ]

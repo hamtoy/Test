@@ -1,0 +1,38 @@
+{
+  "smart_caching": {
+    "enabled": true,
+    "description": "학습 기반 스마트 캐싱 전략",
+    "rollout_percent": 10,
+    "environments": ["development", "staging"],
+    "whitelist": [],
+    "created_at": "2025-11-29",
+    "owner": "hamtoy"
+  },
+  "model_ensemble": {
+    "enabled": true,
+    "description": "멀티 모델 앙상블",
+    "rollout_percent": 5,
+    "environments": ["development"],
+    "whitelist": ["power_user_1"],
+    "variants": ["control", "ensemble_vote", "ensemble_hybrid"]
+  },
+  "prompt_compression": {
+    "enabled": false,
+    "description": "프롬프트 자동 압축",
+    "rollout_percent": 0,
+    "environments": ["development"]
+  },
+  "new_ui_design": {
+    "enabled": true,
+    "description": "새 UI 디자인",
+    "rollout_percent": 20,
+    "environments": ["staging", "production"],
+    "rules": [
+      {
+        "field": "user_tier",
+        "operator": "equals",
+        "value": "premium"
+      }
+    ]
+  }
+}

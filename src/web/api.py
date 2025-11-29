@@ -487,6 +487,37 @@ async def metrics_endpoint() -> Response:
 
 
 # ============================================================================
+# 분석 엔드포인트 (Analytics)
+# ============================================================================
+
+
+@app.get("/api/analytics/current")
+async def current_metrics() -> Dict[str, Any]:
+    """실시간 메트릭 조회
+
+    Returns current usage metrics including today's stats and weekly totals.
+    """
+    from src.analytics.dashboard import UsageDashboard
+
+    dashboard = UsageDashboard()
+
+    # 오늘 데이터
+    today_stats = dashboard.get_today_stats()
+
+    return {
+        "today": {
+            "sessions": today_stats["sessions"],
+            "cost": today_stats["cost"],
+            "cache_hit_rate": today_stats["cache_hit_rate"],
+        },
+        "this_week": {
+            "total_cost": dashboard.get_week_total_cost(),
+            "avg_quality": dashboard.get_week_avg_quality(),
+        },
+    }
+
+
+# ============================================================================
 # 관리자 엔드포인트
 # ============================================================================
 
