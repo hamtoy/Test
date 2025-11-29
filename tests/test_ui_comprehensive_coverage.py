@@ -131,7 +131,10 @@ class TestRunWorkflowInteractiveSuccess:
         ):
             # Setup: First confirm for OCR creation, then reject candidates
             mock_prompt.ask.side_effect = ["input_ocr.txt", "input_candidates.json"]
-            mock_confirm.ask.side_effect = [True, False]  # Create OCR, don't create cand
+            mock_confirm.ask.side_effect = [
+                True,
+                False,
+            ]  # Create OCR, don't create cand
 
             await run_workflow_interactive(mock_agent, mock_config, mock_logger)
 
