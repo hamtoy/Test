@@ -16,7 +16,7 @@ def test_self_correcting_chain_stops_on_yes(monkeypatch: pytest.MonkeyPatch) -> 
 
     class _LLM:
         def __init__(self) -> None:
-            self.calls = []
+            self.calls: list[str] = []
 
         def generate(self, prompt: Any, role: Any = "default") -> Any:
             self.calls.append(role)
@@ -41,7 +41,7 @@ def test_ultimate_langchain_qa_system_wires_dependencies(
 
     class _Memory:
         def __init__(self, *args: Any, **kwargs: Any) -> None:
-            self.logged = []
+            self.logged: list[tuple[Any, Any]] = []
 
         def _log_interaction(self, q: Any, a: Any) -> None:
             self.logged.append((q, a))

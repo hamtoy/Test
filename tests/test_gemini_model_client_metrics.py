@@ -3,14 +3,14 @@ from __future__ import annotations
 import pytest
 from unittest.mock import MagicMock, patch
 import src.llm.gemini as gmc
-from typing import Any
+from typing import Any, Generator
 
 
 class TestGeminiModelClientMetrics:
     """Test GeminiModelClient metrics logging with mocked API."""
 
     @pytest.fixture(autouse=True)
-    def setup_mocks(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def setup_mocks(self, monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
         """Setup mocks for all tests."""
         monkeypatch.setenv("GEMINI_API_KEY", "test-api-key")
 

@@ -82,7 +82,7 @@ def test_link_blocks_creates_links(monkeypatch) -> None:
         # emulate flush calls
         _run(None, {"links": batch})
 
-    _Session.execute_write = _execute_write  # type: ignore[method-assign]
+    _Session.execute_write = _execute_write  # type: ignore[method-assign, assignment]
 
     sa.link_blocks_to_topics(_Driver(), blocks, topics)  # type: ignore[arg-type]
 
