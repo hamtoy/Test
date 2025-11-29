@@ -2,6 +2,7 @@
 
 from src.config.settings import AppConfig
 from src.config.constants import (
+    CacheConfig,
     ERROR_MESSAGES,
     GEMINI_API_KEY_LENGTH,
     MIN_CACHE_TOKENS,
@@ -35,6 +36,7 @@ from src.config.exceptions import (
 
 __all__ = [
     "AppConfig",
+    "CacheConfig",
     "ERROR_MESSAGES",
     "GEMINI_API_KEY_LENGTH",
     "MIN_CACHE_TOKENS",
