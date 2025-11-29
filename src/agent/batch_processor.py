@@ -21,6 +21,11 @@ from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
+from src.config.constants import (
+    BATCH_MAX_WAIT_SECONDS,
+    DEFAULT_MAX_OUTPUT_TOKENS,
+)
+
 if TYPE_CHECKING:
     from src.config import AppConfig
 
@@ -50,7 +55,7 @@ class BatchRequest:
     model_name: str = "gemini-3-pro-preview"
     system_instruction: Optional[str] = None
     temperature: float = 0.2
-    max_output_tokens: int = 2048
+    max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS
 
     def to_jsonl_dict(self) -> Dict[str, Any]:
         """Convert to JSONL format for batch submission."""
@@ -189,7 +194,9 @@ class BatchProcessor:
         max_tokens = max_output_tokens
         if max_tokens is None:
             max_tokens = (
-                getattr(self.config, "max_output_tokens", 2048) if self.config else 2048
+                getattr(self.config, "max_output_tokens", DEFAULT_MAX_OUTPUT_TOKENS)
+                if self.config
+                else DEFAULT_MAX_OUTPUT_TOKENS
             )
 
         return BatchRequest(
@@ -294,7 +301,7 @@ class BatchProcessor:
         self,
         job: BatchJob,
         interval_seconds: float = 10.0,
-        max_wait_seconds: float = 3600.0,
+        max_wait_seconds: float = BATCH_MAX_WAIT_SECONDS,
     ) -> BatchJob:
         """Poll for batch job completion.
 

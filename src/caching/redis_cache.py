@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Optional
 
+from src.config.constants import DEFAULT_CACHE_TTL_SECONDS
+
 logger = logging.getLogger(__name__)
 
 
@@ -13,7 +15,9 @@ class RedisEvalCache:
     Persists LATS evaluation scores across worker restarts.
     """
 
-    def __init__(self, redis_client: Optional[Any] = None, ttl: int = 3600):
+    def __init__(
+        self, redis_client: Optional[Any] = None, ttl: int = DEFAULT_CACHE_TTL_SECONDS
+    ):
         """
         Initialize Redis cache with fallback.
 

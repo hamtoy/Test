@@ -16,6 +16,7 @@ import google.generativeai as genai
 from google.api_core import exceptions as google_exceptions
 from dotenv import load_dotenv
 
+from src.config.constants import DEFAULT_MAX_OUTPUT_TOKENS
 from src.infra.logging import log_metrics
 
 load_dotenv()
@@ -61,7 +62,7 @@ class GeminiModelClient:
                 prompt,
                 generation_config=genai.types.GenerationConfig(
                     temperature=temperature,
-                    max_output_tokens=2048,
+                    max_output_tokens=DEFAULT_MAX_OUTPUT_TOKENS,
                 ),
             )
             latency_ms = (time.perf_counter() - start) * 1000

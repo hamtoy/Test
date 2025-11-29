@@ -38,25 +38,23 @@ if sys.version_info < (3, 10):
         "  pip install shining-quasar~=2.5.0"
     )
 
-# Public API Exports (explicit)
-from src.agent import GeminiAgent
-from src.config import AppConfig
-from src.config.exceptions import (
-    APIRateLimitError,
-    BudgetExceededError,
-    ValidationFailedError,
-)
-from src.core.models import (
-    EvaluationResultSchema,
-    QueryResult,
-    WorkflowResult,
-)
-
 if TYPE_CHECKING:
-    # Import types for type checking without circular dependencies
+    # Type-only imports for static analysis - no runtime cost
+    from src.agent import GeminiAgent
     from src.analysis import cross_validation
     from src.analysis import document_compare as compare_documents
     from src.analysis import semantic as semantic_analysis
+    from src.config import AppConfig
+    from src.config.exceptions import (
+        APIRateLimitError,
+        BudgetExceededError,
+        ValidationFailedError,
+    )
+    from src.core.models import (
+        EvaluationResultSchema,
+        QueryResult,
+        WorkflowResult,
+    )
     from src.features import autocomplete as smart_autocomplete
     from src.infra import budget as budget_tracker
     from src.infra import callbacks as custom_callback
@@ -67,91 +65,68 @@ if TYPE_CHECKING:
     from src.processing import example_selector as dynamic_example_selector
 
 
+# Lazy loading mapping for public API
+# Maps attribute name to (module_path, attribute_name, is_deprecated)
+_LAZY_IMPORTS: dict[str, tuple[str, str, bool]] = {
+    # Core public API (not deprecated)
+    "GeminiAgent": ("src.agent", "GeminiAgent", False),
+    "AppConfig": ("src.config", "AppConfig", False),
+    "BudgetExceededError": ("src.config.exceptions", "BudgetExceededError", False),
+    "APIRateLimitError": ("src.config.exceptions", "APIRateLimitError", False),
+    "ValidationFailedError": ("src.config.exceptions", "ValidationFailedError", False),
+    "WorkflowResult": ("src.core.models", "WorkflowResult", False),
+    "EvaluationResultSchema": ("src.core.models", "EvaluationResultSchema", False),
+    "QueryResult": ("src.core.models", "QueryResult", False),
+    # Deprecated module shims (will be removed in v4.0)
+    "gemini_model_client": ("src.llm.gemini", None, True),
+    "lcel_optimized_chain": ("src.llm.lcel_chain", None, True),
+    "list_models": ("src.llm.list_models", None, True),
+    "compare_documents": ("src.analysis.document_compare", None, True),
+    "cross_validation": ("src.analysis.cross_validation", None, True),
+    "semantic_analysis": ("src.analysis.semantic", None, True),
+    "custom_callback": ("src.infra.callbacks", None, True),
+    "budget_tracker": ("src.infra.budget", None, True),
+    "health_check": ("src.infra.health", None, True),
+    "smart_autocomplete": ("src.features.autocomplete", None, True),
+    "dynamic_example_selector": ("src.processing.example_selector", None, True),
+}
+
+
 def _emit_deprecation_warning(name: str, new_path: str) -> None:
     """Emit a deprecation warning for legacy module shims."""
     warnings.warn(
         f"Importing '{name}' from 'src' is deprecated and will be removed in v4.0. "
         f"Use 'from {new_path} import ...' instead.",
         DeprecationWarning,
-        stacklevel=3,
+        stacklevel=4,
     )
 
 
 def __getattr__(name: str) -> Any:
-    """Lazy-load module shims to avoid circular imports.
+    """Lazy-load public API and deprecated module shims.
 
-    This provides backward compatibility for code that imports modules
-    from src directly (e.g., `from src import gemini_model_client`).
-    The actual modules have been reorganized into subpackages.
+    This uses lazy loading for all exports to:
+    1. Reduce circular import risks by deferring imports
+    2. Improve startup time by loading modules on-demand
+    3. Maintain backward compatibility with deprecated imports
 
-    DEPRECATED: These shims are deprecated and will be removed in v4.0.
+    DEPRECATED shims will be removed in v4.0.
     """
-    # LLM module shims
-    if name == "gemini_model_client":
-        from src.llm import gemini as gemini_model_client
+    if name in _LAZY_IMPORTS:
+        module_path, attr_name, is_deprecated = _LAZY_IMPORTS[name]
 
-        _emit_deprecation_warning("gemini_model_client", "src.llm.gemini")
-        return gemini_model_client
-    if name == "lcel_optimized_chain":
-        from src.llm import lcel_chain as lcel_optimized_chain
+        if is_deprecated:
+            _emit_deprecation_warning(name, module_path)
 
-        _emit_deprecation_warning("lcel_optimized_chain", "src.llm.lcel_chain")
-        return lcel_optimized_chain
-    if name == "list_models":
-        from src.llm import list_models
+        # Import the module
+        import importlib
 
-        _emit_deprecation_warning("list_models", "src.llm.list_models")
-        return list_models
+        module = importlib.import_module(module_path)
 
-    # Analysis module shims
-    if name == "compare_documents":
-        from src.analysis import document_compare as compare_documents
-
-        _emit_deprecation_warning("compare_documents", "src.analysis.document_compare")
-        return compare_documents
-    if name == "cross_validation":
-        from src.analysis import cross_validation
-
-        _emit_deprecation_warning("cross_validation", "src.analysis.cross_validation")
-        return cross_validation
-    if name == "semantic_analysis":
-        from src.analysis import semantic as semantic_analysis
-
-        _emit_deprecation_warning("semantic_analysis", "src.analysis.semantic")
-        return semantic_analysis
-
-    # Infra module shims
-    if name == "custom_callback":
-        from src.infra import callbacks as custom_callback
-
-        _emit_deprecation_warning("custom_callback", "src.infra.callbacks")
-        return custom_callback
-    if name == "budget_tracker":
-        from src.infra import budget as budget_tracker
-
-        _emit_deprecation_warning("budget_tracker", "src.infra.budget")
-        return budget_tracker
-    if name == "health_check":
-        from src.infra import health as health_check
-
-        _emit_deprecation_warning("health_check", "src.infra.health")
-        return health_check
-
-    # Features module shims
-    if name == "smart_autocomplete":
-        from src.features import autocomplete as smart_autocomplete
-
-        _emit_deprecation_warning("smart_autocomplete", "src.features.autocomplete")
-        return smart_autocomplete
-
-    # Processing module shims
-    if name == "dynamic_example_selector":
-        from src.processing import example_selector as dynamic_example_selector
-
-        _emit_deprecation_warning(
-            "dynamic_example_selector", "src.processing.example_selector"
-        )
-        return dynamic_example_selector
+        # Return either a specific attribute or the whole module
+        if attr_name is not None:
+            return getattr(module, attr_name)
+        return module
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
