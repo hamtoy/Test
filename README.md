@@ -5,420 +5,32 @@
 
 Google Gemini AI를 활용한 Q&A 응답 평가 및 재작성 워크플로우 시스템입니다.
 
-## 주요 기능
+## 🚀 빠른 시작 (5분)
 
-- 🤖 **질의 생성**: OCR 텍스트에서 질의 자동생성
-- 📊 **후보 평가**: 여러 답변 후보 평가 및 점수 부여
-- ✍️ **답변 재작성**: 선택된 답변의 품질 개선
-- 🌳 **LATS 워커**: 경량 트리 탐색(LATS)으로 액션 제안/검증/평가, Redis 캐시와 예산 추적 연동
-- 💰 **비용 추적**: BudgetTracker로 토큰/비용 집계 및 한도 경고
-- 🛡️ **안정성**: Rate limiting, 타입 검증, 환각 감지, Redis 장애 시 fail-open 처리
-- 🎨 **사용자 인터페이스**: Rich 기반 콘솔 출력
-- 🧪 **테스트**: pytest + coverage (현재 전체 커버리지 약 84%)
-
-## 프로젝트 구조
-
-```
-project_root/
-├── .env                    # 환경 변수 (API 키)
-├── .env.example            # 환경 변수 템플릿
-├── pyproject.toml          # 프로젝트 메타데이터/의존성
-├── .pre-commit-config.yaml # pre-commit 훅 설정
-├── README.md               # 문서
-├── UV_GUIDE.md             # UV 패키지 매니저 가이드
-├── MIGRATION.md            # Import path 마이그레이션 가이드
-├── checks/                 # Session 검증
-│   ├── detect_forbidden_patterns.py
-│   └── validate_session.py
-├── data/
-│   ├── inputs/             # 입력 파일
-│   └── outputs/            # 출력 파일 (Markdown)
-├── docs/                   # 상세 문서
-│   ├── ARCHITECTURE.md     # 시스템 아키텍처
-│   ├── ENVIRONMENT_SETUP.md
-│   └── ...
-├── examples/               # 예제 데이터
-│   └── session_input.json
-├── notion-neo4j-graph/     # Neo4j 데이터 임포트
-├── scripts/                # 유틸리티 스크립트
-│   ├── auto_profile.py
-│   ├── compare_runs.py
-│   └── ...
-├── src/                    # 소스 코드 (모듈화된 패키지 구조)
-│   ├── main.py             # 메인 워크플로우 진입점 (대화형 메뉴)
-│   │
-│   ├── agent/              # AI Agent 핵심 기능
-│   │   ├── core.py         # GeminiAgent 클래스
-│   │   ├── cost_tracker.py # 비용 추적
-│   │   ├── cache_manager.py# 캐시 관리
-│   │   └── rate_limiter.py # Rate limiting
-│   │
-│   ├── config/             # 설정 및 상수
-│   │   ├── settings.py     # AppConfig
-│   │   ├── constants.py    # 상수 정의
-│   │   └── exceptions.py   # 예외 클래스
-│   │
-│   ├── core/               # 핵심 인터페이스와 모델
-│   │   ├── models.py       # Pydantic 모델
-│   │   ├── interfaces.py   # 인터페이스 정의
-│   │   ├── prompts.py      # 프롬프트 관리
-│   │   └── schema.py       # 스키마 정의
-│   │
-│   ├── qa/                 # Q&A 및 RAG 시스템
-│   │   ├── rag_system.py   # QAKnowledgeGraph
-│   │   ├── generator.py    # Q&A 생성
-│   │   ├── factory.py      # QA 시스템 팩토리
-│   │   ├── pipeline.py     # 통합 파이프라인
-│   │   ├── quality.py      # 품질 시스템
-│   │   ├── memory_augmented.py
-│   │   └── multi_agent.py
-│   │
-│   ├── caching/            # 캐시 관리
-│   │   ├── layer.py        # CachingLayer
-│   │   ├── analytics.py    # 캐시 분석
-│   │   └── redis_eval.py   # Redis 평가 캐시
-│   │
-│   ├── llm/                # LLM 클라이언트 및 체인
-│   │   ├── gemini.py       # GeminiModelClient
-│   │   ├── lcel_chain.py   # LCEL 최적화 체인
-│   │   ├── langchain_system.py
-│   │   └── list_models.py
-│   │
-│   ├── analysis/           # 의미 분석 및 검증
-│   │   ├── semantic.py     # 의미 분석
-│   │   ├── cross_validation.py
-│   │   └── comparison.py
-│   │
-│   ├── processing/         # 데이터 로딩 및 변환
-│   │   ├── loader.py       # 데이터 로더
-│   │   ├── template_generator.py
-│   │   ├── example_selector.py
-│   │   └── context_augmentation.py
-│   │
-│   ├── features/           # 추가 기능
-│   │   ├── autocomplete.py
-│   │   ├── multimodal.py
-│   │   ├── self_correcting.py
-│   │   ├── lats_searcher.py
-│   │   ├── difficulty.py
-│   │   └── action_executor.py
-│   │
-│   ├── infra/              # 인프라 및 유틸리티
-│   │   ├── utils.py        # 공통 유틸리티
-│   │   ├── logging.py      # 로깅 설정
-│   │   ├── budget.py       # 예산 추적
-│   │   ├── neo4j.py        # Neo4j 유틸리티
-│   │   ├── worker.py       # LATS 워커
-│   │   ├── health.py       # 헬스체크
-│   │   ├── callbacks.py    # 콜백
-│   │   └── constraints.py  # 제약 조건
-│   │
-│   ├── routing/            # 요청 라우팅
-│   │   └── graph_router.py # GraphEnhancedRouter
-│   │
-│   ├── graph/              # 그래프 스키마 및 빌드
-│   ├── ui/                 # 사용자 인터페이스
-│   └── workflow/           # 워크플로우 실행
-│
-├── templates/              # Jinja2 템플릿 (15개)
-│   ├── system/             # 시스템 프롬프트
-│   ├── user/               # 사용자 프롬프트
-│   ├── eval/               # 평가 프롬프트
-│   └── ...
-└── tests/                  # 테스트 스위트(pytest, 커버리지 80%+)
-    ├── test_agent.py
-    ├── test_worker_process.py
-    ├── test_qa_rag_system.py
-    └── ...
-```
-
-## 시스템 개요
-
-이 시스템은 다음 작업을 수행합니다:
-
-- OCR 텍스트를 기반으로 검색 질의 생성
-- 여러 후보 답변을 평가하고 점수 부여
-- 최고 점수 답변을 재작성하여 품질 개선
-- 토큰 사용량 및 비용 추적
-- 입력 검증 및 환각 감지
-
-### 시스템 구성
-
-**워크플로우 다이어그램 (Mermaid)**
-
-```mermaid
-flowchart LR
-    A[OCR 입력] --> B[질의 생성]
-    B --> C[후보 평가]
-    C --> D[답변 재작성]
-    D --> E[결과 출력]
-
-    C -.->|옵션: QA RAG| F[Neo4j 그래프]
-    F -.-> G[벡터 검색]
-    F -.-> H["Session 검증 (checks/)"]
-    
-    style F fill:#2d3748,stroke:#718096,stroke-dasharray: 5 5
-    style G fill:#2d3748,stroke:#718096,stroke-dasharray: 5 5
-    style H fill:#2d3748,stroke:#718096,stroke-dasharray: 5 5
-```
-
-> **기본 워크플로우** (실선): OCR 입력 → 질의 생성 → 후보 평가 → 답변 재작성 → 결과 출력  
-> **선택적 RAG 경로** (점선): 후보 평가 시점에 Neo4j 그래프/벡터 검색/Session 검증을 통해 평가 품질을 보강할 수 있습니다.
-
-> [!NOTE]
-> Neo4j와 Notion은 **QA RAG 시스템** 사용 시에만 필요합니다. 기본 워크플로우는 Gemini API만으로 동작합니다.
-
-## 시작하기
-
-### 필수 요구사항
-
-- Python 3.10 이상
-- Google Gemini API 키 ([발급 링크](https://makersuite.google.com/app/apikey))
-
-### 선택 요구사항 (QA RAG 시스템 사용 시)
-
-- Neo4j 데이터베이스 ([Aura 무료](https://neo4j.com/cloud/aura-free/))
-- Notion 계정 (규칙 데이터 소스)
-- Neo4j 연결은 `src/neo4j_utils.py`의 `create_sync_driver`/`SafeDriver`를 통해 생성하면 컨텍스트 매니저로 자동 정리되며, 종료 시점에 반드시 `close()`가 호출되도록 보장합니다.
-
-### 설치
-
-#### pip 사용
+### 1. 설치
 
 ```bash
-cd shining-quasar
+# 기본 설치
 pip install -e .
-# 개발/테스트/문서 의존성까지 설치
-pip install -e ".[dev]"
+
+# RAG 기능 포함
+pip install -e ".[rag]"
+
+# 웹 UI 포함
+pip install -e ".[web]"
+
+# 전체 기능 설치
+pip install -e ".[all]"
 ```
 
-### Neo4j 프로브(선택)
-
-대표 쿼리/벡터 검색 latency를 빠르게 점검하려면:
-
-```bash
-python scripts/neo4j_benchmark_stub.py
-```
-
-> `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`가 설정되어 있을 때만 실행되며, 미설정 시 안전하게 스킵됩니다.
->
-> 예시 출력:
->
-> ```
-> Neo4j credentials missing; skipping probe.
-> ```
->
-> 또는 벡터 스토어가 있을 경우:
->
-> ```
-> constraints: 42.1 ms, rows=5
-> best_practices: 35.7 ms, rows=3
-> examples: 28.4 ms, rows=3
-> vector_search: 50.2 ms, rows=1
-> ```
-
-### 예산/코스트 알림
-
-- 워크플로우 실행 중 예산 임계(80/90/95%) 도달 시 콘솔 경고와 패널로 알려줍니다.
-- 세션 종료 시 비용/토큰/캐시 통계를 패널로 요약 표시하고, `cache_stats.jsonl`에 최근 항목을 남깁니다.
-
-#### uv 사용
-
-```bash
-pip install uv
-uv sync                # 런타임 의존성
-uv sync --extra dev    # 개발/테스트/문서 의존성 포함
-```
-
-자세한 내용은 [UV_GUIDE.md](UV_GUIDE.md)를 참조하세요.
-
-## 📦 Import 가이드
-
-프로젝트는 모듈화된 패키지 구조를 사용합니다. 권장 import 패턴:
-
-### 설정 및 상수
-
-```python
-from src.config import AppConfig                    # 앱 설정
-from src.config.constants import ERROR_MESSAGES     # 상수
-from src.config.exceptions import BudgetExceededError  # 예외
-```
-
-### 핵심 모델 및 인터페이스
-
-```python
-from src.core.models import WorkflowResult, EvaluationResultSchema
-from src.core.interfaces import IAgent
-```
-
-### Agent
-
-```python
-from src.agent import GeminiAgent
-from src.agent.cost_tracker import CostTracker
-```
-
-### Q&A 시스템
-
-```python
-from src.qa.rag_system import QAKnowledgeGraph
-from src.qa.generator import QAGenerator
-from src.qa.factory import QASystemFactory
-```
-
-### LLM 클라이언트
-
-```python
-from src.llm.gemini import GeminiModelClient
-from src.llm.langchain_system import UltimateLangChainQASystem
-```
-
-### 인프라 및 유틸리티
-
-```python
-from src.infra.utils import clean_markdown_code_block
-from src.infra.logging import setup_logging, log_metrics
-from src.infra.neo4j import SafeDriver, create_sync_driver
-```
-
-### 캐싱
-
-```python
-from src.caching.layer import CachingLayer
-from src.caching.analytics import analyze_cache_stats
-```
-
-> **참고**: 이전 버전의 import 경로(예: `from src.utils import ...`)는 여전히 작동하지만 deprecation 경고가 표시됩니다.  
-> 마이그레이션 가이드는 [MIGRATION.md](MIGRATION.md)를 참조하세요.
-
-## ⚡️ Quick Start
-
-1) `.env`에서 `GEMINI_API_KEY` 설정  
-2) 대화형 메뉴 실행:
-
-```bash
-python -m src.main
-```
-
-실행 후 대화형 메뉴가 표시됩니다:
-
-```
-═══ Gemini Workflow System ═══
-규칙 준수 리라이팅 · 검수 반려 방지
-
-상태: Neo4j ✓ | LATS ✓
-
-1. 🔄 질의 생성 및 평가
-2. ✅ 검수 (질의/답변)
-3. 📊 캐시 통계 분석
-4. 🚪 종료
-
-선택 [1]:
-```
-
-### 성능/관측 도구
-
-```bash
-# 캐시 통계 요약 (CACHE_STATS_FILE 기반)
-python -m src.main --analyze-cache
-make -C docs cache-report  # make 도움말 위치: docs/Makefile
-
-# 로그에서 API latency p50/p90/p99 집계
-python scripts/latency_baseline.py --log-file app.log
-make -C docs latency
-```
-
-3) 결과는 `data/outputs/`에 저장됩니다.
-
-### 개발 환경 (권장)
-
-개발/테스트 시 필요한 도구를 설치하고 pre-commit 훅을 활성화하세요.
-
-```bash
-pip install -e ".[dev]"
-pre-commit install
-# 첫 실행 시 전체 파일 검사
-pre-commit run --all-files
-```
-
-### 빠른 품질 검사(권장)
-
-```bash
-pre-commit run --all-files        # ruff + ruff-format + mypy
-uv run pytest tests/ --cov=src --cov-fail-under=80
-```
-
-### CI 파이프라인
-
-GitHub Actions에서 자동으로 실행되는 검증 단계:
-
-1. `ruff check` - 린트 검사
-2. `ruff format --check` - 포맷 검사
-3. `mypy` - 타입 체크
-4. `pytest --cov=src --cov-fail-under=80` - 테스트 및 커버리지
-
-로컬에서 동일하게 실행하려면 `pre-commit run --all-files` 사용
-
-### 템플릿/세션 도구
-
-```bash
-# 템플릿 렌더링 예시
-uv run python scripts/render_prompt.py --template system/text_image_qa_explanation_system.j2 --context examples/session_input.json
-
-# 세션 빌드 및 검증
-uv run python scripts/build_session.py --context examples/session_input.json
-uv run python checks/validate_session.py --context examples/session_input.json
-uv run python scripts/run_pipeline.py --context examples/session_input.json
-```
-
-### 환경 설정
-
-`.env.example`을 복사하여 `.env` 파일 생성:
+### 2. 환경 설정
 
 ```bash
 cp .env.example .env
+# .env 파일에서 GEMINI_API_KEY 설정
 ```
 
-`.env` 파일 편집:
-
-```bash
-# 필수
-GEMINI_API_KEY=your_api_key_here
-
-# 선택 사항 - Gemini 설정 (기본값 제공)
-GEMINI_MODEL_NAME=gemini-3-pro-preview
-GEMINI_MAX_OUTPUT_TOKENS=8192
-GEMINI_TIMEOUT=120
-GEMINI_MAX_CONCURRENCY=5
-GEMINI_TEMPERATURE=0.2
-GEMINI_CACHE_SIZE=50
-GEMINI_CACHE_TTL_MINUTES=10
-LOG_LEVEL=INFO
-
-# 선택 사항 - QA RAG 시스템 사용 시
-NEO4J_URI=bolt://localhost:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=password
-```
-
-다른 디렉토리에서 실행할 경우 `PROJECT_ROOT`를 설정할 수 있습니다.
-
-API 키 확인:
-
-```bash
-python -m src.list_models
-```
-
-### 입력 파일 준비
-
-`data/inputs/` 디렉토리에 파일 배치:
-
-- OCR 텍스트: `data/inputs/input_ocr.txt`
-- 후보 답변: `data/inputs/input_candidates.json`
-
-### 실행 (대화형 메뉴)
-
-시스템은 사용자 친화적인 대화형 메뉴 인터페이스를 제공합니다:
+### 3. 실행
 
 ```bash
 python -m src.main
@@ -764,117 +376,81 @@ python -m src.main --integrated-pipeline --pipeline-meta examples/session_input.
 
 ---
 
-## Text-Image QA 템플릿 시스템
+## 📦 설치 옵션
 
-Notion 가이드 기반 텍스트 중심 이미지 QA 세션 생성 시스템입니다.
+| 설치 명령 | 포함 기능 |
+|-----------|-----------|
+| `pip install -e .` | 핵심 기능 (Gemini API, 캐싱, 비용 추적) |
+| `pip install -e ".[rag]"` | + Neo4j RAG, LangChain |
+| `pip install -e ".[web]"` | + FastAPI 웹 UI |
+| `pip install -e ".[worker]"` | + Redis 워커 (LATS) |
+| `pip install -e ".[multimodal]"` | + 이미지 처리 |
+| `pip install -e ".[all]"` | 전체 기능 |
+| `pip install -e ".[dev]"` | 개발/테스트 도구 |
 
-### 주요 구성요소
+---
 
-**템플릿:**
+## ✨ 핵심 기능
 
-- `templates/system/` - 설명문, 요약문, 추론, 전역 시스템 프롬프트
-- `templates/user/` - 타겟 질의, 일반 사용자 입력
-- `templates/eval/` - 3개 답변 비교 평가
-- `templates/rewrite/` - 최고 답변 재작성
-- `templates/fact/` - 사실 검증
+- 🤖 **질의 생성**: OCR 텍스트에서 질의 자동생성
+- 📊 **후보 평가**: 여러 답변 후보 평가 및 점수 부여
+- ✍️ **답변 재작성**: 선택된 답변의 품질 개선
+- 💰 **비용 추적**: BudgetTracker로 토큰/비용 집계 및 한도 경고
+- 🛡️ **안정성**: Rate limiting, 타입 검증, 환각 감지
+- 🌳 **LATS 워커**: 경량 트리 탐색으로 액션 제안/검증/평가 (선택)
+- 📈 **캐싱**: 2048 토큰 이상 프롬프트 자동 캐싱
 
-**도구:**
+---
 
-- `scripts/build_session.py` - 3~4턴 세션 자동 구성
-- `scripts/render_prompt.py` - 템플릿 렌더링
-- `checks/detect_forbidden_patterns.py` - 금지 패턴 검출
+## 🔗 상세 문서
 
-### 빠른 시작
-
-```bash
-# 기본 세션 생성
-python scripts/build_session.py
-
-# 커스텀 컨텍스트로 세션 생성
-python scripts/build_session.py --context examples/session_input.json
-
-# 단일 템플릿 렌더링
-python scripts/render_prompt.py --template system/text_image_qa_explanation_system.j2
-```
-
-### 주요 제약사항
-
-- 세션당 3~4턴 제한
-- 설명문/요약문 중 하나만 사용 (4턴 시 예외적 동시 허용)
-- 추론 질의 가능한 경우 필수 포함
-- 계산 요청 세션당 1회 제한
-- 표/그래프 참조 금지 (텍스트만 사용)
-
-자세한 내용은 `docs/guide_mapping.md`를 참조하세요.
+| 문서 | 설명 |
+|------|------|
+| [📖 시작 가이드](docs/GETTING_STARTED.md) | 초보자를 위한 단계별 튜토리얼 |
+| [⚙️ 설정 가이드](docs/CONFIGURATION.md) | 모든 환경 변수 및 설정 옵션 |
+| [🚀 고급 기능](docs/ADVANCED_FEATURES.md) | LATS, RAG, 멀티모달 상세 가이드 |
+| [💾 캐싱 전략](docs/CACHING.md) | 2048 토큰, TTL 전략, 비용 분석 |
+| [❓ 문제 해결](docs/TROUBLESHOOTING.md) | FAQ 및 일반적인 문제 해결 방법 |
+| [📊 모니터링](docs/MONITORING.md) | 메트릭, SLO, 알림 설정 |
+| [🔒 보안](docs/SECURITY.md) | API 키 관리 및 보안 가이드 |
+| [🏗️ 아키텍처](docs/ARCHITECTURE.md) | 시스템 아키텍처 상세 |
+| [📚 전체 문서](docs/README_FULL.md) | 상세 문서 전체 |
 
 ---
 
 ## 🐳 Docker 실행
 
-### 개발 환경
-
 ```bash
-# 전체 스택 실행
+# 개발 환경
 docker-compose up -d
 
-# 로그 확인
-docker-compose logs -f app
-
-# 종료
-docker-compose down
-```
-
-### 프로덕션 배포
-
-```bash
-# 이미지 pull
+# 프로덕션
 docker pull ghcr.io/hamtoy/test:latest
-
-# 실행
-docker run -d \
-  --name shining-quasar \
-  -e GEMINI_API_KEY=your_key \
-  -e REDIS_URL=redis://redis:6379 \
-  -e NEO4J_URI=bolt://neo4j:7687 \
-  -p 8000:8000 \
-  ghcr.io/hamtoy/test:latest
-```
-
-### Docker Compose 워커
-
-프로덕션 LATS 워커 실행:
-
-```bash
-docker-compose -f docker-compose.worker.yml up -d
+docker run -d -e GEMINI_API_KEY=your_key -p 8000:8000 ghcr.io/hamtoy/test:latest
 ```
 
 ---
 
-## 📊 모니터링
+## 📊 시스템 개요
 
-### 헬스체크
+```mermaid
+flowchart LR
+    A[OCR 입력] --> B[질의 생성]
+    B --> C[후보 평가]
+    C --> D[답변 재작성]
+    D --> E[결과 출력]
 
-- `GET /health` - 전체 시스템 상태 (Redis, Neo4j, Gemini API, 디스크, 메모리)
-- `GET /health/ready` - Kubernetes readiness probe (Redis, Neo4j만 체크)
-- `GET /health/live` - Kubernetes liveness probe (프로세스 생존 확인)
+    C -.->|옵션: QA RAG| F[Neo4j 그래프]
+    
+    style F fill:#2d3748,stroke:#718096,stroke-dasharray: 5 5
+```
 
-### 메트릭
-
-- `GET /metrics` - Prometheus 메트릭 엔드포인트
-
-### 환경 변수
-
-| 변수 | 기본값 | 설명 |
-|------|--------|------|
-| `ENVIRONMENT` | `development` | 환경 (development/staging/production) |
-| `LOG_LEVEL_OVERRIDE` | - | 로그 레벨 강제 지정 |
-| `GEMINI_API_KEY` | 필수 | Gemini API 키 |
-| `REDIS_URL` | - | Redis 연결 URL |
-| `NEO4J_URI` | - | Neo4j 연결 URI |
+> **기본 워크플로우** (실선): OCR 입력 → 질의 생성 → 후보 평가 → 답변 재작성 → 결과 출력  
+> **선택적 RAG** (점선): Neo4j 그래프/벡터 검색을 통해 평가 품질 보강
 
 ---
 
-## 라이선스
+## 📝 라이선스
 
 MIT License
 

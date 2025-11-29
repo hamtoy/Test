@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import re
+from pathlib import Path
 from typing import List, Tuple
 
 
@@ -177,6 +178,42 @@ class EnvValidator:
         return errors
 
 
+def validate_env_file_permissions() -> list[str]:
+    """
+    .env 파일 권한이 안전한지 확인
+
+    권장: 600 (소유자만 읽기/쓰기)
+    Note: Windows에서는 이 검사를 건너뜁니다.
+
+    Returns:
+        경고 메시지 리스트
+    """
+    import sys
+
+    warnings: list[str] = []
+    env_path = Path(".env")
+
+    # Skip permission check on Windows
+    if sys.platform == "win32":
+        return warnings
+
+    if env_path.exists():
+        try:
+            st = env_path.stat()
+            # Check if group or others have any permissions (Unix only)
+            if st.st_mode & 0o077:
+                mode_str = oct(st.st_mode)[-3:]
+                warnings.append(
+                    f".env 파일 권한이 안전하지 않습니다: {mode_str}\n"
+                    f"  💡 권장: chmod 600 .env"
+                )
+        except (OSError, AttributeError):
+            # On some platforms or file systems, skip permission check
+            pass
+
+    return warnings
+
+
 def validate_environment(strict: bool = False) -> bool:
     """환경 변수 검증 및 결과 출력
 
@@ -192,6 +229,11 @@ def validate_environment(strict: bool = False) -> bool:
     validator = EnvValidator()
     errors = validator.validate_all()
 
+    # Check file permissions (warnings only)
+    permission_warnings = validate_env_file_permissions()
+    for warning in permission_warnings:
+        print(f"⚠️  {warning}")
+
     if errors:
         print("❌ Environment validation failed:")
         for key, error in errors:
@@ -205,4 +247,9 @@ def validate_environment(strict: bool = False) -> bool:
     return True
 
 
-__all__ = ["EnvValidator", "ValidationError", "validate_environment"]
+__all__ = [
+    "EnvValidator",
+    "ValidationError",
+    "validate_environment",
+    "validate_env_file_permissions",
+]

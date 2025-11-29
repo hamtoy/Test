@@ -5,9 +5,9 @@ description = "Enterprise-grade workflow system for evaluating and rewriting Q&A
 readme = "README.md"
 requires-python = ">=3.10, <3.14"
 dependencies = [
+    # Core dependencies - always required
     "google-generativeai>=0.8.3,<1.0.0",
     "python-dotenv>=1.0.1",
-    "faststream[redis]>=0.4.10,<1.0.0",
     "aiofiles>=23.2.1",
     "pydantic>=2.0.0",
     "tenacity>=8.2.0",
@@ -16,36 +16,82 @@ dependencies = [
     "rich>=13.0.0",
     "aiolimiter>=1.1.0",
     "python-json-logger>=2.0.7",
+]
+
+[project.optional-dependencies]
+# RAG system with Neo4j and LangChain
+rag = [
     "langchain>=1.0.8,<2.0.0",
     "langchain-community>=0.4.1,<1.0.0",
     "langchain-neo4j>=0.6.0,<1.0.0",
     "langchain-openai>=1.0.3,<2.0.0",
-    "pillow>=10.0.0",
+]
+
+# Web UI with FastAPI
+web = [
     "fastapi>=0.115.0",
     "uvicorn>=0.32.0",
     "python-multipart>=0.0.12",
 ]
 
-[project.optional-dependencies]
+# Redis worker for LATS
+worker = [
+    "faststream[redis]>=0.4.10,<1.0.0",
+]
+
+# Multimodal (image processing)
+multimodal = [
+    "pillow>=10.0.0",
+]
+
+# All optional features - list individual packages, not self-reference
+all = [
+    "langchain>=1.0.8,<2.0.0",
+    "langchain-community>=0.4.1,<1.0.0",
+    "langchain-neo4j>=0.6.0,<1.0.0",
+    "langchain-openai>=1.0.3,<2.0.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
+    "python-multipart>=0.0.12",
+    "faststream[redis]>=0.4.10,<1.0.0",
+    "pillow>=10.0.0",
+]
+
+# Development and testing (includes all optional deps for type checking)
 dev = [
+    # Testing
     "pytest>=7.4.0",
     "pytest-asyncio>=0.23.0",
     "pytest-cov>=4.1.0",
     "pytest-sugar>=1.0.0",
     "pytest-watcher>=0.4.0",
     "pytest-xdist>=3.6.0",
+    # Linting and formatting
     "ruff>=0.1.0",
     "mypy>=1.0.0",
     "pre-commit>=3.6.0",
-    "sphinx>=7.0.0",
-    "sphinx-rtd-theme>=1.3.0",
-    "memory-profiler>=0.61",
     "vulture>=2.11",
     "autoflake>=2.3.0",
+    # Documentation
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=1.3.0",
+    # Profiling
+    "memory-profiler>=0.61",
+    # Type stubs
     "types-aiofiles>=24.1.0.20240410",
     "types-redis>=4.6.0",
     "types-jinja2>=2.11.0",
     "types-pillow>=10.0.0",
+    # Include all optional deps for type checking in CI
+    "langchain>=1.0.8,<2.0.0",
+    "langchain-community>=0.4.1,<1.0.0",
+    "langchain-neo4j>=0.6.0,<1.0.0",
+    "langchain-openai>=1.0.3,<2.0.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
+    "python-multipart>=0.0.12",
+    "faststream[redis]>=0.4.10,<1.0.0",
+    "pillow>=10.0.0",
 ]
 
 [project.scripts]
@@ -135,6 +181,12 @@ module = [
     "prometheus_client.*",
     "psutil",
     "psutil.*",
+    "neo4j",
+    "neo4j.*",
+    "openai",
+    "openai.*",
+    "faststream",
+    "faststream.*",
 ]
 ignore_missing_imports = true
 
