@@ -7,9 +7,9 @@ from src.qa import rag_system as qrs
 
 def test_qa_rag_system_embeddings_and_rules(monkeypatch):
     calls: list[str] = []
-    monkeypatch.setattr(qrs.genai, "configure", lambda api_key: calls.append("config"))
+    monkeypatch.setattr(qrs.genai, "configure", lambda api_key: calls.append("config"))  # type: ignore[attr-defined]
     monkeypatch.setattr(
-        qrs.genai, "embed_content", lambda **kwargs: {"embedding": [1.0, 2.0]}
+        qrs.genai, "embed_content", lambda **kwargs: {"embedding": [1.0, 2.0]}  # type: ignore[attr-defined]
     )
 
     emb = qrs.CustomGeminiEmbeddings(api_key="k")
@@ -35,7 +35,7 @@ def test_qa_rag_vector_store_init(monkeypatch):
             return "vector"
 
     # stub import module
-    sys.modules["langchain_neo4j"] = types.SimpleNamespace(Neo4jVector=_FakeNeo4jVector)
+    sys.modules["langchain_neo4j"] = types.SimpleNamespace(Neo4jVector=_FakeNeo4jVector)  # type: ignore[assignment]
 
     kg = qrs.QAKnowledgeGraph.__new__(qrs.QAKnowledgeGraph)
     kg.neo4j_uri = "uri"
@@ -54,7 +54,7 @@ def test_qa_rag_vector_store_handles_errors(monkeypatch):
         def from_existing_graph(cls, *args, **kwargs):
             raise ValueError("bad config")
 
-    sys.modules["langchain_neo4j"] = types.SimpleNamespace(Neo4jVector=_FakeNeo4jVector)
+    sys.modules["langchain_neo4j"] = types.SimpleNamespace(Neo4jVector=_FakeNeo4jVector)  # type: ignore[assignment]
 
     kg = qrs.QAKnowledgeGraph.__new__(qrs.QAKnowledgeGraph)
     kg.neo4j_uri = "uri"
@@ -86,7 +86,7 @@ def test_qa_rag_validate_session(monkeypatch):
             if kwargs.get("fail"):
                 raise TypeError("boom")
 
-    sys.modules["scripts.build_session"] = types.SimpleNamespace(
+    sys.modules["scripts.build_session"] = types.SimpleNamespace(  # type: ignore[assignment]
         SessionContext=_SessionContext
     )
     monkeypatch.setattr(qrs, "validate_turns", lambda turns, ctx: {"ok": True})

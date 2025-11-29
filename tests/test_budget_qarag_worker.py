@@ -76,7 +76,7 @@ def test_qakg_constraints_with_provider(monkeypatch):
     monkeypatch.setattr(
         qa_rag_system, "os", types.SimpleNamespace(getenv=lambda *a, **k: None)
     )
-    kg = qa_rag_system.QAKnowledgeGraph(graph_provider=_Provider())
+    kg = qa_rag_system.QAKnowledgeGraph(graph_provider=_Provider())  # type: ignore[arg-type]
     cons = kg.get_constraints_for_query_type("qt")
     assert cons and cons[0]["id"] == "c1"
     kg.close()
@@ -123,7 +123,7 @@ async def test_qakg_constraints_from_async_context(monkeypatch):
     monkeypatch.setattr(
         qa_rag_system, "os", types.SimpleNamespace(getenv=lambda *a, **k: None)
     )
-    kg = qa_rag_system.QAKnowledgeGraph(graph_provider=_Provider())
+    kg = qa_rag_system.QAKnowledgeGraph(graph_provider=_Provider())  # type: ignore[arg-type]
     # This should NOT raise "This event loop is already running"
     cons = kg.get_constraints_for_query_type("qt")
     assert cons and cons[0]["id"] == "c1"
