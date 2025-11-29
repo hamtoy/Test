@@ -64,7 +64,9 @@ class _UpsertFakeSession:
         # generator wrapper 반환
         return self._generate_results(cypher, params)
 
-    def _generate_results(self, cypher: Any, params: Any) -> Generator[dict[str, Any], None, None]:
+    def _generate_results(
+        self, cypher: Any, params: Any
+    ) -> Generator[dict[str, Any], None, None]:
         """결과를 yield하는 내부 generator."""
         # 존재 여부 확인 쿼리 처리
         if "MATCH (r:Rule {id: $id}) RETURN" in cypher:
