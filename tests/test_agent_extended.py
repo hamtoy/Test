@@ -45,7 +45,7 @@ async def test_agent_execute_api_call_safety_error(monkeypatch, tmp_path):
             "__aenter__": lambda self: asyncio.sleep(0),
             "__aexit__": lambda self, exc_type, exc, tb: asyncio.sleep(0),
         },
-    )()  # type: ignore[assignment]
+    )()
 
     class _Resp:
         def __init__(self):

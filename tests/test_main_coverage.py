@@ -159,42 +159,42 @@ class TestImports:
 
     def test_analyze_cache_stats_import(self):
         """Test analyze_cache_stats is importable."""
-        from src.main import analyze_cache_stats
+        from src.main import analyze_cache_stats  # type: ignore[attr-defined]
 
         assert analyze_cache_stats is not None
 
     def test_print_cache_report_import(self):
         """Test print_cache_report is importable."""
-        from src.main import print_cache_report
+        from src.main import print_cache_report  # type: ignore[attr-defined]
 
         assert print_cache_report is not None
 
     def test_parse_args_import(self):
         """Test parse_args is importable."""
-        from src.main import parse_args
+        from src.main import parse_args  # type: ignore[attr-defined]
 
         assert parse_args is not None
 
     def test_write_cache_stats_import(self):
         """Test write_cache_stats is importable."""
-        from src.main import write_cache_stats
+        from src.main import write_cache_stats  # type: ignore[attr-defined]
 
         assert write_cache_stats is not None
 
     def test_load_input_data_import(self):
         """Test load_input_data is importable."""
-        from src.main import load_input_data
+        from src.main import load_input_data  # type: ignore[attr-defined]
 
         assert load_input_data is not None
 
     def test_render_cost_panel_import(self):
         """Test render_cost_panel is importable."""
-        from src.main import render_cost_panel
+        from src.main import render_cost_panel  # type: ignore[attr-defined]
 
         assert render_cost_panel is not None
 
     def test_execute_workflow_import(self):
         """Test execute_workflow is importable."""
-        from src.main import execute_workflow
+        from src.main import execute_workflow  # type: ignore[attr-defined]
 
         assert execute_workflow is not None
