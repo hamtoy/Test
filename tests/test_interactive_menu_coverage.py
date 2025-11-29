@@ -166,10 +166,10 @@ class TestDisplayWorkflowSummary:
 
             _display_workflow_summary(
                 queries,
-                results,
+                results,  # type: ignore[arg-type]
                 mock_agent,
                 mock_config,
-                timestamp,  # type: ignore[arg-type]
+                timestamp,
             )
 
             # Should print success count
@@ -203,10 +203,10 @@ class TestDisplayWorkflowSummary:
 
             _display_workflow_summary(
                 queries,
-                results,
+                results,  # type: ignore[arg-type]
                 mock_agent,
                 mock_config,
-                timestamp,  # type: ignore[arg-type]
+                timestamp,
             )
 
             # Check that add_row was called with truncated query
