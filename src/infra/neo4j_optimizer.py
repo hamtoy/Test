@@ -185,7 +185,8 @@ class TwoTierIndexManager:
         """Execute Cypher query and return results."""
         async with self.driver.session() as session:
             result = await session.run(query)
-            return await result.data()
+            data: List[Dict[str, Any]] = await result.data()
+            return data
 
 
 # ============ Optimized Query Examples ============
