@@ -1,7 +1,6 @@
-from typing import Any
-
 """Tests for the QA factory module."""
 
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest

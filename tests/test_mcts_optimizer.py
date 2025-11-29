@@ -1,8 +1,7 @@
-from typing import Any
-
 """Tests for the MCTS workflow optimizer module."""
 
 import math
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest

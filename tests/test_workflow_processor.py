@@ -1,8 +1,7 @@
-from typing import Any
-from pathlib import Path
-
 """Tests for the workflow processor module."""
 
+from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -13,7 +12,7 @@ from src.config.exceptions import (
     SafetyFilterError,
     ValidationFailedError,
 )
-from src.core.models import WorkflowResult, EvaluationResultSchema, EvaluationItem
+from src.core.models import EvaluationItem, EvaluationResultSchema, WorkflowResult
 
 
 class TestSaveResultToFile:

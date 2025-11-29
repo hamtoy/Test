@@ -1,10 +1,9 @@
-from pathlib import Path
-
 """Tests for src/main.py to improve coverage."""
 
 import asyncio
 import os
-from unittest.mock import patch, MagicMock, AsyncMock
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
