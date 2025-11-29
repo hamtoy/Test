@@ -9,9 +9,9 @@ def test_qa_rag_system_embeddings_and_rules(monkeypatch):
     calls: list[str] = []
     monkeypatch.setattr(qrs.genai, "configure", lambda api_key: calls.append("config"))  # type: ignore[attr-defined]
     monkeypatch.setattr(
-        qrs.genai,
+        qrs.genai,  # type: ignore[attr-defined]
         "embed_content",
-        lambda **kwargs: {"embedding": [1.0, 2.0]},  # type: ignore[attr-defined]
+        lambda **kwargs: {"embedding": [1.0, 2.0]},
     )
 
     emb = qrs.CustomGeminiEmbeddings(api_key="k")

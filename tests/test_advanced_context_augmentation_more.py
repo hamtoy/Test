@@ -27,7 +27,7 @@ def test_augment_without_vector_store(monkeypatch):
 
     aug = AdvancedContextAugmentation.__new__(AdvancedContextAugmentation)
     aug.vector_index = None
-    aug.graph = types.SimpleNamespace(_driver=_Driver())  # type: ignore[assignment]
+    aug.graph = types.SimpleNamespace(_driver=_Driver())
 
     result = aug.augment_prompt_with_similar_cases("q", "explanation")
     assert result["similar_cases"] == ["text"]

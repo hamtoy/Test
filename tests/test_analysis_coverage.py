@@ -53,9 +53,9 @@ def test_semantic_analysis_utils(monkeypatch):
     driver = _SADriver()
     semantic.create_topics(driver, [("alpha", 3)])  # type: ignore[arg-type]
     semantic.link_blocks_to_topics(
-        driver,
+        driver,  # type: ignore[arg-type]
         [{"id": "b1", "content": "alpha beta"}],
-        [("alpha", 3)],  # type: ignore[arg-type]
+        [("alpha", 3)],
     )
 
 

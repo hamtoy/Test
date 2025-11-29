@@ -63,7 +63,7 @@ def test_multimodal_understanding_uses_fakes(monkeypatch):
         types.SimpleNamespace(image_to_string=lambda img, lang=None: "alpha beta beta"),
     )
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())
+    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
     meta = analyzer.analyze_image_deep("fake.png")
 
     assert meta["has_table_chart"] is False
@@ -108,7 +108,7 @@ def test_multimodal_with_graph_session(monkeypatch):
         ),
     )
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())
+    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
     meta = analyzer.analyze_image_deep("test.png")
 
     assert "path" in meta
@@ -137,7 +137,7 @@ def test_multimodal_no_graph(monkeypatch):
         types.SimpleNamespace(image_to_string=lambda img, lang=None: "word word word"),
     )
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())
+    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
     meta = analyzer.analyze_image_deep("test.png")
 
     # Should still return metadata even without graph
@@ -180,7 +180,7 @@ def test_multimodal_session_returns_none(monkeypatch):
         types.SimpleNamespace(image_to_string=lambda img, lang=None: "sample text"),
     )
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())
+    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
     meta = analyzer.analyze_image_deep("test.png")
 
     # Should still return metadata even when session is None
@@ -224,7 +224,7 @@ def test_multimodal_exception_handling(monkeypatch):
         types.SimpleNamespace(image_to_string=lambda img, lang=None: "test"),
     )
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())
+    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
     meta = analyzer.analyze_image_deep("test.png")
 
     # Should still return metadata even with exception
@@ -241,8 +241,8 @@ def test_detect_table(monkeypatch):
     class _FakeImg:
         pass
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())
-    result = analyzer._detect_table(_FakeImg())
+    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
+    result = analyzer._detect_table(_FakeImg())  # type: ignore[arg-type]
 
     # Placeholder always returns False
     assert result is False
@@ -257,8 +257,8 @@ def test_detect_chart(monkeypatch):
     class _FakeImg:
         pass
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())
-    result = analyzer._detect_chart(_FakeImg())
+    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
+    result = analyzer._detect_chart(_FakeImg())  # type: ignore[arg-type]
 
     # Placeholder always returns False
     assert result is False
@@ -270,7 +270,7 @@ def test_extract_topics_empty_text():
     class _KG:
         pass
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())
+    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
     topics = analyzer._extract_topics("")
 
     assert topics == []
@@ -282,7 +282,7 @@ def test_extract_topics_short_words():
     class _KG:
         pass
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())
+    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
     topics = analyzer._extract_topics("a b c ab cd ef")
 
     # Only words with len > 2 are kept
@@ -295,7 +295,7 @@ def test_extract_topics_frequency():
     class _KG:
         pass
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())
+    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
     topics = analyzer._extract_topics("apple banana apple cherry apple banana date")
 
     # Most common first (max 5)

@@ -500,7 +500,7 @@ class TestMainEntryPoint:
             lambda log_level=None: (MagicMock(), SimpleNamespace(stop=lambda: None)),
         )
         monkeypatch.setattr(main_module, "AppConfig", FakeConfig)
-        monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)
+        monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)  # type: ignore[attr-defined]
 
         with pytest.raises(SystemExit) as exc_info:
             await main_module.main()
@@ -885,7 +885,7 @@ class TestWorkflowExecutor:
         tasks = [asyncio.create_task(raise_error())]
 
         with pytest.raises(ValueError, match="Task failed"):
-            await _gather_results(tasks, logger)
+            await _gather_results(tasks, logger)  # type: ignore[arg-type]
 
         logger.error.assert_called()
 
@@ -922,7 +922,7 @@ class TestWorkflowExecutor:
             asyncio.create_task(return_result()),
         ]
 
-        results = await _gather_results(tasks, logger)
+        results = await _gather_results(tasks, logger)  # type: ignore[arg-type]
 
         assert len(results) == 1
         assert results[0].query == "Q"
@@ -1140,7 +1140,7 @@ class TestWorkflowExecutorAdditional:
         logger = MagicMock()
 
         # First call should emit warning
-        _warn_budget_thresholds(mock_agent, logger)
+        _warn_budget_thresholds(mock_agent, logger)  # type: ignore[arg-type]
 
         # Should have logged warning for 80% threshold
         assert logger.warning.call_count == 1
@@ -1149,7 +1149,7 @@ class TestWorkflowExecutorAdditional:
         assert hasattr(mock_agent, "_warned_80")
 
         # Second call should not emit again (already warned)
-        _warn_budget_thresholds(mock_agent, logger)
+        _warn_budget_thresholds(mock_agent, logger)  # type: ignore[arg-type]
         assert logger.warning.call_count == 1  # Still 1
 
     @pytest.mark.asyncio

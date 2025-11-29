@@ -25,9 +25,11 @@ def test_evaluate_parses_scores(monkeypatch):
     _fake_genai(monkeypatch)
 
     client = gmc.GeminiModelClient()
-    client.generate = (
-        lambda prompt, role="evaluator": "점수1: 2\n점수2: 4\n점수3: 1\n최고: 2"
-    )
+
+    def fake_generate(prompt: str, role: str = "evaluator") -> str:
+        return "점수1: 2\n점수2: 4\n점수3: 1\n최고: 2"
+
+    client.generate = fake_generate  # type: ignore[method-assign, assignment]
 
     result = client.evaluate("q", ["a", "bb", "ccc"])
     assert result["best_index"] == 1
@@ -42,9 +44,9 @@ def test_evaluate_api_error_fallback(monkeypatch):
     client = gmc.GeminiModelClient()
 
     def _raise(prompt, role="evaluator"):
-        raise gmc.google_exceptions.GoogleAPIError("boom")
+        raise gmc.google_exceptions.GoogleAPIError("boom")  # type: ignore[attr-defined]
 
-    client.generate = _raise
+    client.generate = _raise  # type: ignore[method-assign, assignment]
     result = client.evaluate("q", ["a", "bbbb"])
     assert result["best_index"] == 1  # length-based fallback
     assert "길이 기반" in result["notes"]
@@ -57,8 +59,8 @@ def test_rewrite_handles_api_error(monkeypatch):
     client = gmc.GeminiModelClient()
 
     def _raise(prompt, role="rewriter"):
-        raise gmc.google_exceptions.GoogleAPIError("rewrite error")
+        raise gmc.google_exceptions.GoogleAPIError("rewrite error")  # type: ignore[attr-defined]
 
-    client.generate = _raise
+    client.generate = _raise  # type: ignore[method-assign, assignment]
     out = client.rewrite("text")
     assert "재작성 실패" in out
