@@ -500,10 +500,14 @@ class TestCLIArguments:
         """Test parse_args with custom file paths."""
         from src.cli import parse_args
 
-        result = parse_args([
-            "--ocr-file", "custom_ocr.txt",
-            "--cand-file", "custom_candidates.json",
-        ])
+        result = parse_args(
+            [
+                "--ocr-file",
+                "custom_ocr.txt",
+                "--cand-file",
+                "custom_candidates.json",
+            ]
+        )
 
         assert result.ocr_file == "custom_ocr.txt"
         assert result.cand_file == "custom_candidates.json"
@@ -520,10 +524,13 @@ class TestCLIArguments:
         """Test parse_args with --resume and --checkpoint-file flags."""
         from src.cli import parse_args
 
-        result = parse_args([
-            "--resume",
-            "--checkpoint-file", "custom_checkpoint.jsonl",
-        ])
+        result = parse_args(
+            [
+                "--resume",
+                "--checkpoint-file",
+                "custom_checkpoint.jsonl",
+            ]
+        )
 
         assert result.resume is True
         assert result.checkpoint_file == "custom_checkpoint.jsonl"
@@ -568,10 +575,12 @@ class TestCLIArguments:
         """Test parse_args with --optimize-neo4j flag."""
         from src.cli import parse_args
 
-        result = parse_args([
-            "--optimize-neo4j",
-            "--drop-existing-indexes",
-        ])
+        result = parse_args(
+            [
+                "--optimize-neo4j",
+                "--drop-existing-indexes",
+            ]
+        )
 
         assert result.optimize_neo4j is True
         assert result.drop_existing_indexes is True
@@ -580,10 +589,13 @@ class TestCLIArguments:
         """Test parse_args with --integrated-pipeline flag."""
         from src.cli import parse_args
 
-        result = parse_args([
-            "--integrated-pipeline",
-            "--pipeline-meta", "custom_meta.json",
-        ])
+        result = parse_args(
+            [
+                "--integrated-pipeline",
+                "--pipeline-meta",
+                "custom_meta.json",
+            ]
+        )
 
         assert result.integrated_pipeline is True
         assert result.pipeline_meta == "custom_meta.json"
@@ -903,6 +915,7 @@ class TestMainEntryPoint:
                 # Simulate the if __name__ == "__main__" block
                 try:
                     import src.main as main_module
+
                     asyncio.run(main_module.main())
                 except KeyboardInterrupt:
                     console.print(USER_INTERRUPT_MESSAGE)
@@ -929,6 +942,7 @@ class TestMainEntryPoint:
                 # Simulate the if __name__ == "__main__" block
                 try:
                     import src.main as main_module
+
                     asyncio.run(main_module.main())
                 except KeyboardInterrupt:
                     console.print(USER_INTERRUPT_MESSAGE)
@@ -1060,9 +1074,7 @@ class TestStrictValidation:
             mock_genai_configure.assert_called_once_with(api_key=expected_api_key)
 
     @pytest.mark.asyncio
-    async def test_setup_logging_called_with_correct_args(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_setup_logging_called_with_correct_args(self, tmp_path: Path) -> None:
         """Verify setup_logging is called with correct arguments."""
         from src.main import main
 
@@ -1091,9 +1103,7 @@ class TestStrictValidation:
             mock_setup_logging.assert_called_once_with(log_level=None)
 
     @pytest.mark.asyncio
-    async def test_log_listener_stop_called_once(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_log_listener_stop_called_once(self, tmp_path: Path) -> None:
         """Verify log_listener.stop() is called exactly once."""
         from src.main import main
 
