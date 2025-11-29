@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from src.core.models import WorkflowResult
+
 
 class TestShowErrorWithGuide:
     """Tests for show_error_with_guide function."""
