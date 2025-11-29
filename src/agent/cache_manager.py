@@ -25,9 +25,7 @@ class CacheManager:
     Compatibility wrappers are provided for legacy signatures.
     """
 
-    def __init__(
-        self, config: AppConfig, *, min_tokens: Optional[int] = None
-    ) -> None:
+    def __init__(self, config: AppConfig, *, min_tokens: Optional[int] = None) -> None:
         self.config = config
         self.logger = logging.getLogger("GeminiWorkflow")
         self.cache_hits = 0
