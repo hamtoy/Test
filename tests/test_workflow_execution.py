@@ -5,10 +5,11 @@ from src.workflow import execute_workflow
 from src.workflow.executor import _gather_results
 from src.core.models import EvaluationResultSchema, EvaluationItem
 from src.config.exceptions import BudgetExceededError
+from typing import Any
 
 
 @pytest.fixture
-def mock_agent():
+def mock_agent() -> Any:
     agent = MagicMock()
     agent.generate_query = AsyncMock(return_value=["Query 1"])
     agent.evaluate_responses = AsyncMock()
@@ -21,12 +22,12 @@ def mock_agent():
 
 
 @pytest.fixture
-def mock_logger():
+def mock_logger() -> Any:
     return MagicMock()
 
 
 @pytest.mark.asyncio
-async def test_execute_workflow_success(mock_agent, mock_logger):
+async def test_execute_workflow_success(mock_agent: Any, mock_logger: Any) -> None:
     ocr_text = "ocr"
     candidates = {"A": "a", "B": "b", "C": "c"}
 
@@ -61,7 +62,7 @@ async def test_execute_workflow_success(mock_agent, mock_logger):
 
 
 @pytest.mark.asyncio
-async def test_execute_workflow_query_gen_fail(mock_agent, mock_logger):
+async def test_execute_workflow_query_gen_fail(mock_agent: Any, mock_logger: Any) -> None:
     mock_agent.generate_query.return_value = []
 
     results = await execute_workflow(
@@ -80,7 +81,7 @@ async def test_execute_workflow_query_gen_fail(mock_agent, mock_logger):
 
 
 @pytest.mark.asyncio
-async def test_execute_workflow_budget_exceeded(mock_logger):
+async def test_execute_workflow_budget_exceeded(mock_logger: Any) -> None:
     mock_agent = MagicMock()
     mock_agent.generate_query = AsyncMock(return_value=["Query 1"])
     mock_agent.check_budget = MagicMock(side_effect=BudgetExceededError("limit"))
@@ -108,8 +109,8 @@ async def test_execute_workflow_budget_exceeded(mock_logger):
 
 
 @pytest.mark.asyncio
-async def test_gather_results_propagates_budget_error(mock_logger):
-    async def _raise_budget():
+async def test_gather_results_propagates_budget_error(mock_logger: Any) -> None:
+    async def _raise_budget() -> None:
         raise BudgetExceededError("limit")
 
     task = asyncio.create_task(_raise_budget())
@@ -118,7 +119,7 @@ async def test_gather_results_propagates_budget_error(mock_logger):
 
 
 @pytest.mark.asyncio
-async def test_execute_workflow_interactive_skip_reload(mock_agent, mock_logger):
+async def test_execute_workflow_interactive_skip_reload(mock_agent: Any, mock_logger: Any) -> None:
     mock_agent.create_context_cache = AsyncMock(return_value=None)
     eval_item = EvaluationItem(candidate_id="A", score=90, reason="Good")
     eval_result = EvaluationResultSchema(best_candidate="A", evaluations=[eval_item])

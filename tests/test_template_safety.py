@@ -1,22 +1,24 @@
 from __future__ import annotations
 
 import types
+from typing import Any, Optional
 
+import pytest
 from jinja2 import Environment, DictLoader
 
 from src.processing.template_generator import DynamicTemplateGenerator
 
 
-def test_dynamic_template_autoescape(monkeypatch):
+def test_dynamic_template_autoescape(monkeypatch: pytest.MonkeyPatch) -> None:
     # Inject fake driver to bypass Neo4j
     class _FakeSession:
-        def __enter__(self):
+        def __enter__(self) -> "_FakeSession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Optional[type], exc: Optional[BaseException], tb: Any) -> None:
+            pass
 
-        def run(self, *args, **kwargs):
+        def run(self, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:
             return [
                 {
                     "type_name": "설명",
@@ -28,10 +30,10 @@ def test_dynamic_template_autoescape(monkeypatch):
             ]
 
     class _FakeDriver:
-        def session(self):
+        def session(self) -> _FakeSession:
             return _FakeSession()
 
-        def close(self):
+        def close(self) -> None:
             return None
 
     monkeypatch.setattr(
@@ -50,7 +52,7 @@ def test_dynamic_template_autoescape(monkeypatch):
     assert "&lt;script&gt;" in output  # escaped
 
 
-def test_agent_default_env_autoescape():
+def test_agent_default_env_autoescape() -> None:
     # Environment(autoescape=True) is set in agent init path; verify Jinja behavior directly.
     env = Environment(
         loader=DictLoader({"rewrite_user.j2": "{{ best_answer }}"}), autoescape=True

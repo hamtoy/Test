@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 class TestAdvancedContextAugmentation:
     """Tests for AdvancedContextAugmentation class."""
 
-    def test_init_without_gemini_key(self):
+    def test_init_without_gemini_key(self) -> None:
         """Test initialization without Gemini API key (no vector index)."""
         with patch("src.processing.context_augmentation.Neo4jGraph") as mock_graph:
             mock_graph.return_value = MagicMock()
@@ -26,7 +26,7 @@ class TestAdvancedContextAugmentation:
                 assert aug.vector_index is None
                 mock_graph.assert_called_once()
 
-    def test_init_with_gemini_key(self):
+    def test_init_with_gemini_key(self) -> None:
         """Test initialization with Gemini API key (creates vector index)."""
         with (
             patch("src.processing.context_augmentation.Neo4jGraph") as mock_graph,
@@ -47,7 +47,7 @@ class TestAdvancedContextAugmentation:
             assert aug.vector_index is not None
             mock_vector.from_existing_graph.assert_called_once()
 
-    def test_init_with_env_gemini_key(self, monkeypatch):
+    def test_init_with_env_gemini_key(self, monkeypatch) -> None:
         """Test initialization uses GEMINI_API_KEY from environment."""
         monkeypatch.setenv("GEMINI_API_KEY", "AIza" + "0" * 35)
 
@@ -72,7 +72,7 @@ class TestAdvancedContextAugmentation:
 class TestAugmentPromptWithSimilarCases:
     """Tests for augment_prompt_with_similar_cases method."""
 
-    def test_augment_with_vector_index(self):
+    def test_augment_with_vector_index(self) -> None:
         """Test augmentation with vector index available."""
         with (
             patch("src.processing.context_augmentation.Neo4jGraph") as mock_graph,
@@ -129,7 +129,7 @@ class TestAugmentPromptWithSimilarCases:
             assert "query_type" in result
             assert result["query_type"] == "explanation"
 
-    def test_augment_without_vector_index_fallback(self):
+    def test_augment_without_vector_index_fallback(self) -> None:
         """Test augmentation falls back to graph search when no vector index."""
         with patch("src.processing.context_augmentation.Neo4jGraph") as mock_graph:
             mock_graph_instance = MagicMock()
@@ -173,7 +173,7 @@ class TestAugmentPromptWithSimilarCases:
                 assert "similar_cases" in result
                 assert "relevant_rules" in result
 
-    def test_augment_fallback_exception_handling(self):
+    def test_augment_fallback_exception_handling(self) -> None:
         """Test augmentation handles fallback query exceptions."""
         with patch("src.processing.context_augmentation.Neo4jGraph") as mock_graph:
             mock_graph_instance = MagicMock()
@@ -209,7 +209,7 @@ class TestAugmentPromptWithSimilarCases:
                 assert result["similar_cases"] == []
                 assert result["relevant_rules"] == []
 
-    def test_augment_with_empty_block_ids(self):
+    def test_augment_with_empty_block_ids(self) -> None:
         """Test augmentation when similarity search returns docs without metadata ids."""
         with (
             patch("src.processing.context_augmentation.Neo4jGraph") as mock_graph,
@@ -245,7 +245,7 @@ class TestAugmentPromptWithSimilarCases:
             assert "similar_cases" in result
             assert "relevant_rules" in result
 
-    def test_augment_fallback_no_record(self):
+    def test_augment_fallback_no_record(self) -> None:
         """Test augmentation when fallback query returns no record."""
         with patch("src.processing.context_augmentation.Neo4jGraph") as mock_graph:
             mock_graph_instance = MagicMock()
@@ -286,7 +286,7 @@ class TestAugmentPromptWithSimilarCases:
 class TestGenerateWithAugmentation:
     """Tests for generate_with_augmentation method."""
 
-    def test_generate_with_augmentation_basic(self):
+    def test_generate_with_augmentation_basic(self) -> None:
         """Test generate_with_augmentation returns formatted prompt."""
         with patch("src.processing.context_augmentation.Neo4jGraph") as mock_graph:
             mock_graph_instance = MagicMock()
@@ -327,7 +327,7 @@ class TestGenerateWithAugmentation:
                 assert "사용자 질의" in result
                 assert "explanation" in result
 
-    def test_generate_with_augmentation_with_results(self):
+    def test_generate_with_augmentation_with_results(self) -> None:
         """Test generate_with_augmentation includes similar cases and rules."""
         with (
             patch("src.processing.context_augmentation.Neo4jGraph") as mock_graph,
@@ -385,7 +385,7 @@ class TestGenerateWithAugmentation:
             # Should include truncated similar case
             assert "..." in result or "중요한 규칙" in result
 
-    def test_generate_with_augmentation_empty_results(self):
+    def test_generate_with_augmentation_empty_results(self) -> None:
         """Test generate_with_augmentation handles empty results gracefully."""
         with patch("src.processing.context_augmentation.Neo4jGraph") as mock_graph:
             mock_graph_instance = MagicMock()
@@ -428,7 +428,7 @@ class TestGenerateWithAugmentation:
 class TestSimilarCasesExtraction:
     """Tests for similar cases extraction from different document types."""
 
-    def test_extract_from_page_content(self):
+    def test_extract_from_page_content(self) -> None:
         """Test extracting content from page_content attribute."""
         with (
             patch("src.processing.context_augmentation.Neo4jGraph") as mock_graph,
@@ -460,7 +460,7 @@ class TestSimilarCasesExtraction:
 
             assert "페이지 콘텐츠" in result["similar_cases"]
 
-    def test_extract_from_dict_content(self):
+    def test_extract_from_dict_content(self) -> None:
         """Test extracting content from dict with 'content' key."""
         with patch("src.processing.context_augmentation.Neo4jGraph") as mock_graph:
             mock_graph_instance = MagicMock()
@@ -501,7 +501,7 @@ class TestSimilarCasesExtraction:
 
                 assert "딕셔너리 콘텐츠" in result["similar_cases"]
 
-    def test_extract_from_dict_text(self):
+    def test_extract_from_dict_text(self) -> None:
         """Test extracting content from dict with 'text' key."""
         with patch("src.processing.context_augmentation.Neo4jGraph") as mock_graph:
             mock_graph_instance = MagicMock()

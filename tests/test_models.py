@@ -1,12 +1,12 @@
 from src.core.models import EvaluationResultSchema
 
 
-def test_get_best_candidate_when_evaluations_empty_defaults_to_a():
+def test_get_best_candidate_when_evaluations_empty_defaults_to_a() -> None:
     result = EvaluationResultSchema(best_candidate="A", evaluations=[])
     assert result.get_best_candidate_id() == "A"
 
 
-def test_model_validation_handles_ties_by_preserving_first_max():
+def test_model_validation_handles_ties_by_preserving_first_max() -> None:
     data = {
         "best_candidate": "B",
         "evaluations": [

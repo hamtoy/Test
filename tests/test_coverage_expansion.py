@@ -16,12 +16,12 @@ import src.infra.constraints as rtce
 import src.features.autocomplete as smart_autocomplete
 
 
-def test_smart_autocomplete_handles_missing_graph():
+def test_smart_autocomplete_handles_missing_graph() -> None:
     sa = smart_autocomplete.SmartAutocomplete(types.SimpleNamespace())  # type: ignore[arg-type]
     assert sa.suggest_next_query_type([]) == []
 
 
-def test_smart_autocomplete_session_none(monkeypatch):
+def test_smart_autocomplete_session_none(monkeypatch) -> None:
     class _KG:
         def graph_session(self):
             class _Ctx:
@@ -37,7 +37,7 @@ def test_smart_autocomplete_session_none(monkeypatch):
     assert sa.suggest_next_query_type([{"type": "summary"}]) == []
 
 
-def test_smart_autocomplete_filters_by_limit():
+def test_smart_autocomplete_filters_by_limit() -> None:
     class _Sess:
         def __enter__(self):
             return self
@@ -57,14 +57,14 @@ def test_smart_autocomplete_filters_by_limit():
     assert all(s["name"] != "summary" for s in suggestions)
 
 
-def test_smart_autocomplete_constraint_missing_graph(monkeypatch):
+def test_smart_autocomplete_constraint_missing_graph(monkeypatch) -> None:
     monkeypatch.setattr(smart_autocomplete, "find_violations", lambda text: [])
     sa = smart_autocomplete.SmartAutocomplete(types.SimpleNamespace())  # type: ignore[arg-type]
     res = sa.suggest_constraint_compliance("draft", "summary")
     assert res == {"violations": [], "suggestions": []}
 
 
-def test_smart_autocomplete_constraint_session_none(monkeypatch):
+def test_smart_autocomplete_constraint_session_none(monkeypatch) -> None:
     monkeypatch.setattr(smart_autocomplete, "find_violations", lambda text: [])
 
     class _KG:
@@ -84,7 +84,7 @@ def test_smart_autocomplete_constraint_session_none(monkeypatch):
     assert res["suggestions"] == []
 
 
-def test_real_time_constraint_stream_final_validation(monkeypatch):
+def test_real_time_constraint_stream_final_validation(monkeypatch) -> None:
     class _KG:
         def get_constraints_for_query_type(self, _qt):
             return []
@@ -98,7 +98,7 @@ def test_real_time_constraint_stream_final_validation(monkeypatch):
     assert events[-1]["type"] == "final_validation"
 
 
-def test_real_time_constraint_get_original_blocks_no_session():
+def test_real_time_constraint_get_original_blocks_no_session() -> None:
     class _KG:
         def graph_session(self):
             class _Ctx:
@@ -114,11 +114,11 @@ def test_real_time_constraint_get_original_blocks_no_session():
     assert enforcer._get_original_blocks() == []
 
 
-def test_real_time_constraint_get_original_blocks_exception():
+def test_real_time_constraint_get_original_blocks_exception() -> None:
     class _KG:
         def graph_session(self):
             class _Ctx:
-                def __enter__(self):
+                def __enter__(self) -> None:
                     raise RuntimeError("boom")
 
                 def __exit__(self, exc_type, exc, tb):
@@ -130,7 +130,7 @@ def test_real_time_constraint_get_original_blocks_exception():
     assert enforcer._get_original_blocks() == []
 
 
-def test_real_time_constraint_similarity_issue(monkeypatch):
+def test_real_time_constraint_similarity_issue(monkeypatch) -> None:
     enforcer = rtce.RealTimeConstraintEnforcer(types.SimpleNamespace())  # type: ignore[arg-type]
     monkeypatch.setattr(
         enforcer, "_get_original_blocks", lambda: [{"content": "repeat me"}]
@@ -142,12 +142,12 @@ def test_real_time_constraint_similarity_issue(monkeypatch):
     assert found_similarity, "Expected similarity issue not found"
 
 
-def test_health_check_graph_missing():
+def test_health_check_graph_missing() -> None:
     kg = types.SimpleNamespace(_graph=None)
     assert health_check.check_neo4j_connection(kg) is False  # type: ignore[arg-type]
 
 
-def test_health_check_unknown_exception(monkeypatch):
+def test_health_check_unknown_exception(monkeypatch) -> None:
     class _Session:
         def __enter__(self):
             return self
@@ -155,7 +155,7 @@ def test_health_check_unknown_exception(monkeypatch):
         def __exit__(self, exc_type, exc, tb):
             return False
 
-        def run(self, *_args, **_kwargs):
+        def run(self, *_args, **_kwargs) -> None:
             raise ValueError("boom")
 
         def single(self):
@@ -165,7 +165,7 @@ def test_health_check_unknown_exception(monkeypatch):
     assert health_check.check_neo4j_connection(kg) is False  # type: ignore[arg-type]
 
 
-def test_sensitive_filter_handles_non_string_args():
+def test_sensitive_filter_handles_non_string_args() -> None:
     filt = logging_setup.SensitiveDataFilter()
     raw_key = "AIza" + "1" * 35
     record = logging.LogRecord(
@@ -186,7 +186,7 @@ def test_sensitive_filter_handles_non_string_args():
     assert isinstance(args, tuple) and args[-1] == 123
 
 
-def test_list_models_exits_without_key(monkeypatch):
+def test_list_models_exits_without_key(monkeypatch) -> None:
     import importlib
     import os
 
@@ -223,13 +223,13 @@ def test_list_models_exits_without_key(monkeypatch):
     assert any(msg.endswith("exit:1") or msg == "exit:1" for msg in captured)
 
 
-def test_dynamic_example_selector_no_graph_returns_empty(caplog):
+def test_dynamic_example_selector_no_graph_returns_empty(caplog) -> None:
     caplog.set_level(logging.DEBUG)
     selector = dynamic_example_selector.DynamicExampleSelector(types.SimpleNamespace())  # type: ignore[arg-type]
     assert selector.select_best_examples("qt", {}, k=1) == []
 
 
-def test_dynamic_example_selector_session_none(monkeypatch):
+def test_dynamic_example_selector_session_none(monkeypatch) -> None:
     class _KG:
         def graph_session(self):
             class _Ctx:
@@ -245,7 +245,7 @@ def test_dynamic_example_selector_session_none(monkeypatch):
     assert selector.select_best_examples("qt", {}, k=1) == []
 
 
-def test_dynamic_example_selector_handles_exception(monkeypatch):
+def test_dynamic_example_selector_handles_exception(monkeypatch) -> None:
     class _Session:
         def __enter__(self):
             return self
@@ -253,7 +253,7 @@ def test_dynamic_example_selector_handles_exception(monkeypatch):
         def __exit__(self, exc_type, exc, tb):
             return False
 
-        def run(self, *_args, **_kwargs):
+        def run(self, *_args, **_kwargs) -> None:
             raise RuntimeError("query fail")
 
     class _KG:
@@ -264,7 +264,7 @@ def test_dynamic_example_selector_handles_exception(monkeypatch):
     assert selector.select_best_examples("qt", {}, k=1) == []
 
 
-def test_caching_layer_import_fallback(monkeypatch):
+def test_caching_layer_import_fallback(monkeypatch) -> None:
     original_import = builtins.__import__
 
     def _fake_import(name, *args, **kwargs):
@@ -283,17 +283,17 @@ def test_caching_layer_import_fallback(monkeypatch):
     assert module.redis is None
 
 
-def test_caching_layer_handles_bad_cache_and_write_error(monkeypatch):
+def test_caching_layer_handles_bad_cache_and_write_error(monkeypatch) -> None:
     rows = [{"id": "1", "text": "t1", "section": "s1"}]
 
     class _Redis:
-        def __init__(self):
+        def __init__(self) -> None:
             self.store = {"rules:qt": "not-json"}
 
         def get(self, key):
             return self.store.get(key)
 
-        def setex(self, *_args, **_kwargs):
+        def setex(self, *_args, **_kwargs) -> None:
             raise RuntimeError("write fail")
 
     layer = caching_layer.CachingLayer(
@@ -305,19 +305,19 @@ def test_caching_layer_handles_bad_cache_and_write_error(monkeypatch):
     assert layer.get_rules_cached("qt") == rows
 
 
-def test_caching_layer_invalidate_without_redis():
+def test_caching_layer_invalidate_without_redis() -> None:
     layer = caching_layer.CachingLayer(kg=types.SimpleNamespace(_graph=None))  # type: ignore[arg-type]
     assert layer.invalidate_cache() == 0
     layer.redis = types.SimpleNamespace(keys=lambda pattern: [], delete=lambda *k: 0)
     assert layer.invalidate_cache() == 0
 
 
-def test_caching_layer_fetch_without_graph():
+def test_caching_layer_fetch_without_graph() -> None:
     layer = caching_layer.CachingLayer(kg=types.SimpleNamespace())  # type: ignore[arg-type]
     assert layer._fetch_rules_from_graph("qt") == []
 
 
-def test_adaptive_difficulty_missing_graph_logs(monkeypatch, caplog):
+def test_adaptive_difficulty_missing_graph_logs(monkeypatch, caplog) -> None:
     caplog.set_level(logging.WARNING)
     adjuster = adaptive_difficulty.AdaptiveDifficultyAdjuster(types.SimpleNamespace())  # type: ignore[arg-type]
     result = adjuster.analyze_image_complexity({"text_density": 0.9})
@@ -325,14 +325,14 @@ def test_adaptive_difficulty_missing_graph_logs(monkeypatch, caplog):
     assert any("Failed to estimate blocks" in rec.message for rec in caplog.records)
 
 
-def test_adaptive_difficulty_reasoning_requires_evidence():
+def test_adaptive_difficulty_reasoning_requires_evidence() -> None:
     adjuster = adaptive_difficulty.AdaptiveDifficultyAdjuster(types.SimpleNamespace())  # type: ignore[arg-type]
     complexity = {"reasoning_possible": True, "level": "medium"}
     adjustments = adjuster.adjust_query_requirements(complexity, "reasoning")
     assert adjustments["evidence_required"] is True
 
 
-def test_cross_validation_grounding_branches(monkeypatch):
+def test_cross_validation_grounding_branches(monkeypatch) -> None:
     cvs = cross_validation.CrossValidationSystem(types.SimpleNamespace())  # type: ignore[arg-type]
     res = cvs._check_image_grounding("ans", {"page_id": "p"})
     assert res["note"] == "graph 없음"
@@ -359,7 +359,7 @@ def test_cross_validation_grounding_branches(monkeypatch):
         def __exit__(self, exc_type, exc, tb):
             return False
 
-        def run(self, *_args, **_kwargs):
+        def run(self, *_args, **_kwargs) -> None:
             raise Neo4jError("neo boom")
 
     cvs3 = cross_validation.CrossValidationSystem(
@@ -371,7 +371,7 @@ def test_cross_validation_grounding_branches(monkeypatch):
     assert res3["note"] == "Neo4j 조회 실패"
 
 
-def test_cross_validation_rule_compliance_graph_missing():
+def test_cross_validation_rule_compliance_graph_missing() -> None:
     class _KG:
         def get_constraints_for_query_type(self, *_args, **_kwargs):
             return []
@@ -381,9 +381,9 @@ def test_cross_validation_rule_compliance_graph_missing():
     assert res["violations"] == []
 
 
-def test_cross_validation_novelty_store_paths():
+def test_cross_validation_novelty_store_paths() -> None:
     class _Similar:
-        def __init__(self, sim):
+        def __init__(self, sim) -> None:
             self.metadata = {"similarity": sim}
 
     class _StoreHigh:

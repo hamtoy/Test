@@ -1,3 +1,5 @@
+from typing import Any
+from pathlib import Path
 """Tests for Data2NeoExtractor module.
 
 Tests the entity extraction and Neo4j import functionality.
@@ -39,7 +41,7 @@ from src.graph.entities import (
 
 
 @pytest.fixture
-def mock_config():
+def mock_config() -> Any:
     """Create mock config for testing."""
     config = MagicMock()
     config.data2neo_confidence = 0.7
@@ -49,7 +51,7 @@ def mock_config():
 
 
 @pytest.fixture
-def mock_llm_provider():
+def mock_llm_provider() -> Any:
     """Create mock LLM provider."""
     provider = AsyncMock()
     provider.generate_content_async = AsyncMock()
@@ -57,7 +59,7 @@ def mock_llm_provider():
 
 
 @pytest.fixture
-def mock_graph_provider():
+def mock_graph_provider() -> Any:
     """Create mock graph provider."""
     provider = AsyncMock()
     provider.create_nodes = AsyncMock(return_value=1)
@@ -68,7 +70,7 @@ def mock_graph_provider():
 class TestEntity:
     """Tests for Entity model."""
 
-    def test_entity_creation(self):
+    def test_entity_creation(self) -> None:
         """Test basic entity creation."""
         entity = Entity(
             id="person_john_doe",
@@ -81,7 +83,7 @@ class TestEntity:
         assert entity.properties["name"] == "John Doe"
         assert entity.confidence == 0.9
 
-    def test_entity_default_confidence(self):
+    def test_entity_default_confidence(self) -> None:
         """Test entity default confidence value."""
         entity = Entity(
             id="org_acme",
@@ -90,7 +92,7 @@ class TestEntity:
         )
         assert entity.confidence == 1.0
 
-    def test_entity_types(self):
+    def test_entity_types(self) -> None:
         """Test all entity types."""
         assert EntityType.PERSON.value == "Person"
         assert EntityType.ORGANIZATION.value == "Organization"
@@ -102,7 +104,7 @@ class TestEntity:
 class TestRelationship:
     """Tests for Relationship model."""
 
-    def test_relationship_creation(self):
+    def test_relationship_creation(self) -> None:
         """Test basic relationship creation."""
         rel = FeaturesRelationship(
             from_id="person_john",
@@ -118,7 +120,7 @@ class TestRelationship:
 class TestEntityModels:
     """Tests for entity Pydantic models."""
 
-    def test_person_creation(self):
+    def test_person_creation(self) -> None:
         """Test creating a Person entity."""
         person = Person(
             name="John Doe",
@@ -132,7 +134,7 @@ class TestEntityModels:
         assert person.role == "CEO"
         assert person.organization == "Acme Corp"
 
-    def test_person_to_node_dict(self):
+    def test_person_to_node_dict(self) -> None:
         """Test Person conversion to Neo4j node properties."""
         person = Person(
             name="Jane Smith",
@@ -146,7 +148,7 @@ class TestEntityModels:
         assert node["role"] == "CTO"
         assert node["confidence"] == 0.85
 
-    def test_organization_creation(self):
+    def test_organization_creation(self) -> None:
         """Test creating an Organization entity."""
         org = Organization(
             name="OpenAI",
@@ -159,7 +161,7 @@ class TestEntityModels:
         assert org.org_type == "company"
         assert org.location == "San Francisco"
 
-    def test_organization_to_node_dict(self):
+    def test_organization_to_node_dict(self) -> None:
         """Test Organization conversion to Neo4j node properties."""
         org = Organization(
             name="Google",
@@ -173,7 +175,7 @@ class TestEntityModels:
         assert node["type"] == "company"
         assert node["confidence"] == 0.95
 
-    def test_date_entity_creation(self):
+    def test_date_entity_creation(self) -> None:
         """Test creating a DateEntity."""
         date = DateEntity(
             name="January 15, 2024",
@@ -186,7 +188,7 @@ class TestEntityModels:
         assert date.normalized == "2024-01-15"
         assert date.date_type == "event"
 
-    def test_document_rule_creation(self):
+    def test_document_rule_creation(self) -> None:
         """Test creating a DocumentRule entity."""
         rule = DocumentRule(
             name="All documents must be reviewed within 5 days",
@@ -198,7 +200,7 @@ class TestEntityModels:
         assert rule.priority == "high"
         assert rule.category == "compliance"
 
-    def test_relationship_creation(self):
+    def test_relationship_creation(self) -> None:
         """Test creating a Relationship."""
         rel = Relationship(
             from_entity="John Doe",
@@ -216,7 +218,7 @@ class TestEntityModels:
 class TestExtractionResult:
     """Tests for ExtractionResult model (from features)."""
 
-    def test_extraction_result_default(self):
+    def test_extraction_result_default(self) -> None:
         """Test default extraction result."""
         result = FeaturesExtractionResult()
         assert result.entities == []
@@ -224,7 +226,7 @@ class TestExtractionResult:
         assert result.document_id is None
         assert result.chunk_count == 0
 
-    def test_extraction_result_with_data(self):
+    def test_extraction_result_with_data(self) -> None:
         """Test extraction result with data."""
         entity = Entity(id="test", type=EntityType.PERSON, properties={})
         rel = FeaturesRelationship(from_id="a", to_id="b", type="REL")
@@ -243,7 +245,7 @@ class TestExtractionResult:
 class TestExtractedEntitiesSchema:
     """Tests for ExtractedEntitiesSchema parsing."""
 
-    def test_schema_parsing(self):
+    def test_schema_parsing(self) -> None:
         """Test schema parsing from dict."""
         data = {
             "persons": [{"id": "p1", "name": "John", "role": "Manager"}],
@@ -257,7 +259,7 @@ class TestExtractedEntitiesSchema:
         assert len(schema.rules) == 1
         assert len(schema.relationships) == 1
 
-    def test_schema_empty(self):
+    def test_schema_empty(self) -> None:
         """Test schema with empty data."""
         schema = ExtractedEntitiesSchema()
         assert schema.persons == []
@@ -265,7 +267,7 @@ class TestExtractedEntitiesSchema:
         assert schema.rules == []
         assert schema.relationships == []
 
-    def test_schema_null_values(self):
+    def test_schema_null_values(self) -> None:
         """Test schema handles null values."""
         data = {
             "persons": None,
@@ -277,7 +279,7 @@ class TestExtractedEntitiesSchema:
         assert schema.persons == []
         assert schema.organizations == []
 
-    def test_total_entities(self):
+    def test_total_entities(self) -> None:
         """Test total_entities property."""
         result = ExtractionResult(
             persons=[
@@ -291,7 +293,7 @@ class TestExtractedEntitiesSchema:
 
         assert result.total_entities == 4
 
-    def test_filter_by_confidence(self):
+    def test_filter_by_confidence(self) -> None:
         """Test filtering entities by confidence threshold."""
         result = ExtractionResult(
             persons=[
@@ -311,7 +313,7 @@ class TestExtractedEntitiesSchema:
         assert len(filtered.organizations) == 1
         assert filtered.organizations[0].name == "HighOrg"
 
-    def test_empty_result(self):
+    def test_empty_result(self) -> None:
         """Test empty ExtractionResult."""
         result = ExtractionResult()
 
@@ -323,13 +325,13 @@ class TestExtractedEntitiesSchema:
 class TestData2NeoExtractor:
     """Tests for Data2NeoExtractor class (from features)."""
 
-    def test_extractor_initialization(self, mock_config):
+    def test_extractor_initialization(self, mock_config: Any) -> None:
         """Test extractor initialization."""
         extractor = FeaturesData2NeoExtractor(config=mock_config)
         assert extractor.confidence_threshold == 0.7
         assert extractor.batch_size == 100
 
-    def test_chunk_text_short(self, mock_config):
+    def test_chunk_text_short(self, mock_config: Any) -> None:
         """Test chunking short text."""
         extractor = FeaturesData2NeoExtractor(config=mock_config)
         text = "Short text"
@@ -337,27 +339,27 @@ class TestData2NeoExtractor:
         assert len(chunks) == 1
         assert chunks[0] == text
 
-    def test_chunk_text_long(self, mock_config):
+    def test_chunk_text_long(self, mock_config: Any) -> None:
         """Test chunking long text."""
         extractor = FeaturesData2NeoExtractor(config=mock_config)
         text = "Paragraph one.\n\n" * 100  # Long text
         chunks = extractor._chunk_text(text, chunk_size=100)
         assert len(chunks) > 1
 
-    def test_generate_entity_id(self, mock_config):
+    def test_generate_entity_id(self, mock_config: Any) -> None:
         """Test entity ID generation."""
         extractor = FeaturesData2NeoExtractor(config=mock_config)
         entity_id = extractor._generate_entity_id("person", "John Doe")
         assert entity_id == "person_john_doe"
 
-    def test_generate_entity_id_special_chars(self, mock_config):
+    def test_generate_entity_id_special_chars(self, mock_config: Any) -> None:
         """Test entity ID generation with special characters."""
         extractor = FeaturesData2NeoExtractor(config=mock_config)
         entity_id = extractor._generate_entity_id("organization", "Acme, Inc.")
         assert "_" in entity_id
         assert "," not in entity_id
 
-    def test_parse_extraction_response_valid(self, mock_config):
+    def test_parse_extraction_response_valid(self, mock_config: Any) -> None:
         """Test parsing valid JSON response."""
         extractor = FeaturesData2NeoExtractor(config=mock_config)
         response = """
@@ -372,14 +374,14 @@ class TestData2NeoExtractor:
         assert len(result.persons) == 1
         assert result.persons[0]["name"] == "John"
 
-    def test_parse_extraction_response_invalid(self, mock_config):
+    def test_parse_extraction_response_invalid(self, mock_config: Any) -> None:
         """Test parsing invalid response."""
         extractor = FeaturesData2NeoExtractor(config=mock_config)
         response = "This is not JSON"
         result = extractor._parse_extraction_response(response)
         assert len(result.persons) == 0
 
-    def test_convert_to_entities(self, mock_config):
+    def test_convert_to_entities(self, mock_config: Any) -> None:
         """Test converting schema to entities."""
         extractor = FeaturesData2NeoExtractor(config=mock_config)
         schema = ExtractedEntitiesSchema(
@@ -394,7 +396,7 @@ class TestData2NeoExtractor:
         assert len(result.entities) == 3  # 1 person + 1 org + 1 rule
         assert len(result.relationships) == 1
 
-    def test_convert_to_entities_confidence_filter(self, mock_config):
+    def test_convert_to_entities_confidence_filter(self, mock_config: Any) -> None:
         """Test confidence threshold filtering."""
         mock_config.data2neo_confidence = 0.8
         extractor = FeaturesData2NeoExtractor(config=mock_config)
@@ -409,7 +411,7 @@ class TestData2NeoExtractor:
         assert len([e for e in result.entities if e.type == EntityType.PERSON]) == 1
 
     @pytest.mark.asyncio
-    async def test_extract_entities_no_provider(self, mock_config):
+    async def test_extract_entities_no_provider(self, mock_config: Any) -> None:
         """Test extraction without LLM provider."""
         extractor = FeaturesData2NeoExtractor(config=mock_config, llm_provider=None)
         result = await extractor.extract_entities("Test text", "doc_1")
@@ -417,7 +419,7 @@ class TestData2NeoExtractor:
         assert result.document_id == "doc_1"
 
     @pytest.mark.asyncio
-    async def test_extract_entities_with_provider(self, mock_config, mock_llm_provider):
+    async def test_extract_entities_with_provider(self, mock_config: Any, mock_llm_provider: Any) -> None:
         """Test extraction with LLM provider."""
         mock_llm_provider.generate_content_async.return_value = MagicMock(
             content='{"persons": [{"id": "p1", "name": "John"}], "organizations": [], "rules": [], "relationships": []}'
@@ -430,7 +432,7 @@ class TestData2NeoExtractor:
         # Result depends on parsing
 
     @pytest.mark.asyncio
-    async def test_import_to_graph_no_provider(self, mock_config):
+    async def test_import_to_graph_no_provider(self, mock_config: Any) -> None:
         """Test import without graph provider."""
         extractor = FeaturesData2NeoExtractor(config=mock_config, graph_provider=None)
         result = FeaturesExtractionResult(
@@ -444,8 +446,8 @@ class TestData2NeoExtractor:
 
     @pytest.mark.asyncio
     async def test_import_to_graph_with_provider(
-        self, mock_config, mock_graph_provider
-    ):
+        self, mock_config: Any, mock_graph_provider: Any
+    ) -> None:
         """Test import with graph provider."""
         extractor = FeaturesData2NeoExtractor(
             config=mock_config, graph_provider=mock_graph_provider
@@ -467,8 +469,8 @@ class TestData2NeoExtractor:
 
     @pytest.mark.asyncio
     async def test_extract_and_import(
-        self, mock_config, mock_llm_provider, mock_graph_provider
-    ):
+        self, mock_config: Any, mock_llm_provider: Any, mock_graph_provider: Any
+    ) -> None:
         """Test full extraction and import pipeline."""
         llm_response = {
             "persons": [{"id": "p1", "name": "John", "role": "Manager"}],
@@ -495,7 +497,7 @@ class TestCreateData2NeoExtractor:
     """Tests for factory function."""
 
     @pytest.mark.asyncio
-    async def test_create_extractor_disabled(self, mock_config):
+    async def test_create_extractor_disabled(self, mock_config: Any) -> None:
         """Test factory with data2neo disabled."""
         mock_config.enable_data2neo = False
         extractor = await create_data2neo_extractor(mock_config)
@@ -504,8 +506,8 @@ class TestCreateData2NeoExtractor:
 
     @pytest.mark.asyncio
     async def test_create_extractor_with_providers(
-        self, mock_config, mock_llm_provider, mock_graph_provider
-    ):
+        self, mock_config: Any, mock_llm_provider: Any, mock_graph_provider: Any
+    ) -> None:
         """Test factory with provided providers."""
         extractor = await create_data2neo_extractor(
             mock_config,
@@ -516,7 +518,7 @@ class TestCreateData2NeoExtractor:
         assert extractor.graph_provider == mock_graph_provider
 
     @pytest.fixture
-    def mock_templates(self):
+    def mock_templates(self) -> Any:
         """Create mock Jinja2 templates."""
         return DictLoader(
             {
@@ -526,7 +528,7 @@ class TestCreateData2NeoExtractor:
         )
 
     @pytest.fixture
-    def mock_agent(self):
+    def mock_agent(self) -> Any:
         """Create mock GeminiAgent."""
         agent = MagicMock()
         agent._create_generative_model = MagicMock(return_value=MagicMock())
@@ -534,7 +536,7 @@ class TestCreateData2NeoExtractor:
         return agent
 
     @pytest.fixture
-    def mock_config(self, tmp_path):
+    def mock_config(self, tmp_path: Path) -> Any:
         """Create mock AppConfig."""
         config = MagicMock(spec=AppConfig)
         config.template_dir = tmp_path
@@ -543,7 +545,7 @@ class TestCreateData2NeoExtractor:
         return config
 
     @pytest.fixture
-    def extractor(self, mock_config, mock_agent, mock_templates):
+    def extractor(self, mock_config: Any, mock_agent: Any, mock_templates: Any) -> Any:
         """Create Data2NeoExtractor with mocks."""
         jinja_env = Environment(loader=mock_templates)
         return Data2NeoExtractor(
@@ -553,7 +555,7 @@ class TestCreateData2NeoExtractor:
         )
 
     @pytest.mark.asyncio
-    async def test_extract_entities_success(self, extractor, mock_agent):
+    async def test_extract_entities_success(self, extractor: Any, mock_agent: Any) -> None:
         """Test successful entity extraction."""
         mock_response = json.dumps(
             {
@@ -585,19 +587,19 @@ class TestCreateData2NeoExtractor:
         assert len(result.relationships) == 1
 
     @pytest.mark.asyncio
-    async def test_extract_entities_empty_text(self, extractor):
+    async def test_extract_entities_empty_text(self, extractor: Any) -> None:
         """Test extraction with empty text raises error."""
         with pytest.raises(ValueError, match="OCR text cannot be empty"):
             await extractor.extract_entities("")
 
     @pytest.mark.asyncio
-    async def test_extract_entities_whitespace_only(self, extractor):
+    async def test_extract_entities_whitespace_only(self, extractor: Any) -> None:
         """Test extraction with whitespace-only text raises error."""
         with pytest.raises(ValueError, match="OCR text cannot be empty"):
             await extractor.extract_entities("   \n\t  ")
 
     @pytest.mark.asyncio
-    async def test_extract_entities_confidence_filter(self, extractor, mock_agent):
+    async def test_extract_entities_confidence_filter(self, extractor: Any, mock_agent: Any) -> None:
         """Test that confidence threshold filtering works."""
         mock_response = json.dumps(
             {
@@ -620,7 +622,7 @@ class TestCreateData2NeoExtractor:
         assert result.persons[0].name == "High Conf"
 
     @pytest.mark.asyncio
-    async def test_extract_entities_with_markdown_wrapper(self, extractor, mock_agent):
+    async def test_extract_entities_with_markdown_wrapper(self, extractor: Any, mock_agent: Any) -> None:
         """Test extraction handles markdown code blocks."""
         mock_response = """```json
 {
@@ -639,7 +641,7 @@ class TestCreateData2NeoExtractor:
         assert result.persons[0].name == "Test Person"
 
     @pytest.mark.asyncio
-    async def test_extract_entities_empty_response(self, extractor, mock_agent):
+    async def test_extract_entities_empty_response(self, extractor: Any, mock_agent: Any) -> None:
         """Test extraction handles empty response."""
         mock_agent._call_api_with_retry.return_value = ""
 
@@ -648,7 +650,7 @@ class TestCreateData2NeoExtractor:
         assert result.total_entities == 0
 
     @pytest.mark.asyncio
-    async def test_extract_entities_partial_invalid_data(self, extractor, mock_agent):
+    async def test_extract_entities_partial_invalid_data(self, extractor: Any, mock_agent: Any) -> None:
         """Test extraction recovers from partially invalid data."""
         # Missing required 'confidence' field in one person
         mock_response = json.dumps(
@@ -671,7 +673,7 @@ class TestCreateData2NeoExtractor:
         assert len(result.persons) == 1
         assert result.persons[0].name == "Valid"
 
-    def test_generate_entity_id(self):
+    def test_generate_entity_id(self) -> None:
         """Test entity ID generation."""
         id1 = Data2NeoExtractor._generate_entity_id("person", "John Doe")
         id2 = Data2NeoExtractor._generate_entity_id("person", "John Doe")
@@ -681,14 +683,14 @@ class TestCreateData2NeoExtractor:
         assert id1 != id3  # Different names should produce different IDs
         assert id1.startswith("person_")
 
-    def test_generate_entity_id_normalization(self):
+    def test_generate_entity_id_normalization(self) -> None:
         """Test entity ID generation normalizes names."""
         id1 = Data2NeoExtractor._generate_entity_id("org", "  Acme Corp  ")
         id2 = Data2NeoExtractor._generate_entity_id("org", "acme corp")
 
         assert id1 == id2  # Should normalize to same ID
 
-    def test_infer_relationship_labels(self):
+    def test_infer_relationship_labels(self) -> None:
         """Test relationship label inference."""
         from_label, to_label = Data2NeoExtractor._infer_relationship_labels("WORKS_AT")
         assert from_label == "Person"
@@ -700,7 +702,7 @@ class TestCreateData2NeoExtractor:
         assert from_label == "Entity"
         assert to_label == "Entity"
 
-    def test_get_statistics(self, extractor):
+    def test_get_statistics(self, extractor: Any) -> None:
         """Test statistics tracking."""
         stats = extractor.get_statistics()
 
@@ -712,7 +714,7 @@ class TestData2NeoExtractorGraphWriting:
     """Tests for Data2NeoExtractor graph writing functionality."""
 
     @pytest.fixture
-    def mock_graph_provider(self):
+    def mock_graph_provider(self) -> Any:
         """Create mock GraphProvider."""
         provider = AsyncMock()
         provider.create_nodes = AsyncMock(return_value=1)
@@ -720,7 +722,7 @@ class TestData2NeoExtractorGraphWriting:
         return provider
 
     @pytest.fixture
-    def mock_templates(self):
+    def mock_templates(self) -> Any:
         """Create mock Jinja2 templates."""
         return DictLoader(
             {
@@ -730,7 +732,7 @@ class TestData2NeoExtractorGraphWriting:
         )
 
     @pytest.fixture
-    def extractor_with_graph(self, mock_graph_provider, mock_templates, tmp_path):
+    def extractor_with_graph(self, mock_graph_provider: Any, mock_templates: Any, tmp_path: Path) -> Any:
         """Create extractor with graph provider."""
         config = MagicMock(spec=AppConfig)
         config.template_dir = tmp_path
@@ -748,7 +750,7 @@ class TestData2NeoExtractorGraphWriting:
         )
 
     @pytest.mark.asyncio
-    async def test_write_to_graph_no_provider(self, mock_templates, tmp_path):
+    async def test_write_to_graph_no_provider(self, mock_templates: Any, tmp_path: Path) -> None:
         """Test write_to_graph raises error without provider."""
         config = MagicMock(spec=AppConfig)
         config.template_dir = tmp_path
@@ -771,8 +773,8 @@ class TestData2NeoExtractorGraphWriting:
 
     @pytest.mark.asyncio
     async def test_write_to_graph_success(
-        self, extractor_with_graph, mock_graph_provider
-    ):
+        self, extractor_with_graph: Any, mock_graph_provider: Any
+    ) -> None:
         """Test successful graph writing."""
         result = ExtractionResult(
             persons=[Person(name="John", confidence=0.9, role="CEO")],
@@ -797,8 +799,8 @@ class TestData2NeoExtractorGraphWriting:
 
     @pytest.mark.asyncio
     async def test_write_to_graph_empty_result(
-        self, extractor_with_graph, mock_graph_provider
-    ):
+        self, extractor_with_graph: Any, mock_graph_provider: Any
+    ) -> None:
         """Test writing empty result."""
         result = ExtractionResult()
 

@@ -1,3 +1,5 @@
+from typing import Any
+from pathlib import Path
 """Tests for the workflow processor module."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -16,7 +18,7 @@ from src.core.models import WorkflowResult, EvaluationResultSchema, EvaluationIt
 class TestSaveResultToFile:
     """Tests for save_result_to_file function."""
 
-    def test_save_result_basic(self, tmp_path):
+    def test_save_result_basic(self, tmp_path: Path) -> None:
         """Test saving result to file."""
         from src.workflow.processor import save_result_to_file
 
@@ -63,7 +65,7 @@ class TestEvaluateAndRewriteTurn:
     """Tests for _evaluate_and_rewrite_turn function."""
 
     @pytest.fixture
-    def mock_context(self):
+    def mock_context(self) -> Any:
         """Create a mock WorkflowContext."""
         ctx = MagicMock()
         ctx.logger = MagicMock()
@@ -88,7 +90,7 @@ class TestEvaluateAndRewriteTurn:
         return ctx
 
     @pytest.mark.asyncio
-    async def test_evaluate_and_rewrite_success(self, mock_context):
+    async def test_evaluate_and_rewrite_success(self, mock_context: Any) -> None:
         """Test successful evaluation and rewrite."""
         from src.workflow.processor import _evaluate_and_rewrite_turn
 
@@ -102,7 +104,7 @@ class TestEvaluateAndRewriteTurn:
         mock_context.agent.rewrite_best_answer.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_evaluate_and_rewrite_evaluation_fails(self, mock_context):
+    async def test_evaluate_and_rewrite_evaluation_fails(self, mock_context: Any) -> None:
         """Test when evaluation returns None."""
         from src.workflow.processor import _evaluate_and_rewrite_turn
 
@@ -118,7 +120,7 @@ class TestProcessSingleQuery:
     """Tests for process_single_query function."""
 
     @pytest.fixture
-    def mock_context(self, tmp_path):
+    def mock_context(self, tmp_path: Path) -> Any:
         """Create a mock WorkflowContext."""
         ctx = MagicMock()
         ctx.logger = MagicMock()
@@ -149,7 +151,7 @@ class TestProcessSingleQuery:
         return ctx
 
     @pytest.mark.asyncio
-    async def test_process_single_query_success(self, mock_context):
+    async def test_process_single_query_success(self, mock_context: Any) -> None:
         """Test successful query processing."""
         from src.workflow.processor import process_single_query
 
@@ -161,7 +163,7 @@ class TestProcessSingleQuery:
         mock_console.print.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_process_single_query_with_progress(self, mock_context):
+    async def test_process_single_query_with_progress(self, mock_context: Any) -> None:
         """Test query processing with progress tracking."""
         from src.workflow.processor import process_single_query
 
@@ -179,7 +181,7 @@ class TestProcessSingleQuery:
         mock_progress.update.assert_called()
 
     @pytest.mark.asyncio
-    async def test_process_single_query_rate_limit_error(self, mock_context):
+    async def test_process_single_query_rate_limit_error(self, mock_context: Any) -> None:
         """Test handling of rate limit error."""
         from src.workflow.processor import process_single_query
 
@@ -193,7 +195,7 @@ class TestProcessSingleQuery:
         mock_context.logger.error.assert_called()
 
     @pytest.mark.asyncio
-    async def test_process_single_query_validation_error(self, mock_context):
+    async def test_process_single_query_validation_error(self, mock_context: Any) -> None:
         """Test handling of validation error."""
         from src.workflow.processor import process_single_query
 
@@ -206,7 +208,7 @@ class TestProcessSingleQuery:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_process_single_query_safety_filter_error(self, mock_context):
+    async def test_process_single_query_safety_filter_error(self, mock_context: Any) -> None:
         """Test handling of safety filter error."""
         from src.workflow.processor import process_single_query
 
@@ -219,7 +221,7 @@ class TestProcessSingleQuery:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_process_single_query_budget_exceeded(self, mock_context):
+    async def test_process_single_query_budget_exceeded(self, mock_context: Any) -> None:
         """Test handling of budget exceeded error."""
         from src.workflow.processor import process_single_query
 
@@ -231,7 +233,7 @@ class TestProcessSingleQuery:
             await process_single_query(mock_context, "Test query", turn_id=1)
 
     @pytest.mark.asyncio
-    async def test_process_single_query_os_error(self, mock_context):
+    async def test_process_single_query_os_error(self, mock_context: Any) -> None:
         """Test handling of OS error."""
         from src.workflow.processor import process_single_query
 
@@ -245,7 +247,7 @@ class TestProcessSingleQuery:
         mock_context.logger.exception.assert_called()
 
     @pytest.mark.asyncio
-    async def test_process_single_query_runtime_error(self, mock_context):
+    async def test_process_single_query_runtime_error(self, mock_context: Any) -> None:
         """Test handling of runtime error."""
         from src.workflow.processor import process_single_query
 

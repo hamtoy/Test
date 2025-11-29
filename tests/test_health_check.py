@@ -15,19 +15,19 @@ class _BadGraph:
     def __exit__(self, exc_type, exc, tb):
         return False
 
-    def run(self, *args, **kwargs):
+    def run(self, *args, **kwargs) -> None:
         raise Neo4jError("boom")
 
     def single(self):
         return None
 
 
-def test_check_neo4j_connection_false_on_error():
+def test_check_neo4j_connection_false_on_error() -> None:
     kg = types.SimpleNamespace(_graph=_BadGraph())
     assert health_check.check_neo4j_connection(kg) is False  # type: ignore[arg-type]
 
 
-def test_health_check_report(monkeypatch):
+def test_health_check_report(monkeypatch) -> None:
     # Set required environment variables for Neo4j
     monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
     monkeypatch.setenv("NEO4J_USER", "neo4j")

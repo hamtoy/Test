@@ -1,3 +1,5 @@
+from typing import Any
+from pathlib import Path
 """Tests for interactive_menu module to improve coverage."""
 
 import os
@@ -18,7 +20,7 @@ from src.ui.interactive_menu import (
 class TestShowErrorWithGuide:
     """Tests for show_error_with_guide function."""
 
-    def test_show_error_with_guide_displays_message(self, capsys):
+    def test_show_error_with_guide_displays_message(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test that show_error_with_guide displays error message and solution."""
         with patch("src.ui.interactive_menu.console") as mock_console:
             show_error_with_guide(
@@ -29,7 +31,7 @@ class TestShowErrorWithGuide:
             # Should call console.print twice (error + solution)
             assert mock_console.print.call_count == 2
 
-    def test_show_error_with_guide_formats_correctly(self):
+    def test_show_error_with_guide_formats_correctly(self) -> None:
         """Test that error guide shows correct format."""
         with patch("src.ui.interactive_menu.console") as mock_console:
             show_error_with_guide("API Error", "Key invalid", "Check .env file")
@@ -44,12 +46,12 @@ class TestShowErrorWithGuide:
 class TestConstants:
     """Tests for module constants."""
 
-    def test_menu_choices(self):
+    def test_menu_choices(self) -> None:
         """Test MENU_CHOICES constant values."""
         assert MENU_CHOICES == ["1", "2", "3", "4", "5"]
         assert len(MENU_CHOICES) == 5
 
-    def test_default_ocr_path(self):
+    def test_default_ocr_path(self) -> None:
         """Test DEFAULT_OCR_PATH constant."""
         assert DEFAULT_OCR_PATH == "data/inputs/input_ocr.txt"
         assert "input_ocr.txt" in DEFAULT_OCR_PATH
@@ -58,7 +60,7 @@ class TestConstants:
 class TestShowCacheStatistics:
     """Tests for show_cache_statistics function."""
 
-    def test_show_cache_statistics_success(self, tmp_path):
+    def test_show_cache_statistics_success(self, tmp_path: Path) -> None:
         """Test show_cache_statistics with valid cache stats."""
         # Create mock config with cache_stats_path
         mock_config = MagicMock()
@@ -77,7 +79,7 @@ class TestShowCacheStatistics:
             mock_report.assert_called_once()
             mock_prompt.ask.assert_called_once()
 
-    def test_show_cache_statistics_error(self, tmp_path):
+    def test_show_cache_statistics_error(self, tmp_path: Path) -> None:
         """Test show_cache_statistics handles exceptions."""
         mock_config = MagicMock()
         mock_config.cache_stats_path = tmp_path / "nonexistent.json"
@@ -98,7 +100,7 @@ class TestShowCacheStatistics:
 class TestDisplayWorkflowSummary:
     """Tests for _display_workflow_summary function."""
 
-    def test_display_workflow_summary_with_results(self):
+    def test_display_workflow_summary_with_results(self) -> None:
         """Test _display_workflow_summary with successful results."""
         queries = ["질의 1", "질의 2", "질의 3"]
 
@@ -140,7 +142,7 @@ class TestDisplayWorkflowSummary:
             mock_budget.assert_called_once_with(mock_agent)
             mock_cost.assert_called_once_with(mock_agent)
 
-    def test_display_workflow_summary_all_success(self):
+    def test_display_workflow_summary_all_success(self) -> None:
         """Test _display_workflow_summary when all queries succeed."""
         queries = ["질의 1", "질의 2"]
 
@@ -177,7 +179,7 @@ class TestDisplayWorkflowSummary:
             # Check that success count is displayed
             assert any("2" in arg for arg in printed_args)
 
-    def test_display_workflow_summary_long_query(self):
+    def test_display_workflow_summary_long_query(self) -> None:
         """Test _display_workflow_summary with long query text."""
         # Query longer than 50 characters should be truncated
         long_query = "이것은 매우 긴 질의입니다. " * 10
@@ -219,7 +221,7 @@ class TestDisplayWorkflowSummary:
 class TestShowMainMenu:
     """Tests for show_main_menu function."""
 
-    def test_show_main_menu_basic(self):
+    def test_show_main_menu_basic(self) -> None:
         """Test show_main_menu returns correct choice."""
         from src.ui.interactive_menu import show_main_menu
 
@@ -232,7 +234,7 @@ class TestShowMainMenu:
             result = show_main_menu()
             assert result == 0  # "1" - 1 = 0
 
-    def test_show_main_menu_with_flags(self):
+    def test_show_main_menu_with_flags(self) -> None:
         """Test show_main_menu shows feature flags when env vars set."""
         from src.ui.interactive_menu import show_main_menu
 
@@ -253,7 +255,7 @@ class TestShowMainMenu:
             result = show_main_menu()
             assert result == 4  # "5" - 1 = 4
 
-    def test_show_main_menu_all_choices(self):
+    def test_show_main_menu_all_choices(self) -> None:
         """Test show_main_menu with all choices."""
         from src.ui.interactive_menu import show_main_menu
 
@@ -272,7 +274,7 @@ class TestRunWorkflowInteractive:
     """Tests for run_workflow_interactive function."""
 
     @pytest.mark.asyncio
-    async def test_run_workflow_invalid_api_key(self):
+    async def test_run_workflow_invalid_api_key(self) -> None:
         """Test run_workflow_interactive with invalid API key."""
         from src.ui.interactive_menu import run_workflow_interactive
 
@@ -290,7 +292,7 @@ class TestRunWorkflowInteractive:
             mock_prompt.ask.assert_called()
 
     @pytest.mark.asyncio
-    async def test_run_workflow_missing_api_key(self):
+    async def test_run_workflow_missing_api_key(self) -> None:
         """Test run_workflow_interactive with missing API key."""
         from src.ui.interactive_menu import run_workflow_interactive
 
@@ -311,7 +313,7 @@ class TestHandleQueryInspection:
     """Tests for _handle_query_inspection function."""
 
     @pytest.mark.asyncio
-    async def test_handle_query_inspection_empty_query(self):
+    async def test_handle_query_inspection_empty_query(self) -> None:
         """Test _handle_query_inspection with empty query."""
         from src.ui.interactive_menu import _handle_query_inspection
 
@@ -330,7 +332,7 @@ class TestHandleQueryInspection:
             # Should return early for empty query
 
     @pytest.mark.asyncio
-    async def test_handle_query_inspection_with_query(self, tmp_path):
+    async def test_handle_query_inspection_with_query(self, tmp_path: Path) -> None:
         """Test _handle_query_inspection with valid query."""
         from src.ui.interactive_menu import _handle_query_inspection
 
@@ -363,7 +365,7 @@ class TestHandleAnswerInspection:
     """Tests for _handle_answer_inspection function."""
 
     @pytest.mark.asyncio
-    async def test_handle_answer_inspection_file_not_exists(self, tmp_path):
+    async def test_handle_answer_inspection_file_not_exists(self, tmp_path: Path) -> None:
         """Test _handle_answer_inspection with non-existent file."""
         from src.ui.interactive_menu import _handle_answer_inspection
 
@@ -383,7 +385,7 @@ class TestHandleAnswerInspection:
             assert any("red" in str(call) for call in mock_console.print.call_args_list)
 
     @pytest.mark.asyncio
-    async def test_handle_answer_inspection_empty_file(self, tmp_path):
+    async def test_handle_answer_inspection_empty_file(self, tmp_path: Path) -> None:
         """Test _handle_answer_inspection with empty file."""
         from src.ui.interactive_menu import _handle_answer_inspection
 
@@ -410,7 +412,7 @@ class TestHandleEditMenu:
     """Tests for _handle_edit_menu function."""
 
     @pytest.mark.asyncio
-    async def test_handle_edit_menu_file_not_exists(self, tmp_path):
+    async def test_handle_edit_menu_file_not_exists(self, tmp_path: Path) -> None:
         """Test _handle_edit_menu with non-existent file."""
         from src.ui.interactive_menu import _handle_edit_menu
 
@@ -428,7 +430,7 @@ class TestHandleEditMenu:
             # Should print error message
 
     @pytest.mark.asyncio
-    async def test_handle_edit_menu_empty_file(self, tmp_path):
+    async def test_handle_edit_menu_empty_file(self, tmp_path: Path) -> None:
         """Test _handle_edit_menu with empty file."""
         from src.ui.interactive_menu import _handle_edit_menu
 
@@ -449,7 +451,7 @@ class TestHandleEditMenu:
             await _handle_edit_menu(mock_agent, mock_config)
 
     @pytest.mark.asyncio
-    async def test_handle_edit_menu_empty_edit_request(self, tmp_path):
+    async def test_handle_edit_menu_empty_edit_request(self, tmp_path: Path) -> None:
         """Test _handle_edit_menu with empty edit request."""
         from src.ui.interactive_menu import _handle_edit_menu
 
@@ -475,7 +477,7 @@ class TestInteractiveMain:
     """Tests for interactive_main function."""
 
     @pytest.mark.asyncio
-    async def test_interactive_main_exit(self):
+    async def test_interactive_main_exit(self) -> None:
         """Test interactive_main exits on choice 5."""
         from src.ui.interactive_menu import interactive_main
 
@@ -493,7 +495,7 @@ class TestInteractiveMain:
             assert exc_info.value.code == 0
 
     @pytest.mark.asyncio
-    async def test_interactive_main_keyboard_interrupt_continue(self):
+    async def test_interactive_main_keyboard_interrupt_continue(self) -> None:
         """Test interactive_main handles KeyboardInterrupt and continues."""
         from src.ui.interactive_menu import interactive_main
 
@@ -503,7 +505,7 @@ class TestInteractiveMain:
 
         call_count = 0
 
-        def menu_side_effect():
+        def menu_side_effect() -> Any:
             nonlocal call_count
             call_count += 1
             if call_count == 1:

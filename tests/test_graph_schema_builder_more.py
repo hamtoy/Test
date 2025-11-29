@@ -7,14 +7,14 @@ import pytest
 from src.graph import QAGraphBuilder, require_env
 
 
-def test_require_env_missing(monkeypatch):
+def test_require_env_missing(monkeypatch) -> None:
     monkeypatch.delenv("NEO4J_URI", raising=False)
     with pytest.raises(EnvironmentError):
         require_env("NEO4J_URI")
 
 
 class _Session:
-    def __init__(self):
+    def __init__(self) -> None:
         self.calls = []
         self._data_queue = []
 
@@ -35,7 +35,7 @@ class _Session:
 
 
 class _Driver:
-    def __init__(self):
+    def __init__(self) -> None:
         self.session_obj = _Session()
 
     def session(self):
@@ -45,7 +45,7 @@ class _Driver:
         return None
 
 
-def test_create_schema_and_query_types(monkeypatch):
+def test_create_schema_and_query_types(monkeypatch) -> None:
     driver = _Driver()
     builder = QAGraphBuilder.__new__(QAGraphBuilder)
     builder.driver = driver  # type: ignore[assignment]
@@ -58,7 +58,7 @@ def test_create_schema_and_query_types(monkeypatch):
     assert any("MERGE (q:QueryType" in q for q, _ in driver.session_obj.calls)
 
 
-def test_extract_rules_no_headings(monkeypatch):
+def test_extract_rules_no_headings(monkeypatch) -> None:
     driver = _Driver()
     session = driver.session_obj
     session._data_queue.append(types.SimpleNamespace(data=lambda: []))  # headings empty

@@ -4,9 +4,9 @@ import types
 from src.processing import context_augmentation as aca
 
 
-def test_advanced_context_augmentation_vector_index(monkeypatch):
+def test_advanced_context_augmentation_vector_index(monkeypatch) -> None:
     class _Doc:
-        def __init__(self, text):
+        def __init__(self, text) -> None:
             self.page_content = text
             self.metadata = {"id": 1}
 
@@ -39,7 +39,7 @@ def test_advanced_context_augmentation_vector_index(monkeypatch):
     assert out["relevant_rules"]
 
 
-def test_advanced_context_augmentation_fallback_graph():
+def test_advanced_context_augmentation_fallback_graph() -> None:
     record = {
         "blocks": [{"content": "b"}],
         "rules": [{"rule": "r", "priority": 1, "examples": ["e"]}],
@@ -70,7 +70,7 @@ def test_advanced_context_augmentation_fallback_graph():
     assert out["relevant_rules"]
 
 
-def test_generate_with_augmentation_formats(monkeypatch):
+def test_generate_with_augmentation_formats(monkeypatch) -> None:
     aug = aca.AdvancedContextAugmentation.__new__(aca.AdvancedContextAugmentation)
     monkeypatch.setattr(
         aug,

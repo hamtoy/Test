@@ -52,11 +52,11 @@ def _make_agent(monkeypatch, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_execute_api_call_logs_metrics(monkeypatch, tmp_path):
+async def test_execute_api_call_logs_metrics(monkeypatch, tmp_path) -> None:
     agent = _make_agent(monkeypatch, tmp_path)
     logged = {}
 
-    def _log_metrics(logger, **kwargs):
+    def _log_metrics(logger, **kwargs) -> None:
         logged.update(kwargs)
 
     # Patch src.agent.log_metrics so _get_log_metrics() finds it
@@ -65,7 +65,7 @@ async def test_execute_api_call_logs_metrics(monkeypatch, tmp_path):
     monkeypatch.setattr(agent_mod, "log_metrics", _log_metrics)
 
     class _Resp:
-        def __init__(self):
+        def __init__(self) -> None:
             self.candidates = [
                 types.SimpleNamespace(finish_reason="STOP", content=None)
             ]
@@ -87,7 +87,7 @@ async def test_execute_api_call_logs_metrics(monkeypatch, tmp_path):
     assert "latency_ms" in logged
 
 
-def test_get_total_cost_unknown_model(monkeypatch, tmp_path):
+def test_get_total_cost_unknown_model(monkeypatch, tmp_path) -> None:
     agent = _make_agent(monkeypatch, tmp_path)
     agent._cost_tracker.model_name = "unknown-model"
     agent.total_input_tokens = 10

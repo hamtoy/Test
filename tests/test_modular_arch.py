@@ -4,27 +4,28 @@ from src.core.interfaces import GenerationResult, SafetyBlockedError
 from src.core.adapters import GeminiProvider
 from src.core.factory import get_llm_provider, get_graph_provider
 from src.config import AppConfig
+from typing import Any
 
 
 @pytest.fixture
-def mock_genai_model():
+def mock_genai_model() -> None:
     with patch("google.generativeai.GenerativeModel") as mock:
         yield mock
 
 
 @pytest.fixture
-def valid_api_key():
+def valid_api_key() -> Any:
     return "AIza" + "X" * 35
 
 
 @pytest.fixture
-def app_config(valid_api_key, monkeypatch):
+def app_config(valid_api_key: Any, monkeypatch: pytest.MonkeyPatch) -> Any:
     monkeypatch.setenv("GEMINI_API_KEY", valid_api_key)
     return AppConfig()
 
 
 @pytest.mark.asyncio
-async def test_gemini_provider_generate_success(mock_genai_model):
+async def test_gemini_provider_generate_success(mock_genai_model: Any) -> None:
     # Setup mock response
     mock_response = MagicMock()
     mock_response.text = "Test content"
@@ -53,7 +54,7 @@ async def test_gemini_provider_generate_success(mock_genai_model):
 
 
 @pytest.mark.asyncio
-async def test_gemini_provider_safety_block(mock_genai_model):
+async def test_gemini_provider_safety_block(mock_genai_model: Any) -> None:
     # Setup mock response with safety block
     mock_response = MagicMock()
 
@@ -73,20 +74,20 @@ async def test_gemini_provider_safety_block(mock_genai_model):
         await provider.generate_content_async("Unsafe prompt")
 
 
-def test_factory_get_llm_provider(app_config):
+def test_factory_get_llm_provider(app_config: Any) -> None:
     with patch("src.core.adapters.genai.configure"):
         provider = get_llm_provider(app_config)
         assert isinstance(provider, GeminiProvider)
 
 
-def test_factory_invalid_provider(valid_api_key, monkeypatch):
+def test_factory_invalid_provider(valid_api_key: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", valid_api_key)
     config = AppConfig(llm_provider_type="invalid")
     with pytest.raises(ValueError, match="Unsupported LLM provider type"):
         get_llm_provider(config)
 
 
-def test_get_graph_provider_missing():
+def test_get_graph_provider_missing() -> None:
     class _Cfg:
         graph_provider_type = "neo4j"
         neo4j_uri = None
@@ -96,7 +97,7 @@ def test_get_graph_provider_missing():
     assert get_graph_provider(_Cfg()) is None  # type: ignore[arg-type]
 
 
-def test_get_graph_provider_valid():
+def test_get_graph_provider_valid() -> None:
     class _Cfg:
         graph_provider_type = "neo4j"
         neo4j_uri = "bolt://localhost:7687"

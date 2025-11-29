@@ -15,7 +15,7 @@ from src.features.lats import (
 
 
 class _FakeLLM(LLMProvider):
-    def __init__(self, responses: List[str]):
+    def __init__(self, responses: List[str]) -> None:
         self.responses = responses
         self.calls = 0
 
@@ -37,14 +37,14 @@ class _FakeLLM(LLMProvider):
 
 
 @pytest.mark.asyncio
-async def test_lats_finds_best_child_with_mock_callbacks():
+async def test_lats_finds_best_child_with_mock_callbacks() -> None:
     actions = {"root": ["a1", "a2"], "a1": [], "a2": []}
     rewards = {"a1": 0.2, "a2": 0.8}
 
-    async def propose(node: SearchNode):
+    async def propose(node: SearchNode) -> Any:
         return actions.get(node.action or "root", [])
 
-    async def evaluate(node: SearchNode):
+    async def evaluate(node: SearchNode) -> Any:
         return rewards.get(node.action or "", 0.0)
 
     searcher = LATSSearcher(
@@ -61,14 +61,14 @@ async def test_lats_finds_best_child_with_mock_callbacks():
 
 
 @pytest.mark.asyncio
-async def test_graph_validator_prunes_actions():
-    async def propose(node: SearchNode):  # noqa: ARG001
+async def test_graph_validator_prunes_actions() -> None:
+    async def propose(node: SearchNode) -> Any:  # noqa: ARG001
         return ["bad", "good"]
 
-    async def graph_validator(_state: SearchState, action: str):
+    async def graph_validator(_state: SearchState, action: str) -> Any:
         return ValidationResult(allowed=action != "bad")
 
-    async def evaluate(node: SearchNode):
+    async def evaluate(node: SearchNode) -> Any:
         return 0.5 if node.action == "good" else 0.0
 
     searcher = LATSSearcher(
@@ -84,14 +84,14 @@ async def test_graph_validator_prunes_actions():
 
 
 @pytest.mark.asyncio
-async def test_graph_penalty_reduces_score():
-    async def propose(node: SearchNode):  # noqa: ARG001
+async def test_graph_penalty_reduces_score() -> None:
+    async def propose(node: SearchNode) -> Any:  # noqa: ARG001
         return ["penalty"]
 
-    async def graph_validator(_state: SearchState, action: str):
+    async def graph_validator(_state: SearchState, action: str) -> Any:
         return ValidationResult(allowed=True, penalty=0.3 if action == "penalty" else 0)
 
-    async def evaluate(node: SearchNode):
+    async def evaluate(node: SearchNode) -> Any:
         return 1.0
 
     searcher = LATSSearcher(
@@ -106,7 +106,7 @@ async def test_graph_penalty_reduces_score():
 
 
 @pytest.mark.asyncio
-async def test_should_terminate_on_budget_and_depth():
+async def test_should_terminate_on_budget_and_depth() -> None:
     state = SearchState(cumulative_tokens=60000, cumulative_cost=2.0)
     searcher = LATSSearcher(
         llm_provider=None, max_visits=1, token_budget=50000, cost_budget=1.0
@@ -116,7 +116,7 @@ async def test_should_terminate_on_budget_and_depth():
 
 
 @pytest.mark.asyncio
-async def test_cost_budget_termination():
+async def test_cost_budget_termination() -> None:
     state = SearchState(cumulative_tokens=0, cumulative_cost=5.0)
     searcher = LATSSearcher(llm_provider=None, cost_budget=1.0)
     node = SearchNode(state=state)
@@ -124,7 +124,7 @@ async def test_cost_budget_termination():
 
 
 @pytest.mark.asyncio
-async def test_reflection_uses_llm():
+async def test_reflection_uses_llm() -> None:
     llm = _FakeLLM(["insight"])
     searcher = LATSSearcher(llm_provider=llm)
     text = await searcher.reflect_on_error("boom", context="ctx")
@@ -132,18 +132,18 @@ async def test_reflection_uses_llm():
 
 
 @pytest.mark.asyncio
-async def test_reflection_without_llm_returns_fallback():
+async def test_reflection_without_llm_returns_fallback() -> None:
     searcher = LATSSearcher(llm_provider=None)
     text = await searcher.reflect_on_error("boom")
     assert "Reflection unavailable" in text
 
 
 @pytest.mark.asyncio
-async def test_evaluate_updates_budget_on_error():
-    async def propose(node: SearchNode):  # noqa: ARG001
+async def test_evaluate_updates_budget_on_error() -> None:
+    async def propose(node: SearchNode) -> Any:  # noqa: ARG001
         return ["x"]
 
-    async def evaluate(node: SearchNode):
+    async def evaluate(node: SearchNode) -> None:
         raise RuntimeError("fail")
 
     searcher = LATSSearcher(

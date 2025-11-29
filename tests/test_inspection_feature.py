@@ -5,18 +5,19 @@ import pytest
 from src.agent import GeminiAgent
 from src.features.difficulty import AdaptiveDifficultyAdjuster
 from src.workflow.inspection import inspect_answer, inspect_query
+from typing import Any
 
 
 # Mock dependencies
 @pytest.fixture
-def mock_agent():
+def mock_agent() -> Any:
     agent = MagicMock(spec=GeminiAgent)
     agent.llm_provider = MagicMock()
     return agent
 
 
 @pytest.fixture
-def mock_components():
+def mock_components() -> Any:
     kg = MagicMock()
     kg.get_constraints_for_query_type.return_value = [{"description": "Rule 1"}]
 
@@ -33,7 +34,7 @@ def mock_components():
 
 
 @pytest.fixture
-def mock_cache():
+def mock_cache() -> Any:
     cache = MagicMock()
     cache.get = AsyncMock(return_value=None)  # No cache hit
     cache.set = AsyncMock()
@@ -41,7 +42,7 @@ def mock_cache():
 
 
 @pytest.mark.asyncio
-async def test_inspect_query(mock_agent, mock_components):
+async def test_inspect_query(mock_agent: Any, mock_components: Any) -> None:
     kg, lats, difficulty, _ = mock_components
 
     # Mock SelfCorrectingQAChain
@@ -64,7 +65,7 @@ async def test_inspect_query(mock_agent, mock_components):
 
 
 @pytest.mark.asyncio
-async def test_inspect_query_without_ocr(mock_agent, mock_components):
+async def test_inspect_query_without_ocr(mock_agent: Any, mock_components: Any) -> None:
     """Test query inspection without OCR text (fallback to image complexity)"""
     kg, lats, difficulty, _ = mock_components
 
@@ -87,7 +88,7 @@ async def test_inspect_query_without_ocr(mock_agent, mock_components):
 
 
 @pytest.mark.asyncio
-async def test_inspect_query_with_cache_hit(mock_agent, mock_components, mock_cache):
+async def test_inspect_query_with_cache_hit(mock_agent: Any, mock_components: Any, mock_cache: Any) -> None:
     """Test query inspection with cache hit - returns original query"""
     kg, lats, difficulty, _ = mock_components
     mock_cache.get = AsyncMock(return_value=1.0)  # Cache hit (processed marker)
@@ -108,7 +109,7 @@ async def test_inspect_query_with_cache_hit(mock_agent, mock_components, mock_ca
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer(mock_agent, mock_components):
+async def test_inspect_answer(mock_agent: Any, mock_components: Any) -> None:
     kg, lats, _, validator = mock_components
 
     with patch("src.workflow.inspection.SelfCorrectingQAChain") as MockChain:
@@ -131,7 +132,7 @@ async def test_inspect_answer(mock_agent, mock_components):
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer_without_query(mock_agent, mock_components):
+async def test_inspect_answer_without_query(mock_agent: Any, mock_components: Any) -> None:
     """Test answer inspection without query (cross-validation skipped)"""
     kg, lats, _, validator = mock_components
 
@@ -156,7 +157,7 @@ async def test_inspect_answer_without_query(mock_agent, mock_components):
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer_low_coverage(mock_agent, mock_components):
+async def test_inspect_answer_low_coverage(mock_agent: Any, mock_components: Any) -> None:
     """Test answer inspection with low keyword coverage warning"""
     kg, lats, _, validator = mock_components
 
@@ -181,7 +182,7 @@ async def test_inspect_answer_low_coverage(mock_agent, mock_components):
 class TestAdaptiveDifficultyAdjuster:
     """Tests for text complexity analysis"""
 
-    def test_analyze_text_complexity_empty(self):
+    def test_analyze_text_complexity_empty(self) -> None:
         """Test complexity analysis with empty text"""
         kg = MagicMock()
         adjuster = AdaptiveDifficultyAdjuster(kg)
@@ -192,7 +193,7 @@ class TestAdaptiveDifficultyAdjuster:
         assert result["word_count"] == 0
         assert result["reasoning_possible"] is False
 
-    def test_analyze_text_complexity_simple(self):
+    def test_analyze_text_complexity_simple(self) -> None:
         """Test complexity analysis with short text"""
         kg = MagicMock()
         adjuster = AdaptiveDifficultyAdjuster(kg)
@@ -203,7 +204,7 @@ class TestAdaptiveDifficultyAdjuster:
         assert result["word_count"] < 100
         assert result["text_density"] < 0.4
 
-    def test_analyze_text_complexity_medium(self):
+    def test_analyze_text_complexity_medium(self) -> None:
         """Test complexity analysis with medium length text"""
         kg = MagicMock()
         adjuster = AdaptiveDifficultyAdjuster(kg)
@@ -217,7 +218,7 @@ class TestAdaptiveDifficultyAdjuster:
         assert result["level"] == "medium"
         assert result["word_count"] == 150
 
-    def test_analyze_text_complexity_complex(self):
+    def test_analyze_text_complexity_complex(self) -> None:
         """Test complexity analysis with long text"""
         kg = MagicMock()
         adjuster = AdaptiveDifficultyAdjuster(kg)
@@ -232,7 +233,7 @@ class TestAdaptiveDifficultyAdjuster:
         assert result["word_count"] == 350
         assert result["recommended_turns"] == 4
 
-    def test_analyze_text_complexity_with_structure(self):
+    def test_analyze_text_complexity_with_structure(self) -> None:
         """Test complexity analysis with structural patterns"""
         kg = MagicMock()
         adjuster = AdaptiveDifficultyAdjuster(kg)
@@ -243,7 +244,7 @@ class TestAdaptiveDifficultyAdjuster:
 
         assert result["has_structure"] is True
 
-    def test_analyze_text_complexity_with_numbers(self):
+    def test_analyze_text_complexity_with_numbers(self) -> None:
         """Test complexity analysis with numeric data"""
         kg = MagicMock()
         adjuster = AdaptiveDifficultyAdjuster(kg)
@@ -256,7 +257,7 @@ class TestAdaptiveDifficultyAdjuster:
 
 
 @pytest.mark.asyncio
-async def test_inspect_query_without_kg(mock_agent, mock_components):
+async def test_inspect_query_without_kg(mock_agent: Any, mock_components: Any) -> None:
     """Test query inspection without knowledge graph (returns original query)."""
     _, lats, difficulty, _ = mock_components
 
@@ -273,8 +274,8 @@ async def test_inspect_query_without_kg(mock_agent, mock_components):
 
 @pytest.mark.asyncio
 async def test_inspect_query_with_cache_miss_and_save(
-    mock_agent, mock_components, mock_cache
-):
+    mock_agent: Any, mock_components: Any, mock_cache: Any
+) -> None:
     """Test query inspection caches result after processing."""
     kg, lats, difficulty, _ = mock_components
 
@@ -298,7 +299,7 @@ async def test_inspect_query_with_cache_miss_and_save(
 
 
 @pytest.mark.asyncio
-async def test_inspect_query_with_rules(mock_agent, mock_components):
+async def test_inspect_query_with_rules(mock_agent: Any, mock_components: Any) -> None:
     """Test query inspection with rules from knowledge graph."""
     kg, lats, difficulty, _ = mock_components
     kg.get_constraints_for_query_type.return_value = [
@@ -325,7 +326,7 @@ async def test_inspect_query_with_rules(mock_agent, mock_components):
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer_without_kg(mock_agent, mock_components):
+async def test_inspect_answer_without_kg(mock_agent: Any, mock_components: Any) -> None:
     """Test answer inspection without knowledge graph (returns original answer)."""
     _, lats, _, validator = mock_components
 
@@ -350,7 +351,7 @@ async def test_inspect_answer_without_kg(mock_agent, mock_components):
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer_with_cache_hit(mock_agent, mock_components, mock_cache):
+async def test_inspect_answer_with_cache_hit(mock_agent: Any, mock_components: Any, mock_cache: Any) -> None:
     """Test answer inspection with cache hit returns original answer."""
     kg, lats, _, validator = mock_components
     mock_cache.get = AsyncMock(return_value=1.0)
@@ -378,7 +379,7 @@ async def test_inspect_answer_with_cache_hit(mock_agent, mock_components, mock_c
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer_with_cache_save(mock_agent, mock_components, mock_cache):
+async def test_inspect_answer_with_cache_save(mock_agent: Any, mock_components: Any, mock_cache: Any) -> None:
     """Test answer inspection caches result after processing."""
     kg, lats, _, validator = mock_components
 
@@ -410,7 +411,7 @@ async def test_inspect_answer_with_cache_save(mock_agent, mock_components, mock_
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer_validation_failure(mock_agent, mock_components):
+async def test_inspect_answer_validation_failure(mock_agent: Any, mock_components: Any) -> None:
     """Test answer inspection with validation failure."""
     kg, lats, _, validator = mock_components
     validator.cross_validate_qa_pair.return_value = {"overall_score": 0.5}  # Below 0.7
@@ -436,7 +437,7 @@ async def test_inspect_answer_validation_failure(mock_agent, mock_components):
 
 
 @pytest.mark.asyncio
-async def test_inspect_query_with_context_none(mock_agent, mock_components):
+async def test_inspect_query_with_context_none(mock_agent: Any, mock_components: Any) -> None:
     """Test query inspection with None context."""
     kg, lats, difficulty, _ = mock_components
 
@@ -463,7 +464,7 @@ async def test_inspect_query_with_context_none(mock_agent, mock_components):
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer_with_context_none(mock_agent, mock_components):
+async def test_inspect_answer_with_context_none(mock_agent: Any, mock_components: Any) -> None:
     """Test answer inspection with None context."""
     kg, lats, _, validator = mock_components
 
@@ -492,7 +493,7 @@ async def test_inspect_answer_with_context_none(mock_agent, mock_components):
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer_without_ocr_text(mock_agent, mock_components):
+async def test_inspect_answer_without_ocr_text(mock_agent: Any, mock_components: Any) -> None:
     """Test answer inspection without OCR text (keyword verification skipped)."""
     kg, lats, _, validator = mock_components
 

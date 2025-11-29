@@ -1,3 +1,5 @@
+from typing import Any
+from pathlib import Path
 """Tests for web API module to improve coverage."""
 
 import io
@@ -32,7 +34,7 @@ from src.web.api import (  # noqa: E402
 
 
 @pytest.fixture
-def client():
+def client() -> Any:
     """Create test client for the API."""
     return TestClient(app)
 
@@ -40,7 +42,7 @@ def client():
 class TestHelperFunctions:
     """Tests for helper functions."""
 
-    def test_load_ocr_text_success(self, tmp_path):
+    def test_load_ocr_text_success(self, tmp_path: Path) -> None:
         """Test load_ocr_text with existing file."""
         inputs_dir = tmp_path / "inputs"
         inputs_dir.mkdir()
@@ -52,7 +54,7 @@ class TestHelperFunctions:
             result = load_ocr_text()
             assert result == "테스트 OCR 내용"
 
-    def test_load_ocr_text_whitespace_stripped(self, tmp_path):
+    def test_load_ocr_text_whitespace_stripped(self, tmp_path: Path) -> None:
         """Test load_ocr_text strips whitespace."""
         inputs_dir = tmp_path / "inputs"
         inputs_dir.mkdir()
@@ -64,7 +66,7 @@ class TestHelperFunctions:
             result = load_ocr_text()
             assert result == "테스트 내용"
 
-    def test_save_ocr_text_creates_directory(self, tmp_path):
+    def test_save_ocr_text_creates_directory(self, tmp_path: Path) -> None:
         """Test save_ocr_text creates directory if not exists."""
         inputs_dir = tmp_path / "inputs"
         # Directory doesn't exist yet
@@ -77,7 +79,7 @@ class TestHelperFunctions:
             assert ocr_file.exists()
             assert ocr_file.read_text(encoding="utf-8") == "새 OCR 텍스트"
 
-    def test_save_ocr_text_overwrites(self, tmp_path):
+    def test_save_ocr_text_overwrites(self, tmp_path: Path) -> None:
         """Test save_ocr_text overwrites existing file."""
         inputs_dir = tmp_path / "inputs"
         inputs_dir.mkdir()
@@ -95,7 +97,7 @@ class TestInitResources:
     """Tests for init_resources function."""
 
     @pytest.mark.asyncio
-    async def test_init_resources_creates_agent(self, tmp_path):
+    async def test_init_resources_creates_agent(self, tmp_path: Path) -> None:
         """Test init_resources creates GeminiAgent."""
         import src.web.api as api_module
 
@@ -131,7 +133,7 @@ class TestInitResources:
             api_module.mm = original_mm
 
     @pytest.mark.asyncio
-    async def test_init_resources_with_kg_success(self, tmp_path):
+    async def test_init_resources_with_kg_success(self, tmp_path: Path) -> None:
         """Test init_resources creates KnowledgeGraph when Neo4j available."""
         import src.web.api as api_module
 
@@ -168,7 +170,7 @@ class TestGenerateSingleQA:
     """Tests for generate_single_qa function."""
 
     @pytest.mark.asyncio
-    async def test_generate_single_qa_basic(self):
+    async def test_generate_single_qa_basic(self) -> None:
         """Test generate_single_qa returns expected structure."""
         mock_agent = MagicMock()
         mock_agent.generate_query = AsyncMock(return_value=["생성된 질의"])
@@ -183,7 +185,7 @@ class TestGenerateSingleQA:
             assert "answer" in result
 
     @pytest.mark.asyncio
-    async def test_generate_single_qa_empty_queries(self):
+    async def test_generate_single_qa_empty_queries(self) -> None:
         """Test generate_single_qa raises on empty queries."""
         mock_agent = MagicMock()
         mock_agent.generate_query = AsyncMock(return_value=[])
@@ -195,7 +197,7 @@ class TestGenerateSingleQA:
             await generate_single_qa(mock_agent, "OCR 텍스트", "reasoning")
 
     @pytest.mark.asyncio
-    async def test_generate_single_qa_with_kg(self, monkeypatch):
+    async def test_generate_single_qa_with_kg(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test generate_single_qa uses template generator with kg."""
         mock_agent = MagicMock()
         mock_agent.generate_query = AsyncMock(return_value=["생성된 질의"])
@@ -227,7 +229,7 @@ class TestGenerateSingleQA:
 class TestLogReviewSessionEdgeCases:
     """Additional edge case tests for log_review_session."""
 
-    def test_log_review_session_unicode_content(self, tmp_path):
+    def test_log_review_session_unicode_content(self, tmp_path: Path) -> None:
         """Test log_review_session handles unicode content."""
         with patch("src.web.api.REPO_ROOT", tmp_path):
             log_review_session(
@@ -251,7 +253,7 @@ class TestLogReviewSessionEdgeCases:
             assert "🚀" in entry["answer_after"]
             assert "👍" in entry["inspector_comment"]
 
-    def test_log_review_session_long_content(self, tmp_path):
+    def test_log_review_session_long_content(self, tmp_path: Path) -> None:
         """Test log_review_session handles very long content."""
         long_text = "A" * 10000
 
@@ -278,7 +280,7 @@ class TestLogReviewSessionEdgeCases:
 class TestHealthCheck:
     """Tests for health check endpoint."""
 
-    def test_health_check_all_none(self, client):
+    def test_health_check_all_none(self, client: Any) -> None:
         """Test health check when all resources are None."""
         import src.web.api as api_module
 
@@ -304,7 +306,7 @@ class TestHealthCheck:
             api_module.kg = original_kg
             api_module.mm = original_mm
 
-    def test_health_check_with_agent(self, client):
+    def test_health_check_with_agent(self, client: Any) -> None:
         """Test health check when agent is initialized."""
         import src.web.api as api_module
 
@@ -332,7 +334,7 @@ class TestHealthCheck:
 class TestWorkspaceApiExtended:
     """Extended tests for workspace API."""
 
-    def test_workspace_inspect_with_mocked_agent(self, client, tmp_path):
+    def test_workspace_inspect_with_mocked_agent(self, client: Any, tmp_path: Path) -> None:
         """Test workspace inspect mode with mocked agent."""
         import src.web.api as api_module
 
@@ -369,7 +371,7 @@ class TestWorkspaceApiExtended:
         finally:
             api_module.agent = original_agent
 
-    def test_workspace_edit_with_mocked_agent(self, client, tmp_path):
+    def test_workspace_edit_with_mocked_agent(self, client: Any, tmp_path: Path) -> None:
         """Test workspace edit mode with mocked agent."""
         import src.web.api as api_module
 
@@ -409,7 +411,7 @@ class TestWorkspaceApiExtended:
 class TestQAGenerateApiExtended:
     """Extended tests for QA generation API."""
 
-    def test_generate_batch_with_mocked_agent(self, client, tmp_path):
+    def test_generate_batch_with_mocked_agent(self, client: Any, tmp_path: Path) -> None:
         """Test batch QA generation with mocked agent."""
         import src.web.api as api_module
 
@@ -444,7 +446,7 @@ class TestQAGenerateApiExtended:
 class TestEvalApiExtended:
     """Extended tests for evaluation API."""
 
-    def test_eval_external_with_mocked_agent(self, client, tmp_path):
+    def test_eval_external_with_mocked_agent(self, client: Any, tmp_path: Path) -> None:
         """Test external evaluation with mocked agent."""
         import src.web.api as api_module
 
@@ -489,7 +491,7 @@ class TestEvalApiExtended:
 class TestMultimodalApiExtended:
     """Extended tests for multimodal API."""
 
-    def test_multimodal_with_mocked_mm(self, client, tmp_path):
+    def test_multimodal_with_mocked_mm(self, client: Any, tmp_path: Path) -> None:
         """Test multimodal analysis with mocked mm."""
         import src.web.api as api_module
 
@@ -522,7 +524,7 @@ class TestMultimodalApiExtended:
         finally:
             api_module.mm = original_mm
 
-    def test_multimodal_invalid_content_type(self, client):
+    def test_multimodal_invalid_content_type(self, client: Any) -> None:
         """Test multimodal with invalid content type when mm is available."""
         import src.web.api as api_module
 
@@ -540,7 +542,7 @@ class TestMultimodalApiExtended:
         finally:
             api_module.mm = original_mm
 
-    def test_multimodal_missing_content_type(self, client):
+    def test_multimodal_missing_content_type(self, client: Any) -> None:
         """Test multimodal with missing content type when mm is available."""
         import src.web.api as api_module
 
@@ -559,7 +561,7 @@ class TestMultimodalApiExtended:
         finally:
             api_module.mm = original_mm
 
-    def test_multimodal_analysis_error(self, client, tmp_path):
+    def test_multimodal_analysis_error(self, client: Any, tmp_path: Path) -> None:
         """Test multimodal handles analysis errors."""
         import src.web.api as api_module
 

@@ -44,7 +44,7 @@ def _agent_with_budget(
     return agent
 
 
-def test_budget_warning_logs(caplog, tmp_path):
+def test_budget_warning_logs(caplog: pytest.LogCaptureFixture, tmp_path: Path) -> None:
     agent = _agent_with_budget(
         200_000, 0, budget=0.01, tmp_path=tmp_path
     )  # forces high pct
@@ -53,6 +53,6 @@ def test_budget_warning_logs(caplog, tmp_path):
     assert any("Budget nearing limit" in rec.message for rec in caplog.records)
 
 
-def test_budget_ok(tmp_path):
+def test_budget_ok(tmp_path: Path) -> None:
     agent = _agent_with_budget(1_000, 1_000, budget=1000.0, tmp_path=tmp_path)
     agent.check_budget()  # should not raise

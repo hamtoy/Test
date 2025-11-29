@@ -12,7 +12,7 @@ VALID_API_KEY = "AIza" + "A" * 35
 
 
 @pytest.mark.asyncio
-async def test_create_context_cache_reuses_local(monkeypatch, tmp_path):
+async def test_create_context_cache_reuses_local(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
     monkeypatch.setenv("LOCAL_CACHE_DIR", str(tmp_path / ".cache"))
@@ -45,7 +45,7 @@ async def test_create_context_cache_reuses_local(monkeypatch, tmp_path):
     assert cache.name == "cached-content"
 
 
-def test_local_cache_ttl_expiration(monkeypatch, tmp_path):
+def test_local_cache_ttl_expiration(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
     monkeypatch.setenv("LOCAL_CACHE_DIR", str(tmp_path / ".cache"))
@@ -71,7 +71,7 @@ def test_local_cache_ttl_expiration(monkeypatch, tmp_path):
     assert agent._load_local_cache(fingerprint, ttl_minutes=10) is None
 
 
-def test_local_cache_ttl_returns_cache(monkeypatch, tmp_path):
+def test_local_cache_ttl_returns_cache(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
     monkeypatch.setenv("LOCAL_CACHE_DIR", str(tmp_path / ".cache"))
@@ -106,7 +106,7 @@ def test_local_cache_ttl_returns_cache(monkeypatch, tmp_path):
     assert cache.name == "cached-keep"
 
 
-def test_local_cache_invalid_manifest(monkeypatch, tmp_path):
+def test_local_cache_invalid_manifest(monkeypatch, tmp_path) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
     monkeypatch.setenv("LOCAL_CACHE_DIR", str(tmp_path / ".cache"))

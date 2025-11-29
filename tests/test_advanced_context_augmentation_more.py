@@ -3,17 +3,18 @@ from __future__ import annotations
 import types
 
 from src.processing.context_augmentation import AdvancedContextAugmentation
+from typing import Any
 
 
-def test_augment_without_vector_store(monkeypatch):
+def test_augment_without_vector_store(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Session:
-        def __enter__(self):
+        def __enter__(self) -> Any:
             return self
 
-        def __exit__(self, exc_type, exc, tb):
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> Any:
             return False
 
-        def run(self, *_args, **_kwargs):
+        def run(self, *_args: Any, **_kwargs: Any) -> Any:
             return types.SimpleNamespace(
                 single=lambda: {
                     "blocks": [{"content": "text", "id": "b1"}],
@@ -22,7 +23,7 @@ def test_augment_without_vector_store(monkeypatch):
             )
 
     class _Driver:
-        def session(self):
+        def session(self) -> Any:
             return _Session()
 
     aug = AdvancedContextAugmentation.__new__(AdvancedContextAugmentation)

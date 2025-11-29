@@ -1,3 +1,4 @@
+from typing import Any
 """Tests for Feature Flags."""
 
 import json
@@ -9,7 +10,7 @@ from src.infra.feature_flags import FeatureFlags
 
 
 @pytest.fixture
-def temp_flags_file(tmp_path):
+def temp_flags_file(tmp_path: Path) -> Any:
     """Create a temporary feature flags config file."""
     flags_file = tmp_path / "config" / "feature_flags.json"
     flags_file.parent.mkdir(parents=True, exist_ok=True)
@@ -63,7 +64,7 @@ def temp_flags_file(tmp_path):
 
 
 @pytest.fixture
-def empty_flags_file(tmp_path):
+def empty_flags_file(tmp_path: Path) -> Any:
     """Create an empty flags file."""
     flags_file = tmp_path / "config" / "feature_flags.json"
     flags_file.parent.mkdir(parents=True, exist_ok=True)
@@ -71,33 +72,33 @@ def empty_flags_file(tmp_path):
     return flags_file
 
 
-def test_feature_flags_init():
+def test_feature_flags_init() -> None:
     """Test feature flags initialization with default path."""
     flags = FeatureFlags()
     assert flags.config_file == Path("config/feature_flags.json")
 
 
-def test_feature_flags_init_custom_path(temp_flags_file):
+def test_feature_flags_init_custom_path(temp_flags_file: Any) -> None:
     """Test feature flags initialization with custom path."""
     flags = FeatureFlags(config_file=temp_flags_file)
     assert flags.config_file == temp_flags_file
 
 
-def test_load_flags(temp_flags_file):
+def test_load_flags(temp_flags_file: Any) -> None:
     """Test loading flags from file."""
     flags = FeatureFlags(config_file=temp_flags_file)
     assert "test_feature" in flags.flags
     assert flags.flags["test_feature"]["enabled"] is True
 
 
-def test_load_flags_missing_file(tmp_path):
+def test_load_flags_missing_file(tmp_path: Path) -> None:
     """Test loading from non-existent file."""
     missing_file = tmp_path / "missing.json"
     flags = FeatureFlags(config_file=missing_file)
     assert flags.flags == {}
 
 
-def test_is_enabled_basic(temp_flags_file, monkeypatch):
+def test_is_enabled_basic(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test basic feature enabled check."""
     monkeypatch.setenv("ENVIRONMENT", "development")
     flags = FeatureFlags(config_file=temp_flags_file)
@@ -105,14 +106,14 @@ def test_is_enabled_basic(temp_flags_file, monkeypatch):
     assert flags.is_enabled("disabled_feature") is False
 
 
-def test_is_enabled_unknown_flag(temp_flags_file, monkeypatch):
+def test_is_enabled_unknown_flag(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test checking unknown flag."""
     monkeypatch.setenv("ENVIRONMENT", "development")
     flags = FeatureFlags(config_file=temp_flags_file)
     assert flags.is_enabled("unknown_flag") is False
 
 
-def test_is_enabled_environment_restriction(temp_flags_file, monkeypatch):
+def test_is_enabled_environment_restriction(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test environment restriction."""
     flags = FeatureFlags(config_file=temp_flags_file)
 
@@ -128,7 +129,7 @@ def test_is_enabled_environment_restriction(temp_flags_file, monkeypatch):
     assert flags.is_enabled("limited_rollout", user_id="test_user") is False
 
 
-def test_is_enabled_whitelist(temp_flags_file, monkeypatch):
+def test_is_enabled_whitelist(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test whitelist functionality."""
     monkeypatch.setenv("ENVIRONMENT", "development")
     flags = FeatureFlags(config_file=temp_flags_file)
@@ -140,7 +141,7 @@ def test_is_enabled_whitelist(temp_flags_file, monkeypatch):
     assert flags.is_enabled("whitelist_only", user_id="user3") is False
 
 
-def test_is_enabled_rollout_percent(temp_flags_file, monkeypatch):
+def test_is_enabled_rollout_percent(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test rollout percentage."""
     monkeypatch.setenv("ENVIRONMENT", "development")
     flags = FeatureFlags(config_file=temp_flags_file)
@@ -152,7 +153,7 @@ def test_is_enabled_rollout_percent(temp_flags_file, monkeypatch):
     assert result1 == result2  # Same user should get same result
 
 
-def test_is_enabled_no_user_id_with_rollout(temp_flags_file, monkeypatch):
+def test_is_enabled_no_user_id_with_rollout(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test rollout without user_id."""
     monkeypatch.setenv("ENVIRONMENT", "development")
     flags = FeatureFlags(config_file=temp_flags_file)
@@ -161,7 +162,7 @@ def test_is_enabled_no_user_id_with_rollout(temp_flags_file, monkeypatch):
     assert flags.is_enabled("limited_rollout") is False
 
 
-def test_is_enabled_context_rules(temp_flags_file, monkeypatch):
+def test_is_enabled_context_rules(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test context-based rules."""
     monkeypatch.setenv("ENVIRONMENT", "development")
     flags = FeatureFlags(config_file=temp_flags_file)
@@ -185,7 +186,7 @@ def test_is_enabled_context_rules(temp_flags_file, monkeypatch):
     )
 
 
-def test_check_rules_equals(temp_flags_file):
+def test_check_rules_equals(temp_flags_file: Any) -> None:
     """Test equals rule operator."""
     flags = FeatureFlags(config_file=temp_flags_file)
     rules = [{"field": "tier", "operator": "equals", "value": "premium"}]
@@ -194,7 +195,7 @@ def test_check_rules_equals(temp_flags_file):
     assert flags._check_rules(rules, {"tier": "basic"}) is False
 
 
-def test_check_rules_not_equals(temp_flags_file):
+def test_check_rules_not_equals(temp_flags_file: Any) -> None:
     """Test not_equals rule operator."""
     flags = FeatureFlags(config_file=temp_flags_file)
     rules = [{"field": "tier", "operator": "not_equals", "value": "premium"}]
@@ -203,7 +204,7 @@ def test_check_rules_not_equals(temp_flags_file):
     assert flags._check_rules(rules, {"tier": "premium"}) is False
 
 
-def test_check_rules_greater_than(temp_flags_file):
+def test_check_rules_greater_than(temp_flags_file: Any) -> None:
     """Test greater_than rule operator."""
     flags = FeatureFlags(config_file=temp_flags_file)
     rules = [{"field": "score", "operator": "greater_than", "value": 50}]
@@ -212,7 +213,7 @@ def test_check_rules_greater_than(temp_flags_file):
     assert flags._check_rules(rules, {"score": 25}) is False
 
 
-def test_check_rules_less_than(temp_flags_file):
+def test_check_rules_less_than(temp_flags_file: Any) -> None:
     """Test less_than rule operator."""
     flags = FeatureFlags(config_file=temp_flags_file)
     rules = [{"field": "score", "operator": "less_than", "value": 50}]
@@ -221,7 +222,7 @@ def test_check_rules_less_than(temp_flags_file):
     assert flags._check_rules(rules, {"score": 75}) is False
 
 
-def test_check_rules_contains(temp_flags_file):
+def test_check_rules_contains(temp_flags_file: Any) -> None:
     """Test contains rule operator."""
     flags = FeatureFlags(config_file=temp_flags_file)
     rules = [{"field": "tags", "operator": "contains", "value": "vip"}]
@@ -230,7 +231,7 @@ def test_check_rules_contains(temp_flags_file):
     assert flags._check_rules(rules, {"tags": "basic"}) is False
 
 
-def test_check_rules_in(temp_flags_file):
+def test_check_rules_in(temp_flags_file: Any) -> None:
     """Test in rule operator."""
     flags = FeatureFlags(config_file=temp_flags_file)
     rules = [{"field": "region", "operator": "in", "value": ["us", "eu", "asia"]}]
@@ -239,7 +240,7 @@ def test_check_rules_in(temp_flags_file):
     assert flags._check_rules(rules, {"region": "africa"}) is False
 
 
-def test_get_variant(temp_flags_file, monkeypatch):
+def test_get_variant(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test A/B variant selection."""
     monkeypatch.setenv("ENVIRONMENT", "development")
     flags = FeatureFlags(config_file=temp_flags_file)
@@ -251,21 +252,21 @@ def test_get_variant(temp_flags_file, monkeypatch):
     assert variant1 in ["control", "variant_a", "variant_b"]
 
 
-def test_get_variant_no_variants(temp_flags_file):
+def test_get_variant_no_variants(temp_flags_file: Any) -> None:
     """Test variant selection with no variants defined."""
     flags = FeatureFlags(config_file=temp_flags_file)
     variant = flags.get_variant("test_feature", "user1")
     assert variant == "control"
 
 
-def test_get_variant_unknown_flag(temp_flags_file):
+def test_get_variant_unknown_flag(temp_flags_file: Any) -> None:
     """Test variant selection for unknown flag."""
     flags = FeatureFlags(config_file=temp_flags_file)
     variant = flags.get_variant("unknown_flag", "user1")
     assert variant == "control"
 
 
-def test_enable_flag(temp_flags_file, monkeypatch):
+def test_enable_flag(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test enabling a flag."""
     monkeypatch.setenv("ENVIRONMENT", "development")
     flags = FeatureFlags(config_file=temp_flags_file)
@@ -274,13 +275,13 @@ def test_enable_flag(temp_flags_file, monkeypatch):
     assert flags.flags["disabled_feature"]["enabled"] is True
 
 
-def test_enable_flag_unknown(temp_flags_file):
+def test_enable_flag_unknown(temp_flags_file: Any) -> None:
     """Test enabling an unknown flag."""
     flags = FeatureFlags(config_file=temp_flags_file)
     assert flags.enable_flag("unknown_flag") is False
 
 
-def test_disable_flag(temp_flags_file, monkeypatch):
+def test_disable_flag(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     """Test disabling a flag."""
     monkeypatch.setenv("ENVIRONMENT", "development")
     flags = FeatureFlags(config_file=temp_flags_file)
@@ -289,13 +290,13 @@ def test_disable_flag(temp_flags_file, monkeypatch):
     assert flags.flags["test_feature"]["enabled"] is False
 
 
-def test_disable_flag_unknown(temp_flags_file):
+def test_disable_flag_unknown(temp_flags_file: Any) -> None:
     """Test disabling an unknown flag."""
     flags = FeatureFlags(config_file=temp_flags_file)
     assert flags.disable_flag("unknown_flag") is False
 
 
-def test_set_rollout_percent(temp_flags_file):
+def test_set_rollout_percent(temp_flags_file: Any) -> None:
     """Test setting rollout percentage."""
     flags = FeatureFlags(config_file=temp_flags_file)
 
@@ -303,7 +304,7 @@ def test_set_rollout_percent(temp_flags_file):
     assert flags.flags["test_feature"]["rollout_percent"] == 75
 
 
-def test_set_rollout_percent_invalid_range(temp_flags_file):
+def test_set_rollout_percent_invalid_range(temp_flags_file: Any) -> None:
     """Test setting invalid rollout percentage."""
     flags = FeatureFlags(config_file=temp_flags_file)
 
@@ -311,13 +312,13 @@ def test_set_rollout_percent_invalid_range(temp_flags_file):
     assert flags.set_rollout_percent("test_feature", 150) is False
 
 
-def test_set_rollout_percent_unknown_flag(temp_flags_file):
+def test_set_rollout_percent_unknown_flag(temp_flags_file: Any) -> None:
     """Test setting rollout for unknown flag."""
     flags = FeatureFlags(config_file=temp_flags_file)
     assert flags.set_rollout_percent("unknown_flag", 50) is False
 
 
-def test_list_flags(temp_flags_file):
+def test_list_flags(temp_flags_file: Any) -> None:
     """Test listing all flags."""
     flags = FeatureFlags(config_file=temp_flags_file)
     flag_list = flags.list_flags()
@@ -332,7 +333,7 @@ def test_list_flags(temp_flags_file):
         assert "rollout_percent" in flag_info
 
 
-def test_save_flags(temp_flags_file):
+def test_save_flags(temp_flags_file: Any) -> None:
     """Test saving flags to file."""
     flags = FeatureFlags(config_file=temp_flags_file)
     flags.flags["test_feature"]["rollout_percent"] = 25

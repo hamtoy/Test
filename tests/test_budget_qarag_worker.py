@@ -14,7 +14,7 @@ from src.qa import rag_system as qa_rag_system
 from src.infra import worker
 
 
-def test_budget_tracker_stats_and_budget():
+def test_budget_tracker_stats_and_budget() -> None:
     tracker = budget_tracker.BudgetTracker(budget_limit_usd=0.01)
     rec = tracker.record_usage(
         {"prompt_tokens": 1000, "completion_tokens": 500, "cached_input_tokens": 250},
@@ -29,20 +29,20 @@ def test_budget_tracker_stats_and_budget():
     assert tracker.is_budget_exceeded(threshold=0.0001) is True
 
 
-def test_budget_tracker_zero_budget():
+def test_budget_tracker_zero_budget() -> None:
     tracker = budget_tracker.BudgetTracker(budget_limit_usd=0.0)
     tracker.record_usage({"prompt_tokens": 0, "completion_tokens": 0})
     assert tracker.get_budget_usage_percent() == 0.0
     assert tracker.is_budget_exceeded() is False
 
 
-def test_require_env_missing(monkeypatch):
+def test_require_env_missing(monkeypatch) -> None:
     monkeypatch.delenv("SOME_ENV_KEY", raising=False)
     with pytest.raises(EnvironmentError):
         qa_rag_system.require_env("SOME_ENV_KEY")
 
 
-def test_qakg_constraints_with_provider(monkeypatch):
+def test_qakg_constraints_with_provider(monkeypatch) -> None:
     class _Session:
         async def __aenter__(self):
             return self
@@ -83,7 +83,7 @@ def test_qakg_constraints_with_provider(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_qakg_constraints_from_async_context(monkeypatch):
+async def test_qakg_constraints_from_async_context(monkeypatch) -> None:
     """Test that get_constraints_for_query_type works when called from async context.
 
     This tests the fix for the "This event loop is already running" error
@@ -130,7 +130,7 @@ async def test_qakg_constraints_from_async_context(monkeypatch):
     kg.close()
 
 
-def test_qakg_graph_session_when_loop_running(monkeypatch):
+def test_qakg_graph_session_when_loop_running(monkeypatch) -> None:
     class _Provider:
         def session(self):
             class _Ctx:
@@ -165,7 +165,7 @@ def test_qakg_graph_session_when_loop_running(monkeypatch):
         assert session is None
 
 
-def test_qakg_vector_store_missing_key(monkeypatch):
+def test_qakg_vector_store_missing_key(monkeypatch) -> None:
     monkeypatch.setattr(
         qa_rag_system, "AppConfig", lambda *a, **k: types.SimpleNamespace()
     )
@@ -186,14 +186,14 @@ def test_qakg_vector_store_missing_key(monkeypatch):
     assert kg.find_relevant_rules("q") == []
 
 
-def test_qakg_validate_session_errors(monkeypatch):
+def test_qakg_validate_session_errors(monkeypatch) -> None:
     res_empty = qa_rag_system.QAKnowledgeGraph(
         graph_provider=types.SimpleNamespace()  # type: ignore[arg-type]
     ).validate_session({"turns": []})
     assert res_empty["ok"] is False
 
     class _BadSessionCtx:
-        def __init__(self, **kwargs):
+        def __init__(self, **kwargs) -> None:
             raise TypeError("boom")
 
     monkeypatch.setitem(
@@ -208,9 +208,9 @@ def test_qakg_validate_session_errors(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_worker_setup_and_close_redis(monkeypatch):
+async def test_worker_setup_and_close_redis(monkeypatch) -> None:
     class _Redis:
-        def __init__(self, url):
+        def __init__(self, url) -> None:
             self.url = url
             self.closed = False
 
@@ -218,7 +218,7 @@ async def test_worker_setup_and_close_redis(monkeypatch):
         def from_url(cls, url):
             return cls(url)
 
-        async def close(self):
+        async def close(self) -> None:
             self.closed = True
 
         async def ping(self):
@@ -240,7 +240,7 @@ async def test_worker_setup_and_close_redis(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_worker_ensure_redis_ready_failure(monkeypatch):
+async def test_worker_ensure_redis_ready_failure(monkeypatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -253,7 +253,7 @@ async def test_worker_ensure_redis_ready_failure(monkeypatch):
         await infra_worker.ensure_redis_ready()
 
 
-def test_worker_append_jsonl(tmp_path, monkeypatch):
+def test_worker_append_jsonl(tmp_path, monkeypatch) -> None:
     path = tmp_path / "out.jsonl"
     worker._append_jsonl(path, {"a": 1})
     data = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
@@ -261,8 +261,8 @@ def test_worker_append_jsonl(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_run_task_with_lats_agent_error(monkeypatch):
-    async def _gen_query(text, meta):
+async def test_run_task_with_lats_agent_error(monkeypatch) -> None:
+    async def _gen_query(text, meta) -> None:
         raise RuntimeError("fail")
 
     monkeypatch.setattr(
@@ -291,9 +291,9 @@ async def test_run_task_with_lats_agent_error(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_run_task_with_lats_llm_budget(monkeypatch):
+async def test_run_task_with_lats_llm_budget(monkeypatch) -> None:
     class _LLM:
-        def __init__(self):
+        def __init__(self) -> None:
             self.calls = 0
 
         async def generate_content_async(self, prompt, **kwargs):

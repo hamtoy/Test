@@ -5,7 +5,7 @@ import types
 from typing import Any, Dict
 
 
-def test_generate_qa_with_all_enhancements(monkeypatch):
+def test_generate_qa_with_all_enhancements(monkeypatch) -> None:
     """Mocked end-to-end path of IntegratedQualitySystem without external services."""
 
     # Provide dummy modules to satisfy imports in multimodal_understanding
@@ -28,11 +28,11 @@ def test_generate_qa_with_all_enhancements(monkeypatch):
     sys.modules["PIL.Image"] = _FakeImageModule  # type: ignore[assignment]
 
     class FakeKG:
-        def __init__(self, *_, **__):
+        def __init__(self, *_, **__) -> None:
             self._graph = None
 
     class FakeAugmenter:
-        def __init__(self, *_, **__):
+        def __init__(self, *_, **__) -> None:
             pass
 
         def generate_with_augmentation(
@@ -41,11 +41,11 @@ def test_generate_qa_with_all_enhancements(monkeypatch):
             return "augmented-prompt"
 
     class FakeEnforcer:
-        def __init__(self, *_, **__):
+        def __init__(self, *_, **__) -> None:
             pass
 
     class FakeAdjuster:
-        def __init__(self, *_, **__):
+        def __init__(self, *_, **__) -> None:
             pass
 
         def analyze_image_complexity(
@@ -59,7 +59,7 @@ def test_generate_qa_with_all_enhancements(monkeypatch):
             return {"min_length": 100, "depth": "shallow"}
 
     class FakeValidator:
-        def __init__(self, *_, **__):
+        def __init__(self, *_, **__) -> None:
             pass
 
         def cross_validate_qa_pair(
@@ -72,7 +72,7 @@ def test_generate_qa_with_all_enhancements(monkeypatch):
             return {"valid": True, "issues": []}
 
     class FakeExampleSelector:
-        def __init__(self, *_, **__):
+        def __init__(self, *_, **__) -> None:
             pass
 
         def select_best_examples(
@@ -81,14 +81,14 @@ def test_generate_qa_with_all_enhancements(monkeypatch):
             return [{"example": "ex1"}]
 
     class FakeMultimodal:
-        def __init__(self, *_, **__):
+        def __init__(self, *_, **__) -> None:
             pass
 
         def analyze_image_deep(self, image_path: str) -> Dict[str, Any]:
             return {"text_density": 0.5, "has_table_chart": False, "path": image_path}
 
     class FakeLLM:
-        def __init__(self, *_, **__):
+        def __init__(self, *_, **__) -> None:
             pass
 
         def generate(self, prompt: str, role: str = "generator") -> str:

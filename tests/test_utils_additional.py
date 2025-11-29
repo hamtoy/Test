@@ -7,7 +7,7 @@ from src.infra import utils
 from src.core.models import WorkflowResult
 
 
-def test_safe_json_parse_errors():
+def test_safe_json_parse_errors() -> None:
     # JSONDecodeError -> None
     assert utils.safe_json_parse("not-json") is None
 
@@ -21,7 +21,7 @@ def test_safe_json_parse_errors():
         utils.safe_json_parse("[1,2,3]", raise_on_error=True)
 
 
-def test_write_cache_stats_trims(tmp_path: Path):
+def test_write_cache_stats_trims(tmp_path: Path) -> None:
     path = tmp_path / "cache.jsonl"
     # Seed with four entries
     for i in range(4):
@@ -38,7 +38,7 @@ def test_write_cache_stats_trims(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_checkpoint_roundtrip(tmp_path: Path):
+async def test_checkpoint_roundtrip(tmp_path: Path) -> None:
     path = tmp_path / "checkpoint.jsonl"
     wf1 = WorkflowResult(
         turn_id=1,
@@ -63,7 +63,7 @@ async def test_checkpoint_roundtrip(tmp_path: Path):
     assert loaded["q2"].rewritten_answer == "r2"
 
 
-def test_safe_json_parse_target_key():
+def test_safe_json_parse_target_key() -> None:
     payload = {"a": {"b": "c"}}
     text = json.dumps(payload)
     assert utils.safe_json_parse(text, target_key="b") == "c"

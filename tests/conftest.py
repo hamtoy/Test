@@ -1,10 +1,11 @@
 import json
+from pathlib import Path
 
 import pytest
 import warnings
 import sys
 import types
-from typing import Any, cast
+from typing import Any, Generator, List, Optional, cast
 from unittest.mock import MagicMock, AsyncMock
 
 # Neo4j sync driver emits a noisy deprecation warning when GC closes a driver.
@@ -37,7 +38,7 @@ cast(Any, langchain_module).callbacks = callbacks_module
 
 
 @pytest.fixture(autouse=True)
-def mock_env(monkeypatch):
+def mock_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Ensure AppConfig validation passes with valid mock values."""
     # AIza + 35 characters = 39 characters total
     mock_key = "AIza" + "0" * 35
@@ -46,7 +47,7 @@ def mock_env(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def clear_neo4j_env(monkeypatch):
+def clear_neo4j_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Ensure Neo4j drivers are not implicitly created during tests."""
     for var in ("NEO4J_URI", "NEO4J_USER", "NEO4J_PASSWORD"):
         monkeypatch.delenv(var, raising=False)
@@ -54,7 +55,7 @@ def clear_neo4j_env(monkeypatch):
 
 
 @pytest.fixture
-def temp_data_dir(tmp_path):
+def temp_data_dir(tmp_path: Path) -> Path:
     """Provide isolated input directory with sample OCR and candidate files."""
     input_dir = tmp_path / "inputs"
     input_dir.mkdir()
@@ -70,16 +71,21 @@ def temp_data_dir(tmp_path):
 class MockSession:
     """Common Neo4j session mock."""
 
-    def __init__(self, responses=None):
+    def __init__(self, responses: Optional[List[Any]] = None) -> None:
         self._responses = list(responses) if responses else []
 
-    def __enter__(self):
+    def __enter__(self) -> "MockSession":
         return self
 
-    def __exit__(self, exc_type, exc, tb):
-        return False
+    def __exit__(
+        self,
+        exc_type: Optional[type],
+        exc: Optional[BaseException],
+        tb: Optional[Any],
+    ) -> None:
+        pass
 
-    def run(self, *args, **kwargs):
+    def run(self, *args: Any, **kwargs: Any) -> List[Any]:
         if self._responses:
             result = self._responses.pop(0)
             return result if isinstance(result, list) else [result]
@@ -89,46 +95,46 @@ class MockSession:
 class MockDriver:
     """Common Neo4j driver mock."""
 
-    def __init__(self, session=None):
+    def __init__(self, session: Optional[Any] = None) -> None:
         if isinstance(session, list):
-            self._session = MockSession(session)
+            self._session: MockSession = MockSession(session)
         else:
             self._session = session or MockSession()
 
-    def session(self):
+    def session(self) -> MockSession:
         return self._session
 
-    def close(self):
+    def close(self) -> None:
         pass
 
 
 class MockKnowledgeGraph:
     """Common KnowledgeGraph mock."""
 
-    def __init__(self, session=None):
+    def __init__(self, session: Optional[Any] = None) -> None:
         self._graph = MockDriver(session)
 
 
 @pytest.fixture
-def mock_neo4j_session():
+def mock_neo4j_session() -> MockSession:
     """Neo4j session mock fixture."""
     return MockSession()
 
 
 @pytest.fixture
-def mock_neo4j_driver(mock_neo4j_session):
+def mock_neo4j_driver(mock_neo4j_session: MockSession) -> MockDriver:
     """Neo4j driver mock fixture."""
     return MockDriver(mock_neo4j_session)
 
 
 @pytest.fixture
-def mock_knowledge_graph(mock_neo4j_session):
+def mock_knowledge_graph(mock_neo4j_session: MockSession) -> MockKnowledgeGraph:
     """KnowledgeGraph mock fixture."""
     return MockKnowledgeGraph(mock_neo4j_session)
 
 
 @pytest.fixture
-def mock_gemini_client(monkeypatch):
+def mock_gemini_client(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     """Mock Gemini API client for testing."""
     mock_client = MagicMock()
 
@@ -152,7 +158,7 @@ def mock_gemini_client(monkeypatch):
 
 
 @pytest.fixture
-def mock_genai(monkeypatch, mock_gemini_client):
+def mock_genai(monkeypatch: pytest.MonkeyPatch, mock_gemini_client: MagicMock) -> MagicMock:
     """Mock google.generativeai module."""
     mock_genai = MagicMock()
     mock_genai.GenerativeModel.return_value = mock_gemini_client._model

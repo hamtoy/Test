@@ -6,14 +6,14 @@ from src.routing.graph_router import GraphEnhancedRouter
 
 
 class _FakeLLM:
-    def __init__(self, reply: str):
+    def __init__(self, reply: str) -> None:
         self.reply = reply
 
     def generate(self, prompt: str, role: str | None = None) -> str:  # noqa: ARG002
         return self.reply
 
 
-def test_route_and_generate_match(monkeypatch):
+def test_route_and_generate_match(monkeypatch) -> None:
     router = GraphEnhancedRouter(kg=types.SimpleNamespace(), llm=_FakeLLM("summary"))  # type: ignore[arg-type]
     monkeypatch.setattr(
         router,
@@ -31,7 +31,7 @@ def test_route_and_generate_match(monkeypatch):
     assert result["output"] == "handled:hello"
 
 
-def test_route_and_generate_fallback_first(monkeypatch):
+def test_route_and_generate_fallback_first(monkeypatch) -> None:
     router = GraphEnhancedRouter(kg=types.SimpleNamespace(), llm=_FakeLLM("unknown"))  # type: ignore[arg-type]
     monkeypatch.setattr(
         router,
@@ -49,16 +49,16 @@ def test_route_and_generate_fallback_first(monkeypatch):
     assert result["output"] == "exp:world"
 
 
-def test_build_router_prompt_no_qtypes():
+def test_build_router_prompt_no_qtypes() -> None:
     router = GraphEnhancedRouter(kg=types.SimpleNamespace(), llm=_FakeLLM("any"))  # type: ignore[arg-type]
     prompt = router._build_router_prompt("input text", [])  # noqa: SLF001
     assert "등록된 QueryType 없음" in prompt
     assert "input text" in prompt
 
 
-def test_fetch_query_types_error(monkeypatch):
+def test_fetch_query_types_error(monkeypatch) -> None:
     class _BadGraph:
-        def session(self):
+        def session(self) -> None:
             raise Neo4jError("boom")
 
     router = GraphEnhancedRouter(

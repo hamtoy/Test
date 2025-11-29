@@ -13,7 +13,7 @@ from src.infra import worker  # noqa: E402
 
 
 @pytest.mark.asyncio
-async def test_process_task_without_llm(tmp_path, monkeypatch):
+async def test_process_task_without_llm(tmp_path, monkeypatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -31,12 +31,12 @@ async def test_process_task_without_llm(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_process_task_with_llm(monkeypatch):
+async def test_process_task_with_llm(monkeypatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
     class _FakeResult:
-        def __init__(self, content: str):
+        def __init__(self, content: str) -> None:
             self.content = content
             self.usage: dict[str, int] = {}
 
@@ -56,7 +56,7 @@ async def test_process_task_with_llm(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_ensure_redis_ready(monkeypatch):
+async def test_ensure_redis_ready(monkeypatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -69,12 +69,12 @@ async def test_ensure_redis_ready(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_check_rate_limit_allows_then_blocks(monkeypatch):
+async def test_check_rate_limit_allows_then_blocks(monkeypatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
     class _Redis:
-        def __init__(self):
+        def __init__(self) -> None:
             self.count = 0
             self.expire_called = False
 
@@ -95,7 +95,7 @@ async def test_check_rate_limit_allows_then_blocks(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_check_rate_limit_fail_open(monkeypatch):
+async def test_check_rate_limit_fail_open(monkeypatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -104,7 +104,7 @@ async def test_check_rate_limit_fail_open(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_lats_budget_uses_cost_delta(monkeypatch):
+async def test_lats_budget_uses_cost_delta(monkeypatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
     from src.infra import budget as infra_budget
@@ -121,7 +121,7 @@ async def test_lats_budget_uses_cost_delta(monkeypatch):
             )
 
     class _FakeBudgetTracker:
-        def __init__(self, *args, **kwargs):  # noqa: ANN002, D401
+        def __init__(self, *args, **kwargs) -> None:  # noqa: ANN002, D401
             self.total_cost_usd = 0.0
 
         def record_usage(self, usage):  # noqa: ANN001
@@ -158,7 +158,7 @@ async def test_lats_budget_uses_cost_delta(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_handle_ocr_task_success(monkeypatch, tmp_path):
+async def test_handle_ocr_task_success(monkeypatch, tmp_path) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -176,7 +176,7 @@ async def test_handle_ocr_task_success(monkeypatch, tmp_path):
     # capture jsonl writes
     written: list[dict] = []
 
-    def _append(_path, record):
+    def _append(_path, record) -> None:
         written.append(record)
 
     monkeypatch.setattr(infra_worker, "_append_jsonl", _append)
@@ -188,10 +188,10 @@ async def test_handle_ocr_task_success(monkeypatch, tmp_path):
     monkeypatch.setattr(infra_worker, "_process_task", _proc)
 
     class _Broker:
-        def __init__(self):
+        def __init__(self) -> None:
             self.published: list = []
 
-        async def publish(self, msg, channel):
+        async def publish(self, msg, channel) -> None:
             self.published.append((channel, msg))
 
     broker = _Broker()
@@ -205,7 +205,7 @@ async def test_handle_ocr_task_success(monkeypatch, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_handle_ocr_task_rate_limited(monkeypatch):
+async def test_handle_ocr_task_rate_limited(monkeypatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -225,7 +225,7 @@ async def test_handle_ocr_task_rate_limited(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_handle_ocr_task_sends_dlq(monkeypatch):
+async def test_handle_ocr_task_sends_dlq(monkeypatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -239,17 +239,17 @@ async def test_handle_ocr_task_sends_dlq(monkeypatch):
 
     monkeypatch.setattr(infra_worker, "check_rate_limit", _allow)
 
-    async def _proc(_task):
+    async def _proc(_task) -> None:
         raise RuntimeError("boom")
 
     monkeypatch.setattr(infra_worker, "_process_task", _proc)
     monkeypatch.setattr(infra_worker, "_append_jsonl", lambda *_args, **_kwargs: None)
 
     class _Broker:
-        def __init__(self):
+        def __init__(self) -> None:
             self.published: list = []
 
-        async def publish(self, msg, channel):
+        async def publish(self, msg, channel) -> None:
             self.published.append((channel, msg))
 
     broker = _Broker()
@@ -265,7 +265,7 @@ async def test_handle_ocr_task_sends_dlq(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_handle_ocr_task_lats_toggle(monkeypatch):
+async def test_handle_ocr_task_lats_toggle(monkeypatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -287,10 +287,10 @@ async def test_handle_ocr_task_lats_toggle(monkeypatch):
     )
 
     class _Broker:
-        def __init__(self):
+        def __init__(self) -> None:
             self.published: list = []
 
-        async def publish(self, msg, channel):
+        async def publish(self, msg, channel) -> None:
             self.published.append((channel, msg))
 
     broker = _Broker()
@@ -317,7 +317,7 @@ async def test_handle_ocr_task_lats_toggle(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_handle_ocr_task_lats_budget_exit(monkeypatch):
+async def test_handle_ocr_task_lats_budget_exit(monkeypatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -353,10 +353,10 @@ async def test_handle_ocr_task_lats_budget_exit(monkeypatch):
     )
 
     class _Broker:
-        def __init__(self):
+        def __init__(self) -> None:
             self.published: list = []
 
-        async def publish(self, msg, channel):
+        async def publish(self, msg, channel) -> None:
             self.published.append((channel, msg))
 
     broker = _Broker()

@@ -5,7 +5,7 @@ from builtins import EnvironmentError
 import src.analysis.semantic as sa
 
 
-def test_tokenize_filters_stopwords_and_length():
+def test_tokenize_filters_stopwords_and_length() -> None:
     text = "The quick brown fox 그리고 it jumps"
     tokens = sa.tokenize(text)
     # "the", "it", "그리고" filtered; short words filtered
@@ -13,7 +13,7 @@ def test_tokenize_filters_stopwords_and_length():
     assert "the" not in tokens and "it" not in tokens and "그리고" not in tokens
 
 
-def test_count_keywords_respects_min_freq(monkeypatch):
+def test_count_keywords_respects_min_freq(monkeypatch) -> None:
     # Import the actual semantic module to patch the right namespace
     from src.analysis import semantic as analysis_semantic
 
@@ -24,7 +24,7 @@ def test_count_keywords_respects_min_freq(monkeypatch):
     assert "cherry" not in counter  # freq 1 < MIN_FREQ
 
 
-def test_create_topics_no_keywords(monkeypatch):
+def test_create_topics_no_keywords(monkeypatch) -> None:
     called = False
 
     class _Session:
@@ -34,7 +34,7 @@ def test_create_topics_no_keywords(monkeypatch):
         def __exit__(self, exc_type, exc, tb):
             return False
 
-        def execute_write(self, fn, kw):
+        def execute_write(self, fn, kw) -> None:
             nonlocal called
             called = True
 
@@ -43,7 +43,7 @@ def test_create_topics_no_keywords(monkeypatch):
     assert called is False  # no write when empty
 
 
-def test_link_blocks_creates_links(monkeypatch):
+def test_link_blocks_creates_links(monkeypatch) -> None:
     # Import the actual semantic module to patch the right namespace
     from src.analysis import semantic as analysis_semantic
 
@@ -56,14 +56,14 @@ def test_link_blocks_creates_links(monkeypatch):
         def __exit__(self, exc_type, exc, tb):
             return False
 
-        def execute_write(self, fn, rows):
+        def execute_write(self, fn, rows) -> None:
             fn(None, rows)  # call lambda in code
 
     class _Driver:
         def session(self):
             return _Session()
 
-    def _run(tx, rows):
+    def _run(tx, rows) -> None:
         captured.extend(rows["links"])
 
     blocks = [
@@ -78,7 +78,7 @@ def test_link_blocks_creates_links(monkeypatch):
     monkeypatch.setattr(analysis_semantic, "tokenize", lambda text: text.split())
     _orig_session_run = _Session.execute_write
 
-    def _execute_write(self, fn, batch):
+    def _execute_write(self, fn, batch) -> None:
         # emulate flush calls
         _run(None, {"links": batch})
 
@@ -91,7 +91,7 @@ def test_link_blocks_creates_links(monkeypatch):
     assert {"block_id": "b1", "topic": "banana"} in captured
 
 
-def test_main_env_missing_exits(monkeypatch, capsys):
+def test_main_env_missing_exits(monkeypatch, capsys) -> None:
     # Import the actual semantic module to patch the right namespace
     from src.analysis import semantic as analysis_semantic
 

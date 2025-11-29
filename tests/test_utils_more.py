@@ -10,7 +10,7 @@ from src.core.models import WorkflowResult
 
 
 @pytest.mark.asyncio
-async def test_load_file_async_missing_and_empty(tmp_path: Path):
+async def test_load_file_async_missing_and_empty(tmp_path: Path) -> None:
     missing = tmp_path / "missing.txt"
     with pytest.raises(FileNotFoundError):
         await utils.load_file_async(missing)
@@ -21,7 +21,7 @@ async def test_load_file_async_missing_and_empty(tmp_path: Path):
         await utils.load_file_async(empty)
 
 
-def test_safe_json_parse_variants(caplog):
+def test_safe_json_parse_variants(caplog: pytest.LogCaptureFixture) -> None:
     assert utils.safe_json_parse("") is None
     assert utils.safe_json_parse("not-json") is None
     assert utils.safe_json_parse("[1,2,3]") is None
@@ -35,12 +35,12 @@ def test_safe_json_parse_variants(caplog):
         utils.safe_json_parse("", raise_on_error=True)
 
 
-def test_safe_json_parse_list_with_raise():
+def test_safe_json_parse_list_with_raise() -> None:
     with pytest.raises(ValueError):
         utils.safe_json_parse("[1,2,3]", raise_on_error=True)
 
 
-def test_write_cache_stats_trims_and_caps(tmp_path: Path):
+def test_write_cache_stats_trims_and_caps(tmp_path: Path) -> None:
     path = tmp_path / "stats.jsonl"
     # prepopulate more than cap
     entries = [{"id": i} for i in range(5)]
@@ -54,7 +54,7 @@ def test_write_cache_stats_trims_and_caps(tmp_path: Path):
     assert json.loads(lines[-1])["id"] == 99
 
 
-def test_parse_raw_candidates_with_fallback(caplog):
+def test_parse_raw_candidates_with_fallback(caplog: pytest.LogCaptureFixture) -> None:
     text = "Hello world"
     parsed = utils.parse_raw_candidates(text)
     assert parsed == {"A": "Hello world"}
@@ -63,7 +63,7 @@ def test_parse_raw_candidates_with_fallback(caplog):
     assert structured == {"A": "first", "B": "second"}
 
 
-def test_parse_raw_candidates_auto_split_three():
+def test_parse_raw_candidates_auto_split_three() -> None:
     raw = "alpha\n\n---\n\nbravo text\n\n---\n\ncharlie content"
     parsed = utils.parse_raw_candidates(raw)
     assert parsed["A"].startswith("alpha")
@@ -72,7 +72,7 @@ def test_parse_raw_candidates_auto_split_three():
 
 
 @pytest.mark.asyncio
-async def test_load_checkpoint_ignores_bad_lines(tmp_path: Path):
+async def test_load_checkpoint_ignores_bad_lines(tmp_path: Path) -> None:
     path = tmp_path / "checkpoint.jsonl"
     valid = WorkflowResult(
         turn_id=1,

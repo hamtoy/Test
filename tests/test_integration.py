@@ -4,6 +4,8 @@ import pytest
 
 from src.workflow import execute_workflow
 from src.core.models import EvaluationItem, EvaluationResultSchema
+from typing import Any
+from pathlib import Path
 
 VALID_API_KEY = "AIza" + "A" * 35
 
@@ -14,27 +16,27 @@ class DummyAgent:
         self.total_output_tokens = 500
         self.budget_limit_usd = None
 
-    async def generate_query(self, ocr_text, user_intent):
+    async def generate_query(self, ocr_text: Any, user_intent: Any) -> Any:
         return ["strategic query"]
 
-    async def create_context_cache(self, ocr_text):
+    async def create_context_cache(self, ocr_text: Any) -> Any:
         return None
 
     async def evaluate_responses(
-        self, ocr_text, query, candidates, cached_content=None
-    ):
+        self, ocr_text: Any, query: Any, candidates: Any, cached_content: Any=None
+    ) -> Any:
         return EvaluationResultSchema(
             best_candidate="A",
             evaluations=[EvaluationItem(candidate_id="A", score=10, reason="strong")],
         )
 
-    async def rewrite_best_answer(self, ocr_text, best_answer, cached_content=None):
+    async def rewrite_best_answer(self, ocr_text: Any, best_answer: Any, cached_content: Any=None) -> Any:
         return f"rewritten: {best_answer}"
 
     def get_total_cost(self) -> float:
         return 0.123
 
-    def check_budget(self):
+    def check_budget(self) -> Any:
         return None
 
     def get_budget_usage_percent(self) -> float:
@@ -42,11 +44,11 @@ class DummyAgent:
 
 
 @pytest.mark.asyncio
-async def test_execute_workflow_e2e(monkeypatch, tmp_path):
+async def test_execute_workflow_e2e(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
 
-    async def fake_reload_data(config, ocr_filename, cand_filename, interactive=False):
+    async def fake_reload_data(config: Any, ocr_filename: Any, cand_filename: Any, interactive: Any=False) -> Any:
         return "ocr text", {"A": '{"A": "Best answer"}'}
 
     monkeypatch.setattr("src.workflow.executor.reload_data_if_needed", fake_reload_data)
@@ -74,22 +76,22 @@ async def test_execute_workflow_e2e(monkeypatch, tmp_path):
 
 
 class NoCallAgent(DummyAgent):
-    async def generate_query(self, ocr_text, user_intent):
+    async def generate_query(self, ocr_text: Any, user_intent: Any) -> Any:
         return ["strategic query"]
 
-    async def evaluate_responses(self, *args, **kwargs):
+    async def evaluate_responses(self, *args: Any, **kwargs: Any) -> None:
         raise AssertionError("Should not evaluate when resuming")
 
-    async def rewrite_best_answer(self, *args, **kwargs):
+    async def rewrite_best_answer(self, *args: Any, **kwargs: Any) -> None:
         raise AssertionError("Should not rewrite when resuming")
 
 
 @pytest.mark.asyncio
-async def test_execute_workflow_resume(monkeypatch, tmp_path):
+async def test_execute_workflow_resume(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
 
-    async def fake_reload_data(config, ocr_filename, cand_filename, interactive=False):
+    async def fake_reload_data(config: Any, ocr_filename: Any, cand_filename: Any, interactive: Any=False) -> Any:
         return "ocr text", {"A": '{"A": "Best answer"}'}
 
     monkeypatch.setattr("src.workflow.executor.reload_data_if_needed", fake_reload_data)

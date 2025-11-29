@@ -22,7 +22,7 @@ def _stub_agent(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_call_api_with_retry_adaptive_backoff(monkeypatch):
+async def test_call_api_with_retry_adaptive_backoff(monkeypatch) -> None:
     agent = _stub_agent(monkeypatch)
 
     class Boom(Exception):
@@ -30,7 +30,7 @@ async def test_call_api_with_retry_adaptive_backoff(monkeypatch):
 
     call_count = {"n": 0}
 
-    async def _boom(*_a, **_k):
+    async def _boom(*_a, **_k) -> None:
         call_count["n"] += 1
         raise Boom("fail")
 
@@ -44,7 +44,7 @@ async def test_call_api_with_retry_adaptive_backoff(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_call_api_with_retry_success_after_backoff(monkeypatch):
+async def test_call_api_with_retry_success_after_backoff(monkeypatch) -> None:
     agent = _stub_agent(monkeypatch)
     attempts = {"n": 0}
 

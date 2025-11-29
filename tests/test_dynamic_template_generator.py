@@ -6,7 +6,7 @@ from src.processing.template_generator import DynamicTemplateGenerator
 
 
 class _FakeSession:
-    def __init__(self, rows):
+    def __init__(self, rows) -> None:
         self.rows = rows
 
     def __enter__(self):
@@ -20,7 +20,7 @@ class _FakeSession:
 
 
 class _FakeDriver:
-    def __init__(self, rows):
+    def __init__(self, rows) -> None:
         self._rows = rows
 
     def session(self):
@@ -31,7 +31,7 @@ class _FakeDriver:
 
 
 class _FakeTemplate:
-    def __init__(self, name):
+    def __init__(self, name) -> None:
         self.name = name
         self.last_kwargs: dict[str, object] | None = None
 
@@ -41,7 +41,7 @@ class _FakeTemplate:
 
 
 class _FakeEnv:
-    def __init__(self, fallback_template):
+    def __init__(self, fallback_template) -> None:
         self.calls = 0
         self.fallback_template = fallback_template
 
@@ -60,7 +60,7 @@ def _make_dtg(rows, env):
     return dtg
 
 
-def test_generate_prompt_uses_fallback_and_calc_flag():
+def test_generate_prompt_uses_fallback_and_calc_flag() -> None:
     tmpl = _FakeTemplate("fallback")
     env = _FakeEnv(tmpl)
     rows = [
@@ -84,13 +84,13 @@ def test_generate_prompt_uses_fallback_and_calc_flag():
     )  # derived from used_calc_query_count
 
 
-def test_generate_prompt_missing_query_type():
+def test_generate_prompt_missing_query_type() -> None:
     dtg = _make_dtg([], _FakeEnv(_FakeTemplate("fallback")))
     with pytest.raises(ValueError):
         dtg.generate_prompt_for_query_type("unknown", {})
 
 
-def test_generate_validation_checklist():
+def test_generate_validation_checklist() -> None:
     rows = [{"item": "i1", "category": "cat"}]
     dtg = _make_dtg(rows, _FakeEnv(_FakeTemplate("fallback")))
     session = {"turns": [{"type": "summary"}, {"type": "explanation"}]}
@@ -101,7 +101,7 @@ def test_generate_validation_checklist():
     assert checklist[0]["query_type"] in {"summary", "explanation"}
 
 
-def test_main_shows_error_on_missing_env(monkeypatch, capsys):
+def test_main_shows_error_on_missing_env(monkeypatch, capsys) -> None:
     monkeypatch.setattr("os.getenv", lambda *_a, **_k: None)
     import runpy
 

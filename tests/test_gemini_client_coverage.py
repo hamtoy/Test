@@ -10,7 +10,7 @@ class TestGeminiModelClientBehaviors:
     """Test GeminiModelClient with mocked API."""
 
     @pytest.fixture(autouse=True)
-    def setup_mocks(self, monkeypatch):
+    def setup_mocks(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Setup mocks for all tests in this class."""
         # Mock environment variable
         monkeypatch.setenv("GEMINI_API_KEY", "test-api-key")
@@ -32,7 +32,7 @@ class TestGeminiModelClientBehaviors:
         ):
             yield
 
-    def test_gemini_model_client_behaviors(self):
+    def test_gemini_model_client_behaviors(self) -> None:
         client = gmc.GeminiModelClient()
 
         # Test generate
@@ -60,7 +60,7 @@ class TestGeminiModelClientBehaviors:
         self.mock_response.text = "rewritten text"
         assert client.rewrite("orig").startswith("rewritten")
 
-    def test_gemini_model_client_errors(self):
+    def test_gemini_model_client_errors(self) -> None:
         client = gmc.GeminiModelClient()
 
         # Mock exception
@@ -84,7 +84,7 @@ class TestGeminiModelClientBehaviors:
         assert "실패" in res
         assert "rewriter error" in res
 
-    def test_gemini_model_client_type_error(self):
+    def test_gemini_model_client_type_error(self) -> None:
         client = gmc.GeminiModelClient()
 
         # Make the mock raise TypeError

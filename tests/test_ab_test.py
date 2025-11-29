@@ -1,3 +1,5 @@
+from typing import Any
+from pathlib import Path
 """Tests for the A/B testing framework."""
 
 import json
@@ -11,7 +13,7 @@ from src.qa.ab_test import ExperimentConfig, ExperimentResult, PromptExperimentM
 class TestExperimentResult:
     """Tests for ExperimentResult dataclass."""
 
-    def test_experiment_result_creation(self):
+    def test_experiment_result_creation(self) -> None:
         result = ExperimentResult(
             variant_name="control",
             input_id="doc_1",
@@ -26,7 +28,7 @@ class TestExperimentResult:
         assert result.success is True
         assert result.error_msg is None
 
-    def test_experiment_result_with_error(self):
+    def test_experiment_result_with_error(self) -> None:
         result = ExperimentResult(
             variant_name="treatment",
             input_id="doc_2",
@@ -44,7 +46,7 @@ class TestExperimentResult:
 class TestExperimentConfig:
     """Tests for ExperimentConfig dataclass."""
 
-    def test_experiment_config_defaults(self):
+    def test_experiment_config_defaults(self) -> None:
         config = ExperimentConfig(
             name="test_experiment",
             control_prompt_template="control.j2",
@@ -54,7 +56,7 @@ class TestExperimentConfig:
         assert config.sample_size == 10
         assert config.output_dir == "experiments/results"
 
-    def test_experiment_config_custom_values(self):
+    def test_experiment_config_custom_values(self) -> None:
         config = ExperimentConfig(
             name="custom_test",
             control_prompt_template="control.j2",
@@ -70,19 +72,19 @@ class TestPromptExperimentManager:
     """Tests for PromptExperimentManager class."""
 
     @pytest.fixture
-    def mock_agent(self):
+    def mock_agent(self) -> Any:
         """Create a mock GeminiAgent."""
         agent = MagicMock()
         agent.generate_query = AsyncMock(return_value=["query1", "query2"])
         return agent
 
     @pytest.fixture
-    def manager(self, mock_agent):
+    def manager(self, mock_agent: Any) -> Any:
         """Create a PromptExperimentManager instance."""
         return PromptExperimentManager(mock_agent)
 
     @pytest.fixture
-    def test_dataset(self):
+    def test_dataset(self) -> Any:
         """Create test dataset."""
         return [
             {"id": "doc_1", "input_text": "Test document 1"},
@@ -91,7 +93,7 @@ class TestPromptExperimentManager:
         ]
 
     @pytest.mark.asyncio
-    async def test_run_batch_success(self, manager, test_dataset):
+    async def test_run_batch_success(self, manager: Any, test_dataset: Any) -> None:
         """Test running a batch of experiments successfully."""
         results = await manager._run_batch("control", "template.j2", test_dataset)
 
@@ -100,7 +102,7 @@ class TestPromptExperimentManager:
         assert all(r.variant_name == "control" for r in results)
 
     @pytest.mark.asyncio
-    async def test_run_batch_with_error(self, manager, test_dataset):
+    async def test_run_batch_with_error(self, manager: Any, test_dataset: Any) -> None:
         """Test handling errors during batch execution."""
         manager.agent.generate_query = AsyncMock(side_effect=Exception("API error"))
 
@@ -111,7 +113,7 @@ class TestPromptExperimentManager:
         assert all(r.error_msg == "API error" for r in results)
 
     @pytest.mark.asyncio
-    async def test_run_experiment(self, manager, test_dataset, tmp_path):
+    async def test_run_experiment(self, manager: Any, test_dataset: Any, tmp_path: Path) -> None:
         """Test running a complete experiment."""
         config = ExperimentConfig(
             name="test_exp",
@@ -130,7 +132,7 @@ class TestPromptExperimentManager:
         assert report["control"]["success_rate"] == 1.0
         assert report["treatment"]["success_rate"] == 1.0
 
-    def test_generate_report(self, manager):
+    def test_generate_report(self, manager: Any) -> None:
         """Test report generation logic."""
         control_results = [
             ExperimentResult(
@@ -181,7 +183,7 @@ class TestPromptExperimentManager:
         # Treatment is faster and cheaper
         assert report["winner"] == "Treatment (Faster & Cheaper)"
 
-    def test_generate_report_manual_review(self, manager):
+    def test_generate_report_manual_review(self, manager: Any) -> None:
         """Test report when winner is not clear."""
         control_results = [
             ExperimentResult(
@@ -211,7 +213,7 @@ class TestPromptExperimentManager:
         # Treatment is cheaper but slower - should indicate trade-off
         assert "Slower, Lower Cost" in report["winner"]
 
-    def test_save_results(self, manager, tmp_path):
+    def test_save_results(self, manager: Any, tmp_path: Path) -> None:
         """Test saving experiment results to file."""
         config = ExperimentConfig(
             name="save_test",
@@ -238,7 +240,7 @@ class TestPromptExperimentManager:
             saved_report = json.load(f)
         assert saved_report["experiment"] == "save_test"
 
-    def test_generate_report_empty_results(self, manager):
+    def test_generate_report_empty_results(self, manager: Any) -> None:
         """Test report generation with empty results."""
         report = manager._generate_report("empty_test", [], [])
 
@@ -246,7 +248,7 @@ class TestPromptExperimentManager:
         assert report["treatment"]["success_rate"] == 0
 
     @pytest.mark.asyncio
-    async def test_run_batch_with_user_intent(self, manager):
+    async def test_run_batch_with_user_intent(self, manager: Any) -> None:
         """Test batch execution includes user_intent."""
         samples = [
             {
@@ -263,7 +265,7 @@ class TestPromptExperimentManager:
         call_kwargs = manager.agent.generate_query.call_args.kwargs
         assert call_kwargs["user_intent"] == "Extract info"
 
-    def test_generate_report_no_improvement(self, manager):
+    def test_generate_report_no_improvement(self, manager: Any) -> None:
         """Test report when control is better in all dimensions."""
         control_results = [
             ExperimentResult(
@@ -293,7 +295,7 @@ class TestPromptExperimentManager:
         # Control is faster and cheaper
         assert report["winner"] == "Control (No Improvement)"
 
-    def test_generate_report_faster_higher_cost(self, manager):
+    def test_generate_report_faster_higher_cost(self, manager: Any) -> None:
         """Test report when treatment is faster but more expensive."""
         control_results = [
             ExperimentResult(

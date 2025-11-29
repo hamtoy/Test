@@ -8,13 +8,13 @@ from neo4j.exceptions import Neo4jError
 import src.analysis.semantic as sa
 
 
-def test_main_handles_neo4j_error(monkeypatch):
+def test_main_handles_neo4j_error(monkeypatch) -> None:
     # Import the actual semantic module to patch the right namespace
     from src.analysis import semantic as analysis_semantic
 
     monkeypatch.setattr(analysis_semantic, "require_env", lambda name: "x")
 
-    def _raise(*_a, **_k):
+    def _raise(*_a, **_k) -> None:
         raise Neo4jError("boom")
 
     monkeypatch.setattr(analysis_semantic.GraphDatabase, "driver", _raise)  # type: ignore[attr-defined]
@@ -22,7 +22,7 @@ def test_main_handles_neo4j_error(monkeypatch):
         sa.main()
 
 
-def test_main_no_blocks_returns(monkeypatch, caplog):
+def test_main_no_blocks_returns(monkeypatch, caplog) -> None:
     # Import the actual semantic module to patch the right namespace
     from src.analysis import semantic as analysis_semantic
 
@@ -39,13 +39,13 @@ def test_main_no_blocks_returns(monkeypatch, caplog):
             return []
 
     class _Driver:
-        def __init__(self):
+        def __init__(self) -> None:
             self.closed = False
 
         def session(self):
             return _Session()
 
-        def close(self):
+        def close(self) -> None:
             self.closed = True
 
     monkeypatch.setattr(

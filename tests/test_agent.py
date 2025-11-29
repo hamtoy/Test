@@ -4,34 +4,36 @@ from unittest.mock import MagicMock, AsyncMock, PropertyMock, patch
 from src.agent import GeminiAgent
 from src.config import AppConfig
 from src.core.models import EvaluationResultSchema
+from typing import Any
+from pathlib import Path
 
 
 class TestGeminiAgent:
     """기본 Agent 기능 테스트"""
 
     @pytest.fixture
-    def config(self):
+    def config(self) -> Any:
         """테스트용 설정"""
         return AppConfig()
 
     @pytest.fixture
-    def agent(self, config):
+    def agent(self, config: Any) -> Any:
         """테스트용 Agent 인스턴스"""
         return GeminiAgent(config)
 
-    def test_agent_initialization(self, agent):
+    def test_agent_initialization(self, agent: Any) -> None:
         """Agent가 올바르게 초기화되는지 확인"""
         assert agent is not None
         assert agent.total_input_tokens == 0
         assert agent.total_output_tokens == 0
         assert agent.jinja_env is not None
 
-    def test_cost_calculation_zero(self, agent):
+    def test_cost_calculation_zero(self, agent: Any) -> None:
         """초기 비용이 0인지 확인"""
         cost = agent.get_total_cost()
         assert cost == 0.0
 
-    def test_cost_calculation_with_tokens(self, agent):
+    def test_cost_calculation_with_tokens(self, agent: Any) -> None:
         """토큰 사용 시 비용 계산 확인"""
         agent.total_input_tokens = 1_000_000  # 1M tokens
         agent.total_output_tokens = 1_000_000  # 1M tokens
@@ -41,7 +43,7 @@ class TestGeminiAgent:
         assert cost == 22.0
 
     @pytest.mark.asyncio
-    async def test_cache_monitoring(self, agent):
+    async def test_cache_monitoring(self, agent: Any) -> None:
         # Mock internal methods to avoid API calls
         agent._create_generative_model = MagicMock()
         agent._call_api_with_retry = AsyncMock(
@@ -78,7 +80,7 @@ class TestGeminiAgent:
             assert agent.cache_misses == 1
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_concurrency_respected(self, monkeypatch, tmp_path):
+    async def test_rate_limiter_concurrency_respected(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
         monkeypatch.setenv("GEMINI_MAX_CONCURRENCY", "1")
         monkeypatch.setenv("LOCAL_CACHE_DIR", str(tmp_path / ".cache"))
@@ -91,7 +93,7 @@ class TestGeminiAgent:
         active = False
         overlap = False
 
-        async def fake_execute(model, prompt_text):
+        async def fake_execute(model: Any, prompt_text: Any) -> Any:
             nonlocal active, overlap
             if active:
                 overlap = True
@@ -111,7 +113,7 @@ class TestGeminiAgent:
         assert overlap is False
 
     @pytest.mark.asyncio
-    async def test_generate_query_with_cache(self, agent):
+    async def test_generate_query_with_cache(self, agent: Any) -> None:
         """Verify cached_content is passed to _create_generative_model in generate_query."""
         # Mock internal methods to avoid API calls
         agent._create_generative_model = MagicMock()
@@ -154,7 +156,7 @@ class TestGeminiAgent:
             assert queries == ["query1", "query2"]
 
     @pytest.mark.asyncio
-    async def test_generate_query_without_cache(self, agent):
+    async def test_generate_query_without_cache(self, agent: Any) -> None:
         """Verify generate_query works without cached_content."""
         # Mock internal methods to avoid API calls
         agent._create_generative_model = MagicMock()
@@ -187,7 +189,7 @@ class TestGeminiAgent:
             assert agent.cache_hits == 0
             assert agent.cache_misses == 1
 
-    def test_budget_usage_and_enforcement(self, agent):
+    def test_budget_usage_and_enforcement(self, agent: Any) -> None:
         agent.total_input_tokens = 500_000
         agent.total_output_tokens = 250_000
         agent._cost_tracker.config.budget_limit_usd = 0.1
@@ -203,7 +205,7 @@ class TestGeminiAgent:
 class TestEvaluationModel:
     """평가 모델 검증 테스트"""
 
-    def test_model_validation_corrects_hallucination(self):
+    def test_model_validation_corrects_hallucination(self) -> None:
         """LLM 환각을 자동 수정하는지 확인"""
         # LLM이 A를 최고라고 했지만, 실제로는 B가 더 높은 점수
         data = {
@@ -221,7 +223,7 @@ class TestEvaluationModel:
         assert result.best_candidate == "B"
         assert result.get_best_candidate_id() == "B"
 
-    def test_model_validation_when_correct(self):
+    def test_model_validation_when_correct(self) -> None:
         """올바른 경우 변경하지 않는지 확인"""
         data = {
             "best_candidate": "A",
@@ -240,7 +242,7 @@ class TestEvaluationModel:
 
 # pytest 실행 시 asyncio 이벤트 루프 자동 설정
 @pytest.fixture(scope="session")
-def event_loop():
+def event_loop() -> None:
     """세션 전체에 동일한 이벤트 루프 사용"""
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop

@@ -5,7 +5,7 @@ import logging
 from src.infra.logging import log_metrics
 
 
-def test_log_metrics_tokens_and_cache(caplog):
+def test_log_metrics_tokens_and_cache(caplog: pytest.LogCaptureFixture) -> None:
     logger = logging.getLogger("metrics-test")
     logger.handlers.clear()
     logger.setLevel(logging.INFO)
@@ -35,7 +35,7 @@ def test_log_metrics_tokens_and_cache(caplog):
     assert metrics["cache_misses"] == 1
 
 
-def test_log_metrics_handles_missing(caplog):
+def test_log_metrics_handles_missing(caplog: pytest.LogCaptureFixture) -> None:
     logger = logging.getLogger("metrics-test-missing")
     logger.handlers.clear()
     logger.setLevel(logging.INFO)

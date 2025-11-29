@@ -8,36 +8,36 @@ from src.config import AppConfig
 VALID_API_KEY = "AIza" + "A" * 35
 
 
-def test_api_key_validation_valid():
+def test_api_key_validation_valid() -> None:
     config = AppConfig(GEMINI_API_KEY=VALID_API_KEY)
     assert config.api_key == VALID_API_KEY
 
 
-def test_api_key_validation_default_placeholder():
+def test_api_key_validation_default_placeholder() -> None:
     with pytest.raises(ValidationError) as excinfo:
         AppConfig(GEMINI_API_KEY="your_api_key_here")
     assert "GEMINI_API_KEY is not set" in str(excinfo.value)
 
 
-def test_api_key_validation_invalid_format():
+def test_api_key_validation_invalid_format() -> None:
     with pytest.raises(ValidationError) as excinfo:
         AppConfig(GEMINI_API_KEY="AIza" + "A" * 34 + "*")
     assert "Invalid format" in str(excinfo.value)
 
 
-def test_api_key_validation_invalid_prefix():
+def test_api_key_validation_invalid_prefix() -> None:
     with pytest.raises(ValidationError) as excinfo:
         AppConfig(GEMINI_API_KEY="WRONG" + "A" * 35)
     assert "Must start with 'AIza'" in str(excinfo.value)
 
 
-def test_api_key_validation_invalid_length():
+def test_api_key_validation_invalid_length() -> None:
     with pytest.raises(ValidationError) as excinfo:
         AppConfig(GEMINI_API_KEY="AIza" + "A" * 10)
     assert "exactly 39 characters" in str(excinfo.value)
 
 
-def test_log_level_validation():
+def test_log_level_validation() -> None:
     config = AppConfig(GEMINI_API_KEY=VALID_API_KEY, LOG_LEVEL="debug")
     assert config.log_level == "DEBUG"
 
@@ -45,7 +45,7 @@ def test_log_level_validation():
         AppConfig(GEMINI_API_KEY=VALID_API_KEY, LOG_LEVEL="INVALID")
 
 
-def test_directories_are_created(tmp_path, monkeypatch):
+def test_directories_are_created(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
     AppConfig(GEMINI_API_KEY=VALID_API_KEY)
 
@@ -59,7 +59,7 @@ def test_directories_are_created(tmp_path, monkeypatch):
         assert dir_path.is_dir()
 
 
-def test_cache_stats_path_and_limit(tmp_path, monkeypatch):
+def test_cache_stats_path_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
     monkeypatch.setenv("CACHE_STATS_FILE", "stats/cache.jsonl")
     monkeypatch.setenv("CACHE_STATS_MAX_ENTRIES", "50")
@@ -72,7 +72,7 @@ def test_cache_stats_path_and_limit(tmp_path, monkeypatch):
         AppConfig(GEMINI_API_KEY=VALID_API_KEY, CACHE_STATS_MAX_ENTRIES=0)
 
 
-def test_rag_dependencies_validation_missing_uri():
+def test_rag_dependencies_validation_missing_uri() -> None:
     """Test that RAG validation fails when URI is missing but enable_rag is True."""
     with pytest.raises(ValidationError) as excinfo:
         AppConfig(
@@ -83,7 +83,7 @@ def test_rag_dependencies_validation_missing_uri():
     assert "neo4j_uri" in str(excinfo.value)
 
 
-def test_rag_dependencies_validation_missing_password():
+def test_rag_dependencies_validation_missing_password() -> None:
     """Test that RAG validation fails when password is missing."""
     with pytest.raises(ValidationError) as excinfo:
         AppConfig(
@@ -95,7 +95,7 @@ def test_rag_dependencies_validation_missing_password():
     assert "neo4j_password" in str(excinfo.value)
 
 
-def test_rag_dependencies_validation_valid():
+def test_rag_dependencies_validation_valid() -> None:
     """Test that RAG validation passes when all fields are set."""
     config = AppConfig(
         GEMINI_API_KEY=VALID_API_KEY,
@@ -108,7 +108,7 @@ def test_rag_dependencies_validation_valid():
     assert config.neo4j_uri == "bolt://localhost:7687"
 
 
-def test_rag_disabled_no_validation():
+def test_rag_disabled_no_validation() -> None:
     """Test that RAG validation is skipped when ENABLE_RAG is False and no Neo4j URI."""
     config = AppConfig(
         GEMINI_API_KEY=VALID_API_KEY,

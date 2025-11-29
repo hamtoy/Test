@@ -4,7 +4,7 @@ from checks.detect_forbidden_patterns import find_violations
 import pytest
 
 
-def test_session_validation_pass():
+def test_session_validation_pass() -> None:
     ctx = SessionContext(
         image_path="images/sample_korean_report.png",
         language_hint="ko",
@@ -22,7 +22,7 @@ def test_session_validation_pass():
     assert result["issues"] == []
 
 
-def test_session_turn_count_invalid():
+def test_session_turn_count_invalid() -> None:
     ctx = SessionContext(
         image_path="images/sample_korean_report.png",
         language_hint="ko",
@@ -35,14 +35,14 @@ def test_session_turn_count_invalid():
         build_session(ctx)
 
 
-def test_forbidden_pattern_detection():
+def test_forbidden_pattern_detection() -> None:
     text = "표에서 보이듯 성장했습니다."
     violations = find_violations(text)
     assert violations
     assert any(v["type"] == "표참조" for v in violations)
 
 
-def test_calc_limit_enforced():
+def test_calc_limit_enforced() -> None:
     # ctx already reports calc count 2, total > 1 should fail
     ctx = SessionContext(
         image_path="images/sample_korean_report.png",

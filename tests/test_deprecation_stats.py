@@ -18,7 +18,7 @@ from scripts.deprecation_stats import (
 class TestAnalyzeFile:
     """Tests for the analyze_file function."""
 
-    def test_no_deprecations(self):
+    def test_no_deprecations(self) -> None:
         """Test file with no deprecated imports."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("from src.config.constants import FOO\n")
@@ -31,7 +31,7 @@ class TestAnalyzeFile:
         finally:
             filepath.unlink()
 
-    def test_single_deprecation(self):
+    def test_single_deprecation(self) -> None:
         """Test file with a single deprecated import."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("from src.utils import helper\n")
@@ -45,7 +45,7 @@ class TestAnalyzeFile:
         finally:
             filepath.unlink()
 
-    def test_multiple_deprecations_same_module(self):
+    def test_multiple_deprecations_same_module(self) -> None:
         """Test file with multiple deprecated imports from same module."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("from src.utils import helper\nfrom src.utils import another\n")
@@ -59,7 +59,7 @@ class TestAnalyzeFile:
         finally:
             filepath.unlink()
 
-    def test_multiple_deprecations_different_modules(self):
+    def test_multiple_deprecations_different_modules(self) -> None:
         """Test file with deprecated imports from different modules."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write("from src.utils import helper\nfrom src.constants import CONST\n")
@@ -77,7 +77,7 @@ class TestAnalyzeFile:
 class TestAnalyzeUsage:
     """Tests for the analyze_usage function."""
 
-    def test_empty_directory(self):
+    def test_empty_directory(self) -> None:
         """Test analyzing an empty directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
             stats = analyze_usage(Path(tmpdir))
@@ -85,7 +85,7 @@ class TestAnalyzeUsage:
             assert stats["unique_callers"] == 0
             assert stats["by_module"] == {}
 
-    def test_directory_with_deprecations(self):
+    def test_directory_with_deprecations(self) -> None:
         """Test analyzing a directory with deprecated imports."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
@@ -97,7 +97,7 @@ class TestAnalyzeUsage:
             assert stats["unique_callers"] == 2
             assert len(stats["files_with_deprecations"]) == 2
 
-    def test_exclude_patterns(self):
+    def test_exclude_patterns(self) -> None:
         """Test that exclude patterns work correctly."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
@@ -112,7 +112,7 @@ class TestAnalyzeUsage:
 class TestGenerateSummaryText:
     """Tests for the generate_summary_text function."""
 
-    def test_summary_with_data(self):
+    def test_summary_with_data(self) -> None:
         """Test generating summary with usage data."""
         stats = {
             "total_calls": 10,
@@ -126,7 +126,7 @@ class TestGenerateSummaryText:
         assert "Unique callers: 5" in summary
         assert "src.utils: 6 call(s)" in summary
 
-    def test_summary_empty(self):
+    def test_summary_empty(self) -> None:
         """Test generating summary with no data."""
         stats = {
             "total_calls": 0,
@@ -142,7 +142,7 @@ class TestGenerateSummaryText:
 class TestGenerateReport:
     """Tests for the generate_report function."""
 
-    def test_html_report_content(self):
+    def test_html_report_content(self) -> None:
         """Test that HTML report contains expected content."""
         stats = {
             "total_calls": 15,
@@ -158,7 +158,7 @@ class TestGenerateReport:
         assert "src.utils" in html
         assert "src.constants" in html
 
-    def test_html_report_file_output(self):
+    def test_html_report_file_output(self) -> None:
         """Test that HTML report is written to file."""
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "report.html"
@@ -179,19 +179,19 @@ class TestGenerateReport:
 class TestGetTrendIndicator:
     """Tests for the get_trend_indicator function."""
 
-    def test_decreasing_trend(self):
+    def test_decreasing_trend(self) -> None:
         """Test decreasing trend indicator."""
         assert "DECREASING" in get_trend_indicator(5, 10)
 
-    def test_increasing_trend(self):
+    def test_increasing_trend(self) -> None:
         """Test increasing trend indicator."""
         assert "INCREASING" in get_trend_indicator(10, 5)
 
-    def test_stable_trend(self):
+    def test_stable_trend(self) -> None:
         """Test stable trend indicator."""
         assert "STABLE" in get_trend_indicator(5, 5)
 
-    def test_new_from_zero(self):
+    def test_new_from_zero(self) -> None:
         """Test new indicator when previous was zero."""
         assert "NEW" in get_trend_indicator(5, 0)
 
@@ -199,7 +199,7 @@ class TestGetTrendIndicator:
 class TestSaveStatsJson:
     """Tests for the save_stats_json function."""
 
-    def test_json_output(self):
+    def test_json_output(self) -> None:
         """Test that JSON output contains expected data."""
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "stats.json"
@@ -222,7 +222,7 @@ class TestSaveStatsJson:
 class TestMain:
     """Tests for the main function."""
 
-    def test_main_basic(self, capsys):
+    def test_main_basic(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test basic main execution."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
@@ -234,7 +234,7 @@ class TestMain:
             captured = capsys.readouterr()
             assert "Total deprecated calls: 1" in captured.out
 
-    def test_main_html_output(self, capsys):
+    def test_main_html_output(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test main with HTML output."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
@@ -246,7 +246,7 @@ class TestMain:
             assert exit_code == 0
             assert html_path.exists()
 
-    def test_main_quiet_mode(self, capsys):
+    def test_main_quiet_mode(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test main with quiet mode."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmppath = Path(tmpdir)
@@ -259,7 +259,7 @@ class TestMain:
             # Summary should not be printed
             assert "Total deprecated calls" not in captured.out
 
-    def test_main_nonexistent_path(self, capsys):
+    def test_main_nonexistent_path(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test main with nonexistent path."""
         exit_code = main(["--path", "/nonexistent/path"])
 

@@ -4,7 +4,7 @@
 class TestNewImportPaths:
     """Test that new import paths work correctly without warnings."""
 
-    def test_config_imports(self):
+    def test_config_imports(self) -> None:
         """Test imports from src.config package."""
         from src.config import AppConfig
         from src.config.constants import ERROR_MESSAGES, LOG_MESSAGES
@@ -21,7 +21,7 @@ class TestNewImportPaths:
         assert APIRateLimitError is not None
         assert CacheCreationError is not None
 
-    def test_core_imports(self):
+    def test_core_imports(self) -> None:
         """Test imports from src.core package."""
         from src.core.models import (
             EvaluationItem,
@@ -35,7 +35,7 @@ class TestNewImportPaths:
         assert EvaluationItem is not None
         assert QueryResult is not None
 
-    def test_agent_imports(self):
+    def test_agent_imports(self) -> None:
         """Test imports from src.agent package."""
         from src.agent import GeminiAgent
         from src.agent.cache_manager import CacheManager
@@ -45,7 +45,7 @@ class TestNewImportPaths:
         assert CostTracker is not None
         assert CacheManager is not None
 
-    def test_infra_imports(self):
+    def test_infra_imports(self) -> None:
         """Test imports from src.infra package."""
         from src.infra.logging import log_metrics, setup_logging
         from src.infra.neo4j import SafeDriver, create_sync_driver
@@ -58,19 +58,19 @@ class TestNewImportPaths:
         assert SafeDriver is not None
         assert create_sync_driver is not None
 
-    def test_qa_imports(self):
+    def test_qa_imports(self) -> None:
         """Test imports from src.qa package."""
         from src.qa.rag_system import QAKnowledgeGraph
 
         assert QAKnowledgeGraph is not None
 
-    def test_llm_imports(self):
+    def test_llm_imports(self) -> None:
         """Test imports from src.llm package."""
         from src.llm.gemini import GeminiModelClient
 
         assert GeminiModelClient is not None
 
-    def test_processing_imports(self):
+    def test_processing_imports(self) -> None:
         """Test imports from src.processing package."""
         from src.processing.loader import (  # type: ignore[attr-defined]
             load_file_async,
@@ -82,19 +82,19 @@ class TestNewImportPaths:
         assert load_file_async is not None
         assert parse_raw_candidates is not None
 
-    def test_caching_imports(self):
+    def test_caching_imports(self) -> None:
         """Test imports from src.caching package."""
         from src.caching.layer import CachingLayer
 
         assert CachingLayer is not None
 
-    def test_routing_imports(self):
+    def test_routing_imports(self) -> None:
         """Test imports from src.routing package."""
         from src.routing.graph_router import GraphEnhancedRouter
 
         assert GraphEnhancedRouter is not None
 
-    def test_workflow_imports(self):
+    def test_workflow_imports(self) -> None:
         """Test imports from src.workflow package."""
         from src.workflow.executor import execute_workflow
         from src.workflow.processor import process_single_query
@@ -102,7 +102,7 @@ class TestNewImportPaths:
         assert execute_workflow is not None
         assert process_single_query is not None
 
-    def test_features_imports(self):
+    def test_features_imports(self) -> None:
         """Test imports from src.features package."""
         from src.features.autocomplete import SmartAutocomplete
         from src.features.difficulty import AdaptiveDifficultyAdjuster
@@ -110,13 +110,13 @@ class TestNewImportPaths:
         assert SmartAutocomplete is not None
         assert AdaptiveDifficultyAdjuster is not None
 
-    def test_analysis_imports(self):
+    def test_analysis_imports(self) -> None:
         """Test imports from src.analysis package."""
         from src.analysis.cross_validation import CrossValidationSystem
 
         assert CrossValidationSystem is not None
 
-    def test_import_equivalence(self):
+    def test_import_equivalence(self) -> None:
         """Test that old and new imports refer to the same objects."""
         import warnings
 

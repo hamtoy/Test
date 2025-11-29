@@ -6,12 +6,12 @@ import pytest
 from src.caching import analytics as cache_analytics
 
 
-def test_calculate_savings_zero_for_unknown_model():
+def test_calculate_savings_zero_for_unknown_model() -> None:
     record = {"model": "unknown", "cache_hits": 5, "input_tokens": 1000}
     assert cache_analytics.calculate_savings(record) == 0.0
 
 
-def test_calculate_savings_basic():
+def test_calculate_savings_basic() -> None:
     record = {
         "model": "gemini-3-pro-preview",
         "cache_hits": 2,
@@ -21,13 +21,13 @@ def test_calculate_savings_basic():
     assert val > 0
 
 
-def test_analyze_cache_stats_missing_file(tmp_path: Path):
+def test_analyze_cache_stats_missing_file(tmp_path: Path) -> None:
     missing = tmp_path / "nope.jsonl"
     with pytest.raises(FileNotFoundError):
         cache_analytics.analyze_cache_stats(missing)
 
 
-def test_analyze_cache_stats_reads_and_sums(tmp_path: Path):
+def test_analyze_cache_stats_reads_and_sums(tmp_path: Path) -> None:
     path = tmp_path / "stats.jsonl"
     lines = [
         {

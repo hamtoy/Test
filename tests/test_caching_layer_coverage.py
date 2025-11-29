@@ -2,46 +2,47 @@ from __future__ import annotations
 
 import types
 from src.caching import layer as caching_layer
+from typing import Any
 
 
-def test_caching_layer_prefers_cache_and_invalidates(monkeypatch):
+def test_caching_layer_prefers_cache_and_invalidates(monkeypatch: pytest.MonkeyPatch) -> None:
     class _FakeSession:
-        def __init__(self):
+        def __init__(self) -> None:
             self.calls = 0
 
-        def __enter__(self):
+        def __enter__(self) -> Any:
             return self
 
-        def __exit__(self, exc_type, exc, tb):
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> Any:
             return False
 
-        def run(self, *_args, **_kwargs):
+        def run(self, *_args: Any, **_kwargs: Any) -> Any:
             self.calls += 1
             return [{"id": "r1", "text": "T", "section": "S"}]
 
     class _FakeGraph:
-        def __init__(self):
+        def __init__(self) -> None:
             self.session_obj = _FakeSession()
 
-        def session(self):
+        def session(self) -> Any:
             return self.session_obj
 
     kg = types.SimpleNamespace(_graph=_FakeGraph())
 
     class _FakeRedis:
-        def __init__(self):
+        def __init__(self) -> None:
             self.store = {}
 
-        def get(self, key):
+        def get(self, key: Any) -> Any:
             return self.store.get(key)
 
-        def setex(self, key, ttl, value):
+        def setex(self, key: Any, ttl: Any, value: Any) -> None:
             self.store[key] = value
 
-        def keys(self, pattern):
+        def keys(self, pattern: Any) -> Any:
             return list(self.store.keys())
 
-        def delete(self, *keys):
+        def delete(self, *keys: Any) -> Any:
             removed = 0
             for k in keys:
                 if k in self.store:

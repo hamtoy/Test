@@ -1,3 +1,4 @@
+from pathlib import Path
 """Tests for main.py module to improve coverage."""
 
 import asyncio
@@ -11,7 +12,7 @@ class TestMainModule:
     """Tests for main module functions."""
 
     @pytest.mark.asyncio
-    async def test_main_initialization_success(self, tmp_path):
+    async def test_main_initialization_success(self, tmp_path: Path) -> None:
         """Test main function initializes correctly."""
         from src.main import main
 
@@ -44,7 +45,7 @@ class TestMainModule:
             mock_listener.stop.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_main_template_dir_missing(self, tmp_path):
+    async def test_main_template_dir_missing(self, tmp_path: Path) -> None:
         """Test main function handles missing template directory."""
         from src.main import main
 
@@ -71,7 +72,7 @@ class TestMainModule:
             mock_listener.stop.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_main_value_error(self, tmp_path):
+    async def test_main_value_error(self, tmp_path: Path) -> None:
         """Test main function handles ValueError."""
         from src.main import main
 
@@ -92,7 +93,7 @@ class TestMainModule:
             assert exc_info.value.code == 1
 
     @pytest.mark.asyncio
-    async def test_main_os_error(self, tmp_path):
+    async def test_main_os_error(self, tmp_path: Path) -> None:
         """Test main function handles OSError."""
         from src.main import main
 
@@ -116,7 +117,7 @@ class TestMainModule:
 class TestMainEntryPoint:
     """Tests for main entry point (__main__ block)."""
 
-    def test_windows_event_loop_policy(self):
+    def test_windows_event_loop_policy(self) -> None:
         """Test Windows event loop policy is set when on Windows."""
         # This tests the Windows-specific code path
         with (
@@ -147,7 +148,7 @@ class TestMainEntryPoint:
                 if hasattr(asyncio, "WindowsSelectorEventLoopPolicy"):
                     mock_set_policy.assert_called_once()
 
-    def test_non_windows_no_policy_change(self):
+    def test_non_windows_no_policy_change(self) -> None:
         """Test that event loop policy is not changed on non-Windows."""
         with patch.object(os, "name", "posix"):
             # On non-Windows, no policy change should occur
@@ -157,43 +158,43 @@ class TestMainEntryPoint:
 class TestImports:
     """Test that imports are available."""
 
-    def test_analyze_cache_stats_import(self):
+    def test_analyze_cache_stats_import(self) -> None:
         """Test analyze_cache_stats is importable."""
         from src.main import analyze_cache_stats  # type: ignore[attr-defined]
 
         assert analyze_cache_stats is not None
 
-    def test_print_cache_report_import(self):
+    def test_print_cache_report_import(self) -> None:
         """Test print_cache_report is importable."""
         from src.main import print_cache_report  # type: ignore[attr-defined]
 
         assert print_cache_report is not None
 
-    def test_parse_args_import(self):
+    def test_parse_args_import(self) -> None:
         """Test parse_args is importable."""
         from src.main import parse_args  # type: ignore[attr-defined]
 
         assert parse_args is not None
 
-    def test_write_cache_stats_import(self):
+    def test_write_cache_stats_import(self) -> None:
         """Test write_cache_stats is importable."""
         from src.main import write_cache_stats  # type: ignore[attr-defined]
 
         assert write_cache_stats is not None
 
-    def test_load_input_data_import(self):
+    def test_load_input_data_import(self) -> None:
         """Test load_input_data is importable."""
         from src.main import load_input_data  # type: ignore[attr-defined]
 
         assert load_input_data is not None
 
-    def test_render_cost_panel_import(self):
+    def test_render_cost_panel_import(self) -> None:
         """Test render_cost_panel is importable."""
         from src.main import render_cost_panel  # type: ignore[attr-defined]
 
         assert render_cost_panel is not None
 
-    def test_execute_workflow_import(self):
+    def test_execute_workflow_import(self) -> None:
         """Test execute_workflow is importable."""
         from src.main import execute_workflow  # type: ignore[attr-defined]
 

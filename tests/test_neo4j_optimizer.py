@@ -296,7 +296,7 @@ class TestCLIOptimizeNeo4j:
         assert "NEO4J_URI" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_run_neo4j_optimization_success(self, monkeypatch) -> None:
+    async def test_run_neo4j_optimization_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Successfully runs optimization with valid env."""
         monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
         monkeypatch.setenv("NEO4J_USER", "neo4j")
@@ -321,7 +321,7 @@ class TestCLIOptimizeNeo4j:
         mock_driver.close.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_run_neo4j_optimization_with_drop(self, monkeypatch) -> None:
+    async def test_run_neo4j_optimization_with_drop(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Drops existing indexes when flag is set."""
         monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
         monkeypatch.setenv("NEO4J_USER", "neo4j")

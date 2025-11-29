@@ -10,7 +10,7 @@ from src.features.self_improvement import SelfImprovingSystem
 
 
 @pytest.fixture
-def temp_history_file(tmp_path):
+def temp_history_file(tmp_path: Path) -> Any:
     """Create a temporary history file with test data."""
     history_file = tmp_path / "data" / "performance_history.jsonl"
     history_file.parent.mkdir(parents=True, exist_ok=True)
@@ -34,7 +34,7 @@ def temp_history_file(tmp_path):
 
 
 @pytest.fixture
-def minimal_history_file(tmp_path):
+def minimal_history_file(tmp_path: Path) -> Any:
     """Create a history file with minimal data (less than 7 entries)."""
     history_file = tmp_path / "data" / "performance_history.jsonl"
     history_file.parent.mkdir(parents=True, exist_ok=True)
@@ -57,7 +57,7 @@ def minimal_history_file(tmp_path):
 
 
 @pytest.fixture
-def empty_history_file(tmp_path):
+def empty_history_file(tmp_path: Path) -> Any:
     """Create an empty history file."""
     history_file = tmp_path / "data" / "performance_history.jsonl"
     history_file.parent.mkdir(parents=True, exist_ok=True)
@@ -65,14 +65,14 @@ def empty_history_file(tmp_path):
     return history_file
 
 
-def test_system_init():
+def test_system_init() -> None:
     """Test system initialization with default paths."""
     system = SelfImprovingSystem()
     assert system.history_file == Path("data/performance_history.jsonl")
     assert system.suggestions_file == Path("reports/improvement_suggestions.json")
 
 
-def test_system_init_custom_paths(tmp_path):
+def test_system_init_custom_paths(tmp_path: Path) -> None:
     """Test system initialization with custom paths."""
     history = tmp_path / "history.jsonl"
     suggestions = tmp_path / "suggestions.json"
@@ -81,7 +81,7 @@ def test_system_init_custom_paths(tmp_path):
     assert system.suggestions_file == suggestions
 
 
-def test_load_history_empty(empty_history_file, tmp_path):
+def test_load_history_empty(empty_history_file: Any, tmp_path: Path) -> None:
     """Test loading from empty file."""
     system = SelfImprovingSystem(
         history_file=empty_history_file,
@@ -91,7 +91,7 @@ def test_load_history_empty(empty_history_file, tmp_path):
     assert history == []
 
 
-def test_load_history_missing_file(tmp_path):
+def test_load_history_missing_file(tmp_path: Path) -> None:
     """Test loading from non-existent file."""
     missing_file = tmp_path / "missing.jsonl"
     system = SelfImprovingSystem(
@@ -102,7 +102,7 @@ def test_load_history_missing_file(tmp_path):
     assert history == []
 
 
-def test_load_history_with_data(temp_history_file, tmp_path):
+def test_load_history_with_data(temp_history_file: Any, tmp_path: Path) -> None:
     """Test loading entries with data."""
     system = SelfImprovingSystem(
         history_file=temp_history_file,
@@ -113,7 +113,7 @@ def test_load_history_with_data(temp_history_file, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_analyze_insufficient_data(minimal_history_file, tmp_path):
+async def test_analyze_insufficient_data(minimal_history_file: Any, tmp_path: Path) -> None:
     """Test analysis with insufficient data."""
     system = SelfImprovingSystem(
         history_file=minimal_history_file,
@@ -124,7 +124,7 @@ async def test_analyze_insufficient_data(minimal_history_file, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_analyze_with_sufficient_data(temp_history_file, tmp_path):
+async def test_analyze_with_sufficient_data(temp_history_file: Any, tmp_path: Path) -> None:
     """Test analysis with sufficient data."""
     suggestions_file = tmp_path / "reports" / "suggestions.json"
     system = SelfImprovingSystem(
@@ -143,7 +143,7 @@ async def test_analyze_with_sufficient_data(temp_history_file, tmp_path):
     assert suggestions_file.exists()
 
 
-def test_analyze_trends(temp_history_file, tmp_path):
+def test_analyze_trends(temp_history_file: Any, tmp_path: Path) -> None:
     """Test trend analysis."""
     system = SelfImprovingSystem(
         history_file=temp_history_file,
@@ -162,7 +162,7 @@ def test_analyze_trends(temp_history_file, tmp_path):
     assert "cache_hit_rate" in trends
 
 
-def test_analyze_trends_empty_history(tmp_path):
+def test_analyze_trends_empty_history(tmp_path: Path) -> None:
     """Test trend analysis with empty history."""
     system = SelfImprovingSystem(
         history_file=tmp_path / "empty.jsonl",
@@ -175,7 +175,7 @@ def test_analyze_trends_empty_history(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_apply_auto_fixes():
+async def test_apply_auto_fixes() -> None:
     """Test auto fix application."""
     system = SelfImprovingSystem()
     issues = [
@@ -194,14 +194,14 @@ async def test_apply_auto_fixes():
 
 
 @pytest.mark.asyncio
-async def test_adjust_cache_ttl():
+async def test_adjust_cache_ttl() -> None:
     """Test cache TTL adjustment placeholder."""
     system = SelfImprovingSystem()
     # Should not raise any exceptions
     await system._adjust_cache_ttl()
 
 
-def test_send_slack_notification_no_high_severity():
+def test_send_slack_notification_no_high_severity() -> None:
     """Test Slack notification with no high severity issues."""
     system = SelfImprovingSystem()
     report = {
@@ -214,7 +214,7 @@ def test_send_slack_notification_no_high_severity():
     system.send_slack_notification(report)
 
 
-def test_send_slack_notification_with_high_severity():
+def test_send_slack_notification_with_high_severity() -> None:
     """Test Slack notification with high severity issues."""
     system = SelfImprovingSystem()
     report = {
@@ -227,7 +227,7 @@ def test_send_slack_notification_with_high_severity():
     system.send_slack_notification(report)
 
 
-def test_send_slack_notification_empty_issues():
+def test_send_slack_notification_empty_issues() -> None:
     """Test Slack notification with empty issues."""
     from typing import Any
 
