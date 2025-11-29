@@ -67,6 +67,8 @@ EXCLUDE_PATHS = {
     "tests/test_enhanced_deprecation.py",
     "scripts/migrate_imports.py",
     "scripts/check_deprecated_imports.py",
+    "tests/test_migrate_imports.py",
+    "tests/test_deprecation_stats.py",
 }
 
 

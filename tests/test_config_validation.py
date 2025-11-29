@@ -76,24 +76,38 @@ def test_cache_stats_path_and_limit(
         AppConfig(GEMINI_API_KEY=VALID_API_KEY, CACHE_STATS_MAX_ENTRIES=0)
 
 
-def test_rag_dependencies_validation_missing_uri() -> None:
+def test_rag_dependencies_validation_missing_uri(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Test that RAG validation fails when URI is missing but enable_rag is True."""
+    monkeypatch.delenv("NEO4J_URI", raising=False)
+    monkeypatch.delenv("NEO4J_USER", raising=False)
+    monkeypatch.delenv("NEO4J_PASSWORD", raising=False)
+
     with pytest.raises(ValidationError) as excinfo:
         AppConfig(
             GEMINI_API_KEY=VALID_API_KEY,
             ENABLE_RAG=True,
+            _env_file=None,
         )
     assert "ENABLE_RAG=True 설정 시 필수" in str(excinfo.value)
     assert "neo4j_uri" in str(excinfo.value)
 
 
-def test_rag_dependencies_validation_missing_password() -> None:
+def test_rag_dependencies_validation_missing_password(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Test that RAG validation fails when password is missing."""
+    monkeypatch.delenv("NEO4J_URI", raising=False)
+    monkeypatch.delenv("NEO4J_USER", raising=False)
+    monkeypatch.delenv("NEO4J_PASSWORD", raising=False)
+
     with pytest.raises(ValidationError) as excinfo:
         AppConfig(
             GEMINI_API_KEY=VALID_API_KEY,
             NEO4J_URI="bolt://localhost:7687",
             NEO4J_USER="neo4j",
+            _env_file=None,
         )
     assert "NEO4J_URI 설정 시 필수" in str(excinfo.value)
     assert "neo4j_password" in str(excinfo.value)
@@ -112,11 +126,16 @@ def test_rag_dependencies_validation_valid() -> None:
     assert config.neo4j_uri == "bolt://localhost:7687"
 
 
-def test_rag_disabled_no_validation() -> None:
+def test_rag_disabled_no_validation(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that RAG validation is skipped when ENABLE_RAG is False and no Neo4j URI."""
+    monkeypatch.delenv("NEO4J_URI", raising=False)
+    monkeypatch.delenv("NEO4J_USER", raising=False)
+    monkeypatch.delenv("NEO4J_PASSWORD", raising=False)
+
     config = AppConfig(
         GEMINI_API_KEY=VALID_API_KEY,
         ENABLE_RAG=False,
+        _env_file=None,  # Disable .env file loading
     )
     assert config.enable_rag is False
     assert config.neo4j_uri is None
