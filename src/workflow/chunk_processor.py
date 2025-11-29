@@ -252,7 +252,8 @@ class ChunkProcessor(Generic[T, R]):
                     self.stats.failed += len(chunk)
                     return [None] * len(chunk)
 
-        # 여기에 도달하면 모든 재시도 실패
+        # 이론적으로 여기에 도달할 수 없음 (max_retries가 0일 때를 위한 안전장치)
+        self.stats.failed += len(chunk)
         return [None] * len(chunk)
 
     def get_stats(self) -> ChunkStats:

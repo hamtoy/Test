@@ -86,7 +86,7 @@ echo "🚀 Starting Shining Quasar..."\n\
 # Cache warming (can be skipped with SKIP_CACHE_WARMING=true)\n\
 if [ "$SKIP_CACHE_WARMING" != "true" ] && [ -f "/app/scripts/cache_warming.py" ]; then\n\
     echo "🔥 Running cache warming..."\n\
-    timeout 30 python /app/scripts/cache_warming.py high 2>&1 || echo "⚠️  Cache warming skipped or failed"\n\
+    timeout 30 python /app/scripts/cache_warming.py high || echo "⚠️  Cache warming failed (non-fatal)"\n\
 fi\n\
 \n\
 # Start the application\n\

@@ -46,7 +46,12 @@ else
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "Running cache warming..."
-        python scripts/cache_warming.py high || echo "⚠️  Cache warming had some failures"
+        if python scripts/cache_warming.py high; then
+            echo "✅ Cache warming completed successfully"
+        else
+            echo "⚠️  Cache warming had some issues (check output above)"
+            echo "   This is non-fatal - you can continue with development"
+        fi
     fi
 fi
 

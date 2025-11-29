@@ -3,18 +3,17 @@
 이 모듈은 테스트 코드의 타입 안정성을 높이기 위한 공통 타입 정의를 제공합니다.
 
 사용 예시:
-    from tests.types import MockRedis, ConfigFixture
+    from tests.types import MockRedis, ProgressCallbackType
 
     @pytest.fixture
     def mock_redis() -> MockRedis:
         return cast(MockRedis, MagicMock())
 
-    def test_cache(sample_config: ConfigFixture) -> None:
-        config = sample_config()
-        assert config.gemini_api_key
+    def test_with_progress(callback: ProgressCallbackType) -> None:
+        callback(1, 10)  # current=1, total=10
 """
 
-from typing import Any, Callable, Protocol, TypeVar
+from typing import Any, Awaitable, Callable, Protocol, TypeVar
 
 # Mock 타입 정의
 class MockRedis(Protocol):
@@ -69,6 +68,7 @@ class MockSession(Protocol):
 
 # 제네릭 타입
 T = TypeVar("T")
+R = TypeVar("R")
 ResultType = TypeVar("ResultType")
 
 # Fixture 타입 별칭
@@ -77,5 +77,5 @@ ResultType = TypeVar("ResultType")
 
 # 테스트에서 자주 사용되는 함수 시그니처 타입
 ProcessFnType = Callable[[T], Any]
-AsyncProcessFnType = Callable[[T], Any]  # Awaitable[R]
+AsyncProcessFnType = Callable[[T], Awaitable[R]]
 ProgressCallbackType = Callable[[int, int], None]
