@@ -1,3 +1,6 @@
+import pytest
+from typing import Any
+from pathlib import Path
 from __future__ import annotations
 
 import types
@@ -9,7 +12,7 @@ from src.qa import multi_agent as multi_agent_qa_system
 from src.qa import memory_augmented
 
 
-def test_cross_validation_scoring(monkeypatch) -> None:
+def test_cross_validation_scoring(monkeypatch: pytest.MonkeyPatch) -> None:
     class _CVSession:
         def __enter__(self):
             return self
@@ -49,7 +52,7 @@ def test_cross_validation_scoring(monkeypatch) -> None:
     assert result["rule_compliance"]["violations"]
 
 
-def test_lcel_optimized_chain(monkeypatch) -> None:
+def test_lcel_optimized_chain(monkeypatch: pytest.MonkeyPatch) -> None:
     class _LCELSession:
         def __enter__(self):
             return self
@@ -93,7 +96,7 @@ def test_lcel_optimized_chain(monkeypatch) -> None:
     assert isinstance(output, str)
 
 
-def test_memory_augmented_qa(monkeypatch) -> None:
+def test_memory_augmented_qa(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(memory_augmented_qa, "require_env", lambda _v: "val")
     monkeypatch.setattr(
         memory_augmented_qa, "CustomGeminiEmbeddings", lambda api_key: object()
@@ -176,7 +179,7 @@ def test_memory_augmented_qa(monkeypatch) -> None:
     system.close()
 
 
-def test_multi_agent_qa_system(monkeypatch) -> None:
+def test_multi_agent_qa_system(monkeypatch: pytest.MonkeyPatch) -> None:
     class _FakeKG:
         def __init__(self) -> None:
             self._graph = types.SimpleNamespace(session=lambda: _FakeRuleSession())

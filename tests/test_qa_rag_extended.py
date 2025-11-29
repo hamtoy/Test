@@ -1,3 +1,6 @@
+import pytest
+from typing import Any
+from pathlib import Path
 from __future__ import annotations
 
 import types
@@ -5,7 +8,7 @@ import sys
 from src.qa import rag_system as qrs
 
 
-def test_qa_rag_system_embeddings_and_rules(monkeypatch) -> None:
+def test_qa_rag_system_embeddings_and_rules(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
     monkeypatch.setattr(qrs.genai, "configure", lambda api_key: calls.append("config"))  # type: ignore[attr-defined]
     monkeypatch.setattr(
@@ -28,7 +31,7 @@ def test_qa_rag_system_embeddings_and_rules(monkeypatch) -> None:
     assert result == ["rule"]
 
 
-def test_qa_rag_vector_store_init(monkeypatch) -> None:
+def test_qa_rag_vector_store_init(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "k")
 
     class _FakeNeo4jVector:
@@ -48,7 +51,7 @@ def test_qa_rag_vector_store_init(monkeypatch) -> None:
     assert kg._vector_store == "vector"
 
 
-def test_qa_rag_vector_store_handles_errors(monkeypatch) -> None:
+def test_qa_rag_vector_store_handles_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "k")
 
     class _FakeNeo4jVector:
@@ -67,7 +70,7 @@ def test_qa_rag_vector_store_handles_errors(monkeypatch) -> None:
     assert kg._vector_store is None
 
 
-def test_qa_rag_find_relevant_rules(monkeypatch) -> None:
+def test_qa_rag_find_relevant_rules(monkeypatch: pytest.MonkeyPatch) -> None:
     kg = qrs.QAKnowledgeGraph.__new__(qrs.QAKnowledgeGraph)
     kg._vector_store = None
     assert kg.find_relevant_rules("q") == []
@@ -82,7 +85,7 @@ def test_qa_rag_find_relevant_rules(monkeypatch) -> None:
     assert kg.find_relevant_rules("q", k=1) == ["r1"]
 
 
-def test_qa_rag_validate_session(monkeypatch) -> None:
+def test_qa_rag_validate_session(monkeypatch: pytest.MonkeyPatch) -> None:
     class _SessionContext:
         def __init__(self, **kwargs) -> None:
             if kwargs.get("fail"):
@@ -104,7 +107,7 @@ def test_qa_rag_validate_session(monkeypatch) -> None:
     assert res2["ok"] is False
 
 
-def test_qa_rag_vector_store_skips_without_key(monkeypatch) -> None:
+def test_qa_rag_vector_store_skips_without_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     kg = qrs.QAKnowledgeGraph.__new__(qrs.QAKnowledgeGraph)
     kg.neo4j_uri = "uri"

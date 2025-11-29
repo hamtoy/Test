@@ -1,3 +1,5 @@
+from typing import Any
+from pathlib import Path
 from __future__ import annotations
 
 import pytest
@@ -6,7 +8,7 @@ from src import compare_documents
 from src import health_check
 
 
-def test_compare_documents_helpers(monkeypatch) -> None:
+def test_compare_documents_helpers(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("MISSING_ENV", raising=False)
     with pytest.raises(EnvironmentError):
         compare_documents.require_env("MISSING_ENV")
@@ -37,7 +39,7 @@ def test_compare_documents_helpers(monkeypatch) -> None:
     assert commons[0][1] == ["Doc A", "Doc B"]
 
 
-def test_health_check_with_stub(monkeypatch) -> None:
+def test_health_check_with_stub(monkeypatch: pytest.MonkeyPatch) -> None:
     # Set required environment variables for Neo4j
     monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
     monkeypatch.setenv("NEO4J_USER", "neo4j")

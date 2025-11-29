@@ -1,10 +1,13 @@
+import pytest
+from typing import Any
+from pathlib import Path
 import types
 
 
 import src.llm.gemini as gmc
 
 
-def _fake_genai(monkeypatch) -> None:
+def _fake_genai(monkeypatch: pytest.MonkeyPatch) -> None:
     class _FakeModel:
         def __init__(self, name: str) -> None:
             self.name = name
@@ -20,7 +23,7 @@ def _fake_genai(monkeypatch) -> None:
     monkeypatch.setattr(gmc, "genai", fake)
 
 
-def test_evaluate_parses_scores(monkeypatch) -> None:
+def test_evaluate_parses_scores(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "key")
     _fake_genai(monkeypatch)
 
@@ -37,7 +40,7 @@ def test_evaluate_parses_scores(monkeypatch) -> None:
     assert result["notes"].startswith("점수 파싱")
 
 
-def test_evaluate_api_error_fallback(monkeypatch) -> None:
+def test_evaluate_api_error_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "key")
     _fake_genai(monkeypatch)
 
@@ -52,7 +55,7 @@ def test_evaluate_api_error_fallback(monkeypatch) -> None:
     assert "길이 기반" in result["notes"]
 
 
-def test_rewrite_handles_api_error(monkeypatch) -> None:
+def test_rewrite_handles_api_error(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "key")
     _fake_genai(monkeypatch)
 

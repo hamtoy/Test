@@ -1,3 +1,6 @@
+import pytest
+from typing import Any
+from pathlib import Path
 from __future__ import annotations
 
 import types
@@ -7,7 +10,7 @@ import builtins
 import io
 
 
-def test_list_models_script(monkeypatch) -> None:
+def test_list_models_script(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "key")
 
     class _FakeModel:
@@ -41,7 +44,7 @@ def test_list_models_script(monkeypatch) -> None:
     assert captured
 
 
-def test_qa_generator_script(monkeypatch) -> None:
+def test_qa_generator_script(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "key")
 
     class _FakeCompletions:

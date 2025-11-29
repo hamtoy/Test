@@ -1,3 +1,6 @@
+import pytest
+from typing import Any
+from pathlib import Path
 from __future__ import annotations
 
 import sys
@@ -24,7 +27,7 @@ sys.modules["pytesseract"] = _StubPytesseract("pytesseract")
 from src.features import multimodal as mmu  # noqa: E402
 
 
-def test_multimodal_understanding_uses_fakes(monkeypatch) -> None:
+def test_multimodal_understanding_uses_fakes(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual multimodal module to patch the right namespace
     from src.features import multimodal as features_multimodal
 
@@ -71,7 +74,7 @@ def test_multimodal_understanding_uses_fakes(monkeypatch) -> None:
     assert fake_saved.get("path") == "fake.png"
 
 
-def test_multimodal_with_graph_session(monkeypatch) -> None:
+def test_multimodal_with_graph_session(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test multimodal analysis with graph_session attribute."""
     from src.features import multimodal as features_multimodal
 
@@ -115,7 +118,7 @@ def test_multimodal_with_graph_session(monkeypatch) -> None:
     assert meta["path"] == "test.png"
 
 
-def test_multimodal_no_graph(monkeypatch) -> None:
+def test_multimodal_no_graph(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test multimodal analysis when no graph is available."""
     from src.features import multimodal as features_multimodal
 
@@ -146,7 +149,7 @@ def test_multimodal_no_graph(monkeypatch) -> None:
     assert meta["topics"] == ["word"]
 
 
-def test_multimodal_session_returns_none(monkeypatch) -> None:
+def test_multimodal_session_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test multimodal analysis when session context returns None."""
     from src.features import multimodal as features_multimodal
 
@@ -187,7 +190,7 @@ def test_multimodal_session_returns_none(monkeypatch) -> None:
     assert "path" in meta
 
 
-def test_multimodal_exception_handling(monkeypatch) -> None:
+def test_multimodal_exception_handling(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test multimodal analysis handles exceptions in graph operations."""
     from src.features import multimodal as features_multimodal
 
@@ -232,7 +235,7 @@ def test_multimodal_exception_handling(monkeypatch) -> None:
     assert meta["path"] == "test.png"
 
 
-def test_detect_table(monkeypatch) -> None:
+def test_detect_table(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test table detection method."""
 
     class _KG:
@@ -248,7 +251,7 @@ def test_detect_table(monkeypatch) -> None:
     assert result is False
 
 
-def test_detect_chart(monkeypatch) -> None:
+def test_detect_chart(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test chart detection method."""
 
     class _KG:

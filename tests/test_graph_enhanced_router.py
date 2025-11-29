@@ -1,3 +1,6 @@
+import pytest
+from typing import Any
+from pathlib import Path
 import types
 
 from neo4j.exceptions import Neo4jError
@@ -13,7 +16,7 @@ class _FakeLLM:
         return self.reply
 
 
-def test_route_and_generate_match(monkeypatch) -> None:
+def test_route_and_generate_match(monkeypatch: pytest.MonkeyPatch) -> None:
     router = GraphEnhancedRouter(kg=types.SimpleNamespace(), llm=_FakeLLM("summary"))  # type: ignore[arg-type]
     monkeypatch.setattr(
         router,
@@ -31,7 +34,7 @@ def test_route_and_generate_match(monkeypatch) -> None:
     assert result["output"] == "handled:hello"
 
 
-def test_route_and_generate_fallback_first(monkeypatch) -> None:
+def test_route_and_generate_fallback_first(monkeypatch: pytest.MonkeyPatch) -> None:
     router = GraphEnhancedRouter(kg=types.SimpleNamespace(), llm=_FakeLLM("unknown"))  # type: ignore[arg-type]
     monkeypatch.setattr(
         router,
@@ -56,7 +59,7 @@ def test_build_router_prompt_no_qtypes() -> None:
     assert "input text" in prompt
 
 
-def test_fetch_query_types_error(monkeypatch) -> None:
+def test_fetch_query_types_error(monkeypatch: pytest.MonkeyPatch) -> None:
     class _BadGraph:
         def session(self) -> None:
             raise Neo4jError("boom")

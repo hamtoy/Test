@@ -1,9 +1,11 @@
-from pathlib import Path
-from typing import Any
-
 from __future__ import annotations
 
 import types
+from pathlib import Path
+from typing import Any
+
+import pytest
+
 from src.analysis import semantic
 from src.features import autocomplete as smart_autocomplete
 from src.processing import example_selector
@@ -21,36 +23,40 @@ def test_semantic_analysis_utils(monkeypatch: pytest.MonkeyPatch) -> None:
     store: list[object] = []
 
     class _SATx:
-        def __init__(self, store_ref) -> None:
+        def __init__(self, store_ref: list[object]) -> None:
             self.store_ref = store_ref
 
-        def run(self, _query, topics=None, links=None) -> None:
+        def run(
+            self, _query: str, topics: list[str] | None = None, links: list[str] | None = None
+        ) -> None:
             if topics is not None:
                 self.store_ref.extend(topics)
             if links is not None:
                 self.store_ref.extend(links)
 
     class _SASession:
-        def __init__(self, store_ref) -> None:
+        def __init__(self, store_ref: list[object]) -> None:
             self.store_ref = store_ref
 
-        def __enter__(self):
+        def __enter__(self) -> "_SASession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
+        def __exit__(
+            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+        ) -> bool:
             return False
 
-        def execute_write(self, func, items) -> None:
+        def execute_write(self, func: Any, items: list[Any]) -> None:
             func(_SATx(self.store_ref), items)
 
-        def run(self, *_args, **_kwargs):
+        def run(self, *_args: Any, **_kwargs: Any) -> list[dict[str, str]]:
             return [{"id": "b1", "content": "alpha beta gamma"}]
 
     class _SADriver:
         def __init__(self) -> None:
             self.session_obj = _SASession(store)
 
-        def session(self):
+        def session(self) -> _SASession:
             return self.session_obj
 
     driver = _SADriver()
@@ -64,13 +70,15 @@ def test_semantic_analysis_utils(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_smart_autocomplete(monkeypatch: pytest.MonkeyPatch) -> None:
     class _SmartSession:
-        def __enter__(self):
+        def __enter__(self) -> "_SmartSession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
+        def __exit__(
+            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+        ) -> bool:
             return False
 
-        def run(self, query, **_kwargs):
+        def run(self, query: str, **_kwargs: Any) -> list[dict[str, str | int]]:
             if "ErrorPattern" in query:
                 return [{"pattern": "bad", "desc": "bad pattern"}]
             if "Constraint" in query:

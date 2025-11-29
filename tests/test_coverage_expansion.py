@@ -1,3 +1,6 @@
+import pytest
+from typing import Any
+from pathlib import Path
 import builtins
 import importlib
 import logging
@@ -21,7 +24,7 @@ def test_smart_autocomplete_handles_missing_graph() -> None:
     assert sa.suggest_next_query_type([]) == []
 
 
-def test_smart_autocomplete_session_none(monkeypatch) -> None:
+def test_smart_autocomplete_session_none(monkeypatch: pytest.MonkeyPatch) -> None:
     class _KG:
         def graph_session(self):
             class _Ctx:
@@ -57,14 +60,14 @@ def test_smart_autocomplete_filters_by_limit() -> None:
     assert all(s["name"] != "summary" for s in suggestions)
 
 
-def test_smart_autocomplete_constraint_missing_graph(monkeypatch) -> None:
+def test_smart_autocomplete_constraint_missing_graph(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(smart_autocomplete, "find_violations", lambda text: [])
     sa = smart_autocomplete.SmartAutocomplete(types.SimpleNamespace())  # type: ignore[arg-type]
     res = sa.suggest_constraint_compliance("draft", "summary")
     assert res == {"violations": [], "suggestions": []}
 
 
-def test_smart_autocomplete_constraint_session_none(monkeypatch) -> None:
+def test_smart_autocomplete_constraint_session_none(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(smart_autocomplete, "find_violations", lambda text: [])
 
     class _KG:
@@ -84,7 +87,7 @@ def test_smart_autocomplete_constraint_session_none(monkeypatch) -> None:
     assert res["suggestions"] == []
 
 
-def test_real_time_constraint_stream_final_validation(monkeypatch) -> None:
+def test_real_time_constraint_stream_final_validation(monkeypatch: pytest.MonkeyPatch) -> None:
     class _KG:
         def get_constraints_for_query_type(self, _qt):
             return []
@@ -130,7 +133,7 @@ def test_real_time_constraint_get_original_blocks_exception() -> None:
     assert enforcer._get_original_blocks() == []
 
 
-def test_real_time_constraint_similarity_issue(monkeypatch) -> None:
+def test_real_time_constraint_similarity_issue(monkeypatch: pytest.MonkeyPatch) -> None:
     enforcer = rtce.RealTimeConstraintEnforcer(types.SimpleNamespace())  # type: ignore[arg-type]
     monkeypatch.setattr(
         enforcer, "_get_original_blocks", lambda: [{"content": "repeat me"}]
@@ -147,7 +150,7 @@ def test_health_check_graph_missing() -> None:
     assert health_check.check_neo4j_connection(kg) is False  # type: ignore[arg-type]
 
 
-def test_health_check_unknown_exception(monkeypatch) -> None:
+def test_health_check_unknown_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Session:
         def __enter__(self):
             return self
@@ -186,7 +189,7 @@ def test_sensitive_filter_handles_non_string_args() -> None:
     assert isinstance(args, tuple) and args[-1] == 123
 
 
-def test_list_models_exits_without_key(monkeypatch) -> None:
+def test_list_models_exits_without_key(monkeypatch: pytest.MonkeyPatch) -> None:
     import importlib
     import os
 
@@ -229,7 +232,7 @@ def test_dynamic_example_selector_no_graph_returns_empty(caplog) -> None:
     assert selector.select_best_examples("qt", {}, k=1) == []
 
 
-def test_dynamic_example_selector_session_none(monkeypatch) -> None:
+def test_dynamic_example_selector_session_none(monkeypatch: pytest.MonkeyPatch) -> None:
     class _KG:
         def graph_session(self):
             class _Ctx:
@@ -245,7 +248,7 @@ def test_dynamic_example_selector_session_none(monkeypatch) -> None:
     assert selector.select_best_examples("qt", {}, k=1) == []
 
 
-def test_dynamic_example_selector_handles_exception(monkeypatch) -> None:
+def test_dynamic_example_selector_handles_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Session:
         def __enter__(self):
             return self
@@ -264,7 +267,7 @@ def test_dynamic_example_selector_handles_exception(monkeypatch) -> None:
     assert selector.select_best_examples("qt", {}, k=1) == []
 
 
-def test_caching_layer_import_fallback(monkeypatch) -> None:
+def test_caching_layer_import_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
     original_import = builtins.__import__
 
     def _fake_import(name, *args, **kwargs):
@@ -283,7 +286,7 @@ def test_caching_layer_import_fallback(monkeypatch) -> None:
     assert module.redis is None
 
 
-def test_caching_layer_handles_bad_cache_and_write_error(monkeypatch) -> None:
+def test_caching_layer_handles_bad_cache_and_write_error(monkeypatch: pytest.MonkeyPatch) -> None:
     rows = [{"id": "1", "text": "t1", "section": "s1"}]
 
     class _Redis:
@@ -332,7 +335,7 @@ def test_adaptive_difficulty_reasoning_requires_evidence() -> None:
     assert adjustments["evidence_required"] is True
 
 
-def test_cross_validation_grounding_branches(monkeypatch) -> None:
+def test_cross_validation_grounding_branches(monkeypatch: pytest.MonkeyPatch) -> None:
     cvs = cross_validation.CrossValidationSystem(types.SimpleNamespace())  # type: ignore[arg-type]
     res = cvs._check_image_grounding("ans", {"page_id": "p"})
     assert res["note"] == "graph 없음"

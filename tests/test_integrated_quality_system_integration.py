@@ -1,3 +1,5 @@
+import pytest
+from pathlib import Path
 from __future__ import annotations
 
 import sys
@@ -5,7 +7,7 @@ import types
 from typing import Any, Dict
 
 
-def test_generate_qa_with_all_enhancements(monkeypatch) -> None:
+def test_generate_qa_with_all_enhancements(monkeypatch: pytest.MonkeyPatch) -> None:
     """Mocked end-to-end path of IntegratedQualitySystem without external services."""
 
     # Provide dummy modules to satisfy imports in multimodal_understanding

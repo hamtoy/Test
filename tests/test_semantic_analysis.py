@@ -1,3 +1,5 @@
+from typing import Any
+from pathlib import Path
 import types
 import pytest
 from builtins import EnvironmentError
@@ -13,7 +15,7 @@ def test_tokenize_filters_stopwords_and_length() -> None:
     assert "the" not in tokens and "it" not in tokens and "그리고" not in tokens
 
 
-def test_count_keywords_respects_min_freq(monkeypatch) -> None:
+def test_count_keywords_respects_min_freq(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual semantic module to patch the right namespace
     from src.analysis import semantic as analysis_semantic
 
@@ -24,7 +26,7 @@ def test_count_keywords_respects_min_freq(monkeypatch) -> None:
     assert "cherry" not in counter  # freq 1 < MIN_FREQ
 
 
-def test_create_topics_no_keywords(monkeypatch) -> None:
+def test_create_topics_no_keywords(monkeypatch: pytest.MonkeyPatch) -> None:
     called = False
 
     class _Session:
@@ -43,7 +45,7 @@ def test_create_topics_no_keywords(monkeypatch) -> None:
     assert called is False  # no write when empty
 
 
-def test_link_blocks_creates_links(monkeypatch) -> None:
+def test_link_blocks_creates_links(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual semantic module to patch the right namespace
     from src.analysis import semantic as analysis_semantic
 

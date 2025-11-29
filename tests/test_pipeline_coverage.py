@@ -1,10 +1,13 @@
+import pytest
+from typing import Any
+from pathlib import Path
 from __future__ import annotations
 
 import types
 from src.infra import constraints as rtce
 
 
-def test_integrated_qa_pipeline_create_and_validate(monkeypatch) -> None:
+def test_integrated_qa_pipeline_create_and_validate(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("NEO4J_URI", "bolt://fake")
     monkeypatch.setenv("NEO4J_USER", "u")
     monkeypatch.setenv("NEO4J_PASSWORD", "p")

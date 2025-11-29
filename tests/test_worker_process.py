@@ -1,3 +1,5 @@
+from typing import Any
+from pathlib import Path
 import os
 import types
 
@@ -31,7 +33,7 @@ async def test_process_task_without_llm(tmp_path, monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_process_task_with_llm(monkeypatch) -> None:
+async def test_process_task_with_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -56,7 +58,7 @@ async def test_process_task_with_llm(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_ensure_redis_ready(monkeypatch) -> None:
+async def test_ensure_redis_ready(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -69,7 +71,7 @@ async def test_ensure_redis_ready(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_check_rate_limit_allows_then_blocks(monkeypatch) -> None:
+async def test_check_rate_limit_allows_then_blocks(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -95,7 +97,7 @@ async def test_check_rate_limit_allows_then_blocks(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_check_rate_limit_fail_open(monkeypatch) -> None:
+async def test_check_rate_limit_fail_open(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -104,7 +106,7 @@ async def test_check_rate_limit_fail_open(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_lats_budget_uses_cost_delta(monkeypatch) -> None:
+async def test_lats_budget_uses_cost_delta(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
     from src.infra import budget as infra_budget
@@ -158,7 +160,7 @@ async def test_lats_budget_uses_cost_delta(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_handle_ocr_task_success(monkeypatch, tmp_path) -> None:
+async def test_handle_ocr_task_success(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -205,7 +207,7 @@ async def test_handle_ocr_task_success(monkeypatch, tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_handle_ocr_task_rate_limited(monkeypatch) -> None:
+async def test_handle_ocr_task_rate_limited(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -225,7 +227,7 @@ async def test_handle_ocr_task_rate_limited(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_handle_ocr_task_sends_dlq(monkeypatch) -> None:
+async def test_handle_ocr_task_sends_dlq(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -265,7 +267,7 @@ async def test_handle_ocr_task_sends_dlq(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_handle_ocr_task_lats_toggle(monkeypatch) -> None:
+async def test_handle_ocr_task_lats_toggle(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -317,7 +319,7 @@ async def test_handle_ocr_task_lats_toggle(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_handle_ocr_task_lats_budget_exit(monkeypatch) -> None:
+async def test_handle_ocr_task_lats_budget_exit(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
