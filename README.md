@@ -470,7 +470,7 @@ python -m src.main
 - 결과: `data/outputs/result_turn_<id>_<timestamp>.md`
 - 콘솔: Rich 포맷 출력
 - 로그 파일: `app.log`
-- 캐싱: 프롬프트 토큰이 2000개 이상일 때만 활성화
+- 캐싱: 프롬프트 토큰이 2048개 이상일 때만 활성화 (Gemini API 제약)
 - **캐시 통계**: `cache_stats.jsonl`(기본)로 누적 저장
   - 파일 경로: `CACHE_STATS_FILE` 환경 변수로 변경 가능
   - 보존 개수: `CACHE_STATS_MAX_ENTRIES`로 조정 가능
@@ -478,6 +478,31 @@ python -m src.main
 - 로그 분리: INFO+ → `app.log`, ERROR+ → `error.log` (JSON 포맷은 production 모드에서 자동 적용)
 - 체크포인트: `--resume` 사용 시 `checkpoint.jsonl`(기본)에서 완료된 질의를 건너뜀. `--checkpoint-file`로 경로 지정 가능
 - **프로파일링 결과**: `profiling_results/` 디렉토리에 `.prof` 파일 저장
+
+## 💾 캐싱 전략
+
+### Context Caching 작동 방식
+
+시스템은 **2048 토큰 이상**의 프롬프트를 자동으로 캐싱합니다.
+
+```
+프롬프트 크기           처리 방식              비용
+─────────────────────────────────────────────────
+< 2,048 토큰    →    일반 API            일반 가격
+≥ 2,048 토큰    →    Context Caching     50-90% 절감
+```
+
+**왜 2048인가?**
+- Gemini API의 기술적 제약사항 (변경 불가)
+- 작은 컨텍스트는 캐싱 오버헤드가 더 큼
+- 2048 이상에서 비용 절감 효과가 명확함
+
+**자동 처리**
+- 시스템이 자동으로 판단하여 처리
+- 사용자가 신경 쓸 필요 없음
+- 로그에서 캐싱 여부 확인 가능
+
+자세한 내용은 [캐싱 가이드](docs/CACHING.md)를 참조하세요.
 
 ## 성능 분석
 

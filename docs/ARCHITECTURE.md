@@ -59,13 +59,13 @@ graph TB
 - Lazy Import 최적화 (성능 ~20% 향상)
 - Rate Limiting (RPM 제어)
 - 동시성 제어 (`Semaphore`)
-- 컨텍스트 캐싱 (토큰 2000개 이상 시)
+- 컨텍스트 캐싱 (토큰 2048개 이상 시, Gemini API 제약)
 - 토큰 사용량 및 비용 추적
 
 **캐싱 전략**:
 
 ```python
-if prompt_tokens >= 2000:
+if prompt_tokens >= 2048:  # Gemini API 최소 임계값
     cache = await create_context_cache(ocr_text)
     # 로컬 매니페스트: .cache/context_cache.json
 ```
@@ -290,7 +290,7 @@ results = await asyncio.gather(*tasks)
 
 ### 캐싱 전략
 
-- **조건**: 프롬프트 토큰 ≥ 2000
+- **조건**: 프롬프트 토큰 ≥ 2048 (Gemini API 제약)
 - **TTL**: 10분 (기본값, `GEMINI_CACHE_TTL_MINUTES`)
 - **저장소**: 로컬 매니페스트 + Gemini Context Cache
 
