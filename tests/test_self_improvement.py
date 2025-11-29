@@ -230,7 +230,7 @@ def test_send_slack_notification_with_high_severity():
 def test_send_slack_notification_empty_issues():
     """Test Slack notification with empty issues."""
     from typing import Any
-    
+
     system = SelfImprovingSystem()
     report: dict[str, Any] = {"issues": []}
     # Should not raise any exceptions

@@ -49,7 +49,9 @@ def test_main_no_blocks_returns(monkeypatch, caplog):
             self.closed = True
 
     monkeypatch.setattr(
-        analysis_semantic.GraphDatabase, "driver", lambda *a, **k: _Driver()  # type: ignore[attr-defined]
+        analysis_semantic.GraphDatabase,
+        "driver",
+        lambda *a, **k: _Driver(),  # type: ignore[attr-defined]
     )
     monkeypatch.setattr(analysis_semantic, "fetch_blocks", lambda driver: [])
 
