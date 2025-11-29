@@ -50,7 +50,7 @@ async def test_main_analyze_cache_quick_path(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(main_module, "AppConfig", FakeConfig)
     monkeypatch.setattr(main_module, "GeminiAgent", FakeAgent)
-    monkeypatch.setattr(main_module.genai, "configure"  # type: ignore[attr-defined], lambda api_key: None)
+    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)  # type: ignore[attr-defined]
     monkeypatch.setattr(
         main_module,
         "load_input_data",
@@ -142,7 +142,7 @@ async def test_main_keep_progress_flag(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(main_module, "AppConfig", FakeConfig)
     monkeypatch.setattr(main_module, "GeminiAgent", FakeAgent)
-    monkeypatch.setattr(main_module.genai, "configure"  # type: ignore[attr-defined], lambda api_key: None)
+    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)  # type: ignore[attr-defined]
     monkeypatch.setattr(
         main_module,
         "load_input_data",
@@ -231,7 +231,7 @@ async def test_main_cache_stats_warning(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(main_module, "AppConfig", FakeConfig)
     monkeypatch.setattr(main_module, "GeminiAgent", FakeAgent)
-    monkeypatch.setattr(main_module.genai, "configure"  # type: ignore[attr-defined], lambda api_key: None)
+    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)  # type: ignore[attr-defined]
     monkeypatch.setattr(
         main_module,
         "load_input_data",
@@ -325,7 +325,7 @@ async def test_main_auto_mode_passes_intent(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(main_module, "AppConfig", FakeConfig)
     monkeypatch.setattr(main_module, "GeminiAgent", FakeAgent)
-    monkeypatch.setattr(main_module.genai, "configure"  # type: ignore[attr-defined], lambda api_key: None)
+    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)  # type: ignore[attr-defined]
     monkeypatch.setattr(
         main_module,
         "load_input_data",
@@ -405,7 +405,7 @@ async def test_main_missing_templates_exits(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(main_module, "AppConfig", FakeConfig)
     monkeypatch.setattr(main_module, "GeminiAgent", MagicMock())
-    monkeypatch.setattr(main_module.genai, "configure"  # type: ignore[attr-defined], lambda api_key: None)
+    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)  # type: ignore[attr-defined]
     monkeypatch.setattr(
         main_module,
         "parse_args",
