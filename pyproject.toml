@@ -28,21 +28,13 @@ rag = [
 ]
 
 # Web UI with FastAPI
-web = [
-    "fastapi>=0.115.0",
-    "uvicorn>=0.32.0",
-    "python-multipart>=0.0.12",
-]
+web = ["fastapi>=0.115.0", "uvicorn>=0.32.0", "python-multipart>=0.0.12"]
 
 # Redis worker for LATS
-worker = [
-    "faststream[redis]>=0.4.10,<1.0.0",
-]
+worker = ["faststream[redis]>=0.4.10,<1.0.0"]
 
 # Multimodal (image processing)
-multimodal = [
-    "pillow>=10.0.0",
-]
+multimodal = ["pillow>=10.0.0"]
 
 # All optional features - list individual packages, not self-reference
 all = [
@@ -114,13 +106,23 @@ extend-select = ["PERF", "FURB", "SIM"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D"]
-"scripts/**" = ["PERF401", "PERF203", "SIM102"]  # Allow simpler patterns in scripts
-"experiments/**" = ["PERF401", "PERF203", "SIM102"]  # Allow simpler patterns in experiments
-"src/plugins/**" = ["PERF203"]  # Allow try-except in loops for plugin loading
-"src/workflow/chunk_processor.py" = ["PERF203"]  # Allow try-except in retry loops
+"scripts/**" = [
+    "PERF401",
+    "PERF203",
+    "SIM102",
+] # Allow simpler patterns in scripts
+"experiments/**" = [
+    "PERF401",
+    "PERF203",
+    "SIM102",
+] # Allow simpler patterns in experiments
+"src/plugins/**" = ["PERF203"] # Allow try-except in loops for plugin loading
+"src/workflow/chunk_processor.py" = [
+    "PERF203",
+] # Allow try-except in retry loops
 
 [tool.mypy]
-python_version = "3.10"  # v3.0: Minimum supported version
+python_version = "3.10" # v3.0: Minimum supported version
 
 # Level 3: Strict mode enabled
 strict = true
@@ -132,7 +134,13 @@ plugins = ["pydantic.mypy"]
 namespace_packages = true
 explicit_package_bases = true
 mypy_path = [".", "stubs"]
-exclude = ["notion-neo4j-graph/", ".venv/", "build/", "vulture_whitelist.py", "tests/test_deprecation_warnings.py"]
+exclude = [
+    "notion-neo4j-graph/",
+    ".venv/",
+    "build/",
+    "vulture_whitelist.py",
+    "tests/test_deprecation_warnings.py",
+]
 
 # ===== 테스트 파일 mypy strict mode 완료 =====
 # test_deprecation_warnings.py는 의도적으로 제외 (삭제된 모듈 테스트)
@@ -273,11 +281,7 @@ disallow_untyped_calls = false
 
 # Scripts, checks, and experiments excluded from strict mode
 [[tool.mypy.overrides]]
-module = [
-    "scripts.*",
-    "checks.*",
-    "experiments.*",
-]
+module = ["scripts.*", "checks.*", "experiments.*"]
 strict = false
 check_untyped_defs = false
 warn_return_any = false
@@ -288,11 +292,7 @@ disallow_untyped_calls = false
 
 # Complex packages with relaxed checking (gradual migration)
 [[tool.mypy.overrides]]
-module = [
-    "src.analysis.*",
-    "src.features.*",
-    "src.ui.*",
-]
+module = ["src.analysis.*", "src.features.*", "src.ui.*"]
 strict = false
 check_untyped_defs = false
 warn_return_any = false
@@ -319,6 +319,16 @@ module = [
     "openai.*",
     "faststream",
     "faststream.*",
+    "dotenv",
+    "dotenv.*",
+    "redis",
+    "redis.*",
+    "PIL",
+    "PIL.*",
+    "fastapi",
+    "fastapi.*",
+    "langchain_core",
+    "langchain_core.*",
 ]
 ignore_missing_imports = true
 
