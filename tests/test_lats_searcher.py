@@ -143,7 +143,7 @@ async def test_evaluate_updates_budget_on_error() -> None:
     async def propose(node: SearchNode) -> Any:  # noqa: ARG001
         return ["x"]
 
-    async def evaluate(node: SearchNode) -> None:
+    async def evaluate(node: SearchNode) -> float:
         raise RuntimeError("fail")
 
     searcher = LATSSearcher(

@@ -15,8 +15,8 @@ def test_require_env_missing(monkeypatch) -> None:
 
 class _Session:
     def __init__(self) -> None:
-        self.calls = []
-        self._data_queue = []
+        self.calls: list[tuple[str, dict[str, object]]] = []
+        self._data_queue: list[object] = []
 
     def __enter__(self):
         return self

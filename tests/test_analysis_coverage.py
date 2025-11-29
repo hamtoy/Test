@@ -97,7 +97,7 @@ def test_smart_autocomplete(monkeypatch) -> None:
 def test_dynamic_example_selector(monkeypatch) -> None:
     class _DESession:
         def __init__(self) -> None:
-            self.updated = []
+            self.updated: list[str] = []
 
         def __enter__(self):
             return self
