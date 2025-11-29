@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import types
+from typing import Any
 
 import pytest
 
@@ -10,7 +11,7 @@ from src.config import AppConfig
 VALID_API_KEY = "AIza" + "C" * 35
 
 
-def _stub_agent(monkeypatch):
+def _stub_agent(monkeypatch: pytest.MonkeyPatch) -> GeminiAgent:
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     jinja_env = types.SimpleNamespace(
         get_template=lambda name: types.SimpleNamespace(render=lambda **_k: "x")
@@ -22,7 +23,7 @@ def _stub_agent(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_call_api_with_retry_adaptive_backoff(monkeypatch) -> None:
+async def test_call_api_with_retry_adaptive_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _stub_agent(monkeypatch)
 
     class Boom(Exception):
@@ -30,7 +31,7 @@ async def test_call_api_with_retry_adaptive_backoff(monkeypatch) -> None:
 
     call_count = {"n": 0}
 
-    async def _boom(*_a, **_k) -> None:
+    async def _boom(*_a: Any, **_k: Any) -> None:
         call_count["n"] += 1
         raise Boom("fail")
 
@@ -44,11 +45,11 @@ async def test_call_api_with_retry_adaptive_backoff(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_call_api_with_retry_success_after_backoff(monkeypatch) -> None:
+async def test_call_api_with_retry_success_after_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _stub_agent(monkeypatch)
     attempts = {"n": 0}
 
-    async def _flaky(*_a, **_k):
+    async def _flaky(*_a: Any, **_k: Any) -> str:
         attempts["n"] += 1
         if attempts["n"] < 2:
             raise TimeoutError("first fail")

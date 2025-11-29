@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Any
+
 import asyncio
 import json
 import os
@@ -36,13 +39,13 @@ def test_budget_tracker_zero_budget() -> None:
     assert tracker.is_budget_exceeded() is False
 
 
-def test_require_env_missing(monkeypatch) -> None:
+def test_require_env_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("SOME_ENV_KEY", raising=False)
     with pytest.raises(EnvironmentError):
         qa_rag_system.require_env("SOME_ENV_KEY")
 
 
-def test_qakg_constraints_with_provider(monkeypatch) -> None:
+def test_qakg_constraints_with_provider(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Session:
         async def __aenter__(self):
             return self
@@ -83,7 +86,7 @@ def test_qakg_constraints_with_provider(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_qakg_constraints_from_async_context(monkeypatch) -> None:
+async def test_qakg_constraints_from_async_context(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that get_constraints_for_query_type works when called from async context.
 
     This tests the fix for the "This event loop is already running" error
@@ -130,7 +133,7 @@ async def test_qakg_constraints_from_async_context(monkeypatch) -> None:
     kg.close()
 
 
-def test_qakg_graph_session_when_loop_running(monkeypatch) -> None:
+def test_qakg_graph_session_when_loop_running(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Provider:
         def session(self):
             class _Ctx:
@@ -165,7 +168,7 @@ def test_qakg_graph_session_when_loop_running(monkeypatch) -> None:
         assert session is None
 
 
-def test_qakg_vector_store_missing_key(monkeypatch) -> None:
+def test_qakg_vector_store_missing_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         qa_rag_system, "AppConfig", lambda *a, **k: types.SimpleNamespace()
     )
@@ -186,7 +189,7 @@ def test_qakg_vector_store_missing_key(monkeypatch) -> None:
     assert kg.find_relevant_rules("q") == []
 
 
-def test_qakg_validate_session_errors(monkeypatch) -> None:
+def test_qakg_validate_session_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     res_empty = qa_rag_system.QAKnowledgeGraph(
         graph_provider=types.SimpleNamespace()  # type: ignore[arg-type]
     ).validate_session({"turns": []})
@@ -208,7 +211,7 @@ def test_qakg_validate_session_errors(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_worker_setup_and_close_redis(monkeypatch) -> None:
+async def test_worker_setup_and_close_redis(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Redis:
         def __init__(self, url) -> None:
             self.url = url
@@ -240,7 +243,7 @@ async def test_worker_setup_and_close_redis(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_worker_ensure_redis_ready_failure(monkeypatch) -> None:
+async def test_worker_ensure_redis_ready_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual worker module to patch the right namespace
     from src.infra import worker as infra_worker
 
@@ -261,7 +264,7 @@ def test_worker_append_jsonl(tmp_path, monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_run_task_with_lats_agent_error(monkeypatch) -> None:
+async def test_run_task_with_lats_agent_error(monkeypatch: pytest.MonkeyPatch) -> None:
     async def _gen_query(text, meta) -> None:
         raise RuntimeError("fail")
 
@@ -291,7 +294,7 @@ async def test_run_task_with_lats_agent_error(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_run_task_with_lats_llm_budget(monkeypatch) -> None:
+async def test_run_task_with_lats_llm_budget(monkeypatch: pytest.MonkeyPatch) -> None:
     class _LLM:
         def __init__(self) -> None:
             self.calls = 0

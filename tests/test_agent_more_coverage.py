@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Any
+
 from __future__ import annotations
 
 import types
@@ -37,7 +40,7 @@ def _make_agent(monkeypatch):
     return GeminiAgent(AppConfig(), jinja_env=_dummy_env())
 
 
-def _patch_protos(monkeypatch) -> None:
+def _patch_protos(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Finish:
         STOP = "STOP"
         MAX_TOKENS = "MAX_TOKENS"
@@ -53,7 +56,7 @@ def _patch_protos(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_execute_api_call_blocks_on_safety(monkeypatch) -> None:
+async def test_execute_api_call_blocks_on_safety(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch_protos(monkeypatch)
     agent = _make_agent(monkeypatch)
 
@@ -73,7 +76,7 @@ async def test_execute_api_call_blocks_on_safety(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_execute_api_call_fallbacks_to_candidate_part(monkeypatch) -> None:
+async def test_execute_api_call_fallbacks_to_candidate_part(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch_protos(monkeypatch)
     agent = _make_agent(monkeypatch)
 
@@ -108,7 +111,7 @@ async def test_execute_api_call_fallbacks_to_candidate_part(monkeypatch) -> None
 
 
 @pytest.mark.asyncio
-async def test_generate_query_empty_response(monkeypatch) -> None:
+async def test_generate_query_empty_response(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _make_agent(monkeypatch)
     monkeypatch.setattr(agent, "_call_api_with_retry", AsyncMock(return_value="   "))
     result = await agent.generate_query("ocr", "user prompt")
@@ -116,7 +119,7 @@ async def test_generate_query_empty_response(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_evaluate_responses_empty_raises(monkeypatch) -> None:
+async def test_evaluate_responses_empty_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _make_agent(monkeypatch)
     monkeypatch.setattr(agent, "_call_api_with_retry", AsyncMock(return_value=" "))
     with pytest.raises(ValueError):
@@ -124,7 +127,7 @@ async def test_evaluate_responses_empty_raises(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_rewrite_best_answer_unwraps(monkeypatch) -> None:
+async def test_rewrite_best_answer_unwraps(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _make_agent(monkeypatch)
     monkeypatch.setattr(
         agent,

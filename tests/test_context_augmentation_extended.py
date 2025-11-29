@@ -1,10 +1,13 @@
+from pathlib import Path
+from typing import Any
+
 from __future__ import annotations
 
 import types
 from src.processing import context_augmentation as aca
 
 
-def test_advanced_context_augmentation_vector_index(monkeypatch) -> None:
+def test_advanced_context_augmentation_vector_index(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Doc:
         def __init__(self, text) -> None:
             self.page_content = text
@@ -70,7 +73,7 @@ def test_advanced_context_augmentation_fallback_graph() -> None:
     assert out["relevant_rules"]
 
 
-def test_generate_with_augmentation_formats(monkeypatch) -> None:
+def test_generate_with_augmentation_formats(monkeypatch: pytest.MonkeyPatch) -> None:
     aug = aca.AdvancedContextAugmentation.__new__(aca.AdvancedContextAugmentation)
     monkeypatch.setattr(
         aug,

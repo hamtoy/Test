@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Any
+
 from __future__ import annotations
 
 import types
@@ -7,7 +10,7 @@ from src.processing import example_selector
 from src.features import difficulty as adaptive_difficulty
 
 
-def test_semantic_analysis_utils(monkeypatch) -> None:
+def test_semantic_analysis_utils(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(semantic, "MIN_FREQ", 1)
     tokens = semantic.tokenize("This is a Sample sample text with 숫자123")
     assert "sample" in tokens
@@ -59,7 +62,7 @@ def test_semantic_analysis_utils(monkeypatch) -> None:
     )
 
 
-def test_smart_autocomplete(monkeypatch) -> None:
+def test_smart_autocomplete(monkeypatch: pytest.MonkeyPatch) -> None:
     class _SmartSession:
         def __enter__(self):
             return self
@@ -94,7 +97,7 @@ def test_smart_autocomplete(monkeypatch) -> None:
     assert compliance["violations"]
 
 
-def test_dynamic_example_selector(monkeypatch) -> None:
+def test_dynamic_example_selector(monkeypatch: pytest.MonkeyPatch) -> None:
     class _DESession:
         def __init__(self) -> None:
             self.updated: list[str] = []
@@ -128,7 +131,7 @@ def test_dynamic_example_selector(monkeypatch) -> None:
     assert examples
 
 
-def test_adaptive_difficulty(monkeypatch) -> None:
+def test_adaptive_difficulty(monkeypatch: pytest.MonkeyPatch) -> None:
     class _ADSession:
         def __enter__(self):
             return self
@@ -163,7 +166,7 @@ def test_semantic_analysis_utils_simple() -> None:
     )  # MIN_FREQ may filter low counts
 
 
-def test_adaptive_difficulty_levels(monkeypatch) -> None:
+def test_adaptive_difficulty_levels(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Session:
         def __enter__(self):
             return self
