@@ -7,6 +7,7 @@ Usage:
 This script runs pytest with all warnings enabled and generates
 a markdown report categorizing deprecation warnings by source.
 """
+
 from __future__ import annotations
 
 import re

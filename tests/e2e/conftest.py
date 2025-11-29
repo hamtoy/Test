@@ -1,6 +1,7 @@
 """
 End-to-End 테스트용 Fixture
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -15,18 +16,21 @@ if TYPE_CHECKING:
 @dataclass
 class QueryResult:
     """질의 결과 모의 객체"""
+
     query: str
 
 
 @dataclass
 class AnswerResult:
     """답변 결과 모의 객체"""
+
     answer: str
 
 
 @dataclass
 class EvaluationResult:
     """평가 결과 모의 객체"""
+
     score: float
     feedback: str
 
@@ -77,9 +81,7 @@ class MockGeminiAgent:
         self.total_output_tokens = 0
         self._request_count = 0
 
-    async def generate_query(
-        self, ocr_text: str, intent: str
-    ) -> QueryResult:
+    async def generate_query(self, ocr_text: str, intent: str) -> QueryResult:
         """질의 생성"""
         if not ocr_text:
             raise ValueError("OCR text cannot be empty")
@@ -100,15 +102,11 @@ class MockGeminiAgent:
 
         return result
 
-    async def generate_answer(
-        self, query: str, context: str
-    ) -> AnswerResult:
+    async def generate_answer(self, query: str, context: str) -> AnswerResult:
         """답변 생성"""
         return AnswerResult(answer=f"Answer for query: {query}")
 
-    async def evaluate_answer(
-        self, query: str, answer: str
-    ) -> EvaluationResult:
+    async def evaluate_answer(self, query: str, answer: str) -> EvaluationResult:
         """답변 평가"""
         return EvaluationResult(score=0.85, feedback="Good answer")
 

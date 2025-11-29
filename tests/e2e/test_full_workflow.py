@@ -4,6 +4,7 @@
 These tests verify complete end-to-end workflows using mock implementations.
 Run with: pytest -m e2e
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -33,8 +34,7 @@ async def test_complete_qa_workflow(full_workflow_agent: MockGeminiAgent) -> Non
 
     # ===== Step 1: 질의 생성 =====
     query_result = await full_workflow_agent.generate_query(
-        ocr_text=ocr_text,
-        intent=intent
+        ocr_text=ocr_text, intent=intent
     )
 
     assert query_result is not None
@@ -131,9 +131,7 @@ async def test_concurrent_workflows(full_workflow_agent: MockGeminiAgent) -> Non
     ]
 
     # 동시 실행
-    tasks = [
-        full_workflow_agent.generate_query(ocr, intent) for ocr, intent in queries
-    ]
+    tasks = [full_workflow_agent.generate_query(ocr, intent) for ocr, intent in queries]
 
     results = await asyncio.gather(*tasks, return_exceptions=True)
 

@@ -7,6 +7,7 @@ Usage:
 This script finds all usages of @no_type_check decorator
 and suggests alternatives for better type safety.
 """
+
 from __future__ import annotations
 
 import ast
@@ -28,7 +29,10 @@ def find_no_type_check_usage(directory: Path) -> list[tuple[Path, int, str]]:
             for node in ast.walk(tree):
                 if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                     for decorator in node.decorator_list:
-                        if isinstance(decorator, ast.Name) and decorator.id == "no_type_check":
+                        if (
+                            isinstance(decorator, ast.Name)
+                            and decorator.id == "no_type_check"
+                        ):
                             results.append((py_file, node.lineno, node.name))
 
         except SyntaxError:
