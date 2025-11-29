@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import types
+from pathlib import Path
+from typing import Any
+
 import pytest
 from jinja2 import DictLoader, Environment
 
@@ -10,7 +13,7 @@ from src.config import AppConfig
 VALID_API_KEY = "AIza" + "E" * 35
 
 
-def _make_config(tmp_path):
+def _make_config(tmp_path: Path) -> AppConfig:
     return AppConfig.model_validate(
         {
             "GEMINI_API_KEY": VALID_API_KEY,
@@ -30,7 +33,7 @@ def _make_config(tmp_path):
     )
 
 
-def _make_agent(monkeypatch, tmp_path):
+def _make_agent(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> GeminiAgent:
     config = _make_config(tmp_path)
     jinja_env = Environment(loader=DictLoader({"prompt_eval.j2": "x"}))
     agent = GeminiAgent(config, jinja_env=jinja_env)
@@ -52,11 +55,13 @@ def _make_agent(monkeypatch, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_execute_api_call_logs_metrics(monkeypatch, tmp_path) -> None:
+async def test_execute_api_call_logs_metrics(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     agent = _make_agent(monkeypatch, tmp_path)
-    logged = {}
+    logged: dict[str, Any] = {}
 
-    def _log_metrics(logger, **kwargs) -> None:
+    def _log_metrics(logger: Any, **kwargs: Any) -> None:
         logged.update(kwargs)
 
     # Patch src.agent.log_metrics so _get_log_metrics() finds it
@@ -77,7 +82,9 @@ async def test_execute_api_call_logs_metrics(monkeypatch, tmp_path) -> None:
 
     class _Model:
         @staticmethod
-        async def generate_content_async(prompt_text, request_options=None):  # noqa: ARG002
+        async def generate_content_async(
+            prompt_text: str, request_options: Any = None
+        ) -> _Resp:  # noqa: ARG002
             return _Resp()
 
     result = await agent._execute_api_call(_Model(), "p")
@@ -87,7 +94,9 @@ async def test_execute_api_call_logs_metrics(monkeypatch, tmp_path) -> None:
     assert "latency_ms" in logged
 
 
-def test_get_total_cost_unknown_model(monkeypatch, tmp_path) -> None:
+def test_get_total_cost_unknown_model(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     agent = _make_agent(monkeypatch, tmp_path)
     agent._cost_tracker.model_name = "unknown-model"
     agent.total_input_tokens = 10
