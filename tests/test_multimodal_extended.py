@@ -245,7 +245,7 @@ def test_detect_table(monkeypatch: pytest.MonkeyPatch) -> None:
         pass
 
     analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
-    result = analyzer._detect_table(_FakeImg())  # type: ignore[arg-type]
+    result = analyzer._detect_table(_FakeImg())
 
     # Placeholder always returns False
     assert result is False
@@ -261,7 +261,7 @@ def test_detect_chart(monkeypatch: pytest.MonkeyPatch) -> None:
         pass
 
     analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
-    result = analyzer._detect_chart(_FakeImg())  # type: ignore[arg-type]
+    result = analyzer._detect_chart(_FakeImg())
 
     # Placeholder always returns False
     assert result is False
