@@ -6,7 +6,7 @@ import logging
 import os
 import sys
 import time
-from typing import Any, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict
 
 if TYPE_CHECKING:
     from src.qa.rag_system import QAKnowledgeGraph
@@ -32,7 +32,7 @@ async def check_redis() -> Dict[str, Any]:
 
         async def _check_redis() -> Dict[str, Any]:
             start = time.perf_counter()
-            client = aioredis.from_url(redis_url)
+            client = aioredis.from_url(redis_url)  # type: ignore[no-untyped-call]
             await client.ping()
             latency_ms = (time.perf_counter() - start) * 1000
             await client.close()
