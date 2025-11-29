@@ -1,10 +1,10 @@
-import pytest
-from pathlib import Path
 from __future__ import annotations
 
 import sys
 import types
 from typing import Any, Dict
+
+import pytest
 
 
 def test_generate_qa_with_all_enhancements(monkeypatch: pytest.MonkeyPatch) -> None:

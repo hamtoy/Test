@@ -1,10 +1,10 @@
-import pytest
-from typing import Any
-from pathlib import Path
 from __future__ import annotations
 
-import types
 import sys
+import types
+
+import pytest
+
 from src.qa import rag_system as qrs
 
 
