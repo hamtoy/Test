@@ -286,17 +286,6 @@ disallow_incomplete_defs = false
 disallow_any_generics = false
 disallow_untyped_calls = false
 
-# Complex packages with relaxed checking (gradual migration)
-[[tool.mypy.overrides]]
-module = [
-    "src.analysis.*",
-    "src.features.*",
-    "src.ui.*",
-]
-strict = false
-check_untyped_defs = false
-warn_return_any = false
-
 # External libraries without type stubs (permanent exceptions)
 [[tool.mypy.overrides]]
 module = [
@@ -321,6 +310,11 @@ module = [
     "faststream.*",
 ]
 ignore_missing_imports = true
+
+# Worker module uses FastStream decorators which are untyped
+[[tool.mypy.overrides]]
+module = ["src.infra.worker"]
+disallow_untyped_decorators = false
 
 # Test file that intentionally tests import failures for removed modules
 [[tool.mypy.overrides]]
