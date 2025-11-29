@@ -1,7 +1,8 @@
-import pytest
 """Tests for src/automation/promote_rules.py to improve coverage."""
 
 from pathlib import Path
+
+import pytest
 
 
 class TestHelperFunctions:

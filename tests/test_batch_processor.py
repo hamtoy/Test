@@ -1,4 +1,3 @@
-from typing import Any
 """Tests for the BatchProcessor module.
 
 Tests cover:
@@ -7,6 +6,8 @@ Tests cover:
 - Batch job submission and polling
 - Job management (list, get, cancel, cleanup)
 """
+
+from typing import Any
 
 import json
 from pathlib import Path

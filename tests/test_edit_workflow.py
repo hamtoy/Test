@@ -1,6 +1,6 @@
-from typing import Any
 """Tests for the edit workflow module."""
 
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -160,7 +160,9 @@ async def test_edit_content_strips_whitespace(mock_agent: Any) -> None:
 
 
 @pytest.mark.asyncio
-async def test_edit_content_with_kg_rules_in_prompt(mock_agent: Any, mock_kg: Any) -> None:
+async def test_edit_content_with_kg_rules_in_prompt(
+    mock_agent: Any, mock_kg: Any
+) -> None:
     """Test that knowledge graph rules appear in the prompt."""
     await edit_content(
         agent=mock_agent,

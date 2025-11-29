@@ -1,9 +1,10 @@
-import pytest
 """Tests for the deprecation_stats.py script."""
 
 import json
 import tempfile
 from pathlib import Path
+
+import pytest
 
 from scripts.deprecation_stats import (
     analyze_file,

@@ -1,8 +1,8 @@
-from typing import Any
 """Tests for Feature Flags."""
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -98,7 +98,9 @@ def test_load_flags_missing_file(tmp_path: Path) -> None:
     assert flags.flags == {}
 
 
-def test_is_enabled_basic(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_is_enabled_basic(
+    temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test basic feature enabled check."""
     monkeypatch.setenv("ENVIRONMENT", "development")
     flags = FeatureFlags(config_file=temp_flags_file)
@@ -106,14 +108,18 @@ def test_is_enabled_basic(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch)
     assert flags.is_enabled("disabled_feature") is False
 
 
-def test_is_enabled_unknown_flag(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_is_enabled_unknown_flag(
+    temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test checking unknown flag."""
     monkeypatch.setenv("ENVIRONMENT", "development")
     flags = FeatureFlags(config_file=temp_flags_file)
     assert flags.is_enabled("unknown_flag") is False
 
 
-def test_is_enabled_environment_restriction(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_is_enabled_environment_restriction(
+    temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test environment restriction."""
     flags = FeatureFlags(config_file=temp_flags_file)
 
@@ -129,7 +135,9 @@ def test_is_enabled_environment_restriction(temp_flags_file: Any, monkeypatch: p
     assert flags.is_enabled("limited_rollout", user_id="test_user") is False
 
 
-def test_is_enabled_whitelist(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_is_enabled_whitelist(
+    temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test whitelist functionality."""
     monkeypatch.setenv("ENVIRONMENT", "development")
     flags = FeatureFlags(config_file=temp_flags_file)
@@ -141,7 +149,9 @@ def test_is_enabled_whitelist(temp_flags_file: Any, monkeypatch: pytest.MonkeyPa
     assert flags.is_enabled("whitelist_only", user_id="user3") is False
 
 
-def test_is_enabled_rollout_percent(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_is_enabled_rollout_percent(
+    temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test rollout percentage."""
     monkeypatch.setenv("ENVIRONMENT", "development")
     flags = FeatureFlags(config_file=temp_flags_file)
@@ -153,7 +163,9 @@ def test_is_enabled_rollout_percent(temp_flags_file: Any, monkeypatch: pytest.Mo
     assert result1 == result2  # Same user should get same result
 
 
-def test_is_enabled_no_user_id_with_rollout(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_is_enabled_no_user_id_with_rollout(
+    temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test rollout without user_id."""
     monkeypatch.setenv("ENVIRONMENT", "development")
     flags = FeatureFlags(config_file=temp_flags_file)
@@ -162,7 +174,9 @@ def test_is_enabled_no_user_id_with_rollout(temp_flags_file: Any, monkeypatch: p
     assert flags.is_enabled("limited_rollout") is False
 
 
-def test_is_enabled_context_rules(temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_is_enabled_context_rules(
+    temp_flags_file: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test context-based rules."""
     monkeypatch.setenv("ENVIRONMENT", "development")
     flags = FeatureFlags(config_file=temp_flags_file)

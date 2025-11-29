@@ -1,8 +1,8 @@
-from typing import Any
 """Tests for src/ui/interactive_menu.py to improve coverage."""
 
-from unittest.mock import patch, MagicMock
 from pathlib import Path
+from typing import Any
+from unittest.mock import MagicMock, patch
 
 import pytest
 

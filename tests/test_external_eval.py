@@ -1,6 +1,6 @@
-from typing import Any
 """Tests for the external evaluation workflow module."""
 
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -75,7 +75,9 @@ async def test_evaluate_external_answers_score_clamping(mock_agent: Any) -> None
 
 
 @pytest.mark.asyncio
-async def test_evaluate_external_answers_negative_score_clamping(mock_agent: Any) -> None:
+async def test_evaluate_external_answers_negative_score_clamping(
+    mock_agent: Any,
+) -> None:
     """Test that negative scores are clamped to 0."""
     mock_agent._call_api_with_retry = AsyncMock(
         return_value="점수: -10\n피드백: 테스트"

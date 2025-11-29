@@ -1,10 +1,11 @@
-import pytest
 from __future__ import annotations
 
 import types
+from typing import Any
+
+import pytest
 
 from src.processing.context_augmentation import AdvancedContextAugmentation
-from typing import Any
 
 
 def test_augment_without_vector_store(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -1,4 +1,5 @@
 from pathlib import Path
+
 """Tests for main.py module to improve coverage."""
 
 import asyncio

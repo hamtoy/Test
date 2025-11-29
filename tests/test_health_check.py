@@ -14,7 +14,9 @@ class _BadGraph:
     def __enter__(self) -> "_BadGraph":
         return self
 
-    def __exit__(self, exc_type: Optional[type], exc: Optional[BaseException], tb: Any) -> None:
+    def __exit__(
+        self, exc_type: Optional[type], exc: Optional[BaseException], tb: Any
+    ) -> None:
         pass
 
     def run(self, *args: Any, **kwargs: Any) -> None:

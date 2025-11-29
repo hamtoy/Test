@@ -5,7 +5,7 @@ import pytest
 import warnings
 import sys
 import types
-from typing import Any, Generator, List, Optional, cast
+from typing import Any, List, Optional, cast
 from unittest.mock import MagicMock, AsyncMock
 
 # Neo4j sync driver emits a noisy deprecation warning when GC closes a driver.
@@ -158,7 +158,9 @@ def mock_gemini_client(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
 
 
 @pytest.fixture
-def mock_genai(monkeypatch: pytest.MonkeyPatch, mock_gemini_client: MagicMock) -> MagicMock:
+def mock_genai(
+    monkeypatch: pytest.MonkeyPatch, mock_gemini_client: MagicMock
+) -> MagicMock:
     """Mock google.generativeai module."""
     mock_genai = MagicMock()
     mock_genai.GenerativeModel.return_value = mock_gemini_client._model

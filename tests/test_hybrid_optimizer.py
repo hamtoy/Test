@@ -1,6 +1,6 @@
-from typing import Any
 """Tests for the hybrid workflow optimizer module."""
 
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -133,7 +133,9 @@ class TestHybridWorkflowOptimizer:
         optimizer._mock_mcts.optimize_workflow.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_optimize_auto_default_fallback(self, mock_agent: Any, templates: Any) -> None:
+    async def test_optimize_auto_default_fallback(
+        self, mock_agent: Any, templates: Any
+    ) -> None:
         """Test auto mode defaults to mcts when detection returns unknown."""
         with (
             patch("src.workflow.hybrid_optimizer.LATSSearcher") as mock_lats,

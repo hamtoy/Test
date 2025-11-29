@@ -27,7 +27,9 @@ class TestDependencyInjection:
         loader = DictLoader(templates)
         return Environment(loader=loader)
 
-    def test_agent_with_injected_jinja_env(self, config: Any, mock_jinja_env: Any) -> None:
+    def test_agent_with_injected_jinja_env(
+        self, config: Any, mock_jinja_env: Any
+    ) -> None:
         """외부에서 주입한 Jinja Environment를 사용하는지 확인"""
         agent = GeminiAgent(config, jinja_env=mock_jinja_env)
 

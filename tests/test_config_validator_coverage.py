@@ -146,14 +146,18 @@ class TestValidateAll:
         # Should not have API key errors
         assert not any("GEMINI_API_KEY" in e[0] for e in errors)
 
-    def test_validate_all_invalid_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_validate_all_invalid_api_key(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test validation with invalid API key."""
         monkeypatch.setenv("GEMINI_API_KEY", "invalid_key")
         validator = EnvValidator()
         errors = validator.validate_all()
         assert any("GEMINI_API_KEY" in e[0] for e in errors)
 
-    def test_validate_all_invalid_neo4j_uri(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_validate_all_invalid_neo4j_uri(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test validation with invalid NEO4J_URI."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -162,7 +166,9 @@ class TestValidateAll:
         errors = validator.validate_all()
         assert any("NEO4J_URI" in e[0] for e in errors)
 
-    def test_validate_all_valid_neo4j_uri(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_validate_all_valid_neo4j_uri(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test validation with valid NEO4J_URI."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -171,7 +177,9 @@ class TestValidateAll:
         errors = validator.validate_all()
         assert not any("NEO4J_URI" in e[0] for e in errors)
 
-    def test_validate_all_invalid_redis_url(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_validate_all_invalid_redis_url(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test validation with invalid REDIS_URL."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -180,7 +188,9 @@ class TestValidateAll:
         errors = validator.validate_all()
         assert any("REDIS_URL" in e[0] for e in errors)
 
-    def test_validate_all_valid_redis_url(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_validate_all_valid_redis_url(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test validation with valid REDIS_URL."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -189,7 +199,9 @@ class TestValidateAll:
         errors = validator.validate_all()
         assert not any("REDIS_URL" in e[0] for e in errors)
 
-    def test_validate_all_valid_redis_ssl_url(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_validate_all_valid_redis_ssl_url(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test validation with valid REDIS_URL using SSL."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -198,7 +210,9 @@ class TestValidateAll:
         errors = validator.validate_all()
         assert not any("REDIS_URL" in e[0] for e in errors)
 
-    def test_validate_all_invalid_log_level(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_validate_all_invalid_log_level(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test validation with invalid LOG_LEVEL."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -207,7 +221,9 @@ class TestValidateAll:
         errors = validator.validate_all()
         assert any("LOG_LEVEL" in e[0] for e in errors)
 
-    def test_validate_all_valid_log_level(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_validate_all_valid_log_level(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test validation with valid LOG_LEVEL."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -216,7 +232,9 @@ class TestValidateAll:
         errors = validator.validate_all()
         assert not any("LOG_LEVEL" in e[0] for e in errors)
 
-    def test_validate_all_invalid_max_tokens(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_validate_all_invalid_max_tokens(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test validation with invalid GEMINI_MAX_OUTPUT_TOKENS."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -225,7 +243,9 @@ class TestValidateAll:
         errors = validator.validate_all()
         assert any("GEMINI_MAX_OUTPUT_TOKENS" in e[0] for e in errors)
 
-    def test_validate_all_valid_max_tokens(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_validate_all_valid_max_tokens(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test validation with valid GEMINI_MAX_OUTPUT_TOKENS."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -234,7 +254,9 @@ class TestValidateAll:
         errors = validator.validate_all()
         assert not any("GEMINI_MAX_OUTPUT_TOKENS" in e[0] for e in errors)
 
-    def test_validate_all_invalid_timeout(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_validate_all_invalid_timeout(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test validation with invalid GEMINI_TIMEOUT."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -252,7 +274,9 @@ class TestValidateAll:
         errors = validator.validate_all()
         assert not any("GEMINI_TIMEOUT" in e[0] for e in errors)
 
-    def test_validate_all_invalid_concurrency(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_validate_all_invalid_concurrency(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test validation with invalid GEMINI_MAX_CONCURRENCY."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -261,7 +285,9 @@ class TestValidateAll:
         errors = validator.validate_all()
         assert any("GEMINI_MAX_CONCURRENCY" in e[0] for e in errors)
 
-    def test_validate_all_valid_concurrency(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_validate_all_valid_concurrency(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test validation with valid GEMINI_MAX_CONCURRENCY."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -274,7 +300,9 @@ class TestValidateAll:
 class TestValidateEnvironment:
     """Tests for validate_environment function."""
 
-    def test_validate_environment_success(self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_validate_environment_success(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         """Test successful environment validation."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)
@@ -283,7 +311,9 @@ class TestValidateEnvironment:
         captured = capsys.readouterr()
         assert "validated" in captured.out.lower() or "✅" in captured.out
 
-    def test_validate_environment_failure(self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_validate_environment_failure(
+        self, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         """Test failed environment validation."""
         monkeypatch.delenv("GEMINI_API_KEY", raising=False)
         result = validate_environment()
@@ -291,14 +321,18 @@ class TestValidateEnvironment:
         captured = capsys.readouterr()
         assert "failed" in captured.out.lower() or "❌" in captured.out
 
-    def test_validate_environment_strict_mode(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_validate_environment_strict_mode(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test strict mode raises SystemExit on failure."""
         monkeypatch.delenv("GEMINI_API_KEY", raising=False)
         with pytest.raises(SystemExit) as exc:
             validate_environment(strict=True)
         assert exc.value.code == 1
 
-    def test_validate_environment_strict_mode_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_validate_environment_strict_mode_success(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test strict mode does not raise on success."""
         valid_key = "AIza" + "A" * 35
         monkeypatch.setenv("GEMINI_API_KEY", valid_key)

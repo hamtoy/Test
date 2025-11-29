@@ -1,14 +1,18 @@
-import pytest
 from __future__ import annotations
 
 import types
+from typing import Any
+
+import pytest
+
 from src.graph import builder as graph
 from src.routing import graph_router as graph_enhanced_router
 from src.infra import callbacks as custom_callback
-from typing import Any
 
 
-def test_graph_schema_builder_runs_with_stubbed_driver(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_graph_schema_builder_runs_with_stubbed_driver(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class _Result(list):
         def data(self) -> Any:
             return list(self)
@@ -96,7 +100,7 @@ def test_graph_enhanced_router(monkeypatch: pytest.MonkeyPatch) -> None:
             self._graph = types.SimpleNamespace(session=lambda: _RouterSession())
 
     class _FakeLLM:
-        def generate(self, prompt: Any, role: Any="router") -> Any:
+        def generate(self, prompt: Any, role: Any = "router") -> Any:
             return "summary"
 
     chosen = {}

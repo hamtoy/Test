@@ -1,10 +1,12 @@
-import pytest
 from __future__ import annotations
 
 import types
+from typing import Any
+
+import pytest
+
 from src.features import self_correcting as self_correcting_chain
 from src.llm import langchain_system as ulqa
-from typing import Any
 
 
 def test_self_correcting_chain_stops_on_yes(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -16,7 +18,7 @@ def test_self_correcting_chain_stops_on_yes(monkeypatch: pytest.MonkeyPatch) -> 
         def __init__(self) -> None:
             self.calls = []
 
-        def generate(self, prompt: Any, role: Any="default") -> Any:
+        def generate(self, prompt: Any, role: Any = "default") -> Any:
             self.calls.append(role)
             if role == "validator":
                 return "yes, all good"
@@ -30,7 +32,9 @@ def test_self_correcting_chain_stops_on_yes(monkeypatch: pytest.MonkeyPatch) -> 
     assert result["validation"]
 
 
-def test_ultimate_langchain_qa_system_wires_dependencies(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_ultimate_langchain_qa_system_wires_dependencies(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class _KG:
         def __init__(self) -> None:
             self._graph = types.SimpleNamespace(session=lambda: None)
@@ -50,21 +54,21 @@ def test_ultimate_langchain_qa_system_wires_dependencies(monkeypatch: pytest.Mon
             return {"metadata": {"m": 1}, "output": "agent"}
 
     class _Correct:
-        def __init__(self, kg: Any, llm: Any=None) -> None:
+        def __init__(self, kg: Any, llm: Any = None) -> None:
             self.kg = kg
 
         def generate_with_self_correction(self, qt: Any, meta: Any) -> Any:
             return {"output": "corrected", "iterations": 1, "validation": "ok"}
 
     class _Router:
-        def __init__(self, kg: Any, llm: Any=None) -> None:
+        def __init__(self, kg: Any, llm: Any = None) -> None:
             self.kg = kg
 
         def route_and_generate(self, user_input: Any, handlers: Any) -> Any:
             return {"choice": "explanation"}
 
     class _LCEL:
-        def __init__(self, kg: Any, llm: Any=None) -> None:
+        def __init__(self, kg: Any, llm: Any = None) -> None:
             self.kg = kg
 
     monkeypatch.setattr(ulqa, "QAKnowledgeGraph", _KG)

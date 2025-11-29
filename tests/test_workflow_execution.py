@@ -62,7 +62,9 @@ async def test_execute_workflow_success(mock_agent: Any, mock_logger: Any) -> No
 
 
 @pytest.mark.asyncio
-async def test_execute_workflow_query_gen_fail(mock_agent: Any, mock_logger: Any) -> None:
+async def test_execute_workflow_query_gen_fail(
+    mock_agent: Any, mock_logger: Any
+) -> None:
     mock_agent.generate_query.return_value = []
 
     results = await execute_workflow(
@@ -119,7 +121,9 @@ async def test_gather_results_propagates_budget_error(mock_logger: Any) -> None:
 
 
 @pytest.mark.asyncio
-async def test_execute_workflow_interactive_skip_reload(mock_agent: Any, mock_logger: Any) -> None:
+async def test_execute_workflow_interactive_skip_reload(
+    mock_agent: Any, mock_logger: Any
+) -> None:
     mock_agent.create_context_cache = AsyncMock(return_value=None)
     eval_item = EvaluationItem(candidate_id="A", score=90, reason="Good")
     eval_result = EvaluationResultSchema(best_candidate="A", evaluations=[eval_item])

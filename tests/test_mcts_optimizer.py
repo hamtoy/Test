@@ -1,4 +1,5 @@
 from typing import Any
+
 """Tests for the MCTS workflow optimizer module."""
 
 import math
@@ -94,7 +95,9 @@ class TestMCTSWorkflowOptimizer:
         assert result["iterations"] == 5
 
     @pytest.mark.asyncio
-    async def test_optimize_finds_template(self, optimizer: Any, templates: Any) -> None:
+    async def test_optimize_finds_template(
+        self, optimizer: Any, templates: Any
+    ) -> None:
         """Test that optimization finds a template from available ones."""
         result = await optimizer.optimize_workflow("Test query")
 

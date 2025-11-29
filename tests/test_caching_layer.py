@@ -1,9 +1,10 @@
-import pytest
 import json
 import types
+from typing import Any
+
+import pytest
 
 from src.caching.layer import CachingLayer
-from typing import Any
 
 
 class _FakeSession:

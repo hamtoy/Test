@@ -1,6 +1,6 @@
-from typing import Any
 """Tests for the core adapters module."""
 
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -47,7 +47,9 @@ class TestGeminiProvider:
         assert provider.model_name == "gemini-1.5-pro"
 
     @pytest.mark.asyncio
-    async def test_generate_content_basic(self, provider: Any, mock_genai: MagicMock) -> None:
+    async def test_generate_content_basic(
+        self, provider: Any, mock_genai: MagicMock
+    ) -> None:
         """Test basic content generation."""
         # Create finish_reason mock properly
         finish_reason = MagicMock()
@@ -75,7 +77,9 @@ class TestGeminiProvider:
         assert result.finish_reason == "STOP"
 
     @pytest.mark.asyncio
-    async def test_generate_content_with_system_instruction(self, provider: Any, mock_genai: MagicMock) -> None:
+    async def test_generate_content_with_system_instruction(
+        self, provider: Any, mock_genai: MagicMock
+    ) -> None:
         """Test content generation with system instruction."""
         # Create finish_reason mock properly
         finish_reason = MagicMock()
@@ -112,7 +116,9 @@ class TestGeminiProvider:
         )
 
     @pytest.mark.asyncio
-    async def test_generate_content_with_config(self, provider: Any, mock_genai: MagicMock) -> None:
+    async def test_generate_content_with_config(
+        self, provider: Any, mock_genai: MagicMock
+    ) -> None:
         """Test content generation with configuration options."""
         # Create finish_reason mock properly
         finish_reason = MagicMock()
@@ -145,7 +151,9 @@ class TestGeminiProvider:
         assert call_args.kwargs["generation_config"]["max_output_tokens"] == 1000
 
     @pytest.mark.asyncio
-    async def test_generate_content_with_response_schema(self, provider: Any, mock_genai: MagicMock) -> None:
+    async def test_generate_content_with_response_schema(
+        self, provider: Any, mock_genai: MagicMock
+    ) -> None:
         """Test content generation with response schema."""
         # Create finish_reason mock properly
         finish_reason = MagicMock()
@@ -298,7 +306,9 @@ class TestNeo4jProvider:
         mock_driver.close.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_verify_connectivity_success(self, provider: Any, mock_driver: Any) -> None:
+    async def test_verify_connectivity_success(
+        self, provider: Any, mock_driver: Any
+    ) -> None:
         """Test successful connectivity verification."""
         mock_driver.verify_connectivity = AsyncMock()
 
@@ -307,7 +317,9 @@ class TestNeo4jProvider:
         mock_driver.verify_connectivity.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_verify_connectivity_failure(self, provider: Any, mock_driver: Any) -> None:
+    async def test_verify_connectivity_failure(
+        self, provider: Any, mock_driver: Any
+    ) -> None:
         """Test connectivity verification failure."""
         mock_driver.verify_connectivity = AsyncMock(
             side_effect=Exception("Connection failed")
@@ -353,7 +365,9 @@ class TestNeo4jProvider:
         assert result == 0
 
     @pytest.mark.asyncio
-    async def test_create_relationships_batch(self, provider: Any, mock_driver: Any) -> None:
+    async def test_create_relationships_batch(
+        self, provider: Any, mock_driver: Any
+    ) -> None:
         """Test creating relationships in batches."""
         mock_session = AsyncMock()
         mock_result = AsyncMock()

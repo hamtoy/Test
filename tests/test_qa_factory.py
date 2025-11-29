@@ -1,4 +1,5 @@
 from typing import Any
+
 """Tests for the QA factory module."""
 
 from unittest.mock import MagicMock, patch

@@ -80,7 +80,9 @@ class TestGeminiAgent:
             assert agent.cache_misses == 1
 
     @pytest.mark.asyncio
-    async def test_rate_limiter_concurrency_respected(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    async def test_rate_limiter_concurrency_respected(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
         monkeypatch.setenv("GEMINI_MAX_CONCURRENCY", "1")
         monkeypatch.setenv("LOCAL_CACHE_DIR", str(tmp_path / ".cache"))

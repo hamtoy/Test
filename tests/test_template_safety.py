@@ -15,7 +15,9 @@ def test_dynamic_template_autoescape(monkeypatch: pytest.MonkeyPatch) -> None:
         def __enter__(self) -> "_FakeSession":
             return self
 
-        def __exit__(self, exc_type: Optional[type], exc: Optional[BaseException], tb: Any) -> None:
+        def __exit__(
+            self, exc_type: Optional[type], exc: Optional[BaseException], tb: Any
+        ) -> None:
             pass
 
         def run(self, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:

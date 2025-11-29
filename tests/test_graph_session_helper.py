@@ -47,8 +47,8 @@ class _AsyncProvider(GraphProvider):
         self,
         nodes: Any,
         label: Any,
-        merge_on: Any="id",
-        merge_keys: Any=None,
+        merge_on: Any = "id",
+        merge_keys: Any = None,
     ) -> Any:
         return len(nodes)
 
@@ -58,8 +58,8 @@ class _AsyncProvider(GraphProvider):
         rel_type: Any,
         from_label: Any,
         to_label: Any,
-        from_key: Any="id",
-        to_key: Any="id",
+        from_key: Any = "id",
+        to_key: Any = "id",
     ) -> Any:
         return len(rels)
 

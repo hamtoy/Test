@@ -1,7 +1,8 @@
-import pytest
 import logging
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
+import pytest
 from pythonjsonlogger.json import JsonFormatter
 from rich.logging import RichHandler
 
@@ -11,7 +12,6 @@ from src.infra.logging import (
     _resolve_log_level,
     setup_logging,
 )
-from pathlib import Path
 
 
 def _cleanup(listener: logging.handlers.QueueListener) -> None:
@@ -20,7 +20,9 @@ def _cleanup(listener: logging.handlers.QueueListener) -> None:
     root.handlers.clear()
 
 
-def test_local_logging_uses_console_and_text_formatter(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_local_logging_uses_console_and_text_formatter(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv("LOG_FILE", str(tmp_path / "app.log"))
     monkeypatch.setenv("ERROR_LOG_FILE", str(tmp_path / "error.log"))
     logger, listener = setup_logging(env="local", log_level="DEBUG")
@@ -37,7 +39,9 @@ def test_local_logging_uses_console_and_text_formatter(tmp_path: Path, monkeypat
         _cleanup(listener)
 
 
-def test_production_logging_uses_json_file_only(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_production_logging_uses_json_file_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv("LOG_FILE", str(tmp_path / "app.log"))
     monkeypatch.setenv("ERROR_LOG_FILE", str(tmp_path / "error.log"))
     logger, listener = setup_logging(env="production", log_level="INFO")

@@ -33,7 +33,9 @@ def test_save_result_to_file(tmp_path: Path) -> None:
     assert "Rewritten" in content
 
 
-def test_save_result_to_file_io_error(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_save_result_to_file_io_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     config = MagicMock()
     config.output_dir = tmp_path
 

@@ -23,7 +23,9 @@ def test_main_handles_neo4j_error(monkeypatch: pytest.MonkeyPatch) -> None:
         sa.main()
 
 
-def test_main_no_blocks_returns(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+def test_main_no_blocks_returns(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     # Import the actual semantic module to patch the right namespace
     from src.analysis import semantic as analysis_semantic
 
@@ -33,7 +35,9 @@ def test_main_no_blocks_returns(monkeypatch: pytest.MonkeyPatch, caplog: pytest.
         def __enter__(self) -> "_Session":
             return self
 
-        def __exit__(self, exc_type: Optional[type], exc: Optional[BaseException], tb: Any) -> None:
+        def __exit__(
+            self, exc_type: Optional[type], exc: Optional[BaseException], tb: Any
+        ) -> None:
             pass
 
         def run(self, *_args: Any, **_kwargs: Any) -> list[Any]:

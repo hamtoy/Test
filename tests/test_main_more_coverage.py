@@ -1,4 +1,5 @@
 from pathlib import Path
+
 """Tests for src/main.py to improve coverage."""
 
 import asyncio
@@ -37,7 +38,9 @@ class TestMainFunction:
     """Tests for main function."""
 
     @pytest.mark.asyncio
-    async def test_main_initialization_error(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    async def test_main_initialization_error(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """Test main function handles initialization errors."""
         # Set up environment
         valid_key = "AIza" + "A" * 35
@@ -66,7 +69,9 @@ class TestMainFunction:
             assert exc.value.code == 1
 
     @pytest.mark.asyncio
-    async def test_main_template_not_found(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    async def test_main_template_not_found(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """Test main function handles missing templates directory."""
         # Set up environment
         valid_key = "AIza" + "A" * 35
@@ -96,7 +101,9 @@ class TestMainFunction:
         assert exc.value.code == 1
 
     @pytest.mark.asyncio
-    async def test_main_success_flow(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    async def test_main_success_flow(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """Test main function successful initialization."""
         # Set up environment
         valid_key = "AIza" + "A" * 35
@@ -139,7 +146,9 @@ class TestMainFunction:
             mock_log_listener.stop.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_main_os_error(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    async def test_main_os_error(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """Test main function handles OSError."""
         # Set up environment
         valid_key = "AIza" + "A" * 35
@@ -187,7 +196,9 @@ class TestMainEntryPoint:
                 asyncio.set_event_loop_policy(policy)
                 mock_set_policy.assert_called()
 
-    def test_non_windows_event_loop_policy(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_non_windows_event_loop_policy(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test non-Windows event loop policy (no change needed)."""
         # Simulate non-Windows environment
         monkeypatch.setattr(os, "name", "posix")

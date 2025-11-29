@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-import pytest
 from src.infra.utils import write_cache_stats
 
 

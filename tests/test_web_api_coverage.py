@@ -1,5 +1,6 @@
 from typing import Any
 from pathlib import Path
+
 """Tests for web API module to improve coverage."""
 
 import io
@@ -197,7 +198,9 @@ class TestGenerateSingleQA:
             await generate_single_qa(mock_agent, "OCR 텍스트", "reasoning")
 
     @pytest.mark.asyncio
-    async def test_generate_single_qa_with_kg(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_generate_single_qa_with_kg(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test generate_single_qa uses template generator with kg."""
         mock_agent = MagicMock()
         mock_agent.generate_query = AsyncMock(return_value=["생성된 질의"])
@@ -334,7 +337,9 @@ class TestHealthCheck:
 class TestWorkspaceApiExtended:
     """Extended tests for workspace API."""
 
-    def test_workspace_inspect_with_mocked_agent(self, client: Any, tmp_path: Path) -> None:
+    def test_workspace_inspect_with_mocked_agent(
+        self, client: Any, tmp_path: Path
+    ) -> None:
         """Test workspace inspect mode with mocked agent."""
         import src.web.api as api_module
 
@@ -371,7 +376,9 @@ class TestWorkspaceApiExtended:
         finally:
             api_module.agent = original_agent
 
-    def test_workspace_edit_with_mocked_agent(self, client: Any, tmp_path: Path) -> None:
+    def test_workspace_edit_with_mocked_agent(
+        self, client: Any, tmp_path: Path
+    ) -> None:
         """Test workspace edit mode with mocked agent."""
         import src.web.api as api_module
 
@@ -411,7 +418,9 @@ class TestWorkspaceApiExtended:
 class TestQAGenerateApiExtended:
     """Extended tests for QA generation API."""
 
-    def test_generate_batch_with_mocked_agent(self, client: Any, tmp_path: Path) -> None:
+    def test_generate_batch_with_mocked_agent(
+        self, client: Any, tmp_path: Path
+    ) -> None:
         """Test batch QA generation with mocked agent."""
         import src.web.api as api_module
 

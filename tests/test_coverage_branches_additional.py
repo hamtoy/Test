@@ -292,7 +292,9 @@ def test_agent_cleanup_expired_cache(monkeypatch, tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_agent_create_context_cache_skips_when_small(monkeypatch, tmp_path) -> None:
+async def test_agent_create_context_cache_skips_when_small(
+    monkeypatch, tmp_path
+) -> None:
     envs = _make_config(tmp_path)
     for k, v in envs.items():
         monkeypatch.setenv(k, v)

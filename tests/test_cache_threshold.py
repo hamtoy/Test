@@ -1,5 +1,3 @@
-from typing import Any
-from pathlib import Path
 """Tests for cache threshold validation and settings.
 
 These tests verify that the 2048 token minimum threshold for Gemini Context Caching
@@ -7,6 +5,8 @@ is properly enforced and documented.
 """
 
 import logging
+from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -34,7 +34,9 @@ class TestCacheConfigConstants:
 class TestCacheSettingsValidation:
     """Test CacheSettings validator."""
 
-    def test_minimum_cache_tokens_auto_correction(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def test_minimum_cache_tokens_auto_correction(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """2048 미만 설정 시 자동 조정 확인."""
         monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
         monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
@@ -44,7 +46,9 @@ class TestCacheSettingsValidation:
         # 자동 조정
         assert config.cache_min_tokens == 2048
 
-    def test_exact_min_tokens(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def test_exact_min_tokens(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """정확한 값 설정 확인."""
         monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
         monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
@@ -53,7 +57,9 @@ class TestCacheSettingsValidation:
         config = AppConfig()
         assert config.cache_min_tokens == 2048
 
-    def test_higher_min_tokens_allowed(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def test_higher_min_tokens_allowed(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """더 큰 값 (허용되지만 경고)."""
         monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
         monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
@@ -62,7 +68,9 @@ class TestCacheSettingsValidation:
         config = AppConfig()
         assert config.cache_min_tokens == 5000
 
-    def test_default_min_tokens(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def test_default_min_tokens(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
         """기본값 확인."""
         monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
         monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
@@ -75,7 +83,9 @@ class TestCacheManagerThreshold:
     """Test CacheManager threshold logic."""
 
     @pytest.fixture
-    def cache_manager(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> CacheManager:
+    def cache_manager(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> CacheManager:
         """Create a CacheManager with test configuration."""
         monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
         monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
@@ -112,7 +122,9 @@ class TestSavingsEstimation:
     """Test savings estimation function."""
 
     @pytest.fixture
-    def cache_manager(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> CacheManager:
+    def cache_manager(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> CacheManager:
         """Create a CacheManager with test configuration."""
         monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
         monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
@@ -136,7 +148,12 @@ class TestSavingsEstimation:
 class TestCacheManagerLogging:
     """Test CacheManager logging behavior."""
 
-    def test_should_cache_logs_skip_message(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    def test_should_cache_logs_skip_message(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
         """캐싱 건너뜀 로그 확인."""
         monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
         monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
@@ -151,7 +168,12 @@ class TestCacheManagerLogging:
         assert "1000" in caplog.text
         assert "2048" in caplog.text
 
-    def test_should_cache_logs_activation_message(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    def test_should_cache_logs_activation_message(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: Path,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
         """캐싱 활성화 로그 확인."""
         monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
         monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))

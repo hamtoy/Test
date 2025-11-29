@@ -80,7 +80,9 @@ def test_factory_get_llm_provider(app_config: Any) -> None:
         assert isinstance(provider, GeminiProvider)
 
 
-def test_factory_invalid_provider(valid_api_key: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_factory_invalid_provider(
+    valid_api_key: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", valid_api_key)
     config = AppConfig(llm_provider_type="invalid")
     with pytest.raises(ValueError, match="Unsupported LLM provider type"):

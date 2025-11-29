@@ -1,7 +1,8 @@
-import pytest
 from __future__ import annotations
 
 import logging
+
+import pytest
 
 from src.infra.logging import log_metrics
 

@@ -23,14 +23,16 @@ class DummyAgent:
         return None
 
     async def evaluate_responses(
-        self, ocr_text: Any, query: Any, candidates: Any, cached_content: Any=None
+        self, ocr_text: Any, query: Any, candidates: Any, cached_content: Any = None
     ) -> Any:
         return EvaluationResultSchema(
             best_candidate="A",
             evaluations=[EvaluationItem(candidate_id="A", score=10, reason="strong")],
         )
 
-    async def rewrite_best_answer(self, ocr_text: Any, best_answer: Any, cached_content: Any=None) -> Any:
+    async def rewrite_best_answer(
+        self, ocr_text: Any, best_answer: Any, cached_content: Any = None
+    ) -> Any:
         return f"rewritten: {best_answer}"
 
     def get_total_cost(self) -> float:
@@ -44,11 +46,15 @@ class DummyAgent:
 
 
 @pytest.mark.asyncio
-async def test_execute_workflow_e2e(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+async def test_execute_workflow_e2e(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
 
-    async def fake_reload_data(config: Any, ocr_filename: Any, cand_filename: Any, interactive: Any=False) -> Any:
+    async def fake_reload_data(
+        config: Any, ocr_filename: Any, cand_filename: Any, interactive: Any = False
+    ) -> Any:
         return "ocr text", {"A": '{"A": "Best answer"}'}
 
     monkeypatch.setattr("src.workflow.executor.reload_data_if_needed", fake_reload_data)
@@ -87,11 +93,15 @@ class NoCallAgent(DummyAgent):
 
 
 @pytest.mark.asyncio
-async def test_execute_workflow_resume(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+async def test_execute_workflow_resume(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
 
-    async def fake_reload_data(config: Any, ocr_filename: Any, cand_filename: Any, interactive: Any=False) -> Any:
+    async def fake_reload_data(
+        config: Any, ocr_filename: Any, cand_filename: Any, interactive: Any = False
+    ) -> Any:
         return "ocr text", {"A": '{"A": "Best answer"}'}
 
     monkeypatch.setattr("src.workflow.executor.reload_data_if_needed", fake_reload_data)

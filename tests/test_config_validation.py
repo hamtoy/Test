@@ -45,7 +45,9 @@ def test_log_level_validation() -> None:
         AppConfig(GEMINI_API_KEY=VALID_API_KEY, LOG_LEVEL="INVALID")
 
 
-def test_directories_are_created(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_directories_are_created(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
     AppConfig(GEMINI_API_KEY=VALID_API_KEY)
 
@@ -59,7 +61,9 @@ def test_directories_are_created(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
         assert dir_path.is_dir()
 
 
-def test_cache_stats_path_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cache_stats_path_and_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv("PROJECT_ROOT", str(tmp_path))
     monkeypatch.setenv("CACHE_STATS_FILE", "stats/cache.jsonl")
     monkeypatch.setenv("CACHE_STATS_MAX_ENTRIES", "50")

@@ -1,5 +1,3 @@
-from typing import Any
-from pathlib import Path
 """Tests for Data2NeoExtractor module.
 
 Tests the entity extraction and Neo4j import functionality.
@@ -12,6 +10,8 @@ Tests cover:
 """
 
 import json
+from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -419,7 +419,9 @@ class TestData2NeoExtractor:
         assert result.document_id == "doc_1"
 
     @pytest.mark.asyncio
-    async def test_extract_entities_with_provider(self, mock_config: Any, mock_llm_provider: Any) -> None:
+    async def test_extract_entities_with_provider(
+        self, mock_config: Any, mock_llm_provider: Any
+    ) -> None:
         """Test extraction with LLM provider."""
         mock_llm_provider.generate_content_async.return_value = MagicMock(
             content='{"persons": [{"id": "p1", "name": "John"}], "organizations": [], "rules": [], "relationships": []}'
@@ -555,7 +557,9 @@ class TestCreateData2NeoExtractor:
         )
 
     @pytest.mark.asyncio
-    async def test_extract_entities_success(self, extractor: Any, mock_agent: Any) -> None:
+    async def test_extract_entities_success(
+        self, extractor: Any, mock_agent: Any
+    ) -> None:
         """Test successful entity extraction."""
         mock_response = json.dumps(
             {
@@ -599,7 +603,9 @@ class TestCreateData2NeoExtractor:
             await extractor.extract_entities("   \n\t  ")
 
     @pytest.mark.asyncio
-    async def test_extract_entities_confidence_filter(self, extractor: Any, mock_agent: Any) -> None:
+    async def test_extract_entities_confidence_filter(
+        self, extractor: Any, mock_agent: Any
+    ) -> None:
         """Test that confidence threshold filtering works."""
         mock_response = json.dumps(
             {
@@ -622,7 +628,9 @@ class TestCreateData2NeoExtractor:
         assert result.persons[0].name == "High Conf"
 
     @pytest.mark.asyncio
-    async def test_extract_entities_with_markdown_wrapper(self, extractor: Any, mock_agent: Any) -> None:
+    async def test_extract_entities_with_markdown_wrapper(
+        self, extractor: Any, mock_agent: Any
+    ) -> None:
         """Test extraction handles markdown code blocks."""
         mock_response = """```json
 {
@@ -641,7 +649,9 @@ class TestCreateData2NeoExtractor:
         assert result.persons[0].name == "Test Person"
 
     @pytest.mark.asyncio
-    async def test_extract_entities_empty_response(self, extractor: Any, mock_agent: Any) -> None:
+    async def test_extract_entities_empty_response(
+        self, extractor: Any, mock_agent: Any
+    ) -> None:
         """Test extraction handles empty response."""
         mock_agent._call_api_with_retry.return_value = ""
 
@@ -650,7 +660,9 @@ class TestCreateData2NeoExtractor:
         assert result.total_entities == 0
 
     @pytest.mark.asyncio
-    async def test_extract_entities_partial_invalid_data(self, extractor: Any, mock_agent: Any) -> None:
+    async def test_extract_entities_partial_invalid_data(
+        self, extractor: Any, mock_agent: Any
+    ) -> None:
         """Test extraction recovers from partially invalid data."""
         # Missing required 'confidence' field in one person
         mock_response = json.dumps(
@@ -732,7 +744,9 @@ class TestData2NeoExtractorGraphWriting:
         )
 
     @pytest.fixture
-    def extractor_with_graph(self, mock_graph_provider: Any, mock_templates: Any, tmp_path: Path) -> Any:
+    def extractor_with_graph(
+        self, mock_graph_provider: Any, mock_templates: Any, tmp_path: Path
+    ) -> Any:
         """Create extractor with graph provider."""
         config = MagicMock(spec=AppConfig)
         config.template_dir = tmp_path
@@ -750,7 +764,9 @@ class TestData2NeoExtractorGraphWriting:
         )
 
     @pytest.mark.asyncio
-    async def test_write_to_graph_no_provider(self, mock_templates: Any, tmp_path: Path) -> None:
+    async def test_write_to_graph_no_provider(
+        self, mock_templates: Any, tmp_path: Path
+    ) -> None:
         """Test write_to_graph raises error without provider."""
         config = MagicMock(spec=AppConfig)
         config.template_dir = tmp_path

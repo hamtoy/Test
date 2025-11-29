@@ -88,7 +88,9 @@ async def test_inspect_query_without_ocr(mock_agent: Any, mock_components: Any) 
 
 
 @pytest.mark.asyncio
-async def test_inspect_query_with_cache_hit(mock_agent: Any, mock_components: Any, mock_cache: Any) -> None:
+async def test_inspect_query_with_cache_hit(
+    mock_agent: Any, mock_components: Any, mock_cache: Any
+) -> None:
     """Test query inspection with cache hit - returns original query"""
     kg, lats, difficulty, _ = mock_components
     mock_cache.get = AsyncMock(return_value=1.0)  # Cache hit (processed marker)
@@ -132,7 +134,9 @@ async def test_inspect_answer(mock_agent: Any, mock_components: Any) -> None:
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer_without_query(mock_agent: Any, mock_components: Any) -> None:
+async def test_inspect_answer_without_query(
+    mock_agent: Any, mock_components: Any
+) -> None:
     """Test answer inspection without query (cross-validation skipped)"""
     kg, lats, _, validator = mock_components
 
@@ -157,7 +161,9 @@ async def test_inspect_answer_without_query(mock_agent: Any, mock_components: An
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer_low_coverage(mock_agent: Any, mock_components: Any) -> None:
+async def test_inspect_answer_low_coverage(
+    mock_agent: Any, mock_components: Any
+) -> None:
     """Test answer inspection with low keyword coverage warning"""
     kg, lats, _, validator = mock_components
 
@@ -351,7 +357,9 @@ async def test_inspect_answer_without_kg(mock_agent: Any, mock_components: Any) 
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer_with_cache_hit(mock_agent: Any, mock_components: Any, mock_cache: Any) -> None:
+async def test_inspect_answer_with_cache_hit(
+    mock_agent: Any, mock_components: Any, mock_cache: Any
+) -> None:
     """Test answer inspection with cache hit returns original answer."""
     kg, lats, _, validator = mock_components
     mock_cache.get = AsyncMock(return_value=1.0)
@@ -379,7 +387,9 @@ async def test_inspect_answer_with_cache_hit(mock_agent: Any, mock_components: A
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer_with_cache_save(mock_agent: Any, mock_components: Any, mock_cache: Any) -> None:
+async def test_inspect_answer_with_cache_save(
+    mock_agent: Any, mock_components: Any, mock_cache: Any
+) -> None:
     """Test answer inspection caches result after processing."""
     kg, lats, _, validator = mock_components
 
@@ -411,7 +421,9 @@ async def test_inspect_answer_with_cache_save(mock_agent: Any, mock_components: 
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer_validation_failure(mock_agent: Any, mock_components: Any) -> None:
+async def test_inspect_answer_validation_failure(
+    mock_agent: Any, mock_components: Any
+) -> None:
     """Test answer inspection with validation failure."""
     kg, lats, _, validator = mock_components
     validator.cross_validate_qa_pair.return_value = {"overall_score": 0.5}  # Below 0.7
@@ -437,7 +449,9 @@ async def test_inspect_answer_validation_failure(mock_agent: Any, mock_component
 
 
 @pytest.mark.asyncio
-async def test_inspect_query_with_context_none(mock_agent: Any, mock_components: Any) -> None:
+async def test_inspect_query_with_context_none(
+    mock_agent: Any, mock_components: Any
+) -> None:
     """Test query inspection with None context."""
     kg, lats, difficulty, _ = mock_components
 
@@ -464,7 +478,9 @@ async def test_inspect_query_with_context_none(mock_agent: Any, mock_components:
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer_with_context_none(mock_agent: Any, mock_components: Any) -> None:
+async def test_inspect_answer_with_context_none(
+    mock_agent: Any, mock_components: Any
+) -> None:
     """Test answer inspection with None context."""
     kg, lats, _, validator = mock_components
 
@@ -493,7 +509,9 @@ async def test_inspect_answer_with_context_none(mock_agent: Any, mock_components
 
 
 @pytest.mark.asyncio
-async def test_inspect_answer_without_ocr_text(mock_agent: Any, mock_components: Any) -> None:
+async def test_inspect_answer_without_ocr_text(
+    mock_agent: Any, mock_components: Any
+) -> None:
     """Test answer inspection without OCR text (keyword verification skipped)."""
     kg, lats, _, validator = mock_components
 

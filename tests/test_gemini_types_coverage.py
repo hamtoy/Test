@@ -1,6 +1,6 @@
-from typing import Any
 """Tests for src/llm/gemini_types.py to improve coverage."""
 
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 

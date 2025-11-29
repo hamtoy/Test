@@ -1,12 +1,16 @@
-import pytest
 from __future__ import annotations
 
 import types
-from src.caching import layer as caching_layer
 from typing import Any
 
+import pytest
 
-def test_caching_layer_prefers_cache_and_invalidates(monkeypatch: pytest.MonkeyPatch) -> None:
+from src.caching import layer as caching_layer
+
+
+def test_caching_layer_prefers_cache_and_invalidates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class _FakeSession:
         def __init__(self) -> None:
             self.calls = 0

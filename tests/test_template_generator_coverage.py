@@ -8,7 +8,9 @@ from src.processing import template_generator as dtg
 from tests.conftest import MockDriver
 
 
-def test_dynamic_template_generator_fallback_and_checklist(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_dynamic_template_generator_fallback_and_checklist(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     # Set required environment variables for Neo4j
     monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
     monkeypatch.setenv("NEO4J_USER", "neo4j")

@@ -682,7 +682,9 @@ class TestGraphData2NeoExtractor:
         assert counts["persons"] == 1
         assert counts["relationships"] == 0  # Failed to create
 
-    def test_parse_partial_result(self, mock_config, mock_agent, mock_templates) -> None:
+    def test_parse_partial_result(
+        self, mock_config, mock_agent, mock_templates
+    ) -> None:
         """Test _parse_partial_result handles malformed data."""
         from jinja2 import Environment
 

@@ -1,8 +1,8 @@
-from typing import Any
-from pathlib import Path
 """Tests for the A/B testing framework."""
 
 import json
+from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -113,7 +113,9 @@ class TestPromptExperimentManager:
         assert all(r.error_msg == "API error" for r in results)
 
     @pytest.mark.asyncio
-    async def test_run_experiment(self, manager: Any, test_dataset: Any, tmp_path: Path) -> None:
+    async def test_run_experiment(
+        self, manager: Any, test_dataset: Any, tmp_path: Path
+    ) -> None:
         """Test running a complete experiment."""
         config = ExperimentConfig(
             name="test_exp",

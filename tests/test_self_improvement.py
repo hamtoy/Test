@@ -113,7 +113,9 @@ def test_load_history_with_data(temp_history_file: Any, tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_analyze_insufficient_data(minimal_history_file: Any, tmp_path: Path) -> None:
+async def test_analyze_insufficient_data(
+    minimal_history_file: Any, tmp_path: Path
+) -> None:
     """Test analysis with insufficient data."""
     system = SelfImprovingSystem(
         history_file=minimal_history_file,
@@ -124,7 +126,9 @@ async def test_analyze_insufficient_data(minimal_history_file: Any, tmp_path: Pa
 
 
 @pytest.mark.asyncio
-async def test_analyze_with_sufficient_data(temp_history_file: Any, tmp_path: Path) -> None:
+async def test_analyze_with_sufficient_data(
+    temp_history_file: Any, tmp_path: Path
+) -> None:
     """Test analysis with sufficient data."""
     suggestions_file = tmp_path / "reports" / "suggestions.json"
     system = SelfImprovingSystem(

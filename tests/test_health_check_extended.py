@@ -1,8 +1,9 @@
-import pytest
-from typing import Any
 """Tests for the health check module."""
 
+from typing import Any
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 class TestCheckNeo4jConnection:

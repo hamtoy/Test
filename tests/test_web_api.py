@@ -1,5 +1,6 @@
 from typing import Any
 from pathlib import Path
+
 """Tests for the web API module."""
 
 import io
@@ -73,7 +74,9 @@ class TestPageRoutes:
 class TestOCRApi:
     """Tests for OCR API endpoint."""
 
-    def test_get_ocr_file_exists(self, client: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_get_ocr_file_exists(
+        self, client: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Test getting OCR text when file exists."""
         # Create the inputs directory and input_ocr.txt file
         inputs_dir = tmp_path / "data" / "inputs"

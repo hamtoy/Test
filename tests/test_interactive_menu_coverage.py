@@ -1,8 +1,8 @@
-from typing import Any
-from pathlib import Path
 """Tests for interactive_menu module to improve coverage."""
 
 import os
+from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -20,7 +20,9 @@ from src.ui.interactive_menu import (
 class TestShowErrorWithGuide:
     """Tests for show_error_with_guide function."""
 
-    def test_show_error_with_guide_displays_message(self, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_show_error_with_guide_displays_message(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
         """Test that show_error_with_guide displays error message and solution."""
         with patch("src.ui.interactive_menu.console") as mock_console:
             show_error_with_guide(
@@ -365,7 +367,9 @@ class TestHandleAnswerInspection:
     """Tests for _handle_answer_inspection function."""
 
     @pytest.mark.asyncio
-    async def test_handle_answer_inspection_file_not_exists(self, tmp_path: Path) -> None:
+    async def test_handle_answer_inspection_file_not_exists(
+        self, tmp_path: Path
+    ) -> None:
         """Test _handle_answer_inspection with non-existent file."""
         from src.ui.interactive_menu import _handle_answer_inspection
 
