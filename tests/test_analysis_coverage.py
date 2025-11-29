@@ -15,7 +15,7 @@ def test_semantic_analysis_utils(monkeypatch):
     counter = semantic.count_keywords(["alpha beta alpha", "beta gamma"])
     assert counter["alpha"] >= 1
 
-    store = []
+    store: list[object] = []
 
     class _SATx:
         def __init__(self, store_ref):
@@ -51,8 +51,8 @@ def test_semantic_analysis_utils(monkeypatch):
             return self.session_obj
 
     driver = _SADriver()
-    semantic.create_topics(driver, [("alpha", 3)])
-    semantic.link_blocks_to_topics(
+    semantic.create_topics(driver, [("alpha", 3)])  # type: ignore[arg-type]
+    semantic.link_blocks_to_topics(  # type: ignore[arg-type]
         driver, [{"id": "b1", "content": "alpha beta"}], [("alpha", 3)]
     )
 
@@ -84,7 +84,7 @@ def test_smart_autocomplete(monkeypatch):
         "find_violations",
         lambda text: [{"type": "local", "match": text}],
     )
-    sa = smart_autocomplete.SmartAutocomplete(_SmartKG())
+    sa = smart_autocomplete.SmartAutocomplete(_SmartKG())  # type: ignore[arg-type]
     suggestions = sa.suggest_next_query_type([{"type": "summary"}])
     assert any(s["name"] == "explanation" for s in suggestions)
 

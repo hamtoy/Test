@@ -217,7 +217,7 @@ class TestGenerateLatestStub:
         from src.monitoring.metrics import PROMETHEUS_AVAILABLE  # type: ignore[attr-defined]
 
         if not PROMETHEUS_AVAILABLE:
-            from src.monitoring.metrics import generate_latest  # type: ignore[attr-defined]
+            from src.monitoring.metrics import generate_latest
 
             result = generate_latest()
             assert isinstance(result, bytes)

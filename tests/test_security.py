@@ -48,8 +48,10 @@ class TestSecurity:
         filter.filter(record)
 
         # args가 튜플이므로 수정되었는지 확인
-        assert "[FILTERED_API_KEY]" in record.args[0]
-        assert fake_key not in record.args[0]
+        assert record.args is not None
+        assert isinstance(record.args, (tuple, list))
+        assert "[FILTERED_API_KEY]" in str(record.args[0])
+        assert fake_key not in str(record.args[0])
 
     def test_sensitive_data_filter_ignores_safe_logs(self):
         """민감 정보가 없는 로그는 건드리지 않는지 확인"""
