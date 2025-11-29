@@ -114,11 +114,9 @@ class MockGeminiAgent:
 
     async def rewrite_answer(
         self, query: str, answer: str, feedback: str
-    ) -> MagicMock:
+    ) -> AnswerResult:
         """답변 재작성"""
-        result = MagicMock()
-        result.answer = f"Rewritten: {answer}"
-        return result
+        return AnswerResult(answer=f"Rewritten: {answer}")
 
 
 @pytest.fixture
