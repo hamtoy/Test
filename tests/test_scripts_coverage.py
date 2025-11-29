@@ -68,7 +68,7 @@ def test_qa_generator_script(monkeypatch) -> None:
     fake_openai_module = types.SimpleNamespace(OpenAI=_FakeOpenAI)
     monkeypatch.setitem(sys.modules, "openai", fake_openai_module)
 
-    files: dict = {}
+    files: dict[str, Any] = {}
 
     class _MemoBuffer(io.StringIO):
         def close(self):
