@@ -187,9 +187,7 @@ class SelfImprovingSystem:
             previous = recent
 
         recent_quality = (
-            sum(h.get("quality", 0) for h in recent) / len(recent)
-            if recent
-            else 0
+            sum(h.get("quality", 0) for h in recent) / len(recent) if recent else 0
         )
         prev_quality = (
             sum(h.get("quality", 0) for h in previous) / len(previous)
@@ -201,9 +199,7 @@ class SelfImprovingSystem:
         prev_cost = sum(h.get("cost", 0) for h in previous)
 
         recent_latency = (
-            sum(h.get("latency", 0) for h in recent) / len(recent)
-            if recent
-            else 0
+            sum(h.get("latency", 0) for h in recent) / len(recent) if recent else 0
         )
         prev_latency = (
             sum(h.get("latency", 0) for h in previous) / len(previous)
@@ -228,7 +224,9 @@ class SelfImprovingSystem:
             else False,
             "quality_score": recent_quality,
             "quality_change": recent_quality - prev_quality,
-            "cost_increasing": recent_cost > prev_cost * 1.2 if prev_cost > 0 else False,
+            "cost_increasing": recent_cost > prev_cost * 1.2
+            if prev_cost > 0
+            else False,
             "cost_increase_percent": cost_increase_percent,
             "latency_increasing": recent_latency > prev_latency * 1.15
             if prev_latency > 0

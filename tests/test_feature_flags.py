@@ -55,9 +55,7 @@ def temp_flags_file(tmp_path):
             "description": "Feature with context rules",
             "rollout_percent": 100,
             "environments": ["development"],
-            "rules": [
-                {"field": "user_tier", "operator": "equals", "value": "premium"}
-            ],
+            "rules": [{"field": "user_tier", "operator": "equals", "value": "premium"}],
         },
     }
 
@@ -170,16 +168,22 @@ def test_is_enabled_context_rules(temp_flags_file, monkeypatch):
     flags = FeatureFlags(config_file=temp_flags_file)
 
     # User tier matches
-    assert flags.is_enabled(
-        "context_rules_feature",
-        context={"user_tier": "premium"},
-    ) is True
+    assert (
+        flags.is_enabled(
+            "context_rules_feature",
+            context={"user_tier": "premium"},
+        )
+        is True
+    )
 
     # User tier doesn't match
-    assert flags.is_enabled(
-        "context_rules_feature",
-        context={"user_tier": "basic"},
-    ) is False
+    assert (
+        flags.is_enabled(
+            "context_rules_feature",
+            context={"user_tier": "basic"},
+        )
+        is False
+    )
 
 
 def test_check_rules_equals(temp_flags_file):

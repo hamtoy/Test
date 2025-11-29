@@ -53,7 +53,9 @@ class UsageDashboard:
                         ts_str = entry.get("timestamp", "")
                         if ts_str:
                             try:
-                                ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                                ts = datetime.fromisoformat(
+                                    ts_str.replace("Z", "+00:00")
+                                )
                                 if ts.replace(tzinfo=None) >= cutoff:
                                     entries.append(entry)
                             except ValueError:
@@ -144,9 +146,7 @@ class UsageDashboard:
 
         return float(total_tokens / total_queries)
 
-    def _calc_week_over_week(
-        self, entries: list[dict[str, Any]], field: str
-    ) -> float:
+    def _calc_week_over_week(self, entries: list[dict[str, Any]], field: str) -> float:
         """Calculate week-over-week change percentage.
 
         Args:
@@ -354,16 +354,16 @@ class UsageDashboard:
 </head>
 <body>
     <h1>📊 사용 현황 대시보드</h1>
-    <p>기간: {week_ago.strftime('%Y-%m-%d')} ~ {now.strftime('%Y-%m-%d')}</p>
+    <p>기간: {week_ago.strftime("%Y-%m-%d")} ~ {now.strftime("%Y-%m-%d")}</p>
 
     <div class="metric-grid">
         <div class="metric-card">
-            <div class="metric-value">{stats.get('total_sessions', 0)}</div>
+            <div class="metric-value">{stats.get("total_sessions", 0)}</div>
             <div class="metric-label">총 세션 수</div>
         </div>
 
         <div class="metric-card">
-            <div class="metric-value">${stats.get('total_cost_usd', 0):.2f}</div>
+            <div class="metric-value">${stats.get("total_cost_usd", 0):.2f}</div>
             <div class="metric-label">총 비용</div>
             <div class="{cost_trend_class}">
                 {cost_change:+.1f}% (전주 대비)
@@ -371,12 +371,12 @@ class UsageDashboard:
         </div>
 
         <div class="metric-card">
-            <div class="metric-value">{stats.get('cache_hit_rate', 0):.1f}%</div>
+            <div class="metric-value">{stats.get("cache_hit_rate", 0):.1f}%</div>
             <div class="metric-label">캐시 Hit Rate</div>
         </div>
 
         <div class="metric-card">
-            <div class="metric-value">{stats.get('avg_tokens_per_query', 0):.0f}</div>
+            <div class="metric-value">{stats.get("avg_tokens_per_query", 0):.0f}</div>
             <div class="metric-label">평균 토큰/쿼리</div>
         </div>
     </div>
