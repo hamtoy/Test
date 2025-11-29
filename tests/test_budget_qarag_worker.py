@@ -1,11 +1,12 @@
-from pathlib import Path
-from typing import Any
+from __future__ import annotations
 
 import asyncio
 import json
 import os
 import sys
 import types
+from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -47,20 +48,22 @@ def test_require_env_missing(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_qakg_constraints_with_provider(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Session:
-        async def __aenter__(self):
+        async def __aenter__(self) -> "_Session":
             return self
 
-        async def __aexit__(self, exc_type, exc, tb):
+        async def __aexit__(
+            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+        ) -> bool:
             return False
 
-        async def run(self, *_args, **_kwargs):
+        async def run(self, *_args: Any, **_kwargs: Any) -> list[dict[str, str]]:
             return [{"id": "c1", "description": "d", "type": "t", "pattern": "p"}]
 
     class _Provider:
-        def session(self):
+        def session(self) -> _Session:
             return _Session()
 
-        async def close(self):
+        async def close(self) -> None:
             return None
 
     monkeypatch.setattr(
@@ -94,20 +97,22 @@ async def test_qakg_constraints_from_async_context(monkeypatch: pytest.MonkeyPat
     """
 
     class _Session:
-        async def __aenter__(self):
+        async def __aenter__(self) -> "_Session":
             return self
 
-        async def __aexit__(self, exc_type, exc, tb):
+        async def __aexit__(
+            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+        ) -> bool:
             return False
 
-        async def run(self, *_args, **_kwargs):
+        async def run(self, *_args: Any, **_kwargs: Any) -> list[dict[str, str]]:
             return [{"id": "c1", "description": "d", "type": "t", "pattern": "p"}]
 
     class _Provider:
-        def session(self):
+        def session(self) -> _Session:
             return _Session()
 
-        async def close(self):
+        async def close(self) -> None:
             return None
 
     monkeypatch.setattr(
@@ -134,15 +139,17 @@ async def test_qakg_constraints_from_async_context(monkeypatch: pytest.MonkeyPat
 
 
 def test_qakg_graph_session_when_loop_running(monkeypatch: pytest.MonkeyPatch) -> None:
+    class _Ctx:
+        async def __aenter__(self) -> object:
+            return object()
+
+        async def __aexit__(
+            self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any
+        ) -> bool:
+            return False
+
     class _Provider:
-        def session(self):
-            class _Ctx:
-                async def __aenter__(self):
-                    return object()
-
-                async def __aexit__(self, exc_type, exc, tb):
-                    return False
-
+        def session(self) -> _Ctx:
             return _Ctx()
 
     loop = types.SimpleNamespace(is_running=lambda: True)
@@ -196,7 +203,7 @@ def test_qakg_validate_session_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     assert res_empty["ok"] is False
 
     class _BadSessionCtx:
-        def __init__(self, **kwargs) -> None:
+        def __init__(self, **kwargs: Any) -> None:
             raise TypeError("boom")
 
     monkeypatch.setitem(
@@ -213,18 +220,18 @@ def test_qakg_validate_session_errors(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.asyncio
 async def test_worker_setup_and_close_redis(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Redis:
-        def __init__(self, url) -> None:
+        def __init__(self, url: str) -> None:
             self.url = url
             self.closed = False
 
         @classmethod
-        def from_url(cls, url):
+        def from_url(cls, url: str) -> "_Redis":
             return cls(url)
 
         async def close(self) -> None:
             self.closed = True
 
-        async def ping(self):
+        async def ping(self) -> bool:
             return True
 
     # Import the actual worker module to patch the right namespace
@@ -248,7 +255,7 @@ async def test_worker_ensure_redis_ready_failure(monkeypatch: pytest.MonkeyPatch
     from src.infra import worker as infra_worker
 
     class _Redis:
-        async def ping(self):
+        async def ping(self) -> bool:
             return False
 
     monkeypatch.setattr(infra_worker, "redis_client", _Redis(), raising=False)
@@ -256,7 +263,9 @@ async def test_worker_ensure_redis_ready_failure(monkeypatch: pytest.MonkeyPatch
         await infra_worker.ensure_redis_ready()
 
 
-def test_worker_append_jsonl(tmp_path, monkeypatch) -> None:
+def test_worker_append_jsonl(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     path = tmp_path / "out.jsonl"
     worker._append_jsonl(path, {"a": 1})
     data = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
@@ -265,7 +274,7 @@ def test_worker_append_jsonl(tmp_path, monkeypatch) -> None:
 
 @pytest.mark.asyncio
 async def test_run_task_with_lats_agent_error(monkeypatch: pytest.MonkeyPatch) -> None:
-    async def _gen_query(text, meta) -> None:
+    async def _gen_query(text: str, meta: Any) -> None:
         raise RuntimeError("fail")
 
     monkeypatch.setattr(
@@ -277,7 +286,7 @@ async def test_run_task_with_lats_agent_error(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(worker, "llm_provider", None, raising=False)
     monkeypatch.setattr(worker, "graph_provider", None, raising=False)
 
-    async def _proc(task):
+    async def _proc(task: Any) -> dict[str, Any]:
         return {
             "request_id": task.request_id,
             "session_id": task.session_id,
@@ -299,7 +308,9 @@ async def test_run_task_with_lats_llm_budget(monkeypatch: pytest.MonkeyPatch) ->
         def __init__(self) -> None:
             self.calls = 0
 
-        async def generate_content_async(self, prompt, **kwargs):
+        async def generate_content_async(
+            self, prompt: str, **kwargs: Any
+        ) -> types.SimpleNamespace:
             self.calls += 1
             return types.SimpleNamespace(
                 content="0.8",
@@ -310,7 +321,7 @@ async def test_run_task_with_lats_llm_budget(monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setattr(worker, "llm_provider", _LLM(), raising=False)
     monkeypatch.setattr(worker, "graph_provider", None, raising=False)
 
-    async def _proc(task):
+    async def _proc(task: Any) -> dict[str, Any]:
         return {
             "request_id": task.request_id,
             "session_id": task.session_id,
