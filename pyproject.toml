@@ -254,9 +254,11 @@ filterwarnings = [
     "ignore::DeprecationWarning:neo4j.*",
     "ignore::DeprecationWarning:tenacity.*",
 
-    # google.api_core Python 버전 지원 경고 무시
+    # google.api_core Python 버전 지원 경고 무시 (DeprecationWarning 및 FutureWarning)
     "ignore:.*Python 3.10.*:DeprecationWarning",
     "ignore:.*support for Python 3.10.*:DeprecationWarning",
+    "ignore:.*Python 3.10.*:FutureWarning",
+    "ignore:.*support for Python 3.10.*:FutureWarning",
 
     # 우리 코드 내 의도적 deprecation 테스트용 경고는 무시
     "ignore:Importing.*from 'src' is deprecated:DeprecationWarning",
