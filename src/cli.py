@@ -73,7 +73,7 @@ Examples:
         "--mode",
         type=str,
         default="AUTO",
-        choices=["AUTO", "MANUAL", "BATCH", "generate", "evaluate", "inspect"],
+        choices=["AUTO", "MANUAL", "BATCH", "GENERATE", "EVALUATE", "INSPECT"],
         help="Workflow mode (default: AUTO)",
     )
     parser.add_argument(
@@ -229,12 +229,19 @@ def format_output(result: dict[str, object], output_format: str = "text") -> str
         Formatted output string.
     """
     if output_format == "json":
-        return json.dumps(result, ensure_ascii=False, indent=2)
+        return json.dumps(result, ensure_ascii=False, indent=2, default=str)
     else:
-        # Text format
-        lines = []
+        # Text format with proper handling of nested structures
+        lines: list[str] = []
         for key, value in result.items():
-            lines.append(f"{key}: {value}")
+            if isinstance(value, dict):
+                lines.append(f"{key}:")
+                lines.extend(f"  {sub_key}: {sub_value}" for sub_key, sub_value in value.items())
+            elif isinstance(value, list):
+                lines.append(f"{key}:")
+                lines.extend(f"  - {item}" for item in value)
+            else:
+                lines.append(f"{key}: {value}")
         return "\n".join(lines)
 
 

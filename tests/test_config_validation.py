@@ -79,7 +79,7 @@ def test_rag_dependencies_validation_missing_uri():
             GEMINI_API_KEY=VALID_API_KEY,
             ENABLE_RAG=True,
         )
-    assert "RAG 사용 시 필수" in str(excinfo.value)
+    assert "ENABLE_RAG=True 설정 시 필수" in str(excinfo.value)
     assert "neo4j_uri" in str(excinfo.value)
 
 
@@ -91,7 +91,7 @@ def test_rag_dependencies_validation_missing_password():
             NEO4J_URI="bolt://localhost:7687",
             NEO4J_USER="neo4j",
         )
-    assert "RAG 사용 시 필수" in str(excinfo.value)
+    assert "NEO4J_URI 설정 시 필수" in str(excinfo.value)
     assert "neo4j_password" in str(excinfo.value)
 
 

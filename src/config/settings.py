@@ -79,16 +79,35 @@ class AppConfig(BaseSettings):
 
     @model_validator(mode="after")
     def check_rag_dependencies(self) -> "AppConfig":
-        """RAG 기능 활성화 시 Neo4j 설정 확인"""
-        # If enable_rag is True or neo4j_uri is set, check other required fields
-        if self.enable_rag or self.neo4j_uri:
+        """RAG 기능 활성화 시 Neo4j 설정 확인.
+
+        Validation rules:
+        1. enable_rag=True requires all Neo4j fields (uri, user, password)
+        2. Any Neo4j field set without enable_rag triggers a warning but is allowed
+           (the field might be set for other purposes)
+        3. neo4j_uri set implies all other Neo4j fields are required
+        """
+        # Case 1: ENABLE_RAG is explicitly True - require all Neo4j fields
+        if self.enable_rag:
             required_fields = ["neo4j_uri", "neo4j_user", "neo4j_password"]
             missing = [f for f in required_fields if not getattr(self, f, None)]
             if missing:
                 raise ValueError(
-                    f"RAG 사용 시 필수: {', '.join(missing)}\n"
-                    f"또는 .env에서 NEO4J_* 변수와 ENABLE_RAG를 제거하세요"
+                    f"ENABLE_RAG=True 설정 시 필수: {', '.join(missing)}\n"
+                    f"또는 ENABLE_RAG=false로 설정하세요"
                 )
+
+        # Case 2: neo4j_uri is set (without enable_rag=True) - still require other Neo4j fields
+        # This handles cases where user sets NEO4J_URI without ENABLE_RAG
+        elif self.neo4j_uri:
+            required_fields = ["neo4j_user", "neo4j_password"]
+            missing = [f for f in required_fields if not getattr(self, f, None)]
+            if missing:
+                raise ValueError(
+                    f"NEO4J_URI 설정 시 필수: {', '.join(missing)}\n"
+                    f"또는 .env에서 NEO4J_URI를 제거하세요"
+                )
+
         return self
 
     @field_validator("api_key")

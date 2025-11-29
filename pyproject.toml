@@ -44,9 +44,17 @@ multimodal = [
     "pillow>=10.0.0",
 ]
 
-# All optional features
+# All optional features - list individual packages, not self-reference
 all = [
-    "shining-quasar[rag,web,worker,multimodal]",
+    "langchain>=1.0.8,<2.0.0",
+    "langchain-community>=0.4.1,<1.0.0",
+    "langchain-neo4j>=0.6.0,<1.0.0",
+    "langchain-openai>=1.0.3,<2.0.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
+    "python-multipart>=0.0.12",
+    "faststream[redis]>=0.4.10,<1.0.0",
+    "pillow>=10.0.0",
 ]
 
 # Development and testing
