@@ -5,7 +5,11 @@ from src.caching.analytics import analyze_cache_stats, calculate_savings
 
 
 def test_calculate_savings_zero_when_no_hits() -> None:
-    record: dict[str, Any] = {"model": "gemini-3-pro-preview", "cache_hits": 0, "input_tokens": 1000}
+    record: dict[str, Any] = {
+        "model": "gemini-3-pro-preview",
+        "cache_hits": 0,
+        "input_tokens": 1000,
+    }
     assert calculate_savings(record) == 0.0
 
 

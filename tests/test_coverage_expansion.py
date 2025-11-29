@@ -297,7 +297,8 @@ def test_caching_layer_handles_bad_cache_and_write_error(monkeypatch):
             raise RuntimeError("write fail")
 
     layer = caching_layer.CachingLayer(
-        kg=types.SimpleNamespace(_graph=None), redis_client=None  # type: ignore[arg-type]
+        kg=types.SimpleNamespace(_graph=None),
+        redis_client=None,  # type: ignore[arg-type]
     )
     layer.redis = _Redis()  # type: ignore[assignment]
     layer._fetch_rules_from_graph = lambda qt: rows  # type: ignore[method-assign, assignment]
