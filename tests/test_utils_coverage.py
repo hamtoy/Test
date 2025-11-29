@@ -1,24 +1,27 @@
 from __future__ import annotations
 
-import pytest
 import types
+from typing import Any
+
+import pytest
+
 from src import compare_documents
 from src import health_check
 
 
-def test_compare_documents_helpers(monkeypatch) -> None:
+def test_compare_documents_helpers(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("MISSING_ENV", raising=False)
     with pytest.raises(EnvironmentError):
         compare_documents.require_env("MISSING_ENV")
 
     class _CompareSession:
-        def __enter__(self):
+        def __enter__(self) -> "_CompareSession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
-        def run(self, query, **_kwargs):
+        def run(self, query: str, **_kwargs: Any) -> list[dict[str, Any]]:
             if "ORDER BY total_blocks" in query:
                 return [
                     {
@@ -37,7 +40,7 @@ def test_compare_documents_helpers(monkeypatch) -> None:
     assert commons[0][1] == ["Doc A", "Doc B"]
 
 
-def test_health_check_with_stub(monkeypatch) -> None:
+def test_health_check_with_stub(monkeypatch: pytest.MonkeyPatch) -> None:
     # Set required environment variables for Neo4j
     monkeypatch.setenv("NEO4J_URI", "bolt://localhost:7687")
     monkeypatch.setenv("NEO4J_USER", "neo4j")
@@ -47,13 +50,13 @@ def test_health_check_with_stub(monkeypatch) -> None:
     from src.infra import health as infra_health
 
     class _HealthSession:
-        def __enter__(self):
+        def __enter__(self) -> "_HealthSession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
-        def run(self, *_args, **_kwargs):
+        def run(self, *_args: Any, **_kwargs: Any) -> types.SimpleNamespace:
             return types.SimpleNamespace(single=lambda: 1)
 
     fake_kg = types.SimpleNamespace(
@@ -66,7 +69,9 @@ def test_health_check_with_stub(monkeypatch) -> None:
     assert report["status"] == "healthy"
 
 
-def test_compare_documents_main_flow(monkeypatch, capsys) -> None:
+def test_compare_documents_main_flow(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     monkeypatch.setenv("NEO4J_URI", "bolt://fake")
     monkeypatch.setenv("NEO4J_USER", "user")
     monkeypatch.setenv("NEO4J_PASSWORD", "pass")
@@ -75,13 +80,13 @@ def test_compare_documents_main_flow(monkeypatch, capsys) -> None:
     from src.analysis import document_compare
 
     class _Session:
-        def __enter__(self):
+        def __enter__(self) -> "_Session":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
-        def run(self, query, **kwargs):
+        def run(self, query: str, **kwargs: Any) -> list[dict[str, Any]]:
             if "collect(DISTINCT b.type)" in query:
                 return [
                     {
@@ -96,10 +101,10 @@ def test_compare_documents_main_flow(monkeypatch, capsys) -> None:
             ]
 
     class _Driver:
-        def session(self):
+        def session(self) -> _Session:
             return _Session()
 
-        def close(self):
+        def close(self) -> None:
             return None
 
     monkeypatch.setattr(

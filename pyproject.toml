@@ -145,9 +145,13 @@ exclude = [
 # ===== 테스트 파일 mypy strict mode 완료 =====
 # test_deprecation_warnings.py는 의도적으로 제외 (삭제된 모듈 테스트)
 
-# Strict mode 통과 파일들 (117개 - 전체 마이그레이션 완료)
+# Strict mode 통과 파일들 (전체 마이그레이션 완료)
 [[tool.mypy.overrides]]
 module = [
+    "tests",
+    "tests.conftest",
+    "tests.types",
+    "tests.e2e",
     "tests.e2e.conftest",
     "tests.e2e.test_full_workflow",
     "tests.test_ab_test",
@@ -183,6 +187,8 @@ module = [
     "tests.test_context_augmentation_coverage",
     "tests.test_context_augmentation_extended",
     "tests.test_core_adapters",
+    "tests.test_coverage_branches_additional",
+    "tests.test_coverage_expansion",
     "tests.test_coverage_improvement",
     "tests.test_dashboard",
     "tests.test_data2neo_extractor",
@@ -196,16 +202,20 @@ module = [
     "tests.test_external_eval",
     "tests.test_feature_flags",
     "tests.test_gemini_client_coverage",
+    "tests.test_gemini_model_client_eval_rewrite",
     "tests.test_gemini_model_client_metrics",
     "tests.test_gemini_types_coverage",
     "tests.test_graph_builder_coverage",
     "tests.test_graph_enhanced_router",
+    "tests.test_graph_modules_coverage",
+    "tests.test_graph_schema_builder_more",
     "tests.test_graph_session_helper",
     "tests.test_health_check",
     "tests.test_health_check_extended",
     "tests.test_health_coverage",
     "tests.test_hybrid_optimizer",
     "tests.test_inspection_feature",
+    "tests.test_integrated_quality_system_integration",
     "tests.test_integration",
     "tests.test_interactive_menu_coverage",
     "tests.test_interactive_menu_more_coverage",
@@ -222,18 +232,24 @@ module = [
     "tests.test_models",
     "tests.test_modular_arch",
     "tests.test_monitoring_metrics_coverage",
+    "tests.test_multimodal_extended",
     "tests.test_neo4j_graph_provider",
     "tests.test_neo4j_optimizer",
     "tests.test_new_import_paths",
     "tests.test_package_init_coverage",
+    "tests.test_pipeline_coverage",
     "tests.test_promote_rules_coverage",
     "tests.test_qa_factory",
+    "tests.test_qa_rag_extended",
     "tests.test_qa_rag_system",
     "tests.test_qa_rag_system_extra",
     "tests.test_qa_rag_vector",
+    "tests.test_qa_systems_coverage",
     "tests.test_redis_cache_coverage",
+    "tests.test_scripts_coverage",
     "tests.test_security",
     "tests.test_self_improvement",
+    "tests.test_semantic_analysis",
     "tests.test_semantic_analysis_exceptions",
     "tests.test_session_builder",
     "tests.test_session_snapshots",
@@ -246,38 +262,16 @@ module = [
     "tests.test_ui_panels_coverage",
     "tests.test_utils",
     "tests.test_utils_additional",
+    "tests.test_utils_coverage",
     "tests.test_utils_more",
     "tests.test_web_api",
     "tests.test_web_api_coverage",
     "tests.test_web_models",
+    "tests.test_worker_process",
     "tests.test_workflow_execution",
     "tests.test_workflow_processor",
 ]
 strict = true
-
-# Test files migrating to strict (currently check_untyped_defs only)
-[[tool.mypy.overrides]]
-module = [
-    "tests.test_coverage_branches_additional",
-    "tests.test_coverage_expansion",
-    "tests.test_gemini_model_client_eval_rewrite",
-    "tests.test_graph_modules_coverage",
-    "tests.test_graph_schema_builder_more",
-    "tests.test_integrated_quality_system_integration",
-    "tests.test_multimodal_extended",
-    "tests.test_pipeline_coverage",
-    "tests.test_qa_rag_extended",
-    "tests.test_qa_systems_coverage",
-    "tests.test_scripts_coverage",
-    "tests.test_semantic_analysis",
-    "tests.test_utils_coverage",
-    "tests.test_worker_process",
-]
-strict = false
-check_untyped_defs = false
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
-disallow_untyped_calls = false
 
 # Scripts, checks, and experiments excluded from strict mode
 [[tool.mypy.overrides]]

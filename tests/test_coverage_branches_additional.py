@@ -6,6 +6,7 @@ import types
 from pathlib import Path
 import json
 import sys
+from typing import Any
 
 import pytest
 from jinja2 import DictLoader, Environment
@@ -26,7 +27,7 @@ VALID_API_KEY = "AIza" + "A" * 35
 # ----------------------------
 
 
-def test_dynamic_template_require_env_missing(monkeypatch) -> None:
+def test_dynamic_template_require_env_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("NEO4J_URI", raising=False)
     with pytest.raises(EnvironmentError):
         dtg.require_env("NEO4J_URI")
@@ -37,43 +38,45 @@ def test_dynamic_template_require_env_missing(monkeypatch) -> None:
 # ----------------------------
 
 
-def test_cross_validation_image_grounding_branches(monkeypatch) -> None:
+def test_cross_validation_image_grounding_branches(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class _ErrorSession:
-        def __enter__(self):
+        def __enter__(self) -> "_ErrorSession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
-        def run(self, *_args, **_kwargs) -> None:
+        def run(self, *_args: Any, **_kwargs: Any) -> None:
             raise Neo4jError("boom")
 
     class _EmptySession:
-        def __enter__(self):
+        def __enter__(self) -> "_EmptySession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
-        def run(self, *_args, **_kwargs):
+        def run(self, *_args: Any, **_kwargs: Any) -> types.SimpleNamespace:
             return types.SimpleNamespace(single=lambda: {"all_content": []})
 
     class _ShortTokenSession:
-        def __enter__(self):
+        def __enter__(self) -> "_ShortTokenSession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
-        def run(self, *_args, **_kwargs):
+        def run(self, *_args: Any, **_kwargs: Any) -> types.SimpleNamespace:
             return types.SimpleNamespace(single=lambda: {"all_content": ["aa"]})
 
     class _KG:
-        def __init__(self, session) -> None:
+        def __init__(self, session: Any) -> None:
             self._graph = types.SimpleNamespace(session=lambda: session)
             self._vector_store = None
 
-        def get_constraints_for_query_type(self, _qt):
+        def get_constraints_for_query_type(self, _qt: str) -> list[Any]:
             return []
 
     cvs = cross_validation.CrossValidationSystem(_KG(_ErrorSession()))  # type: ignore[arg-type]
@@ -92,15 +95,17 @@ def test_cross_validation_image_grounding_branches(monkeypatch) -> None:
     assert no_page["note"] == "page_id 없음"
 
 
-def test_cross_validation_rule_and_novelty_exceptions(monkeypatch) -> None:
+def test_cross_validation_rule_and_novelty_exceptions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class _BadSession:
-        def __enter__(self):
+        def __enter__(self) -> "_BadSession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
-        def run(self, *_args, **_kwargs) -> None:
+        def run(self, *_args: Any, **_kwargs: Any) -> None:
             raise Neo4jError("patterns failed")
 
     class _KG:
@@ -112,7 +117,7 @@ def test_cross_validation_rule_and_novelty_exceptions(monkeypatch) -> None:
                 )
             )
 
-        def get_constraints_for_query_type(self, _qt):
+        def get_constraints_for_query_type(self, _qt: str) -> list[dict[str, str]]:
             return [{"type": "prohibition", "pattern": "bad", "description": "desc"}]
 
     cvs = cross_validation.CrossValidationSystem(_KG())  # type: ignore[arg-type]
@@ -128,24 +133,26 @@ def test_cross_validation_rule_and_novelty_exceptions(monkeypatch) -> None:
 # ----------------------------
 
 
-def test_qa_rag_init_uses_env_and_driver(monkeypatch, tmp_path) -> None:
+def test_qa_rag_init_uses_env_and_driver(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.setenv("NEO4J_URI", "bolt://localhost")
     monkeypatch.setenv("NEO4J_USER", "neo4j")
     monkeypatch.setenv("NEO4J_PASSWORD", "pass")
     monkeypatch.setenv("GEMINI_API_KEY", VALID_API_KEY)
-    called = {}
+    called: dict[str, Any] = {}
 
     class _Driver:
-        def __init__(self, uri, auth) -> None:
+        def __init__(self, uri: str, auth: tuple[str, str]) -> None:
             called["uri"] = uri
             called["auth"] = auth
 
-        def close(self):
+        def close(self) -> None:
             return None
 
     class _GraphDB:
         @staticmethod
-        def driver(uri, auth):
+        def driver(uri: str, auth: tuple[str, str]) -> _Driver:
             return _Driver(uri, auth)
 
     monkeypatch.setattr(qa_rag_system, "GraphDatabase", _GraphDB)
@@ -159,11 +166,11 @@ def test_qa_rag_init_uses_env_and_driver(monkeypatch, tmp_path) -> None:
     kg.close()
 
 
-def test_qa_rag_init_vector_store_error_paths(monkeypatch) -> None:
+def test_qa_rag_init_vector_store_error_paths(monkeypatch: pytest.MonkeyPatch) -> None:
     # Ensure langchain_neo4j import succeeds with a stub
     class _Neo4jVector:
         @staticmethod
-        def from_existing_graph(*_args, **_kwargs) -> None:
+        def from_existing_graph(*_args: Any, **_kwargs: Any) -> None:
             raise Neo4jError("vector fail")
 
     neo4j_vector_module = types.ModuleType("langchain_neo4j")
@@ -188,13 +195,13 @@ def test_qa_rag_init_vector_store_error_paths(monkeypatch) -> None:
     assert kg._vector_store == "keep"
 
 
-def test_qa_rag_validate_session_failure(monkeypatch) -> None:
+def test_qa_rag_validate_session_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     kg = object.__new__(qa_rag_system.QAKnowledgeGraph)
 
     class _BadContext(Exception):
         pass
 
-    def _bad_ctx(**_kwargs) -> None:
+    def _bad_ctx(**_kwargs: Any) -> None:
         raise ValueError("bad ctx")
 
     fake_mod = types.ModuleType("scripts.build_session")
@@ -211,7 +218,7 @@ def test_qa_rag_validate_session_failure(monkeypatch) -> None:
 # ----------------------------
 
 
-def test_semantic_analysis_require_env(monkeypatch) -> None:
+def test_semantic_analysis_require_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("NEO4J_URI", raising=False)
     with pytest.raises(EnvironmentError):
         semantic_analysis.require_env("NEO4J_URI")
@@ -222,7 +229,7 @@ def test_semantic_analysis_require_env(monkeypatch) -> None:
 # ----------------------------
 
 
-def _minimal_jinja_env():
+def _minimal_jinja_env() -> Environment:
     return Environment(
         loader=DictLoader(
             {
@@ -234,7 +241,7 @@ def _minimal_jinja_env():
     )
 
 
-def _make_config(tmp_path: Path):
+def _make_config(tmp_path: Path) -> dict[str, str]:
     monkeypatch_env = {
         "GEMINI_API_KEY": VALID_API_KEY,
         "PROJECT_ROOT": str(tmp_path),
@@ -243,14 +250,16 @@ def _make_config(tmp_path: Path):
     return monkeypatch_env
 
 
-def test_agent_init_without_aiolimiter(monkeypatch, tmp_path) -> None:
+def test_agent_init_without_aiolimiter(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     envs = _make_config(tmp_path)
     for k, v in envs.items():
         monkeypatch.setenv(k, v)
 
     real_import = builtins.__import__
 
-    def _fake_import(name, *args, **kwargs):
+    def _fake_import(name: str, *args: Any, **kwargs: Any) -> Any:
         if name == "aiolimiter":
             raise ImportError("missing")
         return real_import(name, *args, **kwargs)
@@ -261,7 +270,9 @@ def test_agent_init_without_aiolimiter(monkeypatch, tmp_path) -> None:
     assert agent._rate_limiter is None
 
 
-def test_agent_cleanup_expired_cache(monkeypatch, tmp_path) -> None:
+def test_agent_cleanup_expired_cache(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     envs = _make_config(tmp_path)
     for k, v in envs.items():
         monkeypatch.setenv(k, v)
@@ -293,7 +304,7 @@ def test_agent_cleanup_expired_cache(monkeypatch, tmp_path) -> None:
 
 @pytest.mark.asyncio
 async def test_agent_create_context_cache_skips_when_small(
-    monkeypatch, tmp_path
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     envs = _make_config(tmp_path)
     for k, v in envs.items():
@@ -303,7 +314,7 @@ async def test_agent_create_context_cache_skips_when_small(
 
     class _Model:
         @staticmethod
-        def count_tokens(_text):
+        def count_tokens(_text: str) -> types.SimpleNamespace:
             return types.SimpleNamespace(total_tokens=1)
 
     stub_genai = types.SimpleNamespace(GenerativeModel=lambda *_a, **_k: _Model())
@@ -315,7 +326,9 @@ async def test_agent_create_context_cache_skips_when_small(
     assert result is None
 
 
-def test_agent_create_model_with_cached_content(monkeypatch, tmp_path) -> None:
+def test_agent_create_model_with_cached_content(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     envs = _make_config(tmp_path)
     for k, v in envs.items():
         monkeypatch.setenv(k, v)
@@ -325,7 +338,7 @@ def test_agent_create_model_with_cached_content(monkeypatch, tmp_path) -> None:
 
     class _GenModel:
         @staticmethod
-        def from_cached_content(*_args, **_kwargs):
+        def from_cached_content(*_args: Any, **_kwargs: Any) -> object:
             return sentinel
 
     stub_genai = types.SimpleNamespace(GenerativeModel=_GenModel)

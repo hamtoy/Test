@@ -4,6 +4,7 @@ import importlib
 import logging
 import sys
 import types
+from typing import Any
 
 from neo4j.exceptions import Neo4jError
 
@@ -24,13 +25,13 @@ def test_smart_autocomplete_handles_missing_graph() -> None:
 
 def test_smart_autocomplete_session_none(monkeypatch: pytest.MonkeyPatch) -> None:
     class _KG:
-        def graph_session(self):
+        def graph_session(self) -> Any:
             class _Ctx:
-                def __enter__(self):
+                def __enter__(self) -> None:
                     return None
 
-                def __exit__(self, exc_type, exc, tb):
-                    return False
+                def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+                    pass
 
             return _Ctx()
 
@@ -40,13 +41,13 @@ def test_smart_autocomplete_session_none(monkeypatch: pytest.MonkeyPatch) -> Non
 
 def test_smart_autocomplete_filters_by_limit() -> None:
     class _Sess:
-        def __enter__(self):
+        def __enter__(self) -> "_Sess":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
-        def run(self, _cypher):
+        def run(self, _cypher: str) -> list[dict[str, Any]]:
             return [
                 {"name": "summary", "korean": "요약", "limit": 1, "priority": 1},
                 {"name": "explore", "korean": "탐색", "limit": None, "priority": 0},
@@ -73,13 +74,13 @@ def test_smart_autocomplete_constraint_session_none(
     monkeypatch.setattr(smart_autocomplete, "find_violations", lambda text: [])
 
     class _KG:
-        def graph_session(self):
+        def graph_session(self) -> Any:
             class _Ctx:
-                def __enter__(self):
+                def __enter__(self) -> None:
                     return None
 
-                def __exit__(self, exc_type, exc, tb):
-                    return False
+                def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+                    pass
 
             return _Ctx()
 
@@ -93,7 +94,7 @@ def test_real_time_constraint_stream_final_validation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _KG:
-        def get_constraints_for_query_type(self, _qt):
+        def get_constraints_for_query_type(self, _qt: str) -> list[Any]:
             return []
 
     enforcer = rtce.RealTimeConstraintEnforcer(_KG())  # type: ignore[arg-type]
@@ -107,13 +108,13 @@ def test_real_time_constraint_stream_final_validation(
 
 def test_real_time_constraint_get_original_blocks_no_session() -> None:
     class _KG:
-        def graph_session(self):
+        def graph_session(self) -> Any:
             class _Ctx:
-                def __enter__(self):
+                def __enter__(self) -> None:
                     return None
 
-                def __exit__(self, exc_type, exc, tb):
-                    return False
+                def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+                    pass
 
             return _Ctx()
 
@@ -123,13 +124,13 @@ def test_real_time_constraint_get_original_blocks_no_session() -> None:
 
 def test_real_time_constraint_get_original_blocks_exception() -> None:
     class _KG:
-        def graph_session(self):
+        def graph_session(self) -> Any:
             class _Ctx:
                 def __enter__(self) -> None:
                     raise RuntimeError("boom")
 
-                def __exit__(self, exc_type, exc, tb):
-                    return False
+                def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+                    pass
 
             return _Ctx()
 
@@ -156,16 +157,16 @@ def test_health_check_graph_missing() -> None:
 
 def test_health_check_unknown_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Session:
-        def __enter__(self):
+        def __enter__(self) -> "_Session":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
-        def run(self, *_args, **_kwargs) -> None:
+        def run(self, *_args: Any, **_kwargs: Any) -> None:
             raise ValueError("boom")
 
-        def single(self):
+        def single(self) -> None:
             return None
 
     kg = types.SimpleNamespace(_graph=types.SimpleNamespace(session=lambda: _Session()))
@@ -201,9 +202,9 @@ def test_list_models_exits_without_key(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         os,
         "getenv",
-        lambda key, default=None: None
-        if key == "GEMINI_API_KEY"
-        else original_getenv(key, default),
+        lambda key, default=None: (
+            None if key == "GEMINI_API_KEY" else original_getenv(key, default)
+        ),
     )
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     fake_genai = types.SimpleNamespace(
@@ -230,7 +231,9 @@ def test_list_models_exits_without_key(monkeypatch: pytest.MonkeyPatch) -> None:
     assert any(msg.endswith("exit:1") or msg == "exit:1" for msg in captured)
 
 
-def test_dynamic_example_selector_no_graph_returns_empty(caplog) -> None:
+def test_dynamic_example_selector_no_graph_returns_empty(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     caplog.set_level(logging.DEBUG)
     selector = dynamic_example_selector.DynamicExampleSelector(types.SimpleNamespace())  # type: ignore[arg-type]
     assert selector.select_best_examples("qt", {}, k=1) == []
@@ -238,13 +241,13 @@ def test_dynamic_example_selector_no_graph_returns_empty(caplog) -> None:
 
 def test_dynamic_example_selector_session_none(monkeypatch: pytest.MonkeyPatch) -> None:
     class _KG:
-        def graph_session(self):
+        def graph_session(self) -> Any:
             class _Ctx:
-                def __enter__(self):
+                def __enter__(self) -> None:
                     return None
 
-                def __exit__(self, exc_type, exc, tb):
-                    return False
+                def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+                    pass
 
             return _Ctx()
 
@@ -256,17 +259,17 @@ def test_dynamic_example_selector_handles_exception(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _Session:
-        def __enter__(self):
+        def __enter__(self) -> "_Session":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
-        def run(self, *_args, **_kwargs) -> None:
+        def run(self, *_args: Any, **_kwargs: Any) -> None:
             raise RuntimeError("query fail")
 
     class _KG:
-        def graph_session(self):
+        def graph_session(self) -> type["_Session"]:
             return _Session
 
     selector = dynamic_example_selector.DynamicExampleSelector(_KG())  # type: ignore[arg-type]
@@ -276,7 +279,7 @@ def test_dynamic_example_selector_handles_exception(
 def test_caching_layer_import_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
     original_import = builtins.__import__
 
-    def _fake_import(name, *args, **kwargs):
+    def _fake_import(name: str, *args: Any, **kwargs: Any) -> Any:
         if name == "redis":
             raise ImportError("missing redis")
         return original_import(name, *args, **kwargs)
@@ -299,12 +302,12 @@ def test_caching_layer_handles_bad_cache_and_write_error(
 
     class _Redis:
         def __init__(self) -> None:
-            self.store = {"rules:qt": "not-json"}
+            self.store: dict[str, str] = {"rules:qt": "not-json"}
 
-        def get(self, key):
+        def get(self, key: str) -> str | None:
             return self.store.get(key)
 
-        def setex(self, *_args, **_kwargs) -> None:
+        def setex(self, *_args: Any, **_kwargs: Any) -> None:
             raise RuntimeError("write fail")
 
     layer = caching_layer.CachingLayer(
@@ -328,7 +331,9 @@ def test_caching_layer_fetch_without_graph() -> None:
     assert layer._fetch_rules_from_graph("qt") == []
 
 
-def test_adaptive_difficulty_missing_graph_logs(monkeypatch, caplog) -> None:
+def test_adaptive_difficulty_missing_graph_logs(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     caplog.set_level(logging.WARNING)
     adjuster = adaptive_difficulty.AdaptiveDifficultyAdjuster(types.SimpleNamespace())  # type: ignore[arg-type]
     result = adjuster.analyze_image_complexity({"text_density": 0.9})
@@ -349,14 +354,14 @@ def test_cross_validation_grounding_branches(monkeypatch: pytest.MonkeyPatch) ->
     assert res["note"] == "graph 없음"
 
     class _SessionNone:
-        def __enter__(self):
+        def __enter__(self) -> None:
             return None
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
     class _KG:
-        def graph_session(self):
+        def graph_session(self) -> _SessionNone:
             return _SessionNone()
 
     cvs2 = cross_validation.CrossValidationSystem(_KG())  # type: ignore[arg-type]
@@ -364,13 +369,13 @@ def test_cross_validation_grounding_branches(monkeypatch: pytest.MonkeyPatch) ->
     assert res2["note"] == "graph 없음"
 
     class _NeoSession:
-        def __enter__(self):
+        def __enter__(self) -> "_NeoSession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
-        def run(self, *_args, **_kwargs) -> None:
+        def run(self, *_args: Any, **_kwargs: Any) -> None:
             raise Neo4jError("neo boom")
 
     cvs3 = cross_validation.CrossValidationSystem(
@@ -384,7 +389,9 @@ def test_cross_validation_grounding_branches(monkeypatch: pytest.MonkeyPatch) ->
 
 def test_cross_validation_rule_compliance_graph_missing() -> None:
     class _KG:
-        def get_constraints_for_query_type(self, *_args, **_kwargs):
+        def get_constraints_for_query_type(
+            self, *_args: Any, **_kwargs: Any
+        ) -> list[Any]:
             return []
 
     cvs = cross_validation.CrossValidationSystem(_KG())  # type: ignore[arg-type]
@@ -394,11 +401,11 @@ def test_cross_validation_rule_compliance_graph_missing() -> None:
 
 def test_cross_validation_novelty_store_paths() -> None:
     class _Similar:
-        def __init__(self, sim) -> None:
+        def __init__(self, sim: float) -> None:
             self.metadata = {"similarity": sim}
 
     class _StoreHigh:
-        def similarity_search(self, *_args, **_kwargs):
+        def similarity_search(self, *_args: Any, **_kwargs: Any) -> list[_Similar]:
             return [_Similar(0.99)]
 
     cvs_high = cross_validation.CrossValidationSystem(
@@ -408,7 +415,7 @@ def test_cross_validation_novelty_store_paths() -> None:
     assert res_high["too_similar"] is True
 
     class _StoreEmpty:
-        def similarity_search(self, *_args, **_kwargs):
+        def similarity_search(self, *_args: Any, **_kwargs: Any) -> list[Any]:
             return []
 
     cvs_empty = cross_validation.CrossValidationSystem(

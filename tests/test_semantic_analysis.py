@@ -1,6 +1,7 @@
 import types
+from typing import Any
+
 import pytest
-from builtins import EnvironmentError
 
 import src.analysis.semantic as sa
 
@@ -13,7 +14,7 @@ def test_tokenize_filters_stopwords_and_length() -> None:
     assert "the" not in tokens and "it" not in tokens and "그리고" not in tokens
 
 
-def test_count_keywords_respects_min_freq(monkeypatch) -> None:
+def test_count_keywords_respects_min_freq(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual semantic module to patch the right namespace
     from src.analysis import semantic as analysis_semantic
 
@@ -24,17 +25,17 @@ def test_count_keywords_respects_min_freq(monkeypatch) -> None:
     assert "cherry" not in counter  # freq 1 < MIN_FREQ
 
 
-def test_create_topics_no_keywords(monkeypatch) -> None:
+def test_create_topics_no_keywords(monkeypatch: pytest.MonkeyPatch) -> None:
     called = False
 
     class _Session:
-        def __enter__(self):
+        def __enter__(self) -> "_Session":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
-        def execute_write(self, fn, kw) -> None:
+        def execute_write(self, fn: Any, kw: Any) -> None:
             nonlocal called
             called = True
 
@@ -43,27 +44,27 @@ def test_create_topics_no_keywords(monkeypatch) -> None:
     assert called is False  # no write when empty
 
 
-def test_link_blocks_creates_links(monkeypatch) -> None:
+def test_link_blocks_creates_links(monkeypatch: pytest.MonkeyPatch) -> None:
     # Import the actual semantic module to patch the right namespace
     from src.analysis import semantic as analysis_semantic
 
-    captured = []
+    captured: list[dict[str, str]] = []
 
     class _Session:
-        def __enter__(self):
+        def __enter__(self) -> "_Session":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
-        def execute_write(self, fn, rows) -> None:
+        def execute_write(self, fn: Any, rows: Any) -> None:
             fn(None, rows)  # call lambda in code
 
     class _Driver:
-        def session(self):
+        def session(self) -> _Session:
             return _Session()
 
-    def _run(tx, rows) -> None:
+    def _run(tx: Any, rows: dict[str, list[dict[str, str]]]) -> None:
         captured.extend(rows["links"])
 
     blocks = [
@@ -76,9 +77,8 @@ def test_link_blocks_creates_links(monkeypatch) -> None:
     monkeypatch.setattr(analysis_semantic, "REL_BATCH_SIZE", 2)
     # Patch tokenization to identity split for simplicity
     monkeypatch.setattr(analysis_semantic, "tokenize", lambda text: text.split())
-    _orig_session_run = _Session.execute_write
 
-    def _execute_write(self, fn, batch) -> None:
+    def _execute_write(self: Any, fn: Any, batch: Any) -> None:
         # emulate flush calls
         _run(None, {"links": batch})
 
@@ -91,7 +91,9 @@ def test_link_blocks_creates_links(monkeypatch) -> None:
     assert {"block_id": "b1", "topic": "banana"} in captured
 
 
-def test_main_env_missing_exits(monkeypatch, capsys) -> None:
+def test_main_env_missing_exits(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     # Import the actual semantic module to patch the right namespace
     from src.analysis import semantic as analysis_semantic
 

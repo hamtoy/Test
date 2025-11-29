@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 import types
+from typing import Any
 
 
 import src.llm.gemini as gmc
@@ -12,7 +13,9 @@ def _fake_genai(monkeypatch: pytest.MonkeyPatch) -> None:
         def __init__(self, name: str) -> None:
             self.name = name
 
-        def generate_content(self, prompt, generation_config=None):
+        def generate_content(
+            self, prompt: str, generation_config: Any = None
+        ) -> types.SimpleNamespace:
             return types.SimpleNamespace(text="dummy")
 
     fake = types.SimpleNamespace(
@@ -46,7 +49,7 @@ def test_evaluate_api_error_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
 
     client = gmc.GeminiModelClient()
 
-    def _raise(prompt, role="evaluator") -> None:
+    def _raise(prompt: str, role: str = "evaluator") -> None:
         raise gmc.google_exceptions.GoogleAPIError("boom")  # type: ignore[attr-defined]
 
     client.generate = _raise  # type: ignore[method-assign, assignment]
@@ -61,7 +64,7 @@ def test_rewrite_handles_api_error(monkeypatch: pytest.MonkeyPatch) -> None:
 
     client = gmc.GeminiModelClient()
 
-    def _raise(prompt, role="rewriter") -> None:
+    def _raise(prompt: str, role: str = "rewriter") -> None:
         raise gmc.google_exceptions.GoogleAPIError("rewrite error")  # type: ignore[attr-defined]
 
     client.generate = _raise  # type: ignore[method-assign, assignment]

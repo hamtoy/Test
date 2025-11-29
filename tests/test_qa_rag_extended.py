@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import types
+from typing import Any
 
 import pytest
 
@@ -36,7 +37,7 @@ def test_qa_rag_vector_store_init(monkeypatch: pytest.MonkeyPatch) -> None:
 
     class _FakeNeo4jVector:
         @classmethod
-        def from_existing_graph(cls, *args, **kwargs):
+        def from_existing_graph(cls, *args: Any, **kwargs: Any) -> str:
             return "vector"
 
     # stub import module
@@ -56,7 +57,7 @@ def test_qa_rag_vector_store_handles_errors(monkeypatch: pytest.MonkeyPatch) -> 
 
     class _FakeNeo4jVector:
         @classmethod
-        def from_existing_graph(cls, *args, **kwargs) -> None:
+        def from_existing_graph(cls, *args: Any, **kwargs: Any) -> None:
             raise ValueError("bad config")
 
     sys.modules["langchain_neo4j"] = types.SimpleNamespace(Neo4jVector=_FakeNeo4jVector)  # type: ignore[assignment]
@@ -76,7 +77,7 @@ def test_qa_rag_find_relevant_rules(monkeypatch: pytest.MonkeyPatch) -> None:
     assert kg.find_relevant_rules("q") == []
 
     class _Doc:
-        def __init__(self, text) -> None:
+        def __init__(self, text: str) -> None:
             self.page_content = text
 
     kg._vector_store = types.SimpleNamespace(
@@ -87,7 +88,7 @@ def test_qa_rag_find_relevant_rules(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_qa_rag_validate_session(monkeypatch: pytest.MonkeyPatch) -> None:
     class _SessionContext:
-        def __init__(self, **kwargs) -> None:
+        def __init__(self, **kwargs: Any) -> None:
             if kwargs.get("fail"):
                 raise TypeError("boom")
 

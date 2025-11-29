@@ -1,29 +1,35 @@
 from __future__ import annotations
 
 import types
+from typing import Any
+
+import pytest
+
 from src.infra import constraints as rtce
 
 
-def test_integrated_qa_pipeline_create_and_validate(monkeypatch) -> None:
+def test_integrated_qa_pipeline_create_and_validate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("NEO4J_URI", "bolt://fake")
     monkeypatch.setenv("NEO4J_USER", "u")
     monkeypatch.setenv("NEO4J_PASSWORD", "p")
 
     class _FakeKG:
-        def __init__(self, *_args, **_kwargs) -> None:
+        def __init__(self, *_args: Any, **_kwargs: Any) -> None:
             self.closed = False
 
         def close(self) -> None:
             self.closed = True
 
     class _TemplateSession:
-        def __enter__(self):
+        def __enter__(self) -> "_TemplateSession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
-        def run(self, cypher, **_kwargs):
+        def run(self, cypher: str, **_kwargs: Any) -> list[dict[str, str]]:
             if "ErrorPattern" in cypher:
                 return [{"pattern": "forbidden", "desc": "error"}]
             if "Rule" in cypher:
@@ -31,22 +37,24 @@ def test_integrated_qa_pipeline_create_and_validate(monkeypatch) -> None:
             return []
 
     class _FakeTemplateGen:
-        def __init__(self, *_args, **_kwargs) -> None:
+        def __init__(self, *_args: Any, **_kwargs: Any) -> None:
             self.driver = types.SimpleNamespace(session=lambda: _TemplateSession())
 
-        def generate_prompt_for_query_type(self, query_type, _ctx):
+        def generate_prompt_for_query_type(self, query_type: str, _ctx: Any) -> str:
             return f"prompt-{query_type}"
 
-        def close(self):
+        def close(self) -> None:
             return None
 
-    def _fake_build_session(_ctx, validate=True):
+    def _fake_build_session(
+        _ctx: Any, validate: bool = True
+    ) -> list[types.SimpleNamespace]:
         return [
             types.SimpleNamespace(type="explanation", prompt="p1"),
             types.SimpleNamespace(type="target", prompt="p2"),
         ]
 
-    def _fake_find_violations(text):
+    def _fake_find_violations(text: str) -> list[dict[str, str]]:
         if "forbidden" in text:
             return [{"type": "forbidden_pattern", "match": "forbidden"}]
         return []
@@ -76,20 +84,22 @@ def test_integrated_qa_pipeline_create_and_validate(monkeypatch) -> None:
 
 def test_real_time_constraint_enforcer_stream_and_validate() -> None:
     class _GraphSession:
-        def __enter__(self):
+        def __enter__(self) -> "_GraphSession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):
-            return False
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
-        def run(self, *_args, **_kwargs):
+        def run(self, *_args: Any, **_kwargs: Any) -> list[dict[str, str]]:
             return [{"content": "duplicate text"}]
 
     class _FakeKG:
         def __init__(self) -> None:
             self._graph = types.SimpleNamespace(session=lambda: _GraphSession())
 
-        def get_constraints_for_query_type(self, *_args, **_kwargs):
+        def get_constraints_for_query_type(
+            self, *_args: Any, **_kwargs: Any
+        ) -> list[dict[str, str]]:
             return [
                 {"type": "prohibition", "pattern": "bad", "description": "no bad words"}
             ]

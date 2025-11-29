@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 import types
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 
@@ -22,7 +22,7 @@ def test_generate_qa_with_all_enhancements(monkeypatch: pytest.MonkeyPatch) -> N
 
     class _FakeImageModule:
         @staticmethod
-        def open(path):
+        def open(path: str) -> _FakeImageObj:
             return _FakeImageObj()
 
     setattr(fake_pil, "Image", _FakeImageModule)
@@ -30,38 +30,38 @@ def test_generate_qa_with_all_enhancements(monkeypatch: pytest.MonkeyPatch) -> N
     sys.modules["PIL.Image"] = _FakeImageModule  # type: ignore[assignment]
 
     class FakeKG:
-        def __init__(self, *_, **__) -> None:
+        def __init__(self, *_: Any, **__: Any) -> None:
             self._graph = None
 
     class FakeAugmenter:
-        def __init__(self, *_, **__) -> None:
+        def __init__(self, *_: Any, **__: Any) -> None:
             pass
 
         def generate_with_augmentation(
-            self, user_query: str, query_type: str, base_context: Dict[str, Any]
+            self, user_query: str, query_type: str, base_context: dict[str, Any]
         ) -> str:
             return "augmented-prompt"
 
     class FakeEnforcer:
-        def __init__(self, *_, **__) -> None:
+        def __init__(self, *_: Any, **__: Any) -> None:
             pass
 
     class FakeAdjuster:
-        def __init__(self, *_, **__) -> None:
+        def __init__(self, *_: Any, **__: Any) -> None:
             pass
 
         def analyze_image_complexity(
-            self, image_meta: Dict[str, Any]
-        ) -> Dict[str, Any]:
+            self, image_meta: dict[str, Any]
+        ) -> dict[str, Any]:
             return {"text_density": 0.5, "has_structure": False, "level": "simple"}
 
         def adjust_query_requirements(
-            self, complexity: Dict[str, Any], query_type: str
-        ) -> Dict[str, Any]:
+            self, complexity: dict[str, Any], query_type: str
+        ) -> dict[str, Any]:
             return {"min_length": 100, "depth": "shallow"}
 
     class FakeValidator:
-        def __init__(self, *_, **__) -> None:
+        def __init__(self, *_: Any, **__: Any) -> None:
             pass
 
         def cross_validate_qa_pair(
@@ -69,28 +69,28 @@ def test_generate_qa_with_all_enhancements(monkeypatch: pytest.MonkeyPatch) -> N
             question: str,
             answer: str,
             query_type: str,
-            image_meta: Dict[str, Any],
-        ) -> Dict[str, Any]:
+            image_meta: dict[str, Any],
+        ) -> dict[str, Any]:
             return {"valid": True, "issues": []}
 
     class FakeExampleSelector:
-        def __init__(self, *_, **__) -> None:
+        def __init__(self, *_: Any, **__: Any) -> None:
             pass
 
         def select_best_examples(
-            self, query_type: str, context: Dict[str, Any], k: int = 3
-        ):
+            self, query_type: str, context: dict[str, Any], k: int = 3
+        ) -> list[dict[str, str]]:
             return [{"example": "ex1"}]
 
     class FakeMultimodal:
-        def __init__(self, *_, **__) -> None:
+        def __init__(self, *_: Any, **__: Any) -> None:
             pass
 
-        def analyze_image_deep(self, image_path: str) -> Dict[str, Any]:
+        def analyze_image_deep(self, image_path: str) -> dict[str, Any]:
             return {"text_density": 0.5, "has_table_chart": False, "path": image_path}
 
     class FakeLLM:
-        def __init__(self, *_, **__) -> None:
+        def __init__(self, *_: Any, **__: Any) -> None:
             pass
 
         def generate(self, prompt: str, role: str = "generator") -> str:
