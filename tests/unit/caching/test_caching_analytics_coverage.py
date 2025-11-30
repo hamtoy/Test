@@ -1,7 +1,6 @@
 """Additional tests for src/caching/analytics.py to improve coverage."""
 
 from pathlib import Path
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest

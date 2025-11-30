@@ -5,15 +5,14 @@ from typing import Any, Dict, List, Optional
 
 from PIL import Image
 
+from src.qa.rag_system import QAKnowledgeGraph
+
 try:
-    import pytesseract as _pytesseract  # noqa: E402
+    import pytesseract as _pytesseract
 except ImportError:
     _pytesseract = None
 
 pytesseract: Optional[Any] = _pytesseract
-
-
-from src.qa.rag_system import QAKnowledgeGraph
 
 
 class MultimodalUnderstanding:

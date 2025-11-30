@@ -28,12 +28,20 @@ from src.workflow.inspection import inspect_answer
 # ============================================================================
 
 logger = logging.getLogger(__name__)
-config = AppConfig()
 
 # 전역 인스턴스 (서버 시작 시 한 번만 초기화)
+_config: Optional[AppConfig] = None
 agent: Optional[GeminiAgent] = None
 kg: Optional[QAKnowledgeGraph] = None
 mm: Optional[MultimodalUnderstanding] = None
+
+
+def get_config() -> AppConfig:
+    """Lazy config initialization to avoid module-level validation errors during testing."""
+    global _config
+    if _config is None:
+        _config = AppConfig()
+    return _config
 
 # 정적 파일 & 템플릿 경로
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -61,7 +69,7 @@ templates = Jinja2Templates(directory=str(REPO_ROOT / "templates" / "web"))
 
 def load_ocr_text() -> str:
     """data/inputs/input_ocr.txt 로드"""
-    ocr_path = config.input_dir / "input_ocr.txt"
+    ocr_path = get_config().input_dir / "input_ocr.txt"
     if not ocr_path.exists():
         raise HTTPException(status_code=404, detail="OCR 파일이 없습니다.")
     return ocr_path.read_text(encoding="utf-8").strip()
@@ -69,7 +77,7 @@ def load_ocr_text() -> str:
 
 def save_ocr_text(text: str) -> None:
     """OCR 텍스트 저장 (이미지 분석 후)"""
-    ocr_path = config.input_dir / "input_ocr.txt"
+    ocr_path = get_config().input_dir / "input_ocr.txt"
     ocr_path.parent.mkdir(parents=True, exist_ok=True)
     ocr_path.write_text(text, encoding="utf-8")
 
@@ -77,6 +85,7 @@ def save_ocr_text(text: str) -> None:
 async def init_resources() -> None:
     """전역 리소스 초기화 (서버 시작 시 호출)"""
     global agent, kg, mm
+    config = get_config()
 
     if agent is None:
         from jinja2 import Environment, FileSystemLoader
@@ -428,7 +437,7 @@ async def api_analyze_image(file: UploadFile = File(...)) -> Dict[str, Any]:
         raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
 
     # 임시 저장
-    temp_dir = config.input_dir / "temp"
+    temp_dir = get_config().input_dir / "temp"
     temp_dir.mkdir(parents=True, exist_ok=True)
     temp_path = temp_dir / (file.filename or "uploaded_image")
 
