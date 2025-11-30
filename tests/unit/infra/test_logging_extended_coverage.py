@@ -21,25 +21,19 @@ from src.infra.logging import (
 class TestGetLogLevel:
     """Tests for get_log_level function."""
 
-    def test_development_returns_debug(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_development_returns_debug(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test development environment returns DEBUG level."""
         monkeypatch.setenv("ENVIRONMENT", "development")
         monkeypatch.delenv("LOG_LEVEL_OVERRIDE", raising=False)
         assert get_log_level() == logging.DEBUG
 
-    def test_staging_returns_info(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_staging_returns_info(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test staging environment returns INFO level."""
         monkeypatch.setenv("ENVIRONMENT", "staging")
         monkeypatch.delenv("LOG_LEVEL_OVERRIDE", raising=False)
         assert get_log_level() == logging.INFO
 
-    def test_production_returns_warning(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_production_returns_warning(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test production environment returns WARNING level."""
         monkeypatch.setenv("ENVIRONMENT", "production")
         monkeypatch.delenv("LOG_LEVEL_OVERRIDE", raising=False)
@@ -53,17 +47,13 @@ class TestGetLogLevel:
         monkeypatch.delenv("LOG_LEVEL_OVERRIDE", raising=False)
         assert get_log_level() == logging.INFO
 
-    def test_log_level_override(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_log_level_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test LOG_LEVEL_OVERRIDE takes precedence."""
         monkeypatch.setenv("ENVIRONMENT", "production")
         monkeypatch.setenv("LOG_LEVEL_OVERRIDE", "DEBUG")
         assert get_log_level() == logging.DEBUG
 
-    def test_log_level_override_invalid(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_log_level_override_invalid(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test invalid LOG_LEVEL_OVERRIDE falls back to environment."""
         monkeypatch.setenv("ENVIRONMENT", "production")
         monkeypatch.setenv("LOG_LEVEL_OVERRIDE", "INVALID_LEVEL")

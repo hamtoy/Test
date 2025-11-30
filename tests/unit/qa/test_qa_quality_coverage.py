@@ -147,9 +147,7 @@ class TestIntegratedQualitySystem:
             quality_module.MultimodalUnderstanding = orig_multimodal
             quality_module.GeminiModelClient = orig_llm
 
-    def test_generate_qa_with_all_enhancements(
-        self, mock_pytesseract: None
-    ) -> None:
+    def test_generate_qa_with_all_enhancements(self, mock_pytesseract: None) -> None:
         """Test generate_qa_with_all_enhancements method."""
         import src.qa.quality as quality_module
 
@@ -258,9 +256,7 @@ class TestIntegratedQualitySystem:
             quality_module.MultimodalUnderstanding = orig_multimodal
             quality_module.GeminiModelClient = orig_llm
 
-    def test_generate_qa_with_summary_query_type(
-        self, mock_pytesseract: None
-    ) -> None:
+    def test_generate_qa_with_summary_query_type(self, mock_pytesseract: None) -> None:
         """Test generate_qa_with_all_enhancements with summary query type."""
         import src.qa.quality as quality_module
 
