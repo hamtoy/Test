@@ -66,4 +66,31 @@ class CacheTTLPolicy:
         return {prefix: int(ttl) for prefix, ttl in cls._PREFIX_MAP.items()}
 
 
-__all__ = ["CacheTTL", "CacheTTLPolicy"]
+def calculate_ttl_by_token_count(token_count: int) -> int:
+    """토큰 수에 따른 동적 TTL 계산
+
+    토큰 수가 많을수록 캐시 가치가 높으므로 TTL을 늘립니다.
+
+    Args:
+        token_count: 캐싱할 컨텐츠의 토큰 수
+
+    Returns:
+        TTL 초 단위
+
+    Examples:
+        >>> calculate_ttl_by_token_count(3000)
+        300
+        >>> calculate_ttl_by_token_count(7000)
+        600
+        >>> calculate_ttl_by_token_count(15000)
+        1800
+    """
+    if token_count < 5000:
+        return 5 * 60  # 5분
+    elif token_count < 10000:
+        return 10 * 60  # 10분
+    else:
+        return 30 * 60  # 30분
+
+
+__all__ = ["CacheTTL", "CacheTTLPolicy", "calculate_ttl_by_token_count"]

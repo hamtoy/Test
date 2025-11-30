@@ -7,6 +7,9 @@ __all__ = [
     "analyze_cache_stats",
     "print_cache_report",
     "RedisEvalCache",
+    "CacheTTL",
+    "CacheTTLPolicy",
+    "calculate_ttl_by_token_count",
 ]
 
 
@@ -28,4 +31,17 @@ def __getattr__(name: str) -> Any:
         from src.caching.redis_cache import RedisEvalCache
 
         return RedisEvalCache
+    elif name in ("CacheTTL", "CacheTTLPolicy", "calculate_ttl_by_token_count"):
+        from src.caching.ttl_policy import (
+            CacheTTL,
+            CacheTTLPolicy,
+            calculate_ttl_by_token_count,
+        )
+
+        if name == "CacheTTL":
+            return CacheTTL
+        elif name == "CacheTTLPolicy":
+            return CacheTTLPolicy
+        else:
+            return calculate_ttl_by_token_count
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

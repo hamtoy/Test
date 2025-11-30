@@ -1,23 +1,29 @@
 import json
-import re
+import logging
 import os
+import re
+import sys
+
 from openai import OpenAI
 
 # ==========================================
 # 0. 설정 및 프롬프트 로드
 # ==========================================
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
+
 QUERY_COUNT = 4  # 3 또는 4로 설정
 
 # API Client Setup
 api_key = os.environ.get("GEMINI_API_KEY")
 if not api_key:
-    print("Warning: GEMINI_API_KEY environment variable not found.")
+    logger.warning("GEMINI_API_KEY environment variable not found.")
     # You might want to handle this more gracefully or try OPENAI_API_KEY
     api_key = os.environ.get("OPENAI_API_KEY")
 
 if not api_key:
-    print("Error: No API Key found. Please set GEMINI_API_KEY.")
-    exit()
+    logger.error("No API Key found. Please set GEMINI_API_KEY.")
+    sys.exit(1)
 
 client = OpenAI(
     api_key=api_key, base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
@@ -30,8 +36,8 @@ try:
     with open("답변 생성 - 복사본.txt", "r", encoding="utf-8") as f:
         SYSTEM_PROMPT_ANSWER = f.read()
 except FileNotFoundError:
-    print("오류: 프롬프트 파일(.txt)을 찾을 수 없습니다.")
-    exit()
+    logger.error("오류: 프롬프트 파일(.txt)을 찾을 수 없습니다.")
+    sys.exit(1)
 
 # 테스트용 OCR 텍스트 (사용자님의 예시 텍스트)
 ocr_text = """
@@ -75,11 +81,11 @@ def call_llm(system_prompt: str, user_prompt: str) -> str:
         content = response.choices[0].message.content or ""
         return str(content)
     except Exception as e:  # noqa: BLE001
-        print(f"LLM 호출 오류: {e}")
+        logger.error("LLM 호출 오류: %s", e)
         return ""
 
 
-print(f"--- [Step 1] 질의 생성 시작 ({QUERY_COUNT}개 모드) ---")
+logger.info("--- [Step 1] 질의 생성 시작 (%d개 모드) ---", QUERY_COUNT)
 
 # 질의 생성 요청
 query_user_message = f"""
@@ -95,8 +101,8 @@ query_user_message = f"""
 raw_questions = call_llm(SYSTEM_PROMPT_QUERY, query_user_message)
 
 if not raw_questions:
-    print("질의 생성 실패")
-    exit()
+    logger.error("질의 생성 실패")
+    sys.exit(1)
 
 # 결과 파싱 (1. 2. 같은 번호 제거하고 리스트로 변환)
 questions = []
@@ -115,18 +121,18 @@ for line in raw_questions.strip().split("\n"):
         if clean_line.strip():  # Ensure not empty after cleaning
             questions.append(clean_line)
 
-print(f"생성된 질의: {questions}")
+logger.info("생성된 질의: %s", questions)
 
 
 # ==========================================
 # 2. 답변 생성 (Answer Generation)
 # ==========================================
-print("\n--- [Step 2] 답변 생성 시작 ---")
+logger.info("--- [Step 2] 답변 생성 시작 ---")
 
 qa_pairs = []
 
 for idx, question in enumerate(questions):
-    print(f"처리 중... ({idx + 1}/{len(questions)}): {question}")
+    logger.info("처리 중... (%d/%d): %s", idx + 1, len(questions), question)
 
     answer_user_message = f"""
     <input_text>
@@ -149,7 +155,7 @@ output_filename = f"qa_result_{QUERY_COUNT}pairs.json"
 with open(output_filename, "w", encoding="utf-8") as f:
     json.dump(qa_pairs, f, ensure_ascii=False, indent=2)
 
-print(f"\n완료! '{output_filename}'에 저장되었습니다.")
+logger.info("완료! '%s'에 저장되었습니다.", output_filename)
 
 # Markdown 저장
 output_md_filename = f"qa_result_{QUERY_COUNT}pairs.md"
@@ -160,4 +166,4 @@ with open(output_md_filename, "w", encoding="utf-8") as f:
         f.write(f"{item['answer']}\n\n")
         f.write("---\n\n")
 
-print(f"완료! '{output_md_filename}'에 저장되었습니다.")
+logger.info("완료! '%s'에 저장되었습니다.", output_md_filename)

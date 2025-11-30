@@ -212,23 +212,16 @@ def test_list_models_exits_without_key(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     monkeypatch.setitem(sys.modules, "google.generativeai", fake_genai)
 
-    captured = []
-    monkeypatch.setattr(
-        builtins,
-        "print",
-        lambda *args, **kwargs: captured.append(" ".join(map(str, args))),
-    )
-    monkeypatch.setattr(
-        builtins, "exit", lambda code=0: captured.append(f"exit:{code}")
-    )
-
     sys.modules.pop("src.list_models", None)
     sys.modules.pop("src.llm.list_models", None)
-    import src.llm.list_models as lm
 
-    importlib.reload(lm)
-    assert any("No API key" in msg for msg in captured)
-    assert any(msg.endswith("exit:1") or msg == "exit:1" for msg in captured)
+    # The module uses sys.exit(1) when no API key is found
+    with pytest.raises(SystemExit) as exc_info:
+        import src.llm.list_models as lm
+
+        importlib.reload(lm)
+
+    assert exc_info.value.code == 1
 
 
 def test_dynamic_example_selector_no_graph_returns_empty(

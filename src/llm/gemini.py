@@ -169,6 +169,10 @@ class GeminiModelClient:
 
 
 if __name__ == "__main__":
+    import logging
+
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
     client = GeminiModelClient()
     sample = client.generate("간단한 테스트 문장을 생성해 주세요.")
-    print(sample)
+    logger.info("Generated sample: %s", sample)
