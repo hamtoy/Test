@@ -1,0 +1,4084 @@
+{
+  "lastSnapshot": {
+    "generatedAt": "2025-11-30T17:30:20.858Z",
+    "rootPath": "c:\\shining-quasar",
+    "projectName": "shining-quasar",
+    "filesCount": 720,
+    "dirsCount": 102,
+    "languageStats": {
+      "py": 363,
+      "md": 58,
+      "html": 37,
+      "js": 23,
+      "json": 16,
+      "yml": 13,
+      "css": 9,
+      "sh": 4,
+      "ps1": 2,
+      "yaml": 1
+    },
+    "mainConfigFiles": {
+      "otherConfigs": [
+        ".env.example",
+        "pyproject.toml"
+      ],
+      "dockerCompose": true
+    },
+    "importantFiles": [],
+    "fileList": [
+      "vulture_whitelist.py",
+      "UV_GUIDE.md",
+      "tests/__init__.py",
+      "tests/unit/__init__.py",
+      "tests/unit/workflow/__init__.py",
+      "tests/unit/workflow/test_workflow_processor.py",
+      "tests/unit/workflow/test_workflow_execution.py",
+      "tests/unit/workflow/test_edit_workflow.py",
+      "tests/unit/workflow/test_chunk_processor.py",
+      "tests/unit/web/__init__.py",
+      "tests/unit/web/test_web_models.py",
+      "tests/unit/web/test_web_api_coverage.py",
+      "tests/unit/web/test_web_api.py",
+      "tests/unit/web/test_dashboard.py",
+      "tests/unit/utils/__init__.py",
+      "tests/unit/utils/test_utils_more.py",
+      "tests/unit/utils/test_utils_coverage.py",
+      "tests/unit/utils/test_utils_additional.py",
+      "tests/unit/utils/test_utils.py",
+      "tests/unit/utils/test_logging_setup.py",
+      "tests/unit/utils/test_logging_metrics.py",
+      "tests/unit/utils/test_latency_baseline.py",
+      "tests/unit/ui/__init__.py",
+      "tests/unit/ui/test_ui_comprehensive_coverage.py",
+      "tests/unit/ui/test_interactive_menu_more_coverage.py",
+      "tests/unit/ui/test_interactive_menu_coverage.py",
+      "tests/unit/ui/test_ui_panels_coverage.py",
+      "tests/unit/qa/test_qa_rag_extended.py",
+      "tests/unit/llm/__init__.py",
+      "tests/unit/llm/test_mcts_optimizer.py",
+      "tests/unit/main/__init__.py",
+      "tests/unit/llm/test_gemini_types_coverage.py",
+      "tests/unit/migration/test_migrate_imports.py",
+      "tests/unit/main/test_main_integration.py",
+      "tests/unit/migration/test_enhanced_deprecation.py",
+      "tests/unit/misc/__init__.py",
+      "tests/unit/llm/test_gemini_model_client_metrics.py",
+      "tests/unit/main/test_main_coverage.py",
+      "tests/unit/misc/test_src_init_coverage.py",
+      "tests/unit/processing/__init__.py",
+      "tests/unit/main/test_coverage_improvement.py",
+      "tests/unit/misc/test_security.py",
+      "tests/unit/migration/test_deprecation_warnings.py",
+      "tests/unit/llm/test_gemini_model_client_eval_rewrite.py",
+      "tests/unit/misc/test_scripts_coverage.py",
+      "tests/unit/main/test_coverage_expansion.py",
+      "tests/unit/qa/__init__.py",
+      "tests/unit/misc/test_promote_rules_coverage.py",
+      "tests/unit/processing/test_templates_render.py",
+      "tests/unit/misc/test_plugins.py",
+      "tests/unit/llm/test_gemini_coverage_additional.py",
+      "tests/unit/misc/test_pipeline_coverage.py",
+      "tests/unit/qa/test_qa_systems_coverage.py",
+      "tests/unit/migration/test_deprecation_stats.py",
+      "tests/unit/main/test_coverage_branches_additional.py",
+      "tests/unit/qa/test_qa_rag_vector.py",
+      "tests/unit/misc/test_package_init_coverage.py",
+      "tests/unit/processing/test_loader_coverage.py",
+      "tests/unit/misc/test_new_import_paths.py",
+      "tests/unit/main/test_main_more_coverage.py",
+      "tests/unit/qa/test_qa_rag_system_extra.py",
+      "tests/unit/misc/test_modular_arch.py",
+      "tests/unit/misc/test_io_and_checkpoint.py",
+      "tests/unit/qa/test_qa_rag_system.py",
+      "tests/unit/llm/test_gemini_client_coverage.py",
+      "tests/unit/processing/test_data_loader_validation.py",
+      "tests/unit/llm/test_chain_systems.py",
+      "tests/unit/monitoring/__init__.py",
+      "tests/unit/processing/test_data_loader.py",
+      "tests/unit/qa/test_qa_quality_coverage.py",
+      "tests/unit/qa/test_qa_factory.py",
+      "tests/unit/infra/__init__.py",
+      "tests/unit/infra/test_worker_process.py",
+      "tests/unit/monitoring/test_monitoring_metrics_coverage.py",
+      "tests/unit/infra/test_logging_extended_coverage.py",
+      "tests/unit/misc/test_external_eval.py",
+      "tests/unit/infra/test_health_coverage.py",
+      "tests/unit/monitoring/test_inspection_feature.py",
+      "tests/unit/infra/test_health_check_extended.py",
+      "tests/unit/infra/test_health_check.py",
+      "tests/unit/infra/test_dependency_injection.py",
+      "tests/unit/infra/test_budget_qarag_worker.py",
+      "tests/unit/llm/test_lats_searcher.py",
+      "tests/unit/migration/__init__.py",
+      "tests/unit/analysis/test_context_augmentation_extended.py",
+      "tests/unit/agent/test_agent_more_coverage.py",
+      "tests/unit/features/__init__.py",
+      "tests/unit/core/__init__.py",
+      "tests/unit/agent/test_agent_extended.py",
+      "tests/unit/features/test_template_safety.py",
+      "tests/unit/analysis/test_context_augmentation_coverage.py",
+      "tests/unit/core/test_type_aliases_coverage.py",
+      "tests/unit/features/test_template_generator_coverage.py",
+      "tests/unit/agent/test_agent_errors_remaining.py",
+      "tests/unit/config/__init__.py",
+      "tests/unit/analysis/test_analysis_coverage.py",
+      "tests/unit/features/test_self_improvement.py",
+      "tests/unit/agent/test_agent_rate_limit.py",
+      "tests/unit/agent/test_agent_cost_logging.py",
+      "tests/unit/analysis/test_advanced_context_augmentation_more.py",
+      "tests/unit/features/test_multimodal_extended.py",
+      "tests/unit/agent/test_agent_cache.py",
+      "tests/unit/agent/test_agent_budget.py",
+      "tests/unit/analysis/test_advanced_context_augmentation.py",
+      "tests/unit/analytics/__init__.py",
+      "tests/unit/features/test_feature_flags.py",
+      "tests/unit/core/test_schemas_coverage.py",
+      "tests/unit/config/test_config_validator_coverage.py",
+      "tests/unit/agent/test_agent_additional.py",
+      "tests/unit/core/test_models.py",
+      "tests/unit/analysis/test_hybrid_optimizer.py",
+      "tests/unit/features/test_dynamic_template_generator.py",
+      "tests/unit/analytics/test_analytics_init_coverage.py",
+      "tests/unit/agent/test_agent.py",
+      "tests/unit/config/test_config_validation.py",
+      "tests/unit/features/test_data2neo_extractor.py",
+      "tests/unit/core/test_core_adapters.py",
+      "tests/unit/features/test_adaptive_limiter.py",
+      "tests/unit/features/test_adaptive_difficulty.py",
+      "tests/unit/agent/test_agent_resilience.py",
+      "tests/unit/features/test_ab_test.py",
+      "tests/test_web_api.py",
+      "tests/unit/agent/__init__.py",
+      "tests/unit/analysis/__init__.py",
+      "tests/unit/agent/test_edge_cases.py",
+      "tests/unit/analysis/test_semantic_analysis_exceptions.py",
+      "tests/unit/agent/test_batch_processor.py",
+      "tests/unit/analysis/test_semantic_analysis.py",
+      "tests/custom_types.py",
+      "tests/conftest.py",
+      "tests/e2e/test_full_workflow.py",
+      "tests/unit/caching/test_caching_analytics_coverage.py",
+      "tests/unit/caching/test_cache_ttl_policy.py",
+      "tests/e2e/conftest.py",
+      "tests/unit/caching/test_cache_threshold.py",
+      "tests/unit/caching/test_cache_stats.py",
+      "tests/unit/caching/test_cache_analytics_additional.py",
+      "tests/unit/caching/test_cache_analytics.py",
+      "tests/integration/__init__.py",
+      "tests/integration/test_integration.py",
+      "tests/unit/caching/test_redis_cache_coverage.py",
+      "tests/unit/caching/test_realtime_analytics.py",
+      "static/app.js",
+      "tests/unit/caching/test_caching_layer_coverage.py",
+      "templates/base_system.j2",
+      "tests/unit/caching/test_caching_layer.py",
+      "tests/e2e/__init__.py",
+      "tests/unit/caching/test_caching_init_coverage.py",
+      "tests/integration/test_integrated_quality_system_integration.py",
+      "tests/unit/caching/__init__.py",
+      "static/style.css",
+      "templates/entity_extraction_user.j2",
+      "templates/prompt_eval.j2",
+      "templates/prompt_entity_extraction.j2",
+      "scripts/backup.ps1",
+      "src/cli.py",
+      "scripts/backup.py",
+      "templates/prod/ocr_default.j2",
+      "src/__init__.py",
+      "src/core/models.py",
+      "src/_deprecation.py",
+      "src/core/interfaces.py",
+      "scripts/count_rels.py",
+      "src/caching/__init__.py",
+      "src/processing/example_selector.py",
+      "src/core/schemas.py",
+      "src/processing/context_augmentation.py",
+      "src/core/py.typed",
+      "scripts/daily_improvement_check.sh",
+      "src/core/factory.py",
+      "scripts/count_mappings.py",
+      "src/caching/ttl_policy.py",
+      "src/core/type_aliases.py",
+      "src/processing/loader.py",
+      "scripts/debug_descendants.py",
+      "src/core/adapters.py",
+      "src/processing/py.typed",
+      "scripts/compare_runs.py",
+      "scripts/dump_block.py",
+      "scripts/dev_startup.sh",
+      "scripts/deprecation_stats.py",
+      "scripts/debug_rules.py",
+      "src/processing/__init__.py",
+      "scripts/enforce_type_hints.py",
+      "scripts/debug_order.py",
+      "src/processing/template_generator.py",
+      "scripts/debug_headings.py",
+      "src/core/__init__.py",
+      "src/caching/redis_cache.py",
+      "src/automation/__init__.py",
+      "scripts/compare_profiles.py",
+      "src/automation/py.typed",
+      "src/caching/py.typed",
+      "src/caching/layer.py",
+      "scripts/check_test_types.py",
+      "src/automation/promote_rules.py",
+      "scripts/estimate_cost.py",
+      "src/caching/analytics.py",
+      "src/qa/factory.py",
+      "scripts/latency_baseline.py",
+      "src/routing/py.typed",
+      "src/qa/ab_test.py",
+      "scripts/interactive_migration_wizard.py",
+      "src/routing/graph_router.py",
+      "scripts/import_qa_examples.py",
+      "src/workflow/__init__.py",
+      "src/workflow/py.typed",
+      "src/workflow/processor.py",
+      "src/routing/__init__.py",
+      "src/workflow/mcts_optimizer.py",
+      "src/web/__init__.py",
+      "src/workflow/inspection.py",
+      "scripts/manage_flags.py",
+      "src/web/py.typed",
+      "src/workflow/hybrid_optimizer.py",
+      "src/web/models.py",
+      "src/ui/__init__.py",
+      "src/qa/generator.py",
+      "src/web/api.py",
+      "scripts/generate_mappings_code.py",
+      "src/workflow/external_eval.py",
+      "src/ui/py.typed",
+      "src/workflow/executor.py",
+      "src/ui/panels.py",
+      "scripts/generate_architecture_diagram.py",
+      "src/ui/interactive_menu.py",
+      "src/workflow/edit.py",
+      "scripts/fix_mypy_level1.py",
+      "src/workflow/context.py",
+      "scripts/fetch_ids.py",
+      "src/workflow/chunk_processor.py",
+      "scripts/export_for_mapping.py",
+      "scripts/check_no_type_check.py",
+      "scripts/measure_strict_baseline.py",
+      "src/py.typed",
+      "scripts/check_mypy_progress.ps1",
+      "scripts/check_mypy_baseline.py",
+      "src/qa/memory_augmented.py",
+      "scripts/migrate_imports.py",
+      "scripts/check_missing_stubs.py",
+      "src/main.py",
+      "scripts/check_deprecated_imports.py",
+      "src/qa/py.typed",
+      "scripts/neo4j_benchmark_stub.py",
+      "src/qa/pipeline.py",
+      "src/qa/multi_agent.py",
+      "templates/user/text_image_qa_target_user.j2",
+      "scripts/remove_shims_v3.py",
+      "src/plugins/base.py",
+      "scripts/queue_producer.py",
+      "scripts/pre-push-check.sh",
+      "scripts/ocr_producer.py",
+      "src/qa/__init__.py",
+      "scripts/ocr_extraction.py",
+      "src/qa/rag_system.py",
+      "src/qa/quality.py",
+      "scripts/render_prompt.py",
+      "scripts/cache_warming.py",
+      "templates/user/text_image_qa_generic_user.j2",
+      "src/llm/__init__.py",
+      "src/infra/budget.py",
+      "scripts/suggest_mappings.py",
+      "src/llm/py.typed",
+      "src/llm/list_models.py",
+      "scripts/show_mappings.py",
+      "src/infra/adaptive_limiter.py",
+      "src/llm/lcel_chain.py",
+      "src/plugins/__init__.py",
+      "scripts/run_pipeline.py",
+      "src/llm/langchain_system.py",
+      "src/plugins/loader.py",
+      "src/llm/gemini_types.py",
+      "scripts/run_hybrid_optimizer.py",
+      "src/infra/constraints.py",
+      "scripts/track_mypy_progress.py",
+      "src/infra/callbacks.py",
+      "scripts/track_deprecations.py",
+      "src/monitoring/__init__.py",
+      "src/llm/gemini.py",
+      "src/monitoring/metrics.py",
+      "scripts/run_ab_test.py",
+      "scripts/build_session.py",
+      "scripts/weekly_report.sh",
+      "src/infra/logging.py",
+      "src/infra/health.py",
+      "scripts/verify_v3_readiness.py",
+      "src/infra/feature_flags.py",
+      "scripts/verify_counts.py",
+      "scripts/benchmark.py",
+      "src/graph/schema.py",
+      "src/infra/py.typed",
+      "src/graph/py.typed",
+      "src/infra/neo4j_optimizer.py",
+      "src/infra/utils.py",
+      "src/graph/mappings.py",
+      "src/graph/entities.py",
+      "src/graph/data2neo_extractor.py",
+      "src/infra/neo4j.py",
+      "src/graph/builder.py",
+      "scripts/__init__.py",
+      "scripts/auto_profile.py",
+      "templates/fact/text_image_qa_fact_check.j2",
+      "src/features/autocomplete.py",
+      "src/features/action_executor.py",
+      "src/infra/__init__.py",
+      "src/plugins/builtin/__init__.py",
+      "src/infra/worker.py",
+      "src/plugins/builtin/example.py",
+      "src/graph/__init__.py",
+      "scripts/apply_all_mappings.py",
+      "src/features/data2neo_extractor.py",
+      "src/config/constants.py",
+      "scripts/analyze_logs.py",
+      "src/features/difficulty.py",
+      "src/config/exceptions.py",
+      "src/analytics/__init__.py",
+      "src/features/__init__.py",
+      "src/analysis/cross_validation.py",
+      "src/analytics/py.typed",
+      "src/features/self_improvement.py",
+      "src/analytics/dashboard.py",
+      "src/config/__init__.py",
+      "src/features/self_correcting.py",
+      "src/config/validator.py",
+      "src/features/py.typed",
+      "src/features/multimodal.py",
+      "src/config/settings.py",
+      "src/features/lats.py",
+      "src/config/py.typed",
+      "src/analysis/document_compare.py",
+      "templates/rewrite_user.j2",
+      "stubs/langchain/__init__.pyi",
+      "templates/web/workspace.html",
+      "src/agent/py.typed",
+      "src/agent/cost_tracker.py",
+      "templates/web/qa.html",
+      "templates/web/multimodal.html",
+      "src/agent/core.py",
+      "templates/web/layout.html",
+      "src/agent/cache_manager.py",
+      "templates/web/eval.html",
+      "src/analysis/__init__.py",
+      "src/agent/batch_processor.py",
+      "src/analysis/semantic.py",
+      "src/analysis/py.typed",
+      "src/agent/rate_limiter.py",
+      "templates/query_gen_user.j2",
+      "templates/prompt_rewrite.j2",
+      "templates/prompt_query_gen.j2",
+      "src/agent/__init__.py",
+      "stubs/langchain/callbacks/base.pyi",
+      "templates/system/text_image_qa_reasoning_system.j2",
+      "templates/system/text_image_qa_global_system.j2",
+      "templates/rewrite/text_image_qa_rewrite_system.j2",
+      "templates/system/text_image_qa_explanation_system.j2",
+      "run_web.py",
+      "run.bat",
+      "templates/system/text_image_qa_summary_system.j2",
+      "stubs/langchain/callbacks/__init__.pyi",
+      "README.md",
+      "pyproject.toml",
+      "PHASE_4_MYPY_COMPLETE.md",
+      "PHASE_3D_COMPLETE.md",
+      "NEXT_SESSION.md",
+      "templates/experiments/ocr_v2_concise.j2",
+      "templates/eval/text_image_qa_compare_eval.j2",
+      "mypy_analysis.md",
+      "MIGRATION.md",
+      "templates/experiments/ocr_v3_structured.j2",
+      "profiling_results/src.main_stats.prof",
+      "examples/context_calc_used.json",
+      "Redis-x64-5.0.14.1/EventLog.dll",
+      "notion-neo4j-graph/.python-version",
+      "docs/API.md",
+      "Redis-x64-5.0.14.1/redis-check-aof.pdb",
+      "examples/session_input_with_table.json",
+      "Redis-x64-5.0.14.1/redis-check-aof.exe",
+      "examples/session_input_low_density.json",
+      "docs/ADVANCED_FEATURES.md",
+      "Redis-x64-5.0.14.1/redis-benchmark.pdb",
+      "Redis-x64-5.0.14.1/redis-benchmark.exe",
+      "Redis-x64-5.0.14.1/README.txt",
+      "examples/sample_image_meta.json",
+      "examples/context_table.json",
+      "examples/context_low_text.json",
+      "notion-neo4j-graph/.env",
+      "docs/ARCHITECTURE.md",
+      "examples/session_input.json",
+      "notion-neo4j-graph/compare_documents.py",
+      "profiling_results/src.gemini_model_client_stats.prof",
+      "experiments/__init__.py",
+      "experiments/runner.py",
+      "experiments/ab_testing.py",
+      "Redis-x64-5.0.14.1/00-RELEASENOTES",
+      "Dockerfile",
+      "docker-compose.yml",
+      "docker-compose.worker.yml",
+      "DEPRECATION.md",
+      "DEPLOYMENT_VERIFIED.md",
+      "docs/architecture/ocr_workflow.md",
+      "docs/Makefile",
+      "notion-neo4j-graph/verify_topics.py",
+      "docs/architecture/error_handling.md",
+      "docs/architecture/system_architecture.md",
+      "docs/MYPY_LEVEL2_BEST_PRACTICES.md",
+      "docs/MONITORING.md",
+      "Redis-x64-5.0.14.1/RELEASENOTES.txt",
+      "docs/modules.rst",
+      "docs/architecture/rag_system.md",
+      "docs/make.bat",
+      "notion-neo4j-graph/verify_import.py",
+      "docs/PRINCIPLES_REVIEW.md",
+      "docs/README_FULL.md",
+      "docs/MYPY_STRICT_GUIDE.md",
+      "docs/MYPY_LEVEL3_REPORT.md",
+      "docs/index.rst",
+      "notion-neo4j-graph/test_notion_connection.py",
+      "docs/architecture/data_flow.md",
+      "devplan/Project_Improvement_Exploration_Report.md",
+      "docs/IMPROVEMENT_PROPOSAL.md",
+      "docs/guide_mapping.md",
+      "Redis-x64-5.0.14.1/redis.windows.conf",
+      "devplan/Project_Evaluation_Report.md",
+      "docs/GOpt_Integration_Report.md",
+      "Redis-x64-5.0.14.1/redis.windows-service.conf",
+      "docs/architecture/component_dependencies.md",
+      "docs/GETTING_STARTED.md",
+      "notion-neo4j-graph/test_neo4j_connection.py",
+      "docs/architecture/caching_strategy.md",
+      "docs/SECURITY.md",
+      "Redis-x64-5.0.14.1/redis-server.pdb",
+      "notion-neo4j-graph/test_all_connections.py",
+      "docs/ENVIRONMENT_SETUP.md",
+      "notion-neo4j-graph/semantic_analysis.py",
+      "Redis-x64-5.0.14.1/redis-server.exe",
+      "docs/Data2Neo_Integration_Report.md",
+      "notion-neo4j-graph/README.md",
+      "Redis-x64-5.0.14.1/redis-cli.pdb",
+      "docs/CONTRIBUTING.md",
+      "Redis-x64-5.0.14.1/redis-cli.exe",
+      "docs/CONFIGURATION.md",
+      "docs/src.rst",
+      "Redis-x64-5.0.14.1/redis-check-rdb.pdb",
+      "docs/conf.py",
+      "notion-neo4j-graph/pyproject.toml",
+      "docs/CACHING.md",
+      "Redis-x64-5.0.14.1/redis-check-rdb.exe",
+      "notion-neo4j-graph/main.py",
+      "docs/BREAKING_CHANGES_v3.md",
+      "notion-neo4j-graph/import_pipeline.py",
+      "docs/BRANCH_CLEANUP_STATUS.md",
+      "CONTRIBUTING.md",
+      "data/queue_results/results.jsonl",
+      "docs/V3_SHIM_REMOVAL_ISSUE.md",
+      "docs/update_log.md",
+      "docs/TROUBLESHOOTING.md",
+      "data/outputs/edited_20251130_152026.md",
+      "docs/examples/basic_usage.py",
+      "data/outputs/checkpoint.jsonl",
+      "data/inputs/notion_sample_ocr.txt",
+      "data/outputs/result_turn_1_20251130_041500.md",
+      "data/outputs/result_turn_1_20251128_191837.md",
+      "docs/_build/genindex.html",
+      "data/outputs/result_turn_1_20251128_181215.md",
+      "docs/_build/modules.html",
+      "data/outputs/result_turn_1_20251130_041744.md",
+      "data/outputs/result_turn_1_20251130_042552.md",
+      "docs/_build/index.html",
+      "configs/production.env",
+      "checks/check_neo4j_rules.py",
+      "docs/_build/src.html",
+      "docs/_build/searchindex.js",
+      "docs/_build/html/.buildinfo",
+      "docs/_build/html/search.html",
+      "docs/_build/_modules/re.html",
+      "docs/_build/html/py-modindex.html",
+      "docs/_build/_modules/index.html",
+      "docs/_build/html/objects.inv",
+      "docs/_build/html/modules.html",
+      "docs/_build/.doctrees/src.doctree",
+      "data/outputs/review_logs/review_2025-11-30.jsonl",
+      "docs/_build/html/searchindex.js",
+      "docs/_build/_sources/index.rst.txt",
+      "docs/_build/_static/doctools.js",
+      "docs/_build/_sources/modules.rst.txt",
+      "docs/_build/_static/documentation_options.js",
+      "docs/_build/_static/file.png",
+      "docs/_build/_static/language_data.js",
+      "docs/_build/_static/css/theme.css",
+      "docs/_build/html/_static/doctools.js",
+      "docs/_build/_modules/src/data_loader.html",
+      "docs/_build/_modules/src/logging_setup.html",
+      "docs/_build/_static/js/theme.js",
+      "docs/_build/_modules/src/exceptions.html",
+      "docs/_build/_static/js/badge_only.js",
+      "docs/_build/html/_static/jquery.js",
+      "docs/_build/_modules/src/main.html",
+      "docs/_build/_static/js/versions.js",
+      "docs/_build/html/_static/pygments.css",
+      "docs/_build/html/_static/plus.png",
+      "docs/_build/html/_static/minus.png",
+      "docs/_build/_modules/src/utils.html",
+      "docs/_build/html/_static/language_data.js",
+      "docs/_build/_modules/src/models.html",
+      "docs/_build/html/_static/file.png",
+      "docs/_build/_modules/src/constants.html",
+      "docs/_build/html/_static/documentation_options.js",
+      "docs/_build/html/_static/_sphinx_javascript_frameworks_compat.js",
+      "docs/_build/html/_static/sphinx_highlight.js",
+      "docs/_build/html/_static/searchtools.js",
+      "docs/_build/_modules/src/config.html",
+      "docs/_build/_modules/src/cache_analytics.html",
+      "docs/_build/html/_static/js/badge_only.js",
+      "docs/_build/_static/fonts/Lato/lato-bold.ttf",
+      "docs/_build/_static/fonts/Lato/lato-bold.eot",
+      "docs/_build/_static/fonts/Lato/lato-italic.ttf",
+      "docs/_build/_static/fonts/Lato/lato-italic.eot",
+      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-bold.ttf",
+      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-bold.eot",
+      "docs/_build/_static/fonts/Lato/lato-bolditalic.woff2",
+      "docs/_build/_static/fonts/Lato/lato-bolditalic.woff",
+      "docs/_build/_static/fonts/Lato/lato-bolditalic.ttf",
+      "docs/_build/html/_static/js/versions.js",
+      "docs/_build/_static/fonts/Lato/lato-bolditalic.eot",
+      "docs/_build/_static/fonts/Lato/lato-bold.woff2",
+      "docs/_build/html/_static/css/badge_only.css",
+      "docs/_build/html/_static/js/theme.js",
+      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-bold.woff",
+      "docs/_build/_static/fonts/Lato/lato-bold.woff",
+      "docs/_build/_static/fonts/Lato/lato-italic.woff",
+      "docs/_build/_modules/src/agent.html",
+      "docs/_build/html/_static/basic.css",
+      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-regular.woff2",
+      "docs/_build/html/_static/fonts/Lato/lato-bold.woff",
+      "docs/_build/_static/fonts/Lato/lato-regular.woff2",
+      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-bold.woff2",
+      "docs/_build/html/_static/fonts/Lato/lato-bold.ttf",
+      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-regular.woff",
+      "docs/_build/_static/fonts/Lato/lato-regular.woff",
+      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-bold.woff",
+      "docs/_build/html/_static/fonts/Lato/lato-bold.eot",
+      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-regular.ttf",
+      "docs/_build/_static/fonts/Lato/lato-regular.ttf",
+      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-bold.ttf",
+      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-regular.eot",
+      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-regular.eot",
+      "docs/_build/html/_static/css/theme.css",
+      "docs/_build/_static/fonts/Lato/lato-regular.eot",
+      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-bold.woff2",
+      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-bold.eot",
+      "docs/_build/_static/fonts/Lato/lato-italic.woff2",
+      "docs/_build/html/_static/fonts/Lato/lato-bolditalic.woff2",
+      "docs/_build/html/_static/fonts/Lato/lato-bolditalic.woff",
+      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-regular.woff2",
+      "docs/_build/html/_static/fonts/Lato/lato-bolditalic.ttf",
+      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-regular.woff",
+      "docs/_build/html/_static/fonts/Lato/lato-bolditalic.eot",
+      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-regular.ttf",
+      "docs/_build/html/_static/fonts/Lato/lato-italic.eot",
+      "docs/_build/html/_static/fonts/Lato/lato-bold.woff2",
+      "docs/_build/_static/css/badge_only.css",
+      "docs/_build/_static/_sphinx_javascript_frameworks_compat.js",
+      "docs/_build/_static/sphinx_highlight.js",
+      "docs/_build/_static/searchtools.js",
+      "docs/_build/_static/pygments.css",
+      "docs/_build/html/_static/fonts/Lato/lato-italic.ttf",
+      "docs/_build/_static/plus.png",
+      "docs/_build/_static/minus.png",
+      "docs/_build/_static/jquery.js",
+      "docs/_build/_sources/src.rst.txt",
+      "docs/_build/_static/basic.css",
+      "docs/_build/html/src.html",
+      "docs/_build/html/index.html",
+      "docs/_build/.doctrees/modules.doctree",
+      "data/outputs/review_logs/review_2025-11-29.jsonl",
+      "docs/_build/html/genindex.html",
+      "docs/_build/.doctrees/index.doctree",
+      "docs/_build/.doctrees/environment.pickle",
+      "docs/_build/html/_static/css/fonts/fontawesome-webfont.woff2",
+      "docs/_build/html/_sources/index.rst.txt",
+      "docs/_build/_static/css/fonts/lato-bold-italic.woff",
+      "docs/_build/html/_static/css/fonts/fontawesome-webfont.woff",
+      "docs/_build/_static/css/fonts/fontawesome-webfont.woff2",
+      "docs/_build/html/_static/css/fonts/fontawesome-webfont.ttf",
+      "docs/_build/_static/css/fonts/fontawesome-webfont.woff",
+      "docs/_build/html/_static/css/fonts/fontawesome-webfont.svg",
+      "docs/_build/_static/css/fonts/fontawesome-webfont.ttf",
+      "docs/_build/html/_static/fonts/Lato/lato-regular.woff2",
+      "docs/_build/_static/css/fonts/lato-bold-italic.woff2",
+      "docs/_build/html/_static/css/fonts/fontawesome-webfont.eot",
+      "docs/_build/_static/css/fonts/fontawesome-webfont.svg",
+      "docs/_build/html/_static/fonts/Lato/lato-regular.woff",
+      "docs/_build/html/_static/fonts/Lato/lato-regular.ttf",
+      "docs/_build/_static/css/fonts/fontawesome-webfont.eot",
+      "docs/_build/html/_static/fonts/Lato/lato-regular.eot",
+      "docs/_build/html/_static/css/fonts/lato-bold-italic.woff",
+      "docs/_build/html/_static/fonts/Lato/lato-italic.woff2",
+      "docs/_build/html/_static/fonts/Lato/lato-italic.woff",
+      "docs/_build/html/_modules/index.html",
+      "checks/__init__.py",
+      "docs/_build/_static/css/fonts/lato-bold.woff",
+      "docs/_build/html/_sources/modules.rst.txt",
+      "checks/validate_session.py",
+      "checks/detect_forbidden_patterns.py",
+      "docs/_build/search.html",
+      "data/outputs/result_turn_4_20251127_042621.md",
+      "docs/_build/py-modindex.html",
+      "data/outputs/result_turn_3_20251127_042654.md",
+      "data/outputs/result_turn_2_20251127_042646.md",
+      "checks/check_neo4j_summary.py",
+      "docs/_build/html/_static/css/fonts/lato-bold-italic.woff2",
+      "docs/_build/objects.inv",
+      "data/outputs/result_turn_1_20251130_152037.md",
+      "configs/staging.env",
+      "configs/minimal.env",
+      "data/inputs/input_ocr.txt",
+      "docs/_build/html/.doctrees/environment.pickle",
+      "data/inputs/input_candidates_raw.txt",
+      "docs/_build/html/_static/css/fonts/lato-normal-italic.woff2",
+      "docs/_build/html/.doctrees/src.doctree",
+      "docs/_build/html/_static/css/fonts/lato-normal.woff",
+      "docs/_build/html/_static/css/fonts/lato-normal-italic.woff",
+      "docs/_build/html/.doctrees/modules.doctree",
+      "docs/_build/_static/css/fonts/lato-normal-italic.woff",
+      "docs/_build/html/_static/css/fonts/lato-bold.woff2",
+      "docs/_build/_static/css/fonts/lato-normal-italic.woff2",
+      "docs/_build/html/.doctrees/index.doctree",
+      "docs/_build/html/_static/css/fonts/lato-bold.woff",
+      "docs/_build/html/_sources/src.rst.txt",
+      "docs/_build/_static/css/fonts/lato-bold.woff2",
+      "config/feature_flags.json",
+      "docs/_build/.buildinfo",
+      "data/inputs/input_candidates.json",
+      "configs/development.env",
+      "docs/_build/html/_static/css/fonts/lato-normal.woff2",
+      "data/inputs/example_ocr.txt",
+      "data/inputs/example_candidates.json",
+      "data/outputs/result_turn_1_20251128_073813.md",
+      "data/outputs/result_turn_1_20251127_042801.md",
+      "data/outputs/qa_result_4pairs.json",
+      "data/outputs/inspected_20251130_152026.md",
+      "CHANGELOG.md",
+      "docs/_build/html/_static/css/fonts/Roboto-Slab-Bold.woff",
+      "docs/_build/html/_modules/src/logging_setup.html",
+      "docs/_build/html/_modules/src/data_loader.html",
+      "docs/_build/html/_modules/src/config.html",
+      "docs/_build/html/_modules/src/agent.html",
+      "docs/_build/html/_static/css/fonts/Roboto-Slab-Regular.woff2",
+      "docs/_build/html/_static/css/fonts/Roboto-Slab-Regular.woff",
+      "docs/_build/html/_static/css/fonts/Roboto-Slab-Bold.woff2",
+      "docs/_build/html/_modules/src/main.html",
+      "docs/_build/html/_modules/src/models.html",
+      ".pre-commit-config.yaml",
+      ".gitignore",
+      ".vscode/extensions.json",
+      "docs/_build/html/_modules/src/utils.html",
+      ".gitattributes",
+      ".vscode/settings.json",
+      ".env.example",
+      ".env",
+      ".dockerignore",
+      ".coverage",
+      ".vscode/vibereport-state.json",
+      ".vscode/tasks.json",
+      ".cache/context_cache.json",
+      "tests/unit/graph/test_graph_builder_coverage.py",
+      ".github/dependabot.yml",
+      ".github/workflows/deploy.yml",
+      ".github/workflows/ci.yml",
+      "tests/unit/graph/__init__.py",
+      "tests/unit/graph/test_session_validation.py",
+      "tests/unit/graph/test_session_snapshots.py",
+      "tests/unit/graph/test_session_builder.py",
+      "tests/unit/graph/test_neo4j_optimizer.py",
+      "tests/unit/graph/test_neo4j_graph_provider.py",
+      "tests/unit/graph/test_graph_session_helper.py",
+      "tests/unit/graph/test_graph_schema_builder_more.py",
+      "tests/unit/graph/test_graph_modules_coverage.py",
+      "tests/unit/graph/test_graph_enhanced_router.py",
+      ".github/workflows/deprecation-check.yml",
+      "docs/_build/_static/css/fonts/Roboto-Slab-Regular.woff2",
+      ".github/workflows/weekly-deprecation-report.yml",
+      "docs/_build/_static/css/fonts/Roboto-Slab-Regular.woff",
+      "docs/_build/_static/css/fonts/Roboto-Slab-Bold.woff2",
+      "docs/_build/_static/css/fonts/Roboto-Slab-Bold.woff",
+      "docs/_build/_static/css/fonts/lato-normal.woff2",
+      "docs/_build/_static/css/fonts/lato-normal.woff",
+      ".github/workflows/v3-compatibility.yml",
+      ".github/workflows/security.yml",
+      ".github/workflows/qa-validation.yml",
+      ".github/workflows/performance-check.yml",
+      ".github/workflows/mypy-level1-check.yml",
+      ".github/workflows/docker-build.yml",
+      "backup_v3_20251127_225953/worker.py",
+      "backup_v3_20251127_225953/utils.py",
+      "backup_v3_20251127_225953/self_correcting_chain.py",
+      "backup_v3_20251127_225953/real_time_constraint_enforcer.py",
+      "backup_v3_20251127_225953/qa_system_factory.py",
+      "backup_v3_20251127_225953/qa_rag_system.py",
+      "backup_v3_20251127_225953/qa_generator.py",
+      "backup_v3_20251127_225953/neo4j_utils.py",
+      "backup_v3_20251127_225953/multi_agent_qa_system.py",
+      "backup_v3_20251127_225953/multimodal_understanding.py",
+      "backup_v3_20251127_225953/models.py",
+      "backup_v3_20251127_225953/memory_augmented_qa.py",
+      "backup_v3_20251127_225953/logging_setup.py",
+      "backup_v3_20251127_225953/list_models.py",
+      "backup_v3_20251127_225953/lats_searcher.py",
+      "backup_v3_20251127_225953/integrated_qa_pipeline.py",
+      "backup_v3_20251127_225953/graph_schema_builder.py",
+      "backup_v3_20251127_225953/graph_enhanced_router.py",
+      "backup_v3_20251127_225953/exceptions.py",
+      "backup_v3_20251127_225953/dynamic_template_generator.py",
+      "backup_v3_20251127_225953/data_loader.py",
+      "backup_v3_20251127_225953/constants.py",
+      "backup_v3_20251127_225953/config.py",
+      "backup_v3_20251127_225953/caching_layer.py",
+      "backup_v3_20251127_225953/cache_analytics.py",
+      "backup_v3_20251127_225953/advanced_context_augmentation.py",
+      "backup_v3_20251127_225953/adaptive_difficulty.py"
+    ],
+    "structureSummary": [
+      {
+        "name": "backup_v3_20251127_225953",
+        "type": "directory",
+        "children": [
+          {
+            "name": "adaptive_difficulty.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "advanced_context_augmentation.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "cache_analytics.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "caching_layer.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "config.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "constants.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "data_loader.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "dynamic_template_generator.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "exceptions.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "graph_enhanced_router.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "graph_schema_builder.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "integrated_qa_pipeline.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "lats_searcher.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "list_models.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "logging_setup.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "memory_augmented_qa.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "models.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "multi_agent_qa_system.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "multimodal_understanding.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "neo4j_utils.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "qa_generator.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "qa_rag_system.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "qa_system_factory.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "real_time_constraint_enforcer.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "self_correcting_chain.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "utils.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "worker.py",
+            "type": "file",
+            "extension": "py"
+          }
+        ]
+      },
+      {
+        "name": "checks",
+        "type": "directory",
+        "children": [
+          {
+            "name": "__init__.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "check_neo4j_rules.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "check_neo4j_summary.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "detect_forbidden_patterns.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "validate_session.py",
+            "type": "file",
+            "extension": "py"
+          }
+        ]
+      },
+      {
+        "name": "config",
+        "type": "directory",
+        "children": [
+          {
+            "name": "feature_flags.json",
+            "type": "file",
+            "extension": "json"
+          }
+        ]
+      },
+      {
+        "name": "configs",
+        "type": "directory",
+        "children": [
+          {
+            "name": "development.env",
+            "type": "file",
+            "extension": "env"
+          },
+          {
+            "name": "minimal.env",
+            "type": "file",
+            "extension": "env"
+          },
+          {
+            "name": "production.env",
+            "type": "file",
+            "extension": "env"
+          },
+          {
+            "name": "staging.env",
+            "type": "file",
+            "extension": "env"
+          }
+        ]
+      },
+      {
+        "name": "data",
+        "type": "directory",
+        "children": [
+          {
+            "name": "inputs",
+            "type": "directory",
+            "children": [
+              {
+                "name": "example_candidates.json",
+                "type": "file",
+                "extension": "json"
+              },
+              {
+                "name": "example_ocr.txt",
+                "type": "file",
+                "extension": "txt"
+              },
+              {
+                "name": "input_candidates_raw.txt",
+                "type": "file",
+                "extension": "txt"
+              },
+              {
+                "name": "input_candidates.json",
+                "type": "file",
+                "extension": "json"
+              },
+              {
+                "name": "input_ocr.txt",
+                "type": "file",
+                "extension": "txt"
+              },
+              {
+                "name": "notion_sample_ocr.txt",
+                "type": "file",
+                "extension": "txt"
+              }
+            ]
+          },
+          {
+            "name": "outputs",
+            "type": "directory",
+            "children": [
+              {
+                "name": "review_logs",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "review_2025-11-29.jsonl",
+                    "type": "file",
+                    "extension": "jsonl"
+                  },
+                  {
+                    "name": "review_2025-11-30.jsonl",
+                    "type": "file",
+                    "extension": "jsonl"
+                  }
+                ]
+              },
+              {
+                "name": "checkpoint.jsonl",
+                "type": "file",
+                "extension": "jsonl"
+              },
+              {
+                "name": "edited_20251130_152026.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "inspected_20251130_152026.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "qa_result_4pairs.json",
+                "type": "file",
+                "extension": "json"
+              },
+              {
+                "name": "result_turn_1_20251127_042801.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "result_turn_1_20251128_073813.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "result_turn_1_20251128_181215.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "result_turn_1_20251128_191837.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "result_turn_1_20251130_041500.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "result_turn_1_20251130_041744.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "result_turn_1_20251130_042552.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "result_turn_1_20251130_152037.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "result_turn_2_20251127_042646.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "result_turn_3_20251127_042654.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "result_turn_4_20251127_042621.md",
+                "type": "file",
+                "extension": "md"
+              }
+            ]
+          },
+          {
+            "name": "queue_results",
+            "type": "directory",
+            "children": [
+              {
+                "name": "results.jsonl",
+                "type": "file",
+                "extension": "jsonl"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "devplan",
+        "type": "directory",
+        "children": [
+          {
+            "name": "Project_Evaluation_Report.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "Project_Improvement_Exploration_Report.md",
+            "type": "file",
+            "extension": "md"
+          }
+        ]
+      },
+      {
+        "name": "docs",
+        "type": "directory",
+        "children": [
+          {
+            "name": "_build",
+            "type": "directory",
+            "children": [
+              {
+                "name": "_modules",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "src",
+                    "type": "directory"
+                  },
+                  {
+                    "name": "index.html",
+                    "type": "file",
+                    "extension": "html"
+                  },
+                  {
+                    "name": "re.html",
+                    "type": "file",
+                    "extension": "html"
+                  }
+                ]
+              },
+              {
+                "name": "_sources",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "index.rst.txt",
+                    "type": "file",
+                    "extension": "txt"
+                  },
+                  {
+                    "name": "modules.rst.txt",
+                    "type": "file",
+                    "extension": "txt"
+                  },
+                  {
+                    "name": "src.rst.txt",
+                    "type": "file",
+                    "extension": "txt"
+                  }
+                ]
+              },
+              {
+                "name": "_static",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "css",
+                    "type": "directory"
+                  },
+                  {
+                    "name": "fonts",
+                    "type": "directory"
+                  },
+                  {
+                    "name": "js",
+                    "type": "directory"
+                  },
+                  {
+                    "name": "_sphinx_javascript_frameworks_compat.js",
+                    "type": "file",
+                    "extension": "js"
+                  },
+                  {
+                    "name": "basic.css",
+                    "type": "file",
+                    "extension": "css"
+                  },
+                  {
+                    "name": "doctools.js",
+                    "type": "file",
+                    "extension": "js"
+                  },
+                  {
+                    "name": "documentation_options.js",
+                    "type": "file",
+                    "extension": "js"
+                  },
+                  {
+                    "name": "file.png",
+                    "type": "file",
+                    "extension": "png"
+                  },
+                  {
+                    "name": "jquery.js",
+                    "type": "file",
+                    "extension": "js"
+                  },
+                  {
+                    "name": "language_data.js",
+                    "type": "file",
+                    "extension": "js"
+                  },
+                  {
+                    "name": "minus.png",
+                    "type": "file",
+                    "extension": "png"
+                  },
+                  {
+                    "name": "plus.png",
+                    "type": "file",
+                    "extension": "png"
+                  },
+                  {
+                    "name": "pygments.css",
+                    "type": "file",
+                    "extension": "css"
+                  },
+                  {
+                    "name": "searchtools.js",
+                    "type": "file",
+                    "extension": "js"
+                  },
+                  {
+                    "name": "sphinx_highlight.js",
+                    "type": "file",
+                    "extension": "js"
+                  }
+                ]
+              },
+              {
+                "name": "html",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "_modules",
+                    "type": "directory"
+                  },
+                  {
+                    "name": "_sources",
+                    "type": "directory"
+                  },
+                  {
+                    "name": "_static",
+                    "type": "directory"
+                  },
+                  {
+                    "name": "genindex.html",
+                    "type": "file",
+                    "extension": "html"
+                  },
+                  {
+                    "name": "index.html",
+                    "type": "file",
+                    "extension": "html"
+                  },
+                  {
+                    "name": "modules.html",
+                    "type": "file",
+                    "extension": "html"
+                  },
+                  {
+                    "name": "objects.inv",
+                    "type": "file",
+                    "extension": "inv"
+                  },
+                  {
+                    "name": "py-modindex.html",
+                    "type": "file",
+                    "extension": "html"
+                  },
+                  {
+                    "name": "search.html",
+                    "type": "file",
+                    "extension": "html"
+                  },
+                  {
+                    "name": "searchindex.js",
+                    "type": "file",
+                    "extension": "js"
+                  },
+                  {
+                    "name": "src.html",
+                    "type": "file",
+                    "extension": "html"
+                  }
+                ]
+              },
+              {
+                "name": "genindex.html",
+                "type": "file",
+                "extension": "html"
+              },
+              {
+                "name": "index.html",
+                "type": "file",
+                "extension": "html"
+              },
+              {
+                "name": "modules.html",
+                "type": "file",
+                "extension": "html"
+              },
+              {
+                "name": "objects.inv",
+                "type": "file",
+                "extension": "inv"
+              },
+              {
+                "name": "py-modindex.html",
+                "type": "file",
+                "extension": "html"
+              },
+              {
+                "name": "search.html",
+                "type": "file",
+                "extension": "html"
+              },
+              {
+                "name": "searchindex.js",
+                "type": "file",
+                "extension": "js"
+              },
+              {
+                "name": "src.html",
+                "type": "file",
+                "extension": "html"
+              }
+            ]
+          },
+          {
+            "name": "architecture",
+            "type": "directory",
+            "children": [
+              {
+                "name": "caching_strategy.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "component_dependencies.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "data_flow.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "error_handling.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "ocr_workflow.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "rag_system.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "system_architecture.md",
+                "type": "file",
+                "extension": "md"
+              }
+            ]
+          },
+          {
+            "name": "examples",
+            "type": "directory",
+            "children": [
+              {
+                "name": "basic_usage.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "ADVANCED_FEATURES.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "API.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "ARCHITECTURE.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "BRANCH_CLEANUP_STATUS.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "BREAKING_CHANGES_v3.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "CACHING.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "conf.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "CONFIGURATION.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "CONTRIBUTING.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "Data2Neo_Integration_Report.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "ENVIRONMENT_SETUP.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "GETTING_STARTED.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "GOpt_Integration_Report.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "guide_mapping.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "IMPROVEMENT_PROPOSAL.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "index.rst",
+            "type": "file",
+            "extension": "rst"
+          },
+          {
+            "name": "make.bat",
+            "type": "file",
+            "extension": "bat"
+          },
+          {
+            "name": "Makefile",
+            "type": "file"
+          },
+          {
+            "name": "modules.rst",
+            "type": "file",
+            "extension": "rst"
+          },
+          {
+            "name": "MONITORING.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "MYPY_LEVEL2_BEST_PRACTICES.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "MYPY_LEVEL3_REPORT.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "MYPY_STRICT_GUIDE.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "PRINCIPLES_REVIEW.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "README_FULL.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "SECURITY.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "src.rst",
+            "type": "file",
+            "extension": "rst"
+          },
+          {
+            "name": "TROUBLESHOOTING.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "update_log.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "V3_SHIM_REMOVAL_ISSUE.md",
+            "type": "file",
+            "extension": "md"
+          }
+        ]
+      },
+      {
+        "name": "examples",
+        "type": "directory",
+        "children": [
+          {
+            "name": "context_calc_used.json",
+            "type": "file",
+            "extension": "json"
+          },
+          {
+            "name": "context_low_text.json",
+            "type": "file",
+            "extension": "json"
+          },
+          {
+            "name": "context_table.json",
+            "type": "file",
+            "extension": "json"
+          },
+          {
+            "name": "sample_image_meta.json",
+            "type": "file",
+            "extension": "json"
+          },
+          {
+            "name": "session_input_low_density.json",
+            "type": "file",
+            "extension": "json"
+          },
+          {
+            "name": "session_input_with_table.json",
+            "type": "file",
+            "extension": "json"
+          },
+          {
+            "name": "session_input.json",
+            "type": "file",
+            "extension": "json"
+          }
+        ]
+      },
+      {
+        "name": "experiments",
+        "type": "directory",
+        "children": [
+          {
+            "name": "__init__.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "ab_testing.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "runner.py",
+            "type": "file",
+            "extension": "py"
+          }
+        ]
+      },
+      {
+        "name": "notion-neo4j-graph",
+        "type": "directory",
+        "children": [
+          {
+            "name": "compare_documents.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "import_pipeline.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "main.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "pyproject.toml",
+            "type": "file",
+            "extension": "toml"
+          },
+          {
+            "name": "README.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "semantic_analysis.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "test_all_connections.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "test_neo4j_connection.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "test_notion_connection.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "verify_import.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "verify_topics.py",
+            "type": "file",
+            "extension": "py"
+          }
+        ]
+      },
+      {
+        "name": "profiling_results",
+        "type": "directory",
+        "children": [
+          {
+            "name": "src.gemini_model_client_stats.prof",
+            "type": "file",
+            "extension": "prof"
+          },
+          {
+            "name": "src.main_stats.prof",
+            "type": "file",
+            "extension": "prof"
+          }
+        ]
+      },
+      {
+        "name": "Redis-x64-5.0.14.1",
+        "type": "directory",
+        "children": [
+          {
+            "name": "00-RELEASENOTES",
+            "type": "file"
+          },
+          {
+            "name": "EventLog.dll",
+            "type": "file",
+            "extension": "dll"
+          },
+          {
+            "name": "README.txt",
+            "type": "file",
+            "extension": "txt"
+          },
+          {
+            "name": "redis-benchmark.exe",
+            "type": "file",
+            "extension": "exe"
+          },
+          {
+            "name": "redis-benchmark.pdb",
+            "type": "file",
+            "extension": "pdb"
+          },
+          {
+            "name": "redis-check-aof.exe",
+            "type": "file",
+            "extension": "exe"
+          },
+          {
+            "name": "redis-check-aof.pdb",
+            "type": "file",
+            "extension": "pdb"
+          },
+          {
+            "name": "redis-check-rdb.exe",
+            "type": "file",
+            "extension": "exe"
+          },
+          {
+            "name": "redis-check-rdb.pdb",
+            "type": "file",
+            "extension": "pdb"
+          },
+          {
+            "name": "redis-cli.exe",
+            "type": "file",
+            "extension": "exe"
+          },
+          {
+            "name": "redis-cli.pdb",
+            "type": "file",
+            "extension": "pdb"
+          },
+          {
+            "name": "redis-server.exe",
+            "type": "file",
+            "extension": "exe"
+          },
+          {
+            "name": "redis-server.pdb",
+            "type": "file",
+            "extension": "pdb"
+          },
+          {
+            "name": "redis.windows-service.conf",
+            "type": "file",
+            "extension": "conf"
+          },
+          {
+            "name": "redis.windows.conf",
+            "type": "file",
+            "extension": "conf"
+          },
+          {
+            "name": "RELEASENOTES.txt",
+            "type": "file",
+            "extension": "txt"
+          }
+        ]
+      },
+      {
+        "name": "scripts",
+        "type": "directory",
+        "children": [
+          {
+            "name": "__init__.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "analyze_logs.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "apply_all_mappings.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "auto_profile.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "backup.ps1",
+            "type": "file",
+            "extension": "ps1"
+          },
+          {
+            "name": "backup.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "benchmark.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "build_session.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "cache_warming.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "check_deprecated_imports.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "check_missing_stubs.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "check_mypy_baseline.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "check_mypy_progress.ps1",
+            "type": "file",
+            "extension": "ps1"
+          },
+          {
+            "name": "check_no_type_check.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "check_test_types.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "compare_profiles.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "compare_runs.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "count_mappings.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "count_rels.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "daily_improvement_check.sh",
+            "type": "file",
+            "extension": "sh"
+          },
+          {
+            "name": "debug_descendants.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "debug_headings.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "debug_order.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "debug_rules.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "deprecation_stats.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "dev_startup.sh",
+            "type": "file",
+            "extension": "sh"
+          },
+          {
+            "name": "dump_block.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "enforce_type_hints.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "estimate_cost.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "export_for_mapping.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "fetch_ids.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "fix_mypy_level1.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "generate_architecture_diagram.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "generate_mappings_code.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "import_qa_examples.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "interactive_migration_wizard.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "latency_baseline.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "manage_flags.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "measure_strict_baseline.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "migrate_imports.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "neo4j_benchmark_stub.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "ocr_extraction.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "ocr_producer.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "pre-push-check.sh",
+            "type": "file",
+            "extension": "sh"
+          },
+          {
+            "name": "queue_producer.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "remove_shims_v3.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "render_prompt.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "run_ab_test.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "run_hybrid_optimizer.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "run_pipeline.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "show_mappings.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "suggest_mappings.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "track_deprecations.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "track_mypy_progress.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "verify_counts.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "verify_v3_readiness.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "weekly_report.sh",
+            "type": "file",
+            "extension": "sh"
+          }
+        ]
+      },
+      {
+        "name": "src",
+        "type": "directory",
+        "children": [
+          {
+            "name": "agent",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "batch_processor.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "cache_manager.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "core.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "cost_tracker.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              },
+              {
+                "name": "rate_limiter.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "analysis",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "cross_validation.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "document_compare.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              },
+              {
+                "name": "semantic.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "analytics",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "dashboard.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              }
+            ]
+          },
+          {
+            "name": "automation",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "promote_rules.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              }
+            ]
+          },
+          {
+            "name": "caching",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "analytics.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "layer.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              },
+              {
+                "name": "redis_cache.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "ttl_policy.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "config",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "constants.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "exceptions.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              },
+              {
+                "name": "settings.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "validator.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "core",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "adapters.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "factory.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "interfaces.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "models.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              },
+              {
+                "name": "schemas.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "type_aliases.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "features",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "action_executor.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "autocomplete.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "data2neo_extractor.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "difficulty.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "lats.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "multimodal.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              },
+              {
+                "name": "self_correcting.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "self_improvement.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "graph",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "builder.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "data2neo_extractor.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "entities.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "mappings.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              },
+              {
+                "name": "schema.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "infra",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "adaptive_limiter.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "budget.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "callbacks.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "constraints.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "feature_flags.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "health.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "logging.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "neo4j_optimizer.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "neo4j.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              },
+              {
+                "name": "utils.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "worker.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "llm",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "gemini_types.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "gemini.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "langchain_system.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "lcel_chain.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "list_models.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              }
+            ]
+          },
+          {
+            "name": "monitoring",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "metrics.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "plugins",
+            "type": "directory",
+            "children": [
+              {
+                "name": "builtin",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "example.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "base.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "loader.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "processing",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "context_augmentation.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "example_selector.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "loader.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              },
+              {
+                "name": "template_generator.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "qa",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "ab_test.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "factory.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "generator.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "memory_augmented.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "multi_agent.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "pipeline.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              },
+              {
+                "name": "quality.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "rag_system.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "routing",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "graph_router.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              }
+            ]
+          },
+          {
+            "name": "ui",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "interactive_menu.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "panels.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              }
+            ]
+          },
+          {
+            "name": "web",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "api.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "models.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              }
+            ]
+          },
+          {
+            "name": "workflow",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "chunk_processor.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "context.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "edit.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "executor.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "external_eval.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "hybrid_optimizer.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "inspection.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "mcts_optimizer.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "processor.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              }
+            ]
+          },
+          {
+            "name": "__init__.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "_deprecation.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "cli.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "main.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "py.typed",
+            "type": "file",
+            "extension": "typed"
+          }
+        ]
+      },
+      {
+        "name": "static",
+        "type": "directory",
+        "children": [
+          {
+            "name": "app.js",
+            "type": "file",
+            "extension": "js"
+          },
+          {
+            "name": "style.css",
+            "type": "file",
+            "extension": "css"
+          }
+        ]
+      },
+      {
+        "name": "stubs",
+        "type": "directory",
+        "children": [
+          {
+            "name": "langchain",
+            "type": "directory",
+            "children": [
+              {
+                "name": "callbacks",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.pyi",
+                    "type": "file",
+                    "extension": "pyi"
+                  },
+                  {
+                    "name": "base.pyi",
+                    "type": "file",
+                    "extension": "pyi"
+                  }
+                ]
+              },
+              {
+                "name": "__init__.pyi",
+                "type": "file",
+                "extension": "pyi"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "templates",
+        "type": "directory",
+        "children": [
+          {
+            "name": "eval",
+            "type": "directory",
+            "children": [
+              {
+                "name": "text_image_qa_compare_eval.j2",
+                "type": "file",
+                "extension": "j2"
+              }
+            ]
+          },
+          {
+            "name": "experiments",
+            "type": "directory",
+            "children": [
+              {
+                "name": "ocr_v2_concise.j2",
+                "type": "file",
+                "extension": "j2"
+              },
+              {
+                "name": "ocr_v3_structured.j2",
+                "type": "file",
+                "extension": "j2"
+              }
+            ]
+          },
+          {
+            "name": "fact",
+            "type": "directory",
+            "children": [
+              {
+                "name": "text_image_qa_fact_check.j2",
+                "type": "file",
+                "extension": "j2"
+              }
+            ]
+          },
+          {
+            "name": "prod",
+            "type": "directory",
+            "children": [
+              {
+                "name": "ocr_default.j2",
+                "type": "file",
+                "extension": "j2"
+              }
+            ]
+          },
+          {
+            "name": "rewrite",
+            "type": "directory",
+            "children": [
+              {
+                "name": "text_image_qa_rewrite_system.j2",
+                "type": "file",
+                "extension": "j2"
+              }
+            ]
+          },
+          {
+            "name": "system",
+            "type": "directory",
+            "children": [
+              {
+                "name": "text_image_qa_explanation_system.j2",
+                "type": "file",
+                "extension": "j2"
+              },
+              {
+                "name": "text_image_qa_global_system.j2",
+                "type": "file",
+                "extension": "j2"
+              },
+              {
+                "name": "text_image_qa_reasoning_system.j2",
+                "type": "file",
+                "extension": "j2"
+              },
+              {
+                "name": "text_image_qa_summary_system.j2",
+                "type": "file",
+                "extension": "j2"
+              }
+            ]
+          },
+          {
+            "name": "user",
+            "type": "directory",
+            "children": [
+              {
+                "name": "text_image_qa_generic_user.j2",
+                "type": "file",
+                "extension": "j2"
+              },
+              {
+                "name": "text_image_qa_target_user.j2",
+                "type": "file",
+                "extension": "j2"
+              }
+            ]
+          },
+          {
+            "name": "web",
+            "type": "directory",
+            "children": [
+              {
+                "name": "eval.html",
+                "type": "file",
+                "extension": "html"
+              },
+              {
+                "name": "layout.html",
+                "type": "file",
+                "extension": "html"
+              },
+              {
+                "name": "multimodal.html",
+                "type": "file",
+                "extension": "html"
+              },
+              {
+                "name": "qa.html",
+                "type": "file",
+                "extension": "html"
+              },
+              {
+                "name": "workspace.html",
+                "type": "file",
+                "extension": "html"
+              }
+            ]
+          },
+          {
+            "name": "base_system.j2",
+            "type": "file",
+            "extension": "j2"
+          },
+          {
+            "name": "entity_extraction_user.j2",
+            "type": "file",
+            "extension": "j2"
+          },
+          {
+            "name": "prompt_entity_extraction.j2",
+            "type": "file",
+            "extension": "j2"
+          },
+          {
+            "name": "prompt_eval.j2",
+            "type": "file",
+            "extension": "j2"
+          },
+          {
+            "name": "prompt_query_gen.j2",
+            "type": "file",
+            "extension": "j2"
+          },
+          {
+            "name": "prompt_rewrite.j2",
+            "type": "file",
+            "extension": "j2"
+          },
+          {
+            "name": "query_gen_user.j2",
+            "type": "file",
+            "extension": "j2"
+          },
+          {
+            "name": "rewrite_user.j2",
+            "type": "file",
+            "extension": "j2"
+          }
+        ]
+      },
+      {
+        "name": "tests",
+        "type": "directory",
+        "children": [
+          {
+            "name": "e2e",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "conftest.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_full_workflow.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "integration",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_integrated_quality_system_integration.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_integration.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "unit",
+            "type": "directory",
+            "children": [
+              {
+                "name": "agent",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_agent_additional.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_agent_budget.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_agent_cache.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_agent_cost_logging.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_agent_errors_remaining.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_agent_extended.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_agent_more_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_agent_rate_limit.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_agent_resilience.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_agent.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_batch_processor.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_edge_cases.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "analysis",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_advanced_context_augmentation_more.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_advanced_context_augmentation.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_analysis_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_context_augmentation_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_context_augmentation_extended.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_hybrid_optimizer.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_semantic_analysis_exceptions.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_semantic_analysis.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "analytics",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_analytics_init_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "caching",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_cache_analytics_additional.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_cache_analytics.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_cache_stats.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_cache_threshold.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_cache_ttl_policy.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_caching_analytics_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_caching_init_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_caching_layer_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_caching_layer.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_realtime_analytics.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_redis_cache_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "config",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_config_validation.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_config_validator_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "core",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_core_adapters.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_models.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_schemas_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_type_aliases_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "features",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_ab_test.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_adaptive_difficulty.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_adaptive_limiter.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_data2neo_extractor.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_dynamic_template_generator.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_feature_flags.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_multimodal_extended.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_self_improvement.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_template_generator_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_template_safety.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "graph",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_graph_builder_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_graph_enhanced_router.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_graph_modules_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_graph_schema_builder_more.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_graph_session_helper.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_neo4j_graph_provider.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_neo4j_optimizer.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_session_builder.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_session_snapshots.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_session_validation.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "infra",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_budget_qarag_worker.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_dependency_injection.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_health_check_extended.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_health_check.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_health_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_logging_extended_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_worker_process.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "llm",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_chain_systems.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_gemini_client_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_gemini_coverage_additional.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_gemini_model_client_eval_rewrite.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_gemini_model_client_metrics.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_gemini_types_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_lats_searcher.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_mcts_optimizer.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "main",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_coverage_branches_additional.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_coverage_expansion.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_coverage_improvement.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_main_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_main_integration.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_main_more_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "migration",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_deprecation_stats.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_deprecation_warnings.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_enhanced_deprecation.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_migrate_imports.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "misc",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_external_eval.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_io_and_checkpoint.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_modular_arch.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_new_import_paths.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_package_init_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_pipeline_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_plugins.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_promote_rules_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_scripts_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_security.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_src_init_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "monitoring",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_inspection_feature.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_monitoring_metrics_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "processing",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_data_loader_validation.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_data_loader.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_loader_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_templates_render.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "qa",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_qa_factory.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_qa_quality_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_qa_rag_extended.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_qa_rag_system_extra.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_qa_rag_system.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_qa_rag_vector.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_qa_systems_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "ui",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_interactive_menu_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_interactive_menu_more_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_ui_comprehensive_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_ui_panels_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "utils",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_latency_baseline.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_logging_metrics.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_logging_setup.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_utils_additional.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_utils_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_utils_more.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_utils.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "web",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_dashboard.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_web_api_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_web_api.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_web_models.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "workflow",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_chunk_processor.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_edit_workflow.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_workflow_execution.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_workflow_processor.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "__init__.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "conftest.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "custom_types.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
+            "name": "test_web_api.py",
+            "type": "file",
+            "extension": "py"
+          }
+        ]
+      },
+      {
+        "name": "CHANGELOG.md",
+        "type": "file",
+        "extension": "md"
+      },
+      {
+        "name": "CONTRIBUTING.md",
+        "type": "file",
+        "extension": "md"
+      },
+      {
+        "name": "DEPLOYMENT_VERIFIED.md",
+        "type": "file",
+        "extension": "md"
+      },
+      {
+        "name": "DEPRECATION.md",
+        "type": "file",
+        "extension": "md"
+      },
+      {
+        "name": "docker-compose.worker.yml",
+        "type": "file",
+        "extension": "yml"
+      },
+      {
+        "name": "docker-compose.yml",
+        "type": "file",
+        "extension": "yml"
+      },
+      {
+        "name": "Dockerfile",
+        "type": "file"
+      },
+      {
+        "name": "MIGRATION.md",
+        "type": "file",
+        "extension": "md"
+      },
+      {
+        "name": "mypy_analysis.md",
+        "type": "file",
+        "extension": "md"
+      },
+      {
+        "name": "NEXT_SESSION.md",
+        "type": "file",
+        "extension": "md"
+      },
+      {
+        "name": "PHASE_3D_COMPLETE.md",
+        "type": "file",
+        "extension": "md"
+      },
+      {
+        "name": "PHASE_4_MYPY_COMPLETE.md",
+        "type": "file",
+        "extension": "md"
+      },
+      {
+        "name": "pyproject.toml",
+        "type": "file",
+        "extension": "toml"
+      },
+      {
+        "name": "README.md",
+        "type": "file",
+        "extension": "md"
+      },
+      {
+        "name": "run_web.py",
+        "type": "file",
+        "extension": "py"
+      },
+      {
+        "name": "run.bat",
+        "type": "file",
+        "extension": "bat"
+      },
+      {
+        "name": "semantic_analysis.log",
+        "type": "file",
+        "extension": "log"
+      },
+      {
+        "name": "UV_GUIDE.md",
+        "type": "file",
+        "extension": "md"
+      },
+      {
+        "name": "uv.lock",
+        "type": "file",
+        "extension": "lock"
+      },
+      {
+        "name": "vulture_whitelist.py",
+        "type": "file",
+        "extension": "py"
+      }
+    ]
+  },
+  "sessions": [],
+  "appliedImprovements": [],
+  "lastUpdated": "2025-11-30T17:30:20.891Z",
+  "version": 1
+}
