@@ -25,6 +25,33 @@ DEFAULT_RPM_LIMIT: Final[int] = 60
 DEFAULT_RPM_WINDOW_SECONDS: Final[int] = 60
 
 
+# ===== Token and Output Configuration =====
+
+# Default max output tokens for LLM generation
+DEFAULT_MAX_OUTPUT_TOKENS: Final[int] = 2048
+
+# Max output tokens for settings (GEMINI_MAX_OUTPUT_TOKENS env var default)
+DEFAULT_SETTINGS_MAX_OUTPUT_TOKENS: Final[int] = 8192
+
+# Max output tokens for quick operations (e.g., LATS expansion)
+LATS_EXPANSION_MAX_OUTPUT_TOKENS: Final[int] = 50
+
+
+# ===== Cache TTL Configuration (seconds) =====
+
+# Default TTL for cache entries (1 hour)
+DEFAULT_CACHE_TTL_SECONDS: Final[int] = 3600
+
+# TTL for system prompts (1 hour - rarely changes)
+SYSTEM_PROMPT_TTL_SECONDS: Final[int] = 3600
+
+# TTL for rules cache (1 hour)
+RULES_CACHE_TTL_SECONDS: Final[int] = 3600
+
+# Max wait time for batch processing (1 hour)
+BATCH_MAX_WAIT_SECONDS: Final[float] = 3600.0
+
+
 class CacheConfig:
     """Context Caching 설정.
 

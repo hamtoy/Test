@@ -1,32 +1,58 @@
 #!/usr/bin/env python3
-"""Auto-migrate deprecated imports to new paths."""
+"""Auto-migrate deprecated imports to new paths.
+
+This script uses AST-aware parsing to only modify actual Python import statements,
+preserving string literals that may contain import-like text (e.g., in test files).
+"""
 
 import argparse
+import ast
 import difflib
 import fnmatch
 import re
 import sys
 from pathlib import Path
 
+# Mapping from old module path to new module path
+# Used for both regex matching and AST-based replacement
 IMPORT_MAPPINGS = {
-    # Old import pattern -> New import
-    r"from src\.utils import": "from src.infra.utils import",
-    r"from src\.logging_setup import": "from src.infra.logging import",
-    r"from src\.constants import": "from src.config.constants import",
-    r"from src\.exceptions import": "from src.config.exceptions import",
-    r"from src\.models import": "from src.core.models import",
-    r"from src\.budget_tracker import": "from src.infra.budget import",
-    r"from src\.neo4j_utils import": "from src.infra.neo4j import",
-    r"from src\.health_check import": "from src.infra.health import",
-    r"from src\.worker import": "from src.infra.worker import",
-    r"from src\.gemini_model_client import": "from src.llm.gemini import",
-    r"from src\.data_loader import": "from src.processing.loader import",
-    r"from src\.semantic_analysis import": "from src.analysis.semantic import",
-    r"from src\.qa_rag_system import": "from src.qa.rag_system import",
-    r"from src\.caching_layer import": "from src.caching.layer import",
-    r"from src\.smart_autocomplete import": "from src.features.autocomplete import",
-    r"from src\.graph_enhanced_router import": "from src.routing.graph_router import",
+    # Old module path -> New module path
+    "src.utils": "src.infra.utils",
+    "src.logging_setup": "src.infra.logging",
+    "src.constants": "src.config.constants",
+    "src.exceptions": "src.config.exceptions",
+    "src.models": "src.core.models",
+    "src.budget_tracker": "src.infra.budget",
+    "src.neo4j_utils": "src.infra.neo4j",
+    "src.health_check": "src.infra.health",
+    "src.worker": "src.infra.worker",
+    "src.gemini_model_client": "src.llm.gemini",
+    "src.data_loader": "src.processing.loader",
+    "src.semantic_analysis": "src.analysis.semantic",
+    "src.qa_rag_system": "src.qa.rag_system",
+    "src.caching_layer": "src.caching.layer",
+    "src.smart_autocomplete": "src.features.autocomplete",
+    "src.graph_enhanced_router": "src.routing.graph_router",
 }
+
+
+def _get_import_line_numbers(content: str) -> set[int]:
+    """Parse Python code and return line numbers of actual import statements.
+
+    This uses the AST module to identify real import statements,
+    excluding string literals that may contain import-like text.
+    """
+    try:
+        tree = ast.parse(content)
+    except SyntaxError:
+        # If parsing fails, return empty set (no lines will be modified)
+        return set()
+
+    import_lines: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            import_lines.add(node.lineno)
+    return import_lines
 
 
 class MigrationResult:
@@ -65,6 +91,9 @@ def migrate_file(
 ) -> MigrationResult | None:
     """Migrate imports in a single file.
 
+    Uses AST parsing to identify actual import statements and only modifies those,
+    preserving string literals that may contain import-like text.
+
     Returns MigrationResult with details about changes, or None if file should be skipped.
     """
     if exclude_patterns is None:
@@ -78,14 +107,46 @@ def migrate_file(
     except UnicodeDecodeError:
         return None
 
-    changes: list[tuple[str, str]] = []
-    new_content = content
+    # Get line numbers of actual import statements using AST
+    import_lines = _get_import_line_numbers(content)
 
-    for old_pattern, new_import in IMPORT_MAPPINGS.items():
-        if re.search(old_pattern, content):
-            changes.append((old_pattern, new_import))
-            # Always compute new_content for diff generation
-            new_content = re.sub(old_pattern, new_import, new_content)
+    if not import_lines:
+        # No valid import statements found (possibly invalid Python)
+        return MigrationResult(filepath, [], content, content)
+
+    changes: list[tuple[str, str]] = []
+    lines = content.splitlines(keepends=True)
+    new_lines = []
+
+    for i, line in enumerate(lines):
+        line_num = i + 1  # AST uses 1-based line numbers
+        new_line = line
+
+        # Only process lines that contain actual import statements
+        if line_num in import_lines:
+            for old_module, new_module in IMPORT_MAPPINGS.items():
+                # Build patterns for "from X import" and "import X"
+                from_pattern = rf"from {re.escape(old_module)} import"
+                import_pattern = rf"^import {re.escape(old_module)}(\s|$|,)"
+
+                if re.search(from_pattern, new_line):
+                    replacement = f"from {new_module} import"
+                    new_line = re.sub(from_pattern, replacement, new_line)
+                    if (old_module, new_module) not in changes:
+                        changes.append((old_module, new_module))
+                elif re.search(import_pattern, new_line):
+                    # Handle "import X" style
+                    new_line = re.sub(
+                        import_pattern,
+                        rf"import {new_module}\1",
+                        new_line,
+                    )
+                    if (old_module, new_module) not in changes:
+                        changes.append((old_module, new_module))
+
+        new_lines.append(new_line)
+
+    new_content = "".join(new_lines)
 
     if fix and changes:
         filepath.write_text(new_content, encoding="utf-8")
@@ -182,8 +243,8 @@ def main(args: list[str] | None = None) -> int:
 
         for result in results:
             print(f"\n📄 {result.filepath}")
-            for old_pattern, new_import in result.changes:
-                print(f"   {old_pattern} → {new_import}")
+            for old_module, new_module in result.changes:
+                print(f"   from {old_module} import → from {new_module} import")
 
             if parsed_args.show_diff:
                 diff = generate_diff(result)

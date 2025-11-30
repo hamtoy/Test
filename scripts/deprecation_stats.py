@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
-"""Analyze deprecation usage statistics and generate reports."""
+"""Analyze deprecation usage statistics and generate reports.
+
+Uses AST parsing to only detect actual import statements, ignoring
+deprecated import patterns that appear in string literals (e.g., test data).
+"""
 
 import argparse
+import ast
 import json
 import os
 import re
@@ -44,8 +49,30 @@ DEPRECATED_IMPORT_PATTERNS = [
 ]
 
 
+def _get_import_line_numbers(content: str) -> set[int]:
+    """Parse Python code and return line numbers of actual import statements.
+
+    This uses the AST module to identify real import statements,
+    excluding string literals that may contain import-like text.
+    """
+    try:
+        tree = ast.parse(content)
+    except SyntaxError:
+        # If parsing fails, return empty set
+        return set()
+
+    import_lines: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            import_lines.add(node.lineno)
+    return import_lines
+
+
 def analyze_file(filepath: Path) -> dict[str, int]:
     """Analyze a single file for deprecated imports.
+
+    Uses AST parsing to only count actual import statements, ignoring
+    deprecated import patterns that appear in string literals.
 
     Returns a dict mapping deprecated module names to their occurrence count.
     """
@@ -54,11 +81,22 @@ def analyze_file(filepath: Path) -> dict[str, int]:
     except (UnicodeDecodeError, OSError):
         return {}
 
+    # Get line numbers of actual import statements using AST
+    import_lines = _get_import_line_numbers(content)
+    if not import_lines:
+        return {}
+
+    # Only check lines that contain actual imports
+    lines = content.splitlines()
+    import_content = "\n".join(
+        line for i, line in enumerate(lines, 1) if i in import_lines
+    )
+
     module_counts: dict[str, int] = defaultdict(int)
 
     for pattern in DEPRECATED_IMPORT_PATTERNS:
-        # Use finditer to count all matches
-        matches = list(re.finditer(pattern, content))
+        # Use finditer to count all matches in import lines only
+        matches = list(re.finditer(pattern, import_content))
         if matches:
             # Extract module name by normalizing the pattern string
             # Patterns look like: r"from src\.utils import" or r"import src\.models"

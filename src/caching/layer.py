@@ -8,6 +8,7 @@ try:
 except ImportError:  # redis가 없을 때도 동작하도록
     redis = None  # type: ignore[assignment]
 
+from src.config.constants import RULES_CACHE_TTL_SECONDS
 from src.qa.rag_system import QAKnowledgeGraph
 
 
@@ -67,7 +68,11 @@ class CachingLayer:
 
         if self.redis:
             try:
-                self.redis.setex(cache_key, 3600, json.dumps(rules, ensure_ascii=False))
+                self.redis.setex(
+                    cache_key,
+                    RULES_CACHE_TTL_SECONDS,
+                    json.dumps(rules, ensure_ascii=False),
+                )
             except Exception as exc:  # noqa: BLE001
                 import logging
 

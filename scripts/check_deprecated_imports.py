@@ -4,6 +4,9 @@
 This script scans Python files for deprecated import patterns and
 fails if any are found. It is designed to be used as a pre-commit hook.
 
+Uses AST parsing to only detect actual import statements, ignoring
+deprecated import patterns that appear in string literals (e.g., test data).
+
 Usage:
     python scripts/check_deprecated_imports.py [files...]
 
@@ -14,6 +17,7 @@ Exit Codes:
 
 from __future__ import annotations
 
+import ast
 import re
 import sys
 from pathlib import Path
@@ -90,8 +94,30 @@ def should_exclude(filepath: Path) -> bool:
     return any(path_str.endswith(exclude) for exclude in EXCLUDE_PATHS)
 
 
+def _get_import_line_numbers(content: str) -> set[int]:
+    """Parse Python code and return line numbers of actual import statements.
+
+    This uses the AST module to identify real import statements,
+    excluding string literals that may contain import-like text.
+    """
+    try:
+        tree = ast.parse(content)
+    except SyntaxError:
+        # If parsing fails, return empty set (check all lines as fallback)
+        return set()
+
+    import_lines: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            import_lines.add(node.lineno)
+    return import_lines
+
+
 def check_file(filepath: Path) -> list[tuple[int, str, str]]:
     """Check a single file for deprecated imports.
+
+    Uses AST parsing to only check actual import statements, ignoring
+    deprecated import patterns that appear in string literals.
 
     Args:
         filepath: Path to the Python file to check.
@@ -107,10 +133,18 @@ def check_file(filepath: Path) -> list[tuple[int, str, str]]:
     except (OSError, UnicodeDecodeError):
         return []
 
+    # Get line numbers of actual import statements using AST
+    import_lines = _get_import_line_numbers(content)
+
     issues = []
     lines = content.splitlines()
 
     for line_num, line in enumerate(lines, start=1):
+        # Skip if not an actual import statement (based on AST)
+        # If AST parsing failed (import_lines is empty), check all lines
+        if import_lines and line_num not in import_lines:
+            continue
+
         # Skip comments
         stripped = line.strip()
         if stripped.startswith("#"):

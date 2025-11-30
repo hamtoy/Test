@@ -7,6 +7,7 @@ from typing import Any, Awaitable, Callable, List, Optional
 
 from pydantic import BaseModel, Field
 
+from src.config.constants import LATS_EXPANSION_MAX_OUTPUT_TOKENS
 from src.core.interfaces import GenerationResult, LLMProvider
 
 
@@ -246,6 +247,8 @@ class LATSSearcher:
             "Give a short cause (max 20 words)."
         )
         result = await self.llm_provider.generate_content_async(
-            prompt=prompt, temperature=0, max_output_tokens=50
+            prompt=prompt,
+            temperature=0,
+            max_output_tokens=LATS_EXPANSION_MAX_OUTPUT_TOKENS,
         )
         return result.content.strip()

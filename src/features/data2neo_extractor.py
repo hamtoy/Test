@@ -17,6 +17,8 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from pydantic import BaseModel, Field, field_validator
 
+from src.config.constants import DEFAULT_MAX_OUTPUT_TOKENS
+
 if TYPE_CHECKING:
     from src.config import AppConfig
     from src.core.interfaces import GraphProvider, LLMProvider
@@ -386,7 +388,7 @@ OCR Text to analyze:
                 result = await self.llm_provider.generate_content_async(
                     prompt=prompt,
                     temperature=self.extraction_temperature,
-                    max_output_tokens=2048,
+                    max_output_tokens=DEFAULT_MAX_OUTPUT_TOKENS,
                 )
                 schema = self._parse_extraction_response(result.content)
                 chunk_result = self._convert_to_entities(schema, document_id)
