@@ -42,6 +42,26 @@ class TestCachingPackageLazyImports:
 
         assert "nonexistent_function" in str(exc_info.value)
 
+    def test_cache_ttl_lazy_import(self) -> None:
+        """Test lazy import of CacheTTL."""
+        from src.caching import CacheTTL
+
+        assert CacheTTL is not None
+
+    def test_cache_ttl_policy_lazy_import(self) -> None:
+        """Test lazy import of CacheTTLPolicy."""
+        from src.caching import CacheTTLPolicy
+
+        assert CacheTTLPolicy is not None
+        assert hasattr(CacheTTLPolicy, "__init__")
+
+    def test_calculate_ttl_by_token_count_lazy_import(self) -> None:
+        """Test lazy import of calculate_ttl_by_token_count."""
+        from src.caching import calculate_ttl_by_token_count
+
+        assert calculate_ttl_by_token_count is not None
+        assert callable(calculate_ttl_by_token_count)
+
     def test_all_exports(self) -> None:
         """Test that __all__ contains expected exports."""
         import src.caching
@@ -50,3 +70,6 @@ class TestCachingPackageLazyImports:
         assert "analyze_cache_stats" in src.caching.__all__
         assert "print_cache_report" in src.caching.__all__
         assert "RedisEvalCache" in src.caching.__all__
+        assert "CacheTTL" in src.caching.__all__
+        assert "CacheTTLPolicy" in src.caching.__all__
+        assert "calculate_ttl_by_token_count" in src.caching.__all__
