@@ -165,7 +165,9 @@ async def check_dependencies() -> dict[str, Any]:
         import google.generativeai
 
         deps["google-generativeai"] = getattr(
-            google.generativeai, "__version__", "unknown",
+            google.generativeai,
+            "__version__",
+            "unknown",
         )
     except ImportError:
         deps["google-generativeai"] = None

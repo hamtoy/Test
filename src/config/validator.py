@@ -14,7 +14,6 @@ class ValidationError(Exception):
     """환경 변수 검증 실패 예외"""
 
 
-
 class EnvValidator:
     """환경 변수 검증기"""
 
