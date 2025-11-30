@@ -69,6 +69,16 @@ To build the documentation locally:
     ```
 3.  Open `_build/html/index.html` in your browser.
 
+### GitHub Pages Setup
+
+For documentation to be automatically deployed to GitHub Pages:
+
+1. Go to `Settings` → `Pages` in your repository
+2. Under "Build and deployment", set "Source" to "GitHub Actions"
+3. Save the changes
+
+This enables the `docs.yml` workflow to deploy Sphinx documentation on push to main.
+
 ## Pull Request Process
 
 1.  Fork the repository and create a new branch for your feature or fix.
