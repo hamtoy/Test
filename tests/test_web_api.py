@@ -57,8 +57,11 @@ class TestOCREndpoint:
         mock_path.exists.return_value = True
         mock_path.read_text.return_value = "Sample OCR Text"
 
-        with patch("src.web.api.PROJECT_ROOT", new=MagicMock()) as mock_root:
-            mock_root.__truediv__.return_value.__truediv__.return_value = mock_path
+        mock_input_dir = MagicMock()
+        mock_input_dir.__truediv__.return_value = mock_path
+
+        with patch("src.web.api.config") as mock_config:
+            mock_config.input_dir = mock_input_dir
             response = client.get("/api/ocr")
             assert response.status_code == 200
             assert response.json() == {"ocr": "Sample OCR Text"}
@@ -68,11 +71,14 @@ class TestOCREndpoint:
         mock_path = MagicMock()
         mock_path.exists.return_value = False
 
-        with patch("src.web.api.PROJECT_ROOT", new=MagicMock()) as mock_root:
-            mock_root.__truediv__.return_value.__truediv__.return_value = mock_path
+        mock_input_dir = MagicMock()
+        mock_input_dir.__truediv__.return_value = mock_path
+
+        with patch("src.web.api.config") as mock_config:
+            mock_config.input_dir = mock_input_dir
             response = client.get("/api/ocr")
             assert response.status_code == 200
-            assert response.json() == {"ocr": None}
+            assert response.json() == {"ocr": "", "error": "OCR 파일이 없습니다."}
 
 
 class TestQAGeneration:
