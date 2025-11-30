@@ -50,7 +50,7 @@ graph TB
 - `QAKnowledgeGraph`: Neo4j 기반 QA 시스템
 - `IntegratedQAPipeline`: 통합 품질 파이프라인
 
-### 2. GeminiAgent (`src/agent.py`)
+### 2. GeminiAgent (`src/agent/core.py`)
 
 **역할**: Gemini API 인터페이스 및 비용 관리
 
@@ -261,7 +261,7 @@ python scripts/render_prompt.py \
 
 ### Lazy Import
 
-**적용 위치**: `src/agent.py`
+**적용 위치**: `src/agent/core.py`
 
 **성과**: 초기화 시간 ~20% 단축 (2.84s → 2.28s)
 

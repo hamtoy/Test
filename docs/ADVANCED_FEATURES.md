@@ -90,7 +90,7 @@ flowchart TB
 
 ```bash
 # Notion 데이터에서 지식 그래프 생성
-python -m src.graph_schema_builder
+python -m src.graph.builder
 
 # Neo4j Browser에서 확인
 # MATCH (n) RETURN labels(n), count(n)
@@ -99,7 +99,7 @@ python -m src.graph_schema_builder
 ### RAG 시스템 테스트
 
 ```bash
-python -m src.qa_rag_system
+python -m src.qa.rag_system
 ```
 
 ### 주요 컴포넌트
