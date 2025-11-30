@@ -22,6 +22,81 @@ from src.config.constants import PRICING_TIERS
 
 logger = logging.getLogger(__name__)
 
+# Prometheus metrics (lazy initialization to avoid import errors)
+_CACHE_HIT_COUNTER: Optional[Any] = None
+_CACHE_MISS_COUNTER: Optional[Any] = None
+_CACHE_LATENCY_HISTOGRAM: Optional[Any] = None
+
+
+def _init_prometheus_metrics() -> None:
+    """Initialize Prometheus metrics lazily."""
+    global _CACHE_HIT_COUNTER, _CACHE_MISS_COUNTER, _CACHE_LATENCY_HISTOGRAM
+
+    try:
+        from prometheus_client import Counter, Histogram
+
+        if _CACHE_HIT_COUNTER is None:
+            _CACHE_HIT_COUNTER = Counter(
+                "cache_hits_total",
+                "Total number of cache hits",
+                ["cache_type"],
+            )
+            _CACHE_MISS_COUNTER = Counter(
+                "cache_misses_total",
+                "Total number of cache misses",
+                ["cache_type"],
+            )
+            _CACHE_LATENCY_HISTOGRAM = Histogram(
+                "cache_operation_latency_seconds",
+                "Cache operation latency in seconds",
+                ["operation", "cache_type"],
+                buckets=[0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0],
+            )
+    except ImportError:
+        pass  # Prometheus not available
+
+
+def record_cache_hit(cache_type: str = "context") -> None:
+    """Record a cache hit metric.
+
+    Args:
+        cache_type: Type of cache (context, redis, local)
+    """
+    _init_prometheus_metrics()
+    if _CACHE_HIT_COUNTER is not None:
+        _CACHE_HIT_COUNTER.labels(cache_type=cache_type).inc()
+
+
+def record_cache_miss(cache_type: str = "context") -> None:
+    """Record a cache miss metric.
+
+    Args:
+        cache_type: Type of cache (context, redis, local)
+    """
+    _init_prometheus_metrics()
+    if _CACHE_MISS_COUNTER is not None:
+        _CACHE_MISS_COUNTER.labels(cache_type=cache_type).inc()
+
+
+def record_cache_latency(
+    latency_seconds: float,
+    operation: str = "lookup",
+    cache_type: str = "context",
+) -> None:
+    """Record cache operation latency.
+
+    Args:
+        latency_seconds: Operation duration in seconds
+        operation: Operation type (lookup, store, delete)
+        cache_type: Type of cache
+    """
+    _init_prometheus_metrics()
+    if _CACHE_LATENCY_HISTOGRAM is not None:
+        _CACHE_LATENCY_HISTOGRAM.labels(
+            operation=operation,
+            cache_type=cache_type,
+        ).observe(latency_seconds)
+
 
 @dataclass
 class CacheMetrics:
