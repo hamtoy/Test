@@ -41,8 +41,7 @@ class IntegratedQAPipeline:
         )
 
     def create_session(self, image_meta: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        그래프 기반 컨텍스트로 세션을 생성하고 검증합니다.
+        """그래프 기반 컨텍스트로 세션을 생성하고 검증합니다.
 
         Args:
             image_meta: 이미지/텍스트 메타데이터 (text_density, has_table_chart 등 포함).
@@ -84,8 +83,7 @@ class IntegratedQAPipeline:
         return session
 
     def _build_session_context(self, image_meta: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        SessionContext 스키마에 맞게 메타데이터를 변환하고 기본값을 채웁니다.
+        """SessionContext 스키마에 맞게 메타데이터를 변환하고 기본값을 채웁니다.
 
         Args:
             image_meta: 이미지 메타데이터 딕셔너리.
@@ -119,8 +117,7 @@ class IntegratedQAPipeline:
         }
 
     def validate_output(self, query_type: str, output: str) -> Dict[str, Any]:
-        """
-        출력 검증: 금지 패턴, 에러 패턴, 관련 규칙 기반 검사.
+        """출력 검증: 금지 패턴, 에러 패턴, 관련 규칙 기반 검사.
         """
         violations: List[str] = [
             f"forbidden_pattern:{v['type']}" for v in find_violations(output)
@@ -164,8 +161,7 @@ class IntegratedQAPipeline:
 
 
 def run_integrated_pipeline(meta_path: Path) -> Dict[str, Any]:
-    """
-    파일에서 메타데이터를 읽어 통합 파이프라인을 실행합니다.
+    """파일에서 메타데이터를 읽어 통합 파이프라인을 실행합니다.
 
     Args:
         meta_path: 이미지 메타데이터 JSON 경로

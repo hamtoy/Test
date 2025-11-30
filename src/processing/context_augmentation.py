@@ -10,8 +10,7 @@ from src.qa.rag_system import CustomGeminiEmbeddings
 
 
 class AdvancedContextAugmentation:
-    """
-    유사 사례/규칙/예시를 찾아 프롬프트에 주입하는 보조 유틸.
+    """유사 사례/규칙/예시를 찾아 프롬프트에 주입하는 보조 유틸.
     - GEMINI_API_KEY가 없으면 벡터 검색을 건너뛰고 그래프 기반 대체 검색을 사용.
     """
 
@@ -72,7 +71,6 @@ class AdvancedContextAugmentation:
             >>> result["relevant_rules"][0]["priority"]
             1
         """
-
         similar_blocks: List[Any] = []
         enriched_rules: List[Dict[str, Any]] = []
 
@@ -151,10 +149,8 @@ class AdvancedContextAugmentation:
     def generate_with_augmentation(
         self, user_query: str, query_type: str, base_context: Dict[str, Any]
     ) -> str:
+        """증강된 컨텍스트로 최종 프롬프트 생성 (LLM 호출 없이 포맷만 반환).
         """
-        증강된 컨텍스트로 최종 프롬프트 생성 (LLM 호출 없이 포맷만 반환).
-        """
-
         aug_ctx = self.augment_prompt_with_similar_cases(user_query, query_type)
 
         template = """

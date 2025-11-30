@@ -235,8 +235,7 @@ class AppConfig(BaseSettings):
 
     @staticmethod
     def _detect_project_root() -> Path:
-        """
-        Detect the project root by checking several hints:
+        """Detect the project root by checking several hints:
         1. PROJECT_ROOT env var (highest priority)
         2. The nearest directory containing `.git`, `templates`, or `data`
         3. Fallback to the parent of this file (legacy behavior)

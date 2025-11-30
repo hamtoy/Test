@@ -8,16 +8,14 @@ from src.qa.rag_system import QAKnowledgeGraph
 
 
 class AdaptiveDifficultyAdjuster:
-    """
-    이미지 복잡도에 따라 질의/답변 난이도를 자동 조절합니다.
+    """이미지 복잡도에 따라 질의/답변 난이도를 자동 조절합니다.
     """
 
     def __init__(self, kg: QAKnowledgeGraph):
         self.kg = kg
 
     def analyze_text_complexity(self, text: str) -> Dict[str, Any]:
-        """
-        OCR 텍스트를 분석하여 복잡도를 추정합니다.
+        """OCR 텍스트를 분석하여 복잡도를 추정합니다.
 
         Args:
             text: OCR 텍스트 문자열.
@@ -82,8 +80,7 @@ class AdaptiveDifficultyAdjuster:
         return complexity
 
     def analyze_image_complexity(self, image_meta: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        이미지 메타 정보를 기반으로 복잡도를 추정합니다.
+        """이미지 메타 정보를 기반으로 복잡도를 추정합니다.
 
         Args:
             image_meta: OCR/멀티모달 분석 결과 딕셔너리.
@@ -91,7 +88,6 @@ class AdaptiveDifficultyAdjuster:
         Returns:
             complexity dict: text_density, has_structure, estimated_blocks, level 등.
         """
-
         complexity: Dict[str, Any] = {
             "text_density": float(image_meta.get("text_density", 0.5)),
             "has_structure": bool(image_meta.get("has_table_chart", False)),
@@ -145,8 +141,7 @@ class AdaptiveDifficultyAdjuster:
     def adjust_query_requirements(
         self, complexity: Dict[str, Any], query_type: str
     ) -> Dict[str, Any]:
-        """
-        복잡도에 따라 질의 요구사항을 조정합니다.
+        """복잡도에 따라 질의 요구사항을 조정합니다.
 
         Args:
             complexity: analyze_image_complexity 결과 딕셔너리.
@@ -155,7 +150,6 @@ class AdaptiveDifficultyAdjuster:
         Returns:
             dict: 길이/깊이/증거 요구사항 등 조정값.
         """
-
         adjustments: Dict[str, Any] = {}
 
         if query_type == "explanation":

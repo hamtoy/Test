@@ -9,8 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class DynamicExampleSelector:
-    """
-    현재 상황에 가장 적합한 예시를 그래프에서 선택.
+    """현재 상황에 가장 적합한 예시를 그래프에서 선택.
     """
 
     def __init__(self, kg: QAKnowledgeGraph):
@@ -19,10 +18,8 @@ class DynamicExampleSelector:
     def select_best_examples(
         self, query_type: str, context: Dict[str, Any], k: int = 3
     ) -> List[Dict[str, Any]]:
+        """컨텍스트에 맞는 최적 예시 선택.
         """
-        컨텍스트에 맞는 최적 예시 선택.
-        """
-
         examples: List[Dict[str, Any]] = []
         try:
             graph_session = getattr(self.kg, "graph_session", None)

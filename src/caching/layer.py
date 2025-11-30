@@ -23,8 +23,7 @@ class _RedisClientProto(Protocol):
 
 
 class CachingLayer:
-    """
-    Rule 조회에 Redis 캐시를 덧붙이는 간단한 레이어.
+    """Rule 조회에 Redis 캐시를 덧붙이는 간단한 레이어.
     Redis가 없으면 그래프에서 직접 조회합니다.
     """
 
@@ -49,8 +48,7 @@ class CachingLayer:
             )
 
     def get_rules_cached(self, query_type: str) -> List[Dict[str, str]]:
-        """
-        규칙 조회 + Redis 캐시 (1시간 TTL).
+        """규칙 조회 + Redis 캐시 (1시간 TTL).
         """
         cache_key = f"rules:{query_type}"
 
@@ -81,8 +79,7 @@ class CachingLayer:
         return rules
 
     def invalidate_cache(self, pattern: str = "rules:*") -> int:
-        """
-        캐시 무효화. 삭제한 키 개수를 반환.
+        """캐시 무효화. 삭제한 키 개수를 반환.
         """
         if not self.redis:
             return 0

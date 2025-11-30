@@ -300,8 +300,7 @@ class CacheAnalytics:
 def calculate_savings(
     record: Dict[str, Any], cached_portion: float = 0.7, discount: float = 0.9
 ) -> float:
-    """
-    Estimate savings (USD) for a single record given cache hits.
+    """Estimate savings (USD) for a single record given cache hits.
 
     Assumptions:
     - cached_portion of input tokens are cacheable (system + OCR context)

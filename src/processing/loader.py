@@ -118,7 +118,6 @@ async def load_input_data(
 async def reload_data_if_needed(
     config: AppConfig, ocr_filename: str, cand_filename: str, interactive: bool = False
 ) -> tuple[str, Dict[str, str]]:
-    """
-    OCR/후보 데이터를 재로드하는 래퍼 함수. interactive 플래그는 향후 프롬프트를 위해 예약됨.
+    """OCR/후보 데이터를 재로드하는 래퍼 함수. interactive 플래그는 향후 프롬프트를 위해 예약됨.
     """
     return await load_input_data(config.input_dir, ocr_filename, cand_filename)

@@ -9,8 +9,7 @@ from src.qa.rag_system import QAKnowledgeGraph
 
 
 class MultiAgentQASystem:
-    """
-    간소화된 멀티-스텝 품질 파이프라인:
+    """간소화된 멀티-스텝 품질 파이프라인:
     - 규칙/제약 수집
     - 예시 수집
     - Gemini 생성
@@ -26,10 +25,8 @@ class MultiAgentQASystem:
     def collaborative_generate(
         self, query_type: str, context: Dict[str, Any]
     ) -> Dict[str, Any]:
+        """규칙/예시를 모아 Gemini로 생성하고 검증까지 수행합니다.
         """
-        규칙/예시를 모아 Gemini로 생성하고 검증까지 수행합니다.
-        """
-
         rules = self._collect_rules(query_type)
         constraints = self.kg.get_constraints_for_query_type(query_type)
         examples = self.example_selector.select_best_examples(query_type, context, k=3)
@@ -83,7 +80,6 @@ class MultiAgentQASystem:
         examples: List[Dict[str, Any]],
     ) -> str:
         """Gemini에 전달할 통합 프롬프트 생성."""
-
         rules_text = "\n".join([f"- {r['text']}" for r in rules]) or "(규칙 없음)"
         constraint_text = (
             "\n".join([f"- {c.get('description', '')}" for c in constraints])

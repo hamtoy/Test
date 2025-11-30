@@ -24,8 +24,7 @@ def require_env(var: str) -> str:
 
 
 class DynamicTemplateGenerator:
-    """
-    그래프에 저장된 Rule/Constraint/Example을 템플릿 컨텍스트에 주입해
+    """그래프에 저장된 Rule/Constraint/Example을 템플릿 컨텍스트에 주입해
     질의 유형별 프롬프트를 렌더링하고, 세션 검증 체크리스트를 생성합니다.
     """
 
@@ -53,8 +52,7 @@ class DynamicTemplateGenerator:
     def generate_prompt_for_query_type(
         self, query_type: str, context: Dict[str, Any]
     ) -> str:
-        """
-        질의 유형에 맞는 시스템 템플릿을 그래프 지식과 합쳐 렌더링.
+        """질의 유형에 맞는 시스템 템플릿을 그래프 지식과 합쳐 렌더링.
         """
         cypher = """
         MATCH (qt:QueryType {name: $type})
@@ -106,8 +104,7 @@ class DynamicTemplateGenerator:
     def generate_validation_checklist(
         self, session: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
-        """
-        세션에 포함된 QueryType에 대해 그래프에서 제약을 수집해 체크리스트 생성.
+        """세션에 포함된 QueryType에 대해 그래프에서 제약을 수집해 체크리스트 생성.
         """
         query_types = {t.get("type") for t in session.get("turns", []) if t.get("type")}
         checklist: List[Dict[str, Any]] = []

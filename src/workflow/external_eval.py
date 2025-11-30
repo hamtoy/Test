@@ -16,8 +16,7 @@ async def evaluate_external_answers(
     query: str,
     answers: List[str],
 ) -> List[Dict[str, Any]]:
-    """
-    외부에서 제공된 3개의 답변을 평가한다.
+    """외부에서 제공된 3개의 답변을 평가한다.
 
     Args:
         agent: GeminiAgent 인스턴스

@@ -63,7 +63,7 @@ class QAGenerationRequest(BaseModel):
 
     @model_validator(mode="after")
     def check_qtype_for_single(self) -> "QAGenerationRequest":
-        """single 모드에서는 qtype이 필수입니다."""
+        """Single 모드에서는 qtype이 필수입니다."""
         if self.mode == "single" and self.qtype is None:
             raise ValueError("single 모드에서는 qtype 필수")
         return self

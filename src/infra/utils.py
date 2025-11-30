@@ -190,8 +190,7 @@ def safe_json_parse(
 
 
 def write_cache_stats(path: Path, max_entries: int, entry: Dict[str, Any]) -> None:
-    """
-    Append cache/tokens stats to a JSONL file, trimming to max_entries.
+    """Append cache/tokens stats to a JSONL file, trimming to max_entries.
     """
     max_entries = max(1, min(max_entries, 1000))
     path.parent.mkdir(parents=True, exist_ok=True)

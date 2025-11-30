@@ -1,6 +1,5 @@
 # src/infra/neo4j_optimizer.py
-"""
-Neo4j 2-Tier Index Architecture implementation.
+"""Neo4j 2-Tier Index Architecture implementation.
 Optimizes query performance through dual-layer indexing.
 """
 
@@ -17,8 +16,7 @@ _INDEX_NAME_PATTERN = re.compile(r"CREATE\s+(?:VECTOR\s+)?INDEX\s+(\w+)", re.IGN
 
 
 class TwoTierIndexManager:
-    """
-    Manages 2-Tier indexing strategy for Neo4j:
+    """Manages 2-Tier indexing strategy for Neo4j:
     - Tier 1: Object indexing (node properties)
     - Tier 2: Triad indexing (relationship patterns)
     """
@@ -35,8 +33,7 @@ class TwoTierIndexManager:
     # ============ TIER 1: Object Indexes ============
 
     async def create_object_indexes(self) -> None:
-        """
-        Create 1st tier indexes on node properties.
+        """Create 1st tier indexes on node properties.
         Optimizes single-node lookups.
         """
         queries = [
@@ -95,8 +92,7 @@ class TwoTierIndexManager:
     # ============ TIER 2: Triad Indexes ============
 
     async def create_triad_indexes(self) -> None:
-        """
-        Create 2nd tier indexes on relationship patterns.
+        """Create 2nd tier indexes on relationship patterns.
         Optimizes graph traversal queries.
 
         Triad format: (subject)-[predicate]->(object)
@@ -142,8 +138,7 @@ class TwoTierIndexManager:
         return [dict(record) for record in records]
 
     async def analyze_index_usage(self) -> Dict[str, Any]:
-        """
-        Analyze index usage statistics.
+        """Analyze index usage statistics.
         Returns query performance metrics.
         """
         query = """
@@ -167,8 +162,7 @@ class TwoTierIndexManager:
 
     @staticmethod
     def _extract_index_name(query: str) -> str:
-        """
-        Extract index name from a CREATE INDEX query.
+        """Extract index name from a CREATE INDEX query.
 
         Handles both 'CREATE INDEX name' and 'CREATE VECTOR INDEX name' formats.
 
@@ -193,14 +187,12 @@ class TwoTierIndexManager:
 
 
 class OptimizedQueries:
-    """
-    Example queries that benefit from 2-Tier indexing.
+    """Example queries that benefit from 2-Tier indexing.
     """
 
     @staticmethod
     def find_rules_by_document(_document_id: Optional[str] = None) -> str:
-        """
-        Find all rules associated with a document.
+        """Find all rules associated with a document.
         Uses: rule_id_idx + triad_document_rule_idx
 
         Args:
@@ -217,8 +209,7 @@ class OptimizedQueries:
 
     @staticmethod
     def find_related_rules(_rule_id: Optional[str] = None, max_depth: int = 2) -> str:
-        """
-        Find rules related to a given rule (transitive closure).
+        """Find rules related to a given rule (transitive closure).
         Uses: triad_relates_to_idx
 
         Args:
@@ -239,8 +230,7 @@ class OptimizedQueries:
     def semantic_search_with_graph(
         _embedding: Optional[List[float]] = None, _k: int = 10
     ) -> str:
-        """
-        Hybrid search: Vector similarity + Graph traversal.
+        """Hybrid search: Vector similarity + Graph traversal.
         Uses: chunk_embedding_idx + triad_has_chunk_idx
 
         Args:
