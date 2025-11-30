@@ -97,8 +97,8 @@ SHIM_FILES: List[str] = [
 EXCLUDE_PATHS: List[str] = [
     "tests/test_deprecation_warnings.py",
     "tests/test_enhanced_deprecation.py",
-    "tests/test_migrate_imports.py",  # Tests migration functionality
-    "tests/test_deprecation_stats.py",  # Tests deprecation stats
+    "tests/unit/migration/test_migrate_imports.py",  # Tests migration functionality
+    "tests/unit/migration/test_deprecation_stats.py",  # Tests deprecation stats
     "scripts/migrate_imports.py",
     "scripts/check_deprecated_imports.py",
     "scripts/verify_v3_readiness.py",
