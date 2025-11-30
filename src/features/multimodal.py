@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from PIL import Image
 
 try:
-    import pytesseract
+    import pytesseract as _pytesseract  # noqa: E402
 except ImportError:
-    pytesseract = None  # type: ignore
+    _pytesseract = None
+
+pytesseract: Optional[Any] = _pytesseract
 
 
 from src.qa.rag_system import QAKnowledgeGraph
