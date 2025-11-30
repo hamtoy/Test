@@ -36,6 +36,11 @@ DEFAULT_SETTINGS_MAX_OUTPUT_TOKENS: Final[int] = 8192
 # Max output tokens for quick operations (e.g., LATS expansion)
 LATS_EXPANSION_MAX_OUTPUT_TOKENS: Final[int] = 50
 
+# ===== API Pipeline Configuration =====
+
+# Max characters for OCR text truncation in QA generation
+QA_GENERATION_OCR_TRUNCATE_LENGTH: Final[int] = 500
+
 
 # ===== Cache TTL Configuration (seconds) =====
 

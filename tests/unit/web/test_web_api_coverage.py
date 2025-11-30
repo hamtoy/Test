@@ -174,8 +174,15 @@ class TestGenerateSingleQA:
         """Test generate_single_qa returns expected structure."""
         mock_agent = MagicMock()
         mock_agent.generate_query = AsyncMock(return_value=["생성된 질의"])
+        mock_agent.rewrite_best_answer = AsyncMock(return_value="생성된 초안 답변")
 
-        with patch("src.web.api.kg", None):
+        with (
+            patch("src.web.api.kg", None),
+            patch(
+                "src.web.api.inspect_answer",
+                new=AsyncMock(return_value="검수된 최종 답변"),
+            ),
+        ):
             result = await generate_single_qa(mock_agent, "OCR 텍스트", "reasoning")
 
             assert "type" in result
@@ -183,6 +190,7 @@ class TestGenerateSingleQA:
             assert "query" in result
             assert result["query"] == "생성된 질의"
             assert "answer" in result
+            assert result["answer"] == "검수된 최종 답변"
 
     @pytest.mark.asyncio
     async def test_generate_single_qa_empty_queries(self) -> None:
@@ -203,6 +211,7 @@ class TestGenerateSingleQA:
         """Test generate_single_qa uses template generator with kg."""
         mock_agent = MagicMock()
         mock_agent.generate_query = AsyncMock(return_value=["생성된 질의"])
+        mock_agent.rewrite_best_answer = AsyncMock(return_value="생성된 초안 답변")
 
         mock_kg = MagicMock()
         mock_template_gen = MagicMock()
@@ -220,12 +229,17 @@ class TestGenerateSingleQA:
                 "src.processing.template_generator.DynamicTemplateGenerator",
                 return_value=mock_template_gen,
             ),
+            patch(
+                "src.web.api.inspect_answer",
+                new=AsyncMock(return_value="검수된 최종 답변"),
+            ),
         ):
             result = await generate_single_qa(
                 mock_agent, "OCR 텍스트", "global_explanation"
             )
 
             assert result["type"] == "global_explanation"
+            assert result["answer"] == "검수된 최종 답변"
 
 
 class TestLogReviewSessionEdgeCases:
@@ -432,12 +446,19 @@ class TestQAGenerateApiExtended:
         try:
             mock_agent = MagicMock()
             mock_agent.generate_query = AsyncMock(return_value=["생성된 질의"])
+            mock_agent.rewrite_best_answer = AsyncMock(return_value="초안 답변")
             api_module.agent = mock_agent
 
             with patch("src.web.api.config") as mock_config:
                 mock_config.input_dir = inputs_dir
 
-                with patch("src.web.api.kg", None):
+                with (
+                    patch("src.web.api.kg", None),
+                    patch(
+                        "src.web.api.inspect_answer",
+                        new=AsyncMock(return_value="검수된 답변"),
+                    ),
+                ):
                     response = client.post(
                         "/api/qa/generate",
                         json={"mode": "batch"},

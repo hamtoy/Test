@@ -1,8 +1,8 @@
 import logging
-from typing import Dict, Any, Literal, cast
+from typing import Dict, Any, Literal, Optional, cast
 
 # 기존 features 패키지의 LATS 재사용
-from src.features.lats import LATSSearcher
+from src.features.lats import LATSSearcher, SearchState
 from src.workflow.mcts_optimizer import MCTSWorkflowOptimizer
 from src.agent.core import GeminiAgent
 
@@ -22,10 +22,20 @@ class HybridWorkflowOptimizer:
         self.mcts = MCTSWorkflowOptimizer(agent, templates)
 
     async def optimize(
-        self, query: str, mode: Literal["auto", "lats", "mcts"] = "auto"
+        self,
+        query: str,
+        mode: Literal["auto", "lats", "mcts"] = "auto",
+        ocr_text: Optional[str] = None,
+        current_answer: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Execute optimization based on mode.
+
+        Args:
+            query: 최적화할 질의
+            mode: 최적화 모드 (auto, lats, mcts)
+            ocr_text: OCR 텍스트 (LATS 상태 주입용)
+            current_answer: 현재 답변 (LATS 상태 주입용)
         """
         selected_mode: Literal["auto", "lats", "mcts"] = mode
         if mode == "auto":
@@ -39,16 +49,14 @@ class HybridWorkflowOptimizer:
 
         if selected_mode == "lats":
             # LATS: Deep reasoning with reflection
-            # LATSSearcher.run() 메서드 사용 (SearchNode 반환)
-            # 초기 상태에 쿼리를 포함시킬 수 있는지 확인 필요.
-            # 현재 SearchState는 turns 리스트를 가짐.
-            # 여기서는 단순히 run()을 호출하고 결과 노드를 반환.
-            # 실제로는 initial_state에 쿼리를 주입하는 방법이 필요할 수 있음.
-            # 하지만 LATSSearcher.run()은 인자 없이도 동작 가능.
+            # 초기 상태에 query, ocr_text, current_answer 주입
+            initial_state = SearchState(
+                query=query,
+                ocr_text=ocr_text,
+                current_answer=current_answer,
+            )
 
-            # TODO: 쿼리를 초기 상태로 전달하는 방법 개선 필요 (현재 LATS 구현에 의존)
-            # 임시로 run() 호출
-            result_node = await self.lats.run()
+            result_node = await self.lats.run(initial_state=initial_state)
 
             return {
                 "optimizer": "LATS",

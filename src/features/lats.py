@@ -20,6 +20,11 @@ class SearchState(BaseModel):
     last_failure_reason: Optional[str] = None
     focus_history: List[str] = Field(default_factory=list)
 
+    # LATS 상태 주입을 위한 필드
+    query: Optional[str] = None
+    ocr_text: Optional[str] = None
+    current_answer: Optional[str] = None
+
     def add_turn(self, action: str) -> "SearchState":
         new_state = self.model_copy(deep=True)
         new_state.turns.append({"action": action})
