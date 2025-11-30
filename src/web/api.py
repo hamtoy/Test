@@ -457,7 +457,11 @@ async def api_analyze_image(file: UploadFile = File(...)) -> Dict[str, Any]:
     # 업로드된 파일명에서 디렉터리 정보 제거 및 허용된 확장자만 유지
     original_filename = file.filename or "uploaded_image"
     safe_name = Path(original_filename).name
-    ext = Path(safe_name).suffix
+    ext = Path(safe_name).suffix.lower()
+    # 허용된 이미지 확장자만 사용 (확장자가 없거나 허용되지 않으면 빈 문자열)
+    allowed_extensions = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tiff"}
+    if ext not in allowed_extensions:
+        ext = ""
     secure_filename = f"{uuid4().hex}{ext}"
     temp_path = temp_dir / secure_filename
 
