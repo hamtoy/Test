@@ -55,6 +55,12 @@ def test_multimodal_understanding_uses_fakes(monkeypatch: pytest.MonkeyPatch) ->
         width = 10
         height = 20
 
+        def __enter__(self) -> "_FakeImg":
+            return self
+
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
+
     monkeypatch.setattr(
         features_multimodal,
         "Image",
@@ -98,6 +104,12 @@ def test_multimodal_with_graph_session(monkeypatch: pytest.MonkeyPatch) -> None:
         width = 100
         height = 200
 
+        def __enter__(self) -> "_FakeImg":
+            return self
+
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
+
     monkeypatch.setattr(
         features_multimodal,
         "Image",
@@ -128,6 +140,12 @@ def test_multimodal_no_graph(monkeypatch: pytest.MonkeyPatch) -> None:
     class _FakeImg:
         width = 50
         height = 50
+
+        def __enter__(self) -> "_FakeImg":
+            return self
+
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
     monkeypatch.setattr(
         features_multimodal,
@@ -172,6 +190,12 @@ def test_multimodal_session_returns_none(monkeypatch: pytest.MonkeyPatch) -> Non
         width = 50
         height = 50
 
+        def __enter__(self) -> "_FakeImg":
+            return self
+
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
+
     monkeypatch.setattr(
         features_multimodal,
         "Image",
@@ -215,6 +239,12 @@ def test_multimodal_exception_handling(monkeypatch: pytest.MonkeyPatch) -> None:
     class _FakeImg:
         width = 50
         height = 50
+
+        def __enter__(self) -> "_FakeImg":
+            return self
+
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
 
     monkeypatch.setattr(
         features_multimodal,
