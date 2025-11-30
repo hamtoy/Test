@@ -216,6 +216,11 @@ ignore_missing_imports = true
 module = ["src.infra.worker"]
 disallow_untyped_decorators = false
 
+# Health module uses redis.asyncio.from_url which may be untyped without types-redis
+[[tool.mypy.overrides]]
+module = ["src.infra.health"]
+disallow_untyped_calls = false
+
 # Test file that intentionally tests import failures for removed modules
 [[tool.mypy.overrides]]
 module = ["tests.unit.migration.test_deprecation_warnings"]
