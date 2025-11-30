@@ -49,7 +49,7 @@ async def test_load_input_data_candidate_file_whitespace_only(tmp_path: Path) ->
 @pytest.mark.asyncio
 async def test_load_input_data_json_empty_dict(tmp_path: Path) -> None:
     """Test fallback when JSON is valid but empty dict.
-    
+
     Empty dict triggers raw text parsing fallback, which treats the entire
     text as Candidate A, resulting in validation failure for missing B, C.
     """
@@ -65,7 +65,7 @@ async def test_load_input_data_json_empty_dict(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_load_input_data_json_invalid_type(tmp_path: Path) -> None:
     """Test fallback when JSON is valid but wrong type (list instead of dict).
-    
+
     List type triggers raw text parsing fallback.
     """
     base_dir = tmp_path
@@ -80,7 +80,7 @@ async def test_load_input_data_json_invalid_type(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_load_input_data_unparseable_format(tmp_path: Path) -> None:
     """Test error when neither JSON nor raw text format works.
-    
+
     Content without A:, B:, C: patterns falls back to treating entire text
     as Candidate A, resulting in validation failure for missing B, C.
     """
@@ -119,7 +119,7 @@ async def test_reload_data_if_needed(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_load_input_data_json_type_error(tmp_path: Path) -> None:
     """Test that TypeError during JSON parsing is handled.
-    
+
     Falls back to raw text parsing.
     """
     base_dir = tmp_path
@@ -131,14 +131,16 @@ async def test_load_input_data_json_type_error(tmp_path: Path) -> None:
     with patch("src.processing.loader.json.loads") as mock_loads:
         mock_loads.side_effect = TypeError("mock type error")
         # Falls back to raw text parsing -> treats entire JSON text as A -> missing B, C
-        with pytest.raises(ValidationFailedError, match="Candidates missing required keys"):
+        with pytest.raises(
+            ValidationFailedError, match="Candidates missing required keys"
+        ):
             await load_input_data(base_dir, "ocr.txt", "candidates.json")
 
 
 @pytest.mark.asyncio
 async def test_load_input_data_json_value_error(tmp_path: Path) -> None:
     """Test that ValueError during JSON parsing is handled.
-    
+
     Falls back to raw text parsing.
     """
     base_dir = tmp_path
@@ -150,14 +152,16 @@ async def test_load_input_data_json_value_error(tmp_path: Path) -> None:
     with patch("src.processing.loader.json.loads") as mock_loads:
         mock_loads.side_effect = ValueError("mock value error")
         # Falls back to raw text parsing -> treats entire JSON text as A -> missing B, C
-        with pytest.raises(ValidationFailedError, match="Candidates missing required keys"):
+        with pytest.raises(
+            ValidationFailedError, match="Candidates missing required keys"
+        ):
             await load_input_data(base_dir, "ocr.txt", "candidates.json")
 
 
 @pytest.mark.asyncio
 async def test_load_input_data_json_unexpected_error(tmp_path: Path) -> None:
     """Test that unexpected Exception during JSON parsing is handled.
-    
+
     Falls back to raw text parsing.
     """
     base_dir = tmp_path
@@ -169,5 +173,7 @@ async def test_load_input_data_json_unexpected_error(tmp_path: Path) -> None:
     with patch("src.processing.loader.json.loads") as mock_loads:
         mock_loads.side_effect = RuntimeError("unexpected mock error")
         # Falls back to raw text parsing -> treats entire JSON text as A -> missing B, C
-        with pytest.raises(ValidationFailedError, match="Candidates missing required keys"):
+        with pytest.raises(
+            ValidationFailedError, match="Candidates missing required keys"
+        ):
             await load_input_data(base_dir, "ocr.txt", "candidates.json")
