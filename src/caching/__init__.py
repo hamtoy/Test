@@ -6,11 +6,30 @@ __all__ = [
     "CachingLayer",
     "analyze_cache_stats",
     "print_cache_report",
+    "print_realtime_report",
     "RedisEvalCache",
     "CacheTTL",
     "CacheTTLPolicy",
     "calculate_ttl_by_token_count",
+    "CacheAnalytics",
+    "CacheMetrics",
+    "RealTimeTracker",
+    "MemoryMonitor",
 ]
+
+_ANALYTICS_NAMES = frozenset(
+    {
+        "analyze_cache_stats",
+        "print_cache_report",
+        "print_realtime_report",
+        "CacheAnalytics",
+        "CacheMetrics",
+        "RealTimeTracker",
+        "MemoryMonitor",
+    }
+)
+
+_TTL_NAMES = frozenset({"CacheTTL", "CacheTTLPolicy", "calculate_ttl_by_token_count"})
 
 
 def __getattr__(name: str) -> Any:
@@ -19,29 +38,42 @@ def __getattr__(name: str) -> Any:
         from src.caching.layer import CachingLayer
 
         return CachingLayer
-    elif name == "analyze_cache_stats":
-        from src.caching.analytics import analyze_cache_stats
+    if name in _ANALYTICS_NAMES:
+        from src.caching.analytics import (
+            CacheAnalytics,
+            CacheMetrics,
+            MemoryMonitor,
+            RealTimeTracker,
+            analyze_cache_stats,
+            print_cache_report,
+            print_realtime_report,
+        )
 
-        return analyze_cache_stats
-    elif name == "print_cache_report":
-        from src.caching.analytics import print_cache_report
-
-        return print_cache_report
-    elif name == "RedisEvalCache":
+        analytics_map = {
+            "analyze_cache_stats": analyze_cache_stats,
+            "print_cache_report": print_cache_report,
+            "print_realtime_report": print_realtime_report,
+            "CacheAnalytics": CacheAnalytics,
+            "CacheMetrics": CacheMetrics,
+            "RealTimeTracker": RealTimeTracker,
+            "MemoryMonitor": MemoryMonitor,
+        }
+        return analytics_map[name]
+    if name == "RedisEvalCache":
         from src.caching.redis_cache import RedisEvalCache
 
         return RedisEvalCache
-    elif name in ("CacheTTL", "CacheTTLPolicy", "calculate_ttl_by_token_count"):
+    if name in _TTL_NAMES:
         from src.caching.ttl_policy import (
             CacheTTL,
             CacheTTLPolicy,
             calculate_ttl_by_token_count,
         )
 
-        if name == "CacheTTL":
-            return CacheTTL
-        elif name == "CacheTTLPolicy":
-            return CacheTTLPolicy
-        else:
-            return calculate_ttl_by_token_count
+        ttl_map = {
+            "CacheTTL": CacheTTL,
+            "CacheTTLPolicy": CacheTTLPolicy,
+            "calculate_ttl_by_token_count": calculate_ttl_by_token_count,
+        }
+        return ttl_map[name]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
