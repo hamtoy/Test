@@ -99,6 +99,27 @@ class TestHybridWorkflowOptimizer:
         assert "result" in result
         optimizer._mock_lats.run.assert_called_once()
 
+    @pytest.mark.asyncio
+    async def test_optimize_lats_with_state_injection(self, optimizer: Any) -> None:
+        """Test LATS optimization injects query, ocr_text, current_answer into initial state."""
+        result = await optimizer.optimize(
+            "Test query",
+            mode="lats",
+            ocr_text="OCR 텍스트 내용",
+            current_answer="현재 답변",
+        )
+
+        assert result["optimizer"] == "LATS"
+        # Verify run was called with initial_state containing the injected values
+        call_args = optimizer._mock_lats.run.call_args
+        assert call_args is not None
+        # The initial_state is passed as a keyword argument
+        initial_state = call_args.kwargs.get("initial_state")
+        assert initial_state is not None
+        assert initial_state.query == "Test query"
+        assert initial_state.ocr_text == "OCR 텍스트 내용"
+        assert initial_state.current_answer == "현재 답변"
+
     def test_detect_complexity_short_simple_query(self, optimizer: Any) -> None:
         """Test complexity detection with short simple queries."""
         assert optimizer._detect_complexity("What is the price?") == "mcts"

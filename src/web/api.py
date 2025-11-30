@@ -234,7 +234,8 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
 async def generate_single_qa(
     agent: GeminiAgent, ocr_text: str, qtype: str
 ) -> Dict[str, Any]:
-    """단일 QA 생성 헬퍼"""
+    """단일 QA 생성 헬퍼 - 검수 파이프라인 포함"""
+    from src.config.constants import QA_GENERATION_OCR_TRUNCATE_LENGTH
     from src.processing.template_generator import DynamicTemplateGenerator
 
     # 기본 컨텍스트 생성
@@ -243,10 +244,12 @@ async def generate_single_qa(
         "text_density": "high",
         "has_table_chart": False,
         "language_hint": "ko",
+        "type": qtype,
     }
 
     # Neo4j 연결 시 규칙 주입
     prompt = ocr_text
+    template_gen = None
     if kg is not None:
         try:
             import os
@@ -257,26 +260,46 @@ async def generate_single_qa(
                 neo4j_password=os.getenv("NEO4J_PASSWORD", ""),
             )
             prompt = template_gen.generate_prompt_for_query_type(qtype, context)
-            template_gen.close()
         except Exception as e:
             logger.warning(f"템플릿 생성 실패, 기본 프롬프트 사용: {e}")
 
-    # 질의 생성
-    queries = await agent.generate_query(prompt, user_intent=None)
-    if not queries:
-        raise ValueError("질의 생성 실패")
+    try:
+        # 질의 생성
+        queries = await agent.generate_query(prompt, user_intent=None)
+        if not queries:
+            raise ValueError("질의 생성 실패")
 
-    query = queries[0]
+        query = queries[0]
 
-    # 답변 생성 (간단한 더미 생성 - 실제론 평가+재작성 파이프라인)
-    # TODO: 실제 구현 시 evaluate + rewrite 추가
-    answer = f"[{qtype}] 질의에 대한 답변입니다.\n\n{ocr_text[:200]}..."
+        # 초기 답변 생성 (rewrite_best_answer 사용)
+        truncated_ocr = ocr_text[:QA_GENERATION_OCR_TRUNCATE_LENGTH]
+        draft_answer = await agent.rewrite_best_answer(
+            ocr_text=ocr_text,
+            best_answer=f"[{qtype}] 질의: {query}\n\n{truncated_ocr}",
+            cached_content=None,
+        )
 
-    return {
-        "type": qtype,
-        "query": query,
-        "answer": answer,
-    }
+        # 검수 파이프라인 적용
+        final_answer = await inspect_answer(
+            agent=agent,
+            answer=draft_answer,
+            query=query,
+            ocr_text=ocr_text,
+            context=context,
+            kg=kg,
+            lats=None,
+            validator=None,
+            cache=None,
+        )
+
+        return {
+            "type": qtype,
+            "query": query,
+            "answer": final_answer,
+        }
+    finally:
+        if template_gen is not None:
+            template_gen.close()
 
 
 @app.post("/api/eval/external")
