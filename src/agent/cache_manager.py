@@ -16,6 +16,7 @@ from typing import Any, Optional
 
 from src.config import AppConfig
 from src.config.constants import CacheConfig
+from src.core.type_aliases import CachedContentProtocol, CachingModuleProtocol
 
 
 class CacheManager:
@@ -142,14 +143,20 @@ class CacheManager:
             self.logger.debug("Cache cleanup skipped (write error): %s", e)
 
     def load_local_cache(
-        self, fingerprint: str, ttl_minutes: int, caching_module: Any
-    ) -> Any:
+        self,
+        fingerprint: str,
+        ttl_minutes: int,
+        caching_module: CachingModuleProtocol,
+    ) -> Optional[CachedContentProtocol]:
         """Load a cached entry if it exists and is not expired.
 
         Args:
             fingerprint: The fingerprint of the content.
             ttl_minutes: TTL for the entry.
             caching_module: The ``google.generativeai.caching`` module.
+
+        Returns:
+            The cached content if found, None otherwise.
         """
         manifest_path = self._local_cache_manifest_path()
         if not manifest_path.exists():
@@ -206,8 +213,18 @@ class CacheManager:
         """Legacy wrapper that forwards to :meth:`cleanup_expired_cache`."""
         self.cleanup_expired_cache(ttl_minutes or self.config.cache_ttl_minutes)
 
-    def load_cached(self, fingerprint: str, caching_module: Any) -> Any:
-        """Legacy wrapper for loading cache without explicit TTL."""
+    def load_cached(
+        self, fingerprint: str, caching_module: CachingModuleProtocol
+    ) -> Optional[CachedContentProtocol]:
+        """Legacy wrapper for loading cache without explicit TTL.
+
+        Args:
+            fingerprint: The fingerprint of the content.
+            caching_module: The caching module to use.
+
+        Returns:
+            The cached content if found, None otherwise.
+        """
         return self.load_local_cache(
             fingerprint, self.config.cache_ttl_minutes, caching_module
         )
