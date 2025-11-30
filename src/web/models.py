@@ -1,31 +1,49 @@
-"""API 요청/응답 모델"""
+"""Web API request/response models with validation.
+
+All string fields have explicit length limits to prevent
+memory exhaustion attacks and ensure API stability.
+"""
 
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+# Constants for validation limits
+MAX_QUERY_LENGTH = 10000
+MAX_ANSWER_LENGTH = 50000
+MAX_OCR_TEXT_LENGTH = 100000
+MAX_EDIT_REQUEST_LENGTH = 5000
+MAX_COMMENT_LENGTH = 2000
+MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
+MAX_TYPE_LENGTH = 100
+MAX_FEEDBACK_LENGTH = 5000
 
 
 class GenerateQARequest(BaseModel):
-    """QA 생성 요청"""
+    """Request model for QA generation endpoint."""
 
     mode: Literal["batch", "single"] = Field(
-        ..., description="batch: 4타입 일괄, single: 단일 타입"
+        default="batch",
+        description="Generation mode: 'batch' for all 4 types, 'single' for one type",
     )
     qtype: Optional[
         Literal["global_explanation", "reasoning", "target_short", "target_long"]
-    ] = Field(None, description="mode=single일 때 필수")
+    ] = Field(
+        default=None,
+        description="Question type for single mode",
+    )
 
 
 class QAPair(BaseModel):
-    """QA 쌍"""
+    """QA pair model for generated question-answer pairs."""
 
-    type: str
-    query: str
-    answer: str
+    type: str = Field(..., max_length=MAX_TYPE_LENGTH)
+    query: str = Field(..., max_length=MAX_QUERY_LENGTH)
+    answer: str = Field(..., max_length=MAX_ANSWER_LENGTH)
 
 
 class GenerateQAResponse(BaseModel):
-    """QA 생성 응답"""
+    """QA generation response model."""
 
     mode: Literal["batch", "single"]
     pairs: Optional[List[QAPair]] = None  # batch
@@ -33,50 +51,107 @@ class GenerateQAResponse(BaseModel):
 
 
 class EvalExternalRequest(BaseModel):
-    """외부 답변 평가 요청"""
+    """Request model for external answer evaluation."""
 
-    query: str = Field(..., description="질의 내용")
-    answers: List[str] = Field(..., min_length=3, max_length=3, description="답변 3개")
+    query: str = Field(
+        ...,
+        max_length=MAX_QUERY_LENGTH,
+        description="The question to evaluate answers for",
+    )
+    answers: List[str] = Field(
+        ...,
+        min_length=3,
+        max_length=3,
+        description="List of 3 candidate answers",
+    )
+
+    @field_validator("answers")
+    @classmethod
+    def validate_answer_lengths(cls, v: List[str]) -> List[str]:
+        """Validate each answer in the list does not exceed max length."""
+        for i, answer in enumerate(v):
+            if len(answer) > MAX_ANSWER_LENGTH:
+                raise ValueError(
+                    f"Answer {i + 1} exceeds maximum length of {MAX_ANSWER_LENGTH}"
+                )
+        return v
 
 
 class EvalResult(BaseModel):
-    """평가 결과"""
+    """Evaluation result model."""
 
-    answer_id: str
+    answer_id: str = Field(..., max_length=10)
     score: int
-    feedback: str
+    feedback: str = Field(..., max_length=MAX_FEEDBACK_LENGTH)
 
 
 class EvalExternalResponse(BaseModel):
-    """외부 답변 평가 응답"""
+    """External answer evaluation response model."""
 
     results: List[EvalResult]
-    best: str
+    best: str = Field(..., max_length=10)
 
 
 class WorkspaceRequest(BaseModel):
-    """워크스페이스 요청"""
+    """Request model for workspace operations (inspect/edit)."""
 
     mode: Literal["inspect", "edit"] = Field(
-        ..., description="inspect: 검수, edit: 자유 수정"
+        default="inspect",
+        description="Operation mode",
     )
-    query: Optional[str] = Field("", description="질의 (선택)")
-    answer: str = Field(..., description="검수/수정할 답변")
-    edit_request: Optional[str] = Field("", description="edit 모드일 때 수정 요청")
+    query: Optional[str] = Field(
+        default="",
+        max_length=MAX_QUERY_LENGTH,
+        description="Associated query (optional)",
+    )
+    answer: str = Field(
+        ...,
+        max_length=MAX_ANSWER_LENGTH,
+        description="Answer content to process",
+    )
+    edit_request: Optional[str] = Field(
+        default="",
+        max_length=MAX_EDIT_REQUEST_LENGTH,
+        description="Edit instructions for 'edit' mode",
+    )
     inspector_comment: Optional[str] = Field(
-        "", description="검수자 코멘트 (모든 모드에서 선택적으로 입력 가능)"
+        default="",
+        max_length=MAX_COMMENT_LENGTH,
+        description="Inspector's comment for logging",
     )
 
 
 class WorkspaceResponse(BaseModel):
-    """워크스페이스 응답"""
+    """Workspace operation response model."""
 
     mode: Literal["inspect", "edit"]
     result: Dict[str, Any]
 
 
 class MultimodalResponse(BaseModel):
-    """이미지 분석 응답"""
+    """Image analysis response model."""
 
     filename: str
     metadata: Dict[str, Any]
+
+
+class HealthResponse(BaseModel):
+    """Response model for health check endpoints."""
+
+    status: Literal["healthy", "degraded", "unhealthy"]
+    services: Dict[str, bool] = Field(default_factory=dict)
+    version: Optional[str] = None
+
+
+__all__ = [
+    "GenerateQARequest",
+    "EvalExternalRequest",
+    "WorkspaceRequest",
+    "HealthResponse",
+    "MAX_QUERY_LENGTH",
+    "MAX_ANSWER_LENGTH",
+    "MAX_OCR_TEXT_LENGTH",
+    "MAX_EDIT_REQUEST_LENGTH",
+    "MAX_COMMENT_LENGTH",
+    "MAX_UPLOAD_SIZE_BYTES",
+]
