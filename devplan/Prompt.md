@@ -19,11 +19,10 @@
 
 | # | Prompt ID | Title | Priority | Status |
 |:---:|:---|:---|:---:|:---:|
-| 1 | PROMPT-001 | RAG System Additional Module Split | P2 | ✅ Done |
-| 2 | PROMPT-002 | Sphinx Documentation CI Integration | P3 | ✅ Done |
-| 3 | PROMPT-003 | Complete Docstring Standardization | P3 | ✅ Done |
+| 1 | PROMPT-001 | RAG System Additional Module Split | P2 | ⬜ Pending |
+| 2 | PROMPT-002 | Complete Docstring Standardization | P3 | ⬜ Pending |
 
-**Total: 3 prompts** | **Completed: 3** | **Remaining: 0**
+**Total: 2 prompts** | **Completed: 0** | **Remaining: 2**
 
 ---
 
@@ -35,176 +34,327 @@
 
 **⏱️ Execute this prompt now, then proceed to PROMPT-002**
 
-**Task**: Further reduce `src/qa/rag_system.py` from 1022 lines to under 500 lines by extracting more functionality to the existing `src/qa/graph/` modules.
+**Task**: Further reduce `src/qa/rag_system.py` from 1005 lines to under 500 lines by creating new modules in the `src/qa/graph/` package to extract additional functionality.
 
 **Files to Modify**: 
-- Update `src/qa/graph/connection.py` - Add more connection methods from rag_system.py
-- Update `src/qa/graph/rule_extractor.py` - Add upsert and validation methods
-- Create `src/qa/graph/query_executor.py` - Extract query execution logic
+- Create `src/qa/graph/session_validator.py` - New module for session validation logic
+- Create `src/qa/graph/traversal.py` - New module for graph traversal methods
+- Update `src/qa/graph/__init__.py` - Export new classes
 - Update `src/qa/rag_system.py` - Import from new modules and reduce code
 
 #### Instructions:
 
-1. Analyze `src/qa/rag_system.py` to identify extractable methods
-2. Extract `upsert_auto_generated_rules` method to `rule_extractor.py`
-3. Extract query execution helper methods to new `query_executor.py`
+1. Analyze `src/qa/rag_system.py` to identify extractable methods (session validation, graph traversal)
+2. Create `src/qa/graph/session_validator.py` to extract `validate_*` methods
+3. Create `src/qa/graph/traversal.py` to extract `get_descendants`, `traverse_*` methods
 4. Update imports in `rag_system.py` to use the new modules
 5. Ensure all existing tests still pass
 
 #### Implementation Code:
 
-**File: src/qa/graph/query_executor.py**
+**File: src/qa/graph/session_validator.py**
 ```python
-"""Query execution utilities for Neo4j graph operations.
+"""Session validation utilities for QA knowledge graph.
 
-Provides helper functions for executing Cypher queries with proper
-async/sync handling and error management.
+Provides validation logic for QA sessions, turns, and intent verification.
 """
 
 from __future__ import annotations
 
-import asyncio
-import concurrent.futures
 import logging
-from typing import Any, Coroutine, Dict, List, Optional, TypeVar
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T")
 
-
-def run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
-    """Run an async coroutine from sync context safely.
-    
-    Handles the case where an event loop is already running by
-    executing the coroutine in a separate thread.
+def validate_turns_basic(turns: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Basic validation for turn structure.
     
     Args:
-        coro: The coroutine to execute
+        turns: List of turn dictionaries
         
     Returns:
-        The result of the coroutine execution
+        Validation result with status and errors
     """
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        # No running loop, create one and run
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(coro)
-        finally:
-            loop.close()
-            asyncio.set_event_loop(None)
-
-    # Loop is already running - run in a separate thread
-    def run_in_thread() -> T:
-        new_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(new_loop)
-        try:
-            return new_loop.run_until_complete(coro)
-        finally:
-            new_loop.close()
-            asyncio.set_event_loop(None)
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(run_in_thread)
-        return future.result()
-
-
-class QueryExecutor:
-    """Executes Cypher queries against Neo4j with async support.
+    errors = []
+    for i, turn in enumerate(turns):
+        if "query" not in turn:
+            errors.append(f"Turn {i}: missing 'query' field")
+        if "response" not in turn:
+            errors.append(f"Turn {i}: missing 'response' field")
     
-    Provides a unified interface for executing queries regardless of
-    whether a sync driver or async graph provider is being used.
+    return {"valid": len(errors) == 0, "errors": errors}
+
+
+class SessionValidator:
+    """Validates QA session structures and data integrity.
+    
+    Provides methods to validate session metadata, turn sequences,
+    and intent alignment with the knowledge graph.
     
     Args:
-        graph_driver: Sync Neo4j driver instance
-        graph_provider: Async graph provider instance (optional)
+        query_executor: QueryExecutor instance for graph queries
     """
     
-    def __init__(
+    def __init__(self, query_executor: Any) -> None:
+        """Initialize the session validator."""
+        self._executor = query_executor
+    
+    def validate_session_structure(
         self,
-        graph_driver: Optional[Any] = None,
-        graph_provider: Optional[Any] = None,
-    ) -> None:
-        """Initialize the query executor."""
-        self._graph = graph_driver
-        self._graph_provider = graph_provider
-        
-    def execute(
-        self,
-        cypher: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
-        """Execute a Cypher query and return results.
-        
-        Args:
-            cypher: The Cypher query string
-            params: Query parameters
-            
-        Returns:
-            List of result records as dictionaries
-        """
-        params = params or {}
-        
-        if self._graph_provider is None:
-            if self._graph is None:
-                raise RuntimeError("No graph driver or provider available")
-            with self._graph.session() as session:
-                records = session.run(cypher, **params)
-                return [dict(r) for r in records]
-        
-        prov = self._graph_provider
-        
-        async def _run() -> List[Dict[str, Any]]:
-            async with prov.session() as session:
-                records = await session.run(cypher, **params)
-                return [dict(r) for r in records]
-        
-        return run_async_safely(_run())
-        
-    def execute_write(
-        self,
-        cypher: str,
-        params: Optional[Dict[str, Any]] = None,
+        session_id: str,
+        turns: List[Dict[str, Any]],
     ) -> Dict[str, Any]:
-        """Execute a write query and return summary.
+        """Validate the structure of a QA session.
         
         Args:
-            cypher: The Cypher write query
-            params: Query parameters
+            session_id: Unique identifier for the session
+            turns: List of turn dictionaries with query/response pairs
             
         Returns:
-            Summary of the write operation
+            Validation result with status and any error messages
         """
-        params = params or {}
+        result = validate_turns_basic(turns)
         
-        if self._graph_provider is None:
-            if self._graph is None:
-                raise RuntimeError("No graph driver or provider available")
-            with self._graph.session() as session:
-                result = session.run(cypher, **params)
-                summary = result.consume()
-                return {
-                    "nodes_created": summary.counters.nodes_created,
-                    "nodes_deleted": summary.counters.nodes_deleted,
-                    "relationships_created": summary.counters.relationships_created,
-                    "properties_set": summary.counters.properties_set,
-                }
+        return {
+            "session_id": session_id,
+            "valid": result.get("valid", False),
+            "turn_count": len(turns),
+            "errors": result.get("errors", []),
+        }
+    
+    def validate_intent_alignment(
+        self,
+        intent: str,
+        query_type: str,
+    ) -> bool:
+        """Check if intent aligns with QueryType rules.
         
-        prov = self._graph_provider
+        Args:
+            intent: The user's stated intent
+            query_type: The classified query type
+            
+        Returns:
+            True if intent aligns with query type rules
+        """
+        cypher = """
+        MATCH (qt:QueryType {name: $qt})
+        OPTIONAL MATCH (qt)<-[:APPLIES_TO]-(r:Rule)
+        RETURN qt.name AS query_type, collect(r.text) AS rules
+        """
         
-        async def _run() -> Dict[str, Any]:
-            async with prov.session() as session:
-                result = await session.run(cypher, **params)
-                # Async providers may have different summary handling
-                return {"executed": True}
+        try:
+            results = self._executor.execute(cypher, {"qt": query_type})
+            if not results:
+                return True  # No rules defined, allow
+            
+            rules = results[0].get("rules", [])
+            # Basic alignment check - intent should relate to at least one rule
+            intent_lower = intent.lower()
+            for rule in rules:
+                if rule and any(word in intent_lower for word in rule.lower().split()[:3]):
+                    return True
+            
+            return len(rules) == 0  # No rules means no constraints
+        except Exception as e:
+            logger.warning("Intent alignment check failed: %s", e)
+            return True  # Fail open for validation
+
+
+def create_session_validator(query_executor: Any) -> SessionValidator:
+    """Factory function to create a SessionValidator.
+    
+    Args:
+        query_executor: QueryExecutor instance for graph queries
         
-        return run_async_safely(_run())
+    Returns:
+        Configured SessionValidator instance
+    """
+    return SessionValidator(query_executor)
 ```
 
-**Update src/qa/graph/__init__.py to export new class:**
+**File: src/qa/graph/traversal.py**
+```python
+"""Graph traversal utilities for Neo4j knowledge graph.
+
+Provides methods for traversing and querying the knowledge graph
+structure, including descendant discovery and relationship walking.
+"""
+
+from __future__ import annotations
+
+import logging
+from typing import Any, Dict, List, Optional, Set
+
+logger = logging.getLogger(__name__)
+
+
+class GraphTraversal:
+    """Traverses Neo4j knowledge graph for QA operations.
+    
+    Provides methods to walk relationships, find descendants,
+    and discover connected concepts in the graph.
+    
+    Args:
+        query_executor: QueryExecutor instance for graph queries
+    """
+    
+    def __init__(self, query_executor: Any) -> None:
+        """Initialize the graph traversal."""
+        self._executor = query_executor
+    
+    def get_descendants(
+        self,
+        node_id: str,
+        node_label: str = "Concept",
+        max_depth: int = 3,
+    ) -> List[Dict[str, Any]]:
+        """Find all descendants of a node up to max_depth.
+        
+        Args:
+            node_id: The ID of the starting node
+            node_label: The label of the node type
+            max_depth: Maximum traversal depth
+            
+        Returns:
+            List of descendant nodes with their properties
+        """
+        cypher = f"""
+        MATCH (start:{node_label} {{id: $node_id}})
+        MATCH path = (start)-[*1..{max_depth}]->(descendant)
+        RETURN DISTINCT
+            descendant.id AS id,
+            labels(descendant)[0] AS label,
+            descendant.name AS name,
+            length(path) AS depth
+        ORDER BY depth, id
+        """
+        
+        try:
+            return self._executor.execute(cypher, {"node_id": node_id})
+        except Exception as e:
+            logger.warning("Failed to get descendants for %s: %s", node_id, e)
+            return []
+    
+    def find_path_between(
+        self,
+        start_id: str,
+        end_id: str,
+        max_hops: int = 5,
+    ) -> Optional[List[Dict[str, Any]]]:
+        """Find the shortest path between two nodes.
+        
+        Args:
+            start_id: Starting node ID
+            end_id: Target node ID
+            max_hops: Maximum number of hops to search
+            
+        Returns:
+            List of nodes in the path, or None if no path found
+        """
+        cypher = f"""
+        MATCH path = shortestPath(
+            (start {{id: $start_id}})-[*1..{max_hops}]-(end {{id: $end_id}})
+        )
+        UNWIND nodes(path) AS node
+        RETURN 
+            node.id AS id,
+            labels(node)[0] AS label,
+            node.name AS name
+        """
+        
+        try:
+            results = self._executor.execute(
+                cypher, 
+                {"start_id": start_id, "end_id": end_id}
+            )
+            return results if results else None
+        except Exception as e:
+            logger.warning("Path finding failed: %s", e)
+            return None
+    
+    def get_connected_concepts(
+        self,
+        concept_id: str,
+        relationship_types: Optional[List[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Get all concepts connected to a given concept.
+        
+        Args:
+            concept_id: The concept node ID
+            relationship_types: Optional filter for relationship types
+            
+        Returns:
+            List of connected concept nodes
+        """
+        rel_filter = ""
+        if relationship_types:
+            rel_types = "|".join(relationship_types)
+            rel_filter = f"[:{rel_types}]"
+        
+        cypher = f"""
+        MATCH (c:Concept {{id: $concept_id}})-{rel_filter}-(connected)
+        RETURN DISTINCT
+            connected.id AS id,
+            labels(connected)[0] AS label,
+            connected.name AS name,
+            connected.description AS description
+        """
+        
+        try:
+            return self._executor.execute(cypher, {"concept_id": concept_id})
+        except Exception as e:
+            logger.warning("Failed to get connected concepts: %s", e)
+            return []
+    
+    def count_relationships(
+        self,
+        node_id: str,
+        direction: str = "both",
+    ) -> Dict[str, int]:
+        """Count relationships by type for a node.
+        
+        Args:
+            node_id: The node ID to analyze
+            direction: 'in', 'out', or 'both'
+            
+        Returns:
+            Dictionary mapping relationship types to counts
+        """
+        if direction == "in":
+            pattern = "(n)<-[r]-()"
+        elif direction == "out":
+            pattern = "(n)-[r]->()"
+        else:
+            pattern = "(n)-[r]-()"
+        
+        cypher = f"""
+        MATCH {pattern}
+        WHERE n.id = $node_id
+        RETURN type(r) AS rel_type, count(r) AS count
+        """
+        
+        try:
+            results = self._executor.execute(cypher, {"node_id": node_id})
+            return {r["rel_type"]: r["count"] for r in results}
+        except Exception as e:
+            logger.warning("Relationship counting failed: %s", e)
+            return {}
+
+
+def create_traversal(query_executor: Any) -> GraphTraversal:
+    """Factory function to create a GraphTraversal.
+    
+    Args:
+        query_executor: QueryExecutor instance for graph queries
+        
+    Returns:
+        Configured GraphTraversal instance
+    """
+    return GraphTraversal(query_executor)
+```
+
+**Update src/qa/graph/__init__.py to export new classes:**
 ```python
 """Graph-based QA components for RAG system.
 
@@ -213,26 +363,35 @@ This package provides modular components for Neo4j-based knowledge graph operati
 - vector_search: Vector similarity search
 - rule_extractor: Rule extraction and QA generation
 - query_executor: Query execution utilities
+- session_validator: Session validation logic
+- traversal: Graph traversal utilities
 """
 
 from src.qa.graph.connection import Neo4jConnectionManager
 from src.qa.graph.query_executor import QueryExecutor, run_async_safely
 from src.qa.graph.rule_extractor import RuleExtractor
+from src.qa.graph.session_validator import SessionValidator, create_session_validator
+from src.qa.graph.traversal import GraphTraversal, create_traversal
 from src.qa.graph.vector_search import VectorSearchEngine
 
 __all__ = [
     "Neo4jConnectionManager",
     "QueryExecutor",
     "RuleExtractor",
+    "SessionValidator",
+    "GraphTraversal",
     "VectorSearchEngine",
     "run_async_safely",
+    "create_session_validator",
+    "create_traversal",
 ]
 ```
 
 #### Verification:
-- Run: `python -c "from src.qa.graph import QueryExecutor, run_async_safely; print('Import successful')"`
-- Run: `wc -l src/qa/rag_system.py` (should be reduced)
-- Expected: No import errors, line count reduced
+- Run: `python -c "from src.qa.graph import SessionValidator, GraphTraversal; print('Import successful')"`
+- Run: `wc -l src/qa/rag_system.py` (target: under 500 lines after refactoring)
+- Run: `pytest tests/unit/qa/ -v --tb=short` (verify tests still pass)
+- Expected: No import errors, line count significantly reduced
 
 **✅ After completing this prompt, proceed to [PROMPT-002]**
 
@@ -240,117 +399,13 @@ __all__ = [
 
 ## 🟢 Priority 3 (Medium) - Execute Last
 
-### [PROMPT-002] Sphinx Documentation CI Integration
-
-> **🚨 REQUIRED: Use `replace_string_in_file` or `create_file` to make changes. Do NOT just show code.**
-
-**⏱️ Execute this prompt now, then proceed to PROMPT-003**
-
-**Task**: Create GitHub Actions workflow for automatic documentation build and deployment.
-
-**Files to Create**: `.github/workflows/docs.yml`
-
-#### Instructions:
-
-1. Create a GitHub Actions workflow file
-2. Configure Sphinx build on push to main
-3. Deploy to GitHub Pages
-4. Add PR preview comments (optional)
-
-#### Implementation Code:
-
-**File: .github/workflows/docs.yml**
-```yaml
-name: Documentation
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'docs/**'
-      - 'src/**/*.py'
-      - '.github/workflows/docs.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'docs/**'
-      - 'src/**/*.py'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install sphinx sphinx-rtd-theme sphinx-autodoc-typehints
-          pip install -e .
-
-      - name: Generate API documentation
-        run: |
-          sphinx-apidoc -f -o docs/api src/ \
-            --separate \
-            --module-first \
-            -H "API Reference" \
-            -A "shining-quasar Team"
-
-      - name: Build documentation
-        run: |
-          cd docs
-          make html
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/_build/html
-
-  deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-```
-
-#### Verification:
-- Run: `cat .github/workflows/docs.yml`
-- Expected: Valid YAML workflow file exists
-
-**✅ After completing this prompt, proceed to [PROMPT-003]**
-
----
-
-### [PROMPT-003] Complete Docstring Standardization
+### [PROMPT-002] Complete Docstring Standardization
 
 > **🚨 REQUIRED: Use `replace_string_in_file` or `create_file` to make changes. Do NOT just show code.**
 
 **⏱️ Execute this prompt now, then ALL PROMPTS ARE COMPLETED.**
 
-**Task**: Run the docstring checker and fix identified style inconsistencies.
+**Task**: Run the docstring checker and fix identified style inconsistencies across the codebase.
 
 **Files to Modify**: Various files in `src/` based on check_docstrings.py output
 
@@ -358,39 +413,38 @@ jobs:
 
 1. Run `python scripts/check_docstrings.py src/` to identify issues
 2. Fix any NumPy or Sphinx style docstrings to Google style
-3. Add missing docstrings to public functions/classes
-4. Enable ruff D rules in pyproject.toml
+3. Focus on high-priority modules: `src/agent/`, `src/core/`, `src/qa/`
+4. Verify ruff D rules are properly configured in pyproject.toml
 
 #### Implementation Code:
 
-**Update pyproject.toml to enable docstring linting:**
+**Verify pyproject.toml has docstring linting enabled (already done, verify):**
 
-Find the `[tool.ruff.lint]` section and add "D" to the select list:
+The `[tool.ruff.lint]` section should have "D" in extend-select:
 
 ```toml
 [tool.ruff.lint]
-select = [
-    "E",      # pycodestyle errors
-    "W",      # pycodestyle warnings
-    "F",      # pyflakes
-    "I",      # isort
-    "B",      # flake8-bugbear
-    "C4",     # flake8-comprehensions
-    "UP",     # pyupgrade
-    "D",      # pydocstyle (docstring checks)
-]
+extend-select = ["PERF", "FURB", "SIM", "D"]
 ignore = [
     "D100",   # Missing docstring in public module
+    "D101",   # Missing docstring in public class
+    "D102",   # Missing docstring in public method
+    "D103",   # Missing docstring in public function
     "D104",   # Missing docstring in public package
     "D105",   # Missing docstring in magic method
     "D107",   # Missing docstring in __init__
+    "D200",   # One-line docstring should fit on one line
+    "D205",   # 1 blank line required between summary line and description
+    "D415",   # First line should end with a period, question mark, or exclamation point
 ]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 ```
 
-**Example docstring fix (NumPy to Google):**
+**Example docstring fixes to apply:**
+
+1. **NumPy style to Google style conversion:**
 
 Before (NumPy style):
 ```python
@@ -425,25 +479,68 @@ def example_function(param1: str, param2: int) -> bool:
     """
 ```
 
+2. **Sphinx style to Google style conversion:**
+
+Before (Sphinx style):
+```python
+def another_function(name):
+    """Short description.
+    
+    :param name: The name parameter
+    :type name: str
+    :returns: The result
+    :rtype: str
+    """
+```
+
+After (Google style):
+```python
+def another_function(name: str) -> str:
+    """Short description.
+    
+    Args:
+        name: The name parameter
+        
+    Returns:
+        The result
+    """
+```
+
+#### Target Files to Check and Fix:
+
+1. `src/agent/core.py` - Main agent class docstrings
+2. `src/core/models.py` - Pydantic model docstrings
+3. `src/qa/rag_system.py` - RAG system docstrings
+4. `src/workflow/executor.py` - Workflow execution docstrings
+5. `src/web/routes.py` - API route docstrings
+
 #### Verification:
-- Run: `python scripts/check_docstrings.py src/ --missing-only`
-- Run: `ruff check src/ --select D --statistics` (after enabling D rules)
-- Expected: Minimal or no style issues reported
+- Run: `python scripts/check_docstrings.py src/ --missing-only | head -20`
+- Run: `ruff check src/ --select D --statistics`
+- Expected: Minimal style issues, all critical modules using Google style
 
 **🎉 ALL PROMPTS COMPLETED! Run final verification:**
 
 ```bash
-# Verify all changes
+# Verify graph module imports
 python -c "
-from src.qa.graph import QueryExecutor, run_async_safely
-print('QueryExecutor import: OK')
+from src.qa.graph import (
+    QueryExecutor, 
+    SessionValidator, 
+    GraphTraversal,
+    run_async_safely
+)
+print('All graph module imports: OK')
 "
 
-# Check documentation workflow
-cat .github/workflows/docs.yml | head -5
+# Check rag_system.py line count
+wc -l src/qa/rag_system.py
 
 # Run docstring check
 python scripts/check_docstrings.py src/config --missing-only
+
+# Run ruff docstring checks
+ruff check src/ --select D --statistics | head -10
 
 echo 'All prompts completed successfully!'
 ```
