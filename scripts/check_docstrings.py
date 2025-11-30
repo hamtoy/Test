@@ -141,10 +141,7 @@ def main() -> int:
     
     path = Path(args.path)
     
-    if path.is_file():
-        files = [path]
-    else:
-        files = list(path.rglob("*.py"))
+    files = [path] if path.is_file() else list(path.rglob("*.py"))
     
     all_issues: List[DocstringIssue] = []
     
