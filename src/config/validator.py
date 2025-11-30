@@ -8,13 +8,10 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from typing import List, Tuple
 
 
 class ValidationError(Exception):
     """환경 변수 검증 실패 예외"""
-
-    pass
 
 
 class EnvValidator:
@@ -29,12 +26,13 @@ class EnvValidator:
 
         Raises:
             ValidationError: 키 형식이 올바르지 않은 경우
+
         """
         if not key.startswith("AIza"):
             raise ValidationError("GEMINI_API_KEY must start with 'AIza'")
         if len(key) != 39:
             raise ValidationError(
-                f"GEMINI_API_KEY must be 39 characters, got {len(key)}"
+                f"GEMINI_API_KEY must be 39 characters, got {len(key)}",
             )
 
     @staticmethod
@@ -46,6 +44,7 @@ class EnvValidator:
 
         Raises:
             ValidationError: 포트 번호가 유효하지 않은 경우
+
         """
         try:
             p = int(port)
@@ -63,6 +62,7 @@ class EnvValidator:
 
         Raises:
             ValidationError: URL 형식이 올바르지 않은 경우
+
         """
         pattern = re.compile(
             r"^(https?|bolt)://"  # http, https, bolt
@@ -85,11 +85,12 @@ class EnvValidator:
 
         Raises:
             ValidationError: 로그 레벨이 유효하지 않은 경우
+
         """
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         if level.upper() not in valid_levels:
             raise ValidationError(
-                f"Invalid log level: {level}. Use one of: {valid_levels}"
+                f"Invalid log level: {level}. Use one of: {valid_levels}",
             )
 
     @staticmethod
@@ -102,6 +103,7 @@ class EnvValidator:
 
         Raises:
             ValidationError: 값이 양의 정수가 아닌 경우
+
         """
         try:
             v = int(value)
@@ -110,13 +112,14 @@ class EnvValidator:
         except ValueError:
             raise ValidationError(f"{name} must be an integer, got {value}")
 
-    def validate_all(self) -> List[Tuple[str, str]]:
+    def validate_all(self) -> list[tuple[str, str]]:
         """모든 환경 변수 검증
 
         Returns:
             검증 실패한 (환경변수명, 에러메시지) 튜플 리스트
+
         """
-        errors: List[Tuple[str, str]] = []
+        errors: list[tuple[str, str]] = []
 
         # GEMINI_API_KEY 검증 (필수)
         api_key = os.getenv("GEMINI_API_KEY")
@@ -179,25 +182,22 @@ class EnvValidator:
 
 
 def validate_env_file_permissions() -> list[str]:
-    """
-    .env 파일 권한이 안전한지 확인
+    """.env 파일 권한이 안전한지 확인
 
     권장: 600 (소유자만 읽기/쓰기)
     Note: Windows에서는 이 검사를 건너뜁니다.
 
     Returns:
         경고 메시지 리스트
+
     """
     import sys
 
     warnings: list[str] = []
     env_path = Path(".env")
 
-    # Skip permission check on Windows
-    if sys.platform == "win32":
-        return warnings
-
-    if env_path.exists():
+    # Permission check only on Unix-like systems
+    if sys.platform != "win32" and env_path.exists():
         try:
             st = env_path.stat()
             # Check if group or others have any permissions (Unix only)
@@ -205,7 +205,7 @@ def validate_env_file_permissions() -> list[str]:
                 mode_str = oct(st.st_mode)[-3:]
                 warnings.append(
                     f".env 파일 권한이 안전하지 않습니다: {mode_str}\n"
-                    f"  💡 권장: chmod 600 .env"
+                    f"  💡 권장: chmod 600 .env",
                 )
         except (OSError, AttributeError):
             # On some platforms or file systems, skip permission check
@@ -225,6 +225,7 @@ def validate_environment(strict: bool = False) -> bool:
 
     Raises:
         SystemExit: strict=True이고 검증 실패 시
+
     """
     validator = EnvValidator()
     errors = validator.validate_all()
@@ -250,6 +251,6 @@ def validate_environment(strict: bool = False) -> bool:
 __all__ = [
     "EnvValidator",
     "ValidationError",
-    "validate_environment",
     "validate_env_file_permissions",
+    "validate_environment",
 ]

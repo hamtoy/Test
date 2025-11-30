@@ -6,7 +6,7 @@ import logging
 import os
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from src.qa.rag_system import QAKnowledgeGraph
@@ -17,11 +17,12 @@ logger = logging.getLogger(__name__)
 DEFAULT_TIMEOUT = 3.0
 
 
-async def check_redis() -> Dict[str, Any]:
+async def check_redis() -> dict[str, Any]:
     """Redis 연결 및 응답 시간 확인 (타임아웃 3초)
 
     Returns:
         Redis 상태 정보 딕셔너리
+
     """
     redis_url = os.getenv("REDIS_URL")
     if not redis_url:
@@ -30,9 +31,9 @@ async def check_redis() -> Dict[str, Any]:
     try:
         import redis.asyncio as aioredis
 
-        async def _check_redis() -> Dict[str, Any]:
+        async def _check_redis() -> dict[str, Any]:
             start = time.perf_counter()
-            client: aioredis.Redis[bytes] = aioredis.from_url(redis_url)
+            client = aioredis.from_url(redis_url)
             await client.ping()
             latency_ms = (time.perf_counter() - start) * 1000
             await client.close()
@@ -52,11 +53,12 @@ async def check_redis() -> Dict[str, Any]:
         return {"status": "down", "error": str(exc)}
 
 
-async def check_neo4j() -> Dict[str, Any]:
+async def check_neo4j() -> dict[str, Any]:
     """Neo4j 연결 및 쿼리 테스트 (타임아웃 3초)
 
     Returns:
         Neo4j 상태 정보 딕셔너리
+
     """
     neo4j_uri = os.getenv("NEO4J_URI")
     if not neo4j_uri:
@@ -91,8 +93,7 @@ async def check_neo4j() -> Dict[str, Any]:
                 "latency_ms": round(latency_ms, 2),
                 "message": "Neo4j is healthy",
             }
-        else:
-            return {"status": "down", "error": "Connection check failed"}
+        return {"status": "down", "error": "Connection check failed"}
     except asyncio.TimeoutError:
         return {"status": "down", "error": f"Timeout (>{DEFAULT_TIMEOUT}s)"}
     except ImportError:
@@ -119,11 +120,12 @@ def _sync_check_neo4j(uri: str, user: str, password: str) -> bool:
             driver.close()
 
 
-async def check_gemini_api() -> Dict[str, Any]:
+async def check_gemini_api() -> dict[str, Any]:
     """Gemini API 키 유효성 확인
 
     Returns:
         Gemini API 상태 정보 딕셔너리
+
     """
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
@@ -139,13 +141,14 @@ async def check_gemini_api() -> Dict[str, Any]:
     return {"status": "up", "key_prefix": api_key[:8] + "..."}
 
 
-async def check_dependencies() -> Dict[str, Any]:
+async def check_dependencies() -> dict[str, Any]:
     """필수 의존성 버전 확인
 
     Returns:
         의존성 버전 정보 딕셔너리
+
     """
-    deps: Dict[str, str | None] = {
+    deps: dict[str, str | None] = {
         "python": sys.version.split()[0],
     }
 
@@ -162,7 +165,9 @@ async def check_dependencies() -> Dict[str, Any]:
         import google.generativeai
 
         deps["google-generativeai"] = getattr(
-            google.generativeai, "__version__", "unknown"
+            google.generativeai,
+            "__version__",
+            "unknown",
         )
     except ImportError:
         deps["google-generativeai"] = None
@@ -181,11 +186,12 @@ async def check_dependencies() -> Dict[str, Any]:
     }
 
 
-async def check_disk() -> Dict[str, Any]:
+async def check_disk() -> dict[str, Any]:
     """디스크 공간 확인
 
     Returns:
         디스크 상태 정보 딕셔너리
+
     """
     try:
         import shutil
@@ -209,11 +215,12 @@ async def check_disk() -> Dict[str, Any]:
         return {"status": "unknown", "error": str(exc)}
 
 
-async def check_memory() -> Dict[str, Any]:
+async def check_memory() -> dict[str, Any]:
     """메모리 사용량 확인
 
     Returns:
         메모리 상태 정보 딕셔너리
+
     """
     try:
         # psutil이 없는 경우 /proc/meminfo에서 읽기 시도
@@ -227,7 +234,7 @@ async def check_memory() -> Dict[str, Any]:
             with open("/proc/meminfo") as f:
                 lines = f.readlines()
 
-            mem_info: Dict[str, int] = {}
+            mem_info: dict[str, int] = {}
             for line in lines:
                 parts = line.split()
                 if len(parts) >= 2:
@@ -253,11 +260,12 @@ async def check_memory() -> Dict[str, Any]:
         return {"status": "unknown", "error": str(exc)}
 
 
-async def health_check_async() -> Dict[str, Any]:
+async def health_check_async() -> dict[str, Any]:
     """전체 헬스체크 실행 (비동기)
 
     Returns:
         전체 상태 정보 딕셔너리
+
     """
     checks = await asyncio.gather(
         check_redis(),
@@ -270,7 +278,7 @@ async def health_check_async() -> Dict[str, Any]:
     )
 
     # 예외 처리
-    check_results: list[Dict[str, Any]] = []
+    check_results: list[dict[str, Any]] = []
     for check in checks:
         if isinstance(check, BaseException):
             check_results.append({"status": "error", "error": str(check)})
@@ -307,7 +315,7 @@ def check_neo4j_connection(kg: QAKnowledgeGraph | None = None) -> bool:
         from neo4j.exceptions import Neo4jError
     except ImportError:
         logging.getLogger(__name__).warning(
-            "Cannot check Neo4j connection: neo4j package not available"
+            "Cannot check Neo4j connection: neo4j package not available",
         )
         return False
 
@@ -318,14 +326,14 @@ def check_neo4j_connection(kg: QAKnowledgeGraph | None = None) -> bool:
             kg = QAKnowledgeGraph()
         except ImportError:
             logging.getLogger(__name__).warning(
-                "Cannot check Neo4j connection: QAKnowledgeGraph not available"
+                "Cannot check Neo4j connection: QAKnowledgeGraph not available",
             )
             return False
     graph_obj = getattr(kg, "_graph", None)
     if graph_obj is None:
         return False
     try:
-        with graph_obj.session() as session:  # noqa: SLF001
+        with graph_obj.session() as session:
             session.run("RETURN 1").single()
         return True
     except Neo4jError:
@@ -335,7 +343,7 @@ def check_neo4j_connection(kg: QAKnowledgeGraph | None = None) -> bool:
         return False
 
 
-def health_check() -> Dict[str, Any]:
+def health_check() -> dict[str, Any]:
     """Basic health check report (동기)."""
     neo4j_ok = check_neo4j_connection()
     return {
@@ -345,20 +353,22 @@ def health_check() -> Dict[str, Any]:
     }
 
 
-async def liveness_check() -> Dict[str, Any]:
+async def liveness_check() -> dict[str, Any]:
     """Kubernetes liveness probe - 프로세스 살아있는지 확인
 
     Returns:
         간단한 상태 딕셔너리
+
     """
     return {"status": "ok"}
 
 
-async def readiness_check() -> Dict[str, Any]:
+async def readiness_check() -> dict[str, Any]:
     """Kubernetes readiness probe - Redis와 Neo4j만 체크
 
     Returns:
         준비 상태 딕셔너리
+
     """
     checks = await asyncio.gather(
         check_redis(),
@@ -366,7 +376,7 @@ async def readiness_check() -> Dict[str, Any]:
         return_exceptions=True,
     )
 
-    check_results: list[Dict[str, Any]] = []
+    check_results: list[dict[str, Any]] = []
     for check in checks:
         if isinstance(check, BaseException):
             check_results.append({"status": "error", "error": str(check)})
@@ -391,16 +401,16 @@ async def readiness_check() -> Dict[str, Any]:
 
 
 __all__ = [
+    "DEFAULT_TIMEOUT",
+    "check_dependencies",
+    "check_disk",
+    "check_gemini_api",
+    "check_memory",
+    "check_neo4j",
     "check_neo4j_connection",
+    "check_redis",
     "health_check",
     "health_check_async",
     "liveness_check",
     "readiness_check",
-    "check_redis",
-    "check_neo4j",
-    "check_gemini_api",
-    "check_disk",
-    "check_memory",
-    "check_dependencies",
-    "DEFAULT_TIMEOUT",
 ]
