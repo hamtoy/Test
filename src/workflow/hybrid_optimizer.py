@@ -10,8 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class HybridWorkflowOptimizer:
-    """
-    Orchestrator that routes queries to either LATS (Deep Reasoning)
+    """Orchestrator that routes queries to either LATS (Deep Reasoning)
     or MCTS (Fast Optimization).
     """
 
@@ -28,8 +27,7 @@ class HybridWorkflowOptimizer:
         ocr_text: Optional[str] = None,
         current_answer: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """
-        Execute optimization based on mode.
+        """Execute optimization based on mode.
 
         Args:
             query: 최적화할 질의
@@ -74,9 +72,7 @@ class HybridWorkflowOptimizer:
             }
 
     def _detect_complexity(self, query: str) -> str:
-        """
-        Heuristic for complexity detection.
-        """
+        """Heuristic for complexity detection."""
         # 1. 키워드 기반 탐지
         complex_keywords = [
             "why",

@@ -19,9 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class LCELOptimizedChain:
-    """
-    LCEL 기반 병렬 조회 + Gemini 생성을 수행하는 경량 체인.
-    """
+    """LCEL 기반 병렬 조회 + Gemini 생성을 수행하는 경량 체인."""
 
     def __init__(
         self,

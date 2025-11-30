@@ -78,7 +78,6 @@ async def run_workflow_interactive(
     agent: GeminiAgent, config: AppConfig, logger: logging.Logger
 ) -> None:
     """질의 생성 및 평가 - 에러 핸들링 강화"""
-
     # 1. API 키 검증
     if not config.api_key or not config.api_key.startswith("AIza"):
         show_error_with_guide(
@@ -238,8 +237,7 @@ async def run_workflow_interactive(
 
 
 async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> None:
-    """
-    질의 검수 핸들러 (Direct Input -> CLI Output)
+    """질의 검수 핸들러 (Direct Input -> CLI Output)
 
     UX 원칙:
     - 질의 직접 입력 (복붙)
@@ -304,8 +302,7 @@ async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> Non
 
 
 async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> None:
-    """
-    답변 검수 핸들러 (File Input -> File Output)
+    """답변 검수 핸들러 (File Input -> File Output)
 
     UX 원칙:
     - 파일 경로 입력 (긴 텍스트)
@@ -394,8 +391,7 @@ async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> No
 
 
 async def _handle_edit_menu(agent: GeminiAgent, config: AppConfig) -> None:
-    """
-    수정 메뉴 핸들러 (사용자 요청 기반 재작성)
+    """수정 메뉴 핸들러 (사용자 요청 기반 재작성)
 
     UX 원칙:
     - 답변 파일 입력

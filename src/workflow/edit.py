@@ -20,8 +20,7 @@ async def edit_content(
     kg: Optional[QAKnowledgeGraph] = None,
     cache: Optional[Any] = None,
 ) -> str:
-    """
-    사용자의 간결한 요청(edit_request)을 반영하여 answer 내용을 수정한다.
+    """사용자의 간결한 요청(edit_request)을 반영하여 answer 내용을 수정한다.
 
     Args:
         agent: GeminiAgent 인스턴스

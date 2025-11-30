@@ -1,6 +1,4 @@
-"""
-Type stubs for langchain.callbacks.base module.
-"""
+"""Type stubs for langchain.callbacks.base module."""
 
 from typing import Any, Dict, List
 

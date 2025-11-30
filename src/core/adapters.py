@@ -127,8 +127,7 @@ class Neo4jProvider(GraphProvider):
 
     @asynccontextmanager
     async def session(self) -> AsyncIterator[Any]:
-        """
-        Yields an async session.
+        """Yields an async session.
         Enforces explicit transaction scope via async context manager.
         """
         async with self._driver.session() as session:
@@ -152,8 +151,7 @@ class Neo4jProvider(GraphProvider):
         merge_on: str = "id",
         merge_keys: Optional[List[str]] = None,
     ) -> int:
-        """
-        Batch create or merge nodes using UNWIND for efficiency.
+        """Batch create or merge nodes using UNWIND for efficiency.
 
         Args:
             nodes: List of node property dictionaries. All nodes should have
@@ -209,8 +207,7 @@ class Neo4jProvider(GraphProvider):
         from_key: str = "id",
         to_key: str = "id",
     ) -> int:
-        """
-        Batch create relationships between nodes.
+        """Batch create relationships between nodes.
 
         Args:
             rels: List of relationship dictionaries containing

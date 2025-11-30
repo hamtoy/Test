@@ -8,8 +8,7 @@ from src.core.interfaces import GraphProvider, LLMProvider
 
 
 def get_llm_provider(config: AppConfig) -> LLMProvider:
-    """
-    Factory to create an LLM provider based on configuration.
+    """Factory to create an LLM provider based on configuration.
     Defaults to GeminiProvider if not specified or if 'gemini' is selected.
     """
     provider_type = getattr(config, "llm_provider_type", "gemini").lower()
@@ -30,8 +29,7 @@ def get_llm_provider(config: AppConfig) -> LLMProvider:
 
 
 def get_graph_provider(config: AppConfig) -> Optional[GraphProvider]:
-    """
-    Factory to create a Graph provider based on configuration.
+    """Factory to create a Graph provider based on configuration.
     Defaults to Neo4jProvider if not specified or if 'neo4j' is selected.
     """
     provider_type = getattr(config, "graph_provider_type", "neo4j").lower()

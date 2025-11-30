@@ -1,6 +1,5 @@
 # src/qa/ab_test.py
-"""
-A/B Testing Framework for Prompt Optimization in hamtoy/Test.
+"""A/B Testing Framework for Prompt Optimization in hamtoy/Test.
 Comparing different prompt strategies for OCR and RAG tasks.
 """
 
@@ -67,8 +66,7 @@ class PromptExperimentManager:
         config: ExperimentConfig,
         test_dataset: List[Dict[str, Any]],
     ) -> Dict[str, Any]:
-        """
-        Run A/B test comparing Control vs Treatment prompts.
+        """Run A/B test comparing Control vs Treatment prompts.
 
         Args:
             config: Experiment configuration

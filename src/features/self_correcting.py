@@ -7,8 +7,7 @@ from src.qa.rag_system import QAKnowledgeGraph
 
 
 class SelfCorrectingQAChain:
-    """
-    Gemini 기반 자기 교정형 QA 체인.
+    """Gemini 기반 자기 교정형 QA 체인.
     초안 → 비평 → 수정 → 최종 검증을 반복합니다.
     """
 
@@ -19,10 +18,7 @@ class SelfCorrectingQAChain:
     def generate_with_self_correction(
         self, query_type: str, context: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """
-        규칙을 가져와 자기 교정 프로세스를 실행합니다.
-        """
-
+        """규칙을 가져와 자기 교정 프로세스를 실행합니다."""
         rules = self._get_rules_text(query_type)
         attempts = 0
         max_retries = 3

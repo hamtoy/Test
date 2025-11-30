@@ -139,8 +139,7 @@ def _append_jsonl(path: Path, record: Dict[str, Any]) -> None:
 
 
 async def check_rate_limit(key: str, limit: int, window: int) -> bool:
-    """
-    Checks if the rate limit is exceeded for the given key.
+    """Checks if the rate limit is exceeded for the given key.
     Returns True if allowed, False if blocked.
     """
     if not redis_client:
@@ -166,8 +165,7 @@ async def ensure_redis_ready() -> None:
 
 
 async def _process_task(task: OCRTask) -> Dict[str, Any]:
-    """
-    Minimal OCR/LLM processing stub.
+    """Minimal OCR/LLM processing stub.
     - Reads text if the path is a .txt file; otherwise uses filename as content.
     - If llm_provider is available, rewrites/cleans text via LLM.
     """

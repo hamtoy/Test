@@ -25,8 +25,7 @@ async def inspect_query(
     difficulty: Optional[AdaptiveDifficultyAdjuster] = None,
     cache: Optional[RedisEvalCache] = None,
 ) -> str:
-    """
-    질의 종합 검수 (Zero-Rejection 목표)
+    """질의 종합 검수 (Zero-Rejection 목표)
 
     Pipeline:
     1. 캐시 확인 (동일 질의 반복 수정 방지)
@@ -119,8 +118,7 @@ async def inspect_answer(
     validator: Optional[CrossValidationSystem] = None,
     cache: Optional[RedisEvalCache] = None,
 ) -> str:
-    """
-    답변 종합 검수 (Zero-Rejection 목표)
+    """답변 종합 검수 (Zero-Rejection 목표)
 
     Pipeline:
     1. 캐시 확인 (긴 답변 처리 비용 절감)

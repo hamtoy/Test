@@ -20,8 +20,7 @@ __all__ = [
 
 
 class SafeDriver:
-    """
-    Thin wrapper around Neo4j sync Driver that guarantees close is called.
+    """Thin wrapper around Neo4j sync Driver that guarantees close is called.
     Supports context manager semantics to encourage explicit lifecycle control.
     """
 
@@ -73,17 +72,14 @@ def create_sync_driver(
     register_atexit: bool = False,
     graph_db_factory: Optional[Callable[..., Driver]] = None,
 ) -> SafeDriver:
-    """
-    Create a Neo4j sync driver wrapped with SafeDriver to enforce close().
-    """
+    """Create a Neo4j sync driver wrapped with SafeDriver to enforce close()."""
     factory = graph_db_factory or GraphDatabase.driver
     driver = factory(uri, auth=(user, password))
     return SafeDriver(driver, register_atexit=register_atexit)
 
 
 def get_neo4j_driver_from_env(*, register_atexit: bool = False) -> SafeDriver:
-    """
-    환경 변수에서 Neo4j 연결 정보를 읽어 SafeDriver 생성.
+    """환경 변수에서 Neo4j 연결 정보를 읽어 SafeDriver 생성.
 
     환경 변수:
         NEO4J_URI: Neo4j 서버 URI
@@ -110,8 +106,7 @@ def get_neo4j_driver_from_env(*, register_atexit: bool = False) -> SafeDriver:
 
 
 class Neo4jGraphProvider(GraphProvider):
-    """
-    Neo4j implementation of GraphProvider with async support.
+    """Neo4j implementation of GraphProvider with async support.
 
     Supports both read operations (session, verify_connectivity) and
     write operations (create_nodes, create_relationships) for Data2Neo pipeline.
@@ -125,8 +120,7 @@ class Neo4jGraphProvider(GraphProvider):
         *,
         batch_size: int = 100,
     ) -> None:
-        """
-        Initialize Neo4jGraphProvider.
+        """Initialize Neo4jGraphProvider.
 
         Args:
             uri: Neo4j server URI (e.g., "bolt://localhost:7687").
@@ -156,8 +150,7 @@ class Neo4jGraphProvider(GraphProvider):
             yield session
 
     def session(self) -> Any:
-        """
-        Returns an async context manager for a database session.
+        """Returns an async context manager for a database session.
 
         Usage:
             async with provider.session() as session:
@@ -183,8 +176,7 @@ class Neo4jGraphProvider(GraphProvider):
         merge_on: str = "id",
         merge_keys: Optional[List[str]] = None,
     ) -> int:
-        """
-        Batch create or merge nodes using UNWIND for efficiency.
+        """Batch create or merge nodes using UNWIND for efficiency.
 
         Args:
             nodes: List of node property dictionaries. All nodes should have
@@ -240,8 +232,7 @@ class Neo4jGraphProvider(GraphProvider):
         from_key: str = "id",
         to_key: str = "id",
     ) -> int:
-        """
-        Batch create relationships between nodes.
+        """Batch create relationships between nodes.
 
         Args:
             rels: List of relationship dictionaries containing

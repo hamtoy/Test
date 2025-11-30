@@ -54,8 +54,7 @@ class LLMProvider(ABC):
         response_schema: Optional[Any] = None,
         **kwargs: Any,
     ) -> GenerationResult:
-        """
-        Generates content asynchronously.
+        """Generates content asynchronously.
 
         Args:
             prompt: The user prompt.
@@ -75,8 +74,7 @@ class LLMProvider(ABC):
 
     @abstractmethod
     async def count_tokens(self, text: str) -> int:
-        """
-        Counts tokens for the given text.
+        """Counts tokens for the given text.
 
         Returns:
             Number of tokens.
@@ -89,8 +87,7 @@ class GraphProvider(ABC):
 
     @abstractmethod
     def session(self) -> Any:
-        """
-        Returns an async context manager for a database session.
+        """Returns an async context manager for a database session.
         Usage:
             async with provider.session() as session:
                 await session.run(...)
@@ -115,8 +112,7 @@ class GraphProvider(ABC):
         merge_on: str = "id",
         merge_keys: Optional[List[str]] = None,
     ) -> int:
-        """
-        Batch create or merge nodes.
+        """Batch create or merge nodes.
 
         Args:
             nodes: List of node property dictionaries.
@@ -139,8 +135,7 @@ class GraphProvider(ABC):
         from_key: str = "id",
         to_key: str = "id",
     ) -> int:
-        """
-        Batch create relationships between nodes.
+        """Batch create relationships between nodes.
 
         Args:
             rels: List of relationship dictionaries containing

@@ -1,5 +1,4 @@
-"""
-Type wrappers for google-generativeai library.
+"""Type wrappers for google-generativeai library.
 
 Since google-generativeai lacks complete type stubs, we provide
 typed wrappers for commonly used functions. These wrappers provide
@@ -44,8 +43,7 @@ class SafetySettings(TypedDict, total=False):
 
 
 class GenerateContentResponse:
-    """
-    Data class representing the structure of a Gemini API response.
+    """Data class representing the structure of a Gemini API response.
 
     This is not a protocol but a reference class showing the expected
     response structure. Actual responses from the API will be typed as Any.
@@ -60,8 +58,7 @@ class GenerateContentResponse:
 
 
 def configure_genai(api_key: str) -> None:
-    """
-    Configure the google-generativeai library with an API key.
+    """Configure the google-generativeai library with an API key.
 
     This is a typed wrapper for genai.configure().
 
@@ -76,8 +73,7 @@ def create_generative_model(
     generation_config: Optional[GenerationConfig] = None,
     safety_settings: Optional[list[SafetySettings]] = None,
 ) -> Any:
-    """
-    Create a GenerativeModel instance.
+    """Create a GenerativeModel instance.
 
     This is a typed wrapper for genai.GenerativeModel().
 
@@ -99,8 +95,7 @@ def create_generative_model(
 
 
 def list_available_models() -> list[Any]:
-    """
-    List all available Gemini models.
+    """List all available Gemini models.
 
     This is a typed wrapper for genai.list_models().
 
@@ -115,8 +110,7 @@ def embed_content(
     content: str,
     task_type: str = "retrieval_query",
 ) -> dict[str, Any]:
-    """
-    Generate embeddings for content.
+    """Generate embeddings for content.
 
     This is a typed wrapper for genai.embed_content().
 

@@ -1,5 +1,4 @@
-"""
-Minimal Gemini client used across the QA pipeline.
+"""Minimal Gemini client used across the QA pipeline.
 
 This wraps google.generativeai and provides simple generate/evaluate/rewrite
 helpers. Defaults to the model name from `GEMINI_MODEL_NAME` or
