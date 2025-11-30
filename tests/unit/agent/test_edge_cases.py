@@ -69,11 +69,11 @@ class TestAbnormalResponseHandling:
     """비정상 응답 처리 테스트"""
 
     def test_malformed_json_response(self) -> None:
-        """잘못된 형식의 JSON 응답 처리"""
+        """잘못된 형식의 JSON 응답 처리 - starts with { but invalid JSON"""
         from src.infra.utils import safe_json_parse
 
-        # safe_json_parse가 None 반환하는지 확인
-        result = safe_json_parse("{invalid json", "key")
+        # JSON 형식으로 시작하지만 실제로는 잘못된 JSON - JSON decode error 유발
+        result = safe_json_parse('{"key": "value",}', "key")  # trailing comma
         assert result is None
 
     def test_missing_required_field(self) -> None:
@@ -83,12 +83,16 @@ class TestAbnormalResponseHandling:
         result = safe_json_parse('{"other_field": "value"}', "required_field")
         assert result is None
 
-    def test_unexpected_response_type(self) -> None:
-        """예상치 못한 응답 타입 처리"""
+    def test_non_json_format(self) -> None:
+        """JSON 형식이 아닌 응답 처리 - format check에서 None 반환"""
         from src.infra.utils import safe_json_parse
 
-        # 배열 응답 처리
+        # 배열 형식 - starts with [ not { - format check에서 거부됨
         result = safe_json_parse('[1, 2, 3]', "key")
+        assert result is None
+
+        # 일반 텍스트
+        result = safe_json_parse('plain text', "key")
         assert result is None
 
 
