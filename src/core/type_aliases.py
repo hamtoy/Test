@@ -42,6 +42,7 @@ class CachedContentProtocol(Protocol):
         ...
 
 
+@runtime_checkable
 class CachedContentAccessProtocol(Protocol):
     """Protocol for CachedContent class access (e.g., caching_module.CachedContent).
 
@@ -61,6 +62,7 @@ class CachedContentAccessProtocol(Protocol):
         ...
 
 
+@runtime_checkable
 class CachingModuleProtocol(Protocol):
     """Protocol for caching module (e.g., google.generativeai.caching).
 
@@ -74,14 +76,18 @@ class CachingModuleProtocol(Protocol):
 
 
 __all__ = [
+    # JSON-like structures
     "JsonDict",
     "JsonList",
+    # Common collections
     "StringList",
     "StringDict",
     "IntList",
+    # Nested structures
     "NestedDict",
     "NestedList",
+    # Caching Protocols (in declaration order)
     "CachedContentProtocol",
-    "CachingModuleProtocol",
     "CachedContentAccessProtocol",
+    "CachingModuleProtocol",
 ]
