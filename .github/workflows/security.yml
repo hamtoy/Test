@@ -1,0 +1,61 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # Run weekly on Monday at 00:00 UTC
+    - cron: "0 0 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.4.x"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Secrets scan with TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+
+      - name: Dependency vulnerability check with safety
+        run: |
+          uv run safety check --output json || true
+        continue-on-error: true
+
+      - name: Bandit security linter
+        run: |
+          uv run bandit -r src/ -f json -o bandit-report.json || true
+          uv run bandit -r src/ -ll
+        continue-on-error: true
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-security-report
+          path: bandit-report.json
+          retention-days: 30

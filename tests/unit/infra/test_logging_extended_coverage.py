@@ -1,8 +1,6 @@
 """Additional tests for src/infra/logging.py to improve coverage."""
 
 import logging
-import os
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -14,7 +12,6 @@ from src.infra.logging import (
     get_log_level,
     log_metrics,
     set_log_level,
-    setup_logging,
 )
 
 

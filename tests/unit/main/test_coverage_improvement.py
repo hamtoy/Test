@@ -259,7 +259,6 @@ class TestWorkerData2Neo:
 
         async def mock_process_task(task: Any) -> dict[str, Any]:
             return {"request_id": task.request_id, "ocr_text": "test"}
-            return {"request_id": task.request_id, "ocr_text": "test"}
 
         monkeypatch.setattr(worker, "_process_task", mock_process_task)
 

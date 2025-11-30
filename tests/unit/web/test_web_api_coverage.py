@@ -158,7 +158,8 @@ class TestInitResources:
                 ):
                     await init_resources()
 
-                    assert api_module.kg is not None
+                    # After init_resources, kg should be set (use getattr to break type narrowing)
+                    assert getattr(api_module, "kg") is not None
                     mock_mm_class.assert_called_once_with(kg=mock_kg)
         finally:
             api_module.agent = original_agent

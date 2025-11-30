@@ -53,17 +53,8 @@ class EvaluationResultSchema(BaseModel):
         Returns:
             최고 점수 후보의 ID (A, B, C 중 하나)
         """
-        # Literal 타입이 보장하므로 A/B/C 체크 불필요
-        if self.best_candidate:
-            return self.best_candidate
-
-        # evaluations에서 최고점 찾기
-        if not self.evaluations:
-            return "A"  # 기본값
-
-        # 점수 내림차순 정렬
-        sorted_evals = sorted(self.evaluations, key=lambda x: x.score, reverse=True)
-        return sorted_evals[0].candidate_id
+        # best_candidate is always set (Literal type guarantees "A", "B", or "C")
+        return self.best_candidate
 
 
 class QueryResult(BaseModel):

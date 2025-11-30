@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Generator
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 

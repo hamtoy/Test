@@ -271,10 +271,8 @@ async def health_check_async() -> Dict[str, Any]:
     for check in checks:
         if isinstance(check, BaseException):
             check_results.append({"status": "error", "error": str(check)})
-        elif isinstance(check, dict):
-            check_results.append(check)
         else:
-            check_results.append({"status": "unknown", "error": "Invalid result type"})
+            check_results.append(check)
 
     # 전체 상태 결정
     all_statuses = [c.get("status", "unknown") for c in check_results]
@@ -369,10 +367,8 @@ async def readiness_check() -> Dict[str, Any]:
     for check in checks:
         if isinstance(check, BaseException):
             check_results.append({"status": "error", "error": str(check)})
-        elif isinstance(check, dict):
-            check_results.append(check)
         else:
-            check_results.append({"status": "unknown", "error": "Invalid result type"})
+            check_results.append(check)
 
     # skipped 상태는 ready로 간주
     all_statuses = [

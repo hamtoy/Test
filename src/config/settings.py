@@ -39,7 +39,7 @@ class AppConfig(BaseSettings):
     )
     max_output_tokens: int = Field(8192, alias="GEMINI_MAX_OUTPUT_TOKENS")
     timeout: int = Field(120, alias="GEMINI_TIMEOUT")
-    max_concurrency: int = Field(5, alias="GEMINI_MAX_CONCURRENCY")
+    max_concurrency: int = Field(10, alias="GEMINI_MAX_CONCURRENCY")
     cache_size: int = Field(50, alias="GEMINI_CACHE_SIZE")
     temperature: float = Field(0.2, alias="GEMINI_TEMPERATURE")
     cache_ttl_minutes: int = Field(360, alias="GEMINI_CACHE_TTL_MINUTES")
