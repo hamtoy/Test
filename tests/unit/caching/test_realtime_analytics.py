@@ -1,7 +1,5 @@
 """Tests for real-time cache analytics features."""
-from typing import Any
 
-import pytest
 
 from src.caching.analytics import (
     CacheAnalytics,

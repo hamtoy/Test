@@ -253,7 +253,7 @@ def analyze_cache_stats(path: Path) -> Dict[str, Any]:
     if not path.exists():
         raise FileNotFoundError(f"Cache stats file not found: {path}")
 
-    records: List[Dict[str, Any]] = []
+    records = []
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
