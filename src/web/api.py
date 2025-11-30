@@ -43,6 +43,7 @@ def get_config() -> AppConfig:
         _config = AppConfig()
     return _config
 
+
 # 정적 파일 & 템플릿 경로
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
