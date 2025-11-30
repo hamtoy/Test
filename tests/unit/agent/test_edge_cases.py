@@ -88,11 +88,11 @@ class TestAbnormalResponseHandling:
         from src.infra.utils import safe_json_parse
 
         # 배열 형식 - starts with [ not { - format check에서 거부됨
-        result = safe_json_parse('[1, 2, 3]', "key")
+        result = safe_json_parse("[1, 2, 3]", "key")
         assert result is None
 
         # 일반 텍스트
-        result = safe_json_parse('plain text', "key")
+        result = safe_json_parse("plain text", "key")
         assert result is None
 
 
