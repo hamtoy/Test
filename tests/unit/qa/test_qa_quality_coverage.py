@@ -1,7 +1,7 @@
 """Tests for src/qa/quality.py - IntegratedQualitySystem coverage."""
 
 from typing import Any, Dict
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 import sys
 import types
 import pytest
@@ -32,31 +32,19 @@ class TestIntegratedQualitySystem:
         mock_multimodal_class = MagicMock()
         mock_llm_class = MagicMock()
 
-        # Import the module to patch
-        import src.qa.quality as quality_module
+        with (
+            patch("src.qa.quality.QAKnowledgeGraph", mock_kg_class),
+            patch("src.qa.quality.AdvancedContextAugmentation", mock_augmenter_class),
+            patch("src.qa.quality.RealTimeConstraintEnforcer", mock_enforcer_class),
+            patch("src.qa.quality.AdaptiveDifficultyAdjuster", mock_adjuster_class),
+            patch("src.qa.quality.CrossValidationSystem", mock_validator_class),
+            patch("src.qa.quality.DynamicExampleSelector", mock_selector_class),
+            patch("src.qa.quality.MultimodalUnderstanding", mock_multimodal_class),
+            patch("src.qa.quality.GeminiModelClient", mock_llm_class),
+        ):
+            from src.qa.quality import IntegratedQualitySystem
 
-        # Save original classes
-        orig_kg = quality_module.QAKnowledgeGraph
-        orig_augmenter = quality_module.AdvancedContextAugmentation
-        orig_enforcer = quality_module.RealTimeConstraintEnforcer
-        orig_adjuster = quality_module.AdaptiveDifficultyAdjuster
-        orig_validator = quality_module.CrossValidationSystem
-        orig_selector = quality_module.DynamicExampleSelector
-        orig_multimodal = quality_module.MultimodalUnderstanding
-        orig_llm = quality_module.GeminiModelClient
-
-        try:
-            # Patch the classes
-            quality_module.QAKnowledgeGraph = mock_kg_class
-            quality_module.AdvancedContextAugmentation = mock_augmenter_class
-            quality_module.RealTimeConstraintEnforcer = mock_enforcer_class
-            quality_module.AdaptiveDifficultyAdjuster = mock_adjuster_class
-            quality_module.CrossValidationSystem = mock_validator_class
-            quality_module.DynamicExampleSelector = mock_selector_class
-            quality_module.MultimodalUnderstanding = mock_multimodal_class
-            quality_module.GeminiModelClient = mock_llm_class
-
-            system = quality_module.IntegratedQualitySystem(
+            system = IntegratedQualitySystem(
                 neo4j_uri="bolt://localhost:7687",
                 user="neo4j",
                 password="password",
@@ -84,22 +72,9 @@ class TestIntegratedQualitySystem:
             assert system.example_selector is not None
             assert system.multimodal is not None
             assert system.llm is not None
-        finally:
-            # Restore original classes
-            quality_module.QAKnowledgeGraph = orig_kg
-            quality_module.AdvancedContextAugmentation = orig_augmenter
-            quality_module.RealTimeConstraintEnforcer = orig_enforcer
-            quality_module.AdaptiveDifficultyAdjuster = orig_adjuster
-            quality_module.CrossValidationSystem = orig_validator
-            quality_module.DynamicExampleSelector = orig_selector
-            quality_module.MultimodalUnderstanding = orig_multimodal
-            quality_module.GeminiModelClient = orig_llm
 
     def test_init_without_gemini_key(self, mock_pytesseract: None) -> None:
         """Test __init__ with optional gemini_key as None."""
-        import src.qa.quality as quality_module
-
-        # Mock all dependencies
         mock_kg_class = MagicMock()
         mock_augmenter_class = MagicMock()
         mock_enforcer_class = MagicMock()
@@ -109,26 +84,19 @@ class TestIntegratedQualitySystem:
         mock_multimodal_class = MagicMock()
         mock_llm_class = MagicMock()
 
-        orig_kg = quality_module.QAKnowledgeGraph
-        orig_augmenter = quality_module.AdvancedContextAugmentation
-        orig_enforcer = quality_module.RealTimeConstraintEnforcer
-        orig_adjuster = quality_module.AdaptiveDifficultyAdjuster
-        orig_validator = quality_module.CrossValidationSystem
-        orig_selector = quality_module.DynamicExampleSelector
-        orig_multimodal = quality_module.MultimodalUnderstanding
-        orig_llm = quality_module.GeminiModelClient
+        with (
+            patch("src.qa.quality.QAKnowledgeGraph", mock_kg_class),
+            patch("src.qa.quality.AdvancedContextAugmentation", mock_augmenter_class),
+            patch("src.qa.quality.RealTimeConstraintEnforcer", mock_enforcer_class),
+            patch("src.qa.quality.AdaptiveDifficultyAdjuster", mock_adjuster_class),
+            patch("src.qa.quality.CrossValidationSystem", mock_validator_class),
+            patch("src.qa.quality.DynamicExampleSelector", mock_selector_class),
+            patch("src.qa.quality.MultimodalUnderstanding", mock_multimodal_class),
+            patch("src.qa.quality.GeminiModelClient", mock_llm_class),
+        ):
+            from src.qa.quality import IntegratedQualitySystem
 
-        try:
-            quality_module.QAKnowledgeGraph = mock_kg_class
-            quality_module.AdvancedContextAugmentation = mock_augmenter_class
-            quality_module.RealTimeConstraintEnforcer = mock_enforcer_class
-            quality_module.AdaptiveDifficultyAdjuster = mock_adjuster_class
-            quality_module.CrossValidationSystem = mock_validator_class
-            quality_module.DynamicExampleSelector = mock_selector_class
-            quality_module.MultimodalUnderstanding = mock_multimodal_class
-            quality_module.GeminiModelClient = mock_llm_class
-
-            system = quality_module.IntegratedQualitySystem(
+            system = IntegratedQualitySystem(
                 neo4j_uri="bolt://localhost:7687",
                 user="neo4j",
                 password="password",
@@ -137,20 +105,9 @@ class TestIntegratedQualitySystem:
             assert system is not None
             # Verify augmenter was called with None as gemini_key (4th positional arg)
             mock_augmenter_class.assert_called_once()
-        finally:
-            quality_module.QAKnowledgeGraph = orig_kg
-            quality_module.AdvancedContextAugmentation = orig_augmenter
-            quality_module.RealTimeConstraintEnforcer = orig_enforcer
-            quality_module.AdaptiveDifficultyAdjuster = orig_adjuster
-            quality_module.CrossValidationSystem = orig_validator
-            quality_module.DynamicExampleSelector = orig_selector
-            quality_module.MultimodalUnderstanding = orig_multimodal
-            quality_module.GeminiModelClient = orig_llm
 
     def test_generate_qa_with_all_enhancements(self, mock_pytesseract: None) -> None:
         """Test generate_qa_with_all_enhancements method."""
-        import src.qa.quality as quality_module
-
         # Setup mock returns
         mock_image_meta: Dict[str, Any] = {"format": "png", "size": 1024}
         mock_complexity: Dict[str, Any] = {"level": "medium", "score": 0.5}
@@ -189,26 +146,19 @@ class TestIntegratedQualitySystem:
         mock_multimodal_class = MagicMock(return_value=mock_multimodal_instance)
         mock_llm_class = MagicMock(return_value=mock_llm_instance)
 
-        orig_kg = quality_module.QAKnowledgeGraph
-        orig_augmenter = quality_module.AdvancedContextAugmentation
-        orig_enforcer = quality_module.RealTimeConstraintEnforcer
-        orig_adjuster = quality_module.AdaptiveDifficultyAdjuster
-        orig_validator = quality_module.CrossValidationSystem
-        orig_selector = quality_module.DynamicExampleSelector
-        orig_multimodal = quality_module.MultimodalUnderstanding
-        orig_llm = quality_module.GeminiModelClient
+        with (
+            patch("src.qa.quality.QAKnowledgeGraph", mock_kg_class),
+            patch("src.qa.quality.AdvancedContextAugmentation", mock_augmenter_class),
+            patch("src.qa.quality.RealTimeConstraintEnforcer", mock_enforcer_class),
+            patch("src.qa.quality.AdaptiveDifficultyAdjuster", mock_adjuster_class),
+            patch("src.qa.quality.CrossValidationSystem", mock_validator_class),
+            patch("src.qa.quality.DynamicExampleSelector", mock_selector_class),
+            patch("src.qa.quality.MultimodalUnderstanding", mock_multimodal_class),
+            patch("src.qa.quality.GeminiModelClient", mock_llm_class),
+        ):
+            from src.qa.quality import IntegratedQualitySystem
 
-        try:
-            quality_module.QAKnowledgeGraph = mock_kg_class
-            quality_module.AdvancedContextAugmentation = mock_augmenter_class
-            quality_module.RealTimeConstraintEnforcer = mock_enforcer_class
-            quality_module.AdaptiveDifficultyAdjuster = mock_adjuster_class
-            quality_module.CrossValidationSystem = mock_validator_class
-            quality_module.DynamicExampleSelector = mock_selector_class
-            quality_module.MultimodalUnderstanding = mock_multimodal_class
-            quality_module.GeminiModelClient = mock_llm_class
-
-            system = quality_module.IntegratedQualitySystem(
+            system = IntegratedQualitySystem(
                 neo4j_uri="bolt://localhost:7687",
                 user="neo4j",
                 password="password",
@@ -246,20 +196,9 @@ class TestIntegratedQualitySystem:
             assert result["metadata"]["complexity"] == mock_complexity
             assert result["metadata"]["adjustments"] == mock_adjustments
             assert result["metadata"]["examples_used"] == mock_examples
-        finally:
-            quality_module.QAKnowledgeGraph = orig_kg
-            quality_module.AdvancedContextAugmentation = orig_augmenter
-            quality_module.RealTimeConstraintEnforcer = orig_enforcer
-            quality_module.AdaptiveDifficultyAdjuster = orig_adjuster
-            quality_module.CrossValidationSystem = orig_validator
-            quality_module.DynamicExampleSelector = orig_selector
-            quality_module.MultimodalUnderstanding = orig_multimodal
-            quality_module.GeminiModelClient = orig_llm
 
     def test_generate_qa_with_summary_query_type(self, mock_pytesseract: None) -> None:
         """Test generate_qa_with_all_enhancements with summary query type."""
-        import src.qa.quality as quality_module
-
         # Create mock instances
         mock_kg_instance = MagicMock()
         mock_multimodal_instance = MagicMock()
@@ -287,26 +226,19 @@ class TestIntegratedQualitySystem:
         mock_multimodal_class = MagicMock(return_value=mock_multimodal_instance)
         mock_llm_class = MagicMock(return_value=mock_llm_instance)
 
-        orig_kg = quality_module.QAKnowledgeGraph
-        orig_augmenter = quality_module.AdvancedContextAugmentation
-        orig_enforcer = quality_module.RealTimeConstraintEnforcer
-        orig_adjuster = quality_module.AdaptiveDifficultyAdjuster
-        orig_validator = quality_module.CrossValidationSystem
-        orig_selector = quality_module.DynamicExampleSelector
-        orig_multimodal = quality_module.MultimodalUnderstanding
-        orig_llm = quality_module.GeminiModelClient
+        with (
+            patch("src.qa.quality.QAKnowledgeGraph", mock_kg_class),
+            patch("src.qa.quality.AdvancedContextAugmentation", mock_augmenter_class),
+            patch("src.qa.quality.RealTimeConstraintEnforcer", mock_enforcer_class),
+            patch("src.qa.quality.AdaptiveDifficultyAdjuster", mock_adjuster_class),
+            patch("src.qa.quality.CrossValidationSystem", mock_validator_class),
+            patch("src.qa.quality.DynamicExampleSelector", mock_selector_class),
+            patch("src.qa.quality.MultimodalUnderstanding", mock_multimodal_class),
+            patch("src.qa.quality.GeminiModelClient", mock_llm_class),
+        ):
+            from src.qa.quality import IntegratedQualitySystem
 
-        try:
-            quality_module.QAKnowledgeGraph = mock_kg_class
-            quality_module.AdvancedContextAugmentation = mock_augmenter_class
-            quality_module.RealTimeConstraintEnforcer = mock_enforcer_class
-            quality_module.AdaptiveDifficultyAdjuster = mock_adjuster_class
-            quality_module.CrossValidationSystem = mock_validator_class
-            quality_module.DynamicExampleSelector = mock_selector_class
-            quality_module.MultimodalUnderstanding = mock_multimodal_class
-            quality_module.GeminiModelClient = mock_llm_class
-
-            system = quality_module.IntegratedQualitySystem(
+            system = IntegratedQualitySystem(
                 neo4j_uri="bolt://localhost:7687",
                 user="neo4j",
                 password="password",
@@ -320,12 +252,3 @@ class TestIntegratedQualitySystem:
             mock_adjuster_instance.adjust_query_requirements.assert_called_with(
                 {}, "summary"
             )
-        finally:
-            quality_module.QAKnowledgeGraph = orig_kg
-            quality_module.AdvancedContextAugmentation = orig_augmenter
-            quality_module.RealTimeConstraintEnforcer = orig_enforcer
-            quality_module.AdaptiveDifficultyAdjuster = orig_adjuster
-            quality_module.CrossValidationSystem = orig_validator
-            quality_module.DynamicExampleSelector = orig_selector
-            quality_module.MultimodalUnderstanding = orig_multimodal
-            quality_module.GeminiModelClient = orig_llm
