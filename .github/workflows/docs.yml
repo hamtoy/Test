@@ -1,17 +1,17 @@
-name: Documentation
+name: Docs
 
 on:
   push:
     branches: [main]
     paths:
-      - 'docs/**'
-      - 'src/**/*.py'
-      - '.github/workflows/docs.yml'
+      - "docs/**"
+      - "src/**/*.py"
+      - ".github/workflows/docs.yml"
   pull_request:
     branches: [main]
     paths:
-      - 'docs/**'
-      - 'src/**/*.py'
+      - "docs/**"
+      - "src/**/*.py"
   workflow_dispatch:
 
 permissions:
@@ -33,8 +33,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: "3.11"
+          cache: "pip"
 
       - name: Install dependencies
         run: |
