@@ -86,7 +86,7 @@ class TestGeminiModelClientGenerate:
         client = gmc.GeminiModelClient()
 
         # Make generate raise a generic exception
-        client.model.generate_content = MagicMock(
+        client.model.generate_content = MagicMock(  # type: ignore[method-assign]
             side_effect=RuntimeError("unexpected error")
         )
 
@@ -109,7 +109,7 @@ class TestGeminiModelClientEvaluate:
         def _raise(*args: Any, **kwargs: Any) -> None:
             raise RuntimeError("unexpected")
 
-        client.generate = _raise  # type: ignore[method-assign, assignment]
+        client.generate = _raise  # type: ignore[method-assign,assignment]
 
         result = client.evaluate("question", ["answer1", "answer2"])
         assert result["notes"] == "예상치 못한 오류로 길이 기반 평가 수행"
@@ -127,7 +127,7 @@ class TestGeminiModelClientEvaluate:
         def _generate(*args: Any, **kwargs: Any) -> str:
             return "점수: not_a_number\n최고: 1"
 
-        client.generate = _generate  # type: ignore[method-assign, assignment]
+        client.generate = _generate  # type: ignore[method-assign]
 
         result = client.evaluate("question", ["a", "b"])
         # Falls back to length-based since no valid scores
@@ -146,7 +146,7 @@ class TestGeminiModelClientEvaluate:
         def _generate(*args: Any, **kwargs: Any) -> str:
             return "점수: 3\n점수: 5\n최고: not_a_number"
 
-        client.generate = _generate  # type: ignore[method-assign, assignment]
+        client.generate = _generate  # type: ignore[method-assign]
 
         result = client.evaluate("question", ["a", "bb"])
         # Should pick max score (index 1)
@@ -167,7 +167,7 @@ class TestGeminiModelClientRewrite:
         def _raise(*args: Any, **kwargs: Any) -> None:
             raise RuntimeError("unexpected")
 
-        client.generate = _raise  # type: ignore[method-assign, assignment]
+        client.generate = _raise  # type: ignore[method-assign,assignment]
 
         result = client.rewrite("original text")
         assert "재작성 실패(알 수 없음)" in result
