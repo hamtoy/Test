@@ -1,6 +1,4 @@
-"""
-Shared constants for pricing, validation, and operational defaults.
-"""
+"""Shared constants for pricing, validation, and operational defaults."""
 
 from typing import Final, List, Optional, TypedDict
 

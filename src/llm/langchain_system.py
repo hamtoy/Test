@@ -13,8 +13,7 @@ from src.features.self_correcting import SelfCorrectingQAChain
 
 
 class UltimateLangChainQASystem:
-    """
-    Gemini + KG 기반으로 구성한 통합 QA 시스템.
+    """Gemini + KG 기반으로 구성한 통합 QA 시스템.
 
     Uses QASystemFactory for component creation to reduce coupling
     and improve maintainability.
@@ -34,8 +33,7 @@ class UltimateLangChainQASystem:
         password: Optional[str] = None,
         factory: Optional[QASystemFactory] = None,
     ):
-        """
-        Initialize the Ultimate QA System with all components.
+        """Initialize the Ultimate QA System with all components.
 
         Args:
             neo4j_uri: Optional Neo4j database URI
@@ -72,10 +70,7 @@ class UltimateLangChainQASystem:
     def generate_ultimate_qa(
         self, image_path: str, user_query: Optional[str] = None
     ) -> Dict[str, Any]:
-        """
-        모든 기능을 활용한 최상급 생성.
-        """
-
+        """모든 기능을 활용한 최상급 생성."""
         # 1. 라우터로 질의 유형 자동 판단 (핸들러 기본값 제공해 빈 핸들러 오류 방지)
         router_handlers = {
             "explanation": lambda text: None,

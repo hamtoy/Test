@@ -36,8 +36,7 @@ T = TypeVar("T")
 
 
 def _run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
-    """
-    Run an async coroutine from sync context, handling the case where
+    """Run an async coroutine from sync context, handling the case where
     an event loop is already running.
 
     If there's already a running event loop (e.g., called from async context),
@@ -102,8 +101,7 @@ class CustomGeminiEmbeddings(Embeddings):
 
 
 class QAKnowledgeGraph:
-    """
-    RAG + 그래프 기반 QA 헬퍼.
+    """RAG + 그래프 기반 QA 헬퍼.
     - Neo4j 그래프 쿼리
     - (선택) Rule 벡터 검색
     - 세션 구조 검증
@@ -163,9 +161,7 @@ class QAKnowledgeGraph:
         self._init_vector_store()
 
     def _init_vector_store(self) -> None:
-        """
-        GEMINI_API_KEY로 임베딩을 생성합니다. 키가 없거나 인덱스가 없으면 건너뜀.
-        """
+        """GEMINI_API_KEY로 임베딩을 생성합니다. 키가 없거나 인덱스가 없으면 건너뜀."""
         try:
             from langchain_neo4j import Neo4jVector
 
@@ -202,8 +198,7 @@ class QAKnowledgeGraph:
         return [doc.page_content for doc in results]
 
     def get_constraints_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
-        """
-        QueryType과 연결된 제약 조건 조회.
+        """QueryType과 연결된 제약 조건 조회.
         - Rule-[:APPLIES_TO]->QueryType, Rule-[:ENFORCES]->Constraint
         - Template-[:ENFORCES]->Constraint
         """
@@ -255,9 +250,7 @@ class QAKnowledgeGraph:
         return _run_async_safely(_run())
 
     def get_examples(self, limit: int = 5) -> List[Dict[str, str]]:
-        """
-        Example 노드 조회 (현재 Rule과 직접 연결되지 않았으므로 전체에서 샘플링).
-        """
+        """Example 노드 조회 (현재 Rule과 직접 연결되지 않았으므로 전체에서 샘플링)."""
         cypher = """
         MATCH (e:Example)
         RETURN e.id AS id, e.text AS text, e.type AS type
@@ -278,9 +271,7 @@ class QAKnowledgeGraph:
         return _run_async_safely(_run())
 
     def validate_session(self, session: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        checks/validate_session 로직을 활용해 세션 구조 검증.
-        """
+        """checks/validate_session 로직을 활용해 세션 구조 검증."""
         from scripts.build_session import SessionContext
 
         turns = session.get("turns", [])
@@ -332,8 +323,7 @@ class QAKnowledgeGraph:
         patterns: List[Dict[str, Any]],
         batch_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """
-        LLM에서 생성된 규칙/제약/베스트 프랙티스/예시를 Neo4j에 업서트.
+        """LLM에서 생성된 규칙/제약/베스트 프랙티스/예시를 Neo4j에 업서트.
 
         Args:
             patterns: LLM에서 반환된 패턴 리스트. 각 패턴은 다음 필드를 가짐:
@@ -493,8 +483,7 @@ class QAKnowledgeGraph:
         batch_id: str,
         timestamp: str,
     ) -> Dict[str, bool]:
-        """
-        Rule 노드 업서트.
+        """Rule 노드 업서트.
 
         노드 속성:
             - id: 규칙 고유 ID
@@ -585,8 +574,7 @@ class QAKnowledgeGraph:
         batch_id: str,
         timestamp: str,
     ) -> Dict[str, bool]:
-        """
-        Constraint 노드 업서트 및 Rule과 연결.
+        """Constraint 노드 업서트 및 Rule과 연결.
 
         노드 속성:
             - id: 제약 고유 ID
@@ -670,8 +658,7 @@ class QAKnowledgeGraph:
         batch_id: str,
         timestamp: str,
     ) -> Dict[str, bool]:
-        """
-        BestPractice 노드 업서트 및 Rule과 연결.
+        """BestPractice 노드 업서트 및 Rule과 연결.
 
         노드 속성:
             - id: 베스트 프랙티스 고유 ID
@@ -756,8 +743,7 @@ class QAKnowledgeGraph:
         batch_id: str,
         timestamp: str,
     ) -> Dict[str, bool]:
-        """
-        Example 노드 업서트 및 Rule과 연결.
+        """Example 노드 업서트 및 Rule과 연결.
 
         노드 속성:
             - id: 예시 고유 ID
@@ -839,8 +825,7 @@ class QAKnowledgeGraph:
         return _run_async_safely(_run())
 
     def get_rules_by_batch_id(self, batch_id: str) -> List[Dict[str, Any]]:
-        """
-        특정 batch_id로 생성된 모든 노드 조회 (롤백 전 확인용).
+        """특정 batch_id로 생성된 모든 노드 조회 (롤백 전 확인용).
 
         Args:
             batch_id: 조회할 배치 ID
@@ -880,8 +865,7 @@ class QAKnowledgeGraph:
         return _run_async_safely(_run())
 
     def rollback_batch(self, batch_id: str) -> Dict[str, Any]:
-        """
-        특정 batch_id로 생성된 모든 노드 삭제 (롤백).
+        """특정 batch_id로 생성된 모든 노드 삭제 (롤백).
 
         Args:
             batch_id: 삭제할 배치 ID
@@ -957,8 +941,7 @@ class QAKnowledgeGraph:
 
     @contextmanager
     def graph_session(self) -> Generator[Any, None, None]:
-        """
-        동기 Neo4j 세션 헬퍼.
+        """동기 Neo4j 세션 헬퍼.
         - _graph가 있으면 동기 세션 반환
         - _graph_provider가 있으면 별도 이벤트 루프로 async 세션을 동기화
         - 모두 없으면 None yield

@@ -13,9 +13,7 @@ from src.llm.gemini import GeminiModelClient
 
 
 class IntegratedQualitySystem:
-    """
-    모든 품질 향상 기능을 통합한 파이프라인.
-    """
+    """모든 품질 향상 기능을 통합한 파이프라인."""
 
     def __init__(
         self,
@@ -55,7 +53,6 @@ class IntegratedQualitySystem:
                 - adjustments (Dict): 난이도 조정 정보
                 - examples_used (List): 사용된 예시 리스트
         """
-
         # 1. 이미지 분석
         image_meta = self.multimodal.analyze_image_deep(image_path)
 

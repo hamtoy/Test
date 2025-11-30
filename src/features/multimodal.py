@@ -16,16 +16,13 @@ pytesseract: Optional[Any] = _pytesseract
 
 
 class MultimodalUnderstanding:
-    """
-    이미지 OCR + 구조 분석으로 메타데이터 자동 생성
-    """
+    """이미지 OCR + 구조 분석으로 메타데이터 자동 생성"""
 
     def __init__(self, kg: QAKnowledgeGraph):
         self.kg = kg
 
     def analyze_image_deep(self, image_path: str) -> Dict[str, Any]:
-        """
-        이미지 심층 분석: OCR, 표/그래프 감지, 텍스트 밀도/토픽 추출 후 그래프 저장.
+        """이미지 심층 분석: OCR, 표/그래프 감지, 텍스트 밀도/토픽 추출 후 그래프 저장.
 
         Args:
             image_path: 분석할 이미지 파일 경로.
@@ -33,7 +30,6 @@ class MultimodalUnderstanding:
         Returns:
             dict: 텍스트 밀도, 주제 목록, 테이블/차트 여부 등 메타데이터.
         """
-
         with Image.open(image_path) as img:
             # 1. OCR로 텍스트 추출
             text = (
@@ -99,7 +95,6 @@ class MultimodalUnderstanding:
 
     def _extract_topics(self, text: str) -> List[str]:
         """주제 추출 (단순 빈도 기반)."""
-
         words = [w for w in text.split() if len(w) > 2]
         common = Counter(words).most_common(5)
         return [w for w, _ in common]

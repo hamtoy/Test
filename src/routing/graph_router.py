@@ -13,9 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class GraphEnhancedRouter:
-    """
-    Neo4j 그래프의 QueryType 정보를 활용해 최적 체인을 선택하고 실행합니다.
-    """
+    """Neo4j 그래프의 QueryType 정보를 활용해 최적 체인을 선택하고 실행합니다."""
 
     def __init__(
         self,
@@ -28,11 +26,9 @@ class GraphEnhancedRouter:
     def route_and_generate(
         self, user_input: str, handlers: Dict[str, Callable[[str], Any]]
     ) -> Dict[str, Any]:
-        """
-        사용자의 입력을 분석해 타입을 선택하고 해당 핸들러를 실행합니다.
+        """사용자의 입력을 분석해 타입을 선택하고 해당 핸들러를 실행합니다.
         handlers: {"explanation": func, "summary": func, ...}
         """
-
         qtypes = self._fetch_query_types()
         prompt = self._build_router_prompt(user_input, qtypes)
         choice = self.llm.generate(prompt, role="router").strip().lower()

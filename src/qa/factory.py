@@ -12,8 +12,7 @@ from src.features.self_correcting import SelfCorrectingQAChain
 
 
 class QASystemFactory:
-    """
-    Factory class for creating QA system components.
+    """Factory class for creating QA system components.
 
     Centralizes the instantiation logic for all QA components,
     reducing coupling and improving testability.
@@ -25,8 +24,7 @@ class QASystemFactory:
         neo4j_user: Optional[str] = None,
         neo4j_password: Optional[str] = None,
     ):
-        """
-        Initialize the factory with optional Neo4j credentials.
+        """Initialize the factory with optional Neo4j credentials.
 
         Args:
             neo4j_uri: Neo4j database URI
@@ -42,8 +40,7 @@ class QASystemFactory:
         self._model_client: Optional[GeminiModelClient] = None
 
     def get_knowledge_graph(self) -> QAKnowledgeGraph:
-        """
-        Get or create the shared QAKnowledgeGraph instance.
+        """Get or create the shared QAKnowledgeGraph instance.
 
         Returns:
             QAKnowledgeGraph instance
@@ -53,8 +50,7 @@ class QASystemFactory:
         return self._kg
 
     def get_model_client(self) -> GeminiModelClient:
-        """
-        Get or create the shared GeminiModelClient instance.
+        """Get or create the shared GeminiModelClient instance.
 
         Returns:
             GeminiModelClient instance
@@ -64,8 +60,7 @@ class QASystemFactory:
         return self._model_client
 
     def create_memory_system(self) -> MemoryAugmentedQASystem:
-        """
-        Create a MemoryAugmentedQASystem instance.
+        """Create a MemoryAugmentedQASystem instance.
 
         Returns:
             MemoryAugmentedQASystem instance configured with Neo4j credentials
@@ -77,8 +72,7 @@ class QASystemFactory:
         )
 
     def create_agent_system(self) -> MultiAgentQASystem:
-        """
-        Create a MultiAgentQASystem instance.
+        """Create a MultiAgentQASystem instance.
 
         Returns:
             MultiAgentQASystem instance using the shared knowledge graph
@@ -86,8 +80,7 @@ class QASystemFactory:
         return MultiAgentQASystem(self.get_knowledge_graph())
 
     def create_correcting_chain(self) -> SelfCorrectingQAChain:
-        """
-        Create a SelfCorrectingQAChain instance.
+        """Create a SelfCorrectingQAChain instance.
 
         Returns:
             SelfCorrectingQAChain instance using shared dependencies
@@ -98,8 +91,7 @@ class QASystemFactory:
         )
 
     def create_router(self) -> GraphEnhancedRouter:
-        """
-        Create a GraphEnhancedRouter instance.
+        """Create a GraphEnhancedRouter instance.
 
         Returns:
             GraphEnhancedRouter instance using shared dependencies
@@ -110,8 +102,7 @@ class QASystemFactory:
         )
 
     def create_lcel_chain(self) -> LCELOptimizedChain:
-        """
-        Create a LCELOptimizedChain instance.
+        """Create a LCELOptimizedChain instance.
 
         Returns:
             LCELOptimizedChain instance using shared dependencies
@@ -122,8 +113,7 @@ class QASystemFactory:
         )
 
     def create_all_components(self) -> Dict[str, object]:
-        """
-        Create all QA system components at once.
+        """Create all QA system components at once.
 
         Returns:
             Dictionary containing all initialized components with keys:

@@ -9,8 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class RedisEvalCache:
-    """
-    Redis-backed evaluation cache with TTL and fallback to in-memory dict.
+    """Redis-backed evaluation cache with TTL and fallback to in-memory dict.
 
     Persists LATS evaluation scores across worker restarts.
     """
@@ -18,8 +17,7 @@ class RedisEvalCache:
     def __init__(
         self, redis_client: Optional[Any] = None, ttl: int = DEFAULT_CACHE_TTL_SECONDS
     ):
-        """
-        Initialize Redis cache with fallback.
+        """Initialize Redis cache with fallback.
 
         Args:
             redis_client: Async Redis client instance (optional)
@@ -39,8 +37,7 @@ class RedisEvalCache:
             )
 
     async def get(self, key: str) -> Optional[float]:
-        """
-        Retrieve cached evaluation score.
+        """Retrieve cached evaluation score.
 
         Args:
             key: Cache key (typically state hash)
@@ -62,8 +59,7 @@ class RedisEvalCache:
         return None
 
     async def set(self, key: str, score: float) -> None:
-        """
-        Store evaluation score in cache.
+        """Store evaluation score in cache.
 
         Args:
             key: Cache key

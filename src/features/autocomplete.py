@@ -12,8 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class SmartAutocomplete:
-    """
-    그래프 기반 자동 완성/검증 보조.
+    """그래프 기반 자동 완성/검증 보조.
     - 다음 질의 유형 추천
     - 출력 초안의 제약 위반 감지 및 제안
     """
@@ -24,8 +23,7 @@ class SmartAutocomplete:
     def suggest_next_query_type(
         self, current_session: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """
-        현재 세션의 사용 타입/회수 기반으로 다음 질의 유형을 추천.
+        """현재 세션의 사용 타입/회수 기반으로 다음 질의 유형을 추천.
         session_limit를 초과한 유형은 제외, 사용되지 않은 유형 우선.
         """
         used_types = [t["type"] for t in current_session if t.get("type")]
@@ -73,8 +71,7 @@ class SmartAutocomplete:
     def suggest_constraint_compliance(
         self, draft_output: str, query_type: str
     ) -> Dict[str, List[str]]:
-        """
-        출력 초안에 대해 제약 위반을 찾아 개선 제안을 반환.
+        """출력 초안에 대해 제약 위반을 찾아 개선 제안을 반환.
         - 금지 패턴(그래프 + 로컬) 검사
         """
         violations: List[str] = []

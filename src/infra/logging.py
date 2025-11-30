@@ -21,9 +21,7 @@ def _resolve_log_level(explicit: str | None = None) -> int:
 
 
 class SensitiveDataFilter(logging.Filter):
-    """
-    [Security] 로그에서 민감한 정보(API Key 등)를 마스킹하는 필터
-    """
+    """[Security] 로그에서 민감한 정보(API Key 등)를 마스킹하는 필터"""
 
     sensitive_regex = re.compile(SENSITIVE_PATTERN)
 
@@ -89,8 +87,7 @@ def _build_console_handler(
 def setup_logging(
     env: str | None = None, log_level: str | None = None
 ) -> Tuple[logging.Logger, logging.handlers.QueueListener]:
-    """
-    [Non-Blocking Logging] QueueHandler 패턴 + 환경별 포맷/출력 제어
+    """[Non-Blocking Logging] QueueHandler 패턴 + 환경별 포맷/출력 제어
 
     - production: JSON 포맷, 파일만(회전)
     - local/dev: 텍스트 포맷, 콘솔 + 파일(회전)
@@ -215,9 +212,7 @@ def log_metrics(
     api_retries: int | None = None,
     api_failures: int | None = None,
 ) -> None:
-    """
-    표준화된 메트릭 로깅: latency, 토큰 처리율, 캐시 히트율을 계산해 기록.
-    """
+    """표준화된 메트릭 로깅: latency, 토큰 처리율, 캐시 히트율을 계산해 기록."""
     metrics: dict[str, float | int] = {}
     if prompt_tokens is not None:
         metrics["prompt_tokens"] = prompt_tokens

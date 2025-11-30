@@ -1,5 +1,4 @@
-"""
-Partial type stubs for langchain.
+"""Partial type stubs for langchain.
 
 Only commonly used classes are stubbed to enable strict type checking.
 """

@@ -1,5 +1,4 @@
-"""
-Neo4j 그래프에 저장된 Page/Block을 비교/요약하는 스크립트.
+"""Neo4j 그래프에 저장된 Page/Block을 비교/요약하는 스크립트.
 
 개선 사항:
 - 환경 변수 검증 후 친절한 오류 메시지
@@ -52,8 +51,7 @@ def compare_structure(driver: Any) -> List[Dict[str, Any]]:
 
 
 def find_common_content(driver: Any, limit: int = 10) -> List[Tuple[str, List[str]]]:
-    """
-    여러 페이지에서 동일하게 등장하는 블록 콘텐츠 찾기.
+    """여러 페이지에서 동일하게 등장하는 블록 콘텐츠 찾기.
     content별로 그룹화하여 카티전 곱을 피함.
     """
     query = """
