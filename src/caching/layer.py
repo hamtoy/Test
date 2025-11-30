@@ -48,8 +48,7 @@ class CachingLayer:
             )
 
     def get_rules_cached(self, query_type: str) -> List[Dict[str, str]]:
-        """규칙 조회 + Redis 캐시 (1시간 TTL).
-        """
+        """규칙 조회 + Redis 캐시 (1시간 TTL)."""
         cache_key = f"rules:{query_type}"
 
         if self.redis:
@@ -79,8 +78,7 @@ class CachingLayer:
         return rules
 
     def invalidate_cache(self, pattern: str = "rules:*") -> int:
-        """캐시 무효화. 삭제한 키 개수를 반환.
-        """
+        """캐시 무효화. 삭제한 키 개수를 반환."""
         if not self.redis:
             return 0
         keys = list(self.redis.keys(pattern))

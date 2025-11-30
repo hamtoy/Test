@@ -13,8 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class GraphEnhancedRouter:
-    """Neo4j 그래프의 QueryType 정보를 활용해 최적 체인을 선택하고 실행합니다.
-    """
+    """Neo4j 그래프의 QueryType 정보를 활용해 최적 체인을 선택하고 실행합니다."""
 
     def __init__(
         self,

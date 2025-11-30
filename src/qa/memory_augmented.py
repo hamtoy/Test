@@ -13,8 +13,7 @@ load_dotenv()
 
 
 class MemoryAugmentedQASystem:
-    """세션 간 맥락을 기억하면서 벡터 검색+Gemini로 응답 생성.
-    """
+    """세션 간 맥락을 기억하면서 벡터 검색+Gemini로 응답 생성."""
 
     def __init__(
         self,
@@ -54,8 +53,7 @@ class MemoryAugmentedQASystem:
         self.history: List[Dict[str, str]] = []
 
     def ask_with_memory(self, question: str) -> str:
-        """이전 대화와 벡터 검색 결과를 포함해 Gemini로 답변합니다.
-        """
+        """이전 대화와 벡터 검색 결과를 포함해 Gemini로 답변합니다."""
         # 벡터 검색 컨텍스트
         context_docs = self.vectorstore.similarity_search(question, k=5)
         context_text = "\n".join([d.page_content for d in context_docs])

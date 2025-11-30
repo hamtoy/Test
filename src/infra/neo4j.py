@@ -72,8 +72,7 @@ def create_sync_driver(
     register_atexit: bool = False,
     graph_db_factory: Optional[Callable[..., Driver]] = None,
 ) -> SafeDriver:
-    """Create a Neo4j sync driver wrapped with SafeDriver to enforce close().
-    """
+    """Create a Neo4j sync driver wrapped with SafeDriver to enforce close()."""
     factory = graph_db_factory or GraphDatabase.driver
     driver = factory(uri, auth=(user, password))
     return SafeDriver(driver, register_atexit=register_atexit)

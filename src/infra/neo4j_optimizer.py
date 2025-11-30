@@ -187,8 +187,7 @@ class TwoTierIndexManager:
 
 
 class OptimizedQueries:
-    """Example queries that benefit from 2-Tier indexing.
-    """
+    """Example queries that benefit from 2-Tier indexing."""
 
     @staticmethod
     def find_rules_by_document(_document_id: Optional[str] = None) -> str:

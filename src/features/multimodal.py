@@ -16,8 +16,7 @@ pytesseract: Optional[Any] = _pytesseract
 
 
 class MultimodalUnderstanding:
-    """이미지 OCR + 구조 분석으로 메타데이터 자동 생성
-    """
+    """이미지 OCR + 구조 분석으로 메타데이터 자동 생성"""
 
     def __init__(self, kg: QAKnowledgeGraph):
         self.kg = kg

@@ -21,8 +21,7 @@ def _resolve_log_level(explicit: str | None = None) -> int:
 
 
 class SensitiveDataFilter(logging.Filter):
-    """[Security] 로그에서 민감한 정보(API Key 등)를 마스킹하는 필터
-    """
+    """[Security] 로그에서 민감한 정보(API Key 등)를 마스킹하는 필터"""
 
     sensitive_regex = re.compile(SENSITIVE_PATTERN)
 
@@ -213,8 +212,7 @@ def log_metrics(
     api_retries: int | None = None,
     api_failures: int | None = None,
 ) -> None:
-    """표준화된 메트릭 로깅: latency, 토큰 처리율, 캐시 히트율을 계산해 기록.
-    """
+    """표준화된 메트릭 로깅: latency, 토큰 처리율, 캐시 히트율을 계산해 기록."""
     metrics: dict[str, float | int] = {}
     if prompt_tokens is not None:
         metrics["prompt_tokens"] = prompt_tokens

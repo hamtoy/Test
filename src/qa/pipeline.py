@@ -117,8 +117,7 @@ class IntegratedQAPipeline:
         }
 
     def validate_output(self, query_type: str, output: str) -> Dict[str, Any]:
-        """출력 검증: 금지 패턴, 에러 패턴, 관련 규칙 기반 검사.
-        """
+        """출력 검증: 금지 패턴, 에러 패턴, 관련 규칙 기반 검사."""
         violations: List[str] = [
             f"forbidden_pattern:{v['type']}" for v in find_violations(output)
         ]

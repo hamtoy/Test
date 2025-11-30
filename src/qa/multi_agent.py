@@ -25,8 +25,7 @@ class MultiAgentQASystem:
     def collaborative_generate(
         self, query_type: str, context: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """규칙/예시를 모아 Gemini로 생성하고 검증까지 수행합니다.
-        """
+        """규칙/예시를 모아 Gemini로 생성하고 검증까지 수행합니다."""
         rules = self._collect_rules(query_type)
         constraints = self.kg.get_constraints_for_query_type(query_type)
         examples = self.example_selector.select_best_examples(query_type, context, k=3)

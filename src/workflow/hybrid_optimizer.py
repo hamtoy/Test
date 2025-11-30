@@ -72,8 +72,7 @@ class HybridWorkflowOptimizer:
             }
 
     def _detect_complexity(self, query: str) -> str:
-        """Heuristic for complexity detection.
-        """
+        """Heuristic for complexity detection."""
         # 1. 키워드 기반 탐지
         complex_keywords = [
             "why",

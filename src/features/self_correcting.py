@@ -18,8 +18,7 @@ class SelfCorrectingQAChain:
     def generate_with_self_correction(
         self, query_type: str, context: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """규칙을 가져와 자기 교정 프로세스를 실행합니다.
-        """
+        """규칙을 가져와 자기 교정 프로세스를 실행합니다."""
         rules = self._get_rules_text(query_type)
         attempts = 0
         max_retries = 3

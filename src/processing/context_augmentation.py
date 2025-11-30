@@ -149,8 +149,7 @@ class AdvancedContextAugmentation:
     def generate_with_augmentation(
         self, user_query: str, query_type: str, base_context: Dict[str, Any]
     ) -> str:
-        """증강된 컨텍스트로 최종 프롬프트 생성 (LLM 호출 없이 포맷만 반환).
-        """
+        """증강된 컨텍스트로 최종 프롬프트 생성 (LLM 호출 없이 포맷만 반환)."""
         aug_ctx = self.augment_prompt_with_similar_cases(user_query, query_type)
 
         template = """

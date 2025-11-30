@@ -161,8 +161,7 @@ class QAKnowledgeGraph:
         self._init_vector_store()
 
     def _init_vector_store(self) -> None:
-        """GEMINI_API_KEY로 임베딩을 생성합니다. 키가 없거나 인덱스가 없으면 건너뜀.
-        """
+        """GEMINI_API_KEY로 임베딩을 생성합니다. 키가 없거나 인덱스가 없으면 건너뜀."""
         try:
             from langchain_neo4j import Neo4jVector
 
@@ -251,8 +250,7 @@ class QAKnowledgeGraph:
         return _run_async_safely(_run())
 
     def get_examples(self, limit: int = 5) -> List[Dict[str, str]]:
-        """Example 노드 조회 (현재 Rule과 직접 연결되지 않았으므로 전체에서 샘플링).
-        """
+        """Example 노드 조회 (현재 Rule과 직접 연결되지 않았으므로 전체에서 샘플링)."""
         cypher = """
         MATCH (e:Example)
         RETURN e.id AS id, e.text AS text, e.type AS type
@@ -273,8 +271,7 @@ class QAKnowledgeGraph:
         return _run_async_safely(_run())
 
     def validate_session(self, session: Dict[str, Any]) -> Dict[str, Any]:
-        """checks/validate_session 로직을 활용해 세션 구조 검증.
-        """
+        """checks/validate_session 로직을 활용해 세션 구조 검증."""
         from scripts.build_session import SessionContext
 
         turns = session.get("turns", [])

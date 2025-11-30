@@ -10,8 +10,7 @@ from src.qa.rag_system import QAKnowledgeGraph
 
 
 class CrossValidationSystem:
-    """생성된 질의-답변 쌍을 다각도로 검증합니다.
-    """
+    """생성된 질의-답변 쌍을 다각도로 검증합니다."""
 
     def __init__(self, kg: QAKnowledgeGraph):
         self.kg = kg
@@ -20,8 +19,7 @@ class CrossValidationSystem:
     def cross_validate_qa_pair(
         self, question: str, answer: str, query_type: str, image_meta: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """질문과 답변의 일관성/근거/규칙/참신성을 통합 검증합니다.
-        """
+        """질문과 답변의 일관성/근거/규칙/참신성을 통합 검증합니다."""
         validation_results = {
             "consistency": self._check_qa_consistency(question, answer),
             "groundedness": self._check_image_grounding(answer, image_meta),

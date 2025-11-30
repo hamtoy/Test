@@ -70,8 +70,7 @@ class UltimateLangChainQASystem:
     def generate_ultimate_qa(
         self, image_path: str, user_query: Optional[str] = None
     ) -> Dict[str, Any]:
-        """모든 기능을 활용한 최상급 생성.
-        """
+        """모든 기능을 활용한 최상급 생성."""
         # 1. 라우터로 질의 유형 자동 판단 (핸들러 기본값 제공해 빈 핸들러 오류 방지)
         router_handlers = {
             "explanation": lambda text: None,

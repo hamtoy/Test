@@ -8,8 +8,7 @@ from src.qa.rag_system import QAKnowledgeGraph
 
 
 class RealTimeConstraintEnforcer:
-    """생성 중간에 실시간으로 제약 조건을 체크하고 수정 제안을 반환합니다.
-    """
+    """생성 중간에 실시간으로 제약 조건을 체크하고 수정 제안을 반환합니다."""
 
     def __init__(self, kg: QAKnowledgeGraph):
         self.kg = kg

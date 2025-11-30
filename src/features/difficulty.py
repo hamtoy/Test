@@ -8,8 +8,7 @@ from src.qa.rag_system import QAKnowledgeGraph
 
 
 class AdaptiveDifficultyAdjuster:
-    """이미지 복잡도에 따라 질의/답변 난이도를 자동 조절합니다.
-    """
+    """이미지 복잡도에 따라 질의/답변 난이도를 자동 조절합니다."""
 
     def __init__(self, kg: QAKnowledgeGraph):
         self.kg = kg

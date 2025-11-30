@@ -52,8 +52,7 @@ class DynamicTemplateGenerator:
     def generate_prompt_for_query_type(
         self, query_type: str, context: Dict[str, Any]
     ) -> str:
-        """질의 유형에 맞는 시스템 템플릿을 그래프 지식과 합쳐 렌더링.
-        """
+        """질의 유형에 맞는 시스템 템플릿을 그래프 지식과 합쳐 렌더링."""
         cypher = """
         MATCH (qt:QueryType {name: $type})
         OPTIONAL MATCH (qt)<-[:APPLIES_TO]-(r:Rule)
@@ -104,8 +103,7 @@ class DynamicTemplateGenerator:
     def generate_validation_checklist(
         self, session: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
-        """세션에 포함된 QueryType에 대해 그래프에서 제약을 수집해 체크리스트 생성.
-        """
+        """세션에 포함된 QueryType에 대해 그래프에서 제약을 수집해 체크리스트 생성."""
         query_types = {t.get("type") for t in session.get("turns", []) if t.get("type")}
         checklist: List[Dict[str, Any]] = []
         cypher = """
