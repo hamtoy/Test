@@ -148,10 +148,7 @@ exclude = [
 # Strict mode 통과 파일들 (전체 마이그레이션 완료)
 # 테스트 파일들은 tests/, tests/unit/, tests/integration/, tests/e2e/로 구조화됨
 [[tool.mypy.overrides]]
-module = [
-    "tests",
-    "tests.*",
-]
+module = ["tests", "tests.*"]
 strict = true
 
 # Scripts, checks, and experiments excluded from strict mode
@@ -226,7 +223,7 @@ disallow_any_generics = false
 members = ["notion-neo4j-graph"]
 
 [tool.coverage.report]
-fail_under = 75
+fail_under = 80
 show_missing = true
 
 [tool.pytest.ini_options]
