@@ -4,7 +4,12 @@ from collections import Counter
 from typing import Any, Dict, List
 
 from PIL import Image
-import pytesseract
+
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None  # type: ignore
+
 
 from src.qa.rag_system import QAKnowledgeGraph
 
@@ -31,7 +36,7 @@ class MultimodalUnderstanding:
         img = Image.open(image_path)
 
         # 1. OCR로 텍스트 추출
-        text = pytesseract.image_to_string(img, lang="kor+eng")
+        text = pytesseract.image_to_string(img, lang="kor+eng") if pytesseract else ""
 
         # 2. 구조 분석 (표/그래프 감지)
         has_table = self._detect_table(img)
