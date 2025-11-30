@@ -6,8 +6,7 @@ to answer evaluation and rewriting, using mocked API responses.
 
 from __future__ import annotations
 
-import json
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -86,7 +85,7 @@ class TestWorkflowE2E:
             # Step 1: Generate queries
             ocr_text = "Sample OCR text content for testing."
             queries = await mock_agent.generate_query(ocr_text)
-            
+
             assert len(queries) > 0
             assert queries[0] == "What is the main topic?"
 
@@ -100,7 +99,7 @@ class TestWorkflowE2E:
                 query=queries[0],
                 candidates=candidates,
             )
-            
+
             assert evaluation is not None
             assert evaluation.best_candidate == "A"
 
@@ -109,7 +108,7 @@ class TestWorkflowE2E:
                 ocr_text=ocr_text,
                 best_answer=candidates["A"],
             )
-            
+
             assert "improved" in rewritten.lower()
 
     @pytest.mark.e2e
@@ -121,24 +120,26 @@ class TestWorkflowE2E:
     ) -> None:
         """Test workflow with context caching enabled."""
         # Skip if cache creation is mocked
-        with patch.object(
-            mock_agent,
-            "create_context_cache",
-            new_callable=AsyncMock,
-            return_value=None,
-        ):
-            with patch.object(
+        with (
+            patch.object(
+                mock_agent,
+                "create_context_cache",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            patch.object(
                 mock_agent,
                 "_call_api_with_retry",
                 new_callable=AsyncMock,
                 return_value='{"queries": ["Test query"]}',
-            ):
-                queries = await mock_agent.generate_query(
-                    "Long OCR text " * 500,  # Simulate large input
-                    user_intent="Summarize",
-                )
-                
-                assert len(queries) > 0
+            ),
+        ):
+            queries = await mock_agent.generate_query(
+                "Long OCR text " * 500,  # Simulate large input
+                user_intent="Summarize",
+            )
+
+            assert len(queries) > 0
 
     @pytest.mark.e2e
     @pytest.mark.asyncio
@@ -162,12 +163,12 @@ class TestWorkflowE2E:
             # Should raise the error
             with pytest.raises(TimeoutError):
                 await mock_agent.generate_query("Test OCR")
-            
+
             assert call_count == 1  # Called once before raising
 
         # After error, agent should still work with successful response
         call_count = 0
-        
+
         async def success_api(*args: Any, **kwargs: Any) -> str:
             nonlocal call_count
             call_count += 1
@@ -179,7 +180,7 @@ class TestWorkflowE2E:
             side_effect=success_api,
         ):
             queries = await mock_agent.generate_query("Test OCR")
-            
+
             assert len(queries) > 0
             assert call_count == 1
 

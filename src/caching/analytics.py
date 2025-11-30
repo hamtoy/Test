@@ -31,10 +31,10 @@ _CACHE_LATENCY_HISTOGRAM: Optional[Any] = None
 def _init_prometheus_metrics() -> None:
     """Initialize Prometheus metrics lazily."""
     global _CACHE_HIT_COUNTER, _CACHE_MISS_COUNTER, _CACHE_LATENCY_HISTOGRAM
-    
+
     try:
         from prometheus_client import Counter, Histogram
-        
+
         if _CACHE_HIT_COUNTER is None:
             _CACHE_HIT_COUNTER = Counter(
                 "cache_hits_total",
@@ -58,7 +58,7 @@ def _init_prometheus_metrics() -> None:
 
 def record_cache_hit(cache_type: str = "context") -> None:
     """Record a cache hit metric.
-    
+
     Args:
         cache_type: Type of cache (context, redis, local)
     """
@@ -69,7 +69,7 @@ def record_cache_hit(cache_type: str = "context") -> None:
 
 def record_cache_miss(cache_type: str = "context") -> None:
     """Record a cache miss metric.
-    
+
     Args:
         cache_type: Type of cache (context, redis, local)
     """
@@ -84,7 +84,7 @@ def record_cache_latency(
     cache_type: str = "context",
 ) -> None:
     """Record cache operation latency.
-    
+
     Args:
         latency_seconds: Operation duration in seconds
         operation: Operation type (lookup, store, delete)
