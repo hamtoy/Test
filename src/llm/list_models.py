@@ -1,20 +1,26 @@
+import logging
 import os
+import sys
+
 import google.generativeai as genai
 from dotenv import load_dotenv
 
 load_dotenv()
 
+logging.basicConfig(level=logging.INFO, format="%(message)s")
+logger = logging.getLogger(__name__)
+
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
-    print("No API key found in .env (GEMINI_API_KEY)")
-    exit(1)
+    logger.error("No API key found in .env (GEMINI_API_KEY)")
+    sys.exit(1)
 
 genai.configure(api_key=api_key)  # type: ignore[attr-defined]
 
-print("Listing models for configured Gemini key...")
+logger.info("Listing models for configured Gemini key...")
 try:
     for m in genai.list_models():  # type: ignore[attr-defined]
         if "generateContent" in m.supported_generation_methods:
-            print(m.name)
+            logger.info(m.name)
 except Exception as e:  # noqa: BLE001
-    print(f"Error listing models: {e}")
+    logger.error("Error listing models: %s", e)

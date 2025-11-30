@@ -16,6 +16,36 @@ class APIRateLimitError(Exception):
     """
 
 
+class APICallError(Exception):
+    """API 호출이 실패했습니다.
+
+    🔧 해결 방법:
+    1. API 연결 상태 확인
+       $ python -m src.llm.list_models
+
+    2. 네트워크 연결 확인
+
+    3. API 키 유효성 확인
+
+    4. 로그 확인
+       $ tail -f error.log
+
+    Attributes:
+        status_code: HTTP 상태 코드 (있는 경우)
+        message: 에러 메시지
+    """
+
+    def __init__(self, message: str, status_code: int | None = None):
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+
+    def __str__(self) -> str:
+        if self.status_code:
+            return f"[{self.status_code}] {self.message}"
+        return self.message
+
+
 class ValidationFailedError(Exception):
     """데이터 검증이 실패했습니다.
 

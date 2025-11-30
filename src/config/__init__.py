@@ -27,6 +27,7 @@ from src.config.constants import (
     SENSITIVE_PATTERN,
 )
 from src.config.exceptions import (
+    APICallError,
     APIRateLimitError,
     BudgetExceededError,
     SafetyFilterError,
@@ -59,6 +60,7 @@ __all__ = [
     "PANEL_TURN_TITLE_TEMPLATE",
     "PANEL_TURN_BODY_TEMPLATE",
     "SENSITIVE_PATTERN",
+    "APICallError",
     "APIRateLimitError",
     "BudgetExceededError",
     "SafetyFilterError",
