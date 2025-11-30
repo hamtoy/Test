@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, Literal, Optional
+from uuid import uuid4
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -450,10 +451,15 @@ async def api_analyze_image(file: UploadFile = File(...)) -> Dict[str, Any]:
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
 
-    # 임시 저장
+    # 임시 저장 - 보안을 위해 uuid로 파일명 생성
     temp_dir = config.input_dir / "temp"
     temp_dir.mkdir(parents=True, exist_ok=True)
-    temp_path = temp_dir / (file.filename or "uploaded_image")
+    # 업로드된 파일명에서 디렉터리 정보 제거 및 허용된 확장자만 유지
+    original_filename = file.filename or "uploaded_image"
+    safe_name = Path(original_filename).name
+    ext = Path(safe_name).suffix
+    secure_filename = f"{uuid4().hex}{ext}"
+    temp_path = temp_dir / secure_filename
 
     try:
         # 파일 저장

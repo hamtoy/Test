@@ -104,16 +104,17 @@ async def check_neo4j() -> Dict[str, Any]:
 
 def _sync_check_neo4j(uri: str, user: str, password: str) -> bool:
     """동기적으로 Neo4j 연결 확인"""
-    try:
-        from neo4j import GraphDatabase
+    from neo4j import GraphDatabase
 
-        driver = GraphDatabase.driver(uri, auth=(user, password))
+    driver = GraphDatabase.driver(uri, auth=(user, password))
+    try:
         with driver.session() as session:
             session.run("RETURN 1").single()
-        driver.close()
         return True
     except Exception:
         return False
+    finally:
+        driver.close()
 
 
 async def check_gemini_api() -> Dict[str, Any]:
