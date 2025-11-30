@@ -323,42 +323,30 @@ class TestStructuredLogger:
 class TestSensitiveDataFilterWithArgs:
     """Additional tests for SensitiveDataFilter."""
 
-    def test_filter_masks_api_key_in_args(self) -> None:
-        """Test filter masks API key in log record args."""
-        filt = SensitiveDataFilter()
-        raw_key = "AIza" + "X" * 35
+    # API key format: 'AIza' prefix + 35 characters = 39 total characters
+    API_KEY_SUFFIX_LENGTH = 35
 
+    def test_filter_masks_api_key_in_message(self) -> None:
+        """Test filter masks API key embedded directly in log message."""
+        filt = SensitiveDataFilter()
+        raw_key = "AIza" + "X" * self.API_KEY_SUFFIX_LENGTH
+
+        # Create record with API key directly in the message string
         record = logging.LogRecord(
             name="test",
             level=logging.INFO,
             pathname=__file__,
             lineno=1,
-            msg="API Key: %s, Other: %s",
-            args=(raw_key, "safe_value"),
-            exc_info=None,
-            func=None,
-            sinfo=None,
-        )
-
-        # First get the message before filtering to trigger arg replacement
-        original_message = record.getMessage()
-        assert "AIza" in original_message
-
-        # Re-create record since getMessage consumed it
-        record2 = logging.LogRecord(
-            name="test",
-            level=logging.INFO,
-            pathname=__file__,
-            lineno=1,
-            msg=f"Key: {raw_key}",  # Use direct string
+            msg=f"Key: {raw_key}",
             args=(),
             exc_info=None,
             func=None,
             sinfo=None,
         )
 
-        assert filt.filter(record2)
-        assert "[FILTERED_API_KEY]" in record2.getMessage()
+        assert filt.filter(record)
+        assert "[FILTERED_API_KEY]" in record.msg
+        assert "AIza" not in record.msg
 
     def test_filter_non_sensitive_message_unchanged(self) -> None:
         """Test filter doesn't modify non-sensitive messages."""
