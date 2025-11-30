@@ -1,10 +1,10 @@
-name: Performance Regression Check
+name: Performance
 
 on:
   pull_request:
     paths:
-      - 'src/**'
-      - 'tests/**'
+      - "src/**"
+      - "tests/**"
 
 permissions:
   contents: read
@@ -14,24 +14,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      
+          python-version: "3.11"
+
       - name: Install dependencies
         run: |
           pip install -e ".[dev]"
           pip install memory-profiler
-      
+
       - name: Run profiling
         run: |
           python scripts/auto_profile.py src.main \
             --mode AUTO \
             --ocr-file examples/sample_ocr.txt \
             --output profiling_results/pr_${{ github.event.pull_request.number }}.prof
-      
+
       - name: Compare with baseline
         run: |
           if [ -f profiling_results/baseline.prof ]; then
@@ -41,7 +41,7 @@ jobs:
           else
             echo "No baseline found, skipping comparison"
           fi
-      
+
       - name: Upload results
         uses: actions/upload-artifact@v4
         with:

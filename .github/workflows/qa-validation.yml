@@ -1,4 +1,4 @@
-name: QA Template Validation
+name: QA Check
 
 on:
   push:

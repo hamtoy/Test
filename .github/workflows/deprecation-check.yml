@@ -1,4 +1,4 @@
-name: Deprecation Check (v2.5)
+name: Deprecation
 
 on:
   push:

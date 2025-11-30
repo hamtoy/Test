@@ -1,4 +1,4 @@
-name: v3.0 Compatibility Check
+name: v3.0 Check
 
 on:
   push:
@@ -134,14 +134,14 @@ jobs:
           # Check that src/__init__.py has version guard
           with open('src/__init__.py', 'r') as f:
               content = f.read()
-          
+
           if 'sys.version_info < (3, 10)' not in content:
               print('❌ Missing Python 3.10+ version guard in src/__init__.py')
               sys.exit(1)
-          
+
           if '__version__ = \"3.0.0\"' not in content:
               print('❌ Missing or incorrect version in src/__init__.py')
               sys.exit(1)
-          
+
           print('✅ Version guard and version string verified')
           "

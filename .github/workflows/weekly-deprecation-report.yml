@@ -1,9 +1,9 @@
-name: Weekly Deprecation Report
+name: Weekly Report
 
 on:
   schedule:
-    - cron: '0 0 * * 1'  # Every Monday at midnight UTC
-  workflow_dispatch:  # Allow manual trigger
+    - cron: "0 0 * * 1" # Every Monday at midnight UTC
+  workflow_dispatch: # Allow manual trigger
 
 permissions:
   contents: read
@@ -76,7 +76,7 @@ jobs:
           script: |
             const totalCalls = ${{ needs.generate-report.outputs.total_calls }};
             const date = new Date().toISOString().split('T')[0];
-            
+
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,

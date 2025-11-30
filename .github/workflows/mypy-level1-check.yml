@@ -1,16 +1,16 @@
-name: Mypy Level 1 Check
+name: Type Check
 
 on:
   push:
     branches: [main, master]
     paths:
-      - 'src/**/*.py'
-      - 'pyproject.toml'
+      - "src/**/*.py"
+      - "pyproject.toml"
   pull_request:
     branches: [main, master]
     paths:
-      - 'src/**/*.py'
-      - 'pyproject.toml'
+      - "src/**/*.py"
+      - "pyproject.toml"
   workflow_dispatch:
 
 permissions:
