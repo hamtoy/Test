@@ -247,6 +247,8 @@ class LATSSearcher:
             "Give a short cause (max 20 words)."
         )
         result = await self.llm_provider.generate_content_async(
-            prompt=prompt, temperature=0, max_output_tokens=LATS_EXPANSION_MAX_OUTPUT_TOKENS
+            prompt=prompt,
+            temperature=0,
+            max_output_tokens=LATS_EXPANSION_MAX_OUTPUT_TOKENS,
         )
         return result.content.strip()

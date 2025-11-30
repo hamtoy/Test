@@ -275,7 +275,9 @@ async def _run_task_with_lats(task: OCRTask) -> Dict[str, Any]:
     from src.caching.redis_cache import RedisEvalCache
 
     # Initialize Redis-backed cache with fallback
-    eval_cache = RedisEvalCache(redis_client=redis_client, ttl=DEFAULT_CACHE_TTL_SECONDS)
+    eval_cache = RedisEvalCache(
+        redis_client=redis_client, ttl=DEFAULT_CACHE_TTL_SECONDS
+    )
     budget_tracker = BudgetTracker(
         budget_limit_usd=getattr(config, "budget_limit_usd", 1.0)
     )

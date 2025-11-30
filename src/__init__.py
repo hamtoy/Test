@@ -67,7 +67,7 @@ if TYPE_CHECKING:
 
 # Lazy loading mapping for public API
 # Maps attribute name to (module_path, attribute_name, is_deprecated)
-_LAZY_IMPORTS: dict[str, tuple[str, str, bool]] = {
+_LAZY_IMPORTS: dict[str, tuple[str, str | None, bool]] = {
     # Core public API (not deprecated)
     "GeminiAgent": ("src.agent", "GeminiAgent", False),
     "AppConfig": ("src.config", "AppConfig", False),
