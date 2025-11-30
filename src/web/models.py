@@ -155,4 +155,3 @@ __all__ = [
     "MAX_COMMENT_LENGTH",
     "MAX_UPLOAD_SIZE_BYTES",
 ]
-
