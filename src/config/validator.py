@@ -197,11 +197,8 @@ def validate_env_file_permissions() -> list[str]:
     warnings: list[str] = []
     env_path = Path(".env")
 
-    # Skip permission check on Windows
-    if sys.platform == "win32":
-        return warnings
-
-    if env_path.exists():
+    # Permission check only on Unix-like systems
+    if sys.platform != "win32" and env_path.exists():
         try:
             st = env_path.stat()
             # Check if group or others have any permissions (Unix only)

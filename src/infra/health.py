@@ -33,7 +33,7 @@ async def check_redis() -> dict[str, Any]:
 
         async def _check_redis() -> dict[str, Any]:
             start = time.perf_counter()
-            client: aioredis.Redis[bytes] = aioredis.from_url(redis_url)
+            client = aioredis.from_url(redis_url)
             await client.ping()
             latency_ms = (time.perf_counter() - start) * 1000
             await client.close()
