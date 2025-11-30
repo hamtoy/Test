@@ -6,7 +6,7 @@ memory exhaustion attacks and ensure API stability.
 
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # Constants for validation limits
 MAX_QUERY_LENGTH = 10000
@@ -15,6 +15,8 @@ MAX_OCR_TEXT_LENGTH = 100000
 MAX_EDIT_REQUEST_LENGTH = 5000
 MAX_COMMENT_LENGTH = 2000
 MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
+MAX_TYPE_LENGTH = 100
+MAX_FEEDBACK_LENGTH = 5000
 
 
 class GenerateQARequest(BaseModel):
@@ -28,21 +30,20 @@ class GenerateQARequest(BaseModel):
         Literal["global_explanation", "reasoning", "target_short", "target_long"]
     ] = Field(
         default=None,
-        max_length=50,
         description="Question type for single mode",
     )
 
 
 class QAPair(BaseModel):
-    """QA 쌍"""
+    """QA pair model for generated question-answer pairs."""
 
-    type: str
-    query: str
-    answer: str
+    type: str = Field(..., max_length=MAX_TYPE_LENGTH)
+    query: str = Field(..., max_length=MAX_QUERY_LENGTH)
+    answer: str = Field(..., max_length=MAX_ANSWER_LENGTH)
 
 
 class GenerateQAResponse(BaseModel):
-    """QA 생성 응답"""
+    """QA generation response model."""
 
     mode: Literal["batch", "single"]
     pairs: Optional[List[QAPair]] = None  # batch
@@ -64,20 +65,31 @@ class EvalExternalRequest(BaseModel):
         description="List of 3 candidate answers",
     )
 
+    @field_validator("answers")
+    @classmethod
+    def validate_answer_lengths(cls, v: List[str]) -> List[str]:
+        """Validate each answer in the list does not exceed max length."""
+        for i, answer in enumerate(v):
+            if len(answer) > MAX_ANSWER_LENGTH:
+                raise ValueError(
+                    f"Answer {i + 1} exceeds maximum length of {MAX_ANSWER_LENGTH}"
+                )
+        return v
+
 
 class EvalResult(BaseModel):
-    """평가 결과"""
+    """Evaluation result model."""
 
-    answer_id: str
+    answer_id: str = Field(..., max_length=10)
     score: int
-    feedback: str
+    feedback: str = Field(..., max_length=MAX_FEEDBACK_LENGTH)
 
 
 class EvalExternalResponse(BaseModel):
-    """외부 답변 평가 응답"""
+    """External answer evaluation response model."""
 
     results: List[EvalResult]
-    best: str
+    best: str = Field(..., max_length=10)
 
 
 class WorkspaceRequest(BaseModel):
@@ -110,14 +122,14 @@ class WorkspaceRequest(BaseModel):
 
 
 class WorkspaceResponse(BaseModel):
-    """워크스페이스 응답"""
+    """Workspace operation response model."""
 
     mode: Literal["inspect", "edit"]
     result: Dict[str, Any]
 
 
 class MultimodalResponse(BaseModel):
-    """이미지 분석 응답"""
+    """Image analysis response model."""
 
     filename: str
     metadata: Dict[str, Any]

@@ -135,14 +135,9 @@ class RuleExtractor:
         """
         rules = self.get_similar_rules(query, k=3)
 
+        # Note: This is a simplified validation placeholder.
+        # Full implementation would require more sophisticated rule matching.
         violations: list[str] = []
-        for rule in rules:
-            content = rule.get("content", "").lower()
-            # Simple keyword-based validation
-            if "must" in content or "required" in content:
-                # Check if answer addresses the requirement
-                # This is a simplified check - actual implementation would be more sophisticated
-                pass
 
         return {
             "valid": len(violations) == 0,
