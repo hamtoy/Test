@@ -34,11 +34,12 @@
 
 **⏱️ Execute this prompt now, then proceed to PROMPT-002**
 
-**Task**: Further reduce `src/qa/rag_system.py` from 1005 lines to under 500 lines by extracting more functionality to the existing `src/qa/graph/` modules.
+**Task**: Further reduce `src/qa/rag_system.py` from 1005 lines to under 500 lines by creating new modules in the `src/qa/graph/` package to extract additional functionality.
 
 **Files to Modify**: 
-- Create `src/qa/graph/session_validator.py` - Extract session validation logic
-- Create `src/qa/graph/traversal.py` - Extract graph traversal methods
+- Create `src/qa/graph/session_validator.py` - New module for session validation logic
+- Create `src/qa/graph/traversal.py` - New module for graph traversal methods
+- Update `src/qa/graph/__init__.py` - Export new classes
 - Update `src/qa/rag_system.py` - Import from new modules and reduce code
 
 #### Instructions:
@@ -61,11 +62,28 @@ Provides validation logic for QA sessions, turns, and intent verification.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
-
-from checks.validate_session import validate_turns
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
+
+
+def validate_turns_basic(turns: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Basic validation for turn structure.
+    
+    Args:
+        turns: List of turn dictionaries
+        
+    Returns:
+        Validation result with status and errors
+    """
+    errors = []
+    for i, turn in enumerate(turns):
+        if "query" not in turn:
+            errors.append(f"Turn {i}: missing 'query' field")
+        if "response" not in turn:
+            errors.append(f"Turn {i}: missing 'response' field")
+    
+    return {"valid": len(errors) == 0, "errors": errors}
 
 
 class SessionValidator:
@@ -96,7 +114,7 @@ class SessionValidator:
         Returns:
             Validation result with status and any error messages
         """
-        result = validate_turns(turns)
+        result = validate_turns_basic(turns)
         
         return {
             "session_id": session_id,
@@ -273,8 +291,6 @@ class GraphTraversal:
         if relationship_types:
             rel_types = "|".join(relationship_types)
             rel_filter = f"[:{rel_types}]"
-        else:
-            rel_filter = ""
         
         cypher = f"""
         MATCH (c:Concept {{id: $concept_id}})-{rel_filter}-(connected)
