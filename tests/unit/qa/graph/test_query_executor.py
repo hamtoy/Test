@@ -1,7 +1,7 @@
 """Tests for query execution utilities module."""
 
 import asyncio
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -190,10 +190,6 @@ class TestQueryExecutorWithAsyncProvider:
 
         # Create an async mock session
         mock_async_session = MagicMock()
-
-        async def mock_run(cypher: str, **params: Any) -> List[Dict[str, Any]]:
-            return mock_records
-
         mock_async_session.run = AsyncMock(return_value=mock_records)
 
         # Create async context manager for session

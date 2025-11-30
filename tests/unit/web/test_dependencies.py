@@ -87,15 +87,10 @@ class TestServiceContainer:
 
         ServiceContainer.reset()
 
-        # Verify all were reset to None by checking each separately
-        # Using intermediate variables to help mypy understand the flow
-        agent_is_none: bool = ServiceContainer._agent is None
-        kg_is_none: bool = ServiceContainer._kg is None
-        mm_is_none: bool = ServiceContainer._mm is None
-
-        assert agent_is_none
-        assert kg_is_none
-        assert mm_is_none
+        # Verify all were reset to None using getattr to avoid mypy narrowing
+        assert getattr(ServiceContainer, "_agent") is None
+        assert getattr(ServiceContainer, "_kg") is None
+        assert getattr(ServiceContainer, "_mm") is None
 
     def test_get_agent_creates_instance(self) -> None:
         """Test that get_agent creates a GeminiAgent instance."""
