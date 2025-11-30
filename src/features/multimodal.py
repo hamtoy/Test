@@ -34,17 +34,18 @@ class MultimodalUnderstanding:
             dict: 텍스트 밀도, 주제 목록, 테이블/차트 여부 등 메타데이터.
         """
 
-        img = Image.open(image_path)
+        with Image.open(image_path) as img:
+            # 1. OCR로 텍스트 추출
+            text = (
+                pytesseract.image_to_string(img, lang="kor+eng") if pytesseract else ""
+            )
 
-        # 1. OCR로 텍스트 추출
-        text = pytesseract.image_to_string(img, lang="kor+eng") if pytesseract else ""
+            # 2. 구조 분석 (표/그래프 감지)
+            has_table = self._detect_table(img)
+            has_chart = self._detect_chart(img)
 
-        # 2. 구조 분석 (표/그래프 감지)
-        has_table = self._detect_table(img)
-        has_chart = self._detect_chart(img)
-
-        # 3. 텍스트 밀도 계산
-        text_density = (len(text.strip()) / (img.width * img.height)) * 10000
+            # 3. 텍스트 밀도 계산
+            text_density = (len(text.strip()) / (img.width * img.height)) * 10000
 
         # 4. 주제 추출 (NLP - 단순 빈도 기반)
         topics = self._extract_topics(text)
