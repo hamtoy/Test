@@ -55,16 +55,21 @@ python -m src.main
 
 #### 2. 검수 (질의/답변) ✅
 
-- 질의 검수: 직접 입력 모드 지원 예정
-- 답변 검수: 외부 파일 기반 검수 지원 예정
+- 질의 검수: 직접 입력 모드 지원
+- 답변 검수: 외부 파일 기반 검수 지원
 
-#### 3. 캐시 통계 분석 📊
+#### 3. 수정 (사용자 요청 기반 재작성) ✏️
+
+- 사용자 요청에 따른 답변 재작성
+- 기존 답변을 개선하거나 스타일 변경
+
+#### 4. 캐시 통계 분석 📊
 
 - 캐시 hit/miss 비율 확인
 - 비용 절감 효과 분석
 - 토큰 사용 통계
 
-#### 4. 종료 🚪
+#### 5. 종료 🚪
 
 시스템 종료
 
@@ -229,18 +234,37 @@ uv run pytest -n auto --ff tests/
 
 ### 주요 모듈
 
-- `src/agent.py`: Gemini API 호출, 재시도, rate limiting, 비용 추적
-- `src/cache_analytics.py`: 캐시 통계 분석 및 비용 절감 계산
-- `src/config.py`: 환경 변수 기반 설정 관리
-- `src/constants.py`: 가격 티어, 예산 임계값, UI 메시지 템플릿
-- `src/data_loader.py`: 타입 검증을 포함한 데이터 로딩
-- `src/exceptions.py`: 사용자 정의 예외 (API 제한, 예산 초과 등)
-- `src/logging_setup.py`: 콘솔/파일 로깅 분리, 민감 데이터 마스킹
-- `src/main.py`: 워크플로우 실행, 체크포인트 관리, 병렬 처리
-- `src/models.py`: 환각 감지 기능이 포함된 Pydantic 모델
-- `src/utils.py`: 파일 처리 및 파싱 유틸리티
-- `src/qa_rag_system.py`: RAG 및 그래프 기반 QA 시스템
-- `src/integrated_quality_system.py`: 통합 품질 관리 파이프라인
+> **참고**: v3.0부터 새로운 패키지 기반 아키텍처를 사용합니다. 자세한 내용은 [BREAKING_CHANGES_v3.md](docs/BREAKING_CHANGES_v3.md)를 참조하세요.
+
+- `src/agent/`: Gemini API 호출, 재시도, rate limiting, 비용 추적
+  - `core.py`: GeminiAgent 핵심 클래스
+  - `cost_tracker.py`: 비용 추적 및 예산 관리
+  - `rate_limiter.py`: API 호출 제한 관리
+  - `batch_processor.py`: 배치 처리 시스템
+- `src/caching/`: 캐싱 인프라
+  - `analytics.py`: 캐시 통계 분석 및 비용 절감 계산
+  - `layer.py`: 캐싱 레이어 추상화
+  - `redis_cache.py`: Redis 기반 캐시
+- `src/config/`: 환경 변수 기반 설정 관리
+  - `settings.py`: AppConfig 설정 클래스
+  - `constants.py`: 가격 티어, 예산 임계값, UI 메시지 템플릿
+  - `exceptions.py`: 사용자 정의 예외 (API 제한, 예산 초과 등)
+- `src/core/`: 핵심 모델 및 인터페이스
+  - `models.py`: 환각 감지 기능이 포함된 Pydantic 모델
+  - `schemas.py`: 데이터 스키마 정의
+- `src/infra/`: 인프라 유틸리티
+  - `logging.py`: 콘솔/파일 로깅 분리, 민감 데이터 마스킹
+  - `utils.py`: 파일 처리 및 파싱 유틸리티
+  - `neo4j.py`: Neo4j 연결 관리
+- `src/processing/`: 데이터 처리
+  - `loader.py`: 타입 검증을 포함한 데이터 로딩
+- `src/qa/`: Q&A 시스템 컴포넌트
+  - `rag_system.py`: RAG 및 그래프 기반 QA 시스템
+  - `quality.py`: 통합 품질 관리 파이프라인
+  - `pipeline.py`: 통합 QA 파이프라인
+- `src/workflow/`: 워크플로우 오케스트레이션
+  - `executor.py`: 워크플로우 실행
+- `src/main.py`: 메인 진입점 및 인터랙티브 메뉴 시작
 
 ### 주요 기능
 
@@ -320,24 +344,28 @@ results = await asyncio.gather(*[
 
 ## 구현된 기능
 
-- **타입 안정성**: Pydantic Literal 사용
+- **타입 안정성**: Pydantic Literal 사용, mypy strict mode 통과 (v3.0)
+- **패키지 아키텍처**: 14개의 모듈화된 패키지 구조 (v3.0)
 - **예외 처리**: 다중 레이어 에러 핸들링
 - **Rate Limiting**: 동시성 및 RPM 제어
 - **비용 추적**: 실시간 토큰 사용량 계산
 - **로깅**: 콘솔 및 파일 분리, API 키 마스킹
-- **테스트**: Dependency Injection 지원
+- **테스트**: Dependency Injection 지원, 100% 테스트 통과 (v3.0)
 - **검증**: 입력 유효성 검사 및 환각 감지
 - **병렬 처리**: 여러 쿼리 동시 처리
 - **캐시 모니터링**: 캐시 hit/miss 추적
+- **배치 처리**: BatchProcessor를 통한 대량 요청 처리 (v3.0)
 
 ## 문서
 
 - **[UV_GUIDE.md](UV_GUIDE.md)**: UV 패키지 매니저 사용 가이드
-- **[CONTRIBUTING.md](docs/CONTRIBUTING.md)**: 기여 가이드라인
+- **[CONTRIBUTING.md](CONTRIBUTING.md)**: 기여 가이드라인
 - **[DEPLOYMENT_VERIFIED.md](DEPLOYMENT_VERIFIED.md)**: 배포 검증 내역
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: 시스템 아키텍처
 - **[API.md](docs/API.md)**: API 레퍼런스
 - **[DEPRECATION.md](DEPRECATION.md)**: Deprecation 정책 및 일정
+- **[MIGRATION.md](MIGRATION.md)**: v3.0 마이그레이션 가이드
+- **[BREAKING_CHANGES_v3.md](docs/BREAKING_CHANGES_v3.md)**: v3.0 주요 변경 사항
 - **Sphinx 문서**: `docs/` 디렉토리에서 `make html` 실행
 
 ## 즉시 실행 가능 - QA 시스템 구축
@@ -345,7 +373,7 @@ results = await asyncio.gather(*[
 ### 1. 그래프 스키마 구축
 
 ```bash
-python -m src.graph_schema_builder
+python -m src.graph.builder
 ```
 
 Notion 가이드에서 Rule/Constraint/Example을 추출하여 Neo4j 지식 그래프를 생성합니다.
@@ -361,7 +389,7 @@ MATCH (n) RETURN labels(n), count(n)
 ### 3. RAG 시스템 테스트
 
 ```bash
-python -m src.qa_rag_system
+python -m src.qa.rag_system
 ```
 
 벡터 검색 기반 규칙 조회 및 제약 조건/모범 사례를 확인합니다.

@@ -592,18 +592,37 @@ uv run pytest -n auto --ff tests/
 
 ### 주요 모듈
 
-- `src/agent.py`: Gemini API 호출, 재시도, rate limiting, 비용 추적
-- `src/cache_analytics.py`: 캐시 통계 분석 및 비용 절감 계산
-- `src/config.py`: 환경 변수 기반 설정 관리
-- `src/constants.py`: 가격 티어, 예산 임계값, UI 메시지 템플릿
-- `src/data_loader.py`: 타입 검증을 포함한 데이터 로딩
-- `src/exceptions.py`: 사용자 정의 예외 (API 제한, 예산 초과 등)
-- `src/logging_setup.py`: 콘솔/파일 로깅 분리, 민감 데이터 마스킹
-- `src/main.py`: 워크플로우 실행, 체크포인트 관리, 병렬 처리
-- `src/models.py`: 환각 감지 기능이 포함된 Pydantic 모델
-- `src/utils.py`: 파일 처리 및 파싱 유틸리티
-- `src/qa_rag_system.py`: RAG 및 그래프 기반 QA 시스템
-- `src/integrated_quality_system.py`: 통합 품질 관리 파이프라인
+> **참고**: v3.0부터 새로운 패키지 기반 아키텍처를 사용합니다. 자세한 내용은 [BREAKING_CHANGES_v3.md](BREAKING_CHANGES_v3.md)를 참조하세요.
+
+- `src/agent/`: Gemini API 호출, 재시도, rate limiting, 비용 추적
+  - `core.py`: GeminiAgent 핵심 클래스
+  - `cost_tracker.py`: 비용 추적 및 예산 관리
+  - `rate_limiter.py`: API 호출 제한 관리
+  - `batch_processor.py`: 배치 처리 시스템
+- `src/caching/`: 캐싱 인프라
+  - `analytics.py`: 캐시 통계 분석 및 비용 절감 계산
+  - `layer.py`: 캐싱 레이어 추상화
+  - `redis_cache.py`: Redis 기반 캐시
+- `src/config/`: 환경 변수 기반 설정 관리
+  - `settings.py`: AppConfig 설정 클래스
+  - `constants.py`: 가격 티어, 예산 임계값, UI 메시지 템플릿
+  - `exceptions.py`: 사용자 정의 예외 (API 제한, 예산 초과 등)
+- `src/core/`: 핵심 모델 및 인터페이스
+  - `models.py`: 환각 감지 기능이 포함된 Pydantic 모델
+  - `schemas.py`: 데이터 스키마 정의
+- `src/infra/`: 인프라 유틸리티
+  - `logging.py`: 콘솔/파일 로깅 분리, 민감 데이터 마스킹
+  - `utils.py`: 파일 처리 및 파싱 유틸리티
+  - `neo4j.py`: Neo4j 연결 관리
+- `src/processing/`: 데이터 처리
+  - `loader.py`: 타입 검증을 포함한 데이터 로딩
+- `src/qa/`: Q&A 시스템 컴포넌트
+  - `rag_system.py`: RAG 및 그래프 기반 QA 시스템
+  - `quality.py`: 통합 품질 관리 파이프라인
+  - `pipeline.py`: 통합 QA 파이프라인
+- `src/workflow/`: 워크플로우 오케스트레이션
+  - `executor.py`: 워크플로우 실행
+- `src/main.py`: 메인 진입점 및 인터랙티브 메뉴 시작
 
 ### 주요 기능
 
@@ -708,7 +727,7 @@ results = await asyncio.gather(*[
 ### 1. 그래프 스키마 구축
 
 ```bash
-python -m src.graph_schema_builder
+python -m src.graph.builder
 ```
 
 Notion 가이드에서 Rule/Constraint/Example을 추출하여 Neo4j 지식 그래프를 생성합니다.
@@ -724,7 +743,7 @@ MATCH (n) RETURN labels(n), count(n)
 ### 3. RAG 시스템 테스트
 
 ```bash
-python -m src.qa_rag_system
+python -m src.qa.rag_system
 ```
 
 벡터 검색 기반 규칙 조회 및 제약 조건/모범 사례를 확인합니다.
