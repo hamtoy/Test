@@ -5,6 +5,7 @@ This module provides tools for analyzing cache performance including:
 - TTL efficiency analysis
 - Memory usage monitoring
 """
+
 from __future__ import annotations
 
 import json

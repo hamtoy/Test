@@ -69,7 +69,7 @@ async def load_input_data(
     if not cand_text or not cand_text.strip():
         raise ValueError(f"Candidate file is empty: {cand_path}")
 
-    candidates = {}
+    candidates: Dict[str, str] = {}
 
     # [Strategy 1] JSON으로 간주하고 파싱 시도 (안전한 파싱)
     try:

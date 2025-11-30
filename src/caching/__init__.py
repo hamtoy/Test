@@ -17,15 +17,17 @@ __all__ = [
     "MemoryMonitor",
 ]
 
-_ANALYTICS_NAMES = frozenset((
-    "analyze_cache_stats",
-    "print_cache_report",
-    "print_realtime_report",
-    "CacheAnalytics",
-    "CacheMetrics",
-    "RealTimeTracker",
-    "MemoryMonitor",
-))
+_ANALYTICS_NAMES = frozenset(
+    (
+        "analyze_cache_stats",
+        "print_cache_report",
+        "print_realtime_report",
+        "CacheAnalytics",
+        "CacheMetrics",
+        "RealTimeTracker",
+        "MemoryMonitor",
+    )
+)
 
 _TTL_NAMES = frozenset(("CacheTTL", "CacheTTLPolicy", "calculate_ttl_by_token_count"))
 

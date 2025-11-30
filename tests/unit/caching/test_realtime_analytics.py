@@ -1,6 +1,5 @@
 """Tests for real-time cache analytics features."""
 
-
 from src.caching.analytics import (
     CacheAnalytics,
     CacheMetrics,
@@ -163,7 +162,7 @@ class TestCacheAnalytics:
             analytics.record_hit()
         for _ in range(3):
             analytics.record_miss()
-        
+
         assert analytics.is_hit_rate_target_met(70.0) is True
         assert analytics.is_hit_rate_target_met(80.0) is False
 
@@ -173,7 +172,7 @@ class TestCacheAnalytics:
             analytics.record_hit()
         for _ in range(5):
             analytics.record_miss()
-        
+
         assert analytics.is_hit_rate_target_met(70.0) is False
 
 
@@ -182,20 +181,25 @@ class TestCachingInitExports:
 
     def test_cache_analytics_import(self) -> None:
         from src.caching import CacheAnalytics
+
         assert CacheAnalytics is not None
 
     def test_cache_metrics_import(self) -> None:
         from src.caching import CacheMetrics
+
         assert CacheMetrics is not None
 
     def test_realtime_tracker_import(self) -> None:
         from src.caching import RealTimeTracker
+
         assert RealTimeTracker is not None
 
     def test_memory_monitor_import(self) -> None:
         from src.caching import MemoryMonitor
+
         assert MemoryMonitor is not None
 
     def test_print_realtime_report_import(self) -> None:
         from src.caching import print_realtime_report
+
         assert print_realtime_report is not None
