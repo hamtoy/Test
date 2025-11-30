@@ -185,7 +185,7 @@ class TestQAGenerationRequest:
     def test_invalid_mode(self) -> None:
         """Test invalid mode fails validation."""
         with pytest.raises(ValidationError) as exc_info:
-            QAGenerationRequest(mode="invalid")  # type: ignore[arg-type]
+            QAGenerationRequest(mode="invalid")
         assert "Input should be 'batch' or 'single'" in str(exc_info.value)
 
 
