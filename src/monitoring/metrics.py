@@ -30,7 +30,6 @@ except ImportError:
 
         def inc(self, amount: float = 1) -> None:
             """Increment the counter (no-op in stub)."""
-            pass
 
     class Histogram:  # type: ignore[no-redef]
         """Stub Histogram implementation when Prometheus is not available."""
@@ -45,7 +44,6 @@ except ImportError:
 
         def observe(self, amount: float) -> None:
             """Observe a value (no-op in stub)."""
-            pass
 
     class Gauge:  # type: ignore[no-redef]
         """Stub Gauge implementation when Prometheus is not available."""

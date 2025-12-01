@@ -33,7 +33,6 @@ class EnhancedDeprecationWarning(DeprecationWarning):
     filtered by default in Python.
     """
 
-    pass
 
 
 # Ensure EnhancedDeprecationWarning is always shown

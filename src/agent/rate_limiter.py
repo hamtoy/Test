@@ -92,4 +92,3 @@ class RateLimitManager(RateLimiter):
     """
 
     # No additional behaviour – all functionality is provided by ``RateLimiter``.
-    pass

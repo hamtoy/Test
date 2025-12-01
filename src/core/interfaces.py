@@ -76,7 +76,6 @@ class LLMProvider(ABC):
         Raises:
             ProviderError: For any provider-related errors.
         """
-        pass
 
     @abstractmethod
     async def count_tokens(self, text: str) -> int:
@@ -85,7 +84,6 @@ class LLMProvider(ABC):
         Returns:
             Number of tokens.
         """
-        pass
 
 
 class GraphProvider(ABC):
@@ -98,17 +96,14 @@ class GraphProvider(ABC):
             async with provider.session() as session:
                 await session.run(...)
         """
-        pass
 
     @abstractmethod
     async def close(self) -> None:
         """Closes the provider connection."""
-        pass
 
     @abstractmethod
     async def verify_connectivity(self) -> None:
         """Verifies connection to the database."""
-        pass
 
     @abstractmethod
     async def create_nodes(
@@ -129,7 +124,6 @@ class GraphProvider(ABC):
         Returns:
             Number of nodes created or merged.
         """
-        pass
 
     @abstractmethod
     async def create_relationships(
@@ -155,4 +149,3 @@ class GraphProvider(ABC):
         Returns:
             Number of relationships created.
         """
-        pass
