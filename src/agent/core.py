@@ -547,6 +547,7 @@ class GeminiAgent:
         user_intent: Optional[str] = None,
         cached_content: Optional["caching.CachedContent"] = None,
         template_name: Optional[str] = None,
+        query_type: str = "explanation",
     ) -> List[str]:
         """OCR 텍스트와 사용자 의도에 기반한 전략적 쿼리 생성.
 
@@ -555,24 +556,45 @@ class GeminiAgent:
             user_intent: 사용자 의도
             cached_content: 캐시된 컨텐츠
             template_name: 사용자 템플릿 이름 (A/B 테스트용, None이면 기본 템플릿 사용)
+            query_type: 질의 유형 (Neo4j 규칙 조회용)
 
         Returns:
             생성된 쿼리 목록
         """
-        # Determine template to use (default or override for A/B testing)
         user_template_name = template_name or "query_gen_user.j2"
-        system_template_name = "prompt_query_gen.j2"
-
-        template = self.jinja_env.get_template(user_template_name)
-        user_prompt = template.render(ocr_text=ocr_text, user_intent=user_intent)
+        user_template = self.jinja_env.get_template(user_template_name)
+        user_prompt = user_template.render(ocr_text=ocr_text, user_intent=user_intent)
 
         schema_json = json.dumps(
             QueryResult.model_json_schema(), indent=2, ensure_ascii=False
         )
 
-        system_prompt = self.jinja_env.get_template(system_template_name).render(
-            response_schema=schema_json
-        )
+        rules: List[str] = []
+        constraints: List[str] = []
+        try:
+            from src.qa.rag_system import QAKnowledgeGraph
+
+            kg = QAKnowledgeGraph()
+            constraint_list = kg.get_constraints_for_query_type(query_type)
+            for c in constraint_list:
+                desc = c.get("description")
+                if desc:
+                    constraints.append(desc)
+            rules = kg.find_relevant_rules(ocr_text[:500], k=10)
+        except Exception as e:  # noqa: BLE001
+            self.logger.debug("Neo4j 규칙 조회 실패: %s", e)
+
+        system_template_name = "prompt_query_gen.j2"
+        try:
+            system_template = self.jinja_env.get_template(system_template_name)
+            system_prompt = system_template.render(
+                response_schema=schema_json, rules=rules, constraints=constraints
+            )
+        except Exception as e:  # noqa: BLE001
+            self.logger.debug("템플릿 렌더링 실패: %s", e)
+            system_prompt = self.jinja_env.get_template(system_template_name).render(
+                response_schema=schema_json
+            )
 
         model = self._create_generative_model(
             system_prompt, response_schema=QueryResult, cached_content=cached_content
@@ -631,6 +653,7 @@ class GeminiAgent:
         query: str,
         candidates: Dict[str, str],
         cached_content: Optional["caching.CachedContent"] = None,
+        query_type: str = "explanation",
     ) -> Optional[EvaluationResultSchema]:
         """후보 답변을 평가하고 점수를 부여."""
         if not query:
@@ -642,7 +665,32 @@ class GeminiAgent:
             "candidates": candidates,
         }
 
-        system_prompt = self.jinja_env.get_template("prompt_eval.j2").render()
+        rules: List[str] = []
+        constraints: List[str] = []
+        try:
+            from src.qa.rag_system import QAKnowledgeGraph
+
+            kg = QAKnowledgeGraph()
+            constraint_list = kg.get_constraints_for_query_type(query_type)
+            for c in constraint_list:
+                desc = c.get("description")
+                if desc:
+                    constraints.append(desc)
+            rules = kg.find_relevant_rules(ocr_text[:500], k=10)
+        except Exception as e:  # noqa: BLE001
+            self.logger.debug("Neo4j 규칙 조회 실패: %s", e)
+
+        try:
+            system_template = self.jinja_env.get_template(
+                "eval/text_image_qa_compare_eval.j2"
+            )
+            system_prompt = system_template.render(
+                rules=rules,
+                constraints=constraints,
+            )
+        except Exception as e:  # noqa: BLE001
+            self.logger.debug("동적 템플릿 실패, 기본 사용: %s", e)
+            system_prompt = self.jinja_env.get_template("prompt_eval.j2").render()
 
         model = self._create_generative_model(
             system_prompt,
@@ -694,14 +742,44 @@ class GeminiAgent:
         best_answer: str,
         edit_request: Optional[str] = None,
         cached_content: Optional["caching.CachedContent"] = None,
+        query_type: str = "explanation",
     ) -> str:
-        """선택된 최고 답변을 가독성 및 안전성 측면에서 개선."""
+        """선택된 최고 답변을 가독성 및 안전성 측면에서 개선.
+
+        Neo4j 규칙을 동적으로 주입하여 templates/system/*.j2 사용.
+        """
+        from src.qa.rag_system import QAKnowledgeGraph
+
         template = self.jinja_env.get_template("rewrite_user.j2")
         payload = template.render(
             ocr_text=ocr_text, best_answer=best_answer, edit_request=edit_request
         )
 
-        system_prompt = self.jinja_env.get_template("prompt_rewrite.j2").render()
+        rules: List[str] = []
+        constraints: List[str] = []
+        try:
+            kg = QAKnowledgeGraph()
+            constraint_list = kg.get_constraints_for_query_type(query_type)
+            for c in constraint_list:
+                desc = c.get("description")
+                if desc:
+                    constraints.append(desc)
+            rules = kg.find_relevant_rules(best_answer[:500], k=10)
+        except Exception as e:  # noqa: BLE001
+            self.logger.warning("Neo4j 규칙 조회 실패, 기본 템플릿 사용: %s", e)
+
+        try:
+            system_template = self.jinja_env.get_template(
+                "rewrite/text_image_qa_rewrite_system.j2"
+            )
+            system_prompt = system_template.render(
+                rules=rules,
+                constraints=constraints,
+                has_table_chart=False,
+            )
+        except Exception as e:  # noqa: BLE001
+            self.logger.warning("동적 템플릿 실패, 기본 사용: %s", e)
+            system_prompt = self.jinja_env.get_template("prompt_rewrite.j2").render()
 
         model = self._create_generative_model(
             system_prompt, cached_content=cached_content
