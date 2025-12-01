@@ -74,22 +74,22 @@ def _preprocess_image(
     threshold: int = BINARY_THRESHOLD,
 ) -> Image.Image:
     working = ImageOps.exif_transpose(img) or img
-    
+
     # Upscale low-resolution images
     width, height = working.size
     if width < MIN_RESOLUTION or height < MIN_RESOLUTION:
         scale_factor = max(MIN_RESOLUTION / width, MIN_RESOLUTION / height)
         new_size = (int(width * scale_factor), int(height * scale_factor))
         working = working.resize(new_size, Image.Resampling.LANCZOS)
-    
+
     # Apply contrast enhancement
     enhancer = ImageEnhance.Contrast(working)
     working = enhancer.enhance(CONTRAST_ENHANCEMENT_FACTOR)
-    
+
     # Resize if needed
     if max_dim:
         working.thumbnail(max_dim, Image.Resampling.LANCZOS)
-    
+
     if grayscale:
         working = ImageOps.grayscale(working)
     if binarize:
@@ -166,8 +166,11 @@ def extract_text_from_images(
         for img_path in images:
             print(f"Processing: {img_path}")
             text, error = _extract_with_retries(
-                model, img_path, preprocess=preprocess, max_retries=max_retries,
-                use_layout_prompt=use_layout_prompt
+                model,
+                img_path,
+                preprocess=preprocess,
+                max_retries=max_retries,
+                use_layout_prompt=use_layout_prompt,
             )
 
             if error:
