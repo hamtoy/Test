@@ -6,44 +6,12 @@ best practices, and examples to Neo4j.
 
 from __future__ import annotations
 
-import asyncio
-import concurrent.futures
 from datetime import datetime, timezone
-from typing import Any, Coroutine, Dict, List, Optional, TypeVar
+from typing import Any, Dict, List, Optional
 
 from src.core.interfaces import GraphProvider
 from src.infra.neo4j import SafeDriver
-
-T = TypeVar("T")
-
-
-def _run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
-    """Run an async coroutine from sync context, handling the case where
-    an event loop is already running.
-    """
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(coro)
-        finally:
-            loop.close()
-            asyncio.set_event_loop(None)
-
-    def run_in_thread() -> T:
-        new_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(new_loop)
-        try:
-            return new_loop.run_until_complete(coro)
-        finally:
-            new_loop.close()
-            asyncio.set_event_loop(None)
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(run_in_thread)
-        return future.result()
+from src.qa.graph.query_executor import run_async_safely
 
 
 class RuleUpsertManager:
@@ -261,7 +229,7 @@ class RuleUpsertManager:
                 )
                 return {"created": is_new}
 
-        return _run_async_safely(_run())
+        return run_async_safely(_run())
 
     def _upsert_constraint_node(
         self,
@@ -327,7 +295,7 @@ class RuleUpsertManager:
                 )
                 return {"created": is_new}
 
-        return _run_async_safely(_run())
+        return run_async_safely(_run())
 
     def _upsert_best_practice_node(
         self,
@@ -393,7 +361,7 @@ class RuleUpsertManager:
                 )
                 return {"created": is_new}
 
-        return _run_async_safely(_run())
+        return run_async_safely(_run())
 
     def _upsert_example_node(
         self,
@@ -464,7 +432,7 @@ class RuleUpsertManager:
                 )
                 return {"created": is_new}
 
-        return _run_async_safely(_run())
+        return run_async_safely(_run())
 
     def get_rules_by_batch_id(self, batch_id: str) -> List[Dict[str, Any]]:
         """특정 batch_id로 생성된 모든 노드 조회 (롤백 전 확인용).
@@ -495,7 +463,7 @@ class RuleUpsertManager:
                 records = await session.run(cypher, batch_id=batch_id)
                 return [dict(r) for r in records]
 
-        return _run_async_safely(_run())
+        return run_async_safely(_run())
 
     def rollback_batch(self, batch_id: str) -> Dict[str, Any]:
         """특정 batch_id로 생성된 모든 노드 삭제 (롤백).
@@ -534,4 +502,4 @@ class RuleUpsertManager:
                 await session.run(delete_cypher, batch_id=batch_id)
                 return {"success": True, "deleted_count": count}
 
-        return _run_async_safely(_run())
+        return run_async_safely(_run())
