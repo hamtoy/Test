@@ -22,6 +22,14 @@ class MemoryAugmentedQASystem:
         password: Optional[str] = None,
         session_id: str = "qa_session_001",
     ):
+        """Initialize the memory augmented QA system.
+
+        Args:
+            neo4j_uri: Optional Neo4j database URI.
+            user: Optional Neo4j username.
+            password: Optional Neo4j password.
+            session_id: Session identifier for conversation tracking.
+        """
         self.neo4j_uri = neo4j_uri or require_env("NEO4J_URI")
         self.neo4j_user = user or require_env("NEO4J_USER")
         self.neo4j_password = password or require_env("NEO4J_PASSWORD")
@@ -109,14 +117,18 @@ class MemoryAugmentedQASystem:
             logging.getLogger(__name__).warning("Interaction log failed: %s", exc)
 
     def close(self) -> None:
+        """Close database connections and clean up resources."""
         if hasattr(self, "_driver") and self._driver:
             self._driver.close()
 
     def __enter__(self) -> "MemoryAugmentedQASystem":
+        """Enter context manager."""
         return self
 
     def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+        """Exit context manager and close resources."""
         self.close()
 
     def __del__(self) -> None:
+        """Destructor to ensure resources are cleaned up."""
         self.close()

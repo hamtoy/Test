@@ -27,6 +27,12 @@ class CacheManager:
     """
 
     def __init__(self, config: AppConfig, *, min_tokens: Optional[int] = None) -> None:
+        """Initialize the cache manager.
+
+        Args:
+            config: Application configuration instance.
+            min_tokens: Minimum token count for caching eligibility.
+        """
         self.config = config
         self.logger = logging.getLogger("GeminiWorkflow")
         self.cache_hits = 0

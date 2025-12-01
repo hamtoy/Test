@@ -27,6 +27,12 @@ class GeminiProvider(LLMProvider):
     """Gemini implementation of LLMProvider."""
 
     def __init__(self, api_key: str, model_name: str = "gemini-1.5-pro"):
+        """Initialize the Gemini provider.
+
+        Args:
+            api_key: The Google AI API key.
+            model_name: The Gemini model name to use.
+        """
         genai.configure(api_key=api_key)  # type: ignore[attr-defined]
         self.model_name = model_name
         self._model = genai.GenerativeModel(model_name)  # type: ignore[attr-defined]
@@ -40,6 +46,26 @@ class GeminiProvider(LLMProvider):
         response_schema: Optional[Any] = None,
         **kwargs: Any,
     ) -> GenerationResult:
+        """Generate content asynchronously using Gemini.
+
+        Args:
+            prompt: The input prompt text.
+            system_instruction: Optional system instruction for the model.
+            temperature: Sampling temperature for generation.
+            max_output_tokens: Maximum number of tokens to generate.
+            response_schema: Optional JSON schema for structured output.
+            **kwargs: Additional generation configuration options.
+
+        Returns:
+            GenerationResult containing the generated content and metadata.
+
+        Raises:
+            SafetyBlockedError: If generation is blocked by safety filters.
+            RateLimitError: If rate limit is exceeded.
+            ContextWindowExceededError: If input exceeds context window.
+            TimeoutError: If the request times out.
+            ProviderError: For other generation failures.
+        """
         generation_config: GenerationConfigDict = {}
         if temperature is not None:
             generation_config["temperature"] = temperature
@@ -110,6 +136,17 @@ class GeminiProvider(LLMProvider):
             ) from e
 
     async def count_tokens(self, text: str) -> int:
+        """Count tokens in the given text.
+
+        Args:
+            text: The text to count tokens for.
+
+        Returns:
+            The number of tokens in the text.
+
+        Raises:
+            ProviderError: If token counting fails.
+        """
         try:
             return self._model.count_tokens(text).total_tokens
         except Exception as e:
@@ -122,6 +159,13 @@ class Neo4jProvider(GraphProvider):
     """Neo4j implementation of GraphProvider using AsyncGraphDatabase."""
 
     def __init__(self, uri: str, auth: tuple[str, str], *, batch_size: int = 100):
+        """Initialize the Neo4j provider.
+
+        Args:
+            uri: The Neo4j database URI.
+            auth: A tuple of (username, password) for authentication.
+            batch_size: Number of records to process in each batch.
+        """
         self._driver = AsyncGraphDatabase.driver(uri, auth=auth)
         self._batch_size = batch_size
 
@@ -134,9 +178,15 @@ class Neo4jProvider(GraphProvider):
             yield session
 
     async def close(self) -> None:
+        """Close the database connection."""
         await self._driver.close()
 
     async def verify_connectivity(self) -> None:
+        """Verify that the database connection is working.
+
+        Raises:
+            ProviderError: If connectivity check fails.
+        """
         try:
             await self._driver.verify_connectivity()
         except Exception as e:

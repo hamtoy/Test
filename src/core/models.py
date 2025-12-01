@@ -11,12 +11,16 @@ CandidateID = Literal["A", "B", "C"]
 
 
 class EvaluationItem(BaseModel):
+    """Represents a single candidate evaluation result."""
+
     candidate_id: CandidateID  # Literal로 강제
     score: int
     reason: str
 
 
 class EvaluationResultSchema(BaseModel):
+    """Schema for structured evaluation results from the LLM."""
+
     best_candidate: CandidateID = Field(
         description="The key of the best candidate (e.g., 'A', 'B', 'C')."
     )

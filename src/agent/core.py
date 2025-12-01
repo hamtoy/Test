@@ -145,6 +145,7 @@ class GeminiAgent:
 
     @total_input_tokens.setter
     def total_input_tokens(self, value: int) -> None:
+        """Set total input tokens count."""
         self._cost_tracker.total_input_tokens = value
 
     @property
@@ -154,6 +155,7 @@ class GeminiAgent:
 
     @total_output_tokens.setter
     def total_output_tokens(self, value: int) -> None:
+        """Set total output tokens count."""
         self._cost_tracker.total_output_tokens = value
 
     @property
@@ -163,6 +165,7 @@ class GeminiAgent:
 
     @cache_hits.setter
     def cache_hits(self, value: int) -> None:
+        """Set cache hits count."""
         self._cache_manager.cache_hits = value
 
     @property
@@ -172,6 +175,7 @@ class GeminiAgent:
 
     @cache_misses.setter
     def cache_misses(self, value: int) -> None:
+        """Set cache misses count."""
         self._cache_manager.cache_misses = value
 
     @property
@@ -734,6 +738,17 @@ class GeminiAgent:
 
 
 def __getattr__(name: str) -> Any:
+    """Lazy import of the caching module.
+
+    Args:
+        name: The attribute name to retrieve.
+
+    Returns:
+        The caching module if name is 'caching'.
+
+    Raises:
+        AttributeError: If name is not 'caching'.
+    """
     if name == "caching":
         import google.generativeai.caching as caching_mod
 

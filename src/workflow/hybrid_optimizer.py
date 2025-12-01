@@ -15,6 +15,12 @@ class HybridWorkflowOptimizer:
     """
 
     def __init__(self, agent: GeminiAgent, templates: list[str]):
+        """Initialize the hybrid workflow optimizer.
+
+        Args:
+            agent: The Gemini agent for content generation.
+            templates: List of template names available for optimization.
+        """
         self.agent = agent
         # LATSSearcher 초기화 (llm_provider로 agent.llm_provider 사용)
         self.lats = LATSSearcher(llm_provider=agent.llm_provider)

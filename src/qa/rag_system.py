@@ -60,6 +60,7 @@ def _run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
 
     # Loop is already running - run in a separate thread
     def run_in_thread() -> T:
+        """Execute the coroutine in a separate thread with a new event loop."""
         new_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(new_loop)
         try:
@@ -77,6 +78,17 @@ load_dotenv()
 
 
 def require_env(var: str) -> str:
+    """Get a required environment variable.
+
+    Args:
+        var: The name of the environment variable.
+
+    Returns:
+        The value of the environment variable.
+
+    Raises:
+        EnvironmentError: If the environment variable is not set.
+    """
     val = os.getenv(var)
     if not val:
         raise EnvironmentError(f"환경 변수 {var}가 설정되지 않았습니다 (.env 확인).")
@@ -87,13 +99,35 @@ class CustomGeminiEmbeddings(Embeddings):
     """Gemini 임베딩 래퍼."""
 
     def __init__(self, api_key: str, model: str = "models/text-embedding-004") -> None:
+        """Initialize the Gemini embeddings wrapper.
+
+        Args:
+            api_key: The Google AI API key.
+            model: The embedding model name to use.
+        """
         genai.configure(api_key=api_key)  # type: ignore[attr-defined]
         self.model = model
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """Embed a list of documents.
+
+        Args:
+            texts: List of text documents to embed.
+
+        Returns:
+            List of embedding vectors.
+        """
         return [self.embed_query(text) for text in texts]
 
     def embed_query(self, text: str) -> List[float]:
+        """Embed a single query text.
+
+        Args:
+            text: The query text to embed.
+
+        Returns:
+            The embedding vector.
+        """
         result = genai.embed_content(  # type: ignore[attr-defined]
             model=self.model, content=text, task_type="retrieval_query"
         )
@@ -115,6 +149,15 @@ class QAKnowledgeGraph:
         graph_provider: Optional[GraphProvider] = None,
         config: Optional[AppConfig] = None,
     ) -> None:
+        """Initialize the QA Knowledge Graph.
+
+        Args:
+            neo4j_uri: Optional Neo4j database URI.
+            neo4j_user: Optional Neo4j username.
+            neo4j_password: Optional Neo4j password.
+            graph_provider: Optional pre-configured graph provider.
+            config: Optional application configuration.
+        """
         cfg = config or AppConfig()
         provider = (
             graph_provider if graph_provider is not None else get_graph_provider(cfg)
@@ -237,6 +280,14 @@ class QAKnowledgeGraph:
         return _run_async_safely(_run())
 
     def get_best_practices(self, query_type: str) -> List[Dict[str, str]]:
+        """Get best practices for a given query type.
+
+        Args:
+            query_type: The type of query to get best practices for.
+
+        Returns:
+            List of best practice dictionaries with id and text.
+        """
         cypher = """
         MATCH (qt:QueryType {name: $qt})<-[:APPLIES_TO]-(b:BestPractice)
         RETURN b.id AS id, b.text AS text
@@ -320,6 +371,7 @@ class QAKnowledgeGraph:
         return self._rule_upsert_manager.rollback_batch(batch_id)
 
     def close(self) -> None:
+        """Close database connections and clean up resources."""
         if self._graph:
             with suppress(Exception):
                 self._graph.close()
@@ -391,6 +443,7 @@ class QAKnowledgeGraph:
         yield None
 
     def __del__(self) -> None:
+        """Destructor to ensure resources are cleaned up."""
         with suppress(Exception):
             self.close()
 

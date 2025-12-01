@@ -25,6 +25,11 @@ class RateLimiter:
     """
 
     def __init__(self, max_concurrency: int = 5) -> None:
+        """Initialize the rate limiter.
+
+        Args:
+            max_concurrency: Maximum number of concurrent operations.
+        """
         self.logger = logging.getLogger("GeminiWorkflow")
         self._semaphore = asyncio.Semaphore(max_concurrency)
         self._rate_limiter: Optional["AsyncLimiter"] = None
@@ -53,6 +58,7 @@ class RateLimiter:
 
     @semaphore.setter
     def semaphore(self, value: asyncio.Semaphore) -> None:
+        """Set the underlying semaphore."""
         self._semaphore = value
 
     @property
@@ -62,6 +68,7 @@ class RateLimiter:
 
     @limiter.setter
     def limiter(self, value: Optional["AsyncLimiter"]) -> None:
+        """Set the optional AsyncLimiter instance."""
         self._rate_limiter = value
 
     async def acquire(self) -> None:

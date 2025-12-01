@@ -17,6 +17,11 @@ class MultiAgentQASystem:
     """
 
     def __init__(self, kg: Optional[QAKnowledgeGraph] = None):
+        """Initialize the multi-agent QA system.
+
+        Args:
+            kg: Optional QAKnowledgeGraph instance.
+        """
         self.kg = kg or QAKnowledgeGraph()
         self.llm = GeminiModelClient()
         self.example_selector = DynamicExampleSelector(self.kg)
