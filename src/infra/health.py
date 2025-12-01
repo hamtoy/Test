@@ -8,6 +8,19 @@ import sys
 import time
 from typing import TYPE_CHECKING, Any
 
+try:
+    import psutil  # type: ignore[assignment]
+except ImportError:  # pragma: no cover - provide stub so tests can patch psutil.virtual_memory
+    import types
+
+    psutil = types.ModuleType("psutil")
+
+    def _virtual_memory_stub() -> Any:
+        raise ImportError("psutil not installed")
+
+    psutil.virtual_memory = _virtual_memory_stub  # type: ignore[attr-defined]
+    sys.modules["psutil"] = psutil
+
 if TYPE_CHECKING:
     from src.qa.rag_system import QAKnowledgeGraph
 
