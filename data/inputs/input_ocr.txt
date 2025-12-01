@@ -1,1 +1,2 @@
-This is sample OCR text for testing the web UI.
+이것은 사용자가 직접 입력한 OCR 테스트 텍스트입니다.
+자동 OCR 대신 수동으로 입력하고 저장할 수 있습니다.
