@@ -7,7 +7,7 @@ import pytest
 
 pytest.importorskip("PIL")
 
-from PIL import Image
+from PIL import Image as PILImage
 
 from scripts import ocr_extraction
 
@@ -15,7 +15,7 @@ from scripts import ocr_extraction
 def test_preprocess_image_upscaling() -> None:
     """Test that low-resolution images are upscaled."""
     # Create a small test image (800x600)
-    small_img = Image.new("RGB", (800, 600), color="white")
+    small_img = PILImage.new("RGB", (800, 600), color="white")
 
     # Preprocess should upscale it
     result = ocr_extraction._preprocess_image(small_img)
@@ -26,17 +26,17 @@ def test_preprocess_image_upscaling() -> None:
 
 def test_preprocess_image_contrast_enhancement() -> None:
     """Test that contrast enhancement is applied."""
-    img = Image.new("RGB", (1200, 1200), color="white")
+    img = PILImage.new("RGB", (1200, 1200), color="white")
 
     # The function should complete without error
     result = ocr_extraction._preprocess_image(img)
     assert result is not None
-    assert isinstance(result, Image.Image)
+    assert isinstance(result, PILImage.Image)
 
 
 def test_preprocess_image_defaults() -> None:
     """Test that grayscale and binarize are False by default."""
-    img = Image.new("RGB", (1200, 1200), color=(128, 64, 192))
+    img = PILImage.new("RGB", (1200, 1200), color=(128, 64, 192))
 
     # With default settings, should preserve color
     result = ocr_extraction._preprocess_image(img)
@@ -48,7 +48,7 @@ def test_preprocess_image_defaults() -> None:
 def test_preprocess_image_max_dim() -> None:
     """Test that max_dim is respected."""
     # Create a large image
-    large_img = Image.new("RGB", (3000, 2000), color="white")
+    large_img = PILImage.new("RGB", (3000, 2000), color="white")
 
     # Preprocess with default max_dim (2048, 2048)
     result = ocr_extraction._preprocess_image(large_img)
@@ -66,7 +66,7 @@ def test_extract_with_retries_layout_prompt() -> None:
     mock_model.generate_content.return_value = mock_response
 
     # Create a small test image
-    test_img = Image.new("RGB", (100, 100), color="white")
+    test_img = PILImage.new("RGB", (100, 100), color="white")
     test_path = Path("/tmp/test_image.png")
 
     with patch("scripts.ocr_extraction.PILImage.open") as mock_open:
@@ -95,7 +95,7 @@ def test_extract_with_retries_default_prompt() -> None:
     mock_model.generate_content.return_value = mock_response
 
     # Create a small test image
-    test_img = Image.new("RGB", (100, 100), color="white")
+    test_img = PILImage.new("RGB", (100, 100), color="white")
     test_path = Path("/tmp/test_image.png")
 
     with patch("scripts.ocr_extraction.PILImage.open") as mock_open:
