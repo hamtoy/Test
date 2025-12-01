@@ -13,6 +13,7 @@ repos:
         files: ^(src/|scripts/)
         additional_dependencies:
           - types-aiofiles
+          - pydantic
         args:
           - --ignore-missing-imports
           - --check-untyped-defs

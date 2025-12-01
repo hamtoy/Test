@@ -4,8 +4,6 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from src.agent.core import GeminiAgent
-from src.analysis.cross_validation import CrossValidationSystem
-from src.analysis.semantic import count_keywords
 from src.caching.redis_cache import RedisEvalCache
 from src.config.constants import DEFAULT_ANSWER_RULES
 from src.features.difficulty import AdaptiveDifficultyAdjuster
@@ -116,36 +114,14 @@ async def inspect_answer(
     context: Optional[Dict[str, Any]] = None,
     kg: Optional[QAKnowledgeGraph] = None,
     lats: Optional[LATSSearcher] = None,
-    validator: Optional[CrossValidationSystem] = None,
+    validator: Optional[Any] = None,
     cache: Optional[RedisEvalCache] = None,
 ) -> str:
-    """답변 종합 검수 (Zero-Rejection 목표)
-
-    Pipeline:
-    1. 캐시 확인 (긴 답변 처리 비용 절감)
-    2. Semantic 키워드 검증 (OCR 이탈 방지)
-    3. Self-Correcting 자기 교정 (LATS 탐색)
-    4. Cross-Validation 교차 검증
-
-    Args:
-        agent: GeminiAgent 인스턴스
-        answer: 검수할 답변 문자열
-        query: 관련 질의 (선택적이지만 교차검증에 사용)
-        ocr_text: OCR 텍스트 (사실 검증용)
-        context: 추가 컨텍스트 정보 (선택)
-        kg: Neo4j 지식 그래프 (규칙 로드용)
-        lats: LATS 탐색기 (최적 표현 탐색용)
-        validator: 교차 검증 시스템 (신뢰도 강화용)
-        cache: Redis 캐시 (비용 절감용)
-
-    Returns:
-        수정된 답변 문자열
-    """
+    """답변 종합 검수 - 규칙 주입 + 자기 교정 최소화 버전"""
     if context is None:
         context = {}
     query_type = context.get("type", "general")
 
-    # 1. 캐시 확인 (긴 답변 처리 비용 절감)
     cache_key = f"inspect:ans:{hash(answer + query + ocr_text)}"
     if cache:
         cached = await cache.get(cache_key)
@@ -154,41 +130,19 @@ async def inspect_answer(
             # 캐시에서 처리 완료 표시만 저장하므로 원본 반환
             return answer
 
-    # 2. Semantic 키워드 검증 (OCR 이탈 방지)
-    if ocr_text:
-        ocr_keywords = count_keywords([ocr_text])
-        answer_keywords = count_keywords([answer])
-
-        total_ocr_keywords = sum(ocr_keywords.values())
-        matched_keywords = 0
-        for k, v in answer_keywords.items():
-            if k in ocr_keywords:
-                matched_keywords += v
-
-        coverage = (
-            matched_keywords / total_ocr_keywords if total_ocr_keywords > 0 else 1.0
-        )
-        if coverage < 0.6:
-            logger.warning(f"Low keyword coverage: {coverage:.2f}")
-            context["low_coverage"] = True
-            context["coverage_score"] = coverage
-
-    # [추가] 규칙 컨텍스트 조회 및 주입
     rules_context = ""
     if kg is not None:
         try:
-            # 관련 규칙 조회
-            rules = kg.find_relevant_rules(query, k=5) if query else []
             constraints = kg.get_constraints_for_query_type(query_type)
+            rules = kg.find_relevant_rules(query, k=5) if query else []
 
-            if rules or constraints:
+            if constraints or rules:
                 rules_context = "[준수해야 할 규칙]\n"
-                if constraints:
-                    rules_context += "\n".join(
-                        f"- {c.get('description', '')}"
-                        for c in constraints
-                        if c.get("description")
-                    )
+                rules_context += "\n".join(
+                    f"- {c.get('description', '')}"
+                    for c in constraints
+                    if c.get("description")
+                )
                 if rules:
                     rules_context += "\n" + "\n".join(f"- {r}" for r in rules if r)
                 rules_context += "\n\n"
@@ -200,13 +154,13 @@ async def inspect_answer(
         rules_context += "\n".join(f"- {r}" for r in DEFAULT_ANSWER_RULES)
         rules_context += "\n\n"
 
-    # 3. Self-Correcting 자기 교정 (LATS 내부 최적 경로 탐색)
     context_with_answer = context.copy()
     context_with_answer["draft_answer"] = answer
     context_with_answer["original_answer"] = answer
     context_with_answer["query"] = query
     context_with_answer["ocr_text"] = ocr_text
     context_with_answer["rules_context"] = rules_context
+    context_with_answer["language"] = "한국어"
 
     if kg:
         corrector = SelfCorrectingQAChain(kg)
@@ -218,7 +172,6 @@ async def inspect_answer(
         # kg가 없으면 원본 answer 반환
         final_answer = answer
 
-    # 4. Cross-Validation 교차 검증 (질의 있을 시 신뢰도 강화)
     if query and validator:
         val_result = validator.cross_validate_qa_pair(
             query, final_answer, query_type, context.get("image_meta", {})
@@ -227,7 +180,6 @@ async def inspect_answer(
             logger.warning(f"Validation failed: {val_result}")
             context["validation_warning"] = True
 
-    # 5. 캐시에 저장 (처리 완료 표시)
     if cache:
         await cache.set(cache_key, 1.0)
 

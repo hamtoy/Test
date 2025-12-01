@@ -15,7 +15,7 @@ def mock_agent() -> Any:
     agent = MagicMock(spec=GeminiAgent)
     agent._create_generative_model = MagicMock(return_value=MagicMock())
     agent._call_api_with_retry = AsyncMock(
-        return_value="점수: 85\n피드백: 좋은 답변입니다"
+        return_value="점수: 5\n피드백: 좋은 답변입니다"
     )
     return agent
 
@@ -40,7 +40,7 @@ async def test_evaluate_external_answers_basic(mock_agent: Any) -> None:
 async def test_evaluate_external_answers_scores(mock_agent: Any) -> None:
     """Test that scores are parsed correctly."""
     mock_agent._call_api_with_retry = AsyncMock(
-        return_value="점수: 92\n피드백: 훌륭합니다"
+        return_value="점수: 6\n피드백: 훌륭합니다"
     )
 
     results = await evaluate_external_answers(
@@ -51,13 +51,13 @@ async def test_evaluate_external_answers_scores(mock_agent: Any) -> None:
     )
 
     for result in results:
-        assert result["score"] == 92
+        assert result["score"] == 6
         assert result["feedback"] == "훌륭합니다"
 
 
 @pytest.mark.asyncio
 async def test_evaluate_external_answers_score_clamping(mock_agent: Any) -> None:
-    """Test that scores are clamped to 0-100 range."""
+    """Test that scores are clamped to 1-6 range."""
     # Test score > 100
     mock_agent._call_api_with_retry = AsyncMock(
         return_value="점수: 150\n피드백: 테스트"
@@ -71,14 +71,14 @@ async def test_evaluate_external_answers_score_clamping(mock_agent: Any) -> None
     )
 
     for result in results:
-        assert result["score"] == 100  # Clamped to 100
+        assert result["score"] == 6  # Clamped to 6
 
 
 @pytest.mark.asyncio
 async def test_evaluate_external_answers_negative_score_clamping(
     mock_agent: Any,
 ) -> None:
-    """Test that negative scores are clamped to 0."""
+    """Test that negative scores are clamped to minimum (1)."""
     mock_agent._call_api_with_retry = AsyncMock(
         return_value="점수: -10\n피드백: 테스트"
     )
@@ -91,7 +91,7 @@ async def test_evaluate_external_answers_negative_score_clamping(
     )
 
     for result in results:
-        assert result["score"] == 0  # Clamped to 0
+        assert result["score"] == 1  # Clamped to 1
 
 
 @pytest.mark.asyncio
@@ -108,9 +108,9 @@ async def test_evaluate_external_answers_invalid_score(mock_agent: Any) -> None:
         answers=["A", "B", "C"],
     )
 
-    # Should use default score of 50
+    # Should use default score of 3
     for result in results:
-        assert result["score"] == 50
+        assert result["score"] == 3
 
 
 @pytest.mark.asyncio
@@ -142,9 +142,9 @@ async def test_evaluate_external_answers_api_error(mock_agent: Any) -> None:
         answers=["A", "B", "C"],
     )
 
-    # All results should have score 0 and error feedback
+    # All results should have score 1 and error feedback
     for result in results:
-        assert result["score"] == 0
+        assert result["score"] == 1
         assert "평가 실패" in result["feedback"]
 
 
@@ -161,22 +161,21 @@ async def test_evaluate_external_answers_prompt_structure(mock_agent: Any) -> No
     # Verify system prompt
     system_prompt = mock_agent._create_generative_model.call_args[0][0]
     assert "평가하는 전문가" in system_prompt
+    assert "1~6점" in system_prompt or "1-6점" in system_prompt
 
     # Verify user prompt structure
     call_args = mock_agent._call_api_with_retry.call_args
     prompt = call_args[0][1]
     assert "[OCR 텍스트]" in prompt
     assert "[질의]" in prompt
-    assert "정확성" in prompt
-    assert "완전성" in prompt
-    assert "표현력" in prompt
+    assert "1-6점" in prompt
 
 
 @pytest.mark.asyncio
 async def test_evaluate_external_answers_feedback_parsing(mock_agent: Any) -> None:
     """Test that feedback is parsed correctly."""
     mock_agent._call_api_with_retry = AsyncMock(
-        return_value="점수: 75\n피드백: 개선이 필요합니다"
+        return_value="점수: 4\n피드백: 개선이 필요합니다"
     )
 
     results = await evaluate_external_answers(
@@ -194,7 +193,7 @@ async def test_evaluate_external_answers_feedback_parsing(mock_agent: Any) -> No
 async def test_evaluate_external_answers_multiline_response(mock_agent: Any) -> None:
     """Test handling of multiline response."""
     mock_agent._call_api_with_retry = AsyncMock(
-        return_value="추가 설명\n점수: 88\n피드백: 잘했습니다\n추가 정보"
+        return_value="추가 설명\n점수: 8\n피드백: 잘했습니다\n추가 정보"
     )
 
     results = await evaluate_external_answers(
@@ -205,5 +204,5 @@ async def test_evaluate_external_answers_multiline_response(mock_agent: Any) -> 
     )
 
     for result in results:
-        assert result["score"] == 88
+        assert result["score"] == 6
         assert result["feedback"] == "잘했습니다"

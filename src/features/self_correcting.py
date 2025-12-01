@@ -62,15 +62,17 @@ class SelfCorrectingQAChain:
         return "\n".join(rule_lines) or "(규칙 없음)"
 
     def _draft(self, query_type: str, context: Dict[str, Any], rules: str) -> str:
-        prompt = f"""Generate a {query_type} following these rules:
+        prompt = f"""다음 규칙을 준수하여 한국어로 답변을 생성하세요.
 
-Rules:
+[질의 유형]: {query_type}
+
+[규칙]
 {rules}
 
-Context:
+[컨텍스트]
 {context}
 
-Generate output:"""
+반드시 한국어로 출력하세요:"""
         return self.llm.generate(prompt, role="draft")
 
     def _critique(self, draft: str, rules: str) -> str:

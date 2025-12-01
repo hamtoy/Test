@@ -308,7 +308,7 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
 async def generate_single_qa(
     agent: GeminiAgent, ocr_text: str, qtype: str
 ) -> Dict[str, Any]:
-    """단일 QA 생성 - 품질 유지 + 호출 최소화"""
+    """단일 QA 생성 - 규칙 적용 보장 + 호출 최소화"""
     from src.config.constants import QA_GENERATION_OCR_TRUNCATE_LENGTH
 
     context = {
@@ -319,17 +319,48 @@ async def generate_single_qa(
         "type": qtype,
     }
 
-    prompt = ocr_text
+    rules_list: list[str] = []
+    template_prompt: str | None = None
+
+    # 1) IntegratedQAPipeline 템플릿
     if pipeline is not None:
         try:
-            prompt = pipeline.template_gen.generate_prompt_for_query_type(
+            template_prompt = pipeline.template_gen.generate_prompt_for_query_type(
                 qtype, context
             )
         except Exception as e:
             logger.warning(f"파이프라인 템플릿 생성 실패: {e}")
-    elif kg is None:
-        rules_text = "\n".join(f"- {r}" for r in DEFAULT_ANSWER_RULES)
-        prompt = f"[기본 규칙]\n{rules_text}\n\n[텍스트]\n{ocr_text}"
+
+    # 2) Neo4j 규칙 조회
+    if kg is not None:
+        try:
+            constraints = kg.get_constraints_for_query_type(qtype)
+            for c in constraints:
+                desc = c.get("description")
+                if desc:
+                    rules_list.append(desc)
+        except Exception as e:
+            logger.warning(f"규칙 조회 실패: {e}")
+
+    # 3) 기본 규칙
+    if not rules_list:
+        rules_list = list(DEFAULT_ANSWER_RULES)
+        logger.info("Neo4j 규칙 없음, 기본 규칙 사용")
+
+    # 프롬프트 구성
+    if template_prompt:
+        prompt = template_prompt
+    else:
+        rules_text = "\n".join(f"- {r}" for r in rules_list)
+        prompt = f"""[지시사항]
+반드시 한국어로 답변하세요.
+
+[준수 규칙]
+{rules_text}
+
+[텍스트]
+{ocr_text}
+"""
 
     try:
         queries = await agent.generate_query(prompt, user_intent=None)
@@ -339,10 +370,19 @@ async def generate_single_qa(
         query = queries[0]
 
         truncated_ocr = ocr_text[:QA_GENERATION_OCR_TRUNCATE_LENGTH]
+        rules_in_answer = "\n".join(f"- {r}" for r in rules_list)
+        answer_prompt = f"""[규칙]
+{rules_in_answer}
+
+[질의]: {query}
+
+[OCR 텍스트]
+{truncated_ocr}
+
+위 규칙을 준수하여 한국어로 답변하세요."""
+
         draft_answer = await agent.rewrite_best_answer(
-            ocr_text=ocr_text,
-            best_answer=f"[{qtype}] 질의: {query}\n\n{truncated_ocr}",
-            cached_content=None,
+            ocr_text=ocr_text, best_answer=answer_prompt, cached_content=None
         )
 
         all_violations: list[str] = []
@@ -517,46 +557,62 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
 
 @app.post("/api/workspace/generate-answer")
 async def api_generate_answer_from_query(body: Dict[str, Any]) -> Dict[str, Any]:
-    """질문 기반 답변 생성 - 파이프라인 검증 포함"""
+    """질문 기반 답변 생성 - 한국어 지시 + 규칙 포함, 재작성 최소화"""
     if agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
     query = body.get("query", "")
     ocr_text = body.get("ocr_text") or load_ocr_text()
 
-    try:
-        answer = await agent.rewrite_best_answer(
-            ocr_text=ocr_text,
-            best_answer=f"질의: {query}\n\nOCR 텍스트를 기반으로 위 질의에 답변하세요.",
-            cached_content=None,
-        )
-
-        # 파이프라인 검증
-        if pipeline is not None:
-            validation = pipeline.validate_output("general", answer)
-            if not validation.get("valid", True):
-                violation_desc = "; ".join(validation.get("violations", []))
-                answer = await agent.rewrite_best_answer(
-                    ocr_text=ocr_text,
-                    best_answer=answer,
-                    edit_request=f"위반 사항 수정: {violation_desc}",
-                    cached_content=None,
+    # 규칙 로드 (한 번만)
+    rules_text = ""
+    if kg is not None:
+        try:
+            constraints = kg.get_constraints_for_query_type("general")
+            if constraints:
+                rules_text = "\n".join(
+                    f"- {c.get('description', '')}"
+                    for c in constraints
+                    if c.get("description")
                 )
+        except Exception as e:
+            logger.debug(f"규칙 로드 실패: {e}")
 
-        # 검수 적용
-        final_answer = await inspect_answer(
-            agent=agent,
-            answer=answer,
-            query=query,
-            ocr_text=ocr_text,
-            context={"type": "general"},
-            kg=kg,
-            lats=None,
-            validator=None,
-            cache=None,
+    if not rules_text:
+        rules_text = "\n".join(f"- {r}" for r in DEFAULT_ANSWER_RULES)
+
+    try:
+        prompt = f"""[지시사항]
+반드시 한국어로 답변하세요.
+OCR에 없는 정보는 추가하지 마세요.
+표/그래프/차트를 직접 언급하지 말고 텍스트 근거만 사용하세요.
+
+[준수 규칙]
+{rules_text}
+
+[OCR 텍스트]
+{ocr_text[:3000]}
+
+[질의]
+{query}
+
+위 OCR 텍스트를 기반으로 질의에 대한 답변을 작성하세요."""
+
+        answer = await agent.rewrite_best_answer(
+            ocr_text=ocr_text, best_answer=prompt, cached_content=None
         )
 
-        return {"query": query, "answer": final_answer}
+        violations = find_violations(answer)
+        if violations:
+            violation_types = ", ".join(set(v["type"] for v in violations))
+            answer = await agent.rewrite_best_answer(
+                ocr_text=ocr_text,
+                best_answer=answer,
+                edit_request=f"한국어로 다시 작성하고 다음 패턴 제거: {violation_types}",
+                cached_content=None,
+            )
+
+        return {"query": query, "answer": answer}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
