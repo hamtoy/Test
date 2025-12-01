@@ -5,9 +5,11 @@
     <!-- 왼쪽: OCR 영역 -->
     <div class="left-panel">
         <h2>📄 OCR 텍스트</h2>
-        <textarea id="ocr-input" class="ocr-box" rows="20" placeholder="OCR 텍스트를 직접 입력하세요... "></textarea>
-        <button id="save-ocr-btn" class="btn-primary">💾 저장</button>
-        <span id="ocr-save-status" style="margin-left: 10px;"></span>
+        <textarea id="ocr-input" class="ocr-box" rows="20" placeholder="OCR 텍스트를 직접 입력하세요..."></textarea>
+        <div class="btn-row">
+            <button id="save-ocr-btn" class="btn-primary" style="width: 100%;">💾 저장</button>
+        </div>
+        <span id="ocr-save-status" class="status-text"></span>
     </div>
 
     <!-- 오른쪽: 생성 컨트롤 + 결과 -->
@@ -34,7 +36,7 @@
                 </select>
             </div>
 
-            <button id="generate-btn" class="btn-primary">🚀 생성 실행</button>
+            <button id="generate-btn" class="btn-primary" style="width: 100%; margin-top: 15px;">🚀 생성 실행</button>
         </div>
 
         <div id="results" class="results-area"></div>
@@ -44,10 +46,32 @@
 
 {% block scripts %}
 <script>
-    // 페이지 로드 시 OCR 텍스트 로드
-    loadOCR();
+    // OCR 로드/저장
+    async function loadOCR() {
+        try {
+            const data = await apiCall('/api/ocr');
+            document.getElementById('ocr-input').value = data.ocr || '';
+        } catch (error) {
+            document.getElementById('ocr-input').placeholder = 'OCR 로드 실패';
+        }
+    }
 
-    // 저장 버튼 이벤트
+    async function saveOCR() {
+        const text = document.getElementById('ocr-input').value;
+        const statusEl = document.getElementById('ocr-save-status');
+        try {
+            await apiCall('/api/ocr', 'POST', { text });
+            statusEl.textContent = '✅ 저장됨';
+            statusEl.className = 'status-text success';
+            setTimeout(() => statusEl.textContent = '', 2000);
+        } catch (error) {
+            statusEl.textContent = '❌ 저장 실패';
+            statusEl.className = 'status-text error';
+        }
+    }
+
+    // 초기화
+    loadOCR();
     document.getElementById('save-ocr-btn').addEventListener('click', saveOCR);
 
     // 모드 선택 시 타입 셀렉터 토글
