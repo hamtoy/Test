@@ -11,7 +11,7 @@ from src.graph import QAGraphBuilder
 
 def test_require_env_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("NEO4J_URI", raising=False)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(EnvironmentError):
         require_env("NEO4J_URI")
 
 

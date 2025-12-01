@@ -53,6 +53,7 @@ except ImportError:
         def __init__(self, name: str, doc: str, _labelnames: list[str] | None = None):
             """Initialize the stub gauge."""
             self._name = name
+            self._value = 0.0
 
         def set(self, value: float) -> None:
             """Set the gauge value (no-op in stub)."""

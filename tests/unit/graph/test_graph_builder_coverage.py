@@ -331,7 +331,7 @@ class TestRequireEnv:
         from src.config.utils import require_env
 
         monkeypatch.delenv("MISSING_VAR", raising=False)
-        with pytest.raises(RuntimeError, match="MISSING_VAR"):
+        with pytest.raises(EnvironmentError, match="MISSING_VAR"):
             require_env("MISSING_VAR")
 
     def test_require_env_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -339,7 +339,7 @@ class TestRequireEnv:
         from src.config.utils import require_env
 
         monkeypatch.setenv("EMPTY_VAR", "")
-        with pytest.raises(RuntimeError, match="EMPTY_VAR"):
+        with pytest.raises(EnvironmentError, match="EMPTY_VAR"):
             require_env("EMPTY_VAR")
 
 

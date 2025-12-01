@@ -14,7 +14,6 @@ load_dotenv()
 
 def test_all():
     """Notion과 Neo4j 연결 모두 테스트"""
-
     token = os.environ.get("NOTION_TOKEN")
     page_id = os.environ.get("PAGE_ID_1")
     uri = os.environ.get("NEO4J_URI")
