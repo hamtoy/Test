@@ -387,8 +387,10 @@ class TestWorkerHandleOcrTask:
             return True
 
         monkeypatch.setattr(worker, "check_rate_limit", mock_rate_limit)
-        monkeypatch.setattr(worker.config, "enable_data2neo", True, raising=False)
-        monkeypatch.setattr(worker.config, "enable_lats", False, raising=False)
+
+        # Create a mock config with the required attributes
+        mock_config = SimpleNamespace(enable_data2neo=True, enable_lats=False)
+        monkeypatch.setattr(worker, "get_config", lambda: mock_config)
 
         async def mock_data2neo(task: Any) -> dict[str, Any]:
             return {
@@ -432,8 +434,10 @@ class TestWorkerHandleOcrTask:
             return True
 
         monkeypatch.setattr(worker, "check_rate_limit", mock_rate_limit)
-        monkeypatch.setattr(worker.config, "enable_data2neo", False, raising=False)
-        monkeypatch.setattr(worker.config, "enable_lats", False, raising=False)
+
+        # Create a mock config with the required attributes
+        mock_config = SimpleNamespace(enable_data2neo=False, enable_lats=False)
+        monkeypatch.setattr(worker, "get_config", lambda: mock_config)
 
         async def mock_process(task: Any) -> dict[str, Any]:
             return {"request_id": task.request_id, "ocr_text": "test"}
