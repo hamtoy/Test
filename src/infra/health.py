@@ -10,7 +10,9 @@ from typing import TYPE_CHECKING, Any
 
 try:
     import psutil  # type: ignore[assignment]
-except ImportError:  # pragma: no cover - provide stub so tests can patch psutil.virtual_memory
+except (
+    ImportError
+):  # pragma: no cover - provide stub so tests can patch psutil.virtual_memory
     import types
 
     psutil = types.ModuleType("psutil")
