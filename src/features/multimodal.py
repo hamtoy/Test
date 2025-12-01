@@ -8,7 +8,23 @@ from PIL import Image
 from src.qa.rag_system import QAKnowledgeGraph
 
 try:
+    # Windows에서 PATH 문제 해결: tesseract 실행 파일 경로 직접 지정
+    import platform
+
     import pytesseract as _pytesseract
+
+    if platform.system() == "Windows":
+        # 일반적인 Tesseract 설치 경로들 시도
+        import os
+
+        possible_paths = [
+            r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+            r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+        ]
+        for path in possible_paths:
+            if os.path.exists(path):
+                _pytesseract.pytesseract.tesseract_cmd = path
+                break
 except ImportError:
     _pytesseract = None
 
