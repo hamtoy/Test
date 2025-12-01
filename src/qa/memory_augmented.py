@@ -5,7 +5,8 @@ from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
-from src.qa.rag_system import CustomGeminiEmbeddings, require_env
+from src.qa.rag_system import CustomGeminiEmbeddings
+from src.config.utils import require_env
 from src.infra.neo4j import create_sync_driver, SafeDriver
 from src.llm.gemini import GeminiModelClient
 
