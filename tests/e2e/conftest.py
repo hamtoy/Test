@@ -90,9 +90,9 @@ class MockGeminiAgent:
 
         # 캐시 확인
         cache_key = f"query:{ocr_text}:{intent}"
-        cached = await self.cache_manager.get(cache_key)
+        cached: QueryResult | None = await self.cache_manager.get(cache_key)
         if cached is not None:
-            return QueryResult(query=cached.query)
+            return cached
 
         # 결과 생성
         result = QueryResult(query=f"Generated query for: {ocr_text}")
