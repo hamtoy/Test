@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 import sys
 import types
 from pathlib import Path
@@ -10,8 +9,8 @@ from typing import Any
 
 import pytest
 
-# Ensure required env is present for AppConfig during import
-os.environ.setdefault("GEMINI_API_KEY", "AIza" + "0" * 35)
+# Note: GEMINI_API_KEY is set in tests/conftest.py before any imports
+# to handle AppConfig validation during test collection.
 
 from src.infra import budget as budget_tracker
 from src.qa import rag_system as qa_rag_system

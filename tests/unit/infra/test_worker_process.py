@@ -1,14 +1,11 @@
-import os
 import types
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-# For BudgetTracker monkeypatching in LATS tests
-
-# Ensure required env is present for AppConfig during import
-os.environ.setdefault("GEMINI_API_KEY", "AIza" + "0" * 35)
+# Note: GEMINI_API_KEY is set in tests/conftest.py before any imports
+# to handle AppConfig validation during test collection.
 
 pytest.importorskip("faststream")
 from src.infra import worker  # noqa: E402
