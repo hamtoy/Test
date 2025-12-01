@@ -33,9 +33,15 @@ env/
 *.swo
 *~
 
-# Environment variables
+# Environment variables (절대 커밋 금지)
 .env
 .env.local
+.env.*.local
+
+# API 키/시크릿
+*.pem
+*.key
+secrets/
 
 # Logs
 *.log
@@ -86,7 +92,6 @@ test_warnings_quick.py
 # v3.0 shim backups
 backup_v3_*/
 strict_baseline.txt
-.env
 
 # Generated reports
 reports/
