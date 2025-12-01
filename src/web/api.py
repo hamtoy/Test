@@ -518,7 +518,7 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
 
 
 @app.post("/api/workspace/generate-answer")
-async def api_generate_answer_from_query(body: dict) -> Dict[str, Any]:
+async def api_generate_answer_from_query(body: Dict[str, Any]) -> Dict[str, Any]:
     """질문 기반 답변 생성 - 파이프라인 검증 포함"""
     if agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
@@ -564,7 +564,7 @@ async def api_generate_answer_from_query(body: dict) -> Dict[str, Any]:
 
 
 @app.post("/api/workspace/generate-query")
-async def api_generate_query_from_answer(body: dict) -> Dict[str, Any]:
+async def api_generate_query_from_answer(body: Dict[str, Any]) -> Dict[str, Any]:
     """답변 기반 질문 생성"""
     if agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
