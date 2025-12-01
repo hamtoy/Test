@@ -1,38 +1,14 @@
 from __future__ import annotations
 
-from collections import Counter
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from PIL import Image
 
 from src.qa.rag_system import QAKnowledgeGraph
 
-try:
-    # Windows에서 PATH 문제 해결: tesseract 실행 파일 경로 직접 지정
-    import platform
-
-    import pytesseract as _pytesseract
-
-    if platform.system() == "Windows":
-        # 일반적인 Tesseract 설치 경로들 시도
-        import os
-
-        possible_paths = [
-            r"C:\Program Files\Tesseract-OCR\tesseract.exe",
-            r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
-        ]
-        for path in possible_paths:
-            if os.path.exists(path):
-                _pytesseract.pytesseract.tesseract_cmd = path
-                break
-except ImportError:
-    _pytesseract = None
-
-pytesseract: Optional[Any] = _pytesseract
-
 
 class MultimodalUnderstanding:
-    """이미지 OCR + 구조 분석으로 메타데이터 자동 생성"""
+    """이미지 구조 분석으로 메타데이터 자동 생성 (OCR은 사용자 직접 입력)"""
 
     def __init__(self, kg: QAKnowledgeGraph):
         """Initialize the multimodal understanding system.
@@ -43,7 +19,9 @@ class MultimodalUnderstanding:
         self.kg = kg
 
     def analyze_image_deep(self, image_path: str) -> Dict[str, Any]:
-        """이미지 심층 분석: OCR, 표/그래프 감지, 텍스트 밀도/토픽 추출 후 그래프 저장.
+        """이미지 심층 분석: 구조 분석, 텍스트 밀도/토픽 추출 후 그래프 저장.
+
+        Note: OCR 텍스트는 사용자가 직접 입력합니다 (자동 추출 비활성화됨).
 
         Args:
             image_path: 분석할 이미지 파일 경로.
@@ -52,27 +30,22 @@ class MultimodalUnderstanding:
             dict: 텍스트 밀도, 주제 목록, 테이블/차트 여부 등 메타데이터.
         """
         with Image.open(image_path) as img:
-            # 1. OCR로 텍스트 추출
-            text = (
-                pytesseract.image_to_string(img, lang="kor+eng") if pytesseract else ""
-            )
-
-            # 2. 구조 분석 (표/그래프 감지)
+            # 1. 구조 분석 (표/그래프 감지)
             has_table = self._detect_table(img)
             has_chart = self._detect_chart(img)
 
-            # 3. 텍스트 밀도 계산
-            text_density = (len(text.strip()) / (img.width * img.height)) * 10000
+            # 2. 텍스트 밀도 계산 (이미지 크기 기반)
+            text_density = 0.0  # OCR 없이는 계산 불가, 기본값 사용
 
-        # 4. 주제 추출 (NLP - 단순 빈도 기반)
-        topics = self._extract_topics(text)
+        # 3. 주제 추출 (OCR 없이는 빈 리스트 반환)
+        topics: List[str] = []
 
         metadata = {
             "path": image_path,
             "has_table_chart": has_table or has_chart,
             "text_density": text_density,
             "topics": topics,
-            "extracted_text": text[:1000],  # 샘플만 저장
+            "extracted_text": "",  # OCR 비활성화됨
         }
 
         # 5. Neo4j에 저장 (실패해도 분석 결과는 반환)
@@ -113,9 +86,3 @@ class MultimodalUnderstanding:
         """그래프 감지 (placeholder)."""
         # 실제 구현 시 색상 히스토그램/선 패턴 감지 등 적용
         return False
-
-    def _extract_topics(self, text: str) -> List[str]:
-        """주제 추출 (단순 빈도 기반)."""
-        words = [w for w in text.split() if len(w) > 2]
-        common = Counter(words).most_common(5)
-        return [w for w, _ in common]

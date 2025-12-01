@@ -457,7 +457,7 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
 
 @app.post("/api/multimodal/analyze")
 async def api_analyze_image(file: UploadFile = File(...)) -> Dict[str, Any]:
-    """이미지 업로드 + OCR + 구조 분석"""
+    """이미지 업로드 + 구조 분석 (OCR은 사용자가 직접 입력)"""
     if mm is None:
         raise HTTPException(
             status_code=500, detail="Multimodal 기능 비활성화 (Neo4j 필요)"
@@ -489,10 +489,7 @@ async def api_analyze_image(file: UploadFile = File(...)) -> Dict[str, Any]:
         # 분석 실행
         metadata = mm.analyze_image_deep(str(temp_path))
 
-        # OCR 텍스트 저장 (다음 QA 생성에 사용)
-        extracted_text = metadata.get("extracted_text", "")
-        if extracted_text:
-            save_ocr_text(extracted_text)
+        # Note: OCR 텍스트는 사용자가 직접 입력해야 함 (자동 추출 제거됨)
 
         return {
             "filename": file.filename,
