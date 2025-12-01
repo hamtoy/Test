@@ -68,7 +68,9 @@ def get_config() -> AppConfig:
         _config = AppConfig()
     return _config
 
-# Initialize Broker with default URL (actual connection happens at startup)
+# Initialize Broker with default URL (redis://localhost:6379)
+# Note: RedisBroker default URL matches AppConfig.redis_url default
+# The broker connects during app.run() startup, not at instantiation
 broker = RedisBroker()
 app = FastStream(broker)
 redis_client = None
