@@ -48,7 +48,7 @@ async function loadOCR() {
         const input = document.getElementById('ocr-input') || document.getElementById('ocr-preview');
         
         if (!input) {
-            console.error('OCR element not found');
+            console.error('OCR element not found (searched for ocr-input and ocr-preview)');
             return;
         }
         
@@ -83,11 +83,11 @@ async function loadOCR() {
 }
 
 async function saveOCR() {
-    const text = document.getElementById('ocr-input').value;
+    const ocrText = document.getElementById('ocr-input').value;
     const statusEl = document.getElementById('ocr-save-status');
     
     try {
-        await apiCall('/api/ocr', 'POST', { text: text });
+        await apiCall('/api/ocr', 'POST', { text: ocrText });
         statusEl.textContent = '✅ 저장됨';
         statusEl.style.color = 'var(--success, green)';
         setTimeout(() => statusEl.textContent = '', 2000);
