@@ -283,7 +283,11 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
                 if isinstance(result, Exception):
                     logger.error("%s 생성 실패: %s", types[idx], result)
                     pairs.append(
-                        {"type": types[idx], "query": "생성 실패", "answer": str(result)}
+                        {
+                            "type": types[idx],
+                            "query": "생성 실패",
+                            "answer": str(result),
+                        }
                     )
                 else:
                     pairs.append(cast(Dict[str, Any], result))
