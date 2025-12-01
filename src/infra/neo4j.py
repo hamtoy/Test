@@ -25,6 +25,12 @@ class SafeDriver:
     """
 
     def __init__(self, driver: Driver, *, register_atexit: bool = False):
+        """Initialize the SafeDriver wrapper.
+
+        Args:
+            driver: The Neo4j Driver instance to wrap.
+            register_atexit: Whether to register cleanup on program exit.
+        """
         self._driver: Optional[Driver] = driver
         self._register_atexit = register_atexit
         if register_atexit:
@@ -38,11 +44,13 @@ class SafeDriver:
         return self._driver
 
     def session(self, *args: Any, **kwargs: Any) -> Any:
+        """Create a new database session."""
         if self._driver is None:
             raise RuntimeError("Driver already closed")
         return self._driver.session(*args, **kwargs)
 
     def close(self) -> None:
+        """Close the database connection."""
         if self._driver is None:
             return
         with suppress(Exception):
@@ -50,17 +58,21 @@ class SafeDriver:
         self._driver = None
 
     def __enter__(self) -> "SafeDriver":
+        """Enter context manager."""
         return self
 
     def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+        """Exit context manager and close resources."""
         self.close()
 
     def __getattr__(self, name: str) -> Any:
+        """Proxy attribute access to the underlying driver."""
         if self._driver is None:
             raise AttributeError(name)
         return getattr(self._driver, name)
 
     def __del__(self) -> None:
+        """Destructor to ensure resources are cleaned up."""
         self.close()
 
 

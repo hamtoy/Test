@@ -4,6 +4,8 @@ from typing import Final, List, Optional, TypedDict
 
 
 class PricingTier(TypedDict):
+    """Pricing tier configuration for token-based billing."""
+
     max_input_tokens: Optional[int]
     input_rate: float
     output_rate: float

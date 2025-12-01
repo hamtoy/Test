@@ -13,6 +13,11 @@ class CrossValidationSystem:
     """생성된 질의-답변 쌍을 다각도로 검증합니다."""
 
     def __init__(self, kg: QAKnowledgeGraph):
+        """Initialize the cross validation system.
+
+        Args:
+            kg: QAKnowledgeGraph instance for graph queries.
+        """
         self.kg = kg
         self.logger = logging.getLogger(__name__)
 

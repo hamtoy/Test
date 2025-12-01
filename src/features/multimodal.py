@@ -19,6 +19,11 @@ class MultimodalUnderstanding:
     """이미지 OCR + 구조 분석으로 메타데이터 자동 생성"""
 
     def __init__(self, kg: QAKnowledgeGraph):
+        """Initialize the multimodal understanding system.
+
+        Args:
+            kg: QAKnowledgeGraph instance for graph queries.
+        """
         self.kg = kg
 
     def analyze_image_deep(self, image_path: str) -> Dict[str, Any]:

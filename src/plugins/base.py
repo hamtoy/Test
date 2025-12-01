@@ -50,6 +50,7 @@ class Plugin(ABC):
         """
 
     def __repr__(self) -> str:
+        """Return string representation of the plugin."""
         return f"<Plugin {self.name} v{self.version}>"
 
 

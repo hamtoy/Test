@@ -11,6 +11,11 @@ class RealTimeConstraintEnforcer:
     """생성 중간에 실시간으로 제약 조건을 체크하고 수정 제안을 반환합니다."""
 
     def __init__(self, kg: QAKnowledgeGraph):
+        """Initialize the constraint enforcer.
+
+        Args:
+            kg: QAKnowledgeGraph instance for constraint lookups.
+        """
         self.kg = kg
 
     def stream_with_validation(

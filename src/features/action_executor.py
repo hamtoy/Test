@@ -11,6 +11,11 @@ class ActionExecutor:
     """
 
     def __init__(self, llm_provider: Optional[Any] = None):
+        """Initialize the action executor.
+
+        Args:
+            llm_provider: Optional LLM provider for generating responses.
+        """
         self.llm_provider = llm_provider
         self.last_llm_usage: Optional[Dict[str, Any]] = None
 

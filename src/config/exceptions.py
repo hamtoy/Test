@@ -36,11 +36,18 @@ class APICallError(Exception):
     """
 
     def __init__(self, message: str, status_code: int | None = None):
+        """Initialize the API error.
+
+        Args:
+            message: The error message.
+            status_code: Optional HTTP status code.
+        """
         super().__init__(message)
         self.message = message
         self.status_code = status_code
 
     def __str__(self) -> str:
+        """Return string representation with optional status code."""
         if self.status_code:
             return f"[{self.status_code}] {self.message}"
         return self.message

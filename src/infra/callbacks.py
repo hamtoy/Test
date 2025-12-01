@@ -22,6 +22,14 @@ class Neo4jLoggingCallback(BaseCallbackHandler):
         password: Optional[str] = None,
         session_id: Optional[str] = None,
     ):
+        """Initialize the Neo4j logging callback.
+
+        Args:
+            neo4j_uri: Optional Neo4j database URI.
+            user: Optional Neo4j username.
+            password: Optional Neo4j password.
+            session_id: Optional session identifier.
+        """
         self.neo4j_uri = neo4j_uri or require_env("NEO4J_URI")
         self.neo4j_user = user or require_env("NEO4J_USER")
         self.neo4j_password = password or require_env("NEO4J_PASSWORD")
@@ -93,16 +101,20 @@ class Neo4jLoggingCallback(BaseCallbackHandler):
             logging.getLogger(__name__).warning("LLM chain error log failed: %s", exc)
 
     def close(self) -> None:
+        """Close the database connection."""
         if self.driver:
             self.driver.close()
 
     def __enter__(self) -> "Neo4jLoggingCallback":
+        """Enter context manager."""
         return self
 
     def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
+        """Exit context manager and close resources."""
         self.close()
 
     def __del__(self) -> None:
+        """Destructor to ensure resources are cleaned up."""
         with suppress(Exception):
             self.close()
 

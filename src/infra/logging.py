@@ -26,6 +26,7 @@ class SensitiveDataFilter(logging.Filter):
     sensitive_regex = re.compile(SENSITIVE_PATTERN)
 
     def filter(self, record: logging.LogRecord) -> bool:
+        """Filter and mask sensitive data in log records."""
         msg = record.getMessage()
         if "AIza" in msg:
             record.msg = self.sensitive_regex.sub("[FILTERED_API_KEY]", msg)

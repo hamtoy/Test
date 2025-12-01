@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 from contextlib import suppress
 from pathlib import Path
@@ -11,29 +10,12 @@ from dotenv import load_dotenv
 
 from src.qa.rag_system import QAKnowledgeGraph
 from src.processing.template_generator import DynamicTemplateGenerator
+from src.config.utils import require_env
 from scripts.build_session import SessionContext, build_session
 from checks.validate_session import validate_turns
 from checks.detect_forbidden_patterns import find_violations
 
 load_dotenv()
-
-
-def require_env(var: str) -> str:
-    """Get a required environment variable.
-
-    Args:
-        var: The name of the environment variable.
-
-    Returns:
-        The value of the environment variable.
-
-    Raises:
-        EnvironmentError: If the environment variable is not set.
-    """
-    val = os.getenv(var)
-    if not val:
-        raise EnvironmentError(f"환경 변수 {var}가 설정되지 않았습니다 (.env 확인).")
-    return val
 
 
 class IntegratedQAPipeline:

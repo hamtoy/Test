@@ -27,6 +27,7 @@ from checks.validate_session import validate_turns
 from src.core.interfaces import GraphProvider
 from src.core.factory import get_graph_provider
 from src.config import AppConfig
+from src.config.utils import require_env
 from src.infra.neo4j import SafeDriver, create_sync_driver
 from src.qa.graph.rule_upsert import RuleUpsertManager
 
@@ -75,24 +76,6 @@ def _run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
 
 
 load_dotenv()
-
-
-def require_env(var: str) -> str:
-    """Get a required environment variable.
-
-    Args:
-        var: The name of the environment variable.
-
-    Returns:
-        The value of the environment variable.
-
-    Raises:
-        EnvironmentError: If the environment variable is not set.
-    """
-    val = os.getenv(var)
-    if not val:
-        raise EnvironmentError(f"환경 변수 {var}가 설정되지 않았습니다 (.env 확인).")
-    return val
 
 
 class CustomGeminiEmbeddings(Embeddings):

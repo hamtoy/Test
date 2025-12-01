@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import logging
 from contextlib import suppress
 from pathlib import Path
@@ -10,17 +9,12 @@ from dotenv import load_dotenv
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateNotFound
 from neo4j import GraphDatabase
 
+from src.config.utils import require_env
+
 load_dotenv()
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = REPO_ROOT / "templates"
-
-
-def require_env(var: str) -> str:
-    val = os.getenv(var)
-    if not val:
-        raise EnvironmentError(f"환경 변수 {var}가 설정되지 않았습니다 (.env 확인).")
-    return val
 
 
 class DynamicTemplateGenerator:
@@ -29,6 +23,13 @@ class DynamicTemplateGenerator:
     """
 
     def __init__(self, neo4j_uri: str, neo4j_user: str, neo4j_password: str):
+        """Initialize the dynamic template generator.
+
+        Args:
+            neo4j_uri: Neo4j database URI.
+            neo4j_user: Neo4j username.
+            neo4j_password: Neo4j password.
+        """
         self.driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
         self.logger = logging.getLogger(__name__)
         self.jinja_env = Environment(
@@ -40,6 +41,7 @@ class DynamicTemplateGenerator:
         )
 
     def close(self) -> None:
+        """Close the database connection."""
         if self.driver:
             self.driver.close()
 

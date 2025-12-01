@@ -9,7 +9,6 @@
 
 from __future__ import annotations
 
-import os
 import sys
 from typing import Any, Dict, List, Tuple
 
@@ -17,14 +16,7 @@ from dotenv import load_dotenv
 from neo4j import GraphDatabase
 from neo4j.exceptions import Neo4jError
 
-
-def require_env(var: str) -> str:
-    value = os.getenv(var)
-    if not value:
-        raise EnvironmentError(
-            f"환경 변수 {var}가 설정되지 않았습니다. .env에 {var}=... 값을 추가하세요."
-        )
-    return value
+from src.config.utils import require_env
 
 
 def compare_structure(driver: Any) -> List[Dict[str, Any]]:
@@ -69,6 +61,7 @@ def find_common_content(driver: Any, limit: int = 10) -> List[Tuple[str, List[st
 
 
 def main() -> None:
+    """Entry point for document comparison script."""
     load_dotenv()
     try:
         uri = require_env("NEO4J_URI")

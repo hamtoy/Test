@@ -16,23 +16,17 @@ from google.api_core import exceptions as google_exceptions
 from dotenv import load_dotenv
 
 from src.config.constants import DEFAULT_MAX_OUTPUT_TOKENS
+from src.config.utils import require_env
 from src.infra.logging import log_metrics
 
 load_dotenv()
-
-
-def require_env(var: str) -> str:
-    """Fetch an environment variable or raise if missing."""
-    val = os.getenv(var)
-    if not val:
-        raise EnvironmentError(f"환경 변수 {var}가 설정되지 않았습니다 (.env 확인).")
-    return val
 
 
 class GeminiModelClient:
     """Real Gemini API client for generation, evaluation, and rewrite."""
 
     def __init__(self) -> None:
+        """Initialize the Gemini model client."""
         api_key = require_env("GEMINI_API_KEY")
         genai.configure(api_key=api_key)  # type: ignore[attr-defined]
         self.model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-3-pro-preview")

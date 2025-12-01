@@ -12,6 +12,12 @@ class SelfCorrectingQAChain:
     """
 
     def __init__(self, kg: QAKnowledgeGraph, llm: GeminiModelClient | None = None):
+        """Initialize the self-correcting QA chain.
+
+        Args:
+            kg: QAKnowledgeGraph instance for graph queries.
+            llm: Optional Gemini model client.
+        """
         self.kg = kg
         self.llm = llm or GeminiModelClient()
 

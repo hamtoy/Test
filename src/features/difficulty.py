@@ -11,6 +11,11 @@ class AdaptiveDifficultyAdjuster:
     """이미지 복잡도에 따라 질의/답변 난이도를 자동 조절합니다."""
 
     def __init__(self, kg: QAKnowledgeGraph):
+        """Initialize the adaptive difficulty adjuster.
+
+        Args:
+            kg: QAKnowledgeGraph instance for graph queries.
+        """
         self.kg = kg
 
     def analyze_text_complexity(self, text: str) -> Dict[str, Any]:

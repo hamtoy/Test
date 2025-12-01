@@ -18,6 +18,11 @@ class SmartAutocomplete:
     """
 
     def __init__(self, kg: QAKnowledgeGraph):
+        """Initialize the smart autocomplete system.
+
+        Args:
+            kg: QAKnowledgeGraph instance for graph queries.
+        """
         self.kg = kg
 
     def suggest_next_query_type(

@@ -4,6 +4,17 @@ from typing import Any
 
 
 def __getattr__(name: str) -> Any:
+    """Lazy import of infrastructure module components.
+
+    Args:
+        name: The attribute name to retrieve.
+
+    Returns:
+        The requested infrastructure class or function.
+
+    Raises:
+        AttributeError: If name is not a valid module attribute.
+    """
     # logging.py exports
     if name == "setup_logging":
         from src.infra.logging import setup_logging

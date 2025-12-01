@@ -17,41 +17,57 @@ except ImportError:
 
     # 스텁 구현
     class Counter:  # type: ignore[no-redef]
+        """Stub Counter implementation when Prometheus is not available."""
+
         def __init__(self, name: str, doc: str, _labelnames: list[str] | None = None):
+            """Initialize the stub counter."""
             self._name = name
             self._values: Dict[tuple[str, ...], float] = {}
 
         def labels(self, *args: str) -> "Counter":
+            """Return self for method chaining."""
             return self
 
         def inc(self, amount: float = 1) -> None:
+            """Increment the counter (no-op in stub)."""
             pass
 
     class Histogram:  # type: ignore[no-redef]
+        """Stub Histogram implementation when Prometheus is not available."""
+
         def __init__(self, name: str, doc: str, _labelnames: list[str] | None = None):
+            """Initialize the stub histogram."""
             self._name = name
 
         def labels(self, *args: str) -> "Histogram":
+            """Return self for method chaining."""
             return self
 
         def observe(self, amount: float) -> None:
+            """Observe a value (no-op in stub)."""
             pass
 
     class Gauge:  # type: ignore[no-redef]
+        """Stub Gauge implementation when Prometheus is not available."""
+
         def __init__(self, name: str, doc: str, _labelnames: list[str] | None = None):
+            """Initialize the stub gauge."""
             self._name = name
-            self._value = 0.0
 
         def set(self, value: float) -> None:
+            """Set the gauge value (no-op in stub)."""
             self._value = value
 
         def inc(self, amount: float = 1) -> None:
+            """Increment the gauge (no-op in stub)."""
             self._value += amount
 
         def dec(self, amount: float = 1) -> None:
+            """Decrement the gauge (no-op in stub)."""
             self._value -= amount
 
     def generate_latest() -> bytes:
+        """Generate Prometheus metrics output (stub returns placeholder)."""
         return b"# Prometheus client not installed\n"
 
 

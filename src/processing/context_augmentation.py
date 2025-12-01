@@ -21,6 +21,14 @@ class AdvancedContextAugmentation:
         password: str,
         gemini_key: Optional[str] = None,
     ):
+        """Initialize the context augmentation system.
+
+        Args:
+            neo4j_uri: Neo4j database URI.
+            user: Neo4j username.
+            password: Neo4j password.
+            gemini_key: Optional Gemini API key for vector search.
+        """
         self.graph = Neo4jGraph(url=neo4j_uri, username=user, password=password)
 
         self.vector_index: Optional[Neo4jVector] = None
