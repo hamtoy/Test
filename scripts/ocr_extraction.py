@@ -6,7 +6,7 @@ from typing import Iterable, List, Tuple
 
 import google.generativeai as genai
 from dotenv import load_dotenv
-from PIL import Image, ImageOps
+from PIL import Image
 
 load_dotenv()
 
@@ -73,7 +73,7 @@ def _preprocess_image(
     binarize: bool = False,
     threshold: int = BINARY_THRESHOLD,
 ) -> Image.Image:
-    from PIL import ImageEnhance
+    from PIL import ImageEnhance, ImageOps
 
     working = ImageOps.exif_transpose(img) or img
 
