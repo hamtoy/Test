@@ -5,25 +5,20 @@ This package provides modular components for Neo4j-based knowledge graph operati
 - vector_search: Vector similarity search
 - rule_extractor: Rule extraction and QA generation
 - query_executor: Query execution utilities
-- session_validator: Session validation logic
-- traversal: Graph traversal utilities
+- rule_upsert: Rule upsert management
 """
 
 from src.qa.graph.connection import Neo4jConnectionManager
 from src.qa.graph.query_executor import QueryExecutor, run_async_safely
 from src.qa.graph.rule_extractor import RuleExtractor
-from src.qa.graph.session_validator import SessionValidator, create_session_validator
-from src.qa.graph.traversal import GraphTraversal, create_traversal
+from src.qa.graph.rule_upsert import RuleUpsertManager
 from src.qa.graph.vector_search import VectorSearchEngine
 
 __all__ = [
     "Neo4jConnectionManager",
     "QueryExecutor",
     "RuleExtractor",
-    "SessionValidator",
-    "GraphTraversal",
+    "RuleUpsertManager",
     "VectorSearchEngine",
     "run_async_safely",
-    "create_session_validator",
-    "create_traversal",
 ]
