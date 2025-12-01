@@ -1,4 +1,5 @@
 from src.qa.rag_system import QAKnowledgeGraph
+from src.qa.graph.rule_upsert import RuleUpsertManager
 from typing import Any, Generator
 
 
@@ -132,6 +133,11 @@ def _make_upsert_kg(existing_nodes: Any = None) -> Any:
     kg.neo4j_uri = "uri"
     kg.neo4j_user = "user"
     kg.neo4j_password = "pwd"
+    # Initialize RuleUpsertManager for delegation
+    kg._rule_upsert_manager = RuleUpsertManager(
+        graph=kg._graph,
+        graph_provider=kg._graph_provider,
+    )
     return kg
 
 
