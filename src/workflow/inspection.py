@@ -178,7 +178,7 @@ async def inspect_answer(
     if kg is not None:
         try:
             # 관련 규칙 조회
-            rules = kg.find_relevant_rules(query, limit=5) if query else []
+            rules = kg.find_relevant_rules(query, k=5) if query else []
             constraints = kg.get_constraints_for_query_type(query_type)
 
             if rules or constraints:
@@ -190,9 +190,7 @@ async def inspect_answer(
                         if c.get("description")
                     )
                 if rules:
-                    rules_context += "\n" + "\n".join(
-                        f"- {r.get('content', '')}" for r in rules if r.get("content")
-                    )
+                    rules_context += "\n" + "\n".join(f"- {r}" for r in rules if r)
                 rules_context += "\n\n"
         except Exception as e:
             logger.debug(f"규칙 컨텍스트 조회 실패: {e}")

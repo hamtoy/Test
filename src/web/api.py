@@ -334,8 +334,7 @@ async def generate_single_qa(
             violation_types = ", ".join(set(v["type"] for v in violations))
             draft_answer = await agent.rewrite_best_answer(
                 ocr_text=ocr_text,
-                best_answer=draft_answer,
-                edit_request=f"다음 패턴을 제거해주세요: {violation_types}",
+                best_answer=f"{draft_answer}\n\n[편집 요청] 다음 패턴 제거: {violation_types}",
                 cached_content=None,
             )
 
@@ -350,8 +349,7 @@ async def generate_single_qa(
                 violation_desc = "; ".join(rule_check.get("violations", []))
                 draft_answer = await agent.rewrite_best_answer(
                     ocr_text=ocr_text,
-                    best_answer=draft_answer,
-                    edit_request=f"다음 규칙 위반을 수정해주세요: {violation_desc}",
+                    best_answer=f"{draft_answer}\n\n[편집 요청] 규칙 위반 수정: {violation_desc}",
                     cached_content=None,
                 )
 
