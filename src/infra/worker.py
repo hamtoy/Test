@@ -68,6 +68,7 @@ def get_config() -> AppConfig:
         _config = AppConfig()
     return _config
 
+
 # Initialize Broker with default URL (redis://localhost:6379)
 # Note: RedisBroker default URL matches AppConfig.redis_url default
 # The broker connects during app.run() startup, not at instantiation
@@ -85,7 +86,12 @@ _providers_initialized = False
 
 def _init_providers() -> None:
     """Initialize providers lazily on first use."""
-    global llm_provider, lats_agent, graph_provider, data2neo_extractor, _providers_initialized
+    global \
+        llm_provider, \
+        lats_agent, \
+        graph_provider, \
+        data2neo_extractor, \
+        _providers_initialized
     if _providers_initialized:
         return
     _providers_initialized = True
@@ -139,6 +145,7 @@ async def close_redis() -> None:
     """Close Redis connection on application shutdown."""
     if redis_client:
         await redis_client.close()
+
 
 RESULTS_DIR = Path("data/queue_results")
 
