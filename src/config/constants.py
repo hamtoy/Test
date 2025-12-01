@@ -147,3 +147,21 @@ ERROR_MESSAGES: Final[dict[str, str]] = {
 
 # Pattern for masking sensitive API keys in logs (e.g., Google API keys).
 SENSITIVE_PATTERN: Final[str] = r"AIza[0-9A-Za-z_-]{35}"
+
+
+# ===== Default Answer Rules =====
+
+# Default rules applied when Neo4j is unavailable
+DEFAULT_ANSWER_RULES: Final[List[str]] = [
+    "표나 그래프를 직접 언급하지 마세요",
+    "고유명사와 숫자는 원문 그대로 유지하세요",
+    "추측성 표현(~인 것 같다, ~로 보인다)을 피하세요",
+    "OCR 텍스트에 없는 정보를 추가하지 마세요",
+]
+
+# Default forbidden patterns for answer validation
+DEFAULT_FORBIDDEN_PATTERNS: Final[List[str]] = [
+    r"표\s*\d+",
+    r"그래프|차트|도표",
+    r"위\s*그림|아래\s*표",
+]

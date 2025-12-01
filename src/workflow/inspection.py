@@ -7,6 +7,7 @@ from src.agent.core import GeminiAgent
 from src.analysis.cross_validation import CrossValidationSystem
 from src.analysis.semantic import count_keywords
 from src.caching.redis_cache import RedisEvalCache
+from src.config.constants import DEFAULT_ANSWER_RULES
 from src.features.difficulty import AdaptiveDifficultyAdjuster
 from src.features.lats import LATSSearcher
 from src.features.self_correcting import SelfCorrectingQAChain
@@ -172,12 +173,44 @@ async def inspect_answer(
             context["low_coverage"] = True
             context["coverage_score"] = coverage
 
+    # [추가] 규칙 컨텍스트 조회 및 주입
+    rules_context = ""
+    if kg is not None:
+        try:
+            # 관련 규칙 조회
+            rules = kg.find_relevant_rules(query, limit=5) if query else []
+            constraints = kg.get_constraints_for_query_type(query_type)
+            
+            if rules or constraints:
+                rules_context = "[준수해야 할 규칙]\n"
+                if constraints:
+                    rules_context += "\n".join(
+                        f"- {c.get('description', '')}" 
+                        for c in constraints 
+                        if c.get('description')
+                    )
+                if rules:
+                    rules_context += "\n" + "\n".join(
+                        f"- {r.get('content', '')}" 
+                        for r in rules 
+                        if r.get('content')
+                    )
+                rules_context += "\n\n"
+        except Exception as e:
+            logger.debug(f"규칙 컨텍스트 조회 실패: {e}")
+    else:
+        # Neo4j 없을 때 기본 규칙 사용
+        rules_context = "[준수해야 할 규칙]\n"
+        rules_context += "\n".join(f"- {r}" for r in DEFAULT_ANSWER_RULES)
+        rules_context += "\n\n"
+
     # 3. Self-Correcting 자기 교정 (LATS 내부 최적 경로 탐색)
     context_with_answer = context.copy()
     context_with_answer["draft_answer"] = answer
     context_with_answer["original_answer"] = answer
     context_with_answer["query"] = query
     context_with_answer["ocr_text"] = ocr_text
+    context_with_answer["rules_context"] = rules_context
 
     if kg:
         corrector = SelfCorrectingQAChain(kg)
