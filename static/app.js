@@ -205,8 +205,8 @@ async function evaluateAnswers(query, answers) {
             </thead>
             <tbody>
                 ${data.results.map(r => `
-                    <tr class="${r.answer_id === data.best ? 'best-answer' : ''}">
-                        <td>${r.answer_id} ${r.answer_id === data.best ? '⭐' : ''}</td>
+                    <tr class="${r.candidate_id === data.best ? 'best-answer' : ''}">
+                        <td>${r.candidate_id} ${r.candidate_id === data.best ? '⭐' : ''}</td>
                         <td>${r.score}</td>
                         <td>${r.feedback}</td>
                     </tr>
@@ -280,5 +280,4 @@ async function executeWorkspace(mode, query, answer, editRequest) {
         document.getElementById('workspace-results').innerHTML = `<p style="color: var(--danger)">작업 실패: ${error.message}</p>`;
     }
 }
-
 
