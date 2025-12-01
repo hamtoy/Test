@@ -22,6 +22,7 @@ from src.analysis.cross_validation import CrossValidationSystem
 from src.config import AppConfig
 from src.config.constants import DEFAULT_ANSWER_RULES
 from src.features.multimodal import MultimodalUnderstanding
+from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
 from src.web.models import (
     EvalExternalRequest,
@@ -43,6 +44,7 @@ _config: Optional[AppConfig] = None
 agent: Optional[GeminiAgent] = None
 kg: Optional[QAKnowledgeGraph] = None
 mm: Optional[MultimodalUnderstanding] = None
+pipeline: Optional[IntegratedQAPipeline] = None
 
 
 def get_config() -> AppConfig:
@@ -108,7 +110,7 @@ def save_ocr_text(text: str) -> None:
 
 async def init_resources() -> None:
     """전역 리소스 초기화 (서버 시작 시 호출)"""
-    global agent, kg, mm
+    global agent, kg, mm, pipeline
     app_config = get_config()
 
     if agent is None:
@@ -137,6 +139,15 @@ async def init_resources() -> None:
         except Exception as e:
             logger.warning(f"Multimodal 초기화 실패: {e}")
             mm = None
+
+    # IntegratedQAPipeline 초기화 추가
+    if pipeline is None:
+        try:
+            pipeline = IntegratedQAPipeline()
+            logger.info("IntegratedQAPipeline 초기화 완료")
+        except Exception as e:
+            logger.warning(f"IntegratedQAPipeline 초기화 실패: {e}")
+            pipeline = None
 
 
 def log_review_session(
@@ -281,9 +292,8 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
 async def generate_single_qa(
     agent: GeminiAgent, ocr_text: str, qtype: str
 ) -> Dict[str, Any]:
-    """단일 QA 생성 헬퍼 - 검수 파이프라인 포함"""
+    """단일 QA 생성 - IntegratedQAPipeline 완전 통합"""
     from src.config.constants import QA_GENERATION_OCR_TRUNCATE_LENGTH
-    from src.processing.template_generator import DynamicTemplateGenerator
 
     # 기본 컨텍스트 생성
     context = {
@@ -294,22 +304,14 @@ async def generate_single_qa(
         "type": qtype,
     }
 
-    # Neo4j 연결 시 규칙 주입
+    # IntegratedQAPipeline 사용 (Neo4j 연결 시)
     prompt = ocr_text
-    template_gen = None
-    if kg is not None:
+    if pipeline is not None:
         try:
-            import os
-
-            template_gen = DynamicTemplateGenerator(
-                neo4j_uri=os.getenv("NEO4J_URI", ""),
-                neo4j_user=os.getenv("NEO4J_USER", ""),
-                neo4j_password=os.getenv("NEO4J_PASSWORD", ""),
-            )
-            prompt = template_gen.generate_prompt_for_query_type(qtype, context)
+            prompt = pipeline.template_gen.generate_prompt_for_query_type(qtype, context)
         except Exception as e:
-            logger.warning(f"템플릿 생성 실패, 기본 프롬프트 사용: {e}")
-    else:
+            logger.warning(f"파이프라인 템플릿 생성 실패: {e}")
+    elif kg is None:
         # Neo4j 없을 때 기본 규칙 사용
         rules_text = "\n".join(f"- {r}" for r in DEFAULT_ANSWER_RULES)
         prompt = f"[기본 규칙]\n{rules_text}\n\n[텍스트]\n{ocr_text}"
@@ -330,7 +332,7 @@ async def generate_single_qa(
             cached_content=None,
         )
 
-        # [추가] 금지 패턴 검사
+        # 금지 패턴 검사
         violations = find_violations(draft_answer)
         if violations:
             logger.warning(f"금지 패턴 발견: {violations}")
@@ -343,7 +345,23 @@ async def generate_single_qa(
                 cached_content=None,
             )
 
-        # [추가] 규칙 준수 검증 (Neo4j 연결 시)
+        # IntegratedQAPipeline.validate_output() 사용
+        if pipeline is not None:
+            validation = pipeline.validate_output(qtype, draft_answer)
+            if not validation.get("valid", True):
+                logger.warning(f"파이프라인 검증 실패: {validation.get('violations')}")
+                violation_desc = "; ".join(validation.get("violations", []))
+                draft_answer = await agent.rewrite_best_answer(
+                    ocr_text=ocr_text,
+                    best_answer=draft_answer,
+                    edit_request=f"다음 위반 사항을 수정해주세요: {violation_desc}",
+                    cached_content=None,
+                )
+            missing_rules = validation.get("missing_rules_hint", [])
+            if missing_rules:
+                logger.info(f"누락 가능성 있는 규칙: {missing_rules}")
+
+        # 규칙 준수 검증 (CrossValidationSystem)
         if kg is not None:
             validator = CrossValidationSystem(kg)
             rule_check = validator._check_rule_compliance(draft_answer, qtype)
@@ -377,9 +395,9 @@ async def generate_single_qa(
             "query": query,
             "answer": final_answer,
         }
-    finally:
-        if template_gen is not None:
-            template_gen.close()
+    except Exception as e:
+        logger.error(f"QA 생성 실패: {e}")
+        raise
 
 
 @app.post("/api/eval/external")
@@ -495,6 +513,81 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"작업 실패: {str(e)}")
 
 
+@app.post("/api/workspace/generate-answer")
+async def api_generate_answer_from_query(body: dict) -> Dict[str, Any]:
+    """질문 기반 답변 생성 - 파이프라인 검증 포함"""
+    if agent is None:
+        raise HTTPException(status_code=500, detail="Agent 초기화 실패")
+
+    query = body.get("query", "")
+    ocr_text = body.get("ocr_text") or load_ocr_text()
+
+    try:
+        answer = await agent.rewrite_best_answer(
+            ocr_text=ocr_text,
+            best_answer=f"질의: {query}\n\nOCR 텍스트를 기반으로 위 질의에 답변하세요.",
+            cached_content=None,
+        )
+
+        # 파이프라인 검증
+        if pipeline is not None:
+            validation = pipeline.validate_output("general", answer)
+            if not validation.get("valid", True):
+                violation_desc = "; ".join(validation.get("violations", []))
+                answer = await agent.rewrite_best_answer(
+                    ocr_text=ocr_text,
+                    best_answer=answer,
+                    edit_request=f"위반 사항 수정: {violation_desc}",
+                    cached_content=None,
+                )
+
+        # 검수 적용
+        final_answer = await inspect_answer(
+            agent=agent,
+            answer=answer,
+            query=query,
+            ocr_text=ocr_text,
+            context={"type": "general"},
+            kg=kg,
+            lats=None,
+            validator=None,
+            cache=None,
+        )
+
+        return {"query": query, "answer": final_answer}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/workspace/generate-query")
+async def api_generate_query_from_answer(body: dict) -> Dict[str, Any]:
+    """답변 기반 질문 생성"""
+    if agent is None:
+        raise HTTPException(status_code=500, detail="Agent 초기화 실패")
+
+    answer = body.get("answer", "")
+    ocr_text = body.get("ocr_text") or load_ocr_text()
+
+    try:
+        prompt = f"""
+다음 답변에 가장 적합한 질문을 생성하세요.
+
+[OCR 텍스트]
+{ocr_text[:1000]}
+
+[답변]
+{answer}
+
+위 답변에 대한 자연스러운 질문 1개를 생성하세요. 질문만 출력하세요.
+"""
+        queries = await agent.generate_query(prompt, user_intent=None)
+        query = queries[0] if queries else "질문 생성 실패"
+
+        return {"query": query, "answer": answer}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/multimodal/analyze")
 async def api_analyze_image(file: UploadFile = File(...)) -> Dict[str, Any]:
     """이미지 업로드 + 구조 분석 (OCR은 사용자가 직접 입력)."""
@@ -555,6 +648,7 @@ async def health_endpoint() -> Dict[str, Any]:
         "agent": agent is not None,
         "neo4j": kg is not None,
         "multimodal": mm is not None,
+        "pipeline": pipeline is not None,
     }
     return result
 

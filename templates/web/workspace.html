@@ -6,43 +6,46 @@
     <div class="left-panel">
         <h2>📄 OCR 텍스트</h2>
         <textarea id="ocr-input" class="ocr-box" rows="20" placeholder="OCR 텍스트를 직접 입력하세요..."></textarea>
-        <button id="save-ocr-btn" class="btn-primary">💾 저장</button>
-        <span id="ocr-save-status" style="margin-left: 10px;"></span>
+        <div class="btn-row">
+            <button id="save-ocr-btn" class="btn-primary" style="width: 100%;">💾 저장</button>
+        </div>
+        <span id="ocr-save-status" class="status-text"></span>
     </div>
 
     <!-- 오른쪽: 워크스페이스 -->
     <div class="right-panel">
-        <h2>✍️ 워크스페이스</h2>
+        <h2>🔥 워크스페이스</h2>
         
-        <div class="form-group">
-            <label>질의 (선택)</label>
-            <input type="text" id="query" placeholder="질의 내용">
+        <!-- 작업 모드 선택 (탭 스타일) -->
+        <div class="mode-tabs">
+            <button class="mode-tab active" data-mode="generate-answer">💡 답변 생성</button>
+            <button class="mode-tab" data-mode="generate-query">❓ 질문 생성</button>
+            <button class="mode-tab" data-mode="inspect">✅ 검수</button>
+            <button class="mode-tab" data-mode="edit">✏️ 자유 수정</button>
         </div>
 
+        <!-- 질의 입력 -->
         <div class="form-group">
-            <label>답변/텍스트</label>
-            <textarea id="answer" rows="8"></textarea>
+            <label id="query-label">질의</label>
+            <textarea id="query" rows="3" placeholder="질문을 입력하세요..."></textarea>
         </div>
 
+        <!-- 답변 입력 -->
         <div class="form-group">
-            <label>모드 선택</label>
-            <label>
-                <input type="radio" name="mode" value="inspect" checked>
-                검수 모드 (자동 교정)
-            </label>
-            <label>
-                <input type="radio" name="mode" value="edit">
-                자유 수정 모드
-            </label>
+            <label id="answer-label">답변</label>
+            <textarea id="answer" rows="8" placeholder="답변을 입력하세요..."></textarea>
         </div>
 
-        <div id="edit-request-box" style="display:none;" class="form-group">
+        <!-- 자유 수정용 입력 (edit 모드에서만 표시) -->
+        <div id="edit-request-box" class="form-group" style="display: none;">
             <label>수정 요청</label>
-            <input type="text" id="edit-request" placeholder="예: 더 간결하게">
+            <input type="text" id="edit-request" placeholder="예: 더 간결하게, 숫자 강조, 문장 다듬기...">
         </div>
 
-        <button id="execute-btn" class="btn-primary">▶️ 실행</button>
+        <!-- 실행 버튼 -->
+        <button id="execute-btn" class="btn-primary" style="width: 100%;">▶️ 실행</button>
 
+        <!-- 결과 영역 -->
         <div id="workspace-results" class="results-area"></div>
     </div>
 </div>
@@ -50,37 +53,180 @@
 
 {% block scripts %}
 <script>
-    // 페이지 로드 시 OCR 텍스트 로드
-    loadOCR();
+    // OCR 로드/저장
+    async function loadOCR() {
+        try {
+            const data = await apiCall('/api/ocr');
+            document.getElementById('ocr-input').value = data.ocr || '';
+        } catch (error) {
+            document.getElementById('ocr-input').placeholder = 'OCR 로드 실패';
+        }
+    }
 
-    // 저장 버튼 이벤트
-    document.getElementById('save-ocr-btn').addEventListener('click', saveOCR);
+    async function saveOCR() {
+        const text = document.getElementById('ocr-input').value;
+        const statusEl = document.getElementById('ocr-save-status');
+        try {
+            await apiCall('/api/ocr', 'POST', { text });
+            statusEl.textContent = '✅ 저장됨';
+            statusEl.className = 'status-text success';
+            setTimeout(() => statusEl.textContent = '', 2000);
+        } catch (error) {
+            statusEl.textContent = '❌ 저장 실패';
+            statusEl.className = 'status-text error';
+        }
+    }
 
-    // 모드 선택 시 수정 요청 박스 토글
-    document.querySelectorAll('input[name="mode"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            const box = document.getElementById('edit-request-box');
-            box.style.display = e.target.value === 'edit' ? 'block' : 'none';
+    // 현재 모드
+    let currentMode = 'generate-answer';
+
+    // 모드 탭 전환
+    document.querySelectorAll('.mode-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentMode = tab.dataset.mode;
+            updateUIForMode();
         });
     });
 
+    function updateUIForMode() {
+        const queryLabel = document.getElementById('query-label');
+        const answerLabel = document.getElementById('answer-label');
+        const queryInput = document.getElementById('query');
+        const answerInput = document.getElementById('answer');
+        const editBox = document.getElementById('edit-request-box');
+
+        editBox.style.display = 'none';
+
+        switch(currentMode) {
+            case 'generate-answer':
+                queryLabel.textContent = '질의 (필수)';
+                answerLabel.textContent = '답변 (자동 생성됨)';
+                queryInput.placeholder = '질문을 입력하면 OCR 기반으로 답변을 생성합니다...';
+                answerInput.placeholder = '생성된 답변이 여기에 표시됩니다...';
+                break;
+            case 'generate-query':
+                queryLabel.textContent = '질의 (자동 생성됨)';
+                answerLabel.textContent = '답변 (필수)';
+                queryInput.placeholder = '생성된 질문이 여기에 표시됩니다...';
+                answerInput.placeholder = '답변을 입력하면 적절한 질문을 생성합니다...';
+                break;
+            case 'inspect':
+                queryLabel.textContent = '질의 (선택)';
+                answerLabel.textContent = '답변 (필수)';
+                queryInput.placeholder = '질의가 있으면 더 정확한 검수가 가능합니다...';
+                answerInput.placeholder = '검수할 답변을 입력하세요...';
+                break;
+            case 'edit':
+                queryLabel.textContent = '질의 (선택)';
+                answerLabel.textContent = '답변 (필수)';
+                queryInput.placeholder = '원본 질의 (선택)';
+                answerInput.placeholder = '수정할 답변을 입력하세요...';
+                editBox.style.display = 'block';
+                break;
+        }
+    }
+
+    // 실행
     document.getElementById('execute-btn').addEventListener('click', async () => {
-        const mode = document.querySelector('input[name="mode"]:checked').value;
         const query = document.getElementById('query').value;
         const answer = document.getElementById('answer').value;
         const editRequest = document.getElementById('edit-request').value;
+        const ocrText = document.getElementById('ocr-input').value;
 
-        if (!answer.trim()) {
+        // 유효성 검사
+        if (currentMode === 'generate-answer' && !query.trim()) {
+            alert('질문을 입력해주세요.');
+            return;
+        }
+        if (currentMode === 'generate-query' && !answer.trim()) {
             alert('답변을 입력해주세요.');
             return;
         }
-
-        if (mode === 'edit' && !editRequest.trim()) {
+        if ((currentMode === 'inspect' || currentMode === 'edit') && !answer.trim()) {
+            alert('답변을 입력해주세요.');
+            return;
+        }
+        if (currentMode === 'edit' && !editRequest.trim()) {
             alert('수정 요청을 입력해주세요.');
             return;
         }
 
-        await executeWorkspace(mode, query, answer, editRequest);
+        showLoading('workspace-results');
+
+        try {
+            let result;
+
+            if (currentMode === 'generate-answer') {
+                result = await apiCall('/api/workspace/generate-answer', 'POST', { query, ocr_text: ocrText });
+                document.getElementById('answer').value = result.answer;
+            } else if (currentMode === 'generate-query') {
+                result = await apiCall('/api/workspace/generate-query', 'POST', { answer, ocr_text: ocrText });
+                document.getElementById('query').value = result.query;
+            } else {
+                const body = { mode: currentMode, query, answer };
+                if (currentMode === 'edit') body.edit_request = editRequest;
+                result = await apiCall('/api/workspace', 'POST', body);
+            }
+
+            displayResult(result);
+        } catch (error) {
+            document.getElementById('workspace-results').innerHTML = 
+                `<p style="color: var(--danger)">작업 실패: ${error.message}</p>`;
+        }
     });
+
+    function displayResult(data) {
+        const resultsDiv = document.getElementById('workspace-results');
+        resultsDiv.innerHTML = '<h3>✨ 결과</h3>';
+
+        const card = document.createElement('div');
+        card.className = 'result-card';
+
+        const pre = document.createElement('pre');
+        pre.textContent = data.answer || data.query || data.result?.fixed || data.result?.edited || '결과 없음';
+
+        const btnRow = document.createElement('div');
+        btnRow.className = 'btn-row';
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'btn-secondary';
+        copyBtn.textContent = '📋 복사';
+        copyBtn.addEventListener('click', () => copyToClipboard(pre.textContent));
+
+        const applyBtn = document.createElement('button');
+        applyBtn.className = 'btn-secondary';
+        applyBtn.textContent = '✅ 적용';
+        applyBtn.addEventListener('click', () => {
+            if (data.answer) document.getElementById('answer').value = data.answer;
+            if (data.query) document.getElementById('query').value = data.query;
+            if (data.result?.fixed) document.getElementById('answer').value = data.result.fixed;
+            if (data.result?.edited) document.getElementById('answer').value = data.result.edited;
+        });
+
+        btnRow.appendChild(copyBtn);
+        btnRow.appendChild(applyBtn);
+        card.appendChild(pre);
+        card.appendChild(btnRow);
+        resultsDiv.appendChild(card);
+    }
+
+    // 세션 스토리지에서 데이터 복원
+    const savedQuery = sessionStorage.getItem('workspace_query');
+    const savedAnswer = sessionStorage.getItem('workspace_answer');
+    if (savedQuery) {
+        document.getElementById('query').value = savedQuery;
+        sessionStorage.removeItem('workspace_query');
+    }
+    if (savedAnswer) {
+        document.getElementById('answer').value = savedAnswer;
+        sessionStorage.removeItem('workspace_answer');
+    }
+
+    // 초기화
+    loadOCR();
+    document.getElementById('save-ocr-btn').addEventListener('click', saveOCR);
+    updateUIForMode();
 </script>
 {% endblock %}

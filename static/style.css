@@ -84,14 +84,18 @@ main {
 .ocr-box {
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 15px;
+    border-radius: 8px;
+    padding: 12px;
+    width: 100%;
+    min-height: 400px;
     max-height: 70vh;
     overflow-y: auto;
     white-space: pre-wrap;
     font-family: 'Courier New', monospace;
     font-size: 13px;
-    color: var(--text-dim);
+    color: var(--text);
+    resize: vertical;
+    box-sizing: border-box;
 }
 
 /* 컨트롤 박스 */
@@ -202,9 +206,10 @@ main {
 .result-card {
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 15px;
+    border-radius: 8px;
+    padding: 16px;
     margin-bottom: 15px;
+    margin-top: 16px;
 }
 
 .result-card h3 {
@@ -214,10 +219,11 @@ main {
 
 .result-card pre {
     background: var(--panel);
-    padding: 10px;
+    padding: 12px;
     border-radius: 4px;
     overflow-x: auto;
     white-space: pre-wrap;
+    word-wrap: break-word;
     font-size: 13px;
 }
 
@@ -328,4 +334,57 @@ footer {
         padding: 6px 12px;
         font-size: 14px;
     }
+}
+
+/* 모드 탭 */
+.mode-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.mode-tab {
+    padding: 10px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.mode-tab:hover {
+    background: #3a3a3a;
+}
+
+.mode-tab.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+/* 버튼 행 */
+.btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* 상태 텍스트 */
+.status-text {
+    display: block;
+    margin-top: 8px;
+    font-size: 14px;
+}
+.status-text.success { color: var(--primary); }
+.status-text.error { color: var(--danger); }
+
+/* OCR 영역 너비 통일 */
+.left-panel .ocr-box,
+.left-panel .btn-primary,
+.left-panel .btn-row {
+    width: 100%;
+    box-sizing: border-box;
 }
