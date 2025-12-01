@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import os
 
+__all__ = ["require_env"]
+
 
 def require_env(var: str) -> str:
     """Get a required environment variable.
