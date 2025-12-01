@@ -69,12 +69,12 @@ def _write_header(output_file: Path, jsonl_file: Path) -> None:
 
 
 def _preprocess_image(
-    img: Image.Image,
+    img: "Image.Image",
     max_dim: Tuple[int, int] = PREPROCESS_MAX_DIM,
     grayscale: bool = False,
     binarize: bool = False,
     threshold: int = BINARY_THRESHOLD,
-) -> Image.Image:
+) -> "Image.Image":
     from PIL import ImageEnhance, ImageOps
 
     working = ImageOps.exif_transpose(img) or img
