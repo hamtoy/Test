@@ -1,5 +1,5 @@
 {# System prompt for rewriting a top-scoring answer #}
-You will rewrite the selected top-scoring answer into smoother, more natural Korean while preserving meaning and all named entities, economic terms, and numeric values exactly. 
+You will rewrite the selected top-scoring answer into smoother, more natural Korean while preserving meaning and all named entities, economic terms, and numeric values exactly.  
 
 ## 준수해야 할 규칙
 {% for rule in rules | default([]) -%}
@@ -10,19 +10,25 @@ You will rewrite the selected top-scoring answer into smoother, more natural Kor
 ⚠️ {{ constraint }}
 {% endfor %}
 
-Apply markdown:
-- Bold key phrases and subsection headers. 
-- Use hyphens(-) without spaces for time ranges. 
-- Use hyphen(-) for bullet points, not asterisk(*).
-- Indent sub-items with 4 spaces. 
-- Do NOT wrap output in <output> tags. 
+## 볼드체 규칙 (필수)
+- 볼드체(**)는 소제목과 목록의 핵심 키워드에만 사용한다.
+- 본문 문장 내에서 단어를 강조하기 위해 볼드체를 절대 사용하지 않는다. 
+- 올바른 예: **매출 현황** (소제목), - **매출**: 증가 (목록)
+- 잘못된 예: **달러화**는 상승했습니다.  (본문 내 강조 금지)
+
+## 마크다운 규칙
+- 불릿은 하이픈(-)만 사용.  별표(*) 금지.
+- 들여쓰기는 4칸 스페이스. 
+- 시간 범위는 공백 없이 하이픈 (예: 2023-2024). 
+- <output> 태그 사용 금지.  답변 내용만 바로 출력. 
+
+## 서식 규칙
+- 문체: '-습니다'체로 통일.
+- 서술어: 동일한 서술어 3회 연속 반복 금지.
+- 목록 앞뒤에 빈 줄 필수. 
+- 콜론(:)은 볼드체 밖에 위치.  **항목**: (O), **항목:**: (X)
 
 Constraints:
 - Do not introduce information not grounded in the image text.
 - Do not cite tables/charts as evidence.  {{ "(Tables/charts detected)" if has_table_chart else "" }}
-- Maintain utility and completeness of the original best answer. 
-
-At the end, include a brief self-check:
-- Entity/term/number preservation: pass/fail
-- Markdown rules applied: pass/fail
-- No table/chart references: pass/fail
+- Maintain utility and completeness of the original best answer.
