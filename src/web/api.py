@@ -333,16 +333,6 @@ async def generate_single_qa(
     }
 
     rules_list: list[str] = []
-    template_prompt: str | None = None
-
-    # 1) IntegratedQAPipeline 템플릿
-    if pipeline is not None:
-        try:
-            template_prompt = pipeline.template_gen.generate_prompt_for_query_type(
-                normalized_qtype, context
-            )
-        except Exception as e:
-            logger.warning(f"파이프라인 템플릿 생성 실패: {e}")
 
     # 2) Neo4j 규칙 조회
     if kg is not None:
@@ -360,24 +350,9 @@ async def generate_single_qa(
         rules_list = list(DEFAULT_ANSWER_RULES)
         logger.info("Neo4j 규칙 없음, 기본 규칙 사용")
 
-    # 프롬프트 구성
-    if template_prompt:
-        prompt = template_prompt
-    else:
-        rules_text = "\n".join(f"- {r}" for r in rules_list)
-        prompt = f"""[지시사항]
-반드시 한국어로 답변하세요.
-
-[준수 규칙]
-{rules_text}
-
-[텍스트]
-{ocr_text}
-"""
-
     try:
         queries = await agent.generate_query(
-            prompt, user_intent=None, query_type=normalized_qtype
+            ocr_text, user_intent=None, query_type=normalized_qtype, kg=kg
         )
         if not queries:
             raise ValueError("질의 생성 실패")
@@ -401,6 +376,7 @@ async def generate_single_qa(
             best_answer=answer_prompt,
             cached_content=None,
             query_type=normalized_qtype,
+            kg=kg,
         )
 
         all_violations: list[str] = []

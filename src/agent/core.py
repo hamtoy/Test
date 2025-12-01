@@ -41,6 +41,7 @@ from .rate_limiter import RateLimiter
 if TYPE_CHECKING:
     import google.generativeai.caching as caching
     from src.core.interfaces import LLMProvider
+    from src.qa.rag_system import QAKnowledgeGraph
 
 
 def _get_log_metrics() -> Callable[..., None]:
@@ -548,6 +549,7 @@ class GeminiAgent:
         cached_content: Optional["caching.CachedContent"] = None,
         template_name: Optional[str] = None,
         query_type: str = "explanation",
+        kg: Optional["QAKnowledgeGraph"] = None,
     ) -> List[str]:
         """OCR 텍스트와 사용자 의도에 기반한 전략적 쿼리 생성.
 
@@ -557,6 +559,7 @@ class GeminiAgent:
             cached_content: 캐시된 컨텐츠
             template_name: 사용자 템플릿 이름 (A/B 테스트용, None이면 기본 템플릿 사용)
             query_type: 질의 유형 (Neo4j 규칙 조회용)
+            kg: 재사용할 QAKnowledgeGraph 인스턴스 (없으면 새로 생성)
 
         Returns:
             생성된 쿼리 목록
@@ -571,16 +574,18 @@ class GeminiAgent:
 
         rules: List[str] = []
         constraints: List[str] = []
+        kg_obj = kg
         try:
-            from src.qa.rag_system import QAKnowledgeGraph
+            if kg_obj is None:
+                from src.qa.rag_system import QAKnowledgeGraph
 
-            kg = QAKnowledgeGraph()
-            constraint_list = kg.get_constraints_for_query_type(query_type)
+                kg_obj = QAKnowledgeGraph()
+            constraint_list = kg_obj.get_constraints_for_query_type(query_type)
             for c in constraint_list:
                 desc = c.get("description")
                 if desc:
                     constraints.append(desc)
-            rules = kg.find_relevant_rules(ocr_text[:500], k=10)
+            rules = kg_obj.find_relevant_rules(ocr_text[:500], k=10)
         except Exception as e:  # noqa: BLE001
             self.logger.debug("Neo4j 규칙 조회 실패: %s", e)
 
@@ -654,6 +659,7 @@ class GeminiAgent:
         candidates: Dict[str, str],
         cached_content: Optional["caching.CachedContent"] = None,
         query_type: str = "explanation",
+        kg: Optional["QAKnowledgeGraph"] = None,
     ) -> Optional[EvaluationResultSchema]:
         """후보 답변을 평가하고 점수를 부여."""
         if not query:
@@ -667,16 +673,18 @@ class GeminiAgent:
 
         rules: List[str] = []
         constraints: List[str] = []
+        kg_obj = kg
         try:
-            from src.qa.rag_system import QAKnowledgeGraph
+            if kg_obj is None:
+                from src.qa.rag_system import QAKnowledgeGraph
 
-            kg = QAKnowledgeGraph()
-            constraint_list = kg.get_constraints_for_query_type(query_type)
+                kg_obj = QAKnowledgeGraph()
+            constraint_list = kg_obj.get_constraints_for_query_type(query_type)
             for c in constraint_list:
                 desc = c.get("description")
                 if desc:
                     constraints.append(desc)
-            rules = kg.find_relevant_rules(ocr_text[:500], k=10)
+            rules = kg_obj.find_relevant_rules(ocr_text[:500], k=10)
         except Exception as e:  # noqa: BLE001
             self.logger.debug("Neo4j 규칙 조회 실패: %s", e)
 
@@ -743,6 +751,7 @@ class GeminiAgent:
         edit_request: Optional[str] = None,
         cached_content: Optional["caching.CachedContent"] = None,
         query_type: str = "explanation",
+        kg: Optional["QAKnowledgeGraph"] = None,
     ) -> str:
         """선택된 최고 답변을 가독성 및 안전성 측면에서 개선.
 
@@ -757,14 +766,18 @@ class GeminiAgent:
 
         rules: List[str] = []
         constraints: List[str] = []
+        kg_obj = kg
         try:
-            kg = QAKnowledgeGraph()
-            constraint_list = kg.get_constraints_for_query_type(query_type)
+            if kg_obj is None:
+                from src.qa.rag_system import QAKnowledgeGraph
+
+                kg_obj = QAKnowledgeGraph()
+            constraint_list = kg_obj.get_constraints_for_query_type(query_type)
             for c in constraint_list:
                 desc = c.get("description")
                 if desc:
                     constraints.append(desc)
-            rules = kg.find_relevant_rules(best_answer[:500], k=10)
+            rules = kg_obj.find_relevant_rules(best_answer[:500], k=10)
         except Exception as e:  # noqa: BLE001
             self.logger.warning("Neo4j 규칙 조회 실패, 기본 템플릿 사용: %s", e)
 

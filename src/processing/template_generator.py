@@ -75,9 +75,14 @@ class DynamicTemplateGenerator:
 
         template_map = {
             "explanation": "system/text_image_qa_explanation_system.j2",
+            "global_explanation": "system/text_image_qa_explanation_system.j2",
             "summary": "system/text_image_qa_summary_system.j2",
             "reasoning": "system/text_image_qa_reasoning_system.j2",
             "target": "user/text_image_qa_target_user.j2",
+            "target_short": "user/text_image_qa_target_user.j2",
+            "target_long": "user/text_image_qa_target_user.j2",
+            "factual": "user/text_image_qa_target_user.j2",
+            "general": "system/text_image_qa_explanation_system.j2",
         }
         template_name = template_map.get(query_type, "base_system.j2")
         fallback = "base_system.j2"
