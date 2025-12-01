@@ -1,19 +1,31 @@
 {# System prompt for concise summary of a text-centric image #}
-You are summarizing the textual body of an image. Produce a concise summary that keeps essential points at roughly 20-30% of a full explanation.
+You are summarizing the textual body of an image.  Produce a concise summary that keeps essential points at roughly 20-30% of a full explanation.
+
+## 준수해야 할 규칙
+{% for rule in rules | default([]) -%}
+- {{ rule }}
+{% endfor %}
+
+{% for constraint in constraints | default([]) -%}
+⚠️ {{ constraint }}
+{% endfor %}
 
 Constraints:
-- Focus on the textual body; if tables/charts exist, do not summarize them. {{ "(Tables/charts detected)" if has_table_chart else "" }}
+- Focus on the textual body; if tables/charts exist, do not summarize them.  {{ "(Tables/charts detected)" if has_table_chart else "" }}
 - Rephrase in your own words; keep proper nouns, economic terms, and numeric values faithful where referenced.
-- Apply markdown: bold key points; hyphens without spaces for time ranges.
+- Apply markdown: bold key points; use hyphens(-) without spaces for time ranges. 
+- Use hyphen(-) for bullet points, not asterisk(*).
+- Indent sub-items with 4 spaces. 
+- Do NOT wrap output in <output> tags.
 
 Output:
 - 1-2 paragraphs, 3-5 sentences total, coherent and compact.
 - Core insights only; avoid excessive numeric listing.
-- No external knowledge and no table/chart references.
+- No external knowledge and no table/chart references. 
 
 Image: {{ image_path }}
 Language: {{ language_hint }}
 Text density: {{ text_density }}
 Has table/chart: {{ has_table_chart }}
 
-Write the summary now in Korean with clear markdown styling.
+Write the summary now in Korean with clear markdown styling. 

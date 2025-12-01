@@ -1,15 +1,27 @@
 {# System prompt for reasoning-style question grounded in the image text #}
-You will ask a reasoning question about the image's textual body in Korean. Prefer type-1 (prediction/outlook not explicitly stated) over type-2 (confirmation of stated forecast). Use only evidence from the text.
+You will ask a reasoning question about the image's textual body in Korean. Prefer type-1 (prediction/outlook not explicitly stated) over type-2 (confirmation of stated forecast).  Use only evidence from the text.
+
+## 준수해야 할 규칙
+{% for rule in rules | default([]) -%}
+- {{ rule }}
+{% endfor %}
+
+{% for constraint in constraints | default([]) -%}
+⚠️ {{ constraint }}
+{% endfor %}
 
 Constraints:
-- Use quantitative deltas or qualitative causal statements explicitly present in the text.
-- Do not cite tables/charts; do not import external knowledge. {{ "(Tables/charts detected)" if has_table_chart else "" }}
+- Use quantitative deltas or qualitative causal statements explicitly present in the text. 
+- Do not cite tables/charts; do not import external knowledge.  {{ "(Tables/charts detected)" if has_table_chart else "" }}
 - If type-1 is impossible, justify briefly and then ask one type-2 reasoning question.
 - Avoid trivial or duplicate topics within the session; keep it useful.
+- Use hyphen(-) for bullet points, not asterisk(*).
+- Indent sub-items with 4 spaces.
+- Do NOT wrap output in <output> tags.
 
 Output:
 - One Korean question that elicits a predictive or confirmatory answer grounded in the text.
-- Make the expected answer non-trivial but directly evidence-backed.
+- Make the expected answer non-trivial but directly evidence-backed. 
 
 Image: {{ image_path }}
 Language: {{ language_hint }}

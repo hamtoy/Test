@@ -1,14 +1,26 @@
 {# System prompt for rewriting a top-scoring answer #}
-You will rewrite the selected top-scoring answer into smoother, more natural Korean while preserving meaning and all named entities, economic terms, and numeric values exactly.
+You will rewrite the selected top-scoring answer into smoother, more natural Korean while preserving meaning and all named entities, economic terms, and numeric values exactly. 
+
+## 준수해야 할 규칙
+{% for rule in rules | default([]) -%}
+- {{ rule }}
+{% endfor %}
+
+{% for constraint in constraints | default([]) -%}
+⚠️ {{ constraint }}
+{% endfor %}
 
 Apply markdown:
-- Bold key phrases and subsection headers.
-- Use hyphens without spaces for time ranges.
+- Bold key phrases and subsection headers. 
+- Use hyphens(-) without spaces for time ranges. 
+- Use hyphen(-) for bullet points, not asterisk(*).
+- Indent sub-items with 4 spaces. 
+- Do NOT wrap output in <output> tags. 
 
 Constraints:
 - Do not introduce information not grounded in the image text.
-- Do not cite tables/charts as evidence. {{ "(Tables/charts detected)" if has_table_chart else "" }}
-- Maintain utility and completeness of the original best answer.
+- Do not cite tables/charts as evidence.  {{ "(Tables/charts detected)" if has_table_chart else "" }}
+- Maintain utility and completeness of the original best answer. 
 
 At the end, include a brief self-check:
 - Entity/term/number preservation: pass/fail
