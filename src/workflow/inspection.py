@@ -7,6 +7,7 @@ from src.agent.core import GeminiAgent
 from src.analysis.cross_validation import CrossValidationSystem
 from src.analysis.semantic import count_keywords
 from src.caching.redis_cache import RedisEvalCache
+from src.config.constants import DEFAULT_ANSWER_RULES
 from src.features.difficulty import AdaptiveDifficultyAdjuster
 from src.features.lats import LATSSearcher
 from src.features.self_correcting import SelfCorrectingQAChain
@@ -199,7 +200,6 @@ async def inspect_answer(
             logger.debug(f"규칙 컨텍스트 조회 실패: {e}")
     else:
         # Neo4j 없을 때 기본 규칙 사용
-        from src.config.constants import DEFAULT_ANSWER_RULES
         rules_context = "[준수해야 할 규칙]\n"
         rules_context += "\n".join(f"- {r}" for r in DEFAULT_ANSWER_RULES)
         rules_context += "\n\n"

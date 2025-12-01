@@ -133,29 +133,40 @@ class TestGenerateSingleQAWithRules:
         with (
             patch("src.web.api.kg", mock_kg),
             patch("src.web.api.agent") as mock_agent,
+            patch("src.processing.template_generator.DynamicTemplateGenerator") as mock_template_gen,
+            patch("src.web.api.CrossValidationSystem") as mock_validator_class,
         ):
             mock_agent.generate_query = AsyncMock(return_value=["테스트 질의"])
             mock_agent.rewrite_best_answer = AsyncMock(
-                return_value="깨끗한 답변입니다."
+                side_effect=["답변 초안", "수정된 답변"]
             )
+            
+            # Mock template generator to succeed
+            mock_template_instance = MagicMock()
+            mock_template_instance.generate_prompt_for_query_type = MagicMock(
+                return_value="템플릿 프롬프트"
+            )
+            mock_template_instance.close = MagicMock()
+            mock_template_gen.return_value = mock_template_instance
+            
+            # Mock CrossValidationSystem
+            mock_validator = MagicMock()
+            mock_validator._check_rule_compliance = MagicMock(
+                return_value={"score": 0.3, "violations": ["규칙 위반 1"]}
+            )
+            mock_validator_class.return_value = mock_validator
             
             from src.web.api import generate_single_qa
             
-            # Mock CrossValidationSystem in the analysis module where it's imported
-            with patch("src.analysis.cross_validation.CrossValidationSystem") as mock_validator_class:
-                mock_validator = MagicMock()
-                mock_validator._check_rule_compliance = MagicMock(
-                    return_value={"score": 0.8, "violations": [], "valid": True}
+            with patch("src.web.api.inspect_answer", AsyncMock(return_value="최종 답변")):
+                await generate_single_qa(
+                    mock_agent, "OCR 텍스트", "factual"
                 )
-                mock_validator_class.return_value = mock_validator
-                
-                with patch("src.web.api.inspect_answer", AsyncMock(return_value="최종 답변")):
-                    await generate_single_qa(
-                        mock_agent, "OCR 텍스트", "factual"
-                    )
-                
-                # Should call rule compliance check
-                assert mock_validator._check_rule_compliance.called
+            
+            # Should call rule compliance check
+            assert mock_validator._check_rule_compliance.called
+            # Should trigger rewrite due to low score and violations
+            assert mock_agent.rewrite_best_answer.call_count == 2
 
 
 @pytest.mark.asyncio
