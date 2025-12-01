@@ -692,11 +692,14 @@ class GeminiAgent:
         self,
         ocr_text: str,
         best_answer: str,
+        edit_request: Optional[str] = None,
         cached_content: Optional["caching.CachedContent"] = None,
     ) -> str:
         """선택된 최고 답변을 가독성 및 안전성 측면에서 개선."""
         template = self.jinja_env.get_template("rewrite_user.j2")
-        payload = template.render(ocr_text=ocr_text, best_answer=best_answer)
+        payload = template.render(
+            ocr_text=ocr_text, best_answer=best_answer, edit_request=edit_request
+        )
 
         system_prompt = self.jinja_env.get_template("prompt_rewrite.j2").render()
 

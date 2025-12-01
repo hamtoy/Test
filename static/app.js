@@ -7,7 +7,7 @@ async function apiCall(url, method = 'GET', body = null) {
         method,
         headers: { 'Content-Type': 'application/json' }
     };
-    
+
     if (body) {
         options.body = JSON.stringify(body);
     }
@@ -46,12 +46,12 @@ async function loadOCR() {
         const data = await apiCall('/api/ocr');
         // Support both textarea (ocr-input) and div (ocr-preview) elements
         const input = document.getElementById('ocr-input') || document.getElementById('ocr-preview');
-        
+
         if (!input) {
             console.error('OCR element not found (searched for ocr-input and ocr-preview)');
             return;
         }
-        
+
         if (input.tagName === 'TEXTAREA') {
             // For textarea elements
             if (data.ocr) {
@@ -85,7 +85,7 @@ async function loadOCR() {
 async function saveOCR() {
     const ocrText = document.getElementById('ocr-input').value;
     const statusEl = document.getElementById('ocr-save-status');
-    
+
     try {
         await apiCall('/api/ocr', 'POST', { text: ocrText });
         statusEl.textContent = '✅ 저장됨';
@@ -130,17 +130,17 @@ async function generateQA(mode, qtype) {
 function createQACard(pair, index) {
     const card = document.createElement('div');
     card.className = 'result-card';
-    
+
     // Create elements safely using DOM methods
     const h3 = document.createElement('h3');
     h3.textContent = `[${index}] ${pair.type}`;
-    
+
     const p = document.createElement('p');
     const strong = document.createElement('strong');
     strong.textContent = '질의:';
     p.appendChild(strong);
     p.appendChild(document.createTextNode(' ' + pair.query));
-    
+
     const details = document.createElement('details');
     const summary = document.createElement('summary');
     summary.style.cursor = 'pointer';
@@ -150,22 +150,22 @@ function createQACard(pair, index) {
     pre.textContent = pair.answer;
     details.appendChild(summary);
     details.appendChild(pre);
-    
+
     const button = document.createElement('button');
     button.className = 'btn-secondary';
     button.textContent = '워크스페이스로 보내기 →';
     // Store data in dataset for safe access
     button.dataset.query = pair.query;
     button.dataset.answer = pair.answer;
-    button.addEventListener('click', function() {
+    button.addEventListener('click', function () {
         sendToWorkspace(this.dataset.query, this.dataset.answer);
     });
-    
+
     card.appendChild(h3);
     card.appendChild(p);
     card.appendChild(details);
     card.appendChild(button);
-    
+
     return card;
 }
 
@@ -229,7 +229,7 @@ if (window.location.pathname === '/workspace') {
     window.addEventListener('DOMContentLoaded', () => {
         const query = sessionStorage.getItem('workspace_query');
         const answer = sessionStorage.getItem('workspace_answer');
-        
+
         if (query) {
             document.getElementById('query').value = query;
             sessionStorage.removeItem('workspace_query');
@@ -259,19 +259,19 @@ async function executeWorkspace(mode, query, answer, editRequest) {
         card.className = 'result-card';
 
         const resultText = data.result.fixed || data.result.edited;
-        
+
         // Create elements safely using DOM methods
         const pre = document.createElement('pre');
         pre.textContent = resultText;
-        
+
         const button = document.createElement('button');
         button.className = 'btn-secondary';
         button.textContent = '📋 클립보드 복사';
         button.dataset.text = resultText;
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             copyToClipboard(this.dataset.text);
         });
-        
+
         card.appendChild(pre);
         card.appendChild(button);
 
@@ -281,106 +281,4 @@ async function executeWorkspace(mode, query, answer, editRequest) {
     }
 }
 
-// ============================================================================
-// 이미지 분석
-// ============================================================================
 
-async function analyzeImage(file) {
-    showLoading('analysis-results');
-
-    try {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch('/api/multimodal/analyze', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || '분석 실패');
-        }
-
-        const data = await response.json();
-        displayAnalysisResults(data);
-    } catch (error) {
-        document.getElementById('analysis-results').innerHTML = `<p style="color: var(--danger)">분석 실패: ${error.message}</p>`;
-    }
-}
-
-function displayAnalysisResults(data) {
-    const resultsDiv = document.getElementById('analysis-results');
-    const meta = data.metadata;
-
-    // Clear and rebuild using DOM methods for safety
-    resultsDiv.innerHTML = '';
-    
-    // First result card - metadata
-    const metaCard = document.createElement('div');
-    metaCard.className = 'result-card';
-    
-    const h3Meta = document.createElement('h3');
-    h3Meta.textContent = '메타데이터';
-    metaCard.appendChild(h3Meta);
-    
-    const pFilename = document.createElement('p');
-    pFilename.innerHTML = '<strong>파일명:</strong> ';
-    pFilename.appendChild(document.createTextNode(data.filename));
-    metaCard.appendChild(pFilename);
-    
-    const pTableChart = document.createElement('p');
-    pTableChart.innerHTML = '<strong>표/그래프:</strong> ';
-    pTableChart.appendChild(document.createTextNode(meta.has_table_chart ? '✅' : '❌'));
-    metaCard.appendChild(pTableChart);
-    
-    const pDensity = document.createElement('p');
-    pDensity.innerHTML = '<strong>텍스트 밀도:</strong> ';
-    pDensity.appendChild(document.createTextNode(meta.text_density.toFixed(2)));
-    metaCard.appendChild(pDensity);
-    
-    const pTopics = document.createElement('p');
-    pTopics.innerHTML = '<strong>주요 토픽:</strong>';
-    metaCard.appendChild(pTopics);
-    
-    const topicsDiv = document.createElement('div');
-    topicsDiv.style.cssText = 'display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px;';
-    meta.topics.forEach(topic => {
-        const span = document.createElement('span');
-        span.style.cssText = 'background: var(--primary); padding: 4px 8px; border-radius: 4px; font-size: 12px;';
-        span.textContent = topic;
-        topicsDiv.appendChild(span);
-    });
-    metaCard.appendChild(topicsDiv);
-    
-    resultsDiv.appendChild(metaCard);
-    
-    // Second result card - extracted text
-    const textCard = document.createElement('div');
-    textCard.className = 'result-card';
-    
-    const h3Text = document.createElement('h3');
-    h3Text.textContent = '추출된 텍스트';
-    textCard.appendChild(h3Text);
-    
-    const details = document.createElement('details');
-    const summary = document.createElement('summary');
-    summary.style.cssText = 'cursor: pointer; color: var(--primary);';
-    summary.textContent = '텍스트 보기';
-    details.appendChild(summary);
-    
-    const pre = document.createElement('pre');
-    pre.textContent = meta.extracted_text;
-    details.appendChild(pre);
-    textCard.appendChild(details);
-    
-    const qaButton = document.createElement('button');
-    qaButton.className = 'btn-primary';
-    qaButton.textContent = 'QA 생성으로 보내기 →';
-    qaButton.addEventListener('click', function() {
-        window.location.href = '/qa';
-    });
-    textCard.appendChild(qaButton);
-    
-    resultsDiv.appendChild(textCard);
-}

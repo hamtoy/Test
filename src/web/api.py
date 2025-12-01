@@ -8,9 +8,8 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, Literal, Optional
-from uuid import uuid4
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -21,7 +20,6 @@ from src.agent import GeminiAgent
 from src.analysis.cross_validation import CrossValidationSystem
 from src.config import AppConfig
 from src.config.constants import DEFAULT_ANSWER_RULES
-from src.features.multimodal import MultimodalUnderstanding
 from src.qa.rag_system import QAKnowledgeGraph
 from src.web.models import (
     EvalExternalRequest,
@@ -42,7 +40,7 @@ logger = logging.getLogger(__name__)
 _config: Optional[AppConfig] = None
 agent: Optional[GeminiAgent] = None
 kg: Optional[QAKnowledgeGraph] = None
-mm: Optional[MultimodalUnderstanding] = None
+mm: Optional[Any] = None
 
 
 def get_config() -> AppConfig:
@@ -108,7 +106,7 @@ def save_ocr_text(text: str) -> None:
 
 async def init_resources() -> None:
     """전역 리소스 초기화 (서버 시작 시 호출)"""
-    global agent, kg, mm
+    global agent, kg
     app_config = get_config()
 
     if agent is None:
@@ -129,10 +127,6 @@ async def init_resources() -> None:
         except Exception as e:
             logger.warning(f"Neo4j 연결 실패 (RAG 비활성화): {e}")
             kg = None
-
-    if mm is None and kg is not None:
-        mm = MultimodalUnderstanding(kg=kg)
-        logger.info("MultimodalUnderstanding 초기화 완료")
 
 
 def log_review_session(
@@ -216,12 +210,6 @@ async def page_eval(request: Request) -> HTMLResponse:
 async def page_workspace(request: Request) -> HTMLResponse:
     """워크스페이스 페이지"""
     return templates.TemplateResponse(request, "workspace.html")
-
-
-@app.get("/multimodal", response_class=HTMLResponse)
-async def page_multimodal(request: Request) -> HTMLResponse:
-    """이미지 분석 페이지"""
-    return templates.TemplateResponse(request, "multimodal.html")
 
 
 @app.get("/api/ocr")
@@ -334,7 +322,8 @@ async def generate_single_qa(
             violation_types = ", ".join(set(v["type"] for v in violations))
             draft_answer = await agent.rewrite_best_answer(
                 ocr_text=ocr_text,
-                best_answer=f"{draft_answer}\n\n[편집 요청] 다음 패턴 제거: {violation_types}",
+                best_answer=draft_answer,
+                edit_request=f"다음 패턴을 제거해주세요: {violation_types}",
                 cached_content=None,
             )
 
@@ -349,7 +338,8 @@ async def generate_single_qa(
                 violation_desc = "; ".join(rule_check.get("violations", []))
                 draft_answer = await agent.rewrite_best_answer(
                     ocr_text=ocr_text,
-                    best_answer=f"{draft_answer}\n\n[편집 요청] 규칙 위반 수정: {violation_desc}",
+                    best_answer=draft_answer,
+                    edit_request=f"다음 규칙 위반을 수정해주세요: {violation_desc}",
                     cached_content=None,
                 )
 
@@ -489,57 +479,6 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"작업 실패: {str(e)}")
 
 
-@app.post("/api/multimodal/analyze")
-async def api_analyze_image(file: UploadFile = File(...)) -> Dict[str, Any]:
-    """이미지 업로드 + 구조 분석 (OCR은 사용자가 직접 입력)"""
-    if mm is None:
-        raise HTTPException(
-            status_code=500, detail="Multimodal 기능 비활성화 (Neo4j 필요)"
-        )
-
-    # 파일 검증
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
-
-    # 임시 저장 - 보안을 위해 uuid로 파일명 생성
-    temp_dir = config.input_dir / "temp"
-    temp_dir.mkdir(parents=True, exist_ok=True)
-    # 업로드된 파일명에서 디렉터리 정보 제거 및 허용된 확장자만 유지
-    original_filename = file.filename or "uploaded_image"
-    safe_name = Path(original_filename).name
-    ext = Path(safe_name).suffix.lower()
-    # 허용된 이미지 확장자만 사용 (확장자가 없거나 허용되지 않으면 빈 문자열)
-    allowed_extensions = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tiff"}
-    if ext not in allowed_extensions:
-        ext = ""
-    secure_filename = f"{uuid4().hex}{ext}"
-    temp_path = temp_dir / secure_filename
-
-    try:
-        # 파일 저장
-        content = await file.read()
-        temp_path.write_bytes(content)
-
-        # 분석 실행
-        metadata = mm.analyze_image_deep(str(temp_path))
-
-        # Note: OCR 텍스트는 사용자가 직접 입력해야 함 (자동 추출 제거됨)
-
-        return {
-            "filename": file.filename,
-            "metadata": metadata,
-        }
-
-    except Exception as e:
-        logger.error(f"이미지 분석 실패: {e}")
-        raise HTTPException(status_code=500, detail=f"분석 실패: {str(e)}")
-
-    finally:
-        # 임시 파일 정리
-        if temp_path.exists():
-            temp_path.unlink()
-
-
 # ============================================================================
 # 헬스체크
 # ============================================================================
@@ -555,7 +494,6 @@ async def health_endpoint() -> Dict[str, Any]:
     result["services"] = {
         "agent": agent is not None,
         "neo4j": kg is not None,
-        "multimodal": mm is not None,
     }
     return result
 
