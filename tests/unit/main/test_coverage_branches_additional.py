@@ -18,6 +18,7 @@ from src.qa import rag_system as qa_rag_system
 from src.analysis import semantic as semantic_analysis
 from src.agent import GeminiAgent
 from src.config import AppConfig
+from src.config.utils import require_env
 
 VALID_API_KEY = "AIza" + "A" * 35
 
@@ -30,7 +31,7 @@ VALID_API_KEY = "AIza" + "A" * 35
 def test_dynamic_template_require_env_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("NEO4J_URI", raising=False)
     with pytest.raises(EnvironmentError):
-        dtg.require_env("NEO4J_URI")
+        require_env("NEO4J_URI")
 
 
 # ----------------------------
@@ -221,7 +222,7 @@ def test_qa_rag_validate_session_failure(monkeypatch: pytest.MonkeyPatch) -> Non
 def test_semantic_analysis_require_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("NEO4J_URI", raising=False)
     with pytest.raises(EnvironmentError):
-        semantic_analysis.require_env("NEO4J_URI")
+        require_env("NEO4J_URI")
 
 
 # ----------------------------

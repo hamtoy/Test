@@ -7,12 +7,13 @@ import pytest
 
 from src import compare_documents
 from src import health_check
+from src.config.utils import require_env
 
 
 def test_compare_documents_helpers(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("MISSING_ENV", raising=False)
     with pytest.raises(EnvironmentError):
-        compare_documents.require_env("MISSING_ENV")
+        require_env("MISSING_ENV")
 
     class _CompareSession:
         def __enter__(self) -> "_CompareSession":

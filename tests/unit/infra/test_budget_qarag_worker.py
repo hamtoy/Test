@@ -16,6 +16,7 @@ os.environ.setdefault("GEMINI_API_KEY", "AIza" + "0" * 35)
 from src.infra import budget as budget_tracker
 from src.qa import rag_system as qa_rag_system
 from src.infra import worker
+from src.config.utils import require_env
 
 
 def test_budget_tracker_stats_and_budget() -> None:
@@ -43,7 +44,7 @@ def test_budget_tracker_zero_budget() -> None:
 def test_require_env_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("SOME_ENV_KEY", raising=False)
     with pytest.raises(EnvironmentError):
-        qa_rag_system.require_env("SOME_ENV_KEY")
+        require_env("SOME_ENV_KEY")
 
 
 def test_qakg_constraints_with_provider(monkeypatch: pytest.MonkeyPatch) -> None:

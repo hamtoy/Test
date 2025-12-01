@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 import pytest
 
 import src.llm.gemini as gmc
+from src.config.utils import require_env
 
 
 def _fake_genai(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -40,13 +41,13 @@ class TestRequireEnv:
         monkeypatch.delenv("NONEXISTENT_VAR", raising=False)
 
         with pytest.raises(EnvironmentError, match="환경 변수"):
-            gmc.require_env("NONEXISTENT_VAR")
+            require_env("NONEXISTENT_VAR")
 
     def test_require_env_present(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test that present env var is returned."""
         monkeypatch.setenv("TEST_VAR", "test_value")
 
-        result = gmc.require_env("TEST_VAR")
+        result = require_env("TEST_VAR")
         assert result == "test_value"
 
 
