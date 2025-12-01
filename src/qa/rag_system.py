@@ -245,19 +245,27 @@ class QAKnowledgeGraph:
             c.id AS id,
             c.description AS description,
             c.type AS type,
-            c.pattern AS pattern
+        c.pattern AS pattern
         """
         provider = getattr(self, "_graph_provider", None)
+        # 웹 컨텍스트 등에서 이벤트 루프 충돌을 막기 위해 sync 드라이버를 우선 사용
+        if self._graph is not None:
+            try:
+                with self._graph.session() as session:
+                    records = session.run(cypher, qt=query_type)
+                    return [dict(r) for r in records]
+            except Exception as e:  # noqa: BLE001
+                logger.warning("Sync constraints query failed: %s", e)
+
         if provider is None:
-            with self._graph.session() as session:  # type: ignore[union-attr]
-                records = session.run(cypher, qt=query_type)
-                return [dict(r) for r in records]
+            return []
 
         prov = provider
 
         async def _run() -> List[Dict[str, Any]]:
             async with prov.session() as session:
-                records = await session.run(cypher, qt=query_type)
+                result = await session.run(cypher, qt=query_type)
+                records = [record async for record in result]
                 return [dict(r) for r in records]
 
         return _run_async_safely(_run())
