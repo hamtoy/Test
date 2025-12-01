@@ -2,7 +2,6 @@
 
 import io
 import json
-import os
 import sys
 import types
 from datetime import datetime, timezone
@@ -12,9 +11,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-# Set up environment before imports
-os.environ.setdefault("GEMINI_API_KEY", "AIza" + "0" * 35)
-os.environ.setdefault("GEMINI_MODEL_NAME", "gemini-3-pro-preview")
+# Note: GEMINI_API_KEY is set in tests/conftest.py before any imports
+# to handle AppConfig validation during test collection.
+# GEMINI_MODEL_NAME has a default value in AppConfig settings.
 
 # Mock pytesseract before importing web.api
 pytesseract_mock = types.ModuleType("pytesseract")
