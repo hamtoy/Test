@@ -1,5 +1,4 @@
-"""
-Detect forbidden patterns in prompts/answers to enforce session rules.
+"""Detect forbidden patterns in prompts/answers to enforce session rules.
 
 Covers:
 - 전체 이미지 설명/요약 요구

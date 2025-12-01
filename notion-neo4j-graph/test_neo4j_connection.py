@@ -17,7 +17,6 @@ load_dotenv()
 )
 def test_neo4j_connection():
     """Neo4j Aura 연결 테스트"""
-
     uri = os.environ["NEO4J_URI"]
     user = os.environ["NEO4J_USER"]
     password = os.environ["NEO4J_PASSWORD"]

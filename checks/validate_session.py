@@ -1,5 +1,4 @@
-"""
-Validate a built session against core rules and forbidden patterns.
+"""Validate a built session against core rules and forbidden patterns.
 
 Checks:
 - turn count (3~4)
