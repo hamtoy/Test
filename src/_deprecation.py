@@ -34,7 +34,6 @@ class EnhancedDeprecationWarning(DeprecationWarning):
     """
 
 
-
 # Ensure EnhancedDeprecationWarning is always shown
 warnings.filterwarnings("always", category=EnhancedDeprecationWarning)
 
