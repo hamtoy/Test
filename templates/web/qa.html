@@ -5,7 +5,9 @@
     <!-- 왼쪽: OCR 영역 -->
     <div class="left-panel">
         <h2>📄 OCR 텍스트</h2>
-        <div id="ocr-preview" class="ocr-box">로딩 중...</div>
+        <textarea id="ocr-input" class="ocr-box" rows="20" placeholder="OCR 텍스트를 직접 입력하세요..."></textarea>
+        <button id="save-ocr-btn" class="btn-secondary">💾 저장</button>
+        <span id="ocr-save-status" style="margin-left: 10px;"></span>
     </div>
 
     <!-- 오른쪽: 생성 컨트롤 + 결과 -->
@@ -42,8 +44,45 @@
 
 {% block scripts %}
 <script>
-    // OCR 로드
+    // OCR 텍스트 로드
+    async function loadOCR() {
+        try {
+            const data = await apiCall('/api/ocr');
+            const input = document.getElementById('ocr-input');
+            
+            if (data.ocr) {
+                input.value = data.ocr;
+            } else {
+                input.value = '';
+                input.placeholder = 'OCR 파일이 없습니다. 텍스트를 직접 입력하세요...';
+            }
+        } catch (error) {
+            document.getElementById('ocr-input').value = '';
+            document.getElementById('ocr-input').placeholder = 'OCR 로드 실패';
+        }
+    }
+
+    // OCR 텍스트 저장
+    async function saveOCR() {
+        const text = document.getElementById('ocr-input').value;
+        const statusEl = document.getElementById('ocr-save-status');
+        
+        try {
+            await apiCall('/api/ocr', 'POST', { text: text });
+            statusEl.textContent = '✅ 저장됨';
+            statusEl.style.color = 'var(--success, green)';
+            setTimeout(() => statusEl.textContent = '', 2000);
+        } catch (error) {
+            statusEl.textContent = '❌ 저장 실패';
+            statusEl.style.color = 'var(--danger, red)';
+        }
+    }
+
+    // 페이지 로드 시 OCR 텍스트 로드
     loadOCR();
+
+    // 저장 버튼 이벤트
+    document.getElementById('save-ocr-btn').addEventListener('click', saveOCR);
 
     // 모드 선택 시 타입 셀렉터 토글
     document.querySelectorAll('input[name="mode"]').forEach(radio => {
