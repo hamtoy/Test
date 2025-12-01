@@ -180,20 +180,18 @@ async def inspect_answer(
             # 관련 규칙 조회
             rules = kg.find_relevant_rules(query, limit=5) if query else []
             constraints = kg.get_constraints_for_query_type(query_type)
-            
+
             if rules or constraints:
                 rules_context = "[준수해야 할 규칙]\n"
                 if constraints:
                     rules_context += "\n".join(
-                        f"- {c.get('description', '')}" 
-                        for c in constraints 
-                        if c.get('description')
+                        f"- {c.get('description', '')}"
+                        for c in constraints
+                        if c.get("description")
                     )
                 if rules:
                     rules_context += "\n" + "\n".join(
-                        f"- {r.get('content', '')}" 
-                        for r in rules 
-                        if r.get('content')
+                        f"- {r.get('content', '')}" for r in rules if r.get("content")
                     )
                 rules_context += "\n\n"
         except Exception as e:

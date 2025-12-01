@@ -310,7 +310,6 @@ async def generate_single_qa(
         rules_text = "\n".join(f"- {r}" for r in DEFAULT_ANSWER_RULES)
         prompt = f"[기본 규칙]\n{rules_text}\n\n[텍스트]\n{ocr_text}"
 
-
     try:
         # 질의 생성
         queries = await agent.generate_query(prompt, user_intent=None)

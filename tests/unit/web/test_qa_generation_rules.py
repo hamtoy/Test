@@ -17,7 +17,7 @@ class TestForbiddenPatternDetection:
         """Test detection of table references."""
         text = "표 1에서 보면 매출이 증가했습니다."
         violations = find_violations(text)
-        
+
         # Should not detect pattern directly (find_violations focuses on specific patterns)
         # But our integration should handle it
         assert isinstance(violations, list)
@@ -26,7 +26,7 @@ class TestForbiddenPatternDetection:
         """Test detection of graph/chart references."""
         text = "그래프에 따르면 성장세가 나타납니다."
         violations = find_violations(text)
-        
+
         assert isinstance(violations, list)
         # Check if 그래프참조 pattern is detected
         if violations:
@@ -36,7 +36,7 @@ class TestForbiddenPatternDetection:
         """Test detection of whole image description requests."""
         text = "전체 이미지 설명해주세요."
         violations = find_violations(text)
-        
+
         assert isinstance(violations, list)
         if violations:
             assert any(v["type"] == "전체이미지" for v in violations)
@@ -45,7 +45,7 @@ class TestForbiddenPatternDetection:
         """Test clean text without violations."""
         text = "2023년 매출은 100억원으로 전년 대비 20% 증가했습니다."
         violations = find_violations(text)
-        
+
         assert violations == []
 
 
@@ -67,7 +67,7 @@ class TestDefaultRulesConfiguration:
     def test_default_rules_content(self) -> None:
         """Test that default rules contain expected guidance."""
         rules_text = " ".join(DEFAULT_ANSWER_RULES)
-        
+
         # Should mention tables/graphs
         assert "표" in rules_text or "그래프" in rules_text
         # Should mention accuracy
@@ -88,15 +88,15 @@ class TestGenerateSingleQAWithRules:
             mock_agent.rewrite_best_answer = AsyncMock(
                 return_value="테스트 답변입니다."
             )
-            
+
             # Import here to avoid module-level issues
             from src.web.api import generate_single_qa
-            
-            with patch("src.web.api.inspect_answer", AsyncMock(return_value="최종 답변")):
-                await generate_single_qa(
-                    mock_agent, "OCR 텍스트", "factual"
-                )
-            
+
+            with patch(
+                "src.web.api.inspect_answer", AsyncMock(return_value="최종 답변")
+            ):
+                await generate_single_qa(mock_agent, "OCR 텍스트", "factual")
+
             # Should call rewrite_best_answer at least once
             assert mock_agent.rewrite_best_answer.called
 
@@ -114,14 +114,14 @@ class TestGenerateSingleQAWithRules:
                     "매출이 증가했습니다",  # Clean answer
                 ]
             )
-            
+
             from src.web.api import generate_single_qa
-            
-            with patch("src.web.api.inspect_answer", AsyncMock(return_value="최종 답변")):
-                await generate_single_qa(
-                    mock_agent, "OCR 텍스트", "factual"
-                )
-            
+
+            with patch(
+                "src.web.api.inspect_answer", AsyncMock(return_value="최종 답변")
+            ):
+                await generate_single_qa(mock_agent, "OCR 텍스트", "factual")
+
             # Should call rewrite_best_answer twice (once for initial, once for correction)
             assert mock_agent.rewrite_best_answer.call_count >= 2
 
@@ -129,18 +129,20 @@ class TestGenerateSingleQAWithRules:
         """Test that rule compliance is checked when Neo4j is available."""
         mock_kg = MagicMock()
         mock_kg.get_constraints_for_query_type = MagicMock(return_value=[])
-        
+
         with (
             patch("src.web.api.kg", mock_kg),
             patch("src.web.api.agent") as mock_agent,
-            patch("src.processing.template_generator.DynamicTemplateGenerator") as mock_template_gen,
+            patch(
+                "src.processing.template_generator.DynamicTemplateGenerator"
+            ) as mock_template_gen,
             patch("src.web.api.CrossValidationSystem") as mock_validator_class,
         ):
             mock_agent.generate_query = AsyncMock(return_value=["테스트 질의"])
             mock_agent.rewrite_best_answer = AsyncMock(
                 side_effect=["답변 초안", "수정된 답변"]
             )
-            
+
             # Mock template generator to succeed
             mock_template_instance = MagicMock()
             mock_template_instance.generate_prompt_for_query_type = MagicMock(
@@ -148,21 +150,21 @@ class TestGenerateSingleQAWithRules:
             )
             mock_template_instance.close = MagicMock()
             mock_template_gen.return_value = mock_template_instance
-            
+
             # Mock CrossValidationSystem
             mock_validator = MagicMock()
             mock_validator._check_rule_compliance = MagicMock(
                 return_value={"score": 0.3, "violations": ["규칙 위반 1"]}
             )
             mock_validator_class.return_value = mock_validator
-            
+
             from src.web.api import generate_single_qa
-            
-            with patch("src.web.api.inspect_answer", AsyncMock(return_value="최종 답변")):
-                await generate_single_qa(
-                    mock_agent, "OCR 텍스트", "factual"
-                )
-            
+
+            with patch(
+                "src.web.api.inspect_answer", AsyncMock(return_value="최종 답변")
+            ):
+                await generate_single_qa(mock_agent, "OCR 텍스트", "factual")
+
             # Should call rule compliance check
             assert mock_validator._check_rule_compliance.called
             # Should trigger rewrite due to low score and violations
@@ -176,9 +178,9 @@ class TestInspectAnswerWithRules:
     async def test_inspect_answer_injects_default_rules_without_neo4j(self) -> None:
         """Test that default rules are injected when Neo4j is unavailable."""
         from src.workflow.inspection import inspect_answer
-        
+
         mock_agent = MagicMock()
-        
+
         # Without kg, should use default rules
         result = await inspect_answer(
             agent=mock_agent,
@@ -188,32 +190,38 @@ class TestInspectAnswerWithRules:
             context={"type": "factual"},
             kg=None,
         )
-        
+
         # Should return the answer (since kg is None, returns original)
         assert result == "테스트 답변"
 
     async def test_inspect_answer_queries_rules_with_neo4j(self) -> None:
         """Test that rules are queried from Neo4j when available."""
         from src.workflow.inspection import inspect_answer
-        
+
         mock_agent = MagicMock()
         mock_kg = MagicMock()
-        mock_kg.find_relevant_rules = MagicMock(return_value=[
-            {"content": "규칙 1"},
-            {"content": "규칙 2"},
-        ])
-        mock_kg.get_constraints_for_query_type = MagicMock(return_value=[
-            {"description": "제약 1"},
-        ])
-        
+        mock_kg.find_relevant_rules = MagicMock(
+            return_value=[
+                {"content": "규칙 1"},
+                {"content": "규칙 2"},
+            ]
+        )
+        mock_kg.get_constraints_for_query_type = MagicMock(
+            return_value=[
+                {"description": "제약 1"},
+            ]
+        )
+
         # Mock SelfCorrectingQAChain
-        with patch("src.workflow.inspection.SelfCorrectingQAChain") as mock_corrector_class:
+        with patch(
+            "src.workflow.inspection.SelfCorrectingQAChain"
+        ) as mock_corrector_class:
             mock_corrector = MagicMock()
             mock_corrector.generate_with_self_correction = MagicMock(
                 return_value={"output": "수정된 답변"}
             )
             mock_corrector_class.return_value = mock_corrector
-            
+
             result = await inspect_answer(
                 agent=mock_agent,
                 answer="테스트 답변",
@@ -222,7 +230,7 @@ class TestInspectAnswerWithRules:
                 context={"type": "factual"},
                 kg=mock_kg,
             )
-            
+
             # Should query rules
             assert mock_kg.find_relevant_rules.called
             assert mock_kg.get_constraints_for_query_type.called
