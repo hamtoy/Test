@@ -310,7 +310,9 @@ async def generate_single_qa(
     prompt = ocr_text
     if pipeline is not None:
         try:
-            prompt = pipeline.template_gen.generate_prompt_for_query_type(qtype, context)
+            prompt = pipeline.template_gen.generate_prompt_for_query_type(
+                qtype, context
+            )
         except Exception as e:
             logger.warning(f"파이프라인 템플릿 생성 실패: {e}")
     elif kg is None:
