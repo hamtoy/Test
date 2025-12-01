@@ -3,6 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+pytest.importorskip("PIL")
+
 from PIL import Image
 
 from scripts import ocr_extraction
