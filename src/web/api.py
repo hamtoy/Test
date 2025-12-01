@@ -302,6 +302,13 @@ async def generate_single_qa(
             prompt = template_gen.generate_prompt_for_query_type(qtype, context)
         except Exception as e:
             logger.warning(f"템플릿 생성 실패, 기본 프롬프트 사용: {e}")
+    else:
+        # Neo4j 없을 때 기본 규칙 사용
+        from src.config.constants import DEFAULT_ANSWER_RULES
+
+        rules_text = "\n".join(f"- {r}" for r in DEFAULT_ANSWER_RULES)
+        prompt = f"[기본 규칙]\n{rules_text}\n\n[텍스트]\n{ocr_text}"
+
 
     try:
         # 질의 생성
@@ -318,6 +325,39 @@ async def generate_single_qa(
             best_answer=f"[{qtype}] 질의: {query}\n\n{truncated_ocr}",
             cached_content=None,
         )
+
+        # [추가] 금지 패턴 검사
+        from checks.detect_forbidden_patterns import find_violations
+
+        violations = find_violations(draft_answer)
+        if violations:
+            logger.warning(f"금지 패턴 발견: {violations}")
+            # 위반 시 재생성 요청
+            violation_types = ", ".join(set(v["type"] for v in violations))
+            draft_answer = await agent.rewrite_best_answer(
+                ocr_text=ocr_text,
+                best_answer=draft_answer,
+                edit_request=f"다음 패턴을 제거해주세요: {violation_types}",
+                cached_content=None,
+            )
+
+        # [추가] 규칙 준수 검증 (Neo4j 연결 시)
+        if kg is not None:
+            from src.analysis.cross_validation import CrossValidationSystem
+
+            validator = CrossValidationSystem(kg)
+            rule_check = validator._check_rule_compliance(draft_answer, qtype)
+            if not rule_check.get("valid", True) and rule_check.get("violations"):
+                logger.warning(f"규칙 위반: {rule_check.get('violations')}")
+                # 규칙 위반이 심각하면 재생성
+                if rule_check.get("score", 1.0) < 0.5:
+                    violation_desc = "; ".join(rule_check.get("violations", []))
+                    draft_answer = await agent.rewrite_best_answer(
+                        ocr_text=ocr_text,
+                        best_answer=draft_answer,
+                        edit_request=f"다음 규칙 위반을 수정해주세요: {violation_desc}",
+                        cached_content=None,
+                    )
 
         # 검수 파이프라인 적용
         final_answer = await inspect_answer(
