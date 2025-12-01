@@ -7,7 +7,7 @@ Notion 페이지의 데이터를 추출하여 Neo4j Aura(Graph Database)에 지�
 ### 1. 환경 설정
 
 ```bash
-# 의존성 설치
+# 의존성 설치 (루트에서)
 uv sync
 ```
 
@@ -28,18 +28,30 @@ NEO4J_PASSWORD=your_password
 
 ### 3. 실행
 
-**데이터 파이프라인 실행 (Notion -> Neo4j):**
 ```bash
-uv run import_pipeline.py
-```
+# 데이터 파이프라인 실행
+uv run python notion-neo4j-graph/import_pipeline.py
 
-**검증:**
-```bash
-uv run verify_import.py
+# 검증
+uv run python notion-neo4j-graph/verify_import.py
 ```
 
 ## 📂 프로젝트 구조
 
-- `import_pipeline.py`: 메인 파이프라인 스크립트 (추출 및 임포트)
-- `test_*.py`: 연결 테스트 스크립트
-- `verify_import.py`: 데이터 검증 스크립트
+```
+notion-neo4j-graph/
+├── import_pipeline.py   # 메인 파이프라인 (Notion → Neo4j)
+├── verify_import.py     # 데이터 검증
+├── test_notion.py       # Notion 연결 테스트
+├── test_neo4j.py        # Neo4j 연결 테스트
+└── pyproject.toml       # 의존성 정의
+```
+
+## 🔗 메인 프로젝트와의 관계
+
+이 모듈은 `src/graph/builder.py`와 연동되어 QA 시스템의 지식 그래프를 구축합니다.
+
+```bash
+# 메인 프로젝트에서 그래프 빌더 실행
+python -m src.graph.builder
+```

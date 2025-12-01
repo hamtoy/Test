@@ -38,19 +38,20 @@ multimodal = ["pillow>=10.0.0", "pytesseract>=0.3.10"]
 
 # All optional features - list individual packages, not self-reference
 all = [
+    # RAG
     "langchain>=1.0.8,<2.0.0",
     "langchain-community>=0.4.1,<1.0.0",
     "langchain-neo4j>=0.6.0,<1.0.0",
     "langchain-openai>=1.0.3,<2.0.0",
+    # Web
     "fastapi>=0.115.0",
     "uvicorn>=0.32.0",
     "python-multipart>=0.0.12",
+    # Worker
     "faststream[redis]>=0.4.10,<1.0.0",
+    # Multimodal
     "pillow>=10.0.0",
     "pytesseract>=0.3.10",
-    "fastapi>=0.115.0",
-    "uvicorn>=0.32.0",
-    "python-multipart>=0.0.12",
 ]
 
 # Development and testing (includes all optional deps for type checking)
