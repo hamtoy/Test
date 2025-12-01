@@ -6,7 +6,7 @@ from typing import Iterable, List, Tuple
 
 import google.generativeai as genai
 from dotenv import load_dotenv
-from PIL import Image, ImageOps
+from PIL import Image, ImageEnhance, ImageOps
 
 load_dotenv()
 
@@ -16,12 +16,32 @@ MODEL_NAME = (
 EXPORT_DIRS = [Path("export1"), Path("export2")]
 OUTPUT_FILE = Path("data/inputs/notion_sample_ocr.txt")
 OUTPUT_JSONL = Path("data/inputs/notion_sample_ocr.jsonl")
-OCR_PROMPT = (
-    "Extract all text from this image exactly as it appears. "
-    "Do not add any conversational filler."
-)
+OCR_PROMPT = """
+당신은 한국어 문서 OCR 전문가입니다. 
+이 이미지에서 텍스트를 추출해주세요.
+
+규칙:
+1. 모든 한국어 텍스트를 정확하게 추출
+2. 문단 구조와 줄바꿈을 유지
+3. 표나 레이아웃이 있다면 구조를 보존
+4. 특수문자, 숫자, 영문도 정확히 추출
+5. 이미지에 없는 내용은 추가하지 마세요
+
+출력 형식: 원본 문서의 레이아웃을 최대한 유지하여 텍스트만 출력
+"""
+OCR_PROMPT_LAYOUT = """
+이 이미지는 금융/경제 뉴스 문서입니다. 
+다단 레이아웃을 인식하고 각 섹션을 순서대로 추출하세요. 
+
+추출 순서:
+1. 제목/헤더
+2. 본문 (왼쪽에서 오른쪽, 위에서 아래 순서)
+3. 부가 정보/표
+
+각 섹션은 빈 줄로 구분해주세요.
+"""
 MAX_RETRIES = 1
-PREPROCESS_MAX_DIM = (1600, 1600)
+PREPROCESS_MAX_DIM = (2048, 2048)
 BINARY_THRESHOLD = 180
 
 
@@ -47,13 +67,27 @@ def _write_header(output_file: Path, jsonl_file: Path) -> None:
 def _preprocess_image(
     img: Image.Image,
     max_dim: Tuple[int, int] = PREPROCESS_MAX_DIM,
-    grayscale: bool = True,
-    binarize: bool = True,
+    grayscale: bool = False,
+    binarize: bool = False,
     threshold: int = BINARY_THRESHOLD,
 ) -> Image.Image:
     working = ImageOps.exif_transpose(img) or img
+    
+    # Upscale low-resolution images
+    width, height = working.size
+    if width < 1000 or height < 1000:
+        scale_factor = max(1000 / width, 1000 / height)
+        new_size = (int(width * scale_factor), int(height * scale_factor))
+        working = working.resize(new_size, Image.Resampling.LANCZOS)
+    
+    # Apply contrast enhancement
+    enhancer = ImageEnhance.Contrast(working)
+    working = enhancer.enhance(1.3)
+    
+    # Resize if needed
     if max_dim:
-        working.thumbnail(max_dim)
+        working.thumbnail(max_dim, Image.Resampling.LANCZOS)
+    
     if grayscale:
         working = ImageOps.grayscale(working)
     if binarize:
@@ -66,13 +100,15 @@ def _extract_with_retries(
     img_path: Path,
     preprocess: bool = True,
     max_retries: int = MAX_RETRIES,
+    use_layout_prompt: bool = False,
 ) -> Tuple[str, str | None]:
     last_error: str | None = None
+    prompt = OCR_PROMPT_LAYOUT if use_layout_prompt else OCR_PROMPT
     for attempt in range(1, max_retries + 2):
         with Image.open(img_path) as img:
             prepared = _preprocess_image(img.copy()) if preprocess else img.copy()
         try:
-            response = model.generate_content([OCR_PROMPT, prepared])
+            response = model.generate_content([prompt, prepared])
             text = (response.text or "").strip()
             return text, None
         except Exception as e:  # noqa: BLE001
@@ -97,6 +133,7 @@ def extract_text_from_images(
     model_name: str = MODEL_NAME,
     preprocess: bool = True,
     max_retries: int = MAX_RETRIES,
+    use_layout_prompt: bool = True,
 ) -> None:
     """Extract text from images in given directories and write to a text + JSONL file."""
     api_key = os.getenv("GEMINI_API_KEY")
@@ -127,7 +164,8 @@ def extract_text_from_images(
         for img_path in images:
             print(f"Processing: {img_path}")
             text, error = _extract_with_retries(
-                model, img_path, preprocess=preprocess, max_retries=max_retries
+                model, img_path, preprocess=preprocess, max_retries=max_retries,
+                use_layout_prompt=use_layout_prompt
             )
 
             if error:
