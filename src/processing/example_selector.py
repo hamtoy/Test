@@ -12,6 +12,11 @@ class DynamicExampleSelector:
     """현재 상황에 가장 적합한 예시를 그래프에서 선택."""
 
     def __init__(self, kg: QAKnowledgeGraph):
+        """Initialize the dynamic example selector.
+
+        Args:
+            kg: QAKnowledgeGraph instance for graph queries.
+        """
         self.kg = kg
 
     def select_best_examples(

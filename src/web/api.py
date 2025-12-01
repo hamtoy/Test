@@ -55,6 +55,7 @@ class _ConfigProxy:
     """Proxy object to allow patching of config in tests while using lazy initialization."""
 
     def __getattr__(self, name: str) -> Any:
+        """Proxy attribute access to the underlying config."""
         return getattr(get_config(), name)
 
 

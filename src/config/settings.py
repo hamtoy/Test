@@ -121,6 +121,7 @@ class AppConfig(BaseSettings):
     @field_validator("api_key")
     @classmethod
     def validate_api_key(cls, v: str) -> str:
+        """Validate Gemini API key format and structure."""
         if not v or v == "your_api_key_here":
             raise ValueError(ERROR_MESSAGES["api_key_missing"])
 
@@ -142,6 +143,7 @@ class AppConfig(BaseSettings):
     @field_validator("model_name")
     @classmethod
     def enforce_single_model(cls, v: str) -> str:
+        """Enforce use of the supported Gemini model only."""
         if v != "gemini-3-pro-preview":
             raise ValueError(
                 "Unsupported model. This system only allows 'gemini-3-pro-preview'."
@@ -151,6 +153,7 @@ class AppConfig(BaseSettings):
     @field_validator("max_concurrency")
     @classmethod
     def validate_concurrency(cls, v: int) -> int:
+        """Validate concurrency is within allowed range."""
         if not 1 <= v <= 20:
             raise ValueError(ERROR_MESSAGES["concurrency_range"])
         return v
@@ -158,6 +161,7 @@ class AppConfig(BaseSettings):
     @field_validator("timeout")
     @classmethod
     def validate_timeout(cls, v: int) -> int:
+        """Validate timeout is within allowed range."""
         if not 30 <= v <= 600:
             raise ValueError(ERROR_MESSAGES["timeout_range"])
         return v
@@ -165,6 +169,7 @@ class AppConfig(BaseSettings):
     @field_validator("temperature")
     @classmethod
     def validate_temperature(cls, v: float) -> float:
+        """Validate temperature is within allowed range."""
         if not 0.0 <= v <= 2.0:
             raise ValueError(ERROR_MESSAGES["temperature_range"])
         return v
@@ -172,6 +177,7 @@ class AppConfig(BaseSettings):
     @field_validator("cache_ttl_minutes")
     @classmethod
     def validate_cache_ttl(cls, v: int) -> int:
+        """Validate cache TTL is within allowed range."""
         if not 1 <= v <= 1440:
             raise ValueError(ERROR_MESSAGES["cache_ttl_range"])
         return v
@@ -179,6 +185,7 @@ class AppConfig(BaseSettings):
     @field_validator("log_level")
     @classmethod
     def validate_log_level(cls, v: str) -> str:
+        """Validate log level is a recognized level."""
         allowed = {"CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"}
         upper = v.upper()
         if upper not in allowed:
@@ -190,6 +197,7 @@ class AppConfig(BaseSettings):
     @field_validator("budget_limit_usd")
     @classmethod
     def validate_budget(cls, v: float | None) -> float | None:
+        """Validate budget limit is positive if set."""
         if v is None:
             return v
         if v <= 0:
@@ -199,6 +207,7 @@ class AppConfig(BaseSettings):
     @field_validator("cache_stats_max_entries")
     @classmethod
     def validate_cache_stats_max_entries(cls, v: int) -> int:
+        """Validate cache stats max entries is at least 1."""
         if v < 1:
             raise ValueError(ERROR_MESSAGES["cache_stats_min_entries"])
         return v

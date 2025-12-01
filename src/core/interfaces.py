@@ -21,6 +21,12 @@ class ProviderError(Exception):
     """Base exception for all provider errors."""
 
     def __init__(self, message: str, original_error: Optional[Exception] = None):
+        """Initialize the provider error.
+
+        Args:
+            message: The error message.
+            original_error: The original exception that caused this error.
+        """
         super().__init__(message)
         self.original_error = original_error
 

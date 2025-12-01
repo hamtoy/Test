@@ -11,7 +11,6 @@
 
 from __future__ import annotations
 
-import os
 import sys
 import logging
 import re
@@ -21,6 +20,8 @@ from typing import Any, Dict, Iterable, List, Tuple
 from dotenv import load_dotenv
 from neo4j import GraphDatabase, Driver
 from neo4j.exceptions import Neo4jError
+
+from src.config.utils import require_env
 
 # --------------------
 # 설정
@@ -98,15 +99,6 @@ logger = logging.getLogger(__name__)
 # --------------------
 
 
-def require_env(var: str) -> str:
-    value = os.getenv(var)
-    if not value:
-        raise EnvironmentError(
-            f"환경 변수 {var}가 설정되지 않았습니다. .env에 {var}=... 값을 추가하세요."
-        )
-    return value
-
-
 def tokenize(text: str) -> List[str]:
     """간단한 토큰화: 소문자화, 구두점 제거, 불용어/길이 필터."""
     tokens = []
@@ -120,6 +112,14 @@ def tokenize(text: str) -> List[str]:
 
 
 def count_keywords(contents: Iterable[str]) -> Counter[str]:
+    """Count keyword frequencies from text contents.
+
+    Args:
+        contents: Iterable of text strings to analyze.
+
+    Returns:
+        Counter of keywords that meet minimum frequency threshold.
+    """
     counter: Counter[str] = Counter()
     for text in contents:
         counter.update(tokenize(text))
@@ -131,6 +131,13 @@ def count_keywords(contents: Iterable[str]) -> Counter[str]:
 
 
 def create_topics(driver: Driver, keywords: List[Tuple[str, int]]) -> None:
+    """Create Topic nodes in Neo4j from keyword frequencies.
+
+    Args:
+        driver: Neo4j driver instance.
+        keywords: List of (keyword, frequency) tuples.
+    """
+
     def _tx(tx: Any, items: List[Tuple[str, int]]) -> None:
         tx.run(
             """
@@ -153,10 +160,18 @@ def create_topics(driver: Driver, keywords: List[Tuple[str, int]]) -> None:
 def link_blocks_to_topics(
     driver: Driver, blocks: List[Dict[str, Any]], topics: List[Tuple[str, int]]
 ) -> None:
+    """Create TAGGED_WITH relationships between blocks and topics.
+
+    Args:
+        driver: Neo4j driver instance.
+        blocks: List of block dictionaries with id and content.
+        topics: List of (keyword, frequency) tuples.
+    """
     topic_set = {w for w, _ in topics}
     links: List[Dict[str, str]] = []
 
     def flush(batch: List[Dict[str, str]]) -> None:
+        """Flush a batch of block-topic relationships to the database."""
         if not batch:
             return
         with driver.session() as session:
@@ -190,6 +205,14 @@ def link_blocks_to_topics(
 
 
 def fetch_blocks(driver: Driver) -> List[Dict[str, Any]]:
+    """Fetch blocks with content from Neo4j.
+
+    Args:
+        driver: Neo4j driver instance.
+
+    Returns:
+        List of block dictionaries with id and content.
+    """
     with driver.session() as session:
         result = session.run(
             """
@@ -207,6 +230,7 @@ def fetch_blocks(driver: Driver) -> List[Dict[str, Any]]:
 
 
 def main() -> None:
+    """Entry point for semantic topic extraction script."""
     load_dotenv()
 
     try:

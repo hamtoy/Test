@@ -1,6 +1,7 @@
 """Configuration package - centralized settings management."""
 
 from src.config.settings import AppConfig
+from src.config.utils import require_env
 from src.config.constants import (
     CacheConfig,
     ERROR_MESSAGES,
@@ -36,6 +37,7 @@ from src.config.exceptions import (
 )
 
 __all__ = [
+    "require_env",
     "AppConfig",
     "CacheConfig",
     "ERROR_MESSAGES",

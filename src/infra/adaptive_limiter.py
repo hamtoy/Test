@@ -55,6 +55,15 @@ class AdaptiveRateLimiter:
         target_latency: float = 2.0,
         window_size: int = 10,
     ) -> None:
+        """Initialize the adaptive rate limiter.
+
+        Args:
+            initial_concurrency: Starting concurrency level.
+            max_concurrency: Maximum allowed concurrency.
+            min_concurrency: Minimum allowed concurrency.
+            target_latency: Target response latency in seconds.
+            window_size: Number of requests before updating limits.
+        """
         self._current_limit = float(initial_concurrency)
         self._max_limit = max_concurrency
         self._min_limit = min_concurrency

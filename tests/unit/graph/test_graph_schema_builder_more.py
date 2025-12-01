@@ -5,12 +5,13 @@ from typing import Any
 
 import pytest
 
-from src.graph import QAGraphBuilder, require_env
+from src.config.utils import require_env
+from src.graph import QAGraphBuilder
 
 
 def test_require_env_missing(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("NEO4J_URI", raising=False)
-    with pytest.raises(EnvironmentError):
+    with pytest.raises(RuntimeError):
         require_env("NEO4J_URI")
 
 

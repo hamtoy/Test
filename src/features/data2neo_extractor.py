@@ -90,6 +90,14 @@ class ExtractedEntitiesSchema(BaseModel):
     )
     @classmethod
     def ensure_list(cls, v: Any) -> List[Any]:
+        """Ensure the value is a list.
+
+        Args:
+            v: The value to convert to a list.
+
+        Returns:
+            The value as a list.
+        """
         if v is None:
             return []
         if isinstance(v, list):

@@ -26,12 +26,29 @@ class SearchState(BaseModel):
     current_answer: Optional[str] = None
 
     def add_turn(self, action: str) -> "SearchState":
+        """Add a new turn to the search state.
+
+        Args:
+            action: The action taken in this turn.
+
+        Returns:
+            A new SearchState with the turn added.
+        """
         new_state = self.model_copy(deep=True)
         new_state.turns.append({"action": action})
         new_state.focus_history.append(action)
         return new_state
 
     def update_budget(self, tokens: int = 0, cost: float = 0.0) -> "SearchState":
+        """Update the cumulative budget tracking.
+
+        Args:
+            tokens: Number of tokens used.
+            cost: Cost incurred.
+
+        Returns:
+            A new SearchState with updated budget.
+        """
         updated = self.model_copy(deep=True)
         updated.cumulative_tokens += max(0, tokens)
         updated.cumulative_cost += max(0.0, cost)
@@ -46,6 +63,8 @@ class SearchState(BaseModel):
 
 @dataclass
 class ValidationResult:
+    """Result of validating an action against graph constraints."""
+
     allowed: bool
     reason: Optional[str] = None
     penalty: float = 0.0
@@ -53,6 +72,8 @@ class ValidationResult:
 
 @dataclass
 class SearchNode:
+    """Node in the LATS search tree."""
+
     state: SearchState
     action: Optional[str] = None
     reward: float = 0.0
@@ -64,6 +85,7 @@ class SearchNode:
 
     @property
     def depth(self) -> int:
+        """Calculate the depth of this node in the search tree."""
         d = 0
         cur = self.parent
         while cur:
@@ -93,6 +115,20 @@ class LATSSearcher:
         token_budget: int = 10000,
         cost_budget: float = 1.0,
     ):
+        """Initialize the LATS searcher.
+
+        Args:
+            llm_provider: LLM provider for generating content.
+            graph_validator: Optional validator for graph constraints.
+            propose_actions: Optional action proposer function.
+            evaluate_action: Optional action evaluator function.
+            budget_tracker: Optional budget tracking instance.
+            max_visits: Maximum number of node visits.
+            max_depth: Maximum search depth.
+            exploration_constant: UCB1 exploration constant.
+            token_budget: Maximum token budget.
+            cost_budget: Maximum cost budget.
+        """
         self.llm_provider = llm_provider
         self.graph_validator = graph_validator
         self.propose_actions = propose_actions
@@ -106,6 +142,7 @@ class LATSSearcher:
         self.total_visits = 0
 
     def should_terminate(self, node: SearchNode) -> bool:
+        """Check if the search should terminate at this node."""
         return (
             node.depth >= self.max_depth
             or self.total_visits >= self.max_visits
@@ -114,6 +151,14 @@ class LATSSearcher:
         )
 
     async def run(self, initial_state: Optional[SearchState] = None) -> SearchNode:
+        """Run the LATS search algorithm.
+
+        Args:
+            initial_state: Optional initial search state.
+
+        Returns:
+            The best node found during search.
+        """
         root = SearchNode(state=initial_state or SearchState())
         best = root
 
@@ -245,6 +290,15 @@ class LATSSearcher:
         return exploitation + exploration
 
     async def reflect_on_error(self, error: str, context: str = "") -> str:
+        """Reflect on an error using the LLM provider.
+
+        Args:
+            error: The error message to reflect on.
+            context: Optional context for the error.
+
+        Returns:
+            A short reflection on the error cause.
+        """
         if not self.llm_provider:
             return f"Reflection unavailable: {error[:50]}"
         prompt = (

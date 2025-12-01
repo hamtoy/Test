@@ -6,8 +6,9 @@ v3.0: 기존 import 경로는 더 이상 지원되지 않습니다.
 
 from __future__ import annotations
 
-from .builder import QAGraphBuilder, require_env
+from .builder import QAGraphBuilder
 from .data2neo_extractor import Data2NeoExtractor
+from src.config.utils import require_env
 from .entities import (
     DateEntity,
     DocumentRule,

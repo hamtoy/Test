@@ -21,6 +21,7 @@ class ExamplePlugin(Plugin):
     description = "예제 플러그인 - 입력 텍스트를 대문자로 변환"
 
     def __init__(self) -> None:
+        """Initialize the example plugin."""
         self._prefix: str = ""
 
     def initialize(self, config: dict[str, Any]) -> None:

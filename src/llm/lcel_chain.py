@@ -26,6 +26,12 @@ class LCELOptimizedChain:
         kg: Optional[QAKnowledgeGraph] = None,
         llm: Optional[GeminiModelClient] = None,
     ):
+        """Initialize the LCEL optimized chain.
+
+        Args:
+            kg: Optional QAKnowledgeGraph instance.
+            llm: Optional Gemini model client.
+        """
         self.kg = kg or QAKnowledgeGraph()
         self.llm = llm or GeminiModelClient()
 

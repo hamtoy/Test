@@ -68,6 +68,7 @@ redis_client = None
 
 @app.on_startup
 async def setup_redis() -> None:
+    """Initialize Redis connection on application startup."""
     global redis_client
     from redis.asyncio import Redis
 
@@ -76,6 +77,7 @@ async def setup_redis() -> None:
 
 @app.on_shutdown
 async def close_redis() -> None:
+    """Close Redis connection on application shutdown."""
     if redis_client:
         await redis_client.close()
 
@@ -118,12 +120,16 @@ RESULTS_DIR = Path("data/queue_results")
 
 
 class OCRTask(BaseModel):
+    """Model for OCR processing task messages."""
+
     request_id: str
     image_path: str
     session_id: str
 
 
 class DLQMessage(BaseModel):
+    """Model for dead letter queue messages."""
+
     request_id: str
     error_type: str
     payload: Dict[str, Any]
@@ -281,6 +287,7 @@ async def _run_task_with_lats(task: OCRTask) -> Dict[str, Any]:
     )
 
     async def graph_validator(state: SearchState, action: str) -> ValidationResult:
+        """Validate an action against graph constraints."""
         # 간단한 제약: 동일 액션 반복 시 페널티, 금지 접두어 거부
         if action.startswith(("invalid", "forbidden")):
             return ValidationResult(allowed=False, reason="invalid action")
@@ -352,6 +359,7 @@ async def _run_task_with_lats(task: OCRTask) -> Dict[str, Any]:
         return ValidationResult(allowed=True, penalty=penalty)
 
     async def propose(_node: Any) -> list[str]:
+        """Propose candidate actions for LATS expansion."""
         # 복수 브랜치 제안: LLM 제안 우선, 실패 시 기본값
         candidates: list[str] = []
         if lats_agent:
@@ -405,6 +413,7 @@ async def _run_task_with_lats(task: OCRTask) -> Dict[str, Any]:
         return dedup[:3]
 
     async def evaluate(node: Any) -> float:
+        """Evaluate a node's reward for LATS backpropagation."""
         # ActionExecutor 인스턴스 생성 (LLM provider 주입)
         executor = ActionExecutor(llm_provider=llm_provider)
 
@@ -514,6 +523,7 @@ async def _run_task_with_lats(task: OCRTask) -> Dict[str, Any]:
 
 @broker.subscriber("ocr_task")  # Low concurrency for pilot
 async def handle_ocr_task(task: OCRTask) -> None:
+    """Handle incoming OCR tasks from the message queue."""
     try:
         await ensure_redis_ready()
     except Exception as exc:  # noqa: BLE001

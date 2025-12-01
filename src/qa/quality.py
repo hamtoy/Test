@@ -22,6 +22,14 @@ class IntegratedQualitySystem:
         password: str,
         gemini_key: Optional[str] = None,
     ):
+        """Initialize the integrated quality system.
+
+        Args:
+            neo4j_uri: Neo4j database URI.
+            user: Neo4j username.
+            password: Neo4j password.
+            gemini_key: Optional Gemini API key.
+        """
         self.kg = QAKnowledgeGraph(neo4j_uri, user, password)
         self.augmenter = AdvancedContextAugmentation(
             neo4j_uri, user, password, gemini_key

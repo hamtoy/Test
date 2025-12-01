@@ -13,13 +13,23 @@ from src.qa.rag_system import QAKnowledgeGraph
 
 
 class _RedisClientProto(Protocol):
-    def get(self, key: str) -> Any: ...
+    """Protocol for Redis client methods."""
 
-    def setex(self, key: str, ttl: int, value: str) -> Any: ...
+    def get(self, key: str) -> Any:
+        """Get a value by key."""
+        ...
 
-    def keys(self, pattern: str) -> Sequence[Any]: ...
+    def setex(self, key: str, ttl: int, value: str) -> Any:
+        """Set a value with expiration."""
+        ...
 
-    def delete(self, *keys: Any) -> Any: ...
+    def keys(self, pattern: str) -> Sequence[Any]:
+        """Get keys matching pattern."""
+        ...
+
+    def delete(self, *keys: Any) -> Any:
+        """Delete keys."""
+        ...
 
 
 class CachingLayer:
@@ -30,6 +40,12 @@ class CachingLayer:
     def __init__(
         self, kg: QAKnowledgeGraph, redis_client: Optional[_RedisClientProto] = None
     ):
+        """Initialize the caching layer.
+
+        Args:
+            kg: QAKnowledgeGraph instance for graph queries.
+            redis_client: Optional Redis client for caching.
+        """
         self.kg = kg
         self.redis = redis_client if redis_client and redis else None
 

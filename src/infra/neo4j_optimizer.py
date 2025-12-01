@@ -22,6 +22,11 @@ class TwoTierIndexManager:
     """
 
     def __init__(self, driver: AsyncDriver):
+        """Initialize the two-tier index manager.
+
+        Args:
+            driver: AsyncDriver instance for Neo4j operations.
+        """
         self.driver = driver
 
     async def create_all_indexes(self) -> None:

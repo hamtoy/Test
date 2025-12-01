@@ -4,6 +4,17 @@ from typing import Any
 
 
 def __getattr__(name: str) -> Any:
+    """Lazy import of feature module components.
+
+    Args:
+        name: The attribute name to retrieve.
+
+    Returns:
+        The requested feature class or function.
+
+    Raises:
+        AttributeError: If name is not a valid module attribute.
+    """
     if name == "SmartAutocomplete":
         from src.features.autocomplete import SmartAutocomplete
 

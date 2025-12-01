@@ -22,9 +22,18 @@ class MCTSNode:
 
     @property
     def avg_reward(self) -> float:
+        """Calculate the average reward for this node."""
         return self.total_reward / self.visits if self.visits > 0 else 0.0
 
     def ucb1(self, exploration_weight: float = 1.414) -> float:
+        """Calculate the UCB1 score for node selection.
+
+        Args:
+            exploration_weight: Balance between exploration and exploitation.
+
+        Returns:
+            The UCB1 score for this node.
+        """
         if self.visits == 0:
             return float("inf")
         if self.parent is None:
@@ -40,6 +49,13 @@ class MCTSWorkflowOptimizer:
     def __init__(
         self, agent: GeminiAgent, available_templates: List[str], iterations: int = 20
     ):
+        """Initialize the MCTS workflow optimizer.
+
+        Args:
+            agent: The Gemini agent for content generation.
+            available_templates: List of template names to explore.
+            iterations: Number of MCTS iterations to run.
+        """
         self.agent = agent
         self.templates = available_templates
         self.iterations = iterations

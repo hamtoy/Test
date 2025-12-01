@@ -20,6 +20,17 @@ class OCRInput(BaseModel):
     @field_validator("text")
     @classmethod
     def check_text_quality(cls, v: str) -> str:
+        """Validate OCR text quality.
+
+        Args:
+            v: The text value to validate.
+
+        Returns:
+            The validated text.
+
+        Raises:
+            ValueError: If text is empty or has insufficient alphanumeric content.
+        """
         if not v.strip():
             raise ValueError("OCR 텍스트가 비어있습니다")
 
@@ -47,6 +58,17 @@ class EvaluationRequest(BaseModel):
     @field_validator("candidates")
     @classmethod
     def check_unique_ids(cls, v: list[CandidateAnswer]) -> list[CandidateAnswer]:
+        """Validate that candidate IDs are unique.
+
+        Args:
+            v: List of candidate answers to validate.
+
+        Returns:
+            The validated list of candidates.
+
+        Raises:
+            ValueError: If there are duplicate candidate IDs.
+        """
         ids = [c.id for c in v]
         if len(ids) != len(set(ids)):
             raise ValueError("후보 ID가 중복됩니다")

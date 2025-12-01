@@ -42,6 +42,7 @@ def run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
 
     # Loop is already running - run in a separate thread
     def run_in_thread() -> T:
+        """Execute the coroutine in a separate thread with a new event loop."""
         new_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(new_loop)
         try:

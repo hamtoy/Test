@@ -34,6 +34,11 @@ class BudgetTracker:
     """gemini-3-pro-preview 모델의 비용 추적 및 예산 관리."""
 
     def __init__(self, budget_limit_usd: float = 1.0):
+        """Initialize the budget tracker.
+
+        Args:
+            budget_limit_usd: Maximum budget in USD.
+        """
         self.budget_limit_usd = budget_limit_usd
         self.records: List[UsageRecord] = []
         self.total_input_tokens = 0
@@ -108,17 +113,28 @@ class BudgetTracker:
         return record
 
     def get_total_cost(self) -> float:
+        """Get the total cost incurred so far."""
         return self.total_cost_usd
 
     def get_budget_usage_percent(self) -> float:
+        """Get the percentage of budget used."""
         if self.budget_limit_usd <= 0:
             return 0.0
         return (self.total_cost_usd / self.budget_limit_usd) * 100
 
     def is_budget_exceeded(self, threshold: float = 1.0) -> bool:
+        """Check if budget has been exceeded.
+
+        Args:
+            threshold: Fraction of budget that triggers exceeded (default 1.0).
+
+        Returns:
+            True if budget usage exceeds threshold.
+        """
         return self.get_budget_usage_percent() >= (threshold * 100)
 
     def get_statistics(self) -> Dict[str, Any]:
+        """Get usage statistics as a dictionary."""
         return {
             "total_calls": len(self.records),
             "total_input_tokens": self.total_input_tokens,

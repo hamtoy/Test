@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import os
 import sys
 from typing import Any, Dict, List
 
@@ -20,26 +19,27 @@ from .schema import (
     QUERY_TYPES,
     TEMPLATES,
 )
+from src.config.utils import require_env
 
 load_dotenv()
-
-
-def require_env(var: str) -> str:
-    """환경 변수를 요구하고 반환합니다."""
-    val = os.getenv(var)
-    if not val:
-        raise EnvironmentError(f"환경 변수 {var}가 설정되지 않았습니다 (.env 확인).")
-    return val
 
 
 class QAGraphBuilder:
     """Neo4j QA 그래프 구축 클래스."""
 
     def __init__(self, uri: str, user: str, password: str) -> None:
+        """Initialize the QA graph builder.
+
+        Args:
+            uri: Neo4j database URI.
+            user: Neo4j username.
+            password: Neo4j password.
+        """
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
         self.logger = logging.getLogger(__name__)
 
     def close(self) -> None:
+        """Close the database connection."""
         if self.driver:
             self.driver.close()
 
