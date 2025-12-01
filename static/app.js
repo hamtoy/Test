@@ -38,7 +38,7 @@ function copyToClipboard(text) {
 }
 
 // ============================================================================
-// OCR 로드
+// OCR 로드 및 저장
 // ============================================================================
 
 async function loadOCR() {
@@ -79,6 +79,21 @@ async function loadOCR() {
                 input.textContent = 'OCR 로드 실패';
             }
         }
+    }
+}
+
+async function saveOCR() {
+    const text = document.getElementById('ocr-input').value;
+    const statusEl = document.getElementById('ocr-save-status');
+    
+    try {
+        await apiCall('/api/ocr', 'POST', { text: text });
+        statusEl.textContent = '✅ 저장됨';
+        statusEl.style.color = 'var(--success, green)';
+        setTimeout(() => statusEl.textContent = '', 2000);
+    } catch (error) {
+        statusEl.textContent = '❌ 저장 실패';
+        statusEl.style.color = 'var(--danger, red)';
     }
 }
 
