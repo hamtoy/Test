@@ -6,6 +6,9 @@ from typing import Any
 
 import pytest
 
+# module-level placeholder populated by fixture
+mmu = None
+
 
 # Stub external deps before importing targets (with attributes for mypy)
 class _StubPIL(types.ModuleType):
@@ -13,18 +16,34 @@ class _StubPIL(types.ModuleType):
         pass
 
 
-sys.modules["PIL"] = _StubPIL("PIL")
-sys.modules["PIL.Image"] = sys.modules["PIL"]
-
-
 class _StubPytesseract(types.ModuleType):
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+        self.pytesseract = types.SimpleNamespace(tesseract_cmd=None)
+
     def image_to_string(self, *args: Any, **kwargs: Any) -> str:
         return ""
 
 
-sys.modules["pytesseract"] = _StubPytesseract("pytesseract")
+@pytest.fixture(scope="module", autouse=True)
+def _stub_external_modules() -> None:
+    """Inject stub modules and import multimodal with them, then restore."""
 
-from src.features import multimodal as mmu  # noqa: E402
+    mp = pytest.MonkeyPatch()
+    stub_pil = _StubPIL("PIL")
+    stub_pytesseract = _StubPytesseract("pytesseract")
+    mp.setitem(sys.modules, "PIL", stub_pil)
+    mp.setitem(sys.modules, "PIL.Image", stub_pil)
+    mp.setitem(sys.modules, "pytesseract", stub_pytesseract)
+
+    global mmu
+    from src.features import multimodal as mmu  # type: ignore[reimported]
+
+    yield
+
+    # Drop the stubbed module so later tests can import real dependencies
+    sys.modules.pop("src.features.multimodal", None)
+    mp.undo()
 
 
 def test_multimodal_understanding_uses_fakes(monkeypatch: pytest.MonkeyPatch) -> None:

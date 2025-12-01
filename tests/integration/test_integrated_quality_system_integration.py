@@ -11,8 +11,13 @@ def test_generate_qa_with_all_enhancements(monkeypatch: pytest.MonkeyPatch) -> N
     """Mocked end-to-end path of IntegratedQualitySystem without external services."""
 
     # Provide dummy modules to satisfy imports in multimodal_understanding
-    sys.modules["pytesseract"] = types.SimpleNamespace(  # type: ignore[assignment]
-        image_to_string=lambda img, lang=None: ""
+    monkeypatch.setitem(
+        sys.modules,
+        "pytesseract",
+        types.SimpleNamespace(
+            image_to_string=lambda img, lang=None: "",  # type: ignore[assignment]
+            pytesseract=types.SimpleNamespace(tesseract_cmd=None),
+        ),
     )
     fake_pil = types.ModuleType("PIL")
 
@@ -26,8 +31,8 @@ def test_generate_qa_with_all_enhancements(monkeypatch: pytest.MonkeyPatch) -> N
             return _FakeImageObj()
 
     setattr(fake_pil, "Image", _FakeImageModule)
-    sys.modules["PIL"] = fake_pil
-    sys.modules["PIL.Image"] = _FakeImageModule  # type: ignore[assignment]
+    monkeypatch.setitem(sys.modules, "PIL", fake_pil)
+    monkeypatch.setitem(sys.modules, "PIL.Image", _FakeImageModule)  # type: ignore[assignment]
 
     class FakeKG:
         def __init__(self, *_: Any, **__: Any) -> None:
