@@ -9,7 +9,7 @@ import time
 from typing import TYPE_CHECKING, Any
 
 try:
-    import psutil  # type: ignore[assignment]
+    import psutil
 except (
     ImportError
 ):  # pragma: no cover - provide stub so tests can patch psutil.virtual_memory
