@@ -106,6 +106,53 @@ class TestOCRApi:
             assert data["ocr"] == ""
             assert "error" in data
 
+    def test_post_ocr_save(self, client: Any, tmp_path: Path) -> None:
+        """Test saving OCR text via POST."""
+        inputs_dir = tmp_path / "data" / "inputs"
+        inputs_dir.mkdir(parents=True)
+
+        with patch("src.web.api.config") as mock_config:
+            mock_config.input_dir = inputs_dir
+            response = client.post("/api/ocr", json={"text": "사용자 입력 텍스트"})
+            assert response.status_code == 200
+            assert response.json()["status"] == "success"
+
+            # 파일에 저장되었는지 확인
+            saved_text = (inputs_dir / "input_ocr.txt").read_text(encoding="utf-8")
+            assert saved_text == "사용자 입력 텍스트"
+
+    def test_post_ocr_save_empty_text(self, client: Any, tmp_path: Path) -> None:
+        """Test saving empty OCR text via POST."""
+        inputs_dir = tmp_path / "data" / "inputs"
+        inputs_dir.mkdir(parents=True)
+
+        with patch("src.web.api.config") as mock_config:
+            mock_config.input_dir = inputs_dir
+            response = client.post("/api/ocr", json={"text": ""})
+            assert response.status_code == 200
+            assert response.json()["status"] == "success"
+
+            # 파일에 저장되었는지 확인
+            saved_text = (inputs_dir / "input_ocr.txt").read_text(encoding="utf-8")
+            assert saved_text == ""
+
+    def test_post_ocr_save_overwrites_existing(
+        self, client: Any, tmp_path: Path
+    ) -> None:
+        """Test that saving OCR text overwrites existing file."""
+        inputs_dir = tmp_path / "data" / "inputs"
+        inputs_dir.mkdir(parents=True)
+        (inputs_dir / "input_ocr.txt").write_text("기존 텍스트", encoding="utf-8")
+
+        with patch("src.web.api.config") as mock_config:
+            mock_config.input_dir = inputs_dir
+            response = client.post("/api/ocr", json={"text": "새로운 텍스트"})
+            assert response.status_code == 200
+
+            # 파일이 덮어쓰기 되었는지 확인
+            saved_text = (inputs_dir / "input_ocr.txt").read_text(encoding="utf-8")
+            assert saved_text == "새로운 텍스트"
+
 
 class TestQAGenerateApi:
     """Tests for QA generation API endpoint."""

@@ -143,11 +143,22 @@ class HealthResponse(BaseModel):
     version: Optional[str] = None
 
 
+class OCRTextInput(BaseModel):
+    """Request model for saving OCR text."""
+
+    text: str = Field(
+        ...,
+        max_length=MAX_OCR_TEXT_LENGTH,
+        description="OCR text content to save",
+    )
+
+
 __all__ = [
     "GenerateQARequest",
     "EvalExternalRequest",
     "WorkspaceRequest",
     "HealthResponse",
+    "OCRTextInput",
     "MAX_QUERY_LENGTH",
     "MAX_ANSWER_LENGTH",
     "MAX_OCR_TEXT_LENGTH",

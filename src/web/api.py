@@ -20,7 +20,12 @@ from src.agent import GeminiAgent
 from src.config import AppConfig
 from src.features.multimodal import MultimodalUnderstanding
 from src.qa.rag_system import QAKnowledgeGraph
-from src.web.models import EvalExternalRequest, GenerateQARequest, WorkspaceRequest
+from src.web.models import (
+    EvalExternalRequest,
+    GenerateQARequest,
+    OCRTextInput,
+    WorkspaceRequest,
+)
 from src.workflow.edit import edit_content
 from src.workflow.inspection import inspect_answer
 
@@ -224,6 +229,16 @@ async def api_get_ocr() -> Dict[str, str]:
         return {"ocr": ocr_text}
     except HTTPException as e:
         return {"ocr": "", "error": e.detail}
+
+
+@app.post("/api/ocr")
+async def api_save_ocr(payload: OCRTextInput) -> Dict[str, str]:
+    """OCR 텍스트 저장 (사용자 직접 입력)"""
+    try:
+        save_ocr_text(payload.text)
+        return {"status": "success", "message": "OCR 텍스트가 저장되었습니다."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/qa/generate")
