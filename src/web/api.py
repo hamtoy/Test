@@ -20,7 +20,12 @@ from src.agent import GeminiAgent
 from src.config import AppConfig
 from src.features.multimodal import MultimodalUnderstanding
 from src.qa.rag_system import QAKnowledgeGraph
-from src.web.models import EvalExternalRequest, GenerateQARequest, WorkspaceRequest
+from src.web.models import (
+    EvalExternalRequest,
+    GenerateQARequest,
+    OCRTextInput,
+    WorkspaceRequest,
+)
 from src.workflow.edit import edit_content
 from src.workflow.inspection import inspect_answer
 
@@ -224,6 +229,16 @@ async def api_get_ocr() -> Dict[str, str]:
         return {"ocr": ocr_text}
     except HTTPException as e:
         return {"ocr": "", "error": e.detail}
+
+
+@app.post("/api/ocr")
+async def api_save_ocr(payload: OCRTextInput) -> Dict[str, str]:
+    """OCR 텍스트 저장 (사용자 직접 입력)"""
+    try:
+        save_ocr_text(payload.text)
+        return {"status": "success", "message": "OCR 텍스트가 저장되었습니다."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/qa/generate")
@@ -442,7 +457,7 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
 
 @app.post("/api/multimodal/analyze")
 async def api_analyze_image(file: UploadFile = File(...)) -> Dict[str, Any]:
-    """이미지 업로드 + OCR + 구조 분석"""
+    """이미지 업로드 + 구조 분석 (OCR은 사용자가 직접 입력)"""
     if mm is None:
         raise HTTPException(
             status_code=500, detail="Multimodal 기능 비활성화 (Neo4j 필요)"
@@ -474,10 +489,7 @@ async def api_analyze_image(file: UploadFile = File(...)) -> Dict[str, Any]:
         # 분석 실행
         metadata = mm.analyze_image_deep(str(temp_path))
 
-        # OCR 텍스트 저장 (다음 QA 생성에 사용)
-        extracted_text = metadata.get("extracted_text", "")
-        if extracted_text:
-            save_ocr_text(extracted_text)
+        # Note: OCR 텍스트는 사용자가 직접 입력해야 함 (자동 추출 제거됨)
 
         return {
             "filename": file.filename,

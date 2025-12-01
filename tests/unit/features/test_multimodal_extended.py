@@ -16,25 +16,14 @@ class _StubPIL(types.ModuleType):
         pass
 
 
-class _StubPytesseract(types.ModuleType):
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
-        self.pytesseract = types.SimpleNamespace(tesseract_cmd=None)
-
-    def image_to_string(self, *args: Any, **kwargs: Any) -> str:
-        return ""
-
-
 @pytest.fixture(scope="module", autouse=True)
 def _stub_external_modules() -> Iterator[None]:
     """Inject stub modules and import multimodal with them, then restore."""
 
     mp = pytest.MonkeyPatch()
     stub_pil = _StubPIL("PIL")
-    stub_pytesseract = _StubPytesseract("pytesseract")
     mp.setitem(sys.modules, "PIL", stub_pil)
     mp.setitem(sys.modules, "PIL.Image", stub_pil)
-    mp.setitem(sys.modules, "pytesseract", stub_pytesseract)
 
     global mmu
     from src.features import multimodal as multimodal_module
@@ -48,8 +37,8 @@ def _stub_external_modules() -> Iterator[None]:
     mp.undo()
 
 
-def test_multimodal_understanding_uses_fakes(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Import the actual multimodal module to patch the right namespace
+def test_multimodal_understanding_no_ocr(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test multimodal analysis without OCR (OCR removed - user input only)."""
     from src.features import multimodal as features_multimodal
 
     fake_saved: dict[str, Any] = {}
@@ -87,17 +76,13 @@ def test_multimodal_understanding_uses_fakes(monkeypatch: pytest.MonkeyPatch) ->
         "Image",
         types.SimpleNamespace(open=lambda path: _FakeImg()),
     )
-    monkeypatch.setattr(
-        features_multimodal,
-        "pytesseract",
-        types.SimpleNamespace(image_to_string=lambda img, lang=None: "alpha beta beta"),
-    )
 
     analyzer = mmu.MultimodalUnderstanding(_KG())
     meta = analyzer.analyze_image_deep("fake.png")
 
     assert meta["has_table_chart"] is False
-    assert sorted(meta["topics"]) == ["alpha", "beta"]
+    assert meta["topics"] == []  # No OCR, so no topics
+    assert meta["extracted_text"] == ""  # No OCR extraction
     assert fake_saved.get("path") == "fake.png"
 
 
@@ -136,13 +121,6 @@ def test_multimodal_with_graph_session(monkeypatch: pytest.MonkeyPatch) -> None:
         "Image",
         types.SimpleNamespace(open=lambda path: _FakeImg()),
     )
-    monkeypatch.setattr(
-        features_multimodal,
-        "pytesseract",
-        types.SimpleNamespace(
-            image_to_string=lambda img, lang=None: "test text content"
-        ),
-    )
 
     analyzer = mmu.MultimodalUnderstanding(_KG())
     meta = analyzer.analyze_image_deep("test.png")
@@ -173,11 +151,6 @@ def test_multimodal_no_graph(monkeypatch: pytest.MonkeyPatch) -> None:
         "Image",
         types.SimpleNamespace(open=lambda path: _FakeImg()),
     )
-    monkeypatch.setattr(
-        features_multimodal,
-        "pytesseract",
-        types.SimpleNamespace(image_to_string=lambda img, lang=None: "word word word"),
-    )
 
     analyzer = mmu.MultimodalUnderstanding(_KG())
     meta = analyzer.analyze_image_deep("test.png")
@@ -185,7 +158,7 @@ def test_multimodal_no_graph(monkeypatch: pytest.MonkeyPatch) -> None:
     # Should still return metadata even without graph
     assert "path" in meta
     assert meta["path"] == "test.png"
-    assert meta["topics"] == ["word"]
+    assert meta["topics"] == []
 
 
 def test_multimodal_session_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -221,11 +194,6 @@ def test_multimodal_session_returns_none(monkeypatch: pytest.MonkeyPatch) -> Non
         features_multimodal,
         "Image",
         types.SimpleNamespace(open=lambda path: _FakeImg()),
-    )
-    monkeypatch.setattr(
-        features_multimodal,
-        "pytesseract",
-        types.SimpleNamespace(image_to_string=lambda img, lang=None: "sample text"),
     )
 
     analyzer = mmu.MultimodalUnderstanding(_KG())
@@ -272,11 +240,6 @@ def test_multimodal_exception_handling(monkeypatch: pytest.MonkeyPatch) -> None:
         "Image",
         types.SimpleNamespace(open=lambda path: _FakeImg()),
     )
-    monkeypatch.setattr(
-        features_multimodal,
-        "pytesseract",
-        types.SimpleNamespace(image_to_string=lambda img, lang=None: "test"),
-    )
 
     analyzer = mmu.MultimodalUnderstanding(_KG())
     meta = analyzer.analyze_image_deep("test.png")
@@ -316,42 +279,3 @@ def test_detect_chart(monkeypatch: pytest.MonkeyPatch) -> None:
 
     # Placeholder always returns False
     assert result is False
-
-
-def test_extract_topics_empty_text() -> None:
-    """Test topic extraction with empty text."""
-
-    class _KG:
-        pass
-
-    analyzer = mmu.MultimodalUnderstanding(_KG())
-    topics = analyzer._extract_topics("")
-
-    assert topics == []
-
-
-def test_extract_topics_short_words() -> None:
-    """Test topic extraction filters out short words."""
-
-    class _KG:
-        pass
-
-    analyzer = mmu.MultimodalUnderstanding(_KG())
-    topics = analyzer._extract_topics("a b c ab cd ef")
-
-    # Only words with len > 2 are kept
-    assert topics == []
-
-
-def test_extract_topics_frequency() -> None:
-    """Test topic extraction returns most common words."""
-
-    class _KG:
-        pass
-
-    analyzer = mmu.MultimodalUnderstanding(_KG())
-    topics = analyzer._extract_topics("apple banana apple cherry apple banana date")
-
-    # Most common first (max 5)
-    assert "apple" in topics
-    assert "banana" in topics
