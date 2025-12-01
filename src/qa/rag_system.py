@@ -265,7 +265,10 @@ class QAKnowledgeGraph:
         async def _run() -> List[Dict[str, Any]]:
             async with prov.session() as session:
                 result = await session.run(cypher, qt=query_type)
-                records = [record async for record in result]
+                if hasattr(result, "__aiter__"):
+                    records = [record async for record in result]
+                else:
+                    records = list(result)
                 return [dict(r) for r in records]
 
         return _run_async_safely(_run())
