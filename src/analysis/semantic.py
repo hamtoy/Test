@@ -137,6 +137,7 @@ def create_topics(driver: Driver, keywords: List[Tuple[str, int]]) -> None:
         driver: Neo4j driver instance.
         keywords: List of (keyword, frequency) tuples.
     """
+
     def _tx(tx: Any, items: List[Tuple[str, int]]) -> None:
         tx.run(
             """
