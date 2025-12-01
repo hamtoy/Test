@@ -7,9 +7,35 @@ structure, including descendant discovery and relationship walking.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
+
+# Allowed node labels for graph traversal
+ALLOWED_NODE_LABELS: Set[str] = {
+    "Concept",
+    "Rule",
+    "QueryType",
+    "BestPractice",
+    "Constraint",
+    "Example",
+    "Template",
+}
+
+# Maximum depth limits for traversal operations
+MAX_TRAVERSAL_DEPTH = 10
+MAX_HOP_COUNT = 10
+
+# Allowed relationship types for concept connections
+ALLOWED_RELATIONSHIP_TYPES: Set[str] = {
+    "APPLIES_TO",
+    "ENFORCES",
+    "RECOMMENDS",
+    "DEMONSTRATES",
+    "RELATED_TO",
+    "PARENT_OF",
+    "CHILD_OF",
+}
 
 
 class GraphTraversal:
@@ -36,12 +62,29 @@ class GraphTraversal:
         
         Args:
             node_id: The ID of the starting node
-            node_label: The label of the node type
-            max_depth: Maximum traversal depth
+            node_label: The label of the node type (must be in ALLOWED_NODE_LABELS)
+            max_depth: Maximum traversal depth (1 to MAX_TRAVERSAL_DEPTH)
             
         Returns:
             List of descendant nodes with their properties
+            
+        Raises:
+            ValueError: If node_label is not in ALLOWED_NODE_LABELS or max_depth
+                is out of bounds
         """
+        # Validate node_label against whitelist
+        if node_label not in ALLOWED_NODE_LABELS:
+            raise ValueError(
+                f"Invalid node_label '{node_label}'. "
+                f"Must be one of: {sorted(ALLOWED_NODE_LABELS)}"
+            )
+        
+        # Validate max_depth is within bounds
+        if not 1 <= max_depth <= MAX_TRAVERSAL_DEPTH:
+            raise ValueError(
+                f"max_depth must be between 1 and {MAX_TRAVERSAL_DEPTH}, got {max_depth}"
+            )
+        
         cypher = f"""
         MATCH (start:{node_label} {{id: $node_id}})
         MATCH path = (start)-[*1..{max_depth}]->(descendant)
@@ -70,11 +113,20 @@ class GraphTraversal:
         Args:
             start_id: Starting node ID
             end_id: Target node ID
-            max_hops: Maximum number of hops to search
+            max_hops: Maximum number of hops to search (1 to MAX_HOP_COUNT)
             
         Returns:
             List of nodes in the path, or None if no path found
+            
+        Raises:
+            ValueError: If max_hops is out of bounds
         """
+        # Validate max_hops is within bounds
+        if not 1 <= max_hops <= MAX_HOP_COUNT:
+            raise ValueError(
+                f"max_hops must be between 1 and {MAX_HOP_COUNT}, got {max_hops}"
+            )
+        
         cypher = f"""
         MATCH path = shortestPath(
             (start {{id: $start_id}})-[*1..{max_hops}]-(end {{id: $end_id}})
@@ -106,12 +158,23 @@ class GraphTraversal:
         Args:
             concept_id: The concept node ID
             relationship_types: Optional filter for relationship types
+                (must be in ALLOWED_RELATIONSHIP_TYPES)
             
         Returns:
             List of connected concept nodes
+            
+        Raises:
+            ValueError: If any relationship type is not in ALLOWED_RELATIONSHIP_TYPES
         """
         rel_filter = ""
         if relationship_types:
+            # Validate relationship types against whitelist
+            invalid_types = set(relationship_types) - ALLOWED_RELATIONSHIP_TYPES
+            if invalid_types:
+                raise ValueError(
+                    f"Invalid relationship types: {sorted(invalid_types)}. "
+                    f"Must be from: {sorted(ALLOWED_RELATIONSHIP_TYPES)}"
+                )
             rel_types = "|".join(relationship_types)
             rel_filter = f"[:{rel_types}]"
         

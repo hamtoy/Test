@@ -10,6 +10,9 @@ from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
+# Number of leading words from a rule to check for intent alignment
+MAX_RULE_WORDS_TO_CHECK = 3
+
 
 def validate_turns_basic(turns: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Basic validation for turn structure.
@@ -96,7 +99,10 @@ class SessionValidator:
             # Basic alignment check - intent should relate to at least one rule
             intent_lower = intent.lower()
             for rule in rules:
-                if rule and any(word in intent_lower for word in rule.lower().split()[:3]):
+                if rule and any(
+                    word in intent_lower
+                    for word in rule.lower().split()[:MAX_RULE_WORDS_TO_CHECK]
+                ):
                     return True
             
             return len(rules) == 0  # No rules means no constraints
