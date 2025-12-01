@@ -21,7 +21,7 @@ from src.features.data2neo_extractor import Data2NeoExtractor
 __all__ = [
     "app",
     "broker",
-    "config",
+    "get_config",
     "redis_client",
     "llm_provider",
     "lats_agent",
@@ -57,13 +57,68 @@ logger = logging.getLogger("worker")
 # Rough cost estimation (USD per token) for budgeting/cost guardrails
 MODEL_COST_PER_TOKEN = 1e-6
 
-# Load config (environment-driven; ignore call-arg check for BaseSettings)
-config = AppConfig()
+# Lazy loading for config (environment-driven; ignore call-arg check for BaseSettings)
+_config: AppConfig | None = None
 
-# Initialize Broker and Redis Client
-broker = RedisBroker(config.redis_url)
+
+def get_config() -> AppConfig:
+    """Get the AppConfig instance, creating it lazily if needed."""
+    global _config
+    if _config is None:
+        _config = AppConfig()
+    return _config
+
+# Initialize Broker with default URL (actual connection happens at startup)
+broker = RedisBroker()
 app = FastStream(broker)
 redis_client = None
+
+# Lazy-initialized providers (initialized on first use via _init_providers)
+llm_provider = None
+lats_agent: Optional[GeminiAgent] = None
+graph_provider = None
+data2neo_extractor: Optional[Data2NeoExtractor] = None
+_providers_initialized = False
+
+
+def _init_providers() -> None:
+    """Initialize providers lazily on first use."""
+    global llm_provider, lats_agent, graph_provider, data2neo_extractor, _providers_initialized
+    if _providers_initialized:
+        return
+    _providers_initialized = True
+
+    config = get_config()
+
+    # LLM provider (optional; requires llm_provider_enabled=True and valid creds)
+    if getattr(config, "llm_provider_enabled", False):
+        try:
+            llm_provider = get_llm_provider(config)
+            lats_agent = GeminiAgent(config)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("LLM provider init failed; continuing without it: %s", e)
+
+    # Graph provider (optional; used for validation when available)
+    try:
+        graph_provider = get_graph_provider(config)
+    except Exception as e:  # noqa: BLE001
+        logger.debug("Graph provider init skipped: %s", e)
+
+    # Data2Neo extractor (optional; enabled via ENABLE_DATA2NEO)
+    if getattr(config, "enable_data2neo", False):
+        try:
+            data2neo_extractor = Data2NeoExtractor(
+                config=config,
+                llm_provider=llm_provider,
+                graph_provider=graph_provider,
+            )
+            logger.info(
+                "Data2Neo extractor initialized (batch_size=%d, confidence=%.2f)",
+                data2neo_extractor.batch_size,
+                data2neo_extractor.confidence_threshold,
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Data2Neo extractor init failed: %s", e)
 
 
 @app.on_startup
@@ -72,7 +127,9 @@ async def setup_redis() -> None:
     global redis_client
     from redis.asyncio import Redis
 
+    config = get_config()
     redis_client = Redis.from_url(config.redis_url)
+    _init_providers()
 
 
 @app.on_shutdown
@@ -80,41 +137,6 @@ async def close_redis() -> None:
     """Close Redis connection on application shutdown."""
     if redis_client:
         await redis_client.close()
-
-
-# LLM provider (optional; requires llm_provider_enabled=True and valid creds)
-llm_provider = None
-lats_agent: Optional[GeminiAgent] = None
-if getattr(config, "llm_provider_enabled", False):
-    try:
-        llm_provider = get_llm_provider(config)
-        lats_agent = GeminiAgent(config)
-    except Exception as e:  # noqa: BLE001
-        logger.warning("LLM provider init failed; continuing without it: %s", e)
-
-# Graph provider (optional; used for validation when available)
-graph_provider = None
-try:
-    graph_provider = get_graph_provider(config)
-except Exception as e:  # noqa: BLE001
-    logger.debug("Graph provider init skipped: %s", e)
-
-# Data2Neo extractor (optional; enabled via ENABLE_DATA2NEO)
-data2neo_extractor: Optional[Data2NeoExtractor] = None
-if getattr(config, "enable_data2neo", False):
-    try:
-        data2neo_extractor = Data2NeoExtractor(
-            config=config,
-            llm_provider=llm_provider,
-            graph_provider=graph_provider,
-        )
-        logger.info(
-            "Data2Neo extractor initialized (batch_size=%d, confidence=%.2f)",
-            data2neo_extractor.batch_size,
-            data2neo_extractor.confidence_threshold,
-        )
-    except Exception as e:  # noqa: BLE001
-        logger.warning("Data2Neo extractor init failed: %s", e)
 
 RESULTS_DIR = Path("data/queue_results")
 
@@ -187,6 +209,7 @@ async def _process_task(task: OCRTask) -> Dict[str, Any]:
 
     llm_text: Optional[str] = None
     if llm_provider:
+        config = get_config()
         result = await llm_provider.generate_content_async(
             prompt=f"Clean up the OCR text:\n{content}",
             temperature=config.temperature,
@@ -277,6 +300,8 @@ async def _run_task_with_lats(task: OCRTask) -> Dict[str, Any]:
     """LATS 토글 시 사용되는 경량 트리 탐색 래퍼."""
     from src.infra.budget import BudgetTracker
     from src.caching.redis_cache import RedisEvalCache
+
+    config = get_config()
 
     # Initialize Redis-backed cache with fallback
     eval_cache = RedisEvalCache(
@@ -541,6 +566,7 @@ async def handle_ocr_task(task: OCRTask) -> None:
     try:
         # Feature flag priority: Data2Neo > LATS > Basic processing
         # Note: These features are mutually exclusive; only one runs per task
+        config = get_config()
         if getattr(config, "enable_data2neo", False):
             result = await _run_data2neo_extraction(task)
         elif getattr(config, "enable_lats", False):

@@ -128,13 +128,23 @@ async def test_lats_budget_uses_cost_delta(monkeypatch: pytest.MonkeyPatch) -> N
         cost_calls.append(cost)
         return original_update_budget(self, tokens=tokens, cost=cost)
 
+    # Create a mock config with the required attributes
+    mock_config = types.SimpleNamespace(
+        max_output_tokens=128,
+        budget_limit_usd=1.0,
+        enable_lats=False,
+        enable_data2neo=False,
+        temperature=0.7,
+        timeout=30,
+    )
+    monkeypatch.setattr(infra_worker, "get_config", lambda: mock_config)
+
     monkeypatch.setattr(worker.SearchState, "update_budget", _spy_update_budget)
     monkeypatch.setattr(infra_budget, "BudgetTracker", _FakeBudgetTracker)
     monkeypatch.setattr(infra_worker, "llm_provider", _FakeLLM(), raising=False)
     monkeypatch.setattr(infra_worker, "graph_provider", None, raising=False)
     monkeypatch.setattr(infra_worker, "lats_agent", None, raising=False)
     monkeypatch.setattr(infra_worker, "redis_client", None, raising=False)
-    monkeypatch.setattr(infra_worker.config, "max_output_tokens", 128, raising=False)
     task = worker.OCRTask(request_id="cost1", image_path="img", session_id="s1")
     await infra_worker._run_task_with_lats(task)
     non_zero_costs = [c for c in cost_calls if c > 0]
@@ -259,7 +269,14 @@ async def test_handle_ocr_task_lats_toggle(monkeypatch: pytest.MonkeyPatch) -> N
         return True
 
     monkeypatch.setattr(infra_worker, "check_rate_limit", _allow)
-    monkeypatch.setattr(infra_worker.config, "enable_lats", True, raising=False)
+
+    # Create a mock config with enable_lats=True
+    mock_config = types.SimpleNamespace(
+        enable_lats=True,
+        enable_data2neo=False,
+    )
+    monkeypatch.setattr(infra_worker, "get_config", lambda: mock_config)
+
     written: list[dict[str, Any]] = []
     monkeypatch.setattr(
         infra_worker, "_append_jsonl", lambda _p, rec: written.append(rec)
@@ -307,8 +324,14 @@ async def test_handle_ocr_task_lats_budget_exit(
         return True
 
     monkeypatch.setattr(infra_worker, "check_rate_limit", _allow)
-    monkeypatch.setattr(infra_worker.config, "enable_lats", True, raising=False)
-    monkeypatch.setattr(infra_worker.config, "budget_limit_usd", 0.0, raising=False)
+
+    # Create a mock config with enable_lats=True and budget_limit_usd=0.0
+    mock_config = types.SimpleNamespace(
+        enable_lats=True,
+        enable_data2neo=False,
+        budget_limit_usd=0.0,
+    )
+    monkeypatch.setattr(infra_worker, "get_config", lambda: mock_config)
 
     async def _process(task: Any) -> dict[str, Any]:
         return {
