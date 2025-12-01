@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import sys
 import types
-from typing import Any
+from typing import Any, Iterator
 
 import pytest
 
 # module-level placeholder populated by fixture
-mmu = None
+mmu: Any = None
 
 
 # Stub external deps before importing targets (with attributes for mypy)
@@ -26,7 +26,7 @@ class _StubPytesseract(types.ModuleType):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def _stub_external_modules() -> None:
+def _stub_external_modules() -> Iterator[None]:
     """Inject stub modules and import multimodal with them, then restore."""
 
     mp = pytest.MonkeyPatch()
@@ -37,7 +37,9 @@ def _stub_external_modules() -> None:
     mp.setitem(sys.modules, "pytesseract", stub_pytesseract)
 
     global mmu
-    from src.features import multimodal as mmu  # type: ignore[reimported]
+    from src.features import multimodal as multimodal_module
+
+    mmu = multimodal_module
 
     yield
 
@@ -91,7 +93,7 @@ def test_multimodal_understanding_uses_fakes(monkeypatch: pytest.MonkeyPatch) ->
         types.SimpleNamespace(image_to_string=lambda img, lang=None: "alpha beta beta"),
     )
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
+    analyzer = mmu.MultimodalUnderstanding(_KG())
     meta = analyzer.analyze_image_deep("fake.png")
 
     assert meta["has_table_chart"] is False
@@ -142,7 +144,7 @@ def test_multimodal_with_graph_session(monkeypatch: pytest.MonkeyPatch) -> None:
         ),
     )
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
+    analyzer = mmu.MultimodalUnderstanding(_KG())
     meta = analyzer.analyze_image_deep("test.png")
 
     assert "path" in meta
@@ -177,7 +179,7 @@ def test_multimodal_no_graph(monkeypatch: pytest.MonkeyPatch) -> None:
         types.SimpleNamespace(image_to_string=lambda img, lang=None: "word word word"),
     )
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
+    analyzer = mmu.MultimodalUnderstanding(_KG())
     meta = analyzer.analyze_image_deep("test.png")
 
     # Should still return metadata even without graph
@@ -226,7 +228,7 @@ def test_multimodal_session_returns_none(monkeypatch: pytest.MonkeyPatch) -> Non
         types.SimpleNamespace(image_to_string=lambda img, lang=None: "sample text"),
     )
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
+    analyzer = mmu.MultimodalUnderstanding(_KG())
     meta = analyzer.analyze_image_deep("test.png")
 
     # Should still return metadata even when session is None
@@ -276,7 +278,7 @@ def test_multimodal_exception_handling(monkeypatch: pytest.MonkeyPatch) -> None:
         types.SimpleNamespace(image_to_string=lambda img, lang=None: "test"),
     )
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
+    analyzer = mmu.MultimodalUnderstanding(_KG())
     meta = analyzer.analyze_image_deep("test.png")
 
     # Should still return metadata even with exception
@@ -293,8 +295,8 @@ def test_detect_table(monkeypatch: pytest.MonkeyPatch) -> None:
     class _FakeImg:
         pass
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
-    result = analyzer._detect_table(_FakeImg())  # type: ignore[arg-type]
+    analyzer = mmu.MultimodalUnderstanding(_KG())
+    result = analyzer._detect_table(_FakeImg())
 
     # Placeholder always returns False
     assert result is False
@@ -309,8 +311,8 @@ def test_detect_chart(monkeypatch: pytest.MonkeyPatch) -> None:
     class _FakeImg:
         pass
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
-    result = analyzer._detect_chart(_FakeImg())  # type: ignore[arg-type]
+    analyzer = mmu.MultimodalUnderstanding(_KG())
+    result = analyzer._detect_chart(_FakeImg())
 
     # Placeholder always returns False
     assert result is False
@@ -322,7 +324,7 @@ def test_extract_topics_empty_text() -> None:
     class _KG:
         pass
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
+    analyzer = mmu.MultimodalUnderstanding(_KG())
     topics = analyzer._extract_topics("")
 
     assert topics == []
@@ -334,7 +336,7 @@ def test_extract_topics_short_words() -> None:
     class _KG:
         pass
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
+    analyzer = mmu.MultimodalUnderstanding(_KG())
     topics = analyzer._extract_topics("a b c ab cd ef")
 
     # Only words with len > 2 are kept
@@ -347,7 +349,7 @@ def test_extract_topics_frequency() -> None:
     class _KG:
         pass
 
-    analyzer = mmu.MultimodalUnderstanding(_KG())  # type: ignore[arg-type]
+    analyzer = mmu.MultimodalUnderstanding(_KG())
     topics = analyzer._extract_topics("apple banana apple cherry apple banana date")
 
     # Most common first (max 5)

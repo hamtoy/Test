@@ -15,7 +15,7 @@ def test_generate_qa_with_all_enhancements(monkeypatch: pytest.MonkeyPatch) -> N
         sys.modules,
         "pytesseract",
         types.SimpleNamespace(
-            image_to_string=lambda img, lang=None: "",  # type: ignore[assignment]
+            image_to_string=lambda img, lang=None: "",
             pytesseract=types.SimpleNamespace(tesseract_cmd=None),
         ),
     )
@@ -32,7 +32,7 @@ def test_generate_qa_with_all_enhancements(monkeypatch: pytest.MonkeyPatch) -> N
 
     setattr(fake_pil, "Image", _FakeImageModule)
     monkeypatch.setitem(sys.modules, "PIL", fake_pil)
-    monkeypatch.setitem(sys.modules, "PIL.Image", _FakeImageModule)  # type: ignore[assignment]
+    monkeypatch.setitem(sys.modules, "PIL.Image", _FakeImageModule)
 
     class FakeKG:
         def __init__(self, *_: Any, **__: Any) -> None:
