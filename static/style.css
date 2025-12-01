@@ -356,7 +356,7 @@ footer {
 }
 
 .mode-tab:hover {
-    background: #3a3a3a;
+    background: var(--bg-hover, #3a3a3a);
 }
 
 .mode-tab.active {

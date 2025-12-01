@@ -185,6 +185,10 @@
         card.className = 'result-card';
 
         const pre = document.createElement('pre');
+        // Response format varies by mode:
+        // - generate-answer/query: {answer: "...", query: "..."}
+        // - inspect: {result: {fixed: "..."}}
+        // - edit: {result: {edited: "..."}}
         pre.textContent = data.answer || data.query || data.result?.fixed || data.result?.edited || '결과 없음';
 
         const btnRow = document.createElement('div');

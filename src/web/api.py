@@ -146,7 +146,9 @@ async def init_resources() -> None:
             pipeline = IntegratedQAPipeline()
             logger.info("IntegratedQAPipeline 초기화 완료")
         except Exception as e:
-            logger.warning(f"IntegratedQAPipeline 초기화 실패: {e}")
+            logger.warning(
+                f"IntegratedQAPipeline 초기화 실패 (Neo4j 환경변수 필요: NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD): {e}"
+            )
             pipeline = None
 
 
