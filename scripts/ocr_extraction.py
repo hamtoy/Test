@@ -43,6 +43,8 @@ OCR_PROMPT_LAYOUT = """
 MAX_RETRIES = 1
 PREPROCESS_MAX_DIM = (2048, 2048)
 BINARY_THRESHOLD = 180
+MIN_RESOLUTION = 1000  # Upscale images smaller than this
+CONTRAST_ENHANCEMENT_FACTOR = 1.3  # Improves text recognition
 
 
 def _iter_images(paths: Iterable[Path]) -> List[Path]:
@@ -75,14 +77,14 @@ def _preprocess_image(
     
     # Upscale low-resolution images
     width, height = working.size
-    if width < 1000 or height < 1000:
-        scale_factor = max(1000 / width, 1000 / height)
+    if width < MIN_RESOLUTION or height < MIN_RESOLUTION:
+        scale_factor = max(MIN_RESOLUTION / width, MIN_RESOLUTION / height)
         new_size = (int(width * scale_factor), int(height * scale_factor))
         working = working.resize(new_size, Image.Resampling.LANCZOS)
     
     # Apply contrast enhancement
     enhancer = ImageEnhance.Contrast(working)
-    working = enhancer.enhance(1.3)
+    working = enhancer.enhance(CONTRAST_ENHANCEMENT_FACTOR)
     
     # Resize if needed
     if max_dim:
