@@ -69,7 +69,7 @@ def test_extract_with_retries_layout_prompt() -> None:
     test_img = Image.new("RGB", (100, 100), color="white")
     test_path = Path("/tmp/test_image.png")
 
-    with patch("scripts.ocr_extraction.Image.open") as mock_open:
+    with patch("scripts.ocr_extraction.PILImage.open") as mock_open:
         mock_open.return_value.__enter__.return_value = test_img
 
         # Test with layout prompt
@@ -98,7 +98,7 @@ def test_extract_with_retries_default_prompt() -> None:
     test_img = Image.new("RGB", (100, 100), color="white")
     test_path = Path("/tmp/test_image.png")
 
-    with patch("scripts.ocr_extraction.Image.open") as mock_open:
+    with patch("scripts.ocr_extraction.PILImage.open") as mock_open:
         mock_open.return_value.__enter__.return_value = test_img
 
         # Test with default prompt

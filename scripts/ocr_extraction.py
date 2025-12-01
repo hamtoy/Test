@@ -8,7 +8,7 @@ from typing import Iterable, List, Tuple
 
 import google.generativeai as genai
 from dotenv import load_dotenv
-from PIL import Image
+from PIL import Image as PILImage
 
 load_dotenv()
 
@@ -69,12 +69,12 @@ def _write_header(output_file: Path, jsonl_file: Path) -> None:
 
 
 def _preprocess_image(
-    img: "Image.Image",
+    img: "PILImage.Image",
     max_dim: Tuple[int, int] = PREPROCESS_MAX_DIM,
     grayscale: bool = False,
     binarize: bool = False,
     threshold: int = BINARY_THRESHOLD,
-) -> "Image.Image":
+) -> "PILImage.Image":
     from PIL import ImageEnhance, ImageOps
 
     working = ImageOps.exif_transpose(img) or img
@@ -84,7 +84,7 @@ def _preprocess_image(
     if width < MIN_RESOLUTION or height < MIN_RESOLUTION:
         scale_factor = max(MIN_RESOLUTION / width, MIN_RESOLUTION / height)
         new_size = (int(width * scale_factor), int(height * scale_factor))
-        working = working.resize(new_size, Image.Resampling.LANCZOS)
+        working = working.resize(new_size, PILImage.Resampling.LANCZOS)
 
     # Apply contrast enhancement
     enhancer = ImageEnhance.Contrast(working)
@@ -92,7 +92,7 @@ def _preprocess_image(
 
     # Resize if needed
     if max_dim:
-        working.thumbnail(max_dim, Image.Resampling.LANCZOS)
+        working.thumbnail(max_dim, PILImage.Resampling.LANCZOS)
 
     if grayscale:
         working = ImageOps.grayscale(working)
@@ -111,7 +111,7 @@ def _extract_with_retries(
     last_error: str | None = None
     prompt = OCR_PROMPT_LAYOUT if use_layout_prompt else OCR_PROMPT
     for attempt in range(1, max_retries + 2):
-        with Image.open(img_path) as img:
+        with PILImage.open(img_path) as img:
             prepared = _preprocess_image(img.copy()) if preprocess else img.copy()
         try:
             response = model.generate_content([prompt, prepared])
