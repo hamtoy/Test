@@ -38,22 +38,62 @@ function copyToClipboard(text) {
 }
 
 // ============================================================================
-// OCR 로드
+// OCR 로드 및 저장
 // ============================================================================
 
 async function loadOCR() {
     try {
         const data = await apiCall('/api/ocr');
-        const preview = document.getElementById('ocr-preview');
+        // Support both textarea (ocr-input) and div (ocr-preview) elements
+        const input = document.getElementById('ocr-input') || document.getElementById('ocr-preview');
         
-        if (data.ocr) {
-            preview.textContent = data.ocr;
+        if (!input) {
+            console.error('OCR element not found (searched for ocr-input and ocr-preview)');
+            return;
+        }
+        
+        if (input.tagName === 'TEXTAREA') {
+            // For textarea elements
+            if (data.ocr) {
+                input.value = data.ocr;
+            } else {
+                input.value = '';
+                input.placeholder = 'OCR 파일이 없습니다. 텍스트를 직접 입력하세요...';
+            }
         } else {
-            preview.textContent = 'OCR 파일이 없습니다.';
-            preview.style.color = '#999';
+            // For div elements (read-only preview)
+            if (data.ocr) {
+                input.textContent = data.ocr;
+            } else {
+                input.textContent = 'OCR 파일이 없습니다.';
+                input.style.color = '#999';
+            }
         }
     } catch (error) {
-        document.getElementById('ocr-preview').textContent = 'OCR 로드 실패';
+        const input = document.getElementById('ocr-input') || document.getElementById('ocr-preview');
+        if (input) {
+            if (input.tagName === 'TEXTAREA') {
+                input.value = '';
+                input.placeholder = 'OCR 로드 실패';
+            } else {
+                input.textContent = 'OCR 로드 실패';
+            }
+        }
+    }
+}
+
+async function saveOCR() {
+    const ocrText = document.getElementById('ocr-input').value;
+    const statusEl = document.getElementById('ocr-save-status');
+    
+    try {
+        await apiCall('/api/ocr', 'POST', { text: ocrText });
+        statusEl.textContent = '✅ 저장됨';
+        statusEl.style.color = 'var(--success, green)';
+        setTimeout(() => statusEl.textContent = '', 2000);
+    } catch (error) {
+        statusEl.textContent = '❌ 저장 실패';
+        statusEl.style.color = 'var(--danger, red)';
     }
 }
 
