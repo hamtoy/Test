@@ -1,22 +1,36 @@
-from dotenv import load_dotenv
-from neo4j import GraphDatabase
+"""모든 Rule과 QueryType을 연결해주는 임시 스크립트."""
+
+from __future__ import annotations
+
 import os
 
-load_dotenv()
+from dotenv import load_dotenv
+from neo4j import GraphDatabase
 
-driver = GraphDatabase.driver(
-    os.getenv("NEO4J_URI"),
-    auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD"))
-)
 
-with driver.session() as session:
-    result = session.run("""
-        MATCH (r:Rule), (qt:QueryType)
-        WHERE NOT (r)-[:APPLIES_TO]->(qt)
-        MERGE (r)-[:APPLIES_TO]->(qt)
-        RETURN count(*) AS created
-    """)
-    print(f"새로 연결: {result.single()['created']}개")
+def main() -> None:
+    load_dotenv()
 
-driver.close()
-print("완료!")
+    driver = GraphDatabase.driver(
+        os.getenv("NEO4J_URI"),
+        auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD")),
+    )
+
+    with driver.session() as session:
+        result = session.run(
+            """
+            MATCH (r:Rule), (qt:QueryType)
+            WHERE NOT (r)-[:APPLIES_TO]->(qt)
+            MERGE (r)-[:APPLIES_TO]->(qt)
+            RETURN count(*) AS created
+            """
+        )
+        created = result.single()["created"]
+        print(f"새로 연결: {created}개")
+
+    driver.close()
+    print("완료!")
+
+
+if __name__ == "__main__":
+    main()
