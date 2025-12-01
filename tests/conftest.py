@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -7,6 +8,14 @@ import sys
 import types
 from typing import Any, List, Optional, cast
 from unittest.mock import MagicMock, AsyncMock
+
+# Mock API key for testing: AIza + 35 zeros = 39 characters total (valid format)
+MOCK_GEMINI_API_KEY = "AIza" + "0" * 35
+
+# Set GEMINI_API_KEY before any module imports that might trigger AppConfig validation.
+# This is necessary because worker.py creates config = AppConfig() at module level,
+# which happens during test collection (before fixtures run).
+os.environ.setdefault("GEMINI_API_KEY", MOCK_GEMINI_API_KEY)
 
 # Neo4j sync driver emits a noisy deprecation warning when GC closes a driver.
 warnings.filterwarnings(
@@ -40,9 +49,7 @@ cast(Any, langchain_module).callbacks = callbacks_module
 @pytest.fixture(autouse=True)
 def mock_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Ensure AppConfig validation passes with valid mock values."""
-    # AIza + 35 characters = 39 characters total
-    mock_key = "AIza" + "0" * 35
-    monkeypatch.setenv("GEMINI_API_KEY", mock_key)
+    monkeypatch.setenv("GEMINI_API_KEY", MOCK_GEMINI_API_KEY)
     monkeypatch.setenv("GEMINI_MODEL_NAME", "gemini-3-pro-preview")
 
 
