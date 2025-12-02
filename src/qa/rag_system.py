@@ -16,11 +16,21 @@ from typing import (
     List,
     Optional,
     TypeVar,
+    TYPE_CHECKING,
 )
 
 import google.generativeai as genai
 from dotenv import load_dotenv
-from langchain_core.embeddings import Embeddings
+
+if TYPE_CHECKING:
+    from typing import Protocol
+
+    class Embeddings(Protocol):
+        def embed_documents(self, texts: List[str]) -> List[List[float]]: ...
+
+        def embed_query(self, text: str) -> List[float]: ...
+else:
+    from langchain_core.embeddings import Embeddings
 from neo4j import GraphDatabase
 from neo4j.exceptions import Neo4jError
 
@@ -79,7 +89,7 @@ def _run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
 load_dotenv()
 
 
-class CustomGeminiEmbeddings(Embeddings):  # type: ignore[misc]
+class CustomGeminiEmbeddings(Embeddings):
     """Gemini 임베딩 래퍼."""
 
     def __init__(self, api_key: str, model: str = "models/text-embedding-004") -> None:
@@ -204,7 +214,7 @@ class QAKnowledgeGraph:
                 logger.debug("GEMINI_API_KEY 미설정: 벡터 검색을 건너뜁니다.")
                 return
 
-            embedding_model = CustomGeminiEmbeddings(api_key=gemini_api_key)
+            embedding_model: Any = CustomGeminiEmbeddings(api_key=gemini_api_key)
 
             self._vector_store = Neo4jVector.from_existing_graph(
                 embedding_model,

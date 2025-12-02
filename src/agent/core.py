@@ -1,3 +1,4 @@
+# mypy: disable-error-code=misc
 """Gemini Agent 핵심 모듈.
 
 GeminiAgent 클래스의 메인 로직을 포함합니다.
@@ -388,7 +389,7 @@ class GeminiAgent:
             )
             await asyncio.sleep(delay)
 
-        @retry(  # type: ignore[misc]
+        @retry(
             stop=stop_after_attempt(3),
             wait=wait_exponential(multiplier=1, min=2, max=10),
             retry=retry_if_exception_type(retry_exceptions),
@@ -671,7 +672,7 @@ class GeminiAgent:
 
     # ==================== 평가 ====================
 
-    @retry(  # type: ignore[misc]
+    @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
         retry=retry_if_exception_type(

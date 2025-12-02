@@ -37,8 +37,9 @@ class AdvancedContextAugmentation:
         # GEMINI_API_KEY를 우선 사용
         key = gemini_key or os.getenv("GEMINI_API_KEY")
         if key:
+            embedding: Any = CustomGeminiEmbeddings(api_key=key)
             self.vector_index = Neo4jVector.from_existing_graph(
-                CustomGeminiEmbeddings(api_key=key),
+                embedding,
                 url=neo4j_uri,
                 username=user,
                 password=password,

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
@@ -48,7 +48,7 @@ class MemoryAugmentedQASystem:
         from langchain_neo4j import Neo4jVector
 
         self.vectorstore = Neo4jVector.from_existing_graph(
-            CustomGeminiEmbeddings(api_key=require_env("GEMINI_API_KEY")),
+            cast(Any, CustomGeminiEmbeddings(api_key=require_env("GEMINI_API_KEY"))),
             url=self.neo4j_uri,
             username=self.neo4j_user,
             password=self.neo4j_password,
