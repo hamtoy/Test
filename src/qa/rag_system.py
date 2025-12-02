@@ -365,8 +365,8 @@ class QAKnowledgeGraph:
         """
         cypher = """
         MATCH (t:Template {name: $template_type})-[:ENFORCES]->(r:Rule)
-        RETURN r.category AS category, r.text AS text, r.priority AS priority
-        ORDER BY r.priority, r.category
+        RETURN r.text AS text, coalesce(r.priority, 999) AS priority
+        ORDER BY priority
         """
         provider = getattr(self, "_graph_provider", None)
 
@@ -420,14 +420,12 @@ class QAKnowledgeGraph:
             categories[category].append(text)
 
         # Format as markdown
-        lines = []
-        for category, texts in categories.items():
-            lines.append(f"<{category}>")
-            lines.extend(f"    <rule>{text}</rule>" for text in texts)
-            lines.append(f"</{category}>")
-            lines.append("")  # Empty line between categories
-
-        return "\n".join(lines).strip()
+        rules_texts = [rule.get("text", "") for rule in rules_data if rule.get("text")]
+        if not rules_texts:
+            return ""
+        lines = ["### Formatting Rules"]
+        lines.extend(f"- {text}" for text in rules_texts)
+        return "\n".join(lines)
 
     def rollback_batch(self, batch_id: str) -> Dict[str, Any]:
         """특정 batch_id로 생성된 모든 노드 삭제 (롤백).
