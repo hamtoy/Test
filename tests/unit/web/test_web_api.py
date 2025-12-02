@@ -204,8 +204,8 @@ class TestQAGenerateApi:
         valid_types = [
             ("global_explanation", "전반 설명"),
             ("reasoning", "추론"),
-            ("target_short", "타겟 짧은 답변"),
-            ("target_long", "타겟 긴 답변"),
+            ("target_short", "타겟 단답"),
+            ("target_long", "타겟 장답"),
         ]
         for qtype, expected_type in valid_types:
             response = client.post(

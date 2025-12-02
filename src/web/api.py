@@ -596,7 +596,7 @@ async def generate_single_qa(
     # 타입별 질의 스타일 가이드
     query_intent = None
     if qtype == "target_short":
-        query_intent = "간단한 사실 확인 질문 (예: '~은 무엇입니까?', '~는 몇 개입니까?', '~의 핵심은 무엇입니까?')"
+        query_intent = "간단한 사실 확인 질문"
         if previous_queries:
             prev_text = "\n".join(f"- {q}" for q in previous_queries if q)
             query_intent += f"""
@@ -606,7 +606,7 @@ async def generate_single_qa(
 {prev_text}
 """
     elif qtype == "target_long":
-        query_intent = "핵심 요점을 묻는 질문 (예: '~의 주요 변화는 무엇입니까?', '~의 핵심 동향은 무엇입니까?')"
+        query_intent = "핵심 요점을 묻는 질문"
         if previous_queries:
             prev_text = "\n".join(f"- {q}" for q in previous_queries if q)
             query_intent += f"""
@@ -616,9 +616,9 @@ async def generate_single_qa(
 {prev_text}
 """
     elif qtype == "reasoning":
-        query_intent = "추론/예측을 요구하는 질문 (근거 기반 전망)"
+        query_intent = "추론/예측 질문"
     elif qtype == "global_explanation":
-        query_intent = "전체 내용을 종합적으로 설명해 달라는 질문"
+        query_intent = "전체 내용 설명 질문"
 
     rules_list: list[str] = []
     query_constraints: list[Dict[str, Any]] = []
@@ -1111,9 +1111,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     # 타입별 질의 의도 힌트
     query_intent = None
     if query_type == "target_short":
-        query_intent = (
-            "간단한 사실 확인 질문 (예: '~은 무엇입니까?', '~는 몇 개입니까?')"
-        )
+        query_intent = "간단한 사실 확인 질문"
         if global_explanation_ref:
             query_intent += f"""
 
@@ -1124,7 +1122,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
 ---
 전체 설명에서 다루지 않은 구체적 정보(날짜, 수치, 특정 명칭 등)에 집중하세요."""
     elif query_type == "target_long":
-        query_intent = "핵심 요점을 묻는 질문 (예: '~의 주요 변화는 무엇입니까?')"
+        query_intent = "핵심 요점을 묻는 질문"
         if global_explanation_ref:
             query_intent += f"""
 
@@ -1134,9 +1132,9 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
 {global_explanation_ref[:500]}
 ---"""
     elif query_type == "reasoning":
-        query_intent = "추론/예측을 요구하는 질문 (근거 기반 전망)"
+        query_intent = "추론/예측 질문"
     elif query_type == "global_explanation":
-        query_intent = "전체 내용을 종합적으로 설명해 달라는 질문"
+        query_intent = "전체 내용 설명 질문"
 
     # 워크플로우 감지
     workflow = detect_workflow(body.query, body.answer, body.edit_request)
