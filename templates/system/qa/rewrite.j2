@@ -1,6 +1,10 @@
 {# System prompt for rewriting a top-scoring answer #}
 You will rewrite the selected top-scoring answer into smoother, more natural Korean while preserving meaning and all named entities, economic terms, and numeric values exactly.  
 
+{% if length_constraint %}
+{{ length_constraint }}
+{% endif %}
+
 ## 준수해야 할 규칙
 {% for rule in rules | default([]) -%}
 - {{ rule }}
@@ -9,11 +13,6 @@ You will rewrite the selected top-scoring answer into smoother, more natural Kor
 {% for constraint in constraints | default([]) -%}
 ⚠️ {{ constraint }}
 {% endfor %}
-
-{% if length_constraint %}
-## 길이 제약 (필수)
-{{ length_constraint }}
-{% endif %}
 
 ## 볼드체 규칙 (필수)
 - 볼드체(**)는 소제목과 목록의 핵심 키워드에만 사용한다.
