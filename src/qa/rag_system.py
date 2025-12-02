@@ -231,21 +231,17 @@ class QAKnowledgeGraph:
 
     def get_constraints_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
         """QueryType과 연결된 제약 조건 조회.
-        - Rule-[:APPLIES_TO]->QueryType, Rule-[:ENFORCES]->Constraint
-        - Template-[:ENFORCES]->Constraint
+        - QueryType-[:HAS_CONSTRAINT]->Constraint 관계 사용
         """
         cypher = """
-        MATCH (qt:QueryType {name: $qt})
-        OPTIONAL MATCH (r:Rule)-[:APPLIES_TO]->(qt)
-        OPTIONAL MATCH (r)-[:ENFORCES]->(c1:Constraint)
-        OPTIONAL MATCH (t:Template)-[:ENFORCES]->(c2:Constraint)
-        WITH qt, collect(DISTINCT c1) + collect(DISTINCT c2) AS cons
-        UNWIND cons AS c
-        RETURN DISTINCT
-            c.id AS id,
+        MATCH (qt:QueryType {name: $qt})-[:HAS_CONSTRAINT]->(c:Constraint)
+        RETURN 
+            c.name AS name,
             c.description AS description,
-            c.type AS type,
-        c.pattern AS pattern
+            c.priority AS priority,
+            c.category AS category,
+            c.applies_to AS applies_to
+        ORDER BY c.priority DESC
         """
         provider = getattr(self, "_graph_provider", None)
         # 웹 컨텍스트 등에서 이벤트 루프 충돌을 막기 위해 sync 드라이버를 우선 사용
