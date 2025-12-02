@@ -1,6 +1,6 @@
 """Tests for the unified workspace functionality."""
 
-from typing import Any
+from typing import Any, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -87,7 +87,9 @@ class TestUnifiedWorkspaceAPI:
         return agent
 
     @pytest.fixture
-    def setup_mocks(self, mock_agent: Any, tmp_path: Any) -> None:
+    def setup_mocks(
+        self, mock_agent: Any, tmp_path: Any
+    ) -> Generator[None, None, None]:
         """Set up common mocks for testing."""
         # Setup OCR file
         inputs_dir = tmp_path / "data" / "inputs"
