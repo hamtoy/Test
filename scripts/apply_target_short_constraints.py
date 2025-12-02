@@ -92,6 +92,18 @@ def main():
         })
         MERGE (qt)-[:HAS_CONSTRAINT]->(c4)
         """,
+        # 5. Constraint: no_overlap_with_global_explanation
+        """
+        MATCH (qt:QueryType {name: "target_short"})
+        MERGE (c5:Constraint {
+          name: "no_overlap_with_global_explanation",
+          description: "타겟 단답형 질의는 전체 설명형(global_explanation)에서 다루지 않은 세부 사실/수치를 묻는 질문이어야 합니다. 전체 설명에서 이미 언급된 핵심 내용과 중복되는 질의는 생성하지 마세요. 전체 흐름이 아닌 구체적 팩트(날짜, 수치, 특정 명칭 등)에 집중하세요.",
+          priority: 95,
+          category: "query",
+          applies_to: "generation"
+        })
+        MERGE (qt)-[:HAS_CONSTRAINT]->(c5)
+        """,
     ]
 
     try:

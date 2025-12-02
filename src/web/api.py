@@ -28,6 +28,7 @@ from src.config.constants import (
     DEFAULT_ANSWER_RULES,
     QA_BATCH_GENERATION_TIMEOUT,
     QA_SINGLE_GENERATION_TIMEOUT,
+    QA_BATCH_TYPES,
     WORKSPACE_GENERATION_TIMEOUT,
     WORKSPACE_UNIFIED_TIMEOUT,
 )
@@ -464,7 +465,7 @@ async def api_save_ocr(payload: OCRTextInput) -> Dict[str, str]:
 
 @app.post("/api/qa/generate")
 async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
-    """QA 생성 (배치 병렬 처리 + 품질 검증)"""
+    """QA 생성 (배치: 전체 설명 선행 후 병렬, 단일: 타입별 생성)"""
     if agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
@@ -472,26 +473,53 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
 
     try:
         if body.mode == "batch":
-            types = ["global_explanation", "reasoning", "target_short", "target_long"]
+            results: list[Dict[str, Any]] = []
 
-            pairs = await asyncio.wait_for(
+            first_type = QA_BATCH_TYPES[0]
+            first_query: str = ""
+
+            # 1단계: global_explanation 순차 생성
+            try:
+                first_pair = await asyncio.wait_for(
+                    generate_single_qa_with_retry(agent, ocr_text, first_type),
+                    timeout=QA_SINGLE_GENERATION_TIMEOUT,
+                )
+                results.append(first_pair)
+                first_query = first_pair.get("query", "")
+            except Exception as exc:  # noqa: BLE001
+                logger.error("%s 생성 실패: %s", first_type, exc)
+                results.append(
+                    {
+                        "type": first_type,
+                        "query": "생성 실패",
+                        "answer": f"일시적 오류: {str(exc)[:100]}",
+                    }
+                )
+
+            # 2단계: 나머지 타입 병렬 생성 (중복 방지용 previous_queries 전달)
+            remaining_types = QA_BATCH_TYPES[1:]
+            remaining_pairs = await asyncio.wait_for(
                 asyncio.gather(
                     *[
-                        generate_single_qa_with_retry(agent, ocr_text, qtype)
-                        for qtype in types
+                        generate_single_qa_with_retry(
+                            agent,
+                            ocr_text,
+                            qtype,
+                            previous_queries=[first_query] if first_query else None,
+                        )
+                        for qtype in remaining_types
                     ],
                     return_exceptions=True,
                 ),
                 timeout=QA_BATCH_GENERATION_TIMEOUT,
             )
 
-            results: list[Dict[str, Any]] = []
-            for i, pair in enumerate(pairs):
+            for i, pair in enumerate(remaining_pairs):
                 if isinstance(pair, Exception):
-                    logger.error("%s 생성 실패: %s", types[i], pair)
+                    logger.error("%s 생성 실패: %s", remaining_types[i], pair)
                     results.append(
                         {
-                            "type": types[i],
+                            "type": remaining_types[i],
                             "query": "생성 실패",
                             "answer": f"일시적 오류: {str(pair)[:100]}",
                         }
@@ -522,7 +550,10 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
 
 
 async def generate_single_qa(
-    agent: GeminiAgent, ocr_text: str, qtype: str
+    agent: GeminiAgent,
+    ocr_text: str,
+    qtype: str,
+    previous_queries: Optional[list[str]] = None,
 ) -> Dict[str, Any]:
     """단일 QA 생성 - 규칙 적용 보장 + 호출 최소화"""
     from src.config.constants import QA_GENERATION_OCR_TRUNCATE_LENGTH
@@ -533,8 +564,24 @@ async def generate_single_qa(
     query_intent = None
     if qtype == "target_short":
         query_intent = "간단한 사실 확인 질문 (예: '~은 무엇입니까?', '~는 몇 개입니까?', '~의 핵심은 무엇입니까?')"
+        if previous_queries:
+            prev_text = "\n".join(f"- {q}" for q in previous_queries if q)
+            query_intent += f"""
+
+[중복 방지]
+다음 질의에서 다룬 내용과 겹치지 않도록 구체적 팩트(날짜, 수치, 명칭 등)를 질문하세요:
+{prev_text}
+"""
     elif qtype == "target_long":
         query_intent = "핵심 요점을 묻는 질문 (예: '~의 주요 변화는 무엇입니까?', '~의 핵심 동향은 무엇입니까?')"
+        if previous_queries:
+            prev_text = "\n".join(f"- {q}" for q in previous_queries if q)
+            query_intent += f"""
+
+[중복 방지]
+다음 질의와 다른 관점/세부 항목을 묻는 질문을 생성하세요:
+{prev_text}
+"""
     elif qtype == "reasoning":
         query_intent = "추론/예측을 요구하는 질문 (근거 기반 전망)"
     elif qtype == "global_explanation":
@@ -736,10 +783,13 @@ async def generate_single_qa(
     reraise=True,
 )
 async def generate_single_qa_with_retry(
-    agent: GeminiAgent, ocr_text: str, qtype: str
+    agent: GeminiAgent,
+    ocr_text: str,
+    qtype: str,
+    previous_queries: Optional[list[str]] = None,
 ) -> Dict[str, Any]:
     """재시도 로직이 있는 QA 생성 래퍼."""
-    return await generate_single_qa(agent, ocr_text, qtype)
+    return await generate_single_qa(agent, ocr_text, qtype, previous_queries)
 
 
 @app.post("/api/eval/external")

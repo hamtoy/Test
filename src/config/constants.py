@@ -50,6 +50,13 @@ QA_GENERATION_OCR_TRUNCATE_LENGTH: Final[int] = 500
 # QA generation timeout settings (seconds)
 QA_SINGLE_GENERATION_TIMEOUT: Final[int] = 60
 QA_BATCH_GENERATION_TIMEOUT: Final[int] = 120
+# QA batch generation order (first sequential, rest parallel)
+QA_BATCH_TYPES: Final[List[str]] = [
+    "global_explanation",
+    "reasoning",
+    "target_short",
+    "target_long",
+]
 
 # Workspace generation timeout settings (seconds)
 WORKSPACE_GENERATION_TIMEOUT: Final[int] = 90
