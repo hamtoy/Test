@@ -300,6 +300,58 @@ def _strip_output_tags(text: str) -> str:
     return text.replace("<output>", "").replace("</output>", "").strip()
 
 
+def postprocess_answer(answer: str, qtype: str) -> str:
+    """답변 후처리 - 불필요한 요소 제거 및 길이 강제 조정."""
+    # 1. 태그 제거
+    answer = answer.replace("<output>", "").replace("</output>", "").strip()
+
+    # 2. target_short: 불필요한 헤더 제거
+    if qtype == "target_short":
+        lines = answer.split("\n")
+        # 첫 줄이 짧고 콜론 포함 시 제거 (예: "답변:", "내용:")
+        if lines and len(lines) > 1 and ":" in lines[0] and len(lines[0]) < 20:
+            answer = "\n".join(lines[1:]).strip()
+            logger.info("target_short: 불필요한 헤더 제거됨")
+
+    # 3. 과도한 빈 줄 정리
+    while "\n\n\n" in answer:
+        answer = answer.replace("\n\n\n", "\n\n")
+
+    # 4. 길이 강제 조정 (target_short/long만)
+    if qtype == "target_short":
+        sentences = [
+            s.strip() for s in answer.split(".") if s.strip() and len(s.strip()) > 5
+        ]
+        if len(sentences) > 2:
+            sentence_with_index = [(i, s) for i, s in enumerate(sentences)]
+            top_2 = sorted(sentence_with_index, key=lambda x: len(x[1]), reverse=True)[
+                :2
+            ]
+            top_2_sorted = sorted(top_2, key=lambda x: x[0])
+            answer = ". ".join([s for _, s in top_2_sorted]) + "."
+            logger.warning(
+                "target_short 길이 초과 (%s문장) → 강제로 2문장으로 축소",
+                len(sentences),
+            )
+
+    elif qtype == "target_long":
+        sentences = [
+            s.strip() for s in answer.split(".") if s.strip() and len(s.strip()) > 5
+        ]
+        if len(sentences) > 4:
+            sentence_with_index = [(i, s) for i, s in enumerate(sentences)]
+            top_4 = sorted(sentence_with_index, key=lambda x: len(x[1]), reverse=True)[
+                :4
+            ]
+            top_4_sorted = sorted(top_4, key=lambda x: x[0])
+            answer = ". ".join([s for _, s in top_4_sorted]) + "."
+            logger.warning(
+                "target_long 길이 초과 (%s문장) → 강제로 4문장으로 축소", len(sentences)
+            )
+
+    return answer.strip()
+
+
 def detect_workflow(
     query: Optional[str], answer: Optional[str], edit_request: Optional[str]
 ) -> str:
@@ -660,7 +712,7 @@ async def generate_single_qa(
                 length_constraint=length_constraint,
             )
 
-        final_answer = draft_answer
+        final_answer = postprocess_answer(draft_answer, qtype)
 
         return {
             "type": qtype,

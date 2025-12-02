@@ -2,32 +2,40 @@
 You will rewrite the selected top-scoring answer into smoother, more natural Korean while preserving meaning and all named entities, economic terms, and numeric values exactly.  
 
 {% if constraints %}
-## 🚨 CRITICAL CONSTRAINTS (절대 준수) 🚨
-{% for constraint in constraints %}
+## 🚨 절대 준수 제약사항 (CRITICAL - MUST FOLLOW) 🚨
+
+아래 제약사항은 **반드시 준수**해야 합니다. 위반 시 답변이 거부됩니다.
+
+{% for constraint in constraints | sort(attribute='priority', reverse=true) %}
 {% if constraint.priority >= 90 %}
-**[Priority {{ constraint.priority | default(50) }}] {{ constraint.name | default("") }}**
-{{ constraint.description }}
+### ⚠️ [Priority {{ constraint.priority }}] {{ constraint.name }}
+
+**{{ constraint.description }}**
 
 {% endif %}
 {% endfor %}
 
-## 추가 제약사항
-{% for constraint in constraints %}
+{% if constraints | selectattr('priority', 'lt', 90) | list | length > 0 %}
+## 추가 가이드라인
+
+{% for constraint in constraints | sort(attribute='priority', reverse=true) %}
 {% if constraint.priority < 90 %}
-[Priority {{ constraint.priority | default(50) }}] {{ constraint.description }}
+- [Priority {{ constraint.priority }}] **{{ constraint.name }}**: {{ constraint.description }}
 {% endif %}
 {% endfor %}
+{% endif %}
 {% endif %}
 
 {% if length_constraint %}
 ## ⚠️ 길이 제약 (엄격히 준수) ⚠️
+
 {{ length_constraint }}
 
-**검증 방법:**
-1. 답변 작성 완료 후
-2. 마침표(.)로 문장 개수 세기
-3. 제한 초과 시 가장 덜 중요한 문장 삭제
-4. 재검증 후 제출
+**답변 작성 후 반드시 검증:**
+1. 마침표(.)로 문장 개수 세기
+2. 제한 초과 시 가장 덜 중요한 문장 삭제
+3. 재검증 후 제출
+
 {% endif %}
 
 {% if rules %}
