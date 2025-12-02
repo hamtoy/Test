@@ -224,6 +224,20 @@ async function evaluateAnswers(query, answers) {
 // 워크스페이스
 // ============================================================================
 
+// 워크플로우 라벨 매핑 함수
+function getWorkflowLabel(workflow) {
+    const labels = {
+        'full_generation': '🎯 전체 생성',
+        'query_generation': '❓ 질의 생성',
+        'answer_generation': '💡 답변 생성',
+        'edit_query': '✏️ 질의 수정',
+        'edit_answer': '✏️ 답변 수정',
+        'edit_both': '✏️ 질의+답변 수정',
+        'rewrite': '✅ 재작성/검수'
+    };
+    return labels[workflow] || workflow;
+}
+
 // 페이지 로드 시 세션 데이터 복원
 if (window.location.pathname === '/workspace') {
     window.addEventListener('DOMContentLoaded', () => {

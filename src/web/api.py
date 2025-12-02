@@ -28,6 +28,7 @@ from src.web.models import (
     EvalExternalRequest,
     GenerateQARequest,
     OCRTextInput,
+    UnifiedWorkspaceRequest,
     WorkspaceRequest,
 )
 from src.workflow.edit import edit_content
@@ -215,6 +216,54 @@ def log_review_session(
     except Exception as e:
         # 로그 기록 실패 시 경고만 출력, 메인 기능에 영향 없음
         logger.warning(f"검수 로그 기록 실패: {e}")
+
+
+def detect_workflow(
+    query: Optional[str], answer: Optional[str], edit_request: Optional[str]
+) -> str:
+    """입력 조합으로 워크플로우 자동 감지
+
+    Args:
+        query: 질의 텍스트
+        answer: 답변 텍스트
+        edit_request: 수정 요청 텍스트
+
+    Returns:
+        워크플로우 타입:
+        - "full_generation": 질의/답변 둘 다 비어있음 → OCR에서 전체 생성
+        - "query_generation": 답변만 있음 (수정요청 없음) → 질의 생성
+        - "answer_generation": 질의만 있음 (수정요청 없음) → 답변 생성
+        - "edit_query": 질의만 + 수정요청 → 질의 수정
+        - "edit_answer": 답변만 + 수정요청 → 답변 수정
+        - "edit_both": 질의+답변+수정요청 → 둘 다 수정
+        - "rewrite": 질의+답변 (수정요청 없음) → 재작성/검수
+    """
+    has_query = bool(query and query.strip())
+    has_answer = bool(answer and answer.strip())
+    has_edit = bool(edit_request and edit_request.strip())
+
+    # 1. 둘 다 비어있음
+    if not has_query and not has_answer:
+        return "full_generation"
+
+    # 2. 수정요청 있는 경우
+    if has_edit:
+        if has_query and has_answer:
+            return "edit_both"  # 둘 다 수정
+        elif has_query:
+            return "edit_query"  # 질의만 수정
+        elif has_answer:
+            return "edit_answer"  # 답변만 수정
+
+    # 3. 수정요청 없는 경우 (일반 생성)
+    if not has_query and has_answer:
+        return "query_generation"  # 답변 → 질의 생성
+
+    if has_query and not has_answer:
+        return "answer_generation"  # 질의 → 답변 생성
+
+    # 4. 둘 다 있고 수정요청 없음
+    return "rewrite"  # 재작성/검수
 
 
 # ============================================================================
@@ -685,6 +734,248 @@ async def api_generate_query_from_answer(body: Dict[str, Any]) -> Dict[str, Any]
         return {"query": query, "answer": answer}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/workspace/unified")
+async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]:
+    """통합 워크스페이스 - 모든 조합 지원"""
+    if agent is None:
+        raise HTTPException(status_code=500, detail="Agent 초기화 실패")
+
+    ocr_text = body.ocr_text or load_ocr_text()
+
+    # 워크플로우 감지
+    workflow = detect_workflow(body.query, body.answer, body.edit_request)
+    logger.info(f"워크플로우 감지: {workflow}")
+
+    query = body.query or ""
+    answer = body.answer or ""
+    changes: list[str] = []
+
+    try:
+        if workflow == "full_generation":
+            # 질의와 답변 모두 생성
+            changes.append("OCR에서 전체 생성")
+
+            # 질의 생성
+            queries = await agent.generate_query(
+                ocr_text, user_intent=None, query_type="explanation", kg=kg
+            )
+            if queries:
+                query = queries[0]
+                changes.append("질의 생성 완료")
+
+            # 답변 생성
+            normalized_qtype = "explanation"
+            rules_list: list[str] = []
+            if kg is not None:
+                try:
+                    constraints = kg.get_constraints_for_query_type(normalized_qtype)
+                    for c in constraints:
+                        desc = c.get("description")
+                        if desc:
+                            rules_list.append(desc)
+                except Exception as e:
+                    logger.debug(f"규칙 로드 실패: {e}")
+
+            if not rules_list:
+                rules_list = list(DEFAULT_ANSWER_RULES)
+
+            rules_text = "\n".join(f"- {r}" for r in rules_list)
+            prompt = f"""[지시사항]
+반드시 한국어로 답변하세요.
+OCR에 없는 정보는 추가하지 마세요.
+
+[준수 규칙]
+{rules_text}
+
+[OCR 텍스트]
+{ocr_text[:3000]}
+
+[질의]
+{query}
+
+위 OCR 텍스트를 기반으로 질의에 대한 답변을 작성하세요."""
+
+            answer = await agent.rewrite_best_answer(
+                ocr_text=ocr_text,
+                best_answer=prompt,
+                cached_content=None,
+                query_type=normalized_qtype,
+            )
+            changes.append("답변 생성 완료")
+
+        elif workflow == "query_generation":
+            # 답변 → 질의 생성
+            changes.append("답변 기반 질의 생성")
+
+            prompt = f"""
+다음 답변에 가장 적합한 질문을 생성하세요.
+
+[OCR 텍스트]
+{ocr_text[:1000]}
+
+[답변]
+{answer}
+
+위 답변에 대한 자연스러운 질문 1개를 생성하세요. 질문만 출력하세요.
+"""
+            queries = await agent.generate_query(prompt, user_intent=None)
+            query = queries[0] if queries else "질문 생성 실패"
+            changes.append("질의 생성 완료")
+
+        elif workflow == "answer_generation":
+            # 질의 → 답변 생성
+            changes.append("질의 기반 답변 생성")
+
+            normalized_qtype = "explanation"
+            answer_rules_list: list[str] = []
+            if kg is not None:
+                try:
+                    constraints = kg.get_constraints_for_query_type(normalized_qtype)
+                    for c in constraints:
+                        desc = c.get("description")
+                        if desc:
+                            answer_rules_list.append(desc)
+                except Exception as e:
+                    logger.debug(f"규칙 로드 실패: {e}")
+
+            if not answer_rules_list:
+                answer_rules_list = list(DEFAULT_ANSWER_RULES)
+
+            rules_text = "\n".join(f"- {r}" for r in answer_rules_list)
+            prompt = f"""[지시사항]
+반드시 한국어로 답변하세요.
+OCR에 없는 정보는 추가하지 마세요.
+
+[준수 규칙]
+{rules_text}
+
+[OCR 텍스트]
+{ocr_text[:3000]}
+
+[질의]
+{query}
+
+위 OCR 텍스트를 기반으로 질의에 대한 답변을 작성하세요."""
+
+            answer = await agent.rewrite_best_answer(
+                ocr_text=ocr_text,
+                best_answer=prompt,
+                cached_content=None,
+                query_type=normalized_qtype,
+            )
+
+            if "<output>" in answer:
+                answer = answer.replace("<output>", "").replace("</output>", "").strip()
+
+            violations = find_violations(answer)
+            if violations:
+                violation_types = ", ".join(set(v["type"] for v in violations))
+                answer = await agent.rewrite_best_answer(
+                    ocr_text=ocr_text,
+                    best_answer=answer,
+                    edit_request=f"한국어로 다시 작성하고 다음 패턴 제거: {violation_types}",
+                    cached_content=None,
+                    query_type=normalized_qtype,
+                )
+                if "<output>" in answer:
+                    answer = (
+                        answer.replace("<output>", "").replace("</output>", "").strip()
+                    )
+
+            changes.append("답변 생성 완료")
+
+        elif workflow == "rewrite":
+            # 재작성/검수
+            changes.append("재작성/검수 수행")
+
+            fixed = await inspect_answer(
+                agent=agent,
+                answer=answer,
+                query=query,
+                ocr_text=ocr_text,
+                context={},
+                kg=kg,
+                validator=None,
+                cache=None,
+            )
+            answer = fixed
+            changes.append("검수 완료")
+
+        elif workflow == "edit_query":
+            # 질의만 수정
+            changes.append(f"질의 수정 요청: {body.edit_request}")
+
+            # 질의를 "답변"처럼 취급하여 edit_content 호출
+            edited_query = await edit_content(
+                agent=agent,
+                answer=query,  # 질의를 수정 대상으로
+                ocr_text=ocr_text,
+                query="",  # 빈 문자열
+                edit_request=body.edit_request or "",
+                kg=kg,
+                cache=None,
+            )
+            query = edited_query
+            changes.append("질의 수정 완료")
+
+        elif workflow == "edit_answer":
+            # 답변만 수정
+            changes.append(f"답변 수정 요청: {body.edit_request}")
+
+            edited_answer = await edit_content(
+                agent=agent,
+                answer=answer,
+                ocr_text=ocr_text,
+                query="",  # 질의 없음
+                edit_request=body.edit_request or "",
+                kg=kg,
+                cache=None,
+            )
+            answer = edited_answer
+            changes.append("답변 수정 완료")
+
+        elif workflow == "edit_both":
+            # 둘 다 수정
+            changes.append(f"질의+답변 수정 요청: {body.edit_request}")
+
+            # 먼저 답변 수정
+            edited_answer = await edit_content(
+                agent=agent,
+                answer=answer,
+                ocr_text=ocr_text,
+                query=query,
+                edit_request=body.edit_request or "",
+                kg=kg,
+                cache=None,
+            )
+            answer = edited_answer
+            changes.append("답변 수정 완료")
+
+            # 수정된 답변 기반으로 질의도 조정
+            edited_query = await edit_content(
+                agent=agent,
+                answer=query,
+                ocr_text=ocr_text,
+                query="",
+                edit_request=f"다음 답변에 맞게 질의 조정: {answer[:200]}...",
+                kg=kg,
+                cache=None,
+            )
+            query = edited_query
+            changes.append("질의 조정 완료")
+
+        return {
+            "workflow": workflow,
+            "query": query,
+            "answer": answer,
+            "changes": changes,
+        }
+
+    except Exception as e:
+        logger.error(f"워크플로우 실행 실패: {e}")
+        raise HTTPException(status_code=500, detail=f"실행 실패: {str(e)}")
 
 
 @app.post("/api/multimodal/analyze")
