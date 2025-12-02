@@ -36,7 +36,9 @@ async def test_agent_execute_api_call_safety_error(
         "user/query_gen.j2",
         "user/rewrite.j2",
     ]:
-        (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("{{ body }}", encoding="utf-8")
 
     monkeypatch.setattr("src.agent.rate_limiter.DEFAULT_RPM_LIMIT", 1)
     monkeypatch.setattr("src.agent.rate_limiter.DEFAULT_RPM_WINDOW_SECONDS", 60)
@@ -109,7 +111,9 @@ def test_agent_cache_budget_and_pricing(
         "user/query_gen.j2",
         "user/rewrite.j2",
     ]:
-        (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("{{ body }}", encoding="utf-8")
 
     agent = ag.GeminiAgent(_Config(), jinja_env=None)  # type: ignore[arg-type]
 
@@ -148,7 +152,9 @@ def test_agent_local_cache_load_and_store(
         "user/query_gen.j2",
         "user/rewrite.j2",
     ]:
-        (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("{{ body }}", encoding="utf-8")
 
     agent = ag.GeminiAgent(_Config(), jinja_env=None)  # type: ignore[arg-type]
     fp = "abc"
@@ -185,7 +191,9 @@ def test_agent_get_total_cost_invalid_model(monkeypatch: pytest.MonkeyPatch) -> 
         "user/query_gen.j2",
         "user/rewrite.j2",
     ]:
-        (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("{{ body }}", encoding="utf-8")
 
     # Need to update config with temp path
     class _ConfigWithTemp:
@@ -232,7 +240,9 @@ async def test_agent_call_api_with_retry(
         "user/query_gen.j2",
         "user/rewrite.j2",
     ]:
-        (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("{{ body }}", encoding="utf-8")
 
     agent = ag.GeminiAgent(_Config(), jinja_env=None)  # type: ignore[arg-type]
     agent._rate_limiter = None

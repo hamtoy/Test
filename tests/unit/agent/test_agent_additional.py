@@ -65,7 +65,9 @@ def fake_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> AppConfig:
         "user/rewrite.j2",
     ]
     for name in required:
-        (tdir / name).write_text("{{ input }}", encoding="utf-8")
+        path = tdir / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("{{ input }}", encoding="utf-8")
 
     fake_key = "AIza" + "x" * 35  # valid format/length
     monkeypatch.setenv("GEMINI_API_KEY", fake_key)
