@@ -176,6 +176,12 @@ class UnifiedWorkspaceRequest(BaseModel):
         max_length=MAX_OCR_TEXT_LENGTH,
         description="OCR text (optional, will load from file if not provided)",
     )
+    query_type: Optional[
+        Literal["global_explanation", "reasoning", "target_short", "target_long"]
+    ] = Field(
+        default=None,
+        description="Query/answer type for generation style",
+    )
 
 
 __all__ = [

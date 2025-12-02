@@ -34,6 +34,24 @@
             </small>
         </div>
 
+        <!-- 질문/답변 유형 선택 -->
+        <div class="form-group">
+            <label for="query-type">질문/답변 유형 (선택)</label>
+            <select
+                id="query-type"
+                style="width: 100%; padding: 12px; border: 1px solid var(--border, rgba(94, 82, 64, 0.2)); border-radius: 6px; font-size: 14px; background: var(--surface, #fffffe); color: var(--text-primary, #1f2121);"
+            >
+                <option value="">자동 감지</option>
+                <option value="global_explanation">전반 설명 (포괄적 내용)</option>
+                <option value="reasoning">추론 (근거 기반 전망)</option>
+                <option value="target_short">타겟 짧은 답변 (1-2문장)</option>
+                <option value="target_long">타겟 긴 답변 (3-4문장)</option>
+            </select>
+            <small style="color: var(--text-secondary, #666); font-size: 0.85em;">
+                🎯 생성할 질의/답변의 스타일을 지정합니다
+            </small>
+        </div>
+
         <!-- 수정 요청 (선택) -->
         <div class="form-group">
             <label for="edit-request">수정 요청 (선택)</label>
@@ -162,6 +180,7 @@
         const answer = document.getElementById('answer').value.trim();
         const editRequest = document.getElementById('edit-request').value.trim();
         const ocrText = document.getElementById('ocr-input').value;
+        const queryType = document.getElementById('query-type').value;
 
         const resultsDiv = document.getElementById('workspace-results');
         
@@ -185,6 +204,7 @@
                 answer: answer || null,
                 edit_request: editRequest || null,
                 ocr_text: ocrText || null,
+                query_type: queryType || null,
             });
 
             progressBar.style.width = '100%';

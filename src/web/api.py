@@ -987,10 +987,25 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
     ocr_text = body.ocr_text or load_ocr_text()
+    query_type = body.query_type or "global_explanation"
+    normalized_qtype = QTYPE_MAP.get(query_type, "explanation")
+
+    # 타입별 질의 의도 힌트
+    query_intent = None
+    if query_type == "target_short":
+        query_intent = (
+            "간단한 사실 확인 질문 (예: '~은 무엇입니까?', '~는 몇 개입니까?')"
+        )
+    elif query_type == "target_long":
+        query_intent = "핵심 요점을 묻는 질문 (예: '~의 주요 변화는 무엇입니까?')"
+    elif query_type == "reasoning":
+        query_intent = "추론/예측을 요구하는 질문 (근거 기반 전망)"
+    elif query_type == "global_explanation":
+        query_intent = "전체 내용을 종합적으로 설명해 달라는 질문"
 
     # 워크플로우 감지
     workflow = detect_workflow(body.query, body.answer, body.edit_request)
-    logger.info(f"워크플로우 감지: {workflow}")
+    logger.info(f"워크플로우 감지: {workflow}, 질문 유형: {query_type}")
 
     query = body.query or ""
     answer = body.answer or ""
@@ -1004,14 +1019,13 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
 
             # 질의 생성
             queries = await agent.generate_query(
-                ocr_text, user_intent=None, query_type="explanation", kg=kg
+                ocr_text, user_intent=query_intent, query_type=query_type, kg=kg
             )
             if queries:
                 query = queries[0]
                 changes.append("질의 생성 완료")
 
             # 답변 생성
-            normalized_qtype = "explanation"
             rules_list: list[str] = []
             if kg is not None:
                 try:
@@ -1026,10 +1040,20 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
             if not rules_list:
                 rules_list = list(DEFAULT_ANSWER_RULES)
 
+            length_constraint = ""
+            if query_type == "target_short":
+                length_constraint = "답변은 1-2문장, 최대 50단어 이내로 작성하세요."
+                rules_list = rules_list[:3]
+            elif query_type == "target_long":
+                length_constraint = "답변은 3-4문장, 최대 100단어 이내로 작성하세요."
+            elif query_type == "reasoning":
+                length_constraint = "근거 2~3개와 결론을 명확히 제시하세요."
+
             rules_text = "\n".join(f"- {r}" for r in rules_list)
             prompt = f"""[지시사항]
 반드시 한국어로 답변하세요.
 OCR에 없는 정보는 추가하지 마세요.
+{length_constraint}
 
 [준수 규칙]
 {rules_text}
@@ -1065,7 +1089,7 @@ OCR에 없는 정보는 추가하지 마세요.
 
 위 답변에 대한 자연스러운 질문 1개를 생성하세요. 질문만 출력하세요.
 """
-            queries = await agent.generate_query(prompt, user_intent=None)
+            queries = await agent.generate_query(prompt, user_intent=query_intent)
             if not queries:
                 logger.warning(
                     "질의 생성 실패: agent.generate_query returned empty list"
@@ -1080,7 +1104,6 @@ OCR에 없는 정보는 추가하지 마세요.
             # 질의 → 답변 생성
             changes.append("질의 기반 답변 생성")
 
-            normalized_qtype = "explanation"
             answer_rules_list: list[str] = []
             if kg is not None:
                 try:
@@ -1095,10 +1118,20 @@ OCR에 없는 정보는 추가하지 마세요.
             if not answer_rules_list:
                 answer_rules_list = list(DEFAULT_ANSWER_RULES)
 
+            length_constraint = ""
+            if query_type == "target_short":
+                length_constraint = "답변은 1-2문장, 최대 50단어 이내로 작성하세요."
+                answer_rules_list = answer_rules_list[:3]
+            elif query_type == "target_long":
+                length_constraint = "답변은 3-4문장, 최대 100단어 이내로 작성하세요."
+            elif query_type == "reasoning":
+                length_constraint = "근거 2~3개와 결론을 명확히 제시하세요."
+
             rules_text = "\n".join(f"- {r}" for r in answer_rules_list)
             prompt = f"""[지시사항]
 반드시 한국어로 답변하세요.
 OCR에 없는 정보는 추가하지 마세요.
+{length_constraint}
 
 [준수 규칙]
 {rules_text}
@@ -1222,6 +1255,7 @@ OCR에 없는 정보는 추가하지 마세요.
             "query": query,
             "answer": answer,
             "changes": changes,
+            "query_type": query_type,
         }
 
     try:
