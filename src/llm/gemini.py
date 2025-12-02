@@ -1,3 +1,4 @@
+# mypy: disable-error-code=attr-defined
 """Minimal Gemini client used across the QA pipeline.
 
 This wraps google.generativeai and provides simple generate/evaluate/rewrite

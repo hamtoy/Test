@@ -1,7 +1,12 @@
+# mypy: disable-error-code=import-untyped
 import os
 import sys
+from typing import TYPE_CHECKING
 
-from tabulate import tabulate
+if TYPE_CHECKING:
+    from tabulate import tabulate
+else:
+    from tabulate import tabulate  # type: ignore[import-untyped]
 
 # Add project root to path
 sys.path.append(os.getcwd())

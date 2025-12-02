@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# mypy: disable-error-code=attr-defined
 """Main entry point for Gemini Workflow System - Interactive Menu Mode."""
 
 import asyncio

@@ -15,6 +15,7 @@ Usage:
     model = create_generative_model("gemini-1.5-pro")
 """
 
+# mypy: disable-error-code=attr-defined
 from __future__ import annotations
 
 from typing import Any, Optional

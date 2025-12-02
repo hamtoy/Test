@@ -22,6 +22,10 @@ password = config.neo4j_password
 
 print(f"URI: {uri}", flush=True)
 
+if not uri or not user or not password:
+    print("Missing Neo4j configuration (uri/user/password)", flush=True)
+    sys.exit(1)
+
 try:
     driver = GraphDatabase.driver(uri, auth=(user, password))
     driver.verify_connectivity()
@@ -36,7 +40,11 @@ query = "RETURN 1 as val"
 print("Running query...", flush=True)
 with driver.session() as session:
     result = session.run(query)
-    print(f"Result: {result.single()[0]}", flush=True)
+    record = result.single()
+    if record is None:
+        print("No result returned", flush=True)
+    else:
+        print(f"Result: {record[0]}", flush=True)
 
 print("End debug script", flush=True)
 driver.close()

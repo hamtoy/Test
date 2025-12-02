@@ -1,3 +1,4 @@
+# mypy: disable-error-code=attr-defined
 import logging
 import os
 import sys

@@ -3,13 +3,19 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Optional, Protocol, Sequence, cast
 
-try:
-    import redis
-except ImportError:  # redis가 없을 때도 동작하도록
-    redis = None
-
 from src.config.constants import RULES_CACHE_TTL_SECONDS
 from src.qa.rag_system import QAKnowledgeGraph
+
+redis_module: Any | None = None
+try:
+    import redis as _redis
+
+    redis_module = cast(Any | None, _redis)
+except ImportError:  # redis가 없을 때도 동작하도록
+    redis_module = None
+
+redis: Any | None = redis_module
+redis_client_module: Any | None = redis_module
 
 
 class _RedisClientProto(Protocol):
@@ -47,7 +53,7 @@ class CachingLayer:
             redis_client: Optional Redis client for caching.
         """
         self.kg = kg
-        self.redis = redis_client if redis_client and redis else None
+        self.redis = redis_client if redis_client and redis_client_module else None
 
     def _fetch_rules_from_graph(self, query_type: str) -> List[Dict[str, str]]:
         cypher = """

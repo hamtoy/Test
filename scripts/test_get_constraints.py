@@ -1,7 +1,20 @@
+# mypy: disable-error-code=import-untyped
 import os
 import sys
+from typing import TYPE_CHECKING
 
-from tabulate import tabulate
+import pytest
+
+if TYPE_CHECKING:
+    from tabulate import tabulate
+else:
+    try:
+        from tabulate import tabulate  # type: ignore[import-untyped]
+    except ImportError:  # pragma: no cover - optional dependency for local scripts
+        pytest.skip(
+            "tabulate not installed; skipping constraint script tests",
+            allow_module_level=True,
+        )
 
 # Add project root to path
 sys.path.append(os.getcwd())
