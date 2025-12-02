@@ -273,57 +273,6 @@ class QAKnowledgeGraph:
 
         return _run_async_safely(_run())
 
-    def get_formatting_rules(self, template_type: str) -> str:
-        """템플릿 유형별 서식/스타일 규칙을 마크다운 문자열로 반환."""
-        cypher = """
-        MATCH (t:Template {name: $template_type})-[:ENFORCES]->(r:Rule)
-        RETURN r.category AS category, r.text AS text, coalesce(r.priority, 999) AS priority
-        ORDER BY priority, category
-        """
-
-        def _format(records: List[Dict[str, Any]]) -> str:
-            grouped: Dict[str, List[str]] = {}
-            for rec in records:
-                text = rec.get("text")
-                if not text:
-                    continue
-                category = rec.get("category") or "Formatting Rules"
-                grouped.setdefault(category, []).append(str(text))
-
-            if not grouped:
-                return ""
-
-            lines: List[str] = []
-            for category, texts in grouped.items():
-                lines.append(f"### {category}")
-                lines.extend(f"- {t}" for t in texts)
-            return "\n".join(lines)
-
-        # sync 드라이버 우선
-        if self._graph is not None:
-            try:
-                with self._graph.session() as session:
-                    records = session.run(cypher, template_type=template_type)
-                    return _format([dict(r) for r in records])
-            except Exception as e:  # noqa: BLE001
-                logger.warning("Sync formatting rules query failed: %s", e)
-
-        provider = getattr(self, "_graph_provider", None)
-        if provider is None:
-            return ""
-
-        async def _run() -> List[Dict[str, Any]]:
-            async with provider.session() as session:
-                result = await session.run(cypher, template_type=template_type)
-                if hasattr(result, "__aiter__"):
-                    records = [record async for record in result]
-                else:
-                    records = list(result)
-                return [dict(r) for r in records]
-
-        records = _run_async_safely(_run())
-        return _format(records)
-
     def get_best_practices(self, query_type: str) -> List[Dict[str, str]]:
         """Get best practices for a given query type.
 
