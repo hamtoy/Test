@@ -433,14 +433,37 @@ async def generate_single_qa(
         rules_list = list(DEFAULT_ANSWER_RULES)
         logger.info("Neo4j 규칙 없음, 기본 규칙 사용")
 
-    # 질의 유형별 추가 지시
+    # 질의 유형별 추가 지시 및 길이 제약
     extra_instructions = "질의 유형에 맞게 작성하세요."
+    length_constraint = ""
     if normalized_qtype == "reasoning":
         extra_instructions = "추론형 답변입니다. '요약문' 같은 헤더를 쓰지 말고, 근거 2~3개와 결론을 명확히 제시하세요."
-    elif normalized_qtype == "target_short":
-        extra_instructions = "타겟 짧은 답변입니다. 두 문장 이내로 핵심만 요약해 주세요. 불필요한 서론/결론은 생략합니다."
-    elif normalized_qtype == "target_long":
-        extra_instructions = "타겟 긴 답변입니다. 핵심을 3~4문장 정도로 간결하게 서술해 주세요. 불필요한 반복을 피합니다."
+        length_constraint = """
+[답변 형식]
+추론형 답변입니다.
+- '요약문' 같은 헤더 사용 금지
+- 근거 2~3개와 결론을 명확히 제시
+"""
+    elif normalized_qtype == "target":
+        if qtype == "target_short":
+            length_constraint = """
+[CRITICAL - 길이 제약]
+**절대 규칙**: 답변은 반드시 1-2문장 이내로 작성하세요.
+- 최대 50단어 이내
+- 핵심만 추출
+- 불필요한 서론/결론 금지
+- 예시/부연 설명 금지
+"""
+            rules_list = rules_list[:3]
+        elif qtype == "target_long":
+            length_constraint = """
+[CRITICAL - 길이 제약]
+**절대 규칙**: 답변은 반드시 3-4문장 이내로 작성하세요.
+- 최대 100단어 이내
+- 핵심 요점만 간결하게
+- 불필요한 반복 금지
+"""
+            rules_list = rules_list[:5]
 
     try:
         queries = await agent.generate_query(
@@ -453,7 +476,9 @@ async def generate_single_qa(
 
         truncated_ocr = ocr_text[:QA_GENERATION_OCR_TRUNCATE_LENGTH]
         rules_in_answer = "\n".join(f"- {r}" for r in rules_list)
-        answer_prompt = f"""[규칙]
+        answer_prompt = f"""{length_constraint}
+
+[규칙]
 {rules_in_answer}
 
 [질의]: {query}
@@ -461,7 +486,7 @@ async def generate_single_qa(
 [OCR 텍스트]
 {truncated_ocr}
 
-위 규칙을 준수하여 한국어로 답변하세요.
+위 길이/형식 제약과 규칙을 엄격히 준수하여 한국어로 답변하세요.
 {extra_instructions}"""
 
         draft_answer = await agent.rewrite_best_answer(
@@ -471,6 +496,35 @@ async def generate_single_qa(
             query_type=normalized_qtype,
             kg=kg_wrapper or kg,
         )
+
+        # 길이 검증: 타겟 단답/장답형에서 문장 수 초과 시 재작성
+        sentences = [
+            s
+            for s in draft_answer.replace("?", ".").replace("!", ".").split(".")
+            if s.strip()
+        ]
+        sentence_count = len(sentences)
+        if normalized_qtype == "target":
+            if qtype == "target_short" and sentence_count > 2:
+                logger.warning(
+                    "타겟 단답형이 %s문장으로 길어 재작성합니다.", sentence_count
+                )
+                draft_answer = await agent.rewrite_best_answer(
+                    ocr_text=ocr_text,
+                    best_answer=draft_answer,
+                    edit_request="핵심 1-2문장만 남기고 모든 부연 설명을 제거하세요. 최대 50단어 이내.",
+                    cached_content=None,
+                )
+            elif qtype == "target_long" and sentence_count > 4:
+                logger.warning(
+                    "타겟 장답형이 %s문장으로 길어 재작성합니다.", sentence_count
+                )
+                draft_answer = await agent.rewrite_best_answer(
+                    ocr_text=ocr_text,
+                    best_answer=draft_answer,
+                    edit_request="3-4문장 이내로 간결하게 요약하세요. 최대 100단어 이내.",
+                    cached_content=None,
+                )
 
         all_violations: list[str] = []
         if normalized_qtype == "reasoning" and (

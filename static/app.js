@@ -104,6 +104,8 @@ async function saveOCR() {
 async function generateQA(mode, qtype) {
     const resultsDiv = document.getElementById('results');
 
+    const estimatedTime = mode === 'batch' ? '10-20초' : '5-10초';
+
     // 진행 상황 표시
     resultsDiv.innerHTML = `
         <div class="progress-container" style="text-align: center; padding: 40px 20px; background: var(--bg-secondary, #f5f5f5); border-radius: 8px;">
@@ -114,7 +116,7 @@ async function generateQA(mode, qtype) {
                 <div class="progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary, #21808d) 0%, var(--primary-dark, #1a6673) 100%); transition: width 0.5s ease;"></div>
             </div>
             <p style="color: var(--text-secondary, #666); font-size: 0.95em; margin-top: 20px; font-weight: 500;">
-                ${mode === 'batch' ? '예상 소요 시간: <strong>10-20초</strong>' : '예상 소요 시간: <strong>5-10초</strong>'}
+                예상 소요 시간: <strong>${estimatedTime}</strong>
             </p>
             <p style="color: var(--text-secondary, #666); font-size: 0.85em; margin-top: 8px;">
                 병렬 처리로 빠르게 완료됩니다 ✨
@@ -123,9 +125,10 @@ async function generateQA(mode, qtype) {
     `;
 
     const progressBar = document.querySelector('.progress-fill');
-    setTimeout(() => progressBar.style.width = '25%', 300);
-    setTimeout(() => progressBar.style.width = '50%', 2000);
-    setTimeout(() => progressBar.style.width = '75%', 5000);
+    setTimeout(() => progressBar.style.width = '20%', 500);
+    setTimeout(() => progressBar.style.width = '45%', 3000);
+    setTimeout(() => progressBar.style.width = '70%', 7000);
+    setTimeout(() => progressBar.style.width = '90%', 12000);
 
     try {
         const body = { mode };
