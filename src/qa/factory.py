@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from typing import Dict, Optional
 
 from src.llm.gemini import GeminiModelClient
@@ -16,6 +17,12 @@ class QASystemFactory:
 
     Centralizes the instantiation logic for all QA components,
     reducing coupling and improving testability.
+
+    Example:
+        with QASystemFactory() as factory:
+            kg = factory.get_knowledge_graph()
+            # 작업 수행
+        # with 블록 종료 시 자동으로 리소스가 정리됩니다.
     """
 
     def __init__(
@@ -132,3 +139,35 @@ class QASystemFactory:
             "router": self.create_router(),
             "lcel_chain": self.create_lcel_chain(),
         }
+
+    def close(self) -> None:
+        """모든 공유 리소스를 정리합니다."""
+        if self._kg is not None:
+            with suppress(Exception):
+                self._kg.close()
+            self._kg = None
+
+        if self._model_client is not None:
+            close_client = getattr(self._model_client, "close", None)
+            if callable(close_client):
+                with suppress(Exception):
+                    close_client()
+            self._model_client = None
+
+    def __enter__(self) -> "QASystemFactory":
+        """컨텍스트 매니저 진입 시 팩토리 인스턴스 반환."""
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[type],
+        _exc_val: Optional[BaseException],
+        _exc_tb: Optional[object],
+    ) -> None:
+        """컨텍스트 종료 시 리소스 정리."""
+        self.close()
+
+    def __del__(self) -> None:
+        """파괴자에서 안전하게 리소스를 정리합니다."""
+        with suppress(Exception):
+            self.close()

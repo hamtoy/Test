@@ -52,6 +52,10 @@ def __getattr__(name: str) -> Any:
         from src.infra.utils import write_cache_stats
 
         return write_cache_stats
+    if name == "run_async_safely":
+        from src.infra.utils import run_async_safely
+
+        return run_async_safely
     if name == "clean_markdown_code_block":
         from src.infra.utils import clean_markdown_code_block
 
@@ -102,6 +106,14 @@ def __getattr__(name: str) -> Any:
         from src.infra.feature_flags import FeatureFlags
 
         return FeatureFlags
+    if name == "measure_latency":
+        from src.infra.metrics import measure_latency
+
+        return measure_latency
+    if name == "measure_latency_async":
+        from src.infra.metrics import measure_latency_async
+
+        return measure_latency_async
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
@@ -113,6 +125,7 @@ __all__ = [
     "BudgetTracker",
     "SafeDriver",
     "get_neo4j_driver_from_env",
+    "run_async_safely",
     "write_cache_stats",
     "clean_markdown_code_block",
     "safe_json_parse",
@@ -124,4 +137,6 @@ __all__ = [
     "TwoTierIndexManager",
     "OptimizedQueries",
     "FeatureFlags",
+    "measure_latency",
+    "measure_latency_async",
 ]

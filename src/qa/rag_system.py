@@ -2,22 +2,12 @@
 from __future__ import annotations
 
 import asyncio
-import concurrent.futures
 import logging
 import os
-import time
 import weakref
+from collections.abc import Sized
 from contextlib import contextmanager, suppress
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Coroutine,
-    Dict,
-    Generator,
-    List,
-    Optional,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional
 
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -51,59 +41,29 @@ if TYPE_CHECKING:
             ...
 else:
     from langchain_core.embeddings import Embeddings
+from langchain_core.exceptions import LangChainException
 from neo4j import GraphDatabase
-from neo4j.exceptions import Neo4jError
+from neo4j.exceptions import Neo4jError, ServiceUnavailable
 
 from checks.validate_session import validate_turns
+from src.caching.analytics import CacheMetrics
 from src.config import AppConfig
 from src.config.utils import require_env
 from src.core.factory import get_graph_provider
 from src.core.interfaces import GraphProvider
+from src.infra.metrics import measure_latency
 from src.infra.neo4j import SafeDriver, create_sync_driver
+from src.infra.utils import run_async_safely
 from src.qa.graph.rule_upsert import RuleUpsertManager
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T")
 
-
-def _run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
-    """Run an async coroutine from sync context, handling the case where
-    an event loop is already running.
-
-    If there's already a running event loop (e.g., called from async context),
-    run the coroutine in a separate thread to avoid "event loop already running" error.
-
-    Note: This follows the same pattern as close() in this module.
-    Setting event loop to None after loop.close() is intentional to clean up
-    thread-local state. For the thread case, this only affects the worker thread.
-    """
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        # No running loop, create one and run
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(coro)
-        finally:
-            loop.close()
-            asyncio.set_event_loop(None)
-
-    # Loop is already running - run in a separate thread
-    def run_in_thread() -> T:
-        """Execute the coroutine in a separate thread with a new event loop."""
-        new_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(new_loop)
-        try:
-            return new_loop.run_until_complete(coro)
-        finally:
-            new_loop.close()
-            asyncio.set_event_loop(None)
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(run_in_thread)
-        return future.result()
+def _len_if_sized(obj: Any) -> int:
+    """Return length if the object supports __len__, else 0."""
+    if isinstance(obj, Sized):
+        return len(obj)
+    return 0
 
 
 load_dotenv()
@@ -183,6 +143,7 @@ class QAKnowledgeGraph:
         self.neo4j_user: Optional[str] = None
         self.neo4j_password: Optional[str] = None
         self._vector_store: Any = None
+        self._cache_metrics = CacheMetrics(namespace="qa_kg")
 
         if provider is None:
             self.neo4j_uri = neo4j_uri or require_env("NEO4J_URI")
@@ -223,6 +184,31 @@ class QAKnowledgeGraph:
             graph_provider=self._graph_provider,
         )
 
+    def _record_vector_metrics(
+        self,
+        *,
+        query: str,
+        k: int,
+        result_count: int,
+        success: bool,
+        duration_ms: float,
+    ) -> Dict[str, Any]:
+        """Record vector search metrics and return structured log extras."""
+        status = "hit" if success else "error"
+        self._cache_metrics.record_query(
+            "vector_search",
+            duration_ms=duration_ms,
+            result_count=result_count,
+            status=status,
+        )
+        return {
+            "metric": "vector_search",
+            "duration_ms": round(duration_ms, 2),
+            "k": k,
+            "query_length": len(query),
+            "result_count": result_count,
+        }
+
     def _init_vector_store(self) -> None:
         """GEMINI_API_KEY로 임베딩을 생성합니다. 키가 없거나 인덱스가 없으면 건너뜀."""
         try:
@@ -231,7 +217,9 @@ class QAKnowledgeGraph:
             gemini_api_key = os.getenv("GEMINI_API_KEY")
 
             if not gemini_api_key:
-                logger.debug("GEMINI_API_KEY 미설정: 벡터 검색을 건너뜁니다.")
+                logger.debug(
+                    "GEMINI_API_KEY not set; skipping vector store initialization."
+                )
                 return
 
             embedding_model: Any = CustomGeminiEmbeddings(api_key=gemini_api_key)
@@ -246,20 +234,49 @@ class QAKnowledgeGraph:
                 text_node_properties=["text", "section"],
                 embedding_node_property="embedding",
             )
-        except Exception as e:  # noqa: BLE001
-            logger.warning("Neo4j 벡터 스토어 초기화 실패: %s", e)
+        except ImportError as exc:
+            logger.debug(
+                "langchain_neo4j not installed; skipping vector store. (%s)", exc
+            )
+            self._vector_store = None
+        except (
+            Neo4jError,
+            ServiceUnavailable,
+            LangChainException,
+            ValueError,
+        ) as exc:
+            logger.warning("Failed to initialize Neo4j vector store: %s", exc)
             self._vector_store = None
 
+    @measure_latency(
+        "vector_search",
+        get_extra=lambda args, kwargs, result, success, elapsed_ms: args[
+            0
+        ]._record_vector_metrics(
+            query=kwargs.get("query", args[1]),
+            k=kwargs.get("k", args[2] if len(args) > 2 else 5),
+            result_count=_len_if_sized(result),
+            success=success,
+            duration_ms=elapsed_ms,
+        ),
+    )
     def find_relevant_rules(self, query: str, k: int = 5) -> List[str]:
-        """벡터 검색 기반 규칙 찾기 (가능할 때만)."""
+        """Return vector-search-based rules when available."""
         if not self._vector_store:
+            self._cache_metrics.record_skip("vector_store_unavailable")
+            logger.warning("Vector store unavailable; skipping vector search")
             return []
-        start = time.perf_counter()
+
         results = self._vector_store.similarity_search(query, k=k)
-        elapsed_ms = (time.perf_counter() - start) * 1000
-        logger.info("vector_search_ms=%.2f k=%s query=%s", elapsed_ms, k, query)
         return [doc.page_content for doc in results]
 
+    @measure_latency(
+        "get_constraints",
+        get_extra=lambda args, kwargs, result, success, elapsed_ms: {
+            "query_type": kwargs.get("query_type", args[1]),
+            "result_count": _len_if_sized(result),
+        },
+    )
     def get_constraints_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
         """QueryType과 연결된 제약 조건 조회.
         - QueryType-[:HAS_CONSTRAINT]->Constraint 관계 사용
@@ -281,8 +298,8 @@ class QAKnowledgeGraph:
                 with self._graph.session() as session:
                     records = session.run(cypher, qt=query_type)
                     return [dict(r) for r in records]
-            except Exception as e:  # noqa: BLE001
-                logger.warning("Sync constraints query failed: %s", e)
+            except (Neo4jError, ServiceUnavailable) as exc:
+                logger.warning("Sync constraints query failed: %s", exc)
 
         if provider is None:
             return []
@@ -298,8 +315,15 @@ class QAKnowledgeGraph:
                     records = list(result)
                 return [dict(r) for r in records]
 
-        return _run_async_safely(_run())
+        return run_async_safely(_run())
 
+    @measure_latency(
+        "get_best_practices",
+        get_extra=lambda args, kwargs, result, success, elapsed_ms: {
+            "query_type": kwargs.get("query_type", args[1]),
+            "result_count": _len_if_sized(result),
+        },
+    )
     def get_best_practices(self, query_type: str) -> List[Dict[str, str]]:
         """Get best practices for a given query type.
 
@@ -325,8 +349,15 @@ class QAKnowledgeGraph:
                 records = await session.run(cypher, qt=query_type)
                 return [dict(r) for r in records]
 
-        return _run_async_safely(_run())
+        return run_async_safely(_run())
 
+    @measure_latency(
+        "get_examples",
+        get_extra=lambda args, kwargs, result, success, elapsed_ms: {
+            "limit": kwargs.get("limit", args[1] if len(args) > 1 else 5),
+            "result_count": _len_if_sized(result),
+        },
+    )
     def get_examples(self, limit: int = 5) -> List[Dict[str, str]]:
         """Example 노드 조회 (현재 Rule과 직접 연결되지 않았으므로 전체에서 샘플링)."""
         cypher = """
@@ -346,8 +377,15 @@ class QAKnowledgeGraph:
                 records = await session.run(cypher, limit=limit)
                 return [dict(r) for r in records]
 
-        return _run_async_safely(_run())
+        return run_async_safely(_run())
 
+    @measure_latency(
+        "validate_session",
+        get_extra=lambda args, kwargs, result, success, elapsed_ms: {
+            "turns_count": len(kwargs.get("session", args[1]).get("turns", [])),
+            "success": success,
+        },
+    )
     def validate_session(self, session: Dict[str, Any]) -> Dict[str, Any]:
         """checks/validate_session 로직을 활용해 세션 구조 검증."""
         from scripts.build_session import SessionContext
@@ -363,9 +401,17 @@ class QAKnowledgeGraph:
             return res
         except (TypeError, ValueError) as exc:
             return {"ok": False, "issues": [f"컨텍스트 생성 실패: {exc}"]}
-        except Exception as exc:  # noqa: BLE001
+        except (AttributeError, KeyError, RuntimeError) as exc:
             return {"ok": False, "issues": [f"컨텍스트 검증 실패: {exc}"]}
 
+    @measure_latency(
+        "upsert_auto_generated_rules",
+        get_extra=lambda args, kwargs, result, success, elapsed_ms: {
+            "patterns_count": len(args[1]) if len(args) > 1 else 0,
+            "batch_id": kwargs.get("batch_id"),
+            "success": success,
+        },
+    )
     def upsert_auto_generated_rules(
         self,
         patterns: List[Dict[str, Any]],
@@ -381,6 +427,13 @@ class QAKnowledgeGraph:
         """Batch ID로 업서트된 Rule 노드 조회."""
         return self._rule_upsert_manager.get_rules_by_batch_id(batch_id)
 
+    @measure_latency(
+        "get_formatting_rules_for_query_type",
+        get_extra=lambda args, kwargs, result, success, elapsed_ms: {
+            "query_type": kwargs.get("query_type", args[1] if len(args) > 1 else "all"),
+            "result_count": _len_if_sized(result),
+        },
+    )
     def get_formatting_rules_for_query_type(
         self, query_type: str = "all"
     ) -> List[Dict[str, Any]]:
@@ -403,8 +456,8 @@ class QAKnowledgeGraph:
                 with self._graph.session() as session:
                     result = session.run(cypher, query_type=query_type)
                     return [dict(record) for record in result]
-            except Exception as e:  # noqa: BLE001
-                logger.warning("Formatting rule query failed (sync): %s", e)
+            except (Neo4jError, ServiceUnavailable) as exc:
+                logger.warning("Formatting rule query failed (sync): %s", exc)
 
         if provider is None:
             logger.warning("No graph provider available for formatting rules")
@@ -419,8 +472,15 @@ class QAKnowledgeGraph:
                     records = list(result)
                 return [dict(r) for r in records]
 
-        return _run_async_safely(_run())
+        return run_async_safely(_run())
 
+    @measure_latency(
+        "get_formatting_rules",
+        get_extra=lambda args, kwargs, result, success, elapsed_ms: {
+            "template_type": kwargs.get("template_type", args[1]),
+            "result_length": _len_if_sized(result),
+        },
+    )
     def get_formatting_rules(self, template_type: str) -> str:
         """Get formatting rules for a specific template type from Neo4j.
 
@@ -444,8 +504,8 @@ class QAKnowledgeGraph:
                     records = session.run(cypher, template_type=template_type)
                     rules_data = [dict(r) for r in records]
                     return self._format_rules(rules_data)
-            except Exception as e:  # noqa: BLE001
-                logger.warning("Sync formatting rules query failed: %s", e)
+            except (Neo4jError, ServiceUnavailable) as exc:
+                logger.warning("Sync formatting rules query failed: %s", exc)
 
         if provider is None:
             logger.warning("No graph provider available for formatting rules")
@@ -463,7 +523,7 @@ class QAKnowledgeGraph:
                 rules_data = [dict(r) for r in records]
                 return self._format_rules(rules_data)
 
-        return _run_async_safely(_run())
+        return run_async_safely(_run())
 
     def _format_rules(self, rules_data: List[Dict[str, Any]]) -> str:
         """Format rules data into markdown structure.
@@ -530,8 +590,8 @@ class QAKnowledgeGraph:
                     if not running:
                         loop.close()
                         asyncio.set_event_loop(None)
-            except Exception:
-                pass
+            except (RuntimeError, Neo4jError, ServiceUnavailable) as exc:
+                logger.warning("Graph provider close failed: %s", exc)
             self._graph_provider = None
 
     @contextmanager

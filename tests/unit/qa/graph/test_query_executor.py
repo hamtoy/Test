@@ -1,50 +1,11 @@
 """Tests for query execution utilities module."""
 
-import asyncio
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from src.qa.graph.query_executor import QueryExecutor, run_async_safely
-
-
-class TestRunAsyncSafely:
-    """Tests for run_async_safely function."""
-
-    def test_run_async_safely_no_running_loop(self) -> None:
-        """Test running coroutine when no event loop is running."""
-
-        async def sample_coro() -> str:
-            await asyncio.sleep(0.001)
-            return "success"
-
-        result = run_async_safely(sample_coro())
-        assert result == "success"
-
-    def test_run_async_safely_with_running_loop(self) -> None:
-        """Test running coroutine when event loop is already running."""
-
-        async def inner_coro() -> str:
-            return "inner_result"
-
-        async def outer_coro() -> str:
-            # Simulate calling run_async_safely from within an async context
-            result = run_async_safely(inner_coro())
-            return result
-
-        # Run the outer coroutine which calls run_async_safely
-        result = asyncio.run(outer_coro())
-        assert result == "inner_result"
-
-    def test_run_async_safely_propagates_exception(self) -> None:
-        """Test that exceptions from coroutine are propagated."""
-
-        async def failing_coro() -> str:
-            raise ValueError("Test error")
-
-        with pytest.raises(ValueError, match="Test error"):
-            run_async_safely(failing_coro())
+from src.qa.graph.query_executor import QueryExecutor
 
 
 class TestQueryExecutor:

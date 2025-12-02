@@ -256,3 +256,55 @@ class TestQASystemFactory:
             MockChain.assert_called_once()
             MockRouter.assert_called_once()
             MockLCEL.assert_called_once()
+
+    def test_close_cleans_resources(self) -> None:
+        """close should release cached resources."""
+        with (
+            patch("src.qa.factory.QAKnowledgeGraph") as MockKG,
+            patch("src.qa.factory.GeminiModelClient") as MockClient,
+        ):
+            from src.qa.factory import QASystemFactory
+
+            factory = QASystemFactory()
+
+            mock_kg = MagicMock()
+            mock_kg.close = MagicMock()
+            mock_client = MagicMock()
+            mock_client.close = MagicMock()
+            MockKG.return_value = mock_kg
+            MockClient.return_value = mock_client
+
+            factory.get_knowledge_graph()
+            factory.get_model_client()
+
+            factory.close()
+
+            mock_kg.close.assert_called_once()
+            mock_client.close.assert_called_once()
+            assert factory._kg is None
+            assert factory._model_client is None
+
+    def test_context_manager_auto_closes(self) -> None:
+        """Context manager should auto-close resources on exit."""
+        with (
+            patch("src.qa.factory.QAKnowledgeGraph") as MockKG,
+            patch("src.qa.factory.GeminiModelClient") as MockClient,
+        ):
+            from src.qa.factory import QASystemFactory
+
+            mock_kg = MagicMock()
+            mock_kg.close = MagicMock()
+            mock_client = MagicMock()
+            mock_client.close = MagicMock()
+            MockKG.return_value = mock_kg
+            MockClient.return_value = mock_client
+
+            with QASystemFactory() as factory:
+                assert factory is not None
+                factory.get_knowledge_graph()
+                factory.get_model_client()
+
+            mock_kg.close.assert_called_once()
+            mock_client.close.assert_called_once()
+            assert factory._kg is None
+            assert factory._model_client is None

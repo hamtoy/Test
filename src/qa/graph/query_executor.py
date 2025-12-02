@@ -6,54 +6,12 @@ async/sync handling and error management.
 
 from __future__ import annotations
 
-import asyncio
-import concurrent.futures
 import logging
-from typing import Any, Coroutine, Dict, List, Optional, TypeVar
+from typing import Any, Dict, List, Optional
+
+from src.infra.utils import run_async_safely
 
 logger = logging.getLogger(__name__)
-
-T = TypeVar("T")
-
-
-def run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
-    """Run an async coroutine from sync context safely.
-
-    Handles the case where an event loop is already running by
-    executing the coroutine in a separate thread.
-
-    Args:
-        coro: The coroutine to execute
-
-    Returns:
-        The result of the coroutine execution
-    """
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        # No running loop, create one and run
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(coro)
-        finally:
-            loop.close()
-            asyncio.set_event_loop(None)
-
-    # Loop is already running - run in a separate thread
-    def run_in_thread() -> T:
-        """Execute the coroutine in a separate thread with a new event loop."""
-        new_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(new_loop)
-        try:
-            return new_loop.run_until_complete(coro)
-        finally:
-            new_loop.close()
-            asyncio.set_event_loop(None)
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(run_in_thread)
-        return future.result()
 
 
 class QueryExecutor:
