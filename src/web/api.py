@@ -16,6 +16,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
+from fastapi.middleware.cors import CORSMiddleware
 
 from checks.detect_forbidden_patterns import find_violations
 from src.agent import GeminiAgent
@@ -95,6 +96,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 # FastAPI 앱
 app = FastAPI(title="Gemini QA System", version="1.0.0", lifespan=lifespan)
+
+# CORS 설정
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://127.0.0.1:8000", "http://localhost:8000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 정적 파일 & 템플릿
 app.mount("/static", StaticFiles(directory=str(REPO_ROOT / "static")), name="static")
