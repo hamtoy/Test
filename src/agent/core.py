@@ -551,6 +551,7 @@ class GeminiAgent:
         template_name: Optional[str] = None,
         query_type: str = "explanation",
         kg: Optional["QAKnowledgeGraph"] = None,
+        constraints: Optional[List[Dict[str, Any]]] = None,
     ) -> List[str]:
         """OCR 텍스트와 사용자 의도에 기반한 전략적 쿼리 생성.
 
@@ -561,6 +562,7 @@ class GeminiAgent:
             template_name: 사용자 템플릿 이름 (A/B 테스트용, None이면 기본 템플릿 사용)
             query_type: 질의 유형 (Neo4j 규칙 조회용)
             kg: 재사용할 QAKnowledgeGraph 인스턴스 (없으면 새로 생성)
+            constraints: Neo4j에서 미리 조회한 제약사항 리스트 (없으면 내부 조회)
 
         Returns:
             생성된 쿼리 목록
@@ -573,20 +575,30 @@ class GeminiAgent:
             QueryResult.model_json_schema(), indent=2, ensure_ascii=False
         )
 
-        rules: List[str] = []
-        constraints: List[str] = []
+        # constraints가 직접 전달되었으면 사용, 아니면 Neo4j 조회
+        constraint_list = constraints if constraints is not None else []
         kg_obj = kg
         try:
-            if kg_obj is None:
+            if not constraint_list and kg_obj is None:
                 from src.qa.rag_system import QAKnowledgeGraph
 
                 kg_obj = QAKnowledgeGraph()
-            constraint_list = kg_obj.get_constraints_for_query_type(query_type)
-            for c in constraint_list:
-                desc = c.get("description")
-                if desc:
-                    constraints.append(desc)
-            rules = kg_obj.find_relevant_rules(ocr_text[:500], k=10)
+            if not constraint_list and kg_obj is not None:
+                all_constraints = kg_obj.get_constraints_for_query_type(query_type)
+                constraint_list = [
+                    c for c in all_constraints if c.get("category") in ["query", "both"]
+                ]
+        except Exception as e:  # noqa: BLE001
+            self.logger.debug("Neo4j 제약사항 조회 실패: %s", e)
+
+        # priority 높은 순으로 정렬
+        if constraint_list:
+            constraint_list.sort(key=lambda x: x.get("priority", 0), reverse=True)
+
+        rules: List[str] = []
+        try:
+            if kg_obj is not None:
+                rules = kg_obj.find_relevant_rules(ocr_text[:500], k=10)
         except Exception as e:  # noqa: BLE001
             self.logger.debug("Neo4j 규칙 조회 실패: %s", e)
 
@@ -604,13 +616,15 @@ class GeminiAgent:
             system_prompt = system_template.render(
                 response_schema=schema_json,
                 rules=rules,
-                constraints=constraints,
+                constraints=constraint_list,
                 formatting_rules=formatting_rules,
             )
         except Exception as e:  # noqa: BLE001
             self.logger.debug("템플릿 렌더링 실패: %s", e)
             system_prompt = self.jinja_env.get_template(system_template_name).render(
-                response_schema=schema_json, formatting_rules=formatting_rules
+                response_schema=schema_json,
+                formatting_rules=formatting_rules,
+                constraints=constraint_list,
             )
 
         model = self._create_generative_model(
@@ -773,6 +787,7 @@ class GeminiAgent:
         cached_content: Optional["caching.CachedContent"] = None,
         query_type: str = "explanation",
         kg: Optional["QAKnowledgeGraph"] = None,
+        constraints: Optional[List[Dict[str, Any]]] = None,
         length_constraint: str = "",
     ) -> str:
         """선택된 최고 답변을 가독성 및 안전성 측면에서 개선.
@@ -786,22 +801,30 @@ class GeminiAgent:
             ocr_text=ocr_text, best_answer=best_answer, edit_request=edit_request
         )
 
+        # constraints가 직접 전달되었으면 사용, 아니면 Neo4j 조회
+        constraint_list = constraints if constraints is not None else []
         rules: List[str] = []
-        constraints: List[str] = []
         kg_obj = kg
         try:
-            if kg_obj is None:
+            if not constraint_list and kg_obj is None:
                 from src.qa.rag_system import QAKnowledgeGraph
 
                 kg_obj = QAKnowledgeGraph()
-            constraint_list = kg_obj.get_constraints_for_query_type(query_type)
-            for c in constraint_list:
-                desc = c.get("description")
-                if desc:
-                    constraints.append(desc)
-            rules = kg_obj.find_relevant_rules(best_answer[:500], k=10)
+            if not constraint_list and kg_obj is not None:
+                all_constraints = kg_obj.get_constraints_for_query_type(query_type)
+                constraint_list = [
+                    c
+                    for c in all_constraints
+                    if c.get("category") in ["answer", "both"]
+                ]
+            if kg_obj is not None:
+                rules = kg_obj.find_relevant_rules(best_answer[:500], k=10)
         except Exception as e:  # noqa: BLE001
             self.logger.warning("Neo4j 규칙 조회 실패, 기본 템플릿 사용: %s", e)
+
+        # priority 높은 순으로 정렬
+        if constraint_list:
+            constraint_list.sort(key=lambda x: x.get("priority", 0), reverse=True)
 
         # Get formatting rules from Neo4j
         formatting_rules = ""
@@ -815,7 +838,7 @@ class GeminiAgent:
             system_template = self.jinja_env.get_template("system/qa/rewrite.j2")
             system_prompt = system_template.render(
                 rules=rules,
-                constraints=constraints,
+                constraints=constraint_list,
                 has_table_chart=False,
                 formatting_rules=formatting_rules,
                 length_constraint=length_constraint,
@@ -824,6 +847,7 @@ class GeminiAgent:
             self.logger.warning("동적 템플릿 실패, 기본 사용: %s", e)
             system_prompt = self.jinja_env.get_template("system/rewrite.j2").render(
                 formatting_rules=formatting_rules,
+                constraints=constraint_list,
                 length_constraint=length_constraint,
             )
 

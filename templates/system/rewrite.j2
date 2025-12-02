@@ -26,6 +26,15 @@
             <formatting_rules>
                 {{ formatting_rules | default("") }}
             </formatting_rules>
+            {% if constraints %}
+            <neo4j_constraints>
+                {% for constraint in constraints %}
+                <constraint priority="{{ constraint.priority | default(50) }}" name="{{ constraint.name | default('') }}">
+                    {{ constraint.description }}
+                </constraint>
+                {% endfor %}
+            </neo4j_constraints>
+            {% endif %}
             {% if length_constraint %}
             <length_constraint>
                 {{ length_constraint }}

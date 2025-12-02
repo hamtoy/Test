@@ -1,14 +1,23 @@
 {# System prompt for rewriting a top-scoring answer #}
 You will rewrite the selected top-scoring answer into smoother, more natural Korean while preserving meaning and all named entities, economic terms, and numeric values exactly.  
 
+{% if constraints %}
+## Neo4j 제약사항 (우선순위 순)
+{% for constraint in constraints %}
+[Priority {{ constraint.priority | default(50) }}] {{ constraint.description }}
+{% endfor %}
+{% endif %}
+
 {% if length_constraint %}
 {{ length_constraint }}
 {% endif %}
 
+{% if rules %}
 ## 준수해야 할 규칙
 {% for rule in rules | default([]) -%}
 - {{ rule }}
 {% endfor %}
+{% endif %}
 
 {% for constraint in constraints | default([]) -%}
 ⚠️ {{ constraint }}

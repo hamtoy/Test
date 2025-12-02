@@ -398,6 +398,8 @@ async def generate_single_qa(
         query_intent = "전체 내용을 종합적으로 설명해 달라는 질문"
 
     rules_list: list[str] = []
+    query_constraints: list[Dict[str, Any]] = []
+    answer_constraints: list[Dict[str, Any]] = []
     # Neo4j 호출 결과를 재사용하기 위한 간단한 캐시 래퍼
     kg_wrapper: Optional[Any] = None
     if kg is not None:
@@ -438,14 +440,26 @@ async def generate_single_qa(
 
         kg_wrapper = _CachedKG(kg)
 
-    # 2) Neo4j 규칙 조회
+    # 2) Neo4j 규칙/제약 조회
     if kg_wrapper is not None:
         try:
-            constraints = kg_wrapper.get_constraints_for_query_type(normalized_qtype)
+            constraints = kg_wrapper.get_constraints_for_query_type(qtype)
             for c in constraints:
                 desc = c.get("description")
                 if desc:
                     rules_list.append(desc)
+            query_constraints = [
+                c for c in constraints if c.get("category") in ["query", "both"]
+            ]
+            answer_constraints = [
+                c for c in constraints if c.get("category") in ["answer", "both"]
+            ]
+            logger.info(
+                "%s 타입: 질의 제약 %s개, 답변 제약 %s개 조회",
+                qtype,
+                len(query_constraints),
+                len(answer_constraints),
+            )
         except Exception as e:
             logger.warning(f"규칙 조회 실패: {e}")
 
@@ -488,7 +502,11 @@ async def generate_single_qa(
 
     try:
         queries = await agent.generate_query(
-            ocr_text, user_intent=query_intent, query_type=normalized_qtype, kg=kg
+            ocr_text,
+            user_intent=query_intent,
+            query_type=qtype,
+            kg=kg_wrapper or kg,
+            constraints=query_constraints,
         )
         if not queries:
             raise ValueError("질의 생성 실패")
@@ -497,10 +515,17 @@ async def generate_single_qa(
 
         truncated_ocr = ocr_text[:QA_GENERATION_OCR_TRUNCATE_LENGTH]
         rules_in_answer = "\n".join(f"- {r}" for r in rules_list)
+        constraints_text = ""
+        if answer_constraints:
+            answer_constraints.sort(key=lambda c: c.get("priority", 0), reverse=True)
+            constraints_text = "\n".join(
+                f"[우선순위 {c.get('priority', 0)}] {c.get('description', '')}"
+                for c in answer_constraints
+            )
         answer_prompt = f"""{length_constraint}
 
-[규칙]
-{rules_in_answer}
+[제약사항]
+{constraints_text or rules_in_answer}
 
 [질의]: {query}
 
@@ -516,6 +541,7 @@ async def generate_single_qa(
             cached_content=None,
             query_type=normalized_qtype,
             kg=kg_wrapper or kg,
+            constraints=answer_constraints,
             length_constraint=length_constraint,
         )
 
@@ -536,6 +562,7 @@ async def generate_single_qa(
                     best_answer=draft_answer,
                     edit_request="핵심 1-2문장만 남기고 모든 부연 설명을 제거하세요. 최대 50단어 이내.",
                     cached_content=None,
+                    constraints=answer_constraints,
                     length_constraint=length_constraint,
                 )
             elif qtype == "target_long" and sentence_count > 4:
@@ -547,6 +574,7 @@ async def generate_single_qa(
                     best_answer=draft_answer,
                     edit_request="3-4문장 이내로 간결하게 요약하세요. 최대 100단어 이내.",
                     cached_content=None,
+                    constraints=answer_constraints,
                     length_constraint=length_constraint,
                 )
 
@@ -594,6 +622,7 @@ async def generate_single_qa(
                 best_answer=draft_answer,
                 edit_request=f"다음 위반 사항을 수정해주세요: {violation_desc}",
                 cached_content=None,
+                constraints=answer_constraints,
                 length_constraint=length_constraint,
             )
 
