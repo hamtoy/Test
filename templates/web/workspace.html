@@ -198,8 +198,16 @@
         }
     }
 
-    // 실행 버튼
+    // 실행 버튼 (중복 실행 방지)
+    let isExecuting = false;
+
     document.getElementById('execute-btn').addEventListener('click', async () => {
+        if (isExecuting) {
+            console.log('이미 실행 중입니다.');
+            return;
+        }
+        const executeBtn = document.getElementById('execute-btn');
+
         const query = document.getElementById('query').value.trim();
         const answer = document.getElementById('answer').value.trim();
         const editRequest = document.getElementById('edit-request').value.trim();
@@ -223,6 +231,11 @@
         const progressBar = document.querySelector('.progress-fill');
         setTimeout(() => progressBar.style.width = '50%', 300);
 
+        isExecuting = true;
+        executeBtn.disabled = true;
+        executeBtn.textContent = '⏳ 처리 중...';
+        executeBtn.style.opacity = '0.6';
+
         try {
             const result = await apiCall('/api/workspace/unified', 'POST', {
                 query: query || null,
@@ -236,13 +249,14 @@
             progressBar.style.width = '100%';
             await new Promise(resolve => setTimeout(resolve, 300));
 
-            // UI 업데이트
-            document.getElementById('query').value = result.query || '';
-            document.getElementById('answer').value = result.answer || '';
-
             displayResult(result);
         } catch (error) {
             resultsDiv.innerHTML = `<p style="color: var(--danger, red)">작업 실패: ${error.message}</p>`;
+        } finally {
+            isExecuting = false;
+            executeBtn.disabled = false;
+            executeBtn.textContent = '🚀 실행';
+            executeBtn.style.opacity = '1';
         }
     });
 
@@ -295,6 +309,7 @@
         btnRow.style.marginTop = '15px';
         btnRow.style.display = 'flex';
         btnRow.style.gap = '10px';
+        btnRow.style.flexWrap = 'wrap';
 
         const copyQueryBtn = document.createElement('button');
         copyQueryBtn.className = 'btn-secondary';
@@ -306,8 +321,38 @@
         copyAnswerBtn.textContent = '📋 답변 복사';
         copyAnswerBtn.onclick = () => copyToClipboard(data.answer);
 
+        const applyBtn = document.createElement('button');
+        applyBtn.className = 'btn-primary';
+        applyBtn.textContent = '⬆️ 입력 필드에 반영';
+        applyBtn.style.marginLeft = 'auto';
+        applyBtn.onclick = () => {
+            document.getElementById('query').value = data.query || '';
+            document.getElementById('answer').value = data.answer || '';
+            applyBtn.textContent = '✅ 반영됨';
+            applyBtn.disabled = true;
+            setTimeout(() => {
+                applyBtn.textContent = '⬆️ 입력 필드에 반영';
+                applyBtn.disabled = false;
+            }, 2000);
+        };
+
+        const clearBtn = document.createElement('button');
+        clearBtn.className = 'btn-secondary';
+        clearBtn.textContent = '🗑️ 초기화';
+        clearBtn.style.background = 'var(--danger, #e74c3c)';
+        clearBtn.style.color = 'white';
+        clearBtn.style.borderColor = 'var(--danger, #e74c3c)';
+        clearBtn.onclick = () => {
+            document.getElementById('query').value = '';
+            document.getElementById('answer').value = '';
+            document.getElementById('edit-request').value = '';
+            resultsDiv.innerHTML = '';
+        };
+
         btnRow.appendChild(copyQueryBtn);
         btnRow.appendChild(copyAnswerBtn);
+        btnRow.appendChild(applyBtn);
+        btnRow.appendChild(clearBtn);
         card.appendChild(btnRow);
 
         resultsDiv.appendChild(card);

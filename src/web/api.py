@@ -309,13 +309,38 @@ def _strip_output_tags(text: str) -> str:
 
 
 def postprocess_answer(answer: str, qtype: str) -> str:
-    """답변 후처리 - 불필요한 요소 제거 및 길이/서식 교정."""
+    """답변 후처리 - 서식 규칙 위반 자동 수정."""
     import re
 
     # 1. 태그 제거
     answer = answer.replace("<output>", "").replace("</output>", "").strip()
 
-    # 2. 줄글 내 볼드체 제거 (목록/소제목 제외)
+    # 2. 별표 불릿을 하이픈으로 변환
+    answer = re.sub(r"^\*\s+", "- ", answer, flags=re.MULTILINE)
+    answer = re.sub(r"^(\s+)\*\s+", r"\1- ", answer, flags=re.MULTILINE)
+
+    # 3. ###/## 소제목을 볼드 소제목으로 변환
+    answer = re.sub(r"^###\s+(.+)$", r"**\1**", answer, flags=re.MULTILINE)
+    answer = re.sub(r"^##\s+(.+)$", r"**\1**", answer, flags=re.MULTILINE)
+
+    # 4. 목록 항목 내 콜론 뒤 볼드체 제거
+    def fix_list_bold(match: re.Match[str]) -> str:
+        line = match.group(0)
+        parts = line.split(":**", 1)
+        if len(parts) == 2:
+            before_colon = parts[0] + ":**"
+            after_colon = re.sub(r"\*\*([^*]+)\*\*", r"\1", parts[1])
+            return before_colon + after_colon
+        return line
+
+    answer = re.sub(
+        r"^-\s+\*\*[^*]+\*\*:\s*.+$",
+        fix_list_bold,
+        answer,
+        flags=re.MULTILINE,
+    )
+
+    # 5. 줄글 내 볼드체 제거 (목록/소제목 제외)
     lines = answer.split("\n")
     processed_lines: list[str] = []
     for line in lines:
@@ -329,20 +354,20 @@ def postprocess_answer(answer: str, qtype: str) -> str:
         if not is_list_item and not is_heading:
             line = re.sub(r"\*\*([^*]+)\*\*", r"\1", line)
         processed_lines.append(line)
-    answer = "\n".join(processed_lines).strip()
+    answer = "\n".join(processed_lines)
 
-    # 3. target_short: 불필요한 헤더 제거
+    # 6. target_short: 불필요한 헤더 제거
     if qtype == "target_short":
         lines = answer.split("\n")
         if lines and len(lines) > 1 and ":" in lines[0] and len(lines[0]) < 20:
             answer = "\n".join(lines[1:]).strip()
             logger.info("target_short: 불필요한 헤더 제거됨")
 
-    # 4. 과도한 빈 줄 정리
+    # 7. 과도한 빈 줄 정리
     while "\n\n\n" in answer:
         answer = answer.replace("\n\n\n", "\n\n")
 
-    # 5. 길이 강제 조정 (target_short/long만)
+    # 8. 길이 강제 조정 (target_short/long만)
     if qtype == "target_short":
         sentences = [
             s.strip() for s in answer.split(".") if s.strip() and len(s.strip()) > 5
