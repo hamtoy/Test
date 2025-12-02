@@ -218,6 +218,18 @@ def log_review_session(
         logger.warning(f"검수 로그 기록 실패: {e}")
 
 
+def _strip_output_tags(text: str) -> str:
+    """Remove <output> tags from generated text.
+
+    Args:
+        text: Text that may contain <output> tags
+
+    Returns:
+        Text with <output> tags removed and whitespace stripped
+    """
+    return text.replace("<output>", "").replace("</output>", "").strip()
+
+
 def detect_workflow(
     query: Optional[str], answer: Optional[str], edit_request: Optional[str]
 ) -> str:
@@ -686,8 +698,7 @@ OCR에 없는 정보는 추가하지 마세요.
             query_type=normalized_qtype,
         )
 
-        if "<output>" in answer:
-            answer = answer.replace("<output>", "").replace("</output>", "").strip()
+        answer = _strip_output_tags(answer)
 
         violations = find_violations(answer)
         if violations:
@@ -699,8 +710,7 @@ OCR에 없는 정보는 추가하지 마세요.
                 cached_content=None,
                 query_type=normalized_qtype,
             )
-            if "<output>" in answer:
-                answer = answer.replace("<output>", "").replace("</output>", "").strip()
+            answer = _strip_output_tags(answer)
 
         return {"query": query, "answer": answer}
     except Exception as e:
@@ -821,8 +831,13 @@ OCR에 없는 정보는 추가하지 마세요.
 위 답변에 대한 자연스러운 질문 1개를 생성하세요. 질문만 출력하세요.
 """
             queries = await agent.generate_query(prompt, user_intent=None)
-            query = queries[0] if queries else "질문 생성 실패"
-            changes.append("질의 생성 완료")
+            if not queries:
+                logger.warning("질의 생성 실패: agent.generate_query returned empty list")
+                query = ""
+                changes.append("질의 생성 실패 - 빈 답변으로 질의 생성 불가")
+            else:
+                query = queries[0]
+                changes.append("질의 생성 완료")
 
         elif workflow == "answer_generation":
             # 질의 → 답변 생성
@@ -866,8 +881,7 @@ OCR에 없는 정보는 추가하지 마세요.
                 query_type=normalized_qtype,
             )
 
-            if "<output>" in answer:
-                answer = answer.replace("<output>", "").replace("</output>", "").strip()
+            answer = _strip_output_tags(answer)
 
             violations = find_violations(answer)
             if violations:
@@ -879,10 +893,7 @@ OCR에 없는 정보는 추가하지 마세요.
                     cached_content=None,
                     query_type=normalized_qtype,
                 )
-                if "<output>" in answer:
-                    answer = (
-                        answer.replace("<output>", "").replace("</output>", "").strip()
-                    )
+                answer = _strip_output_tags(answer)
 
             changes.append("답변 생성 완료")
 
