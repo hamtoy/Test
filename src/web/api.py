@@ -1383,6 +1383,10 @@ OCR에 없는 정보는 추가하지 마세요.
         else:
             raise HTTPException(status_code=400, detail="알 수 없는 워크플로우")
 
+        # 공통 후처리: 생성/수정된 답변 서식 교정
+        if answer:
+            answer = postprocess_answer(answer, query_type)
+
         return {
             "workflow": workflow,
             "query": query,
