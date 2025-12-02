@@ -19,7 +19,18 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    TypeVar,
+    cast,
+)
 
 from src.config.constants import (
     BATCH_MAX_WAIT_SECONDS,
@@ -28,6 +39,9 @@ from src.config.constants import (
 
 if TYPE_CHECKING:
     from src.config import AppConfig
+
+T = TypeVar("T")
+R = TypeVar("R")
 
 
 class BatchJobStatus(str, Enum):
@@ -81,7 +95,7 @@ class BatchRequest:
 
 
 @dataclass
-class BatchResult:
+class BatchJobResult:
     """Result of a single request in a batch job."""
 
     custom_id: str
@@ -98,7 +112,7 @@ class BatchJob:
     job_id: str
     status: BatchJobStatus = BatchJobStatus.PENDING
     requests: List[BatchRequest] = field(default_factory=list)
-    results: List[BatchResult] = field(default_factory=list)
+    results: List[BatchJobResult] = field(default_factory=list)
     input_file_path: Optional[Path] = None
     output_file_path: Optional[Path] = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -325,7 +339,7 @@ class BatchProcessor:
 
                 # Generate mock results
                 job.results = [
-                    BatchResult(
+                    BatchJobResult(
                         custom_id=req.custom_id,
                         status="success",
                         content=f"Batch response for: {req.text[:50]}...",
@@ -426,3 +440,119 @@ class BatchProcessor:
 
         self.logger.info("Cleaned up %d completed jobs", len(completed_ids))
         return len(completed_ids)
+
+
+# ==================== Async batch processing with rate limiting ====================
+
+
+@dataclass
+class BatchResult(Generic[T, R]):
+    """결과 집계용 배치 처리 결과."""
+
+    successful: List[R]
+    failed: List[tuple[T, Exception]]
+    total: int
+
+    @property
+    def success_rate(self) -> float:
+        """성공률 계산."""
+        return len(self.successful) / self.total if self.total > 0 else 0.0
+
+
+class AsyncRateLimiter:
+    """간단한 비동기 Rate Limiter (분당 요청 수 기준)."""
+
+    def __init__(self, requests_per_minute: int = 60):
+        self.rpm = max(1, requests_per_minute)
+        self.interval = 60.0 / self.rpm
+        self._last_request = 0.0
+        self._lock = asyncio.Lock()
+
+    async def acquire(self) -> None:
+        async with self._lock:
+            now = asyncio.get_event_loop().time()
+            wait_time = self._last_request + self.interval - now
+            if wait_time > 0:
+                await asyncio.sleep(wait_time)
+            self._last_request = asyncio.get_event_loop().time()
+
+
+# ==================== Async batch processing with rate limiting ====================
+
+
+class SmartBatchProcessor(Generic[T, R]):
+    """Rate limit과 재시도를 고려한 배치 처리기."""
+
+    def __init__(
+        self,
+        max_concurrent: int = 5,
+        requests_per_minute: int = 60,
+        max_retries: int = 3,
+        retry_delay: float = 1.0,
+        on_progress: Optional[Callable[[int, int], None]] = None,
+    ):
+        self.semaphore = asyncio.Semaphore(max(1, max_concurrent))
+        self.rate_limiter = AsyncRateLimiter(requests_per_minute)
+        self.max_retries = max(0, max_retries)
+        self.retry_delay = max(0.0, retry_delay)
+        self.on_progress = on_progress
+        self.logger = logging.getLogger(__name__)
+
+    async def process_batch(
+        self,
+        items: List[T],
+        processor: Callable[[T], Awaitable[R]],
+    ) -> BatchResult[T, R]:
+        """배치 항목들을 처리."""
+        failed: List[tuple[T, Exception]] = []
+        completed = 0
+
+        async def process_with_limits(index: int, item: T) -> Optional[R]:
+            nonlocal completed
+            async with self.semaphore:
+                await self.rate_limiter.acquire()
+                for attempt in range(self.max_retries + 1):
+                    try:
+                        result = await processor(item)
+                        completed += 1
+                        if self.on_progress:
+                            self.on_progress(completed, len(items))
+                        return result
+                    except Exception as exc:  # noqa: BLE001, PERF203
+                        if attempt >= self.max_retries:
+                            self.logger.error(
+                                "Item %d failed after %d retries: %s",
+                                index,
+                                self.max_retries + 1,
+                                exc,
+                            )
+                            failed.append((item, exc))
+                            return None
+
+                        delay = self.retry_delay * (2**attempt)
+                        self.logger.warning(
+                            "Item %d attempt %d failed, retrying in %.1fs: %s",
+                            index,
+                            attempt + 1,
+                            delay,
+                            exc,
+                        )
+                        await asyncio.sleep(delay)
+                return None
+
+        results = await asyncio.gather(
+            *(process_with_limits(i, item) for i, item in enumerate(items)),
+            return_exceptions=True,
+        )
+
+        successful: List[R] = [
+            cast(R, result)
+            for result in results
+            if result is not None and not isinstance(result, Exception)
+        ]
+
+        return BatchResult(
+            successful=successful,
+            failed=failed,
+            total=len(items),
+        )

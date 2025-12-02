@@ -12,11 +12,14 @@ from src.agent.core import GeminiAgent
 
 # Batch processing (Phase 2: GOpt Integration)
 from src.agent.batch_processor import (
+    AsyncRateLimiter,
     BatchJob,
+    BatchJobResult,
     BatchJobStatus,
     BatchProcessor,
     BatchRequest,
     BatchResult,
+    SmartBatchProcessor,
 )
 
 # Exceptions (re-export for legacy imports)
@@ -51,8 +54,11 @@ __all__ = [
     "RateLimiter",
     # Batch processing (Phase 2)
     "BatchProcessor",
+    "SmartBatchProcessor",
     "BatchRequest",
     "BatchResult",
+    "BatchJobResult",
+    "AsyncRateLimiter",
     "BatchJob",
     "BatchJobStatus",
     # Exceptions

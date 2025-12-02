@@ -42,6 +42,7 @@ from src.config.exceptions import (
 )
 from src.core.models import EvaluationResultSchema, QueryResult
 from src.infra.logging import log_metrics as _log_metrics
+from src.infra.telemetry import get_meter, traced_async
 from src.infra.utils import clean_markdown_code_block, safe_json_parse
 
 from .cache_manager import CacheManager
@@ -114,6 +115,13 @@ class GeminiAgent:
         self._rate_limiter_module = RateLimiter(config.max_concurrency)
         self._cost_tracker = CostTracker(config)
         self._cache_manager = CacheManager(config)
+        meter = get_meter()  # type: ignore[no-untyped-call]
+        self._api_call_counter = meter.create_counter(
+            "gemini.api.calls", description="Number of Gemini API calls"
+        )
+        self._token_counter = meter.create_counter(
+            "gemini.tokens.total", description="Total tokens used"
+        )
 
         # 하위 호환성을 위한 속성
         self._semaphore = self._rate_limiter_module.semaphore
@@ -554,6 +562,7 @@ class GeminiAgent:
 
     # ==================== Query 생성 ====================
 
+    @traced_async("gemini.generate_query")
     async def generate_query(
         self,
         ocr_text: str,
@@ -578,6 +587,7 @@ class GeminiAgent:
         Returns:
             생성된 쿼리 목록
         """
+        self._api_call_counter.add(1, {"operation": "generate_query"})
         user_template_name = template_name or "user/query_gen.j2"
         user_template = self.jinja_env.get_template(user_template_name)
         user_prompt = user_template.render(ocr_text=ocr_text, user_intent=user_intent)
@@ -689,6 +699,7 @@ class GeminiAgent:
         ),
         reraise=True,
     )
+    @traced_async("gemini.evaluate_responses")
     async def evaluate_responses(
         self,
         ocr_text: str,
@@ -701,6 +712,7 @@ class GeminiAgent:
         """후보 답변을 평가하고 점수를 부여."""
         if not query:
             return None
+        self._api_call_counter.add(1, {"operation": "evaluate"})
 
         input_data = {
             "ocr_ground_truth": ocr_text,

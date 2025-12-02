@@ -36,6 +36,15 @@ worker = ["faststream[redis]>=0.4.10,<1.0.0"]
 # Multimodal (image processing)
 multimodal = ["pillow>=10.0.0"]
 
+# Observability
+observability = [
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "opentelemetry-exporter-otlp>=1.20.0",
+    "opentelemetry-instrumentation-fastapi>=0.41b0",
+    "opentelemetry-instrumentation-httpx>=0.41b0",
+]
+
 # All optional features - list individual packages, not self-reference
 all = [
     # RAG

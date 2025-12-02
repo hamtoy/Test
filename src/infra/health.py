@@ -3,11 +3,14 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import inspect
 import logging
 import os
 import sys
 import time
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 try:
     import psutil
@@ -377,6 +380,115 @@ async def liveness_check() -> dict[str, Any]:
 
     """
     return {"status": "ok"}
+
+
+# ==================== Structured health reporting ====================
+
+
+class HealthStatus(str, Enum):
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
+    UNHEALTHY = "unhealthy"
+
+
+@dataclass
+class ComponentHealth:
+    name: str
+    status: HealthStatus
+    latency_ms: Optional[float] = None
+    message: Optional[str] = None
+    details: Optional[Dict[str, Any]] = None
+
+
+@dataclass
+class SystemHealth:
+    status: HealthStatus
+    timestamp: str
+    version: str
+    components: Dict[str, ComponentHealth]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "status": self.status.value,
+            "timestamp": self.timestamp,
+            "version": self.version,
+            "components": {
+                name: {
+                    "status": comp.status.value,
+                    "latency_ms": comp.latency_ms,
+                    "message": comp.message,
+                    "details": comp.details,
+                }
+                for name, comp in self.components.items()
+            },
+        }
+
+
+class HealthChecker:
+    """시스템 헬스 체커."""
+
+    def __init__(self, version: str = "unknown"):
+        self.version = version
+        self._checks: Dict[str, Any] = {}
+
+    def register_check(self, name: str, check_fn: Any) -> None:
+        """헬스 체크 함수 등록."""
+        self._checks[name] = check_fn
+
+    async def check_all(self) -> SystemHealth:
+        """모든 컴포넌트 헬스 체크."""
+        components: Dict[str, ComponentHealth] = {}
+        overall_status = HealthStatus.HEALTHY
+
+        for name, check_fn in self._checks.items():
+            try:
+                start = asyncio.get_event_loop().time()
+                result = check_fn()
+                if inspect.isawaitable(result):
+                    result = await result
+                latency = (asyncio.get_event_loop().time() - start) * 1000
+
+                components[name] = ComponentHealth(
+                    name=name,
+                    status=HealthStatus.HEALTHY,
+                    latency_ms=round(latency, 2),
+                    details=result if isinstance(result, dict) else {"result": result},
+                )
+            except Exception as exc:  # noqa: BLE001, PERF203
+                logger.warning("Health check failed for %s: %s", name, exc)
+                components[name] = ComponentHealth(
+                    name=name,
+                    status=HealthStatus.UNHEALTHY,
+                    message=str(exc),
+                )
+                overall_status = HealthStatus.UNHEALTHY
+
+        unhealthy_count = sum(
+            1 for c in components.values() if c.status == HealthStatus.UNHEALTHY
+        )
+        if 0 < unhealthy_count < len(components):
+            overall_status = HealthStatus.DEGRADED
+
+        return SystemHealth(
+            status=overall_status,
+            timestamp=datetime.datetime.utcnow().isoformat() + "Z",
+            version=self.version,
+            components=components,
+        )
+
+
+async def check_neo4j_with_params(uri: str, user: str, password: str) -> Dict[str, Any]:
+    """Parameterized Neo4j check using existing helper."""
+    os.environ["NEO4J_URI"] = uri
+    os.environ["NEO4J_USER"] = user
+    os.environ["NEO4J_PASSWORD"] = password
+    return await check_neo4j()
+
+
+async def check_redis_with_url(url: str) -> Dict[str, Any]:
+    """Parameterized Redis check."""
+    os.environ["REDIS_URL"] = url
+    return await check_redis()
 
 
 async def readiness_check() -> dict[str, Any]:

@@ -6,6 +6,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -16,6 +17,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import (
     HTMLResponse,
+    JSONResponse,
     RedirectResponse,
     Response,
     StreamingResponse,
@@ -38,6 +40,13 @@ from src.config.constants import (
     WORKSPACE_UNIFIED_TIMEOUT,
 )
 from src.features.multimodal import MultimodalUnderstanding
+from src.infra.health import (
+    HealthChecker,
+    HealthStatus,
+    check_gemini_api,
+    check_neo4j_with_params,
+    check_redis_with_url,
+)
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
 from src.web.models import (
@@ -79,6 +88,7 @@ QTYPE_MAP = {
 _kg_cache: Optional["_CachedKG"] = None
 _kg_cache_timestamp: Optional[datetime] = None
 _CACHE_TTL = timedelta(minutes=5)
+health_checker = HealthChecker(version=os.getenv("APP_VERSION", "dev"))
 
 
 class _CachedKG:
@@ -198,10 +208,31 @@ class _ConfigProxy:
 config = _ConfigProxy()
 
 
+async def _init_health_checks() -> None:
+    """Register health checks based on environment."""
+    if os.getenv("NEO4J_URI"):
+        health_checker.register_check(
+            "neo4j",
+            lambda: check_neo4j_with_params(
+                os.getenv("NEO4J_URI", ""),
+                os.getenv("NEO4J_USER", "neo4j"),
+                os.getenv("NEO4J_PASSWORD", ""),
+            ),
+        )
+    if os.getenv("REDIS_URL"):
+        health_checker.register_check(
+            "redis",
+            lambda: check_redis_with_url(os.getenv("REDIS_URL", "")),
+        )
+    if os.getenv("GEMINI_API_KEY"):
+        health_checker.register_check("gemini", check_gemini_api)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """서버 시작/종료 시 리소스 관리"""
     await init_resources()
+    await _init_health_checks()
     yield
 
 
@@ -546,6 +577,29 @@ async def api_save_ocr(payload: OCRTextInput) -> Dict[str, str]:
         return {"status": "success", "message": "OCR 텍스트가 저장되었습니다."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/health")
+async def api_health() -> JSONResponse:
+    """상세 헬스 체크."""
+    result = await health_checker.check_all()
+    status_code = 200 if result.status == HealthStatus.HEALTHY else 503
+    return JSONResponse(result.to_dict(), status_code=status_code)
+
+
+@app.get("/health/live")
+async def api_liveness() -> Dict[str, str]:
+    """Liveness probe."""
+    return {"status": "alive"}
+
+
+@app.get("/health/ready")
+async def api_readiness() -> JSONResponse:
+    """Readiness probe."""
+    result = await health_checker.check_all()
+    if result.status == HealthStatus.UNHEALTHY:
+        raise HTTPException(status_code=503, detail="Not ready")
+    return JSONResponse(result.to_dict(), status_code=200)
 
 
 @app.post("/api/qa/generate")
