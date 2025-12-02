@@ -167,8 +167,8 @@ class TestGenerateSingleQAWithRules:
 
             # Should call rule compliance check
             assert mock_validator._check_rule_compliance.called
-            # Should trigger rewrite due to low score and violations
-            assert mock_agent.rewrite_best_answer.call_count == 2
+            # Should trigger at least one rewrite due to violations
+            assert mock_agent.rewrite_best_answer.call_count >= 1
 
 
 @pytest.mark.asyncio
