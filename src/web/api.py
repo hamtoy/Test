@@ -6,7 +6,7 @@ import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List, Literal, Optional
 from uuid import uuid4
@@ -15,8 +15,8 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from starlette.requests import Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.requests import Request
 
 from checks.detect_forbidden_patterns import find_violations
 from src.agent import GeminiAgent
@@ -59,6 +59,64 @@ QTYPE_MAP = {
     "factual": "target",
     "general": "explanation",
 }
+
+# 모듈 레벨 KG 캐시 (5분 TTL)
+_kg_cache: Optional["_CachedKG"] = None
+_kg_cache_timestamp: Optional[datetime] = None
+_CACHE_TTL = timedelta(minutes=5)
+
+
+class _CachedKG:
+    """Lightweight KG wrapper with memoization."""
+
+    def __init__(self, base: QAKnowledgeGraph) -> None:
+        self._base = base
+        self._constraints: dict[str, list[Dict[str, Any]]] = {}
+        self._formatting: dict[str, str] = {}
+        self._rules: dict[tuple[str, int], list[str]] = {}
+
+    def get_constraints_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
+        if query_type in self._constraints:
+            return self._constraints[query_type]
+        data = self._base.get_constraints_for_query_type(query_type)
+        self._constraints[query_type] = data
+        return data
+
+    def get_formatting_rules(self, template_type: str) -> str:
+        if template_type in self._formatting:
+            return self._formatting[template_type]
+        text = self._base.get_formatting_rules(template_type)
+        self._formatting[template_type] = text
+        return text
+
+    def find_relevant_rules(self, query: str, k: int = 10) -> List[str]:
+        key = (query[:500], k)
+        if key in self._rules:
+            return self._rules[key]
+        data = self._base.find_relevant_rules(query, k=k)
+        self._rules[key] = data
+        return data
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._base, name)
+
+
+def get_cached_kg() -> Optional["_CachedKG"]:
+    """Return a cached KG wrapper valid for 5 minutes."""
+    global _kg_cache, _kg_cache_timestamp
+    now = datetime.now()
+    if (
+        _kg_cache is not None
+        and _kg_cache_timestamp is not None
+        and now - _kg_cache_timestamp < _CACHE_TTL
+    ):
+        return _kg_cache
+
+    if kg is not None:
+        _kg_cache = _CachedKG(kg)
+        _kg_cache_timestamp = now
+        return _kg_cache
+    return None
 
 
 def get_config() -> AppConfig:
@@ -400,45 +458,7 @@ async def generate_single_qa(
     rules_list: list[str] = []
     query_constraints: list[Dict[str, Any]] = []
     answer_constraints: list[Dict[str, Any]] = []
-    # Neo4j 호출 결과를 재사용하기 위한 간단한 캐시 래퍼
-    kg_wrapper: Optional[Any] = None
-    if kg is not None:
-
-        class _CachedKG:
-            def __init__(self, base: QAKnowledgeGraph) -> None:
-                self._base = base
-                self._constraints: dict[str, list[Dict[str, Any]]] = {}
-                self._formatting: dict[str, str] = {}
-                self._rules: dict[tuple[str, int], list[str]] = {}
-
-            def get_constraints_for_query_type(
-                self, query_type: str
-            ) -> List[Dict[str, Any]]:
-                if query_type in self._constraints:
-                    return self._constraints[query_type]
-                data = self._base.get_constraints_for_query_type(query_type)
-                self._constraints[query_type] = data
-                return data
-
-            def get_formatting_rules(self, template_type: str) -> str:
-                if template_type in self._formatting:
-                    return self._formatting[template_type]
-                text = self._base.get_formatting_rules(template_type)
-                self._formatting[template_type] = text
-                return text
-
-            def find_relevant_rules(self, query: str, k: int = 10) -> List[str]:
-                key = (query[:500], k)
-                if key in self._rules:
-                    return self._rules[key]
-                data = self._base.find_relevant_rules(query, k=k)
-                self._rules[key] = data
-                return data
-
-            def __getattr__(self, name: str) -> Any:
-                return getattr(self._base, name)
-
-        kg_wrapper = _CachedKG(kg)
+    kg_wrapper: Optional[Any] = get_cached_kg()
 
     # 2) Neo4j 규칙/제약 조회
     if kg_wrapper is not None:
