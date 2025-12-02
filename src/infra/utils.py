@@ -1,11 +1,47 @@
+import asyncio
+import concurrent.futures
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Coroutine, Dict, Optional, TypeVar
 
 import aiofiles
 
 from src.core.models import WorkflowResult
+
+T = TypeVar("T")
+
+
+def run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
+    """동기 컨텍스트에서 안전하게 코루틴을 실행합니다.
+
+    이미 실행 중인 이벤트 루프가 있으면 별도 스레드에서 새 루프로 실행하고,
+    없는 경우에는 새 루프를 생성해 실행합니다.
+    """
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+            asyncio.set_event_loop(None)
+
+    def run_in_thread() -> T:
+        """새 이벤트 루프를 가진 워커 스레드에서 코루틴 실행."""
+        new_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(new_loop)
+        try:
+            return new_loop.run_until_complete(coro)
+        finally:
+            new_loop.close()
+            asyncio.set_event_loop(None)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(run_in_thread)
+        return future.result()
 
 
 async def load_file_async(file_path: Path) -> str:
@@ -245,6 +281,7 @@ async def append_checkpoint(path: Path, result: WorkflowResult) -> None:
 
 
 __all__ = [
+    "run_async_safely",
     "load_file_async",
     "parse_raw_candidates",
     "clean_markdown_code_block",

@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 
 from src.core.interfaces import GraphProvider
 from src.infra.neo4j import SafeDriver
-from src.qa.graph.query_executor import run_async_safely
+from src.infra.utils import run_async_safely
 
 
 class RuleUpsertManager:

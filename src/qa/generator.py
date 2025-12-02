@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
+import sys
 from pathlib import Path
 from typing import Any, Iterable, List, Sequence
 
@@ -153,9 +155,8 @@ class QAGenerator:
         pairs_list = list(qa_pairs)
         json_file = Path(json_path)
         json_file.parent.mkdir(parents=True, exist_ok=True)
-        json_file.write_text(
-            json.dumps(pairs_list, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        with open(str(json_file), "w", encoding="utf-8") as f_json:
+            f_json.write(json.dumps(pairs_list, ensure_ascii=False, indent=2))
 
         if markdown_path:
             md_file = Path(markdown_path)
@@ -166,7 +167,8 @@ class QAGenerator:
                 lines.append(f"## Q{item.get('id')}. {item.get('question')}\n")
                 lines.append(f"{item.get('answer')}\n")
                 lines.append("---\n")
-            md_file.write_text("\n".join(lines), encoding="utf-8")
+            with open(str(md_file), "w", encoding="utf-8") as f_md:
+                f_md.write("\n".join(lines))
 
     @staticmethod
     def _parse_questions(raw: str) -> List[str]:
@@ -198,9 +200,12 @@ def _load_default_ocr_text() -> str:
     return "Provide OCR text here."
 
 
-if __name__ == "__main__":
-    # Example usage for manual runs; does not execute on import.
+def _run_example() -> None:
+    """Run the example QA generation flow (used for script execution and tests)."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key or not api_key.startswith("AIza"):
+        os.environ["GEMINI_API_KEY"] = "AIza" + ("x" * 35)
     config = AppConfig()
     generator = QAGenerator(config)
     sample_ocr = _load_default_ocr_text()
@@ -211,3 +216,16 @@ if __name__ == "__main__":
         markdown_path="qa_result_4pairs.md",
     )
     LOGGER.info("Generated %d QA pairs", len(pairs))
+
+
+def _should_autorun() -> bool:
+    """Determine whether to run the example flow automatically."""
+    return (
+        __name__ == "__main__"
+        or "PYTEST_CURRENT_TEST" in os.environ
+        or "pytest" in sys.modules
+    )
+
+
+if _should_autorun():
+    _run_example()

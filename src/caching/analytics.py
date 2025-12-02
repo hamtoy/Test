@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from datetime import datetime
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 _CACHE_HIT_COUNTER: Optional[Any] = None
 _CACHE_MISS_COUNTER: Optional[Any] = None
 _CACHE_LATENCY_HISTOGRAM: Optional[Any] = None
+_CACHE_REGISTRY: Dict[str, "CacheMetrics"] = {}
 
 
 def _init_prometheus_metrics() -> None:
@@ -98,10 +100,16 @@ def record_cache_latency(
         ).observe(latency_seconds)
 
 
+def _register_namespace(metrics: "CacheMetrics") -> None:
+    """Register a CacheMetrics instance for unified reporting."""
+    _CACHE_REGISTRY[metrics.namespace] = metrics
+
+
 @dataclass
 class CacheMetrics:
     """Container for cache performance metrics."""
 
+    namespace: str = "default"
     hits: int = 0
     misses: int = 0
     evictions: int = 0
@@ -109,6 +117,15 @@ class CacheMetrics:
     ttl_expirations: int = 0
     avg_ttl_seconds: float = 0.0
     ttl_efficiency: float = 0.0  # Percentage of entries used before expiration
+    queries: int = 0
+    skips: int = 0
+    last_operation: Optional[str] = None
+    last_duration_ms: float = 0.0
+    last_result_count: int = 0
+    last_status: str = "unknown"
+
+    def __post_init__(self) -> None:
+        _register_namespace(self)
 
     @property
     def hit_rate(self) -> float:
@@ -120,6 +137,55 @@ class CacheMetrics:
     def total_requests(self) -> int:
         """Total number of cache requests."""
         return self.hits + self.misses
+
+    def record_query(
+        self,
+        operation: str,
+        *,
+        duration_ms: float,
+        result_count: int = 0,
+        status: str = "hit",
+    ) -> None:
+        """Record a cache-related query or lookup event."""
+        self.queries += 1
+        self.last_operation = operation
+        self.last_duration_ms = duration_ms
+        self.last_result_count = result_count
+        self.last_status = status
+
+        if status == "hit":
+            self.hits += 1
+        elif status == "miss":
+            self.misses += 1
+
+        record_cache_latency(
+            duration_ms / 1000.0, operation=operation, cache_type=self.namespace
+        )
+
+    def record_skip(self, reason: str) -> None:
+        """Record a skipped cache lookup (e.g., unavailable backend)."""
+        self.skips += 1
+        self.last_status = f"skip:{reason}"
+        self.last_operation = None
+
+    def to_summary(self) -> Dict[str, Any]:
+        """Return a lightweight serializable summary."""
+        return {
+            "hits": self.hits,
+            "misses": self.misses,
+            "hit_rate": self.hit_rate,
+            "queries": self.queries,
+            "skips": self.skips,
+            "evictions": self.evictions,
+            "ttl_expirations": self.ttl_expirations,
+            "avg_ttl_seconds": self.avg_ttl_seconds,
+            "ttl_efficiency": self.ttl_efficiency,
+            "last_operation": self.last_operation,
+            "last_duration_ms": round(self.last_duration_ms, 2),
+            "last_result_count": self.last_result_count,
+            "last_status": self.last_status,
+            "memory_bytes": self.memory_bytes,
+        }
 
 
 @dataclass
@@ -402,3 +468,15 @@ def print_realtime_report(analytics: CacheAnalytics) -> None:
     table.add_row("Evictions", str(summary["evictions"]), "")
 
     Console().print(table)
+
+
+def get_unified_cache_report() -> Dict[str, Any]:
+    """Return a unified cache report across registered namespaces."""
+    namespaces: Dict[str, Any] = {}
+    for name, metrics in _CACHE_REGISTRY.items():
+        namespaces[name] = metrics.to_summary()
+
+    return {
+        "namespaces": namespaces,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
