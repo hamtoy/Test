@@ -41,6 +41,15 @@ class QAGenerator:
         answer_prompt_path: Path | str | None = None,
         logger: logging.Logger | None = None,
     ) -> None:
+        """Initialize QA generator with configuration and optional dependencies.
+
+        Args:
+            config: Application configuration containing API key and model settings
+            client: Optional pre-configured OpenAI client (creates default if None)
+            query_prompt_path: Custom path to query generation prompt template
+            answer_prompt_path: Custom path to answer generation prompt template
+            logger: Optional logger instance (uses module logger if None)
+        """
         self.config = config
         self.logger = logger or LOGGER
 
