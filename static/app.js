@@ -16,7 +16,9 @@ async function apiCall(url, method = 'GET', body = null) {
         const response = await fetch(url, options);
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || '요청 실패');
+            const err = new Error(error.detail || '요청 실패');
+            err.status = response.status;  // Add status code to error object
+            throw err;
         }
         return await response.json();
     } catch (error) {
@@ -104,7 +106,7 @@ async function saveOCR() {
 async function generateQA(mode, qtype) {
     const resultsDiv = document.getElementById('results');
 
-    const estimatedTime = mode === 'batch' ? '10-20초' : '5-10초';
+    const estimatedTime = mode === 'batch' ? '30초~2분' : '15초~1분';
 
     // 진행 상황 표시
     resultsDiv.innerHTML = `
@@ -153,7 +155,17 @@ async function generateQA(mode, qtype) {
             resultsDiv.appendChild(createQACard(data.pair, 1));
         }
     } catch (error) {
-        resultsDiv.innerHTML = `<p style="color: var(--danger)">생성 실패: ${error.message}</p>`;
+        // Check if it's a timeout error (status 504)
+        if (error.status === 504) {
+            resultsDiv.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <p style="color: var(--warning, orange); font-size: 1.2em; margin-bottom: 15px;">⏱️ 생성 시간이 초과되었습니다.</p>
+                    <p style="color: var(--text-secondary, #666); margin-bottom: 20px;">LLM 서버 응답이 느립니다. 잠시 후 다시 시도해주세요.</p>
+                    <button onclick="location.reload()" class="btn-primary" style="padding: 10px 20px; cursor: pointer;">새로고침</button>
+                </div>`;
+        } else {
+            resultsDiv.innerHTML = `<p style="color: var(--danger, red)">생성 실패: ${error.message}</p>`;
+        }
     }
 }
 

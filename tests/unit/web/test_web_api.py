@@ -1,5 +1,6 @@
 """Tests for the web API module."""
 
+import asyncio
 import io
 import json
 from datetime import datetime, timezone
@@ -10,6 +11,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+from src.config.constants import (
+    QA_BATCH_GENERATION_TIMEOUT,
+    QA_SINGLE_GENERATION_TIMEOUT,
+)
 from src.web.api import app, log_review_session
 
 
@@ -209,6 +214,65 @@ class TestQAGenerateApi:
             assert response.status_code == 200
             data = response.json()
             assert data["pair"]["type"] == expected_type
+
+
+class TestQAGenerateApiTimeout:
+    """Tests for QA generation API timeout functionality."""
+
+    @pytest.mark.asyncio
+    async def test_single_qa_timeout(self, tmp_path: Path) -> None:
+        """Test single QA generation timeout."""
+        # Create OCR file
+        inputs_dir = tmp_path / "data" / "inputs"
+        inputs_dir.mkdir(parents=True)
+        (inputs_dir / "input_ocr.txt").write_text("테스트 OCR 텍스트", encoding="utf-8")
+
+        # Mock agent that takes longer than timeout
+        async def slow_generate(*args: Any, **kwargs: Any) -> list[str]:
+            await asyncio.sleep(QA_SINGLE_GENERATION_TIMEOUT + 5)
+            return ["test query"]
+
+        with patch("src.web.api.config") as mock_config:
+            mock_config.input_dir = inputs_dir
+
+            with patch("src.web.api.agent") as mock_agent:
+                mock_agent.generate_query = slow_generate
+
+                client = TestClient(app)
+                response = client.post(
+                    "/api/qa/generate",
+                    json={"mode": "single", "qtype": "reasoning"},
+                )
+                # Should return 504 timeout error
+                assert response.status_code == 504
+                data = response.json()
+                assert "시간 초과" in data["detail"]
+
+    @pytest.mark.asyncio
+    async def test_batch_qa_timeout(self, tmp_path: Path) -> None:
+        """Test batch QA generation timeout."""
+        # Create OCR file
+        inputs_dir = tmp_path / "data" / "inputs"
+        inputs_dir.mkdir(parents=True)
+        (inputs_dir / "input_ocr.txt").write_text("테스트 OCR 텍스트", encoding="utf-8")
+
+        # Mock agent that takes longer than timeout
+        async def slow_generate(*args: Any, **kwargs: Any) -> list[str]:
+            await asyncio.sleep(QA_BATCH_GENERATION_TIMEOUT + 5)
+            return ["test query"]
+
+        with patch("src.web.api.config") as mock_config:
+            mock_config.input_dir = inputs_dir
+
+            with patch("src.web.api.agent") as mock_agent:
+                mock_agent.generate_query = slow_generate
+
+                client = TestClient(app)
+                response = client.post("/api/qa/generate", json={"mode": "batch"})
+                # Should return 504 timeout error
+                assert response.status_code == 504
+                data = response.json()
+                assert "시간 초과" in data["detail"]
 
 
 class TestEvalApi:
