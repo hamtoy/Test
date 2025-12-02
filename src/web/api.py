@@ -315,35 +315,34 @@ def postprocess_answer(answer: str, qtype: str) -> str:
     # 1. 태그 제거
     answer = answer.replace("<output>", "").replace("</output>", "").strip()
 
-    # 2. 별표 불릿을 하이픈으로 변환
-    answer = re.sub(r"^\*\s+", "- ", answer, flags=re.MULTILINE)
-    answer = re.sub(r"^(\s+)\*\s+", r"\1- ", answer, flags=re.MULTILINE)
+    # 2. ###/## 소제목 → **소제목** + 줄바꿈
+    answer = re.sub(r"\s*###\s+([^#\n]+)", r"\n\n**\1**\n\n", answer)
+    answer = re.sub(r"\s*##\s+([^#\n]+)", r"\n\n**\1**\n\n", answer)
 
-    # 3. ###/## 소제목을 볼드 소제목으로 변환
-    answer = re.sub(r"^###\s+(.+)$", r"**\1**", answer, flags=re.MULTILINE)
-    answer = re.sub(r"^##\s+(.+)$", r"**\1**", answer, flags=re.MULTILINE)
+    # 3. 별표 불릿(*) → 하이픈(-) + 줄바꿈 보장
+    answer = re.sub(r"\s*\*\s+\*\*([^*]+)\*\*:", r"\n- **\1**:", answer)
+    answer = re.sub(r"\s*\*\s+", r"\n- ", answer)
 
-    # 4. 목록 항목 내 콜론 뒤 볼드체 제거
-    def fix_list_bold(match: re.Match[str]) -> str:
-        line = match.group(0)
-        parts = line.split(":**", 1)
-        if len(parts) == 2:
-            before_colon = parts[0] + ":**"
-            after_colon = re.sub(r"\*\*([^*]+)\*\*", r"\1", parts[1])
-            return before_colon + after_colon
+    # 4. 하이픈 불릿 앞에 줄바꿈 보장
+    answer = re.sub(r"([^\n])\s*-\s+\*\*", r"\1\n\n- **", answer)
+
+    # 5. 목록 항목 내 콜론 뒤 볼드체 제거
+    def fix_list_bold(line: str) -> str:
+        if line.strip().startswith("-") and ":**" in line:
+            parts = line.split(":**", 1)
+            if len(parts) == 2:
+                before_colon = parts[0] + ":**"
+                after_colon = re.sub(r"\*\*([^*]+)\*\*", r"\1", parts[1])
+                return before_colon + after_colon
         return line
 
-    answer = re.sub(
-        r"^-\s+\*\*[^*]+\*\*:\s*.+$",
-        fix_list_bold,
-        answer,
-        flags=re.MULTILINE,
-    )
-
-    # 5. 줄글 내 볼드체 제거 (목록/소제목 제외)
     lines = answer.split("\n")
+    lines = [fix_list_bold(line) for line in lines]
+    answer = "\n".join(lines)
+
+    # 6. 줄글 내 볼드체 제거 (목록/소제목 제외)
     processed_lines: list[str] = []
-    for line in lines:
+    for line in answer.split("\n"):
         stripped = line.strip()
         is_list_item = stripped.startswith("-") or bool(re.match(r"^\d+\.", stripped))
         is_heading = (
@@ -356,21 +355,20 @@ def postprocess_answer(answer: str, qtype: str) -> str:
         processed_lines.append(line)
     answer = "\n".join(processed_lines)
 
-    # 6. target_short: 불필요한 헤더 제거
+    # 7. 과도한 빈 줄 정리 (3줄 이상 → 2줄)
+    while "\n\n\n" in answer:
+        answer = answer.replace("\n\n\n", "\n\n")
+
+    # 8. target_short: 불필요한 헤더 제거
     if qtype == "target_short":
         lines = answer.split("\n")
         if lines and len(lines) > 1 and ":" in lines[0] and len(lines[0]) < 20:
             answer = "\n".join(lines[1:]).strip()
-            logger.info("target_short: 불필요한 헤더 제거됨")
 
-    # 7. 과도한 빈 줄 정리
-    while "\n\n\n" in answer:
-        answer = answer.replace("\n\n\n", "\n\n")
-
-    # 8. 길이 강제 조정 (target_short/long만)
+    # 9. 길이 강제 조정 (target_short/long)
     if qtype == "target_short":
         sentences = [
-            s.strip() for s in answer.split(".") if s.strip() and len(s.strip()) > 5
+            s.strip() for s in answer.split(". ") if s.strip() and len(s.strip()) > 5
         ]
         if len(sentences) > 2:
             sentence_with_index = [(i, s) for i, s in enumerate(sentences)]
@@ -379,10 +377,6 @@ def postprocess_answer(answer: str, qtype: str) -> str:
             ]
             top_2_sorted = sorted(top_2, key=lambda x: x[0])
             answer = ". ".join([s for _, s in top_2_sorted]) + "."
-            logger.warning(
-                "target_short 길이 초과 (%s문장) → 강제로 2문장으로 축소",
-                len(sentences),
-            )
 
     elif qtype == "target_long":
         sentences = [
@@ -394,10 +388,7 @@ def postprocess_answer(answer: str, qtype: str) -> str:
                 :4
             ]
             top_4_sorted = sorted(top_4, key=lambda x: x[0])
-            answer = ". ".join([s for _, s in top_4_sorted]) + "."
-            logger.warning(
-                "target_long 길이 초과 (%s문장) → 강제로 4문장으로 축소", len(sentences)
-            )
+            answer = ".  ".join([s for _, s in top_4_sorted]) + "."
 
     return answer.strip()
 

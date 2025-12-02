@@ -299,7 +299,15 @@
         if (data.answer) {
             const answerSection = document.createElement('div');
             answerSection.className = 'result-section';
-            answerSection.innerHTML = `<strong>답변:</strong>${escapeHtml(data.answer)}`;
+
+            const escapedAnswer = escapeHtml(data.answer);
+            let formattedAnswer = escapedAnswer
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n\n/g, '<br><br>')
+                .replace(/\n/g, '<br>')
+                .replace(/^- /gm, '• ');
+
+            answerSection.innerHTML = `<strong>답변:</strong><div class="answer-content">${formattedAnswer}</div>`;
             card.appendChild(answerSection);
         }
 
