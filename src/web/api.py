@@ -847,7 +847,9 @@ OCR에 없는 정보는 추가하지 마세요.
 """
             queries = await agent.generate_query(prompt, user_intent=None)
             if not queries:
-                logger.warning("질의 생성 실패: agent.generate_query returned empty list")
+                logger.warning(
+                    "질의 생성 실패: agent.generate_query returned empty list"
+                )
                 query = ""
                 changes.append("질의 생성 실패 - 빈 답변으로 질의 생성 불가")
             else:
