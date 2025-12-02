@@ -28,6 +28,8 @@ from src.config.constants import (
     DEFAULT_ANSWER_RULES,
     QA_BATCH_GENERATION_TIMEOUT,
     QA_SINGLE_GENERATION_TIMEOUT,
+    WORKSPACE_GENERATION_TIMEOUT,
+    WORKSPACE_UNIFIED_TIMEOUT,
 )
 from src.features.multimodal import MultimodalUnderstanding
 from src.qa.pipeline import IntegratedQAPipeline
@@ -779,7 +781,7 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
 
     ocr_text = load_ocr_text()
 
-    try:
+    async def _run_workspace() -> Dict[str, Any]:
         if body.mode == "inspect":
             # 검수 모드
             fixed = await inspect_answer(
@@ -812,42 +814,48 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
                 },
             }
 
-        else:
-            # 자유 수정 모드
-            if not body.edit_request:
-                raise HTTPException(
-                    status_code=400, detail="edit_request가 필요합니다."
-                )
+        # 자유 수정 모드
+        if not body.edit_request:
+            raise HTTPException(status_code=400, detail="edit_request가 필요합니다.")
 
-            edited = await edit_content(
-                agent=agent,
-                answer=body.answer,
-                ocr_text=ocr_text,
-                query=body.query or "",
-                edit_request=body.edit_request,
-                kg=kg,
-                cache=None,
-            )
+        edited = await edit_content(
+            agent=agent,
+            answer=body.answer,
+            ocr_text=ocr_text,
+            query=body.query or "",
+            edit_request=body.edit_request,
+            kg=kg,
+            cache=None,
+        )
 
-            # 수정 로그 기록 (실패해도 메인 응답에 영향 없음)
-            log_review_session(
-                mode="edit",
-                question=body.query or "",
-                answer_before=body.answer,
-                answer_after=edited,
-                edit_request_used=body.edit_request,
-                inspector_comment=body.inspector_comment or "",
-            )
+        # 수정 로그 기록 (실패해도 메인 응답에 영향 없음)
+        log_review_session(
+            mode="edit",
+            question=body.query or "",
+            answer_before=body.answer,
+            answer_after=edited,
+            edit_request_used=body.edit_request,
+            inspector_comment=body.inspector_comment or "",
+        )
 
-            return {
-                "mode": "edit",
-                "result": {
-                    "original": body.answer,
-                    "edited": edited,
-                    "request": body.edit_request,
-                },
-            }
+        return {
+            "mode": "edit",
+            "result": {
+                "original": body.answer,
+                "edited": edited,
+                "request": body.edit_request,
+            },
+        }
 
+    try:
+        return await asyncio.wait_for(
+            _run_workspace(), timeout=WORKSPACE_GENERATION_TIMEOUT
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail=f"작업 시간 초과 ({WORKSPACE_GENERATION_TIMEOUT}초). 다시 시도해주세요.",
+        )
     except Exception as e:
         logger.error(f"워크스페이스 작업 실패: {e}")
         raise HTTPException(status_code=500, detail=f"작업 실패: {str(e)}")
@@ -898,11 +906,14 @@ OCR에 없는 정보는 추가하지 마세요.
 
 위 OCR 텍스트를 기반으로 질의에 대한 답변을 작성하세요."""
 
-        answer = await agent.rewrite_best_answer(
-            ocr_text=ocr_text,
-            best_answer=prompt,
-            cached_content=None,
-            query_type=normalized_qtype,
+        answer = await asyncio.wait_for(
+            agent.rewrite_best_answer(
+                ocr_text=ocr_text,
+                best_answer=prompt,
+                cached_content=None,
+                query_type=normalized_qtype,
+            ),
+            timeout=WORKSPACE_GENERATION_TIMEOUT,
         )
 
         answer = _strip_output_tags(answer)
@@ -910,16 +921,24 @@ OCR에 없는 정보는 추가하지 마세요.
         violations = find_violations(answer)
         if violations:
             violation_types = ", ".join(set(v["type"] for v in violations))
-            answer = await agent.rewrite_best_answer(
-                ocr_text=ocr_text,
-                best_answer=answer,
-                edit_request=f"한국어로 다시 작성하고 다음 패턴 제거: {violation_types}. <output> 태그 사용 금지.",
-                cached_content=None,
-                query_type=normalized_qtype,
+            answer = await asyncio.wait_for(
+                agent.rewrite_best_answer(
+                    ocr_text=ocr_text,
+                    best_answer=answer,
+                    edit_request=f"한국어로 다시 작성하고 다음 패턴 제거: {violation_types}. <output> 태그 사용 금지.",
+                    cached_content=None,
+                    query_type=normalized_qtype,
+                ),
+                timeout=WORKSPACE_GENERATION_TIMEOUT,
             )
             answer = _strip_output_tags(answer)
 
         return {"query": query, "answer": answer}
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail=f"답변 생성 시간 초과 ({WORKSPACE_GENERATION_TIMEOUT}초). 다시 시도해주세요.",
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -945,10 +964,18 @@ async def api_generate_query_from_answer(body: Dict[str, Any]) -> Dict[str, Any]
 
 위 답변에 대한 자연스러운 질문 1개를 생성하세요. 질문만 출력하세요.
 """
-        queries = await agent.generate_query(prompt, user_intent=None)
+        queries = await asyncio.wait_for(
+            agent.generate_query(prompt, user_intent=None),
+            timeout=WORKSPACE_GENERATION_TIMEOUT,
+        )
         query = queries[0] if queries else "질문 생성 실패"
 
         return {"query": query, "answer": answer}
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail=f"질의 생성 시간 초과 ({WORKSPACE_GENERATION_TIMEOUT}초). 다시 시도해주세요.",
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -969,7 +996,8 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     answer = body.answer or ""
     changes: list[str] = []
 
-    try:
+    async def _execute_workflow() -> Dict[str, Any]:
+        nonlocal query, answer
         if workflow == "full_generation":
             # 질의와 답변 모두 생성
             changes.append("OCR에서 전체 생성")
@@ -1186,6 +1214,9 @@ OCR에 없는 정보는 추가하지 마세요.
             query = edited_query
             changes.append("질의 조정 완료")
 
+        else:
+            raise HTTPException(status_code=400, detail="알 수 없는 워크플로우")
+
         return {
             "workflow": workflow,
             "query": query,
@@ -1193,6 +1224,15 @@ OCR에 없는 정보는 추가하지 마세요.
             "changes": changes,
         }
 
+    try:
+        return await asyncio.wait_for(
+            _execute_workflow(), timeout=WORKSPACE_UNIFIED_TIMEOUT
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail=f"워크플로우 시간 초과 ({WORKSPACE_UNIFIED_TIMEOUT}초). 다시 시도해주세요.",
+        )
     except Exception as e:
         logger.error(f"워크플로우 실행 실패: {e}")
         raise HTTPException(status_code=500, detail=f"실행 실패: {str(e)}")

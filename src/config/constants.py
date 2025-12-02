@@ -45,6 +45,10 @@ QA_GENERATION_OCR_TRUNCATE_LENGTH: Final[int] = 500
 QA_SINGLE_GENERATION_TIMEOUT: Final[int] = 60
 QA_BATCH_GENERATION_TIMEOUT: Final[int] = 120
 
+# Workspace generation timeout settings (seconds)
+WORKSPACE_GENERATION_TIMEOUT: Final[int] = 90
+WORKSPACE_UNIFIED_TIMEOUT: Final[int] = 120
+
 
 # ===== Cache TTL Configuration (seconds) =====
 
