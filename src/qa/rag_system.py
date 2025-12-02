@@ -9,6 +9,7 @@ import time
 import weakref
 from contextlib import contextmanager, suppress
 from typing import (
+    TYPE_CHECKING,
     Any,
     Coroutine,
     Dict,
@@ -16,7 +17,6 @@ from typing import (
     List,
     Optional,
     TypeVar,
-    TYPE_CHECKING,
 )
 
 import google.generativeai as genai
@@ -26,9 +26,29 @@ if TYPE_CHECKING:
     from typing import Protocol
 
     class Embeddings(Protocol):
-        def embed_documents(self, texts: List[str]) -> List[List[float]]: ...
+        """Protocol for text embedding models."""
 
-        def embed_query(self, text: str) -> List[float]: ...
+        def embed_documents(self, texts: List[str]) -> List[List[float]]:
+            """Embed multiple documents.
+
+            Args:
+                texts: List of text documents to embed
+
+            Returns:
+                List of embedding vectors
+            """
+            ...
+
+        def embed_query(self, text: str) -> List[float]:
+            """Embed a single query text.
+
+            Args:
+                text: Query text to embed
+
+            Returns:
+                Embedding vector
+            """
+            ...
 else:
     from langchain_core.embeddings import Embeddings
 from neo4j import GraphDatabase

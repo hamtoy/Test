@@ -13,10 +13,10 @@ from typing import Any, AsyncIterator, Dict, List, Literal, Optional, cast
 from uuid import uuid4
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -27,8 +27,8 @@ from src.config import AppConfig
 from src.config.constants import (
     DEFAULT_ANSWER_RULES,
     QA_BATCH_GENERATION_TIMEOUT,
-    QA_SINGLE_GENERATION_TIMEOUT,
     QA_BATCH_TYPES,
+    QA_SINGLE_GENERATION_TIMEOUT,
     WORKSPACE_GENERATION_TIMEOUT,
     WORKSPACE_UNIFIED_TIMEOUT,
 )
@@ -79,12 +79,25 @@ class _CachedKG:
     """Lightweight KG wrapper with memoization."""
 
     def __init__(self, base: QAKnowledgeGraph) -> None:
+        """Initialize cached KG wrapper.
+
+        Args:
+            base: Base QAKnowledgeGraph instance to wrap and cache
+        """
         self._base = base
         self._constraints: dict[str, list[Dict[str, Any]]] = {}
         self._formatting: dict[str, str] = {}
         self._rules: dict[tuple[str, int], list[str]] = {}
 
     def get_constraints_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
+        """Get constraints for query type with caching.
+
+        Args:
+            query_type: Type of query to get constraints for
+
+        Returns:
+            List of constraint dictionaries
+        """
         if query_type in self._constraints:
             return self._constraints[query_type]
         data = self._base.get_constraints_for_query_type(query_type)
@@ -92,6 +105,14 @@ class _CachedKG:
         return data
 
     def get_formatting_rules(self, template_type: str) -> str:
+        """Get formatting rules for template type with caching.
+
+        Args:
+            template_type: Template type to get rules for
+
+        Returns:
+            Formatted markdown string containing rules
+        """
         if template_type in self._formatting:
             return self._formatting[template_type]
         text = self._base.get_formatting_rules(template_type)
@@ -99,6 +120,15 @@ class _CachedKG:
         return text
 
     def find_relevant_rules(self, query: str, k: int = 10) -> List[str]:
+        """Find relevant rules for query with caching.
+
+        Args:
+            query: Query text to find rules for
+            k: Number of top rules to return
+
+        Returns:
+            List of relevant rule texts
+        """
         key = (query[:500], k)
         if key in self._rules:
             return self._rules[key]
@@ -107,6 +137,14 @@ class _CachedKG:
         return data
 
     def __getattr__(self, name: str) -> Any:
+        """Proxy attribute access to underlying base KG instance.
+
+        Args:
+            name: Attribute name to access
+
+        Returns:
+            Attribute value from base instance
+        """
         return getattr(self._base, name)
 
 
@@ -328,6 +366,14 @@ def postprocess_answer(answer: str, qtype: str) -> str:
 
     # 5. 목록 항목 내 콜론 뒤 볼드체 제거
     def fix_list_bold(line: str) -> str:
+        """Remove bold formatting after colon in list items.
+
+        Args:
+            line: Input line to process
+
+        Returns:
+            Processed line with bold removed after colons in list items
+        """
         if line.strip().startswith("-") and ":**" in line:
             parts = line.split(":**", 1)
             if len(parts) == 2:
