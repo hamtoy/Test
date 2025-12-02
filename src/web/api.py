@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from contextlib import asynccontextmanager
@@ -345,9 +346,6 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
         if body.mode == "batch":
             types = ["global_explanation", "reasoning", "target_short", "target_long"]
 
-            # 4타입 순차 생성 (병렬 LLM/Neo4j 호출 최소화)
-            pairs: list[Dict[str, Any]] = []
-
             async def _safe_generate(qtype: str) -> Dict[str, Any]:
                 try:
                     return await generate_single_qa(agent, ocr_text, qtype)
@@ -355,11 +353,9 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
                     logger.error("%s 생성 실패: %s", qtype, exc)
                     return {"type": qtype, "query": "생성 실패", "answer": str(exc)}
 
-            for qtype in types:
-                result = await _safe_generate(qtype)
-                pairs.append(result)
+            pairs = await asyncio.gather(*[_safe_generate(qtype) for qtype in types])
 
-            return {"mode": "batch", "pairs": pairs}
+            return {"mode": "batch", "pairs": list(pairs)}
 
         else:
             if not body.qtype:
@@ -379,14 +375,6 @@ async def generate_single_qa(
     from src.config.constants import QA_GENERATION_OCR_TRUNCATE_LENGTH
 
     normalized_qtype = QTYPE_MAP.get(qtype, "explanation")
-
-    context = {
-        "ocr_text": ocr_text,
-        "text_density": "high",
-        "has_table_chart": False,
-        "language_hint": "ko",
-        "type": normalized_qtype,
-    }
 
     rules_list: list[str] = []
     # Neo4j 호출 결과를 재사용하기 위한 간단한 캐시 래퍼
@@ -511,7 +499,7 @@ async def generate_single_qa(
             rule_check = validator._check_rule_compliance(
                 draft_answer, normalized_qtype
             )
-            if rule_check.get("violations") and rule_check.get("score", 1.0) < 0.5:
+            if rule_check.get("violations") and rule_check.get("score", 1.0) < 0.3:
                 all_violations.extend(rule_check.get("violations", []))
 
         # 위반 있을 때만 한 번에 재작성
@@ -526,17 +514,7 @@ async def generate_single_qa(
                 cached_content=None,
             )
 
-        final_answer = await inspect_answer(
-            agent=agent,
-            answer=draft_answer,
-            query=query,
-            ocr_text=ocr_text,
-            context=context,
-            kg=kg,
-            lats=None,
-            validator=None,
-            cache=None,
-        )
+        final_answer = draft_answer
 
         return {
             "type": qtype,
