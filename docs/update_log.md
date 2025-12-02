@@ -71,6 +71,6 @@
 **템플릿 반영:**
 
 - `scripts/build_session.py`: `session_turns` 파라미터 3~4 검증 로직 추가
-- `templates/system/text_image_qa_explanation_system.j2`: "전체 본문" 강조
-- `templates/system/text_image_qa_summary_system.j2`: "전체 본문" 강조, 부분 요약 금지 명시
+- `templates/system/qa/explanation.j2`: "전체 본문" 강조
+- `templates/system/qa/summary.j2`: "전체 본문" 강조, 부분 요약 금지 명시
 - `checks/detect_forbidden_patterns.py`: "전체 이미지" 패턴 검출 추가

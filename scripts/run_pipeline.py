@@ -80,7 +80,7 @@ def rerender_target(ctx_dict, root: Path, avoid_calc: bool, focus_hint: str):
         "calc_allowed": not avoid_calc,
         "used_calc_query_count": ctx_dict.get("used_calc_query_count", 0),
     }
-    return render("user/text_image_qa_target_user.j2", uctx, root)
+    return render("user/qa/target.j2", uctx, root)
 
 
 def main() -> None:

@@ -232,9 +232,9 @@ def _minimal_jinja_env() -> Environment:
     return Environment(
         loader=DictLoader(
             {
-                "prompt_eval.j2": "",
-                "prompt_rewrite.j2": "",
-                "rewrite_user.j2": "",
+                "system/eval.j2": "",
+                "system/rewrite.j2": "",
+                "user/rewrite.j2": "",
             }
         )
     )

@@ -33,7 +33,7 @@ def _agent(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> GeminiAgent:
             "BUDGET_LIMIT_USD": 100,
         }
     )
-    jinja_env = Environment(loader=DictLoader({"prompt_eval.j2": "prompt"}))
+    jinja_env = Environment(loader=DictLoader({"system/eval.j2": "prompt"}))
     return GeminiAgent(config, jinja_env=jinja_env)
 
 

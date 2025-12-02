@@ -43,7 +43,7 @@ def test_dynamic_template_autoescape(monkeypatch: pytest.MonkeyPatch) -> None:
         types.SimpleNamespace(driver=lambda *a, **k: _FakeDriver()),
     )
     env = Environment(
-        loader=DictLoader({"base_system.j2": "{{ rules[0] }}"}),
+        loader=DictLoader({"system/base.j2": "{{ rules[0] }}"}),
         autoescape=True,
     )
     dtg = DynamicTemplateGenerator.__new__(DynamicTemplateGenerator)
@@ -57,8 +57,8 @@ def test_dynamic_template_autoescape(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_agent_default_env_autoescape() -> None:
     # Environment(autoescape=True) is set in agent init path; verify Jinja behavior directly.
     env = Environment(
-        loader=DictLoader({"rewrite_user.j2": "{{ best_answer }}"}), autoescape=True
+        loader=DictLoader({"user/rewrite.j2": "{{ best_answer }}"}), autoescape=True
     )
-    tmpl = env.get_template("rewrite_user.j2")
+    tmpl = env.get_template("user/rewrite.j2")
     rendered = tmpl.render(best_answer="<b>bold</b>")
     assert "&lt;b&gt;" in rendered

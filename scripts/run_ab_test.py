@@ -74,7 +74,7 @@ async def main() -> None:
 
     exp_config = ExperimentConfig(
         name="ocr_prompt_optimization_v1",
-        control_prompt_template="query_gen_user.j2",  # Default (verbose)
+        control_prompt_template="user/query_gen.j2",  # Default (verbose)
         treatment_prompt_template="experiments/ocr_v2_concise.j2",  # Concise variant
         sample_size=5,
         output_dir="experiments/results",

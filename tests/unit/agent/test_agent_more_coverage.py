@@ -18,11 +18,11 @@ def _dummy_env() -> Environment:
     return Environment(
         loader=DictLoader(
             {
-                "prompt_eval.j2": "system-eval",
-                "prompt_rewrite.j2": "system-rewrite",
-                "rewrite_user.j2": "{{ best_answer }}",
-                "prompt_query_gen.j2": "query-gen",
-                "query_gen_user.j2": "user-gen",
+                "system/eval.j2": "system-eval",
+                "system/rewrite.j2": "system-rewrite",
+                "user/rewrite.j2": "{{ best_answer }}",
+                "system/query_gen.j2": "query-gen",
+                "user/query_gen.j2": "user-gen",
             }
         )
     )

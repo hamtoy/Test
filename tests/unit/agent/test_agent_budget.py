@@ -37,7 +37,7 @@ def _agent_with_budget(
     spent_input_tokens: int, spent_output_tokens: int, budget: float, tmp_path: Path
 ) -> GeminiAgent:
     config = _config(tmp_path, budget)
-    jinja_env = Environment(loader=DictLoader({"prompt_eval.j2": "x"}))
+    jinja_env = Environment(loader=DictLoader({"system/eval.j2": "x"}))
     agent = GeminiAgent(config, jinja_env=jinja_env)
     agent.total_input_tokens = spent_input_tokens
     agent.total_output_tokens = spent_output_tokens

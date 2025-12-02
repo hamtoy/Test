@@ -112,7 +112,7 @@ def build_session(ctx: SessionContext, validate: bool = True) -> List[Turn]:
 
     # 1) Explanation or Summary
     first_type = choose_expl_or_summary(ctx)
-    first_template = f"system/text_image_qa_{first_type}_system.j2"
+    first_template = f"system/qa/{first_type}.j2"
     prompt_text = render(first_template, ctx.__dict__, root)
     violations = find_violations(prompt_text) if validate else []
     turns.append(
@@ -124,9 +124,7 @@ def build_session(ctx: SessionContext, validate: bool = True) -> List[Turn]:
 
     # 2) Reasoning if required
     if ctx.must_include_reasoning:
-        prompt_text = render(
-            "system/text_image_qa_reasoning_system.j2", ctx.__dict__, root
-        )
+        prompt_text = render("system/qa/reasoning.j2", ctx.__dict__, root)
         violations = find_violations(prompt_text) if validate else []
         turns.append(
             Turn(
@@ -149,7 +147,7 @@ def build_session(ctx: SessionContext, validate: bool = True) -> List[Turn]:
             "candidate_focus": "새로운 지점/항목",
             "calc_allowed": calc_allowed,
         }
-        prompt_text = render("user/text_image_qa_target_user.j2", uctx, root)
+        prompt_text = render("user/qa/target.j2", uctx, root)
         violations = find_violations(prompt_text) if validate else []
         calc_used_flag = is_calc_query(prompt_text)
 

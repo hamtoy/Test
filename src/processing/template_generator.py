@@ -74,18 +74,18 @@ class DynamicTemplateGenerator:
         data = records[0]
 
         template_map = {
-            "explanation": "system/text_image_qa_explanation_system.j2",
-            "global_explanation": "system/text_image_qa_explanation_system.j2",
-            "summary": "system/text_image_qa_summary_system.j2",
-            "reasoning": "system/text_image_qa_reasoning_system.j2",
-            "target": "user/text_image_qa_target_user.j2",
-            "target_short": "user/text_image_qa_target_user.j2",
-            "target_long": "user/text_image_qa_target_user.j2",
-            "factual": "user/text_image_qa_target_user.j2",
-            "general": "system/text_image_qa_explanation_system.j2",
+            "explanation": "system/qa/explanation.j2",
+            "global_explanation": "system/qa/global.j2",
+            "summary": "system/qa/summary.j2",
+            "reasoning": "system/qa/reasoning.j2",
+            "target": "user/qa/target.j2",
+            "target_short": "user/qa/target.j2",
+            "target_long": "user/qa/target.j2",
+            "factual": "user/qa/target.j2",
+            "general": "system/qa/explanation.j2",
         }
-        template_name = template_map.get(query_type, "base_system.j2")
-        fallback = "base_system.j2"
+        template_name = template_map.get(query_type, "system/base.j2")
+        fallback = "system/base.j2"
         try:
             template = self.jinja_env.get_template(template_name)
         except TemplateNotFound as exc:

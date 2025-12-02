@@ -3,7 +3,7 @@ Render a Jinja2 template with JSON context.
 
 Usage:
   uv run python scripts/render_prompt.py \
-    --template system/text_image_qa_explanation_system.j2 \
+    --template system/qa/explanation.j2 \
     --context examples/sample_image_meta.json
 """
 
@@ -37,8 +37,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Render a Jinja2 prompt template.")
     parser.add_argument(
         "--template",
-        default="system/text_image_qa_explanation_system.j2",
-        help="Template path relative to templates/ (e.g., system/text_image_qa_explanation_system.j2)",
+        default="system/qa/explanation.j2",
+        help="Template path relative to templates/ (e.g., system/qa/explanation.j2)",
     )
     parser.add_argument(
         "--context",

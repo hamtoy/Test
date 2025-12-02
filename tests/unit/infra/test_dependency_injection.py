@@ -18,11 +18,11 @@ class TestDependencyInjection:
     def mock_jinja_env(self) -> Any:
         """Mock Jinja Environment - 실제 파일 없이 테스트 가능"""
         templates = {
-            "prompt_eval.j2": "Mock eval template",
-            "prompt_query_gen.j2": "Mock query template",
-            "prompt_rewrite.j2": "Mock rewrite template",
-            "query_gen_user.j2": "OCR: {{ ocr_text }}",
-            "rewrite_user.j2": "Rewrite: {{ answer }}",
+            "system/eval.j2": "Mock eval template",
+            "system/query_gen.j2": "Mock query template",
+            "system/rewrite.j2": "Mock rewrite template",
+            "user/query_gen.j2": "OCR: {{ ocr_text }}",
+            "user/rewrite.j2": "Rewrite: {{ answer }}",
         }
         loader = DictLoader(templates)
         return Environment(loader=loader)
@@ -34,7 +34,7 @@ class TestDependencyInjection:
         agent = GeminiAgent(config, jinja_env=mock_jinja_env)
 
         assert agent.jinja_env is mock_jinja_env
-        assert agent.jinja_env.get_template("query_gen_user.j2") is not None
+        assert agent.jinja_env.get_template("user/query_gen.j2") is not None
 
     def test_agent_without_injected_jinja_env(self, config: Any) -> None:
         """jinja_env 없이 초기화하면 자동으로 생성되는지 확인"""
@@ -42,7 +42,7 @@ class TestDependencyInjection:
 
         assert agent.jinja_env is not None
         # 실제 파일 시스템의 템플릿을 로드해야 함
-        assert agent.jinja_env.get_template("prompt_eval.j2") is not None
+        assert agent.jinja_env.get_template("system/eval.j2") is not None
 
 
 if __name__ == "__main__":

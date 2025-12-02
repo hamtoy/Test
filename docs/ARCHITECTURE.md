@@ -102,7 +102,7 @@ qa_rag_system.py (조회 및 검증)
 **주요 구성 요소**:
 
 - **DynamicTemplateGenerator**: Jinja2 템플릿 동적 생성
-  - `templates/system/`, `templates/user/`, `templates/eval/`
+  - `templates/system/` (qa/* 포함), `templates/user/`
 - **GraphEnhancedRouter**: 그래프 기반 쿼리 타입 라우팅
 - **validate_turns**: 세션 구조 검증 (턴 수, 설명/요약, 추론)
 
@@ -150,20 +150,33 @@ python scripts/latency_baseline.py
 
 ```
 templates/
-├── system/         # 시스템 프롬프트
-│   ├── text_image_qa_explanation_system.j2
-│   └── text_image_qa_summary_system.j2
-├── user/           # 사용자 프롬프트
-├── eval/           # 평가 프롬프트
-├── rewrite/        # 재작성 프롬프트
-└── fact/           # 사실 검증 프롬프트
+├── system/                # 시스템 프롬프트
+│   ├── base.j2
+│   ├── eval.j2
+│   ├── query_gen.j2
+│   ├── rewrite.j2
+│   ├── entity_extraction.j2
+│   └── qa/
+│       ├── explanation.j2
+│       ├── summary.j2
+│       ├── reasoning.j2
+│       ├── global.j2
+│       └── compare_eval.j2
+├── user/                  # 사용자 프롬프트
+│   ├── query_gen.j2
+│   ├── rewrite.j2
+│   ├── entity_extraction.j2
+│   └── qa/
+│       ├── generic.j2
+│       └── target.j2
+└── fact/                  # 사실 검증 프롬프트
 ```
 
 **사용 예시**:
 
 ```bash
 python scripts/render_prompt.py \
-  --template system/text_image_qa_explanation_system.j2 \
+  --template system/qa/explanation.j2 \
   --context examples/session_input.json
 ```
 

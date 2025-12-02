@@ -363,7 +363,7 @@ GitHub Actions에서 자동으로 실행되는 검증 단계:
 
 ```bash
 # 템플릿 렌더링 예시
-uv run python scripts/render_prompt.py --template system/text_image_qa_explanation_system.j2 --context examples/session_input.json
+uv run python scripts/render_prompt.py --template system/qa/explanation.j2 --context examples/session_input.json
 
 # 세션 빌드 및 검증
 uv run python scripts/build_session.py --context examples/session_input.json
@@ -788,7 +788,7 @@ python scripts/build_session.py
 python scripts/build_session.py --context examples/session_input.json
 
 # 단일 템플릿 렌더링
-python scripts/render_prompt.py --template system/text_image_qa_explanation_system.j2
+python scripts/render_prompt.py --template system/qa/explanation.j2
 ```
 
 ### 주요 제약사항

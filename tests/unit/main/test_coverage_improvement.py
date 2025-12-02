@@ -541,8 +541,8 @@ class TestGraphData2NeoExtractor:
         """Create mock Jinja2 templates."""
         return DictLoader(
             {
-                "prompt_entity_extraction.j2": "Extract: {{ response_schema }}",
-                "entity_extraction_user.j2": "Text: {{ ocr_text }}",
+                "system/entity_extraction.j2": "Extract: {{ response_schema }}",
+                "user/entity_extraction.j2": "Text: {{ ocr_text }}",
             }
         )
 
@@ -1219,8 +1219,8 @@ class TestGraphData2NeoExtractorAdditional:
         """Create mock Jinja2 templates."""
         return DictLoader(
             {
-                "prompt_entity_extraction.j2": "Extract: {{ response_schema }}",
-                "entity_extraction_user.j2": "Text: {{ ocr_text }}",
+                "system/entity_extraction.j2": "Extract: {{ response_schema }}",
+                "user/entity_extraction.j2": "Text: {{ ocr_text }}",
             }
         )
 

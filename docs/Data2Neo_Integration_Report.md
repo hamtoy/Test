@@ -215,8 +215,8 @@ class AppConfig(BaseSettings):
    - Statistics tracking for monitoring
 
 3. **Prompt Templates**:
-   - `templates/prompt_entity_extraction.j2`: System prompt with schema
-   - `templates/entity_extraction_user.j2`: User prompt with OCR text
+   - `templates/system/entity_extraction.j2`: System prompt with schema
+   - `templates/user/entity_extraction.j2`: User prompt with OCR text
 
 4. **Tests** (`tests/test_data2neo_extractor.py`):
    - Entity model creation and validation (7 tests)

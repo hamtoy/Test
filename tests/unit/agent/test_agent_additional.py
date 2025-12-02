@@ -58,11 +58,11 @@ def fake_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> AppConfig:
     tdir = tmp_path / "templates"
     tdir.mkdir()
     required = [
-        "prompt_eval.j2",
-        "prompt_query_gen.j2",
-        "prompt_rewrite.j2",
-        "query_gen_user.j2",
-        "rewrite_user.j2",
+        "system/eval.j2",
+        "system/query_gen.j2",
+        "system/rewrite.j2",
+        "user/query_gen.j2",
+        "user/rewrite.j2",
     ]
     for name in required:
         (tdir / name).write_text("{{ input }}", encoding="utf-8")

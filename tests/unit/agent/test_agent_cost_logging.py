@@ -35,7 +35,7 @@ def _make_config(tmp_path: Path) -> AppConfig:
 
 def _make_agent(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> GeminiAgent:
     config = _make_config(tmp_path)
-    jinja_env = Environment(loader=DictLoader({"prompt_eval.j2": "x"}))
+    jinja_env = Environment(loader=DictLoader({"system/eval.j2": "x"}))
     agent = GeminiAgent(config, jinja_env=jinja_env)
 
     # Avoid touching real genai client, provide protos stub

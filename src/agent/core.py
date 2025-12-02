@@ -117,11 +117,11 @@ class GeminiAgent:
             self.jinja_env = jinja_env
         else:
             required_templates = [
-                "prompt_eval.j2",
-                "prompt_query_gen.j2",
-                "prompt_rewrite.j2",
-                "query_gen_user.j2",
-                "rewrite_user.j2",
+                "system/eval.j2",
+                "system/query_gen.j2",
+                "system/rewrite.j2",
+                "user/query_gen.j2",
+                "user/rewrite.j2",
             ]
 
             for template_name in required_templates:
@@ -312,7 +312,7 @@ class GeminiAgent:
 
     async def create_context_cache(self, ocr_text: str) -> Any:
         """OCR 텍스트를 기반으로 Gemini Context Cache 생성."""
-        system_prompt = self.jinja_env.get_template("prompt_eval.j2").render()
+        system_prompt = self.jinja_env.get_template("system/eval.j2").render()
         combined_content = system_prompt + "\n\n" + ocr_text
         fingerprint = CacheManager.compute_fingerprint(combined_content)
         ttl_minutes = self.config.cache_ttl_minutes
@@ -564,7 +564,7 @@ class GeminiAgent:
         Returns:
             생성된 쿼리 목록
         """
-        user_template_name = template_name or "query_gen_user.j2"
+        user_template_name = template_name or "user/query_gen.j2"
         user_template = self.jinja_env.get_template(user_template_name)
         user_prompt = user_template.render(ocr_text=ocr_text, user_intent=user_intent)
 
@@ -589,7 +589,7 @@ class GeminiAgent:
         except Exception as e:  # noqa: BLE001
             self.logger.debug("Neo4j 규칙 조회 실패: %s", e)
 
-        system_template_name = "prompt_query_gen.j2"
+        system_template_name = "system/query_gen.j2"
         try:
             system_template = self.jinja_env.get_template(system_template_name)
             system_prompt = system_template.render(
@@ -689,16 +689,14 @@ class GeminiAgent:
             self.logger.debug("Neo4j 규칙 조회 실패: %s", e)
 
         try:
-            system_template = self.jinja_env.get_template(
-                "eval/text_image_qa_compare_eval.j2"
-            )
+            system_template = self.jinja_env.get_template("system/qa/compare_eval.j2")
             system_prompt = system_template.render(
                 rules=rules,
                 constraints=constraints,
             )
         except Exception as e:  # noqa: BLE001
             self.logger.debug("동적 템플릿 실패, 기본 사용: %s", e)
-            system_prompt = self.jinja_env.get_template("prompt_eval.j2").render()
+            system_prompt = self.jinja_env.get_template("system/eval.j2").render()
 
         model = self._create_generative_model(
             system_prompt,
@@ -759,7 +757,7 @@ class GeminiAgent:
         """
         from src.qa.rag_system import QAKnowledgeGraph
 
-        template = self.jinja_env.get_template("rewrite_user.j2")
+        template = self.jinja_env.get_template("user/rewrite.j2")
         payload = template.render(
             ocr_text=ocr_text, best_answer=best_answer, edit_request=edit_request
         )
@@ -782,9 +780,7 @@ class GeminiAgent:
             self.logger.warning("Neo4j 규칙 조회 실패, 기본 템플릿 사용: %s", e)
 
         try:
-            system_template = self.jinja_env.get_template(
-                "rewrite/text_image_qa_rewrite_system.j2"
-            )
+            system_template = self.jinja_env.get_template("system/qa/rewrite.j2")
             system_prompt = system_template.render(
                 rules=rules,
                 constraints=constraints,
@@ -792,7 +788,7 @@ class GeminiAgent:
             )
         except Exception as e:  # noqa: BLE001
             self.logger.warning("동적 템플릿 실패, 기본 사용: %s", e)
-            system_prompt = self.jinja_env.get_template("prompt_rewrite.j2").render()
+            system_prompt = self.jinja_env.get_template("system/rewrite.j2").render()
 
         model = self._create_generative_model(
             system_prompt, cached_content=cached_content

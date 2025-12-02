@@ -5,11 +5,11 @@ from src.config import AppConfig
 
 VALID_API_KEY = "AIza" + "E" * 35
 REQUIRED_TEMPLATES = [
-    "prompt_eval.j2",
-    "prompt_query_gen.j2",
-    "prompt_rewrite.j2",
-    "query_gen_user.j2",
-    "rewrite_user.j2",
+    "system/eval.j2",
+    "system/query_gen.j2",
+    "system/rewrite.j2",
+    "user/query_gen.j2",
+    "user/rewrite.j2",
 ]
 
 

@@ -141,7 +141,7 @@ class Data2NeoExtractor:
         schema_json = json.dumps(
             ExtractionResult.model_json_schema(), indent=2, ensure_ascii=False
         )
-        template = self.jinja_env.get_template("prompt_entity_extraction.j2")
+        template = self.jinja_env.get_template("system/entity_extraction.j2")
         return template.render(response_schema=schema_json)
 
     def _render_user_prompt(
@@ -151,7 +151,7 @@ class Data2NeoExtractor:
         focus_entities: Optional[List[str]] = None,
     ) -> str:
         """Render the user prompt for entity extraction."""
-        template = self.jinja_env.get_template("entity_extraction_user.j2")
+        template = self.jinja_env.get_template("user/entity_extraction.j2")
         return template.render(
             ocr_text=ocr_text,
             document_path=document_path,

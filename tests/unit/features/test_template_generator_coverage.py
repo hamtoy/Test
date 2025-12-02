@@ -42,7 +42,7 @@ def test_dynamic_template_generator_fallback_and_checklist(
     monkeypatch.setattr(template_generator, "GraphDatabase", _GraphDB)
 
     env = Environment(
-        loader=DictLoader({"base_system.j2": "{{query_type_korean}}|{{rules|length}}"})
+        loader=DictLoader({"system/base.j2": "{{query_type_korean}}|{{rules|length}}"})
     )
     generator = dtg.DynamicTemplateGenerator("uri", "user", "pw")
     generator.jinja_env = env  # use in-memory template to trigger fallback

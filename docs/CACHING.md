@@ -131,7 +131,7 @@ agent.enable_system_prompt_caching()
 
 ```jinja2
 {# 고정 부분 (캐싱됨) #}
-{% include "system/base_system.j2" %}
+{% include "system/base.j2" %}
 
 {# 변동 부분 #}
 {{ user_input }}
@@ -177,7 +177,7 @@ LOG_LEVEL=DEBUG python -m src.main
 로그에서 캐시 관련 메시지 확인:
 
 ```
-DEBUG - Cache hit for template: system/base_system.j2
+DEBUG - Cache hit for template: system/base.j2
 DEBUG - Cache miss: token count 1500 < 2048
 DEBUG - Cache expired: TTL exceeded
 ```
@@ -196,8 +196,8 @@ python scripts/cache_warming.py
 
 ```python
 PRIORITY_TEMPLATES = [
-    "system/text_image_qa_explanation_system.j2",
-    "system/text_image_qa_summary_system.j2",
+    "system/qa/explanation.j2",
+    "system/qa/summary.j2",
     "eval/compare_three_answers.j2",
     "rewrite/enhance_answer.j2",
 ]

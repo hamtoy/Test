@@ -30,11 +30,11 @@ async def test_agent_execute_api_call_safety_error(
             self.budget_limit_usd = None
 
     for name in [
-        "prompt_eval.j2",
-        "prompt_query_gen.j2",
-        "prompt_rewrite.j2",
-        "query_gen_user.j2",
-        "rewrite_user.j2",
+        "system/eval.j2",
+        "system/query_gen.j2",
+        "system/rewrite.j2",
+        "user/query_gen.j2",
+        "user/rewrite.j2",
     ]:
         (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
 
@@ -103,11 +103,11 @@ def test_agent_cache_budget_and_pricing(
 
     # templates required (empty content)
     for name in [
-        "prompt_eval.j2",
-        "prompt_query_gen.j2",
-        "prompt_rewrite.j2",
-        "query_gen_user.j2",
-        "rewrite_user.j2",
+        "system/eval.j2",
+        "system/query_gen.j2",
+        "system/rewrite.j2",
+        "user/query_gen.j2",
+        "user/rewrite.j2",
     ]:
         (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
 
@@ -142,11 +142,11 @@ def test_agent_local_cache_load_and_store(
             self.budget_limit_usd = None
 
     for name in [
-        "prompt_eval.j2",
-        "prompt_query_gen.j2",
-        "prompt_rewrite.j2",
-        "query_gen_user.j2",
-        "rewrite_user.j2",
+        "system/eval.j2",
+        "system/query_gen.j2",
+        "system/rewrite.j2",
+        "user/query_gen.j2",
+        "user/rewrite.j2",
     ]:
         (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
 
@@ -179,11 +179,11 @@ def test_agent_get_total_cost_invalid_model(monkeypatch: pytest.MonkeyPatch) -> 
 
     tmp_path = Path(tempfile.mkdtemp(prefix="agent_cost_invalid_"))
     for name in [
-        "prompt_eval.j2",
-        "prompt_query_gen.j2",
-        "prompt_rewrite.j2",
-        "query_gen_user.j2",
-        "rewrite_user.j2",
+        "system/eval.j2",
+        "system/query_gen.j2",
+        "system/rewrite.j2",
+        "user/query_gen.j2",
+        "user/rewrite.j2",
     ]:
         (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
 
@@ -226,11 +226,11 @@ async def test_agent_call_api_with_retry(
             self.budget_limit_usd = None
 
     for name in [
-        "prompt_eval.j2",
-        "prompt_query_gen.j2",
-        "prompt_rewrite.j2",
-        "query_gen_user.j2",
-        "rewrite_user.j2",
+        "system/eval.j2",
+        "system/query_gen.j2",
+        "system/rewrite.j2",
+        "user/query_gen.j2",
+        "user/rewrite.j2",
     ]:
         (tmp_path / name).write_text("{{ body }}", encoding="utf-8")
 

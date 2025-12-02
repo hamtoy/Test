@@ -25,18 +25,18 @@ from typing import Any
 # 우선순위별 템플릿 (실제 사용 빈도 기반)
 PRIORITY_TEMPLATES: dict[str, list[str]] = {
     "high": [
-        "system/text_image_qa_explanation_system.j2",  # 가장 많이 사용
-        "system/text_image_qa_summary_system.j2",  # 두번째
-        "eval/text_image_qa_compare_eval.j2",  # 평가용
-        "rewrite/text_image_qa_rewrite_system.j2",  # 리라이트용
+        "system/qa/explanation.j2",  # 가장 많이 사용
+        "system/qa/summary.j2",  # 두번째
+        "system/qa/compare_eval.j2",  # 평가용
+        "system/qa/rewrite.j2",  # 리라이트용
     ],
     "medium": [
-        "system/text_image_qa_reasoning_system.j2",
-        "system/text_image_qa_global_system.j2",
+        "system/qa/reasoning.j2",
+        "system/qa/global.j2",
     ],
     "low": [
-        "user/text_image_qa_generic_user.j2",
-        "user/text_image_qa_target_user.j2",
+        "user/qa/generic.j2",
+        "user/qa/target.j2",
         "fact/text_image_qa_fact_check.j2",
     ],
 }
