@@ -42,8 +42,8 @@ LATS_EXPANSION_MAX_OUTPUT_TOKENS: Final[int] = 50
 QA_GENERATION_OCR_TRUNCATE_LENGTH: Final[int] = 500
 
 # QA generation timeout settings (seconds)
-QA_SINGLE_GENERATION_TIMEOUT: Final[int] = 90
-QA_BATCH_GENERATION_TIMEOUT: Final[int] = 180
+QA_SINGLE_GENERATION_TIMEOUT: Final[int] = 60
+QA_BATCH_GENERATION_TIMEOUT: Final[int] = 120
 
 
 # ===== Cache TTL Configuration (seconds) =====
