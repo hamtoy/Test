@@ -420,9 +420,10 @@ async def generate_single_qa(
         )
 
         all_violations: list[str] = []
-        if normalized_qtype == "reasoning":
-            if "요약문" in draft_answer or "요약" in draft_answer.splitlines()[0]:
-                all_violations.append("summary_header_not_allowed")
+        if normalized_qtype == "reasoning" and (
+            "요약문" in draft_answer or "요약" in draft_answer.splitlines()[0]
+        ):
+            all_violations.append("summary_header_not_allowed")
 
         # 금지 패턴 검사
         violations = find_violations(draft_answer)
