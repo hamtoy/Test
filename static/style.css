@@ -388,3 +388,80 @@ footer {
     width: 100%;
     box-sizing: border-box;
 }
+
+/* QA 카드 섹션 */
+.qa-section {
+    margin: 12px 0;
+    padding: 12px;
+    background: var(--bg-secondary, #2f2f2f);
+    border-radius: 6px;
+    border-left: 3px solid var(--primary, #4CAF50);
+}
+
+.qa-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.qa-label strong {
+    color: var(--text, #e0e0e0);
+    font-size: 14px;
+}
+
+.qa-text {
+    margin: 0;
+    color: var(--text-dim, #999);
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* 작은 복사 버튼 */
+.copy-btn-small {
+    padding: 4px 10px;
+    font-size: 12px;
+    background: var(--panel, #2a2a2a);
+    border: 1px solid var(--border, #444);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-dim, #999);
+}
+
+.copy-btn-small:hover {
+    background: var(--primary, #4CAF50);
+    color: white;
+    border-color: var(--primary, #4CAF50);
+}
+
+/* 워크스페이스 입력 복사 버튼 */
+.input-with-copy {
+    position: relative;
+}
+
+.input-with-copy .copy-btn-float {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    font-size: 11px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border, #444);
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    color: var(--text, #e0e0e0);
+}
+
+.input-with-copy:hover .copy-btn-float {
+    opacity: 1;
+}
+
+.input-with-copy .copy-btn-float:hover {
+    background: var(--primary, #4CAF50);
+    color: white;
+}

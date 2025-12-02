@@ -33,10 +33,29 @@ function showLoading(elementId) {
     el.innerHTML = '<div class="loading"></div> 처리 중...';
 }
 
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        alert('클립보드에 복사되었습니다!');
-    });
+function copyToClipboard(text, buttonEl = null) {
+    navigator.clipboard
+        .writeText(text)
+        .then(() => {
+            if (buttonEl) {
+                const originalText = buttonEl.textContent;
+                const originalBg = buttonEl.style.background;
+                const originalColor = buttonEl.style.color;
+                buttonEl.textContent = '✅ 복사됨';
+                buttonEl.style.background = 'var(--success, #4caf50)';
+                buttonEl.style.color = '#fff';
+                setTimeout(() => {
+                    buttonEl.textContent = originalText;
+                    buttonEl.style.background = originalBg;
+                    buttonEl.style.color = originalColor;
+                }, 1500);
+            } else {
+                alert('클립보드에 복사되었습니다!');
+            }
+        })
+        .catch((err) => {
+            alert('복사 실패: ' + err.message);
+        });
 }
 
 // ============================================================================
@@ -173,30 +192,58 @@ function createQACard(pair, index) {
     const card = document.createElement('div');
     card.className = 'result-card';
 
-    // Create elements safely using DOM methods
     const h3 = document.createElement('h3');
     h3.textContent = `[${index}] ${pair.type}`;
 
-    const p = document.createElement('p');
-    const strong = document.createElement('strong');
-    strong.textContent = '질의:';
-    p.appendChild(strong);
-    p.appendChild(document.createTextNode(' ' + pair.query));
+    // 질의 섹션
+    const querySection = document.createElement('div');
+    querySection.className = 'qa-section';
 
-    const details = document.createElement('details');
-    const summary = document.createElement('summary');
-    summary.style.cursor = 'pointer';
-    summary.style.color = 'var(--primary)';
-    summary.textContent = '답변 보기';
-    const pre = document.createElement('pre');
-    pre.textContent = pair.answer;
-    details.appendChild(summary);
-    details.appendChild(pre);
+    const queryLabel = document.createElement('div');
+    queryLabel.className = 'qa-label';
+    const queryStrong = document.createElement('strong');
+    queryStrong.textContent = '질의:';
+    const copyQueryBtn = document.createElement('button');
+    copyQueryBtn.className = 'copy-btn-small';
+    copyQueryBtn.textContent = '📋 복사';
+    copyQueryBtn.addEventListener('click', function () {
+        copyToClipboard(pair.query, this);
+    });
+    queryLabel.appendChild(queryStrong);
+    queryLabel.appendChild(copyQueryBtn);
+
+    const queryText = document.createElement('p');
+    queryText.className = 'qa-text';
+    queryText.textContent = pair.query;
+    querySection.appendChild(queryLabel);
+    querySection.appendChild(queryText);
+
+    // 답변 섹션
+    const answerSection = document.createElement('div');
+    answerSection.className = 'qa-section';
+
+    const answerLabel = document.createElement('div');
+    answerLabel.className = 'qa-label';
+    const answerStrong = document.createElement('strong');
+    answerStrong.textContent = '답변:';
+    const copyAnswerBtn = document.createElement('button');
+    copyAnswerBtn.className = 'copy-btn-small';
+    copyAnswerBtn.textContent = '📋 복사';
+    copyAnswerBtn.addEventListener('click', function () {
+        copyToClipboard(pair.answer, this);
+    });
+    answerLabel.appendChild(answerStrong);
+    answerLabel.appendChild(copyAnswerBtn);
+
+    const answerText = document.createElement('pre');
+    answerText.className = 'qa-text';
+    answerText.textContent = pair.answer;
+    answerSection.appendChild(answerLabel);
+    answerSection.appendChild(answerText);
 
     const button = document.createElement('button');
     button.className = 'btn-secondary';
     button.textContent = '워크스페이스로 보내기 →';
-    // Store data in dataset for safe access
     button.dataset.query = pair.query;
     button.dataset.answer = pair.answer;
     button.addEventListener('click', function () {
@@ -204,8 +251,8 @@ function createQACard(pair, index) {
     });
 
     card.appendChild(h3);
-    card.appendChild(p);
-    card.appendChild(details);
+    card.appendChild(querySection);
+    card.appendChild(answerSection);
     card.appendChild(button);
 
     return card;
@@ -325,7 +372,7 @@ async function executeWorkspace(mode, query, answer, editRequest) {
         button.textContent = '📋 클립보드 복사';
         button.dataset.text = resultText;
         button.addEventListener('click', function () {
-            copyToClipboard(this.dataset.text);
+            copyToClipboard(this.dataset.text, this);
         });
 
         card.appendChild(pre);
