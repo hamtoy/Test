@@ -4,11 +4,10 @@ from __future__ import annotations
 
 import json
 import logging
-import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, Literal, Optional, cast
+from typing import Any, AsyncIterator, Dict, List, Literal, Optional
 from uuid import uuid4
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -287,15 +286,17 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
 
             # 4타입 순차 생성 (병렬 LLM/Neo4j 호출 최소화)
             pairs: list[Dict[str, Any]] = []
-            for qtype in types:
+
+            async def _safe_generate(qtype: str) -> Dict[str, Any]:
                 try:
-                    result = await generate_single_qa(agent, ocr_text, qtype)
-                    pairs.append(result)
+                    return await generate_single_qa(agent, ocr_text, qtype)
                 except Exception as exc:  # noqa: BLE001
                     logger.error("%s 생성 실패: %s", qtype, exc)
-                    pairs.append(
-                        {"type": qtype, "query": "생성 실패", "answer": str(exc)}
-                    )
+                    return {"type": qtype, "query": "생성 실패", "answer": str(exc)}
+
+            for qtype in types:
+                result = await _safe_generate(qtype)
+                pairs.append(result)
 
             return {"mode": "batch", "pairs": pairs}
 
