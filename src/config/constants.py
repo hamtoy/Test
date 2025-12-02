@@ -41,6 +41,10 @@ LATS_EXPANSION_MAX_OUTPUT_TOKENS: Final[int] = 50
 # Max characters for OCR text truncation in QA generation
 QA_GENERATION_OCR_TRUNCATE_LENGTH: Final[int] = 500
 
+# QA generation timeout settings (seconds)
+QA_SINGLE_GENERATION_TIMEOUT: Final[int] = 90
+QA_BATCH_GENERATION_TIMEOUT: Final[int] = 180
+
 
 # ===== Cache TTL Configuration (seconds) =====
 

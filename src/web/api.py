@@ -24,7 +24,11 @@ from checks.detect_forbidden_patterns import find_violations
 from src.agent import GeminiAgent
 from src.analysis.cross_validation import CrossValidationSystem
 from src.config import AppConfig
-from src.config.constants import DEFAULT_ANSWER_RULES
+from src.config.constants import (
+    DEFAULT_ANSWER_RULES,
+    QA_BATCH_GENERATION_TIMEOUT,
+    QA_SINGLE_GENERATION_TIMEOUT,
+)
 from src.features.multimodal import MultimodalUnderstanding
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
@@ -468,12 +472,15 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
         if body.mode == "batch":
             types = ["global_explanation", "reasoning", "target_short", "target_long"]
 
-            pairs = await asyncio.gather(
-                *[
-                    generate_single_qa_with_retry(agent, ocr_text, qtype)
-                    for qtype in types
-                ],
-                return_exceptions=True,
+            pairs = await asyncio.wait_for(
+                asyncio.gather(
+                    *[
+                        generate_single_qa_with_retry(agent, ocr_text, qtype)
+                        for qtype in types
+                    ],
+                    return_exceptions=True,
+                ),
+                timeout=QA_BATCH_GENERATION_TIMEOUT,
             )
 
             results: list[Dict[str, Any]] = []
@@ -495,9 +502,18 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
         else:
             if not body.qtype:
                 raise HTTPException(status_code=400, detail="qtype이 필요합니다.")
-            pair = await generate_single_qa(agent, ocr_text, body.qtype)
+            pair = await asyncio.wait_for(
+                generate_single_qa(agent, ocr_text, body.qtype),
+                timeout=QA_SINGLE_GENERATION_TIMEOUT,
+            )
             return {"mode": "single", "pair": pair}
 
+    except asyncio.TimeoutError:
+        timeout_msg = (
+            f"생성 시간 초과 ({QA_BATCH_GENERATION_TIMEOUT if body.mode == 'batch' else QA_SINGLE_GENERATION_TIMEOUT}초). "
+            "다시 시도해주세요."
+        )
+        raise HTTPException(status_code=504, detail=timeout_msg)
     except Exception as e:
         logger.error(f"QA 생성 실패: {e}")
         raise HTTPException(status_code=500, detail=f"생성 실패: {str(e)}")
@@ -632,7 +648,10 @@ async def generate_single_qa(
             length_constraint=length_constraint,
         )
 
-        # 길이 검증: 타겟 단답/장답형에서 문장 수 초과 시 재작성
+        # 통합 검증: 길이 + 규칙 위반을 한 번에 수집하여 재작성 호출 최소화
+        all_issues: list[str] = []
+
+        # 길이 검증: 타겟 단답/장답형에서 문장 수 초과 시
         sentences = [
             s
             for s in draft_answer.replace("?", ".").replace("!", ".").split(".")
@@ -641,30 +660,11 @@ async def generate_single_qa(
         sentence_count = len(sentences)
         if normalized_qtype == "target":
             if qtype == "target_short" and sentence_count > 2:
-                logger.warning(
-                    "타겟 단답형이 %s문장으로 길어 재작성합니다.", sentence_count
-                )
-                draft_answer = await agent.rewrite_best_answer(
-                    ocr_text=ocr_text,
-                    best_answer=draft_answer,
-                    edit_request="핵심 1-2문장만 남기고 모든 부연 설명을 제거하세요. 최대 50단어 이내.",
-                    cached_content=None,
-                    constraints=answer_constraints,
-                    length_constraint=length_constraint,
-                )
+                all_issues.append(f"1-2문장으로 축소 필요 (현재 {sentence_count}문장)")
             elif qtype == "target_long" and sentence_count > 4:
-                logger.warning(
-                    "타겟 장답형이 %s문장으로 길어 재작성합니다.", sentence_count
-                )
-                draft_answer = await agent.rewrite_best_answer(
-                    ocr_text=ocr_text,
-                    best_answer=draft_answer,
-                    edit_request="3-4문장 이내로 간결하게 요약하세요. 최대 100단어 이내.",
-                    cached_content=None,
-                    constraints=answer_constraints,
-                    length_constraint=length_constraint,
-                )
+                all_issues.append(f"3-4문장으로 축소 필요 (현재 {sentence_count}문장)")
 
+        # 규칙 위반 검증
         all_violations: list[str] = []
         if normalized_qtype == "reasoning" and (
             "요약문" in draft_answer or "요약" in draft_answer.splitlines()[0]
@@ -699,15 +699,18 @@ async def generate_single_qa(
             if rule_check.get("violations") and rule_check.get("score", 1.0) < 0.3:
                 all_violations.extend(rule_check.get("violations", []))
 
-        # 위반 있을 때만 한 번에 재작성
+        # 위반 사항을 all_issues에 추가 (최대 3개)
         if all_violations:
-            unique_violations = list(set(all_violations))
-            violation_desc = "; ".join(unique_violations[:5])
-            logger.warning("위반 발견, 재생성: %s", violation_desc)
+            all_issues.extend(all_violations[:3])
+
+        # 길이 또는 규칙 위반이 있을 때만 한 번에 재작성
+        if all_issues:
+            combined_request = "; ".join(all_issues)
+            logger.warning("검증 실패, 재생성: %s", combined_request)
             draft_answer = await agent.rewrite_best_answer(
                 ocr_text=ocr_text,
                 best_answer=draft_answer,
-                edit_request=f"다음 위반 사항을 수정해주세요: {violation_desc}",
+                edit_request=f"다음 사항 수정: {combined_request}",
                 cached_content=None,
                 constraints=answer_constraints,
                 length_constraint=length_constraint,
