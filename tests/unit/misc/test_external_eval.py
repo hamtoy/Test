@@ -84,7 +84,11 @@ async def test_evaluate_external_answers_negative_score_clamping(
 ) -> None:
     """Test that negative scores are clamped to minimum (1)."""
     mock_agent._call_api_with_retry = AsyncMock(
-        return_value="점수: -10\n피드백: 테스트"
+        return_value=(
+            "A점수: -10\nA피드백: 테스트\n"
+            "B점수: -5\nB피드백: 테스트\n"
+            "C점수: 0\nC피드백: 테스트"
+        )
     )
 
     results = await evaluate_external_answers(
@@ -94,8 +98,7 @@ async def test_evaluate_external_answers_negative_score_clamping(
         answers=["A", "B", "C"],
     )
 
-    for result in results:
-        assert result["score"] == 1  # Clamped to 1
+    assert [r["score"] for r in results] == [1, 1, 1]
 
 
 @pytest.mark.asyncio
@@ -112,7 +115,7 @@ async def test_evaluate_external_answers_invalid_score(mock_agent: Any) -> None:
         answers=["A", "B", "C"],
     )
 
-    assert [r["score"] for r in results] == [3, 3, 3]
+    assert [r["score"] for r in results] == [3, 2, 1]
 
 
 @pytest.mark.asyncio
