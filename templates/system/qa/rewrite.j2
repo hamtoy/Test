@@ -2,9 +2,20 @@
 You will rewrite the selected top-scoring answer into smoother, more natural Korean while preserving meaning and all named entities, economic terms, and numeric values exactly.  
 
 {% if constraints %}
-## Neo4j 제약사항 (우선순위 순)
+## 🚨 CRITICAL CONSTRAINTS (절대 준수) 🚨
 {% for constraint in constraints %}
+{% if constraint.priority >= 90 %}
+**[Priority {{ constraint.priority | default(50) }}] {{ constraint.name | default("") }}**
+{{ constraint.description }}
+
+{% endif %}
+{% endfor %}
+
+## 추가 제약사항
+{% for constraint in constraints %}
+{% if constraint.priority < 90 %}
 [Priority {{ constraint.priority | default(50) }}] {{ constraint.description }}
+{% endif %}
 {% endfor %}
 {% endif %}
 
@@ -18,10 +29,6 @@ You will rewrite the selected top-scoring answer into smoother, more natural Kor
 - {{ rule }}
 {% endfor %}
 {% endif %}
-
-{% for constraint in constraints | default([]) -%}
-⚠️ {{ constraint }}
-{% endfor %}
 
 ## 볼드체 규칙 (필수)
 - 볼드체(**)는 소제목과 목록의 핵심 키워드에만 사용한다.
