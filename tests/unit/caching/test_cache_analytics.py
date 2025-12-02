@@ -6,7 +6,7 @@ from src.caching.analytics import analyze_cache_stats, calculate_savings
 
 def test_calculate_savings_zero_when_no_hits() -> None:
     record: dict[str, Any] = {
-        "model": "gemini-3-pro-preview",
+        "model": "gemini-flash-latest",
         "cache_hits": 0,
         "input_tokens": 1000,
     }
@@ -18,8 +18,8 @@ def test_analyze_cache_stats(tmp_path: Path) -> None:
     path.write_text(
         "\n".join(
             [
-                '{"model":"gemini-3-pro-preview","cache_hits":2,"cache_misses":1,"input_tokens":10000,"output_tokens":0}',
-                '{"model":"gemini-3-pro-preview","cache_hits":0,"cache_misses":1,"input_tokens":5000,"output_tokens":0}',
+                '{"model":"gemini-flash-latest","cache_hits":2,"cache_misses":1,"input_tokens":10000,"output_tokens":0}',
+                '{"model":"gemini-flash-latest","cache_hits":0,"cache_misses":1,"input_tokens":5000,"output_tokens":0}',
             ]
         ),
         encoding="utf-8",

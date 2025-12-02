@@ -40,7 +40,7 @@ async def test_main_analyze_cache_quick_path(
             self.template_dir = template_dir
             self.input_dir = input_dir
             self.output_dir = output_dir
-            self.model_name = "gemini-3-pro-preview"
+            self.model_name = "gemini-flash-latest"
             self.cache_stats_path = tmp_path / "stats.jsonl"
             self.cache_stats_max_entries = 3
 
@@ -130,7 +130,7 @@ async def test_main_keep_progress_flag(
             self.template_dir = template_dir
             self.input_dir = input_dir
             self.output_dir = output_dir
-            self.model_name = "gemini-3-pro-preview"
+            self.model_name = "gemini-flash-latest"
             self.cache_stats_path = tmp_path / "stats.jsonl"
             self.cache_stats_max_entries = 3
 
@@ -222,7 +222,7 @@ async def test_main_cache_stats_warning(
             self.template_dir = template_dir
             self.input_dir = input_dir
             self.output_dir = output_dir
-            self.model_name = "gemini-3-pro-preview"
+            self.model_name = "gemini-flash-latest"
             self.cache_stats_path = tmp_path / "stats.jsonl"
             self.cache_stats_max_entries = 3
 
@@ -317,7 +317,7 @@ async def test_main_auto_mode_passes_intent(
             self.template_dir = template_dir
             self.input_dir = input_dir
             self.output_dir = output_dir
-            self.model_name = "gemini-3-pro-preview"
+            self.model_name = "gemini-flash-latest"
             self.cache_stats_path = tmp_path / "stats.jsonl"
             self.cache_stats_max_entries = 3
 
@@ -408,7 +408,7 @@ async def test_main_missing_templates_exits(
             self.template_dir = template_dir
             self.input_dir = input_dir
             self.output_dir = output_dir
-            self.model_name = "gemini-3-pro-preview"
+            self.model_name = "gemini-flash-latest"
             self.cache_stats_path = tmp_path / "stats.jsonl"
             self.cache_stats_max_entries = 3
 

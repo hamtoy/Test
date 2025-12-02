@@ -306,7 +306,7 @@ def calculate_savings(
     - cached_portion of input tokens are cacheable (system + OCR context)
     - cached tokens cost is discounted by `discount` factor (e.g., 0.9 = 90% off)
     """
-    model = str(record.get("model", "gemini-3-pro-preview")).lower()
+    model = str(record.get("model", "gemini-flash-latest")).lower()
     tiers = PRICING_TIERS.get(model)
     if not tiers:
         return 0.0

@@ -17,7 +17,7 @@ def _config(tmp_path: Path, budget: float) -> AppConfig:
     return AppConfig.model_validate(
         {
             "GEMINI_API_KEY": VALID_API_KEY,
-            "GEMINI_MODEL_NAME": "gemini-3-pro-preview",
+            "GEMINI_MODEL_NAME": "gemini-flash-latest",
             "GEMINI_MAX_OUTPUT_TOKENS": 1024,
             "GEMINI_TIMEOUT": 60,
             "GEMINI_MAX_CONCURRENCY": 2,

@@ -73,7 +73,7 @@ def fake_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> AppConfig:
     monkeypatch.setenv("GEMINI_API_KEY", fake_key)
     cfg = AppConfig(
         GEMINI_API_KEY=fake_key,
-        GEMINI_MODEL_NAME="gemini-3-pro-preview",
+        GEMINI_MODEL_NAME="gemini-flash-latest",
         GEMINI_MAX_OUTPUT_TOKENS=100,
         GEMINI_TIMEOUT=60,
         GEMINI_MAX_CONCURRENCY=2,

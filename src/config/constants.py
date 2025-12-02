@@ -14,6 +14,12 @@ class PricingTier(TypedDict):
 # Pricing per 1M tokens (USD) for Gemini models.
 # Ordered tiers: first match wins.
 PRICING_TIERS: Final[dict[str, List[PricingTier]]] = {
+    # Default model
+    "gemini-flash-latest": [
+        {"max_input_tokens": 200_000, "input_rate": 2.00, "output_rate": 12.00},
+        {"max_input_tokens": None, "input_rate": 4.00, "output_rate": 18.00},
+    ],
+    # Backward compatibility
     "gemini-3-pro-preview": [
         {"max_input_tokens": 200_000, "input_rate": 2.00, "output_rate": 12.00},
         {"max_input_tokens": None, "input_rate": 4.00, "output_rate": 18.00},
@@ -47,7 +53,7 @@ QA_BATCH_GENERATION_TIMEOUT: Final[int] = 120
 
 # Workspace generation timeout settings (seconds)
 WORKSPACE_GENERATION_TIMEOUT: Final[int] = 90
-WORKSPACE_UNIFIED_TIMEOUT: Final[int] = 120
+WORKSPACE_UNIFIED_TIMEOUT: Final[int] = 90
 
 
 # ===== Cache TTL Configuration (seconds) =====

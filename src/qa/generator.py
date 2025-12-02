@@ -71,7 +71,7 @@ def call_llm(system_prompt: str, user_prompt: str) -> str:
     """Gemini 3 Pro Preview로 고정된 LLM 호출."""
     try:
         response = client.chat.completions.create(
-            model="gemini-3-pro-preview",
+            model="gemini-flash-latest",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},

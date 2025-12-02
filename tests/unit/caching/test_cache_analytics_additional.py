@@ -13,7 +13,7 @@ def test_calculate_savings_zero_for_unknown_model() -> None:
 
 def test_calculate_savings_basic() -> None:
     record = {
-        "model": "gemini-3-pro-preview",
+        "model": "gemini-flash-latest",
         "cache_hits": 2,
         "input_tokens": 1_000_000,
     }
@@ -34,13 +34,13 @@ def test_analyze_cache_stats_reads_and_sums(tmp_path: Path) -> None:
             "cache_hits": 1,
             "cache_misses": 1,
             "input_tokens": 10,
-            "model": "gemini-3-pro-preview",
+            "model": "gemini-flash-latest",
         },
         {
             "cache_hits": 2,
             "cache_misses": 0,
             "input_tokens": 10,
-            "model": "gemini-3-pro-preview",
+            "model": "gemini-flash-latest",
         },
         "not json",
     ]

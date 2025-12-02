@@ -35,8 +35,8 @@ class AppConfig(BaseSettings):
     """
 
     api_key: str = Field(..., alias="GEMINI_API_KEY")
-    model_name: Literal["gemini-3-pro-preview"] = Field(
-        "gemini-3-pro-preview", alias="GEMINI_MODEL_NAME"
+    model_name: Literal["gemini-flash-latest"] = Field(
+        "gemini-flash-latest", alias="GEMINI_MODEL_NAME"
     )
     max_output_tokens: int = Field(8192, alias="GEMINI_MAX_OUTPUT_TOKENS")
     timeout: int = Field(120, alias="GEMINI_TIMEOUT")
@@ -145,9 +145,9 @@ class AppConfig(BaseSettings):
     @classmethod
     def enforce_single_model(cls, v: str) -> str:
         """Enforce use of the supported Gemini model only."""
-        if v != "gemini-3-pro-preview":
+        if v != "gemini-flash-latest":
             raise ValueError(
-                "Unsupported model. This system only allows 'gemini-3-pro-preview'."
+                "Unsupported model. This system only allows 'gemini-flash-latest'."
             )
         return v
 

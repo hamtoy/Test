@@ -105,7 +105,7 @@ class TestTimeoutHandling:
         config = MagicMock()
         config.timeout = 30
         config.max_concurrency = 5
-        config.model_name = "gemini-3-pro-preview"
+        config.model_name = "gemini-flash-latest"
         config.temperature = 0.2
         config.max_output_tokens = 8192
         config.template_dir = MagicMock()

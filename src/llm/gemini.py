@@ -3,7 +3,7 @@
 
 This wraps google.generativeai and provides simple generate/evaluate/rewrite
 helpers. Defaults to the model name from `GEMINI_MODEL_NAME` or
-`gemini-3-pro-preview` if unset.
+`gemini-flash-latest` if unset.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ class GeminiModelClient:
         """Initialize the Gemini model client."""
         api_key = require_env("GEMINI_API_KEY")
         genai.configure(api_key=api_key)
-        self.model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-3-pro-preview")
+        self.model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-flash-latest")
         self.model = genai.GenerativeModel(self.model_name)
         genai_logger = getattr(genai, "_logging", None)
         if genai_logger and getattr(genai_logger, "logger", None):

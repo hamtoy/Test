@@ -50,7 +50,7 @@ cast(Any, langchain_module).callbacks = callbacks_module
 def mock_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Ensure AppConfig validation passes with valid mock values."""
     monkeypatch.setenv("GEMINI_API_KEY", MOCK_GEMINI_API_KEY)
-    monkeypatch.setenv("GEMINI_MODEL_NAME", "gemini-3-pro-preview")
+    monkeypatch.setenv("GEMINI_MODEL_NAME", "gemini-flash-latest")
 
 
 @pytest.fixture(autouse=True)

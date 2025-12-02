@@ -46,13 +46,13 @@ class BatchRequest:
 
     Follows the JSONL format specification:
     {"custom_id": "req-1", "method": "POST",
-     "url": "/v1/models/gemini-3-pro-preview:generateContent",
+     "url": "/v1/models/gemini-flash-latest:generateContent",
      "body": {"contents": [{"parts": [{"text": "..."}]}]}}
     """
 
     custom_id: str
     text: str
-    model_name: str = "gemini-3-pro-preview"
+    model_name: str = "gemini-flash-latest"
     system_instruction: Optional[str] = None
     temperature: float = 0.2
     max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS
@@ -161,8 +161,8 @@ class BatchProcessor:
 
         # Model name from config or default
         self.model_name = (
-            getattr(config, "model_name", None) if config else "gemini-3-pro-preview"
-        ) or "gemini-3-pro-preview"
+            getattr(config, "model_name", None) if config else "gemini-flash-latest"
+        ) or "gemini-flash-latest"
 
     def create_batch_request(
         self,

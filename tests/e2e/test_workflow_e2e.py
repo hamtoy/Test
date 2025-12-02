@@ -23,7 +23,7 @@ def mock_config() -> AppConfig:
         "os.environ",
         {
             "GEMINI_API_KEY": "AIza" + "x" * 35,
-            "GEMINI_MODEL_NAME": "gemini-3-pro-preview",
+            "GEMINI_MODEL_NAME": "gemini-flash-latest",
         },
     ):
         config = AppConfig()

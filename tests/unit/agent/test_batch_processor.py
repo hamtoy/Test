@@ -35,7 +35,7 @@ class TestBatchRequest:
 
         assert request.custom_id == "req-001"
         assert request.text == "Hello, world!"
-        assert request.model_name == "gemini-3-pro-preview"
+        assert request.model_name == "gemini-flash-latest"
         assert request.temperature == 0.2
         assert request.max_output_tokens == 2048
 
@@ -68,7 +68,7 @@ class TestBatchRequest:
 
         assert result["custom_id"] == "req-003"
         assert result["method"] == "POST"
-        assert "gemini-3-pro-preview:generateContent" in result["url"]
+        assert "gemini-flash-latest:generateContent" in result["url"]
         assert result["body"]["contents"][0]["parts"][0]["text"] == "Test prompt"
         assert result["body"]["generationConfig"]["temperature"] == 0.5
         assert result["body"]["generationConfig"]["maxOutputTokens"] == 1024
@@ -159,7 +159,7 @@ class TestBatchProcessor:
     def test_processor_initialization(self, processor: Any, tmp_path: Path) -> None:
         """Test processor initialization."""
         assert processor.output_dir.exists()
-        assert processor.model_name == "gemini-3-pro-preview"
+        assert processor.model_name == "gemini-flash-latest"
 
     def test_create_batch_request(self, processor: Any) -> None:
         """Test creating a batch request through processor."""

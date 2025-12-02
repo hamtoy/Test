@@ -4,9 +4,9 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 
-# Gemini 3 Pro Preview pricing (USD per 1M tokens)
+# Gemini Flash pricing (USD per 1M tokens)
 # Source: Google AI Studio pricing page (<=200K tokens tier)
-GEMINI_PRO_PREVIEW_PRICING = {
+GEMINI_FLASH_PRICING = {
     "input": 2.0,  # $2.00 per 1M input tokens
     "output": 12.0,  # $12.00 per 1M output tokens
     "cached_input": 0.5,  # $0.50 per 1M cached tokens (estimate)
@@ -20,7 +20,7 @@ GEMINI_PRO_PREVIEW_PRICING = {
 class UsageRecord:
     """단일 LLM 호출의 사용량 기록."""
 
-    model: str = "gemini-3-pro-preview"
+    model: str = "gemini-flash-latest"
     input_tokens: int = 0
     output_tokens: int = 0
     cached_input_tokens: int = 0
@@ -31,7 +31,7 @@ class UsageRecord:
 
 
 class BudgetTracker:
-    """gemini-3-pro-preview 모델의 비용 추적 및 예산 관리."""
+    """gemini-flash-latest 모델의 비용 추적 및 예산 관리."""
 
     def __init__(self, budget_limit_usd: float = 1.0):
         """Initialize the budget tracker.
@@ -83,13 +83,9 @@ class BudgetTracker:
             "total_tokens", input_tokens_val + output_tokens_val
         )
 
-        cost_input = (input_tokens_val / 1_000_000) * GEMINI_PRO_PREVIEW_PRICING[
-            "input"
-        ]
-        cost_output = (output_tokens_val / 1_000_000) * GEMINI_PRO_PREVIEW_PRICING[
-            "output"
-        ]
-        cost_cached = (cached_tokens_val / 1_000_000) * GEMINI_PRO_PREVIEW_PRICING[
+        cost_input = (input_tokens_val / 1_000_000) * GEMINI_FLASH_PRICING["input"]
+        cost_output = (output_tokens_val / 1_000_000) * GEMINI_FLASH_PRICING["output"]
+        cost_cached = (cached_tokens_val / 1_000_000) * GEMINI_FLASH_PRICING[
             "cached_input"
         ]
         total_cost = cost_input + cost_output + cost_cached
