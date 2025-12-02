@@ -2,6 +2,9 @@
 
 import asyncio
 import logging
+from typing import cast, NoReturn
+from collections.abc import Coroutine
+from typing import Any
 
 import pytest
 
@@ -26,12 +29,12 @@ def test_measure_latency_logs_duration(caplog: pytest.LogCaptureFixture) -> None
 
     record = caplog.records[-1]
     assert record.levelname == "INFO"
-    assert record.operation == "test_sync"
-    assert record.metric == "latency"
-    assert record.duration_ms > 0
-    assert record.success is True
-    assert record.extra_field == "value"
-    assert record.result_value == 3
+    assert record.__dict__["operation"] == "test_sync"
+    assert record.__dict__["metric"] == "latency"
+    assert record.__dict__["duration_ms"] > 0
+    assert record.__dict__["success"] is True
+    assert record.__dict__["extra_field"] == "value"
+    assert record.__dict__["result_value"] == 3
 
 
 def test_measure_latency_async_logs_duration(caplog: pytest.LogCaptureFixture) -> None:
@@ -49,14 +52,14 @@ def test_measure_latency_async_logs_duration(caplog: pytest.LogCaptureFixture) -
         return a * 2
 
     caplog.set_level(logging.INFO)
-    result = asyncio.run(sample_async(5))
+    result: int = asyncio.run(cast(Coroutine[Any, Any, int], sample_async(5)))
     assert result == 10
 
     record = caplog.records[-1]
-    assert record.operation == "test_async"
-    assert record.metric == "latency"
-    assert record.success is True
-    assert record.extra_async is True
+    assert record.__dict__["operation"] == "test_async"
+    assert record.__dict__["metric"] == "latency"
+    assert record.__dict__["success"] is True
+    assert record.__dict__["extra_async"] is True
 
 
 def test_measure_latency_failure_logs_success_false(
@@ -65,7 +68,7 @@ def test_measure_latency_failure_logs_success_false(
     """Failure should still log with success=False."""
 
     @measure_latency("failing_op")
-    def boom() -> None:
+    def boom() -> NoReturn:
         raise RuntimeError("fail")
 
     caplog.set_level(logging.INFO)
@@ -73,6 +76,6 @@ def test_measure_latency_failure_logs_success_false(
         boom()
 
     record = caplog.records[-1]
-    assert record.operation == "failing_op"
-    assert record.success is False
-    assert record.metric == "latency"
+    assert record.__dict__["operation"] == "failing_op"
+    assert record.__dict__["success"] is False
+    assert record.__dict__["metric"] == "latency"
