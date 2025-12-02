@@ -372,8 +372,8 @@ class QAKnowledgeGraph:
                fr.description AS description,
                fr.priority AS priority,
                fr.category AS category,
-               fr.examples_good AS examples_good,
-               fr.examples_bad AS examples_bad
+               coalesce(fr.examples_good, '') AS examples_good,
+               coalesce(fr.examples_bad, '') AS examples_bad
         ORDER BY fr.priority DESC
         """
         provider = getattr(self, "_graph_provider", None)
