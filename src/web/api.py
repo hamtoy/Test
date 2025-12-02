@@ -437,6 +437,10 @@ async def generate_single_qa(
     extra_instructions = "질의 유형에 맞게 작성하세요."
     if normalized_qtype == "reasoning":
         extra_instructions = "추론형 답변입니다. '요약문' 같은 헤더를 쓰지 말고, 근거 2~3개와 결론을 명확히 제시하세요."
+    elif normalized_qtype == "target_short":
+        extra_instructions = "타겟 짧은 답변입니다. 두 문장 이내로 핵심만 요약해 주세요. 불필요한 서론/결론은 생략합니다."
+    elif normalized_qtype == "target_long":
+        extra_instructions = "타겟 긴 답변입니다. 핵심을 3~4문장 정도로 간결하게 서술해 주세요. 불필요한 반복을 피합니다."
 
     try:
         queries = await agent.generate_query(

@@ -28,7 +28,8 @@
             </label>
 
             <div id="type-selector" style="display:none; margin-top: 10px;">
-                <select id="qtype">
+                <label for="qtype" class="sr-only">생성 타입 선택</label>
+                <select id="qtype" aria-label="생성 타입 선택">
                     <option value="global_explanation">전반 설명</option>
                     <option value="reasoning">추론</option>
                     <option value="target_short">타겟 짧은 답변</option>
