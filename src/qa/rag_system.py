@@ -19,15 +19,15 @@ from typing import (
 
 import google.generativeai as genai
 from dotenv import load_dotenv
+from langchain_core.embeddings import Embeddings
 from neo4j import GraphDatabase
 from neo4j.exceptions import Neo4jError
-from langchain_core.embeddings import Embeddings
 
 from checks.validate_session import validate_turns
-from src.core.interfaces import GraphProvider
-from src.core.factory import get_graph_provider
 from src.config import AppConfig
 from src.config.utils import require_env
+from src.core.factory import get_graph_provider
+from src.core.interfaces import GraphProvider
 from src.infra.neo4j import SafeDriver, create_sync_driver
 from src.qa.graph.rule_upsert import RuleUpsertManager
 
@@ -273,6 +273,57 @@ class QAKnowledgeGraph:
 
         return _run_async_safely(_run())
 
+    def get_formatting_rules(self, template_type: str) -> str:
+        """템플릿 유형별 서식/스타일 규칙을 마크다운 문자열로 반환."""
+        cypher = """
+        MATCH (t:Template {name: $template_type})-[:ENFORCES]->(r:Rule)
+        RETURN r.category AS category, r.text AS text, coalesce(r.priority, 999) AS priority
+        ORDER BY priority, category
+        """
+
+        def _format(records: List[Dict[str, Any]]) -> str:
+            grouped: Dict[str, List[str]] = {}
+            for rec in records:
+                text = rec.get("text")
+                if not text:
+                    continue
+                category = rec.get("category") or "Formatting Rules"
+                grouped.setdefault(category, []).append(str(text))
+
+            if not grouped:
+                return ""
+
+            lines: List[str] = []
+            for category, texts in grouped.items():
+                lines.append(f"### {category}")
+                lines.extend(f"- {t}" for t in texts)
+            return "\n".join(lines)
+
+        # sync 드라이버 우선
+        if self._graph is not None:
+            try:
+                with self._graph.session() as session:
+                    records = session.run(cypher, template_type=template_type)
+                    return _format([dict(r) for r in records])
+            except Exception as e:  # noqa: BLE001
+                logger.warning("Sync formatting rules query failed: %s", e)
+
+        provider = getattr(self, "_graph_provider", None)
+        if provider is None:
+            return ""
+
+        async def _run() -> List[Dict[str, Any]]:
+            async with provider.session() as session:
+                result = await session.run(cypher, template_type=template_type)
+                if hasattr(result, "__aiter__"):
+                    records = [record async for record in result]
+                else:
+                    records = list(result)
+                return [dict(r) for r in records]
+
+        records = _run_async_safely(_run())
+        return _format(records)
+
     def get_best_practices(self, query_type: str) -> List[Dict[str, str]]:
         """Get best practices for a given query type.
 
@@ -351,11 +402,83 @@ class QAKnowledgeGraph:
         return self._rule_upsert_manager.upsert_auto_generated_rules(patterns, batch_id)
 
     def get_rules_by_batch_id(self, batch_id: str) -> List[Dict[str, Any]]:
-        """특정 batch_id로 생성된 모든 노드 조회.
-
-        Delegates to RuleUpsertManager.
-        """
+        """Batch ID로 업서트된 Rule 노드 조회."""
         return self._rule_upsert_manager.get_rules_by_batch_id(batch_id)
+
+    def get_formatting_rules(self, template_type: str) -> str:
+        """Get formatting rules for a specific template type from Neo4j.
+
+        Args:
+            template_type: Template type (e.g., 'eval', 'rewrite', 'query_gen')
+
+        Returns:
+            Formatted markdown string containing all rules grouped by category.
+        """
+        cypher = """
+        MATCH (t:Template {name: $template_type})-[:ENFORCES]->(r:Rule)
+        RETURN r.category AS category, r.text AS text, r.priority AS priority
+        ORDER BY r.priority, r.category
+        """
+        provider = getattr(self, "_graph_provider", None)
+
+        # Try sync driver first if available
+        if self._graph is not None:
+            try:
+                with self._graph.session() as session:
+                    records = session.run(cypher, template_type=template_type)
+                    rules_data = [dict(r) for r in records]
+                    return self._format_rules(rules_data)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("Sync formatting rules query failed: %s", e)
+
+        if provider is None:
+            logger.warning("No graph provider available for formatting rules")
+            return ""
+
+        prov = provider
+
+        async def _run() -> str:
+            async with prov.session() as session:
+                result = await session.run(cypher, template_type=template_type)
+                if hasattr(result, "__aiter__"):
+                    records = [record async for record in result]
+                else:
+                    records = list(result)
+                rules_data = [dict(r) for r in records]
+                return self._format_rules(rules_data)
+
+        return _run_async_safely(_run())
+
+    def _format_rules(self, rules_data: List[Dict[str, Any]]) -> str:
+        """Format rules data into markdown structure.
+
+        Args:
+            rules_data: List of rule dictionaries with category, text, priority
+
+        Returns:
+            Formatted markdown string
+        """
+        if not rules_data:
+            return ""
+
+        # Group rules by category
+        categories: Dict[str, List[str]] = {}
+        for rule in rules_data:
+            category = rule.get("category", "general")
+            text = rule.get("text", "")
+            if category not in categories:
+                categories[category] = []
+            categories[category].append(text)
+
+        # Format as markdown
+        lines = []
+        for category, texts in categories.items():
+            lines.append(f"<{category}>")
+            lines.extend(f"    <rule>{text}</rule>" for text in texts)
+            lines.append(f"</{category}>")
+            lines.append("")  # Empty line between categories
+
+        return "\n".join(lines).strip()
 
     def rollback_batch(self, batch_id: str) -> Dict[str, Any]:
         """특정 batch_id로 생성된 모든 노드 삭제 (롤백).

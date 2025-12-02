@@ -30,8 +30,8 @@ from src.config.exceptions import (
     SafetyFilterError,
     ValidationFailedError,
 )
-from src.infra.logging import log_metrics as _log_metrics
 from src.core.models import EvaluationResultSchema, QueryResult
+from src.infra.logging import log_metrics as _log_metrics
 from src.infra.utils import clean_markdown_code_block, safe_json_parse
 
 from .cache_manager import CacheManager
@@ -40,6 +40,7 @@ from .rate_limiter import RateLimiter
 
 if TYPE_CHECKING:
     import google.generativeai.caching as caching
+
     from src.core.interfaces import LLMProvider
     from src.qa.rag_system import QAKnowledgeGraph
 
@@ -589,16 +590,27 @@ class GeminiAgent:
         except Exception as e:  # noqa: BLE001
             self.logger.debug("Neo4j 규칙 조회 실패: %s", e)
 
+        # Get formatting rules from Neo4j
+        formatting_rules = ""
+        try:
+            if kg_obj:
+                formatting_rules = kg_obj.get_formatting_rules("query_gen")
+        except Exception as e:  # noqa: BLE001
+            self.logger.debug("Formatting rules 조회 실패: %s", e)
+
         system_template_name = "system/query_gen.j2"
         try:
             system_template = self.jinja_env.get_template(system_template_name)
             system_prompt = system_template.render(
-                response_schema=schema_json, rules=rules, constraints=constraints
+                response_schema=schema_json,
+                rules=rules,
+                constraints=constraints,
+                formatting_rules=formatting_rules,
             )
         except Exception as e:  # noqa: BLE001
             self.logger.debug("템플릿 렌더링 실패: %s", e)
             system_prompt = self.jinja_env.get_template(system_template_name).render(
-                response_schema=schema_json
+                response_schema=schema_json, formatting_rules=formatting_rules
             )
 
         model = self._create_generative_model(
@@ -688,15 +700,26 @@ class GeminiAgent:
         except Exception as e:  # noqa: BLE001
             self.logger.debug("Neo4j 규칙 조회 실패: %s", e)
 
+        # Get formatting rules from Neo4j
+        formatting_rules = ""
+        try:
+            if kg_obj:
+                formatting_rules = kg_obj.get_formatting_rules("eval")
+        except Exception as e:  # noqa: BLE001
+            self.logger.debug("Formatting rules 조회 실패: %s", e)
+
         try:
             system_template = self.jinja_env.get_template("system/qa/compare_eval.j2")
             system_prompt = system_template.render(
                 rules=rules,
                 constraints=constraints,
+                formatting_rules=formatting_rules,
             )
         except Exception as e:  # noqa: BLE001
             self.logger.debug("동적 템플릿 실패, 기본 사용: %s", e)
-            system_prompt = self.jinja_env.get_template("system/eval.j2").render()
+            system_prompt = self.jinja_env.get_template("system/eval.j2").render(
+                formatting_rules=formatting_rules
+            )
 
         model = self._create_generative_model(
             system_prompt,
@@ -779,16 +802,27 @@ class GeminiAgent:
         except Exception as e:  # noqa: BLE001
             self.logger.warning("Neo4j 규칙 조회 실패, 기본 템플릿 사용: %s", e)
 
+        # Get formatting rules from Neo4j
+        formatting_rules = ""
+        try:
+            if kg_obj:
+                formatting_rules = kg_obj.get_formatting_rules("rewrite")
+        except Exception as e:  # noqa: BLE001
+            self.logger.debug("Formatting rules 조회 실패: %s", e)
+
         try:
             system_template = self.jinja_env.get_template("system/qa/rewrite.j2")
             system_prompt = system_template.render(
                 rules=rules,
                 constraints=constraints,
                 has_table_chart=False,
+                formatting_rules=formatting_rules,
             )
         except Exception as e:  # noqa: BLE001
             self.logger.warning("동적 템플릿 실패, 기본 사용: %s", e)
-            system_prompt = self.jinja_env.get_template("system/rewrite.j2").render()
+            system_prompt = self.jinja_env.get_template("system/rewrite.j2").render(
+                formatting_rules=formatting_rules
+            )
 
         model = self._create_generative_model(
             system_prompt, cached_content=cached_content

@@ -23,6 +23,9 @@
             <list_indentation>
                 목록 하위 항목은 4칸(스페이스) 단위로 들여쓴다. 가변 들여쓰기는 금지한다.
             </list_indentation>
+            <formatting_rules>
+                {{ formatting_rules | default("") }}
+            </formatting_rules>
             <visual_dependency_ban>
                 표/그래프/색상/좌표 등 시각 정보에 의존한 언급은 금지하고, 제공된 텍스트 내용만 근거로 답한다.
             </visual_dependency_ban>
