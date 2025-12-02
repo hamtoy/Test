@@ -49,6 +49,7 @@ def test_measure_latency_async_logs_duration(caplog: pytest.LogCaptureFixture) -
         return a * 2
 
     caplog.set_level(logging.INFO)
+    # mypy strict mode: asyncio.run expects Coroutine but decorator returns Awaitable
     result: int = asyncio.run(sample_async(5))  # type: ignore[arg-type]
     assert result == 10
 
@@ -64,6 +65,7 @@ def test_measure_latency_failure_logs_success_false(
 ) -> None:
     """Failure should still log with success=False."""
 
+    # mypy strict mode: function that always raises has Never return type
     @measure_latency("failing_op")  # type: ignore[arg-type]
     def boom() -> None:
         raise RuntimeError("fail")
