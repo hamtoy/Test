@@ -420,8 +420,8 @@ class GeminiAgent:
                     raise
 
         try:
-            result = await _execute_with_retry()
-            return cast(str, result)
+            result: str = await _execute_with_retry()
+            return result
         except Exception:
             self.api_failures += 1
             raise
