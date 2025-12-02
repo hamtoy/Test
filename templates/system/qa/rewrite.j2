@@ -20,7 +20,14 @@ You will rewrite the selected top-scoring answer into smoother, more natural Kor
 {% endif %}
 
 {% if length_constraint %}
+## ⚠️ 길이 제약 (엄격히 준수) ⚠️
 {{ length_constraint }}
+
+**검증 방법:**
+1. 답변 작성 완료 후
+2. 마침표(.)로 문장 개수 세기
+3. 제한 초과 시 가장 덜 중요한 문장 삭제
+4. 재검증 후 제출
 {% endif %}
 
 {% if rules %}
