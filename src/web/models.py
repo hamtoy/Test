@@ -153,10 +153,36 @@ class OCRTextInput(BaseModel):
     )
 
 
+class UnifiedWorkspaceRequest(BaseModel):
+    """Request model for unified workspace with automatic workflow detection."""
+
+    query: Optional[str] = Field(
+        default="",
+        max_length=MAX_QUERY_LENGTH,
+        description="Query text (optional based on workflow)",
+    )
+    answer: Optional[str] = Field(
+        default="",
+        max_length=MAX_ANSWER_LENGTH,
+        description="Answer text (optional based on workflow)",
+    )
+    edit_request: Optional[str] = Field(
+        default="",
+        max_length=MAX_EDIT_REQUEST_LENGTH,
+        description="Edit instructions for edit workflows",
+    )
+    ocr_text: Optional[str] = Field(
+        default=None,
+        max_length=MAX_OCR_TEXT_LENGTH,
+        description="OCR text (optional, will load from file if not provided)",
+    )
+
+
 __all__ = [
     "GenerateQARequest",
     "EvalExternalRequest",
     "WorkspaceRequest",
+    "UnifiedWorkspaceRequest",
     "HealthResponse",
     "OCRTextInput",
     "MAX_QUERY_LENGTH",
