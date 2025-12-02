@@ -384,6 +384,11 @@ async def generate_single_qa(
         rules_list = list(DEFAULT_ANSWER_RULES)
         logger.info("Neo4j 규칙 없음, 기본 규칙 사용")
 
+    # 질의 유형별 추가 지시
+    extra_instructions = "질의 유형에 맞게 작성하세요."
+    if normalized_qtype == "reasoning":
+        extra_instructions = "추론형 답변입니다. '요약문' 같은 헤더를 쓰지 말고, 근거 2~3개와 결론을 명확히 제시하세요."
+
     try:
         queries = await agent.generate_query(
             ocr_text, user_intent=None, query_type=normalized_qtype, kg=kg
@@ -403,7 +408,8 @@ async def generate_single_qa(
 [OCR 텍스트]
 {truncated_ocr}
 
-위 규칙을 준수하여 한국어로 답변하세요."""
+위 규칙을 준수하여 한국어로 답변하세요.
+{extra_instructions}"""
 
         draft_answer = await agent.rewrite_best_answer(
             ocr_text=ocr_text,
@@ -414,11 +420,19 @@ async def generate_single_qa(
         )
 
         all_violations: list[str] = []
+        if normalized_qtype == "reasoning":
+            if "요약문" in draft_answer or "요약" in draft_answer.splitlines()[0]:
+                all_violations.append("summary_header_not_allowed")
 
         # 금지 패턴 검사
         violations = find_violations(draft_answer)
         if violations:
-            all_violations.extend([v["type"] for v in violations])
+            for v in violations:
+                v_type = v["type"]
+                # 시의성 표현 관련 위반은 재작성 트리거에서 제외 (사후 수동 수정 허용)
+                if v_type.startswith("error_pattern:시의성"):
+                    continue
+                all_violations.append(v_type)
 
         # IntegratedQAPipeline.validate_output() 사용
         if pipeline is not None:
