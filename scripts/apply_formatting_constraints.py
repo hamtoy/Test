@@ -13,9 +13,12 @@ def apply_formatting_constraints() -> None:
     user = os.getenv("NEO4J_USER")
     password = os.getenv("NEO4J_PASSWORD")
 
-    if not all([uri, user, password]):
+    if not (uri and user and password):
         print("Neo4j 환경변수가 설정되지 않았습니다.")
         return
+
+    # mypy: ensure non-None after guard
+    assert uri is not None and user is not None and password is not None
 
     driver = GraphDatabase.driver(uri, auth=(user, password))
 
