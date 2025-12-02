@@ -14,7 +14,12 @@ from uuid import uuid4
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import (
+    HTMLResponse,
+    RedirectResponse,
+    Response,
+    StreamingResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
@@ -39,6 +44,7 @@ from src.web.models import (
     EvalExternalRequest,
     GenerateQARequest,
     OCRTextInput,
+    StreamGenerateRequest,
     UnifiedWorkspaceRequest,
     WorkspaceRequest,
 )
@@ -626,6 +632,27 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"QA 생성 실패: {e}")
         raise HTTPException(status_code=500, detail=f"생성 실패: {str(e)}")
+
+
+@app.post("/api/qa/generate/stream")
+async def api_generate_qa_stream(body: StreamGenerateRequest) -> StreamingResponse:
+    """QA 생성 스트리밍 (SSE)."""
+    if agent is None:
+        raise HTTPException(status_code=500, detail="Agent 초기화 실패")
+
+    async def event_generator() -> AsyncIterator[str]:
+        try:
+            async for chunk in agent.generate_stream(
+                body.prompt,
+                system_instruction=body.system_instruction,
+            ):
+                yield f"data: {json.dumps({'text': chunk})}\\n\\n"
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Streaming generation failed: %s", exc)
+            yield f"data: {json.dumps({'error': str(exc)})}\\n\\n"
+        yield "data: [DONE]\\n\\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 async def generate_single_qa(

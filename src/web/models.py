@@ -17,6 +17,7 @@ MAX_COMMENT_LENGTH = 2000
 MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 MAX_TYPE_LENGTH = 100
 MAX_FEEDBACK_LENGTH = 5000
+MAX_PROMPT_LENGTH = 50000
 
 
 class GenerateQARequest(BaseModel):
@@ -189,8 +190,24 @@ class UnifiedWorkspaceRequest(BaseModel):
     )
 
 
+class StreamGenerateRequest(BaseModel):
+    """Streaming generation request model."""
+
+    prompt: str = Field(
+        ...,
+        max_length=MAX_PROMPT_LENGTH,
+        description="Raw prompt to stream-generate from",
+    )
+    system_instruction: Optional[str] = Field(
+        default=None,
+        max_length=MAX_PROMPT_LENGTH,
+        description="Optional system instruction",
+    )
+
+
 __all__ = [
     "GenerateQARequest",
+    "StreamGenerateRequest",
     "EvalExternalRequest",
     "WorkspaceRequest",
     "UnifiedWorkspaceRequest",

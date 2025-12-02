@@ -12,7 +12,16 @@ import json
 import logging
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AsyncGenerator,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    cast,
+)
 
 from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, ValidationError
@@ -888,6 +897,52 @@ class GeminiAgent:
     def check_budget(self) -> None:
         """예산 초과 여부 확인."""
         self._cost_tracker.check_budget()
+
+    # ==================== Streaming ====================
+
+    async def generate_stream(
+        self,
+        prompt: str,
+        *,
+        system_instruction: Optional[str] = None,
+        temperature: Optional[float] = None,
+        max_output_tokens: Optional[int] = None,
+        **kwargs: Any,
+    ) -> AsyncGenerator[str, None]:
+        """스트리밍 방식으로 응답을 생성합니다.
+
+        Args:
+            prompt: 사용자 프롬프트.
+            system_instruction: 선택적 시스템 프롬프트.
+            temperature: 샘플링 온도.
+            max_output_tokens: 최대 출력 토큰.
+            **kwargs: 추가 생성 파라미터.
+
+        Yields:
+            생성된 텍스트 청크.
+        """
+        generation_config: Dict[str, object] = {
+            "temperature": temperature or self.config.temperature,
+            "max_output_tokens": max_output_tokens or self.config.max_output_tokens,
+        }
+        gen_config_param = cast(Any, generation_config)
+        model = self._genai.GenerativeModel(
+            model_name=self.config.model_name,
+            system_instruction=system_instruction,
+            generation_config=gen_config_param,
+            safety_settings=self.safety_settings,
+        )
+
+        response = await model.generate_content_async(prompt, stream=True, **kwargs)
+        async for chunk in response:
+            text = getattr(chunk, "text", "") or getattr(chunk, "candidates", None)
+            if isinstance(text, list) and text and hasattr(text[0], "content"):
+                # Fallback for structured chunk objects
+                candidate_text = getattr(text[0], "text", None)
+                if candidate_text:
+                    yield candidate_text
+            elif text:
+                yield cast(str, text)
 
 
 def __getattr__(name: str) -> Any:

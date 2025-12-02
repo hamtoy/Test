@@ -383,3 +383,63 @@ async function executeWorkspace(mode, query, answer, editRequest) {
         document.getElementById('workspace-results').innerHTML = `<p style="color: var(--danger)">작업 실패: ${error.message}</p>`;
     }
 }
+
+// ============================================================================
+// Streaming QA (SSE)
+// ============================================================================
+
+function parseSSEBuffer(buffer) {
+    const events = [];
+    const parts = buffer.split(/\n\n/);
+    const complete = parts.slice(0, -1);
+    const remainder = parts[parts.length - 1] || '';
+
+    complete.forEach((chunk) => {
+        const line = chunk.trim();
+        if (!line.startsWith('data:')) return;
+        const payload = line.replace(/^data:\s*/, '');
+        try {
+            events.push(JSON.parse(payload));
+        } catch (e) {
+            console.warn('Failed to parse SSE chunk', e);
+        }
+    });
+
+    return { events, remainder };
+}
+
+function appendStreamResult(text) {
+    const el = document.getElementById('stream-output');
+    if (!el) return;
+    el.textContent += text;
+}
+
+async function generateQAStream(prompt) {
+    const response = await fetch('/api/qa/generate/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const parsed = parseSSEBuffer(buffer);
+        buffer = parsed.remainder;
+
+        parsed.events.forEach((evt) => {
+            if (evt.text) {
+                appendStreamResult(evt.text);
+            }
+            if (evt.error) {
+                appendStreamResult(`\n[error] ${evt.error}\n`);
+            }
+        });
+    }
+}
