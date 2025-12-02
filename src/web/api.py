@@ -386,6 +386,17 @@ async def generate_single_qa(
 
     normalized_qtype = QTYPE_MAP.get(qtype, "explanation")
 
+    # 타입별 질의 스타일 가이드
+    query_intent = None
+    if qtype == "target_short":
+        query_intent = "간단한 사실 확인 질문 (예: '~은 무엇입니까?', '~는 몇 개입니까?', '~의 핵심은 무엇입니까?')"
+    elif qtype == "target_long":
+        query_intent = "핵심 요점을 묻는 질문 (예: '~의 주요 변화는 무엇입니까?', '~의 핵심 동향은 무엇입니까?')"
+    elif qtype == "reasoning":
+        query_intent = "추론/예측을 요구하는 질문 (근거 기반 전망)"
+    elif qtype == "global_explanation":
+        query_intent = "전체 내용을 종합적으로 설명해 달라는 질문"
+
     rules_list: list[str] = []
     # Neo4j 호출 결과를 재사용하기 위한 간단한 캐시 래퍼
     kg_wrapper: Optional[Any] = None
@@ -477,7 +488,7 @@ async def generate_single_qa(
 
     try:
         queries = await agent.generate_query(
-            ocr_text, user_intent=None, query_type=normalized_qtype, kg=kg
+            ocr_text, user_intent=query_intent, query_type=normalized_qtype, kg=kg
         )
         if not queries:
             raise ValueError("질의 생성 실패")
