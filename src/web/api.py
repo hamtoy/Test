@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from checks.detect_forbidden_patterns import find_violations
 from src.agent import GeminiAgent
@@ -414,16 +415,29 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
         if body.mode == "batch":
             types = ["global_explanation", "reasoning", "target_short", "target_long"]
 
-            async def _safe_generate(qtype: str) -> Dict[str, Any]:
-                try:
-                    return await generate_single_qa(agent, ocr_text, qtype)
-                except Exception as exc:  # noqa: BLE001
-                    logger.error("%s 생성 실패: %s", qtype, exc)
-                    return {"type": qtype, "query": "생성 실패", "answer": str(exc)}
+            pairs = await asyncio.gather(
+                *[
+                    generate_single_qa_with_retry(agent, ocr_text, qtype)
+                    for qtype in types
+                ],
+                return_exceptions=True,
+            )
 
-            pairs = await asyncio.gather(*[_safe_generate(qtype) for qtype in types])
+            results: list[Dict[str, Any]] = []
+            for i, pair in enumerate(pairs):
+                if isinstance(pair, Exception):
+                    logger.error("%s 생성 실패: %s", types[i], pair)
+                    results.append(
+                        {
+                            "type": types[i],
+                            "query": "생성 실패",
+                            "answer": f"일시적 오류: {str(pair)[:100]}",
+                        }
+                    )
+                else:
+                    results.append(pair)
 
-            return {"mode": "batch", "pairs": list(pairs)}
+            return {"mode": "batch", "pairs": results}
 
         else:
             if not body.qtype:
@@ -656,6 +670,18 @@ async def generate_single_qa(
     except Exception as e:
         logger.error(f"QA 생성 실패: {e}")
         raise
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    reraise=True,
+)
+async def generate_single_qa_with_retry(
+    agent: GeminiAgent, ocr_text: str, qtype: str
+) -> Dict[str, Any]:
+    """재시도 로직이 있는 QA 생성 래퍼."""
+    return await generate_single_qa(agent, ocr_text, qtype)
 
 
 @app.post("/api/eval/external")
