@@ -98,9 +98,8 @@ class TestUnifiedWorkspaceAPI:
             mock_config.input_dir = inputs_dir
 
         # Patch agent and kg
-        with patch("src.web.api.agent", mock_agent):
-            with patch("src.web.api.kg", None):
-                yield
+        with patch("src.web.api.agent", mock_agent), patch("src.web.api.kg", None):
+            yield
 
     def test_unified_workspace_full_generation(
         self, client: Any, mock_agent: Any, tmp_path: Any
@@ -110,22 +109,24 @@ class TestUnifiedWorkspaceAPI:
         inputs_dir.mkdir(parents=True)
         (inputs_dir / "input_ocr.txt").write_text("Test OCR text", encoding="utf-8")
 
-        with patch("src.web.api.config") as mock_config:
+        with (
+            patch("src.web.api.config") as mock_config,
+            patch("src.web.api.agent", mock_agent),
+            patch("src.web.api.kg", None),
+            patch("src.web.api.DEFAULT_ANSWER_RULES", ["Rule 1"]),
+        ):
             mock_config.input_dir = inputs_dir
-            with patch("src.web.api.agent", mock_agent):
-                with patch("src.web.api.kg", None):
-                    with patch("src.web.api.DEFAULT_ANSWER_RULES", ["Rule 1"]):
-                        response = client.post(
-                            "/api/workspace/unified",
-                            json={"query": "", "answer": "", "edit_request": ""},
-                        )
+            response = client.post(
+                "/api/workspace/unified",
+                json={"query": "", "answer": "", "edit_request": ""},
+            )
 
-                        assert response.status_code == 200
-                        data = response.json()
-                        assert data["workflow"] == "full_generation"
-                        assert "query" in data
-                        assert "answer" in data
-                        assert "changes" in data
+            assert response.status_code == 200
+            data = response.json()
+            assert data["workflow"] == "full_generation"
+            assert "query" in data
+            assert "answer" in data
+            assert "changes" in data
 
     def test_unified_workspace_query_generation(
         self, client: Any, mock_agent: Any, tmp_path: Any
@@ -137,22 +138,21 @@ class TestUnifiedWorkspaceAPI:
 
         with patch("src.web.api.config") as mock_config:
             mock_config.input_dir = inputs_dir
-            with patch("src.web.api.agent", mock_agent):
-                with patch("src.web.api.kg", None):
-                    response = client.post(
-                        "/api/workspace/unified",
-                        json={
-                            "query": "",
-                            "answer": "Test answer",
-                            "edit_request": "",
-                        },
-                    )
+            with patch("src.web.api.agent", mock_agent), patch("src.web.api.kg", None):
+                response = client.post(
+                    "/api/workspace/unified",
+                    json={
+                        "query": "",
+                        "answer": "Test answer",
+                        "edit_request": "",
+                    },
+                )
 
-                    assert response.status_code == 200
-                    data = response.json()
-                    assert data["workflow"] == "query_generation"
-                    assert data["query"] == "Generated query"
-                    assert data["answer"] == "Test answer"
+                assert response.status_code == 200
+                data = response.json()
+                assert data["workflow"] == "query_generation"
+                assert data["query"] == "Generated query"
+                assert data["answer"] == "Test answer"
 
     def test_unified_workspace_answer_generation(
         self, client: Any, mock_agent: Any, tmp_path: Any
@@ -162,28 +162,28 @@ class TestUnifiedWorkspaceAPI:
         inputs_dir.mkdir(parents=True)
         (inputs_dir / "input_ocr.txt").write_text("Test OCR text", encoding="utf-8")
 
-        with patch("src.web.api.config") as mock_config:
+        with (
+            patch("src.web.api.config") as mock_config,
+            patch("src.web.api.agent", mock_agent),
+            patch("src.web.api.kg", None),
+            patch("src.web.api.DEFAULT_ANSWER_RULES", ["Rule 1"]),
+            patch("src.web.api.find_violations", return_value=[]),
+        ):
             mock_config.input_dir = inputs_dir
-            with patch("src.web.api.agent", mock_agent):
-                with patch("src.web.api.kg", None):
-                    with patch("src.web.api.DEFAULT_ANSWER_RULES", ["Rule 1"]):
-                        with patch(
-                            "src.web.api.find_violations", return_value=[]
-                        ):
-                            response = client.post(
-                                "/api/workspace/unified",
-                                json={
-                                    "query": "Test query",
-                                    "answer": "",
-                                    "edit_request": "",
-                                },
-                            )
+            response = client.post(
+                "/api/workspace/unified",
+                json={
+                    "query": "Test query",
+                    "answer": "",
+                    "edit_request": "",
+                },
+            )
 
-                            assert response.status_code == 200
-                            data = response.json()
-                            assert data["workflow"] == "answer_generation"
-                            assert data["query"] == "Test query"
-                            assert data["answer"] == "Generated answer"
+            assert response.status_code == 200
+            data = response.json()
+            assert data["workflow"] == "answer_generation"
+            assert data["query"] == "Test query"
+            assert data["answer"] == "Generated answer"
 
     def test_unified_workspace_edit_query(
         self, client: Any, mock_agent: Any, tmp_path: Any
@@ -195,25 +195,27 @@ class TestUnifiedWorkspaceAPI:
 
         mock_edit_content = AsyncMock(return_value="Edited query")
 
-        with patch("src.web.api.config") as mock_config:
+        with (
+            patch("src.web.api.config") as mock_config,
+            patch("src.web.api.agent", mock_agent),
+            patch("src.web.api.kg", None),
+            patch("src.web.api.edit_content", mock_edit_content),
+        ):
             mock_config.input_dir = inputs_dir
-            with patch("src.web.api.agent", mock_agent):
-                with patch("src.web.api.kg", None):
-                    with patch("src.web.api.edit_content", mock_edit_content):
-                        response = client.post(
-                            "/api/workspace/unified",
-                            json={
-                                "query": "Original query",
-                                "answer": "",
-                                "edit_request": "Make it better",
-                            },
-                        )
+            response = client.post(
+                "/api/workspace/unified",
+                json={
+                    "query": "Original query",
+                    "answer": "",
+                    "edit_request": "Make it better",
+                },
+            )
 
-                        assert response.status_code == 200
-                        data = response.json()
-                        assert data["workflow"] == "edit_query"
-                        assert data["query"] == "Edited query"
-                        assert "질의 수정 완료" in data["changes"]
+            assert response.status_code == 200
+            data = response.json()
+            assert data["workflow"] == "edit_query"
+            assert data["query"] == "Edited query"
+            assert "질의 수정 완료" in data["changes"]
 
     def test_unified_workspace_edit_answer(
         self, client: Any, mock_agent: Any, tmp_path: Any
@@ -225,25 +227,27 @@ class TestUnifiedWorkspaceAPI:
 
         mock_edit_content = AsyncMock(return_value="Edited answer")
 
-        with patch("src.web.api.config") as mock_config:
+        with (
+            patch("src.web.api.config") as mock_config,
+            patch("src.web.api.agent", mock_agent),
+            patch("src.web.api.kg", None),
+            patch("src.web.api.edit_content", mock_edit_content),
+        ):
             mock_config.input_dir = inputs_dir
-            with patch("src.web.api.agent", mock_agent):
-                with patch("src.web.api.kg", None):
-                    with patch("src.web.api.edit_content", mock_edit_content):
-                        response = client.post(
-                            "/api/workspace/unified",
-                            json={
-                                "query": "",
-                                "answer": "Original answer",
-                                "edit_request": "Make it better",
-                            },
-                        )
+            response = client.post(
+                "/api/workspace/unified",
+                json={
+                    "query": "",
+                    "answer": "Original answer",
+                    "edit_request": "Make it better",
+                },
+            )
 
-                        assert response.status_code == 200
-                        data = response.json()
-                        assert data["workflow"] == "edit_answer"
-                        assert data["answer"] == "Edited answer"
-                        assert "답변 수정 완료" in data["changes"]
+            assert response.status_code == 200
+            data = response.json()
+            assert data["workflow"] == "edit_answer"
+            assert data["answer"] == "Edited answer"
+            assert "답변 수정 완료" in data["changes"]
 
     def test_unified_workspace_edit_both(
         self, client: Any, mock_agent: Any, tmp_path: Any
@@ -253,31 +257,30 @@ class TestUnifiedWorkspaceAPI:
         inputs_dir.mkdir(parents=True)
         (inputs_dir / "input_ocr.txt").write_text("Test OCR text", encoding="utf-8")
 
-        mock_edit_content = AsyncMock(
-            side_effect=["Edited answer", "Edited query"]
-        )
+        mock_edit_content = AsyncMock(side_effect=["Edited answer", "Edited query"])
 
-        with patch("src.web.api.config") as mock_config:
+        with (
+            patch("src.web.api.config") as mock_config,
+            patch("src.web.api.agent", mock_agent),
+            patch("src.web.api.kg", None),
+            patch("src.web.api.edit_content", mock_edit_content),
+        ):
             mock_config.input_dir = inputs_dir
-            with patch("src.web.api.agent", mock_agent):
-                with patch("src.web.api.kg", None):
-                    with patch("src.web.api.edit_content", mock_edit_content):
-                        response = client.post(
-                            "/api/workspace/unified",
-                            json={
-                                "query": "Original query",
-                                "answer": "Original answer",
-                                "edit_request": "Make both better",
-                            },
-                        )
-
-                        assert response.status_code == 200
-                        data = response.json()
-                        assert data["workflow"] == "edit_both"
-                        assert data["query"] == "Edited query"
-                        assert data["answer"] == "Edited answer"
-                        assert "답변 수정 완료" in data["changes"]
-                        assert "질의 조정 완료" in data["changes"]
+            response = client.post(
+                "/api/workspace/unified",
+                json={
+                    "query": "Original query",
+                    "answer": "Original answer",
+                    "edit_request": "Make both better",
+                },
+            )
+            assert response.status_code == 200
+            data = response.json()
+            assert data["workflow"] == "edit_both"
+            assert data["query"] == "Edited query"
+            assert data["answer"] == "Edited answer"
+            assert "답변 수정 완료" in data["changes"]
+            assert "질의 조정 완료" in data["changes"]
 
     def test_unified_workspace_rewrite(
         self, client: Any, mock_agent: Any, tmp_path: Any
@@ -289,25 +292,27 @@ class TestUnifiedWorkspaceAPI:
 
         mock_inspect_answer = AsyncMock(return_value="Inspected answer")
 
-        with patch("src.web.api.config") as mock_config:
+        with (
+            patch("src.web.api.config") as mock_config,
+            patch("src.web.api.agent", mock_agent),
+            patch("src.web.api.kg", None),
+            patch("src.web.api.inspect_answer", mock_inspect_answer),
+        ):
             mock_config.input_dir = inputs_dir
-            with patch("src.web.api.agent", mock_agent):
-                with patch("src.web.api.kg", None):
-                    with patch("src.web.api.inspect_answer", mock_inspect_answer):
-                        response = client.post(
-                            "/api/workspace/unified",
-                            json={
-                                "query": "Test query",
-                                "answer": "Test answer",
-                                "edit_request": "",
-                            },
-                        )
+            response = client.post(
+                "/api/workspace/unified",
+                json={
+                    "query": "Test query",
+                    "answer": "Test answer",
+                    "edit_request": "",
+                },
+            )
 
-                        assert response.status_code == 200
-                        data = response.json()
-                        assert data["workflow"] == "rewrite"
-                        assert data["answer"] == "Inspected answer"
-                        assert "검수 완료" in data["changes"]
+            assert response.status_code == 200
+            data = response.json()
+            assert data["workflow"] == "rewrite"
+            assert data["answer"] == "Inspected answer"
+            assert "검수 완료" in data["changes"]
 
     def test_unified_workspace_agent_not_initialized(self, client: Any) -> None:
         """Test unified workspace when agent is not initialized."""
