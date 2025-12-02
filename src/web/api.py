@@ -285,23 +285,17 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
         if body.mode == "batch":
             types = ["global_explanation", "reasoning", "target_short", "target_long"]
 
-            # 4타입 병렬 생성
-            tasks = [generate_single_qa(agent, ocr_text, qtype) for qtype in types]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-
+            # 4타입 순차 생성 (병렬 LLM/Neo4j 호출 최소화)
             pairs: list[Dict[str, Any]] = []
-            for idx, result in enumerate(results):
-                if isinstance(result, Exception):
-                    logger.error("%s 생성 실패: %s", types[idx], result)
+            for qtype in types:
+                try:
+                    result = await generate_single_qa(agent, ocr_text, qtype)
+                    pairs.append(result)
+                except Exception as exc:  # noqa: BLE001
+                    logger.error("%s 생성 실패: %s", qtype, exc)
                     pairs.append(
-                        {
-                            "type": types[idx],
-                            "query": "생성 실패",
-                            "answer": str(result),
-                        }
+                        {"type": qtype, "query": "생성 실패", "answer": str(exc)}
                     )
-                else:
-                    pairs.append(cast(Dict[str, Any], result))
 
             return {"mode": "batch", "pairs": pairs}
 
@@ -333,11 +327,50 @@ async def generate_single_qa(
     }
 
     rules_list: list[str] = []
+    # Neo4j 호출 결과를 재사용하기 위한 간단한 캐시 래퍼
+    kg_wrapper: Optional[Any] = None
+    if kg is not None:
+
+        class _CachedKG:
+            def __init__(self, base: QAKnowledgeGraph) -> None:
+                self._base = base
+                self._constraints: dict[str, list[Dict[str, Any]]] = {}
+                self._formatting: dict[str, str] = {}
+                self._rules: dict[tuple[str, int], list[str]] = {}
+
+            def get_constraints_for_query_type(
+                self, query_type: str
+            ) -> List[Dict[str, Any]]:
+                if query_type in self._constraints:
+                    return self._constraints[query_type]
+                data = self._base.get_constraints_for_query_type(query_type)
+                self._constraints[query_type] = data
+                return data
+
+            def get_formatting_rules(self, template_type: str) -> str:
+                if template_type in self._formatting:
+                    return self._formatting[template_type]
+                text = self._base.get_formatting_rules(template_type)
+                self._formatting[template_type] = text
+                return text
+
+            def find_relevant_rules(self, query: str, k: int = 10) -> List[str]:
+                key = (query[:500], k)
+                if key in self._rules:
+                    return self._rules[key]
+                data = self._base.find_relevant_rules(query, k=k)
+                self._rules[key] = data
+                return data
+
+            def __getattr__(self, name: str) -> Any:
+                return getattr(self._base, name)
+
+        kg_wrapper = _CachedKG(kg)
 
     # 2) Neo4j 규칙 조회
-    if kg is not None:
+    if kg_wrapper is not None:
         try:
-            constraints = kg.get_constraints_for_query_type(normalized_qtype)
+            constraints = kg_wrapper.get_constraints_for_query_type(normalized_qtype)
             for c in constraints:
                 desc = c.get("description")
                 if desc:
@@ -376,7 +409,7 @@ async def generate_single_qa(
             best_answer=answer_prompt,
             cached_content=None,
             query_type=normalized_qtype,
-            kg=kg,
+            kg=kg_wrapper or kg,
         )
 
         all_violations: list[str] = []
@@ -396,8 +429,8 @@ async def generate_single_qa(
                 logger.info(f"누락 가능성 있는 규칙: {missing_rules}")
 
         # 규칙 준수 검증 (CrossValidationSystem)
-        if kg is not None:
-            validator = CrossValidationSystem(kg)
+        if kg_wrapper is not None:
+            validator = CrossValidationSystem(kg_wrapper)
             rule_check = validator._check_rule_compliance(
                 draft_answer, normalized_qtype
             )
