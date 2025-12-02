@@ -102,7 +102,30 @@ async function saveOCR() {
 // ============================================================================
 
 async function generateQA(mode, qtype) {
-    showLoading('results');
+    const resultsDiv = document.getElementById('results');
+
+    // 진행 상황 표시
+    resultsDiv.innerHTML = `
+        <div class="progress-container" style="text-align: center; padding: 40px 20px; background: var(--bg-secondary, #f5f5f5); border-radius: 8px;">
+            <h3 style="margin-bottom: 20px; color: var(--text-primary, #333);">
+                ${mode === 'batch' ? '⚡ 4개 타입 동시 생성 중...' : '🚀 답변 생성 중...'}
+            </h3>
+            <div style="margin: 25px auto; width: 320px; height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+                <div class="progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary, #21808d) 0%, var(--primary-dark, #1a6673) 100%); transition: width 0.5s ease;"></div>
+            </div>
+            <p style="color: var(--text-secondary, #666); font-size: 0.95em; margin-top: 20px; font-weight: 500;">
+                ${mode === 'batch' ? '예상 소요 시간: <strong>10-20초</strong>' : '예상 소요 시간: <strong>5-10초</strong>'}
+            </p>
+            <p style="color: var(--text-secondary, #666); font-size: 0.85em; margin-top: 8px;">
+                병렬 처리로 빠르게 완료됩니다 ✨
+            </p>
+        </div>
+    `;
+
+    const progressBar = document.querySelector('.progress-fill');
+    setTimeout(() => progressBar.style.width = '25%', 300);
+    setTimeout(() => progressBar.style.width = '50%', 2000);
+    setTimeout(() => progressBar.style.width = '75%', 5000);
 
     try {
         const body = { mode };
@@ -112,7 +135,11 @@ async function generateQA(mode, qtype) {
 
         const data = await apiCall('/api/qa/generate', 'POST', body);
 
-        const resultsDiv = document.getElementById('results');
+        // 완료 애니메이션
+        progressBar.style.width = '100%';
+        await new Promise(resolve => setTimeout(resolve, 400));
+
+        // 결과 표시
         resultsDiv.innerHTML = '';
 
         if (data.mode === 'batch') {
@@ -123,7 +150,7 @@ async function generateQA(mode, qtype) {
             resultsDiv.appendChild(createQACard(data.pair, 1));
         }
     } catch (error) {
-        document.getElementById('results').innerHTML = `<p style="color: var(--danger)">생성 실패: ${error.message}</p>`;
+        resultsDiv.innerHTML = `<p style="color: var(--danger)">생성 실패: ${error.message}</p>`;
     }
 }
 
@@ -294,4 +321,3 @@ async function executeWorkspace(mode, query, answer, editRequest) {
         document.getElementById('workspace-results').innerHTML = `<p style="color: var(--danger)">작업 실패: ${error.message}</p>`;
     }
 }
-
