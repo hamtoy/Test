@@ -188,8 +188,8 @@ class PromptExperimentManager:
 
         def avg(items: List[ExperimentResult], key: str) -> float:
             """Calculate average value for a given attribute."""
-            valid = [getattr(i, key) for i in items if i.success]
-            return sum(valid) / len(valid) if len(valid) > 0 else 0.0
+            valid = [float(getattr(i, key)) for i in items if i.success]
+            return (sum(valid) / len(valid)) if len(valid) > 0 else 0.0
 
         control_success = [i for i in control if i.success]
         treatment_success = [i for i in treatment if i.success]

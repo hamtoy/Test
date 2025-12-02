@@ -75,7 +75,7 @@ def _build_console_handler(
     log_level: int, sensitive_filter: logging.Filter
 ) -> logging.Handler:
     """Create Rich console handler."""
-    console_handler = RichHandler(
+    console_handler: logging.Handler = RichHandler(
         rich_tracebacks=True,
         show_time=False,
         show_path=False,

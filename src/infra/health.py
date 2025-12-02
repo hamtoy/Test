@@ -20,7 +20,7 @@ except (
     def _virtual_memory_stub() -> Any:
         raise ImportError("psutil not installed")
 
-    psutil.virtual_memory = _virtual_memory_stub  # type: ignore[attr-defined]
+    psutil.virtual_memory = _virtual_memory_stub
     sys.modules["psutil"] = psutil
 
 if TYPE_CHECKING:

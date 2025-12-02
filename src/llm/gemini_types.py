@@ -65,7 +65,7 @@ def configure_genai(api_key: str) -> None:
     Args:
         api_key: The Gemini API key
     """
-    genai.configure(api_key=api_key)  # type: ignore[attr-defined]
+    genai.configure(api_key=api_key)
 
 
 def create_generative_model(
@@ -91,7 +91,7 @@ def create_generative_model(
     if safety_settings is not None:
         kwargs["safety_settings"] = safety_settings
 
-    return genai.GenerativeModel(model_name, **kwargs)  # type: ignore[attr-defined]
+    return genai.GenerativeModel(model_name, **kwargs)
 
 
 def list_available_models() -> list[Any]:
@@ -102,7 +102,7 @@ def list_available_models() -> list[Any]:
     Returns:
         List of available model objects
     """
-    return list(genai.list_models())  # type: ignore[attr-defined]
+    return list(genai.list_models())
 
 
 def embed_content(
@@ -122,9 +122,7 @@ def embed_content(
     Returns:
         Dictionary containing the embedding result with 'embedding' key
     """
-    result: Any = genai.embed_content(  # type: ignore[attr-defined]
-        model=model, content=content, task_type=task_type
-    )
+    result: Any = genai.embed_content(model=model, content=content, task_type=task_type)
     # The result is a dict-like object with 'embedding' key
     # We convert to dict to provide a concrete return type
     if hasattr(result, "keys"):

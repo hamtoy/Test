@@ -1,3 +1,4 @@
+# mypy: disable-error-code=misc
 """웹 API 서버 - 기존 엔진을 HTTP로 래핑"""
 
 from __future__ import annotations
@@ -8,7 +9,7 @@ import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, List, Literal, Optional
+from typing import Any, AsyncIterator, Dict, List, Literal, Optional, cast
 from uuid import uuid4
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -487,7 +488,7 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
                         }
                     )
                 else:
-                    results.append(pair)
+                    results.append(cast(Dict[str, Any], pair))
 
             return {"mode": "batch", "pairs": results}
 

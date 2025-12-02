@@ -33,9 +33,9 @@ class GeminiProvider(LLMProvider):
             api_key: The Google AI API key.
             model_name: The Gemini model name to use.
         """
-        genai.configure(api_key=api_key)  # type: ignore[attr-defined]
+        genai.configure(api_key=api_key)
         self.model_name = model_name
-        self._model = genai.GenerativeModel(model_name)  # type: ignore[attr-defined]
+        self._model = genai.GenerativeModel(model_name)
 
     async def generate_content_async(
         self,
@@ -79,7 +79,7 @@ class GeminiProvider(LLMProvider):
         # as it's set at initialization time for GenerativeModel.
         model = self._model
         if system_instruction:
-            model = genai.GenerativeModel(  # type: ignore[attr-defined]
+            model = genai.GenerativeModel(
                 self.model_name, system_instruction=system_instruction
             )
 
@@ -148,7 +148,7 @@ class GeminiProvider(LLMProvider):
             ProviderError: If token counting fails.
         """
         try:
-            return self._model.count_tokens(text).total_tokens
+            return int(self._model.count_tokens(text).total_tokens)
         except Exception as e:
             logger.error(f"Failed to count tokens: {e}")
             # Fallback or re-raise? For now, re-raise as ProviderError

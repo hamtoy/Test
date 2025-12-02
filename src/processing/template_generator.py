@@ -6,7 +6,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
-from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateNotFound
+from jinja2 import (
+    Environment,
+    FileSystemLoader,
+    StrictUndefined,
+    Template,
+    TemplateNotFound,
+)
 from neo4j import GraphDatabase
 
 from src.config.utils import require_env
@@ -87,7 +93,7 @@ class DynamicTemplateGenerator:
         template_name = template_map.get(query_type, "system/base.j2")
         fallback = "system/base.j2"
         try:
-            template = self.jinja_env.get_template(template_name)
+            template: Template = self.jinja_env.get_template(template_name)
         except TemplateNotFound as exc:
             self.logger.warning(
                 "Template %s not found (%s), using fallback", template_name, exc
@@ -105,7 +111,7 @@ class DynamicTemplateGenerator:
                 "calc_allowed", context.get("used_calc_query_count", 0) < 1
             ),
         }
-        return template.render(**full_context)
+        return str(template.render(**full_context))
 
     def generate_validation_checklist(
         self, session: Dict[str, Any]

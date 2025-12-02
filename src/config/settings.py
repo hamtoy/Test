@@ -17,7 +17,7 @@ from src.config.constants import (
 logger = logging.getLogger(__name__)
 
 
-class AppConfig(BaseSettings):
+class AppConfig(BaseSettings):  # type: ignore[misc]
     """애플리케이션 설정 관리.
 
     환경 변수(.env)를 통해 모든 설정을 주입받으며,

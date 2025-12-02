@@ -388,7 +388,7 @@ class GeminiAgent:
             )
             await asyncio.sleep(delay)
 
-        @retry(
+        @retry(  # type: ignore[misc]
             stop=stop_after_attempt(3),
             wait=wait_exponential(multiplier=1, min=2, max=10),
             retry=retry_if_exception_type(retry_exceptions),
@@ -420,7 +420,7 @@ class GeminiAgent:
                     raise
 
         try:
-            return await _execute_with_retry()
+            return cast(str, await _execute_with_retry())
         except Exception:
             self.api_failures += 1
             raise
@@ -670,7 +670,7 @@ class GeminiAgent:
 
     # ==================== 평가 ====================
 
-    @retry(
+    @retry(  # type: ignore[misc]
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
         retry=retry_if_exception_type(

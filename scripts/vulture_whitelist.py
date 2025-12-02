@@ -1,3 +1,5 @@
+# mypy: ignore-errors
+"""Vulture whitelist definitions."""
 # vulture_whitelist.py
 # Intentionally unused code that should not be flagged by vulture.
 # This file lists code that appears unused but is actually required.

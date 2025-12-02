@@ -34,7 +34,7 @@ async def main() -> None:
         config = AppConfig()
 
         # Configure Gemini API
-        genai.configure(api_key=config.api_key)  # type: ignore[attr-defined]
+        genai.configure(api_key=config.api_key)
 
         # Setup Jinja2 environment
         from jinja2 import Environment, FileSystemLoader

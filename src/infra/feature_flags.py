@@ -181,10 +181,14 @@ class FeatureFlags:
             Variant name (defaults to "control" if not found)
         """
         flag = self.flags.get(flag_name, {})
-        variants = flag.get("variants", ["control"])
+        variants_raw = flag.get("variants", ["control"])
+        if not isinstance(variants_raw, list):
+            return "control"
+
+        variants: list[str] = [str(v) for v in variants_raw] or ["control"]
 
         if len(variants) <= 1:
-            return variants[0] if variants else "control"
+            return variants[0]
 
         # 일관된 해시 기반 변형 선택
         user_hash = int(hashlib.md5(user_id.encode()).hexdigest(), 16)

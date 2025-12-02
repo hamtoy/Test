@@ -30,7 +30,7 @@ repos:
         types: [python]
         args:
           - src/
-          - vulture_whitelist.py
+          - scripts/vulture_whitelist.py
           - --min-confidence=80
         pass_filenames: false
 

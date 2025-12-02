@@ -78,7 +78,7 @@ def _run_async_safely(coro: Coroutine[Any, Any, T]) -> T:
 load_dotenv()
 
 
-class CustomGeminiEmbeddings(Embeddings):
+class CustomGeminiEmbeddings(Embeddings):  # type: ignore[misc]
     """Gemini 임베딩 래퍼."""
 
     def __init__(self, api_key: str, model: str = "models/text-embedding-004") -> None:
@@ -88,7 +88,7 @@ class CustomGeminiEmbeddings(Embeddings):
             api_key: The Google AI API key.
             model: The embedding model name to use.
         """
-        genai.configure(api_key=api_key)  # type: ignore[attr-defined]
+        genai.configure(api_key=api_key)
         self.model = model
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
@@ -111,7 +111,7 @@ class CustomGeminiEmbeddings(Embeddings):
         Returns:
             The embedding vector.
         """
-        result = genai.embed_content(  # type: ignore[attr-defined]
+        result = genai.embed_content(
             model=self.model, content=text, task_type="retrieval_query"
         )
         return list(result["embedding"])
@@ -147,7 +147,7 @@ class QAKnowledgeGraph:
         )
         self._graph_provider: Optional[GraphProvider] = provider
         self._graph: Optional[SafeDriver] = None
-        self._graph_finalizer: Optional[weakref.finalize[..., SafeDriver]] = None
+        self._graph_finalizer: Optional[Any] = None
         self.neo4j_uri: Optional[str] = None
         self.neo4j_user: Optional[str] = None
         self.neo4j_password: Optional[str] = None

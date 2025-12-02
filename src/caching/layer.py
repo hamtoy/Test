@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Protocol, Sequence, cast
 try:
     import redis
 except ImportError:  # redis가 없을 때도 동작하도록
-    redis = None  # type: ignore[assignment]
+    redis = None
 
 from src.config.constants import RULES_CACHE_TTL_SECONDS
 from src.qa.rag_system import QAKnowledgeGraph

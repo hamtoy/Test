@@ -4,6 +4,7 @@ In v3.0, all shim files have been removed. Importing from the old paths
 should raise ModuleNotFoundError instead of emitting deprecation warnings.
 """
 
+import importlib
 import sys
 import warnings
 
@@ -19,75 +20,75 @@ class TestV3RemovedShims:
         sys.modules.pop("src.constants", None)
 
         with pytest.raises(ModuleNotFoundError):
-            import src.constants  # noqa: F401
+            importlib.import_module("src.constants")
 
     def test_exceptions_shim_removed(self) -> None:
         """Test that importing from src.exceptions raises ModuleNotFoundError."""
         sys.modules.pop("src.exceptions", None)
 
         with pytest.raises(ModuleNotFoundError):
-            import src.exceptions  # noqa: F401
+            importlib.import_module("src.exceptions")
 
     def test_models_shim_removed(self) -> None:
         """Test that importing from src.models raises ModuleNotFoundError."""
         sys.modules.pop("src.models", None)
 
         with pytest.raises(ModuleNotFoundError):
-            import src.models  # noqa: F401
+            importlib.import_module("src.models")
 
     def test_utils_shim_removed(self) -> None:
         """Test that importing from src.utils raises ModuleNotFoundError."""
         sys.modules.pop("src.utils", None)
 
         with pytest.raises(ModuleNotFoundError):
-            import src.utils  # noqa: F401
+            importlib.import_module("src.utils")
 
     def test_logging_setup_shim_removed(self) -> None:
         """Test that importing from src.logging_setup raises ModuleNotFoundError."""
         sys.modules.pop("src.logging_setup", None)
 
         with pytest.raises(ModuleNotFoundError):
-            import src.logging_setup  # noqa: F401
+            importlib.import_module("src.logging_setup")
 
     def test_neo4j_utils_shim_removed(self) -> None:
         """Test that importing from src.neo4j_utils raises ModuleNotFoundError."""
         sys.modules.pop("src.neo4j_utils", None)
 
         with pytest.raises(ModuleNotFoundError):
-            import src.neo4j_utils  # noqa: F401
+            importlib.import_module("src.neo4j_utils")
 
     def test_worker_shim_removed(self) -> None:
         """Test that importing from src.worker raises ModuleNotFoundError."""
         sys.modules.pop("src.worker", None)
 
         with pytest.raises(ModuleNotFoundError):
-            import src.worker  # noqa: F401
+            importlib.import_module("src.worker")
 
     def test_data_loader_shim_removed(self) -> None:
         """Test that importing from src.data_loader raises ModuleNotFoundError."""
         sys.modules.pop("src.data_loader", None)
 
         with pytest.raises(ModuleNotFoundError):
-            import src.data_loader  # noqa: F401
+            importlib.import_module("src.data_loader")
 
     def test_qa_rag_system_shim_removed(self) -> None:
         """Test that importing qa_rag_system from src raises ImportError."""
         with pytest.raises(ImportError):
-            from src import qa_rag_system  # noqa: F401
+            importlib.import_module("src.qa_rag_system")
 
     def test_caching_layer_shim_removed(self) -> None:
         """Test that importing from src.caching_layer raises ModuleNotFoundError."""
         sys.modules.pop("src.caching_layer", None)
 
         with pytest.raises(ModuleNotFoundError):
-            import src.caching_layer  # noqa: F401
+            importlib.import_module("src.caching_layer")
 
     def test_graph_enhanced_router_shim_removed(self) -> None:
         """Test that importing from src.graph_enhanced_router raises ModuleNotFoundError."""
         sys.modules.pop("src.graph_enhanced_router", None)
 
         with pytest.raises(ModuleNotFoundError):
-            import src.graph_enhanced_router  # noqa: F401
+            importlib.import_module("src.graph_enhanced_router")
 
 
 class TestV3NewImportPaths:

@@ -214,4 +214,4 @@ Generate output that follows ALL rules and learns from successful cases.
             base_context=str(base_context),
         )
 
-        return formatted
+        return str(formatted)

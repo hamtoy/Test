@@ -143,16 +143,17 @@ class TwoTierIndexManager:
         return [dict(record) for record in records]
 
     async def analyze_index_usage(self) -> Dict[str, Any]:
-        """Analyze index usage statistics.
-        Returns query performance metrics.
-        """
+        """Analyze index usage statistics and return metrics."""
         query = """
         CALL db.stats.retrieve('QUERIES')
         YIELD data
         RETURN data
         """
         records = await self._execute_query(query)
-        return records[0]["data"] if records else {}
+        if not records:
+            return {}
+        data = records[0].get("data", {})
+        return data if isinstance(data, dict) else {}
 
     async def drop_all_indexes(self) -> None:
         """Drop all indexes (use with caution!)."""
