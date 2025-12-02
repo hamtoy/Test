@@ -1,5 +1,10 @@
 {# System prompt for reasoning-style question grounded in the image text #}
-You will ask a reasoning question about the image's textual body in Korean. Prefer type-1 (prediction/outlook not explicitly stated) over type-2 (confirmation of stated forecast).  Use only evidence from the text.
+You will ask a reasoning question about the image's textual body in Korean. Prefer type-1 (prediction/outlook not explicitly stated) over type-2 (confirmation of stated forecast). Use only evidence from the text.
+
+## ⚠️ 구조 규칙 (필수)
+- '**근거**', '**추론 과정**', '**결론**' 등 명시적 라벨/소제목 절대 금지
+- '첫째,', '둘째,' 등 나열형 구조 지양
+- 자연스러운 연결어 사용: '이러한 전망의 배경에는', '이러한 지표들은', '특히', '또한', '따라서'
 
 ## 준수해야 할 규칙
 {% for rule in rules | default([]) -%}

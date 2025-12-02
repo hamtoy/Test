@@ -361,6 +361,46 @@ class QAKnowledgeGraph:
         """Batch ID로 업서트된 Rule 노드 조회."""
         return self._rule_upsert_manager.get_rules_by_batch_id(batch_id)
 
+    def get_formatting_rules_for_query_type(
+        self, query_type: str = "all"
+    ) -> List[Dict[str, Any]]:
+        """Return formatting rules for a given query type (or all)."""
+        cypher = """
+        MATCH (fr:FormattingRule)
+        WHERE fr.applies_to = 'all' OR fr.applies_to = $query_type
+        RETURN fr.name AS name,
+               fr.description AS description,
+               fr.priority AS priority,
+               fr.category AS category,
+               fr.examples_good AS examples_good,
+               fr.examples_bad AS examples_bad
+        ORDER BY fr.priority DESC
+        """
+        provider = getattr(self, "_graph_provider", None)
+
+        if self._graph is not None:
+            try:
+                with self._graph.session() as session:
+                    result = session.run(cypher, query_type=query_type)
+                    return [dict(record) for record in result]
+            except Exception as e:  # noqa: BLE001
+                logger.warning("Formatting rule query failed (sync): %s", e)
+
+        if provider is None:
+            logger.warning("No graph provider available for formatting rules")
+            return []
+
+        async def _run() -> List[Dict[str, Any]]:
+            async with provider.session() as session:
+                result = await session.run(cypher, query_type=query_type)
+                if hasattr(result, "__aiter__"):
+                    records = [record async for record in result]
+                else:
+                    records = list(result)
+                return [dict(r) for r in records]
+
+        return _run_async_safely(_run())
+
     def get_formatting_rules(self, template_type: str) -> str:
         """Get formatting rules for a specific template type from Neo4j.
 

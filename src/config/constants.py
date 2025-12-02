@@ -42,6 +42,15 @@ DEFAULT_SETTINGS_MAX_OUTPUT_TOKENS: Final[int] = 8192
 # Max output tokens for quick operations (e.g., LATS expansion)
 LATS_EXPANSION_MAX_OUTPUT_TOKENS: Final[int] = 50
 
+# 서식 규칙: 줄글 볼드 패턴 및 허용 컨텍스트
+PROSE_BOLD_PATTERN: Final[str] = r"(?<!^)(?<!- )(?<!\d\. )\*\*[^*]+\*\*"
+ALLOWED_BOLD_CONTEXTS: Final[List[str]] = [
+    r"^-\s+\*\*",  # 목록 항목 시작
+    r"^\d+\.\s+\*\*",  # 숫자 목록 항목 시작
+    r"^\*\*[^*]+\*\*$",  # 소제목 (줄 전체 볼드)
+    r"^\*\*[^*]+\*\*\s*$",  # 소제목 (끝 공백 포함)
+]
+
 # ===== API Pipeline Configuration =====
 
 # Max characters for OCR text truncation in QA generation

@@ -20,7 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from checks.detect_forbidden_patterns import find_violations
+from checks.detect_forbidden_patterns import find_formatting_violations, find_violations
 from src.agent import GeminiAgent
 from src.analysis.cross_validation import CrossValidationSystem
 from src.config import AppConfig
@@ -309,23 +309,40 @@ def _strip_output_tags(text: str) -> str:
 
 
 def postprocess_answer(answer: str, qtype: str) -> str:
-    """답변 후처리 - 불필요한 요소 제거 및 길이 강제 조정."""
+    """답변 후처리 - 불필요한 요소 제거 및 길이/서식 교정."""
+    import re
+
     # 1. 태그 제거
     answer = answer.replace("<output>", "").replace("</output>", "").strip()
 
-    # 2. target_short: 불필요한 헤더 제거
+    # 2. 줄글 내 볼드체 제거 (목록/소제목 제외)
+    lines = answer.split("\n")
+    processed_lines: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        is_list_item = stripped.startswith("-") or bool(re.match(r"^\d+\.", stripped))
+        is_heading = (
+            stripped.startswith("**")
+            and stripped.rstrip().endswith("**")
+            and stripped.count("**") == 2
+        )
+        if not is_list_item and not is_heading:
+            line = re.sub(r"\*\*([^*]+)\*\*", r"\1", line)
+        processed_lines.append(line)
+    answer = "\n".join(processed_lines).strip()
+
+    # 3. target_short: 불필요한 헤더 제거
     if qtype == "target_short":
         lines = answer.split("\n")
-        # 첫 줄이 짧고 콜론 포함 시 제거 (예: "답변:", "내용:")
         if lines and len(lines) > 1 and ":" in lines[0] and len(lines[0]) < 20:
             answer = "\n".join(lines[1:]).strip()
             logger.info("target_short: 불필요한 헤더 제거됨")
 
-    # 3. 과도한 빈 줄 정리
+    # 4. 과도한 빈 줄 정리
     while "\n\n\n" in answer:
         answer = answer.replace("\n\n\n", "\n\n")
 
-    # 4. 길이 강제 조정 (target_short/long만)
+    # 5. 길이 강제 조정 (target_short/long만)
     if qtype == "target_short":
         sentences = [
             s.strip() for s in answer.split(".") if s.strip() and len(s.strip()) > 5
@@ -590,6 +607,7 @@ async def generate_single_qa(
     rules_list: list[str] = []
     query_constraints: list[Dict[str, Any]] = []
     answer_constraints: list[Dict[str, Any]] = []
+    formatting_rules: list[str] = []
     kg_wrapper: Optional[Any] = get_cached_kg()
 
     # 2) Neo4j 규칙/제약 조회
@@ -606,6 +624,19 @@ async def generate_single_qa(
             answer_constraints = [
                 c for c in constraints if c.get("category") in ["answer", "both"]
             ]
+            # 서식 규칙 로드
+            try:
+                fmt_rules = kg_wrapper.get_formatting_rules_for_query_type(
+                    normalized_qtype
+                )
+                for fr in fmt_rules:
+                    desc = fr.get("description")
+                    if desc:
+                        formatting_rules.append(desc)
+                logger.info("서식 규칙 %s개 로드", len(formatting_rules))
+            except Exception as e:  # noqa: BLE001
+                logger.debug("서식 규칙 로드 실패: %s", e)
+
             logger.info(
                 "%s 타입: 질의 제약 %s개, 답변 제약 %s개 조회",
                 qtype,
@@ -624,7 +655,11 @@ async def generate_single_qa(
     extra_instructions = "질의 유형에 맞게 작성하세요."
     length_constraint = ""
     if normalized_qtype == "reasoning":
-        extra_instructions = "추론형 답변입니다. '요약문' 같은 헤더를 쓰지 말고, 근거 2~3개와 결론을 명확히 제시하세요."
+        extra_instructions = """추론형 답변입니다.
+- '근거', '추론 과정', '결론' 등 명시적 라벨/소제목 절대 금지
+- 두괄식으로 핵심 전망을 먼저 제시
+- '이러한 배경에는', '이를 통해', '따라서' 등 자연스러운 연결어 사용
+- '요약문', '정리하면' 등의 헤더 금지"""
         length_constraint = """
 [답변 형식]
 추론형 답변입니다.
@@ -667,6 +702,11 @@ async def generate_single_qa(
 
         truncated_ocr = ocr_text[:QA_GENERATION_OCR_TRUNCATE_LENGTH]
         rules_in_answer = "\n".join(f"- {r}" for r in rules_list)
+        formatting_text = ""
+        if formatting_rules:
+            formatting_text = "\n[서식 규칙 - 필수 준수]\n" + "\n".join(
+                f"- {r}" for r in formatting_rules
+            )
         constraints_text = ""
         if answer_constraints:
             answer_constraints.sort(key=lambda c: c.get("priority", 0), reverse=True)
@@ -675,6 +715,8 @@ async def generate_single_qa(
                 for c in answer_constraints
             )
         answer_prompt = f"""{length_constraint}
+
+{formatting_text}
 
 [제약사항]
 {constraints_text or rules_in_answer}
@@ -729,6 +771,15 @@ async def generate_single_qa(
                 if v_type.startswith("error_pattern:시의성"):
                     continue
                 all_violations.append(v_type)
+
+        # 서식 규칙 위반 검사 (줄글 볼드 등)
+        formatting_violations = find_formatting_violations(draft_answer)
+        for fv in formatting_violations:
+            if fv.get("severity") == "error":
+                all_violations.append(fv["type"])
+                logger.warning(
+                    "서식 위반 감지: %s - '%s'", fv.get("description", ""), fv["match"]
+                )
 
         # IntegratedQAPipeline.validate_output() 사용
         if pipeline is not None:
