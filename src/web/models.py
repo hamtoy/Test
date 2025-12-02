@@ -182,6 +182,11 @@ class UnifiedWorkspaceRequest(BaseModel):
         default=None,
         description="Query/answer type for generation style",
     )
+    global_explanation_ref: Optional[str] = Field(
+        default=None,
+        max_length=MAX_ANSWER_LENGTH,
+        description="Reference global explanation text to avoid duplication",
+    )
 
 
 __all__ = [

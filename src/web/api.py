@@ -1039,6 +1039,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     ocr_text = body.ocr_text or load_ocr_text()
     query_type = body.query_type or "global_explanation"
     normalized_qtype = QTYPE_MAP.get(query_type, "explanation")
+    global_explanation_ref = body.global_explanation_ref or ""
 
     # 타입별 질의 의도 힌트
     query_intent = None
@@ -1046,8 +1047,25 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
         query_intent = (
             "간단한 사실 확인 질문 (예: '~은 무엇입니까?', '~는 몇 개입니까?')"
         )
+        if global_explanation_ref:
+            query_intent += f"""
+
+[중복 방지 필수]
+다음 전체 설명문에서 이미 다룬 내용과 중복되지 않는 새로운 세부 사실/수치를 질문하세요:
+---
+{global_explanation_ref[:500]}
+---
+전체 설명에서 다루지 않은 구체적 정보(날짜, 수치, 특정 명칭 등)에 집중하세요."""
     elif query_type == "target_long":
         query_intent = "핵심 요점을 묻는 질문 (예: '~의 주요 변화는 무엇입니까?')"
+        if global_explanation_ref:
+            query_intent += f"""
+
+[중복 방지 필수]
+다음 전체 설명문과 다른 관점의 핵심 요점을 질문하세요:
+---
+{global_explanation_ref[:500]}
+---"""
     elif query_type == "reasoning":
         query_intent = "추론/예측을 요구하는 질문 (근거 기반 전망)"
     elif query_type == "global_explanation":

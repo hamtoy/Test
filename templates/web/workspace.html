@@ -4,13 +4,31 @@
 <div class="split-layout">
     <!-- 왼쪽: OCR 영역 -->
     <div class="left-panel">
-        <h2>📄 OCR 텍스트</h2>
-        <textarea id="ocr-input" class="ocr-box" rows="20" placeholder="OCR 텍스트를 직접 입력하세요..."></textarea>
-        <div class="btn-row">
-            <button id="save-ocr-btn" class="btn-primary" style="width: 100%;">💾 저장</button>
-        </div>
-        <span id="ocr-save-status" class="status-text"></span>
+    <h2>📄 OCR 텍스트</h2>
+    <textarea id="ocr-input" class="ocr-box" rows="15" placeholder="OCR 텍스트를 직접 입력하세요..."></textarea>
+    <div class="btn-row">
+        <button id="save-ocr-btn" class="btn-primary" style="width: 100%;">💾 저장</button>
     </div>
+    <span id="ocr-save-status" class="status-text"></span>
+
+    <!-- 전체 설명문 참조 영역 -->
+    <div class="reference-section" style="margin-top: 20px;">
+        <div class="reference-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="margin: 0; font-size: 14px; color: var(--text-primary, #333);">📝 전체 설명문 (참조용)</h3>
+            <button id="clear-reference-btn" class="btn-small" type="button" style="padding: 4px 8px; font-size: 11px;">지우기</button>
+        </div>
+        <textarea
+            id="global-explanation-ref"
+            class="reference-box"
+            rows="8"
+            placeholder="전체 설명문을 여기에 붙여넣으세요.\n\n타겟 단답형/장답형 생성 시 이 내용과 중복되지 않는 질의를 생성합니다."
+            style="width: 100%; padding: 10px; font-size: 13px; border: 1px dashed var(--border, #ccc); border-radius: 6px; background: var(--bg-secondary, #f9f9f9); resize: vertical;"
+        ></textarea>
+        <small style="display: block; margin-top: 6px; color: var(--text-secondary, #888); font-size: 12px;">
+            💡 QA 생성 결과에서 전체 설명문을 복사해서 붙여넣으세요
+        </small>
+    </div>
+</div>
 
     <!-- 오른쪽: 통합 워크스페이스 -->
     <div class="right-panel">
@@ -187,6 +205,7 @@
         const editRequest = document.getElementById('edit-request').value.trim();
         const ocrText = document.getElementById('ocr-input').value;
         const queryType = document.getElementById('query-type').value;
+        const globalExplanationRef = document.getElementById('global-explanation-ref').value.trim();
 
         const resultsDiv = document.getElementById('workspace-results');
         
@@ -211,6 +230,7 @@
                 edit_request: editRequest || null,
                 ocr_text: ocrText || null,
                 query_type: queryType || null,
+                global_explanation_ref: globalExplanationRef || null,
             });
 
             progressBar.style.width = '100%';
@@ -322,6 +342,24 @@
         }
         copyToClipboard(text, buttonEl);
     }
+
+    // 전체 설명문 참조 저장/복원
+    const GLOBAL_EXPLANATION_KEY = 'workspace_global_explanation';
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedRef = localStorage.getItem(GLOBAL_EXPLANATION_KEY);
+        if (savedRef) {
+            document.getElementById('global-explanation-ref').value = savedRef;
+        }
+    });
+
+    document.getElementById('global-explanation-ref').addEventListener('input', (e) => {
+        localStorage.setItem(GLOBAL_EXPLANATION_KEY, e.target.value);
+    });
+
+    document.getElementById('clear-reference-btn').addEventListener('click', () => {
+        document.getElementById('global-explanation-ref').value = '';
+        localStorage.removeItem(GLOBAL_EXPLANATION_KEY);
+    });
 
     // 세션 복원
     const savedQuery = sessionStorage.getItem('workspace_query');
