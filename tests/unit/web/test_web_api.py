@@ -1,5 +1,6 @@
 """Tests for the web API module."""
 
+import asyncio
 import io
 import json
 from datetime import datetime, timezone
@@ -10,6 +11,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+from src.config.constants import (
+    QA_BATCH_GENERATION_TIMEOUT,
+    QA_SINGLE_GENERATION_TIMEOUT,
+)
 from src.web.api import app, log_review_session
 
 
@@ -217,11 +222,6 @@ class TestQAGenerateApiTimeout:
     @pytest.mark.asyncio
     async def test_single_qa_timeout(self, tmp_path: Path) -> None:
         """Test single QA generation timeout."""
-        import asyncio
-        from unittest.mock import patch
-
-        from src.config.constants import QA_SINGLE_GENERATION_TIMEOUT
-
         # Create OCR file
         inputs_dir = tmp_path / "data" / "inputs"
         inputs_dir.mkdir(parents=True)
@@ -238,10 +238,6 @@ class TestQAGenerateApiTimeout:
             with patch("src.web.api.agent") as mock_agent:
                 mock_agent.generate_query = slow_generate
 
-                from fastapi.testclient import TestClient
-
-                from src.web.api import app
-
                 client = TestClient(app)
                 response = client.post(
                     "/api/qa/generate",
@@ -255,11 +251,6 @@ class TestQAGenerateApiTimeout:
     @pytest.mark.asyncio
     async def test_batch_qa_timeout(self, tmp_path: Path) -> None:
         """Test batch QA generation timeout."""
-        import asyncio
-        from unittest.mock import patch
-
-        from src.config.constants import QA_BATCH_GENERATION_TIMEOUT
-
         # Create OCR file
         inputs_dir = tmp_path / "data" / "inputs"
         inputs_dir.mkdir(parents=True)
@@ -275,10 +266,6 @@ class TestQAGenerateApiTimeout:
 
             with patch("src.web.api.agent") as mock_agent:
                 mock_agent.generate_query = slow_generate
-
-                from fastapi.testclient import TestClient
-
-                from src.web.api import app
 
                 client = TestClient(app)
                 response = client.post("/api/qa/generate", json={"mode": "batch"})

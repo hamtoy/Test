@@ -16,7 +16,9 @@ async function apiCall(url, method = 'GET', body = null) {
         const response = await fetch(url, options);
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || '요청 실패');
+            const err = new Error(error.detail || '요청 실패');
+            err.status = response.status;  // Add status code to error object
+            throw err;
         }
         return await response.json();
     } catch (error) {
@@ -153,7 +155,8 @@ async function generateQA(mode, qtype) {
             resultsDiv.appendChild(createQACard(data.pair, 1));
         }
     } catch (error) {
-        if (error.message.includes('504') || error.message.includes('시간 초과')) {
+        // Check if it's a timeout error (status 504)
+        if (error.status === 504) {
             resultsDiv.innerHTML = `
                 <div style="text-align: center; padding: 20px;">
                     <p style="color: var(--warning, orange); font-size: 1.2em; margin-bottom: 15px;">⏱️ 생성 시간이 초과되었습니다.</p>
