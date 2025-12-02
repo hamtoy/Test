@@ -516,6 +516,7 @@ async def generate_single_qa(
             cached_content=None,
             query_type=normalized_qtype,
             kg=kg_wrapper or kg,
+            length_constraint=length_constraint,
         )
 
         # 길이 검증: 타겟 단답/장답형에서 문장 수 초과 시 재작성
@@ -535,6 +536,7 @@ async def generate_single_qa(
                     best_answer=draft_answer,
                     edit_request="핵심 1-2문장만 남기고 모든 부연 설명을 제거하세요. 최대 50단어 이내.",
                     cached_content=None,
+                    length_constraint=length_constraint,
                 )
             elif qtype == "target_long" and sentence_count > 4:
                 logger.warning(
@@ -545,6 +547,7 @@ async def generate_single_qa(
                     best_answer=draft_answer,
                     edit_request="3-4문장 이내로 간결하게 요약하세요. 최대 100단어 이내.",
                     cached_content=None,
+                    length_constraint=length_constraint,
                 )
 
         all_violations: list[str] = []
@@ -591,6 +594,7 @@ async def generate_single_qa(
                 best_answer=draft_answer,
                 edit_request=f"다음 위반 사항을 수정해주세요: {violation_desc}",
                 cached_content=None,
+                length_constraint=length_constraint,
             )
 
         final_answer = draft_answer

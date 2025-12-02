@@ -26,6 +26,11 @@
             <formatting_rules>
                 {{ formatting_rules | default("") }}
             </formatting_rules>
+            {% if length_constraint %}
+            <length_constraint>
+                {{ length_constraint }}
+            </length_constraint>
+            {% endif %}
             <visual_dependency_ban>
                 표/그래프/색상/좌표 등 시각 정보에 의존한 언급은 금지하고, 제공된 텍스트 내용만 근거로 답한다.
             </visual_dependency_ban>

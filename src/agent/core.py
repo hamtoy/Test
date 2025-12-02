@@ -773,6 +773,7 @@ class GeminiAgent:
         cached_content: Optional["caching.CachedContent"] = None,
         query_type: str = "explanation",
         kg: Optional["QAKnowledgeGraph"] = None,
+        length_constraint: str = "",
     ) -> str:
         """선택된 최고 답변을 가독성 및 안전성 측면에서 개선.
 
@@ -817,11 +818,13 @@ class GeminiAgent:
                 constraints=constraints,
                 has_table_chart=False,
                 formatting_rules=formatting_rules,
+                length_constraint=length_constraint,
             )
         except Exception as e:  # noqa: BLE001
             self.logger.warning("동적 템플릿 실패, 기본 사용: %s", e)
             system_prompt = self.jinja_env.get_template("system/rewrite.j2").render(
-                formatting_rules=formatting_rules
+                formatting_rules=formatting_rules,
+                length_constraint=length_constraint,
             )
 
         model = self._create_generative_model(
