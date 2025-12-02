@@ -1,169 +1,204 @@
+"""QA generation module with dependency injection and safe imports.
+
+This refactor removes module-level side effects (sys.exit, env lookups, API calls)
+and provides a class-based generator that can be instantiated with injected
+configuration and client dependencies.
+"""
+
+from __future__ import annotations
+
 import json
 import logging
-import os
 import re
-import sys
+from pathlib import Path
+from typing import Any, Iterable, List, Sequence
 
 from openai import OpenAI
 
-# ==========================================
-# 0. 설정 및 프롬프트 로드
-# ==========================================
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger(__name__)
+from src.config.settings import AppConfig
 
-QUERY_COUNT = 4  # 3 또는 4로 설정
+LOGGER = logging.getLogger(__name__)
 
-# API Client Setup
-api_key = os.environ.get("GEMINI_API_KEY")
-if not api_key:
-    logger.warning("GEMINI_API_KEY environment variable not found.")
-    # You might want to handle this more gracefully or try OPENAI_API_KEY
-    api_key = os.environ.get("OPENAI_API_KEY")
+DEFAULT_PROMPT_DIR = Path(__file__).resolve().parents[2] / "templates" / "prompts"
+DEFAULT_QUERY_PROMPT = DEFAULT_PROMPT_DIR / "query_generation.txt"
+DEFAULT_ANSWER_PROMPT = DEFAULT_PROMPT_DIR / "answer_generation.txt"
+DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 
-if not api_key:
-    logger.error("No API Key found. Please set GEMINI_API_KEY.")
-    sys.exit(1)
 
-client = OpenAI(
-    api_key=api_key, base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
-)
+class QAGenerator:
+    """LLM 기반 QA 생성기.
 
-# 파일에서 시스템 프롬프트 로드
-try:
-    with open("질의 생성.txt", "r", encoding="utf-8") as f:
-        SYSTEM_PROMPT_QUERY = f.read()
-    with open("답변 생성 - 복사본.txt", "r", encoding="utf-8") as f:
-        SYSTEM_PROMPT_ANSWER = f.read()
-except FileNotFoundError:
-    logger.error("오류: 프롬프트 파일(.txt)을 찾을 수 없습니다.")
-    sys.exit(1)
-
-# 테스트용 OCR 텍스트 (사용자님의 예시 텍스트)
-ocr_text = """
-글로벌 주식시장 변화와 전망
-미 증시, 완화적 Fed Speak 에 반발 매수 유입... (중략) ...
-"""
-
-# ==========================================
-# 1. 질의 생성 (Query Generation)
-# ==========================================
-
-# 3개일 때와 4개일 때 요청할 유형 정의
-if QUERY_COUNT == 4:
-    type_instruction = """
-    다음 4가지 유형의 질의를 순서대로 생성하세요:
-    1. [전체 설명]: 전체 맥락을 아우르는 포괄적 설명 요청
-    2. [추론]: 텍스트 내 근거를 바탕으로 한 미래 전망이나 논리적 추론
-    3. [이미지 내 타겟(단답형)]: 특정 수치나 팩트를 묻는 질문
-    4. [이미지 내 타겟(서술형)]: 특정 항목(예: 특징종목)에 대한 상세 기술 요청
-    """
-else:  # 3개일 때
-    type_instruction = """
-    다음 3가지 유형의 질의를 순서대로 생성하세요:
-    1. [전체 설명]: 전체 맥락을 아우르는 포괄적 설명 요청
-    2. [추론]: 텍스트 내 근거를 바탕으로 한 미래 전망이나 논리적 추론
-    3. [이미지 내 타겟(서술형)]: 특정 항목에 대한 상세 기술 요청
+    프롬프트 경로와 LLM 클라이언트를 주입할 수 있도록 구성하여 테스트 가능성을 높이고
+    모듈 로드시 부작용을 제거했다.
     """
 
+    def __init__(
+        self,
+        config: AppConfig,
+        *,
+        client: OpenAI | None = None,
+        query_prompt_path: Path | str | None = None,
+        answer_prompt_path: Path | str | None = None,
+        logger: logging.Logger | None = None,
+    ) -> None:
+        self.config = config
+        self.logger = logger or LOGGER
 
-def call_llm(system_prompt: str, user_prompt: str) -> str:
-    """Gemini 3 Pro Preview로 고정된 LLM 호출."""
-    try:
-        response = client.chat.completions.create(
-            model="gemini-flash-latest",
+        prompt_dir = DEFAULT_PROMPT_DIR
+        self.query_prompt_path = (
+            Path(query_prompt_path) if query_prompt_path else DEFAULT_QUERY_PROMPT
+        )
+        self.answer_prompt_path = (
+            Path(answer_prompt_path) if answer_prompt_path else DEFAULT_ANSWER_PROMPT
+        )
+
+        prompt_dir.mkdir(parents=True, exist_ok=True)
+        self.query_system_prompt = self._load_prompt(self.query_prompt_path)
+        self.answer_system_prompt = self._load_prompt(self.answer_prompt_path)
+
+        self.client = client or self._build_client()
+
+    def _build_client(self) -> OpenAI:
+        """생성자에서 주입되지 않은 경우 OpenAI 호환 Gemini 클라이언트 생성."""
+        return OpenAI(api_key=self.config.api_key, base_url=DEFAULT_BASE_URL)
+
+    def _load_prompt(self, path: Path) -> str:
+        if not path.exists():
+            raise FileNotFoundError(f"Prompt file not found: {path}")
+        return path.read_text(encoding="utf-8").strip()
+
+    def _call_llm(self, system_prompt: str, user_prompt: str) -> str:
+        response = self.client.chat.completions.create(
+            model=self.config.model_name,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            temperature=0,
+            temperature=self.config.temperature,
         )
-        content = response.choices[0].message.content or ""
-        return str(content)
-    except Exception as e:  # noqa: BLE001
-        logger.error("LLM 호출 오류: %s", e)
-        return ""
+        return response.choices[0].message.content or ""
+
+    def generate_questions(self, ocr_text: str, query_count: int = 4) -> List[str]:
+        """OCR 텍스트로부터 다채로운 질의 목록 생성."""
+        if query_count not in {3, 4}:
+            raise ValueError("query_count must be 3 or 4")
+
+        type_instruction = (
+            "Generate the following question types in Korean, in order:\n"
+            "1. Overview/explanation question covering the whole context\n"
+            "2. Reasoning/forecast question grounded in evidence in the text\n"
+            "3. Target short fact question (specific number/name)\n"
+        )
+        if query_count == 4:
+            type_instruction += (
+                "4. Target long descriptive question focusing on detailed narrative\n"
+            )
+
+        user_prompt = (
+            "<input_text>\n"
+            f"{ocr_text.strip()}\n"
+            "</input_text>\n\n"
+            "<request>\n"
+            f"{type_instruction}\n"
+            "Return as a numbered list.\n"
+            "</request>"
+        )
+
+        raw_questions = self._call_llm(self.query_system_prompt, user_prompt)
+        if not raw_questions:
+            raise RuntimeError("질의 생성 실패 (LLM 응답 없음)")
+
+        return self._parse_questions(raw_questions)
+
+    def generate_answers(
+        self, ocr_text: str, questions: Sequence[str]
+    ) -> List[dict[str, Any]]:
+        """질의 목록에 대한 답변 생성."""
+        results: List[dict[str, Any]] = []
+        for idx, question in enumerate(questions, start=1):
+            answer_prompt = (
+                "<input_text>\n"
+                f"{ocr_text.strip()}\n"
+                "</input_text>\n\n"
+                "<instruction>\n"
+                f"{question}\n"
+                "</instruction>"
+            )
+            answer = self._call_llm(self.answer_system_prompt, answer_prompt)
+            results.append({"id": idx, "question": question, "answer": answer})
+        return results
+
+    def generate_qa(self, ocr_text: str, query_count: int = 4) -> List[dict[str, Any]]:
+        """질의/답변 쌍을 생성 후 리스트로 반환."""
+        questions = self.generate_questions(ocr_text, query_count=query_count)
+        return self.generate_answers(ocr_text, questions)
+
+    def save_results(
+        self,
+        qa_pairs: Iterable[dict[str, Any]],
+        *,
+        json_path: Path | str,
+        markdown_path: Path | str | None = None,
+    ) -> None:
+        """결과를 JSON/Markdown으로 저장."""
+        pairs_list = list(qa_pairs)
+        json_file = Path(json_path)
+        json_file.parent.mkdir(parents=True, exist_ok=True)
+        json_file.write_text(
+            json.dumps(pairs_list, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+
+        if markdown_path:
+            md_file = Path(markdown_path)
+            md_file.parent.mkdir(parents=True, exist_ok=True)
+            lines: List[str] = []
+            lines.append(f"# QA Results ({len(pairs_list)} pairs)\n")
+            for item in pairs_list:
+                lines.append(f"## Q{item.get('id')}. {item.get('question')}\n")
+                lines.append(f"{item.get('answer')}\n")
+                lines.append("---\n")
+            md_file.write_text("\n".join(lines), encoding="utf-8")
+
+    @staticmethod
+    def _parse_questions(raw: str) -> List[str]:
+        """생성된 텍스트에서 질문만 추출."""
+        questions: List[str] = []
+        for line in raw.strip().splitlines():
+            line = line.strip()
+            if (
+                not line
+                or line.startswith("#")
+                or line.startswith("```")
+                or line.startswith("<")
+            ):
+                continue
+            clean_line = re.sub(r"^\d+\.\s*", "", line)
+            clean_line = clean_line.replace('"', "").replace("'", "")
+            if clean_line.strip():
+                questions.append(clean_line)
+        return questions
 
 
-logger.info("--- [Step 1] 질의 생성 시작 (%d개 모드) ---", QUERY_COUNT)
-
-# 질의 생성 요청
-query_user_message = f"""
-<input_text>
-{ocr_text}
-</input_text>
-
-<request>
-{type_instruction}
-</request>
-"""
-
-raw_questions = call_llm(SYSTEM_PROMPT_QUERY, query_user_message)
-
-if not raw_questions:
-    logger.error("질의 생성 실패")
-    sys.exit(1)
-
-# 결과 파싱 (1. 2. 같은 번호 제거하고 리스트로 변환)
-questions = []
-for line in raw_questions.strip().split("\n"):
-    line = line.strip()
-    if (
-        line
-        and not line.startswith("#")
-        and not line.startswith("```")
-        and not line.startswith("<")
-    ):
-        # "1. 질문내용" 형태에서 숫자 제거
-        clean_line = re.sub(r"^\d+\.\s*", "", line)
-        # 따옴표 제거
-        clean_line = clean_line.replace('"', "").replace("'", "")
-        if clean_line.strip():  # Ensure not empty after cleaning
-            questions.append(clean_line)
-
-logger.info("생성된 질의: %s", questions)
+def _load_default_ocr_text() -> str:
+    """Try to load OCR text from data/inputs/input_ocr.txt for manual runs."""
+    default_path = (
+        Path(__file__).resolve().parents[2] / "data" / "inputs" / "input_ocr.txt"
+    )
+    if default_path.exists():
+        return default_path.read_text(encoding="utf-8")
+    return "Provide OCR text here."
 
 
-# ==========================================
-# 2. 답변 생성 (Answer Generation)
-# ==========================================
-logger.info("--- [Step 2] 답변 생성 시작 ---")
-
-qa_pairs = []
-
-for idx, question in enumerate(questions):
-    logger.info("처리 중... (%d/%d): %s", idx + 1, len(questions), question)
-
-    answer_user_message = f"""
-    <input_text>
-    {ocr_text}
-    </input_text>
-    
-    <instruction>
-    {question}
-    </instruction>
-    """
-
-    answer = call_llm(SYSTEM_PROMPT_ANSWER, answer_user_message)
-
-    qa_pairs.append({"id": idx + 1, "question": question, "answer": answer})
-
-# ==========================================
-# 3. 결과 저장
-# ==========================================
-output_filename = f"qa_result_{QUERY_COUNT}pairs.json"
-with open(output_filename, "w", encoding="utf-8") as f:
-    json.dump(qa_pairs, f, ensure_ascii=False, indent=2)
-
-logger.info("완료! '%s'에 저장되었습니다.", output_filename)
-
-# Markdown 저장
-output_md_filename = f"qa_result_{QUERY_COUNT}pairs.md"
-with open(output_md_filename, "w", encoding="utf-8") as f:
-    f.write(f"# QA Results ({QUERY_COUNT} pairs)\n\n")
-    for item in qa_pairs:
-        f.write(f"## Q{item['id']}. {item['question']}\n\n")
-        f.write(f"{item['answer']}\n\n")
-        f.write("---\n\n")
-
-logger.info("완료! '%s'에 저장되었습니다.", output_md_filename)
+if __name__ == "__main__":
+    # Example usage for manual runs; does not execute on import.
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    config = AppConfig()
+    generator = QAGenerator(config)
+    sample_ocr = _load_default_ocr_text()
+    pairs = generator.generate_qa(sample_ocr, query_count=4)
+    generator.save_results(
+        pairs,
+        json_path="qa_result_4pairs.json",
+        markdown_path="qa_result_4pairs.md",
+    )
+    LOGGER.info("Generated %d QA pairs", len(pairs))
