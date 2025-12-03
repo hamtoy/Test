@@ -151,6 +151,15 @@
         resultsDiv.innerHTML = '';
 
         const pairs = data.pairs || (data.pair ? [data.pair] : []);
+        if (!pairs.length) {
+            resultsDiv.innerHTML = `
+                <div class="qa-card">
+                    <p style="margin:0; color: var(--text-secondary, #666);">결과가 없습니다.</p>
+                </div>
+            `;
+            return;
+        }
+
         pairs.forEach((item, index) => {
             const card = document.createElement('div');
             card.className = 'qa-card';
@@ -169,11 +178,14 @@
                     <div class="qa-content">${formatAnswer(item.answer)}</div>
                 </div>
                 <div class="btn-row" style="margin-top: 15px;">
-                    <button class="btn-small" onclick="copyToWorkspace('${escapeHtml(item.query)}', '${escapeHtml(item.answer)}')">
-                        📝 워크스페이스로 복사
-                    </button>
+                    <button class="btn-small qa-copy-btn">📝 워크스페이스로 복사</button>
                 </div>
             `;
+
+            const copyBtn = card.querySelector('.qa-copy-btn');
+            copyBtn.addEventListener('click', () => {
+                copyToWorkspace(item.query || '', item.answer || '');
+            });
 
             resultsDiv.appendChild(card);
         });
