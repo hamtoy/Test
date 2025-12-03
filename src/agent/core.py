@@ -6,8 +6,6 @@ GeminiAgent 클래스의 메인 로직을 포함합니다.
 
 from __future__ import annotations
 
-import asyncio
-import datetime
 import json
 import logging
 import sys
@@ -32,7 +30,6 @@ from tenacity import (
 )
 
 from src.config import AppConfig
-from src.config.constants import MIN_CACHE_TOKENS
 from src.config.exceptions import (
     APIRateLimitError,
     CacheCreationError,
@@ -336,58 +333,13 @@ class GeminiAgent:
 
     async def create_context_cache(self, ocr_text: str) -> Any:
         """OCR 텍스트를 기반으로 Gemini Context Cache 생성."""
-        system_prompt = self.jinja_env.get_template("system/eval.j2").render()
-        combined_content = system_prompt + "\n\n" + ocr_text
-        fingerprint = CacheManager.compute_fingerprint(combined_content)
-        ttl_minutes = self.config.cache_ttl_minutes
-        token_threshold = getattr(self.config, "cache_min_tokens", MIN_CACHE_TOKENS)
-
-        local_cached = self._load_local_cache(fingerprint, ttl_minutes)
-        if local_cached:
-            self.logger.info("Reusing context cache from disk: %s", local_cached.name)
-            return local_cached
-
-        loop = asyncio.get_running_loop()
-
-        def _count_tokens() -> int:
-            model = self._genai.GenerativeModel(self.config.model_name)
-            result: int = model.count_tokens(combined_content).total_tokens
-            return result
-
-        token_count = await loop.run_in_executor(None, _count_tokens)
-        self.logger.info("Total Tokens for Caching: %s", token_count)
-
-        if token_count < token_threshold:
-            self.logger.info("Skipping cache creation (Tokens < %s)", token_threshold)
-            return None
-
         try:
-
-            def _create_cache() -> Any:
-                return self._caching.CachedContent.create(
-                    model=self.config.model_name,
-                    display_name="ocr_context_cache",
-                    system_instruction=system_prompt,
-                    contents=[ocr_text],
-                    ttl=datetime.timedelta(minutes=ttl_minutes),
-                )
-
-            cache = await loop.run_in_executor(None, _create_cache)
-            self.logger.info(
-                "Context Cache Created: %s (Expires in %sm)", cache.name, ttl_minutes
-            )
-            try:
-                self._store_local_cache(fingerprint, cache.name, ttl_minutes)
-            except OSError as e:
-                self.logger.debug("Local cache manifest write skipped: %s", e)
-            return cache
+            return await self.context_manager.create_context_cache(ocr_text)
         except self._google_exceptions().ResourceExhausted as e:
-            self.logger.error("Failed to create cache due to rate limit: %s", e)
             raise CacheCreationError(
                 "Rate limit exceeded during cache creation: %s" % e
             ) from e
         except (ValueError, RuntimeError, OSError) as e:
-            self.logger.error("Failed to create cache: %s", e)
             raise CacheCreationError("Failed to create cache: %s" % e) from e
 
     # ==================== API 호출 ====================
