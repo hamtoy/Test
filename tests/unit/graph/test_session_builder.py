@@ -35,9 +35,9 @@ def test_basic_session() -> None:
         "explanation",
         "summary",
     ], "First turn should be explanation or summary"
-    assert session[1].type == "reasoning", (
-        "Second turn should be reasoning when must_include_reasoning=True"
-    )
+    assert (
+        session[1].type == "reasoning"
+    ), "Second turn should be reasoning when must_include_reasoning=True"
     assert session[2].type == "target", "Third turn should be target"
     print("✓ test_basic_session passed")
 

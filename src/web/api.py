@@ -11,7 +11,7 @@ from typing import Any, AsyncIterator, Dict, Literal, Optional
 from uuid import uuid4
 
 from checks.detect_forbidden_patterns import find_violations
-from fastapi import FastAPI, HTTPException
+from fastapi import File, FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from fastapi.responses import HTMLResponse, RedirectResponse, Response, JSONResponse
@@ -318,6 +318,13 @@ async def page_workspace(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "workspace.html")
 
 
+@app.get("/multimodal", response_class=HTMLResponse)
+async def page_multimodal() -> HTMLResponse:
+    """멀티모달 페이지 (현재 비활성화)."""
+    html = "<html><body><h1>Multimodal feature is disabled.</h1></body></html>"
+    return HTMLResponse(content=html)
+
+
 @app.get("/api/session")
 async def get_session(request: Request) -> Dict[str, Any]:
     """현재 세션 정보를 조회합니다."""
@@ -370,6 +377,20 @@ async def api_save_ocr(request: Request, payload: OCRTextInput) -> Dict[str, str
             "Failed to save OCR text", request=request, exc=exc, logger_obj=logger
         )
         raise HTTPException(status_code=500, detail="OCR 텍스트 저장 실패") from exc
+
+
+# ============================================================================
+# 멀티모달 엔드포인트 (기능 비활성)
+# ============================================================================
+
+
+@app.post("/api/multimodal/analyze")
+async def api_analyze_image_disabled(file: UploadFile = File(...)) -> Dict[str, str]:
+    """이미지 분석 엔드포인트 (멀티모달 기능 미사용 시 500 반환)."""
+    _ = file  # FastAPI 형태를 유지하면서 사용하지 않음
+    raise HTTPException(
+        status_code=500, detail="Multimodal analysis is disabled in this deployment."
+    )
 
 
 # ============================================================================
