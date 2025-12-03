@@ -81,6 +81,15 @@ class RetryHandler:
             return result
         except Exception as exc:  # noqa: BLE001
             self.agent.api_failures += 1
+            self.agent.logger.error(
+                "API call failed after retries",
+                extra={
+                    "model": self.agent.config.model_name,
+                    "error_type": exc.__class__.__name__,
+                    "has_llm_provider": bool(self.agent.llm_provider),
+                },
+                exc_info=True,
+            )
             if self.agent._is_rate_limit_error(exc):  # noqa: SLF001
                 raise APIRateLimitError(
                     "Rate limit exceeded during API call: %s" % exc

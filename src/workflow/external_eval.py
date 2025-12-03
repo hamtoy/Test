@@ -121,7 +121,15 @@ C피드백: [한 줄 평가]"""
             for cid in ("A", "B", "C")
         ]
     except Exception as exc:  # noqa: BLE001
-        logger.error("비교 평가 실패: %s", exc)
+        logger.error(
+            "비교 평가 실패",
+            extra={
+                "error_type": exc.__class__.__name__,
+                "query_length": len(query),
+                "ocr_length": len(ocr_text),
+            },
+            exc_info=True,
+        )
         return [
             {"candidate_id": "A", "score": 3, "feedback": f"평가 실패: {exc}"},
             {"candidate_id": "B", "score": 2, "feedback": f"평가 실패: {exc}"},

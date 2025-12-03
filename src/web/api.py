@@ -13,7 +13,7 @@ from uuid import uuid4
 from checks.detect_forbidden_patterns import find_violations
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -59,6 +59,41 @@ kg: Optional[QAKnowledgeGraph] = None
 mm: Optional[MultimodalUnderstanding] = None
 pipeline: Optional[IntegratedQAPipeline] = None
 session_manager = SessionManager()
+REQUEST_ID_HEADER = "X-Request-Id"
+
+
+def _get_request_id(request: Request) -> str:
+    return getattr(request.state, "request_id", "")
+
+
+async def _request_id_middleware(
+    request: Request, call_next: RequestResponseEndpoint
+) -> Response:
+    """Attach request_id to request.state and response headers."""
+    req_id = request.headers.get(REQUEST_ID_HEADER) or uuid4().hex
+    request.state.request_id = req_id
+    response = await call_next(request)
+    response.headers[REQUEST_ID_HEADER] = req_id
+    return response
+
+
+def _log_api_error(
+    message: str, *, request: Request, exc: Exception, logger_obj: logging.Logger
+) -> None:
+    """Log structured error with request context."""
+    logger_obj.error(
+        message,
+        extra={
+            "request_id": getattr(request.state, "request_id", ""),
+            "path": request.url.path,
+            "method": request.method,
+            "client": getattr(request.client, "host", ""),
+            "user_agent": request.headers.get("user-agent", ""),
+            "error_type": exc.__class__.__name__,
+        },
+        exc_info=True,
+    )
+
 
 # 정적 파일 & 템플릿 경로
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -214,6 +249,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(BaseHTTPMiddleware, dispatch=session_middleware(session_manager))
+app.add_middleware(BaseHTTPMiddleware, dispatch=_request_id_middleware)
 
 # 정적 파일 & 템플릿
 app.mount("/static", StaticFiles(directory=str(REPO_ROOT / "static")), name="static")
@@ -286,23 +322,33 @@ async def delete_session(request: Request) -> Dict[str, Any]:
 
 
 @app.get("/api/ocr")
-async def api_get_ocr() -> Dict[str, str]:
+async def api_get_ocr(request: Request) -> Dict[str, str]:
     """OCR 텍스트 조회."""
     try:
         ocr_text = load_ocr_text()
         return {"ocr": ocr_text}
     except HTTPException as e:
         return {"ocr": "", "error": e.detail}
+    except Exception as exc:  # noqa: BLE001
+        _log_api_error(
+            "Failed to load OCR text", request=request, exc=exc, logger_obj=logger
+        )
+        raise HTTPException(
+            status_code=500, detail="OCR 텍스트 조회 중 오류가 발생했습니다."
+        ) from exc
 
 
 @app.post("/api/ocr")
-async def api_save_ocr(payload: OCRTextInput) -> Dict[str, str]:
+async def api_save_ocr(request: Request, payload: OCRTextInput) -> Dict[str, str]:
     """OCR 텍스트 저장 (사용자 직접 입력)."""
     try:
         save_ocr_text(payload.text)
         return {"status": "success", "message": "OCR 텍스트가 저장되었습니다."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as exc:  # noqa: BLE001
+        _log_api_error(
+            "Failed to save OCR text", request=request, exc=exc, logger_obj=logger
+        )
+        raise HTTPException(status_code=500, detail="OCR 텍스트 저장 실패") from exc
 
 
 # ============================================================================
@@ -311,7 +357,9 @@ async def api_save_ocr(payload: OCRTextInput) -> Dict[str, str]:
 
 
 @app.post("/api/multimodal/analyze")
-async def api_analyze_image(file: UploadFile = File(...)) -> Dict[str, Any]:
+async def api_analyze_image(
+    request: Request, file: UploadFile = File(...)
+) -> Dict[str, Any]:
     """이미지 업로드 + 구조 분석 (OCR은 사용자가 직접 입력)."""
     if mm is None:
         raise HTTPException(
@@ -340,9 +388,14 @@ async def api_analyze_image(file: UploadFile = File(...)) -> Dict[str, Any]:
 
         return {"filename": file.filename, "metadata": metadata}
 
-    except Exception as e:
-        logger.error("이미지 분석 실패: %s", e)
-        raise HTTPException(status_code=500, detail=f"분석 실패: {str(e)}")
+    except Exception as exc:  # noqa: BLE001
+        _log_api_error(
+            "이미지 분석 실패",
+            request=request,
+            exc=exc,
+            logger_obj=logger,
+        )
+        raise HTTPException(status_code=500, detail="분석 실패") from exc
 
     finally:
         if temp_path.exists():
