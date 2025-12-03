@@ -6,7 +6,7 @@ to answer evaluation and rewriting, using mocked API responses.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -49,14 +49,18 @@ def mock_agent(mock_config: AppConfig, mock_jinja_env: MagicMock) -> GeminiAgent
         jinja_env=mock_jinja_env,
     )
     # Stub model factory to avoid real genai usage
-    agent._create_generative_model = MagicMock(return_value=MagicMock())
+    setattr(
+        cast(Any, agent),
+        "_create_generative_model",
+        MagicMock(return_value=MagicMock()),
+    )
 
     # Route client execution to the patched _call_api_with_retry used in tests
     async def _client_execute(model: Any, prompt_text: str) -> str:
         return await agent._call_api_with_retry(model, prompt_text)
 
-    agent.client.execute = _client_execute  # type: ignore[method-assign]
-    agent.retry_handler.call = _client_execute  # type: ignore[method-assign]
+    setattr(cast(Any, agent.client), "execute", _client_execute)
+    setattr(cast(Any, agent.retry_handler), "call", _client_execute)
     # Ensure LLM provider path is not used
     agent.llm_provider = None
     return agent

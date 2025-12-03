@@ -1,15 +1,13 @@
 name: Clear All Caches
 on:
-  workflow_dispatch: # 수동 실행 버튼 활성화
+  workflow_dispatch:
 jobs:
   clear-cache:
     runs-on: ubuntu-latest
     permissions:
       actions: write
+      contents: read  # private 저장소 접근 권한 추가
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      
       - name: Delete all caches
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -17,18 +15,20 @@ jobs:
           echo "Fetching list of cache keys..."
           REPO="${{ github.repository }}"
           
-          # 모든 캐시 키 가져오기
-          cache_keys=$(gh cache list -R "$REPO" --json key --jq '.[].key')
+          # 캐시 목록 가져오기
+          cache_keys=$(gh cache list -R "$REPO" --limit 100 --json key --jq '.[].key')
           
           if [ -z "$cache_keys" ]; then
             echo "No caches found."
             exit 0
           fi
           
-          # 각 캐시 개별 삭제
+          # 각 캐시 삭제
           echo "$cache_keys" | while read -r key; do
-            echo "Deleting cache: $key"
-            gh cache delete "$key" -R "$REPO" --confirm
+            if [ -n "$key" ]; then
+              echo "Deleting cache: $key"
+              gh cache delete "$key" -R "$REPO" --confirm || true
+            fi
           done
           
           echo "Done! All caches cleared."
