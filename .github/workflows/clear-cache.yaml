@@ -27,7 +27,8 @@ jobs:
           echo "$cache_keys" | while read -r key; do
             if [ -n "$key" ]; then
               echo "Deleting cache: $key"
-              gh cache delete "$key" -R "$REPO" --confirm || true
+              # gh cache delete prompts interactively; omit --confirm (not supported) to avoid errors in CI
+              gh cache delete "$key" -R "$REPO" || true
             fi
           done
           
