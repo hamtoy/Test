@@ -163,6 +163,11 @@ async def init_resources() -> None:
         except Exception as e:
             logger.warning("Neo4j 연결 실패 (RAG 비활성화): %s", e)
             kg = None
+    if kg is not None:
+        try:
+            kg._ensure_formatting_rule_schema()
+        except Exception as e:  # noqa: BLE001
+            logger.warning("FormattingRule 스키마 보강 실패: %s", e)
 
     if mm is None and kg is not None:
         try:

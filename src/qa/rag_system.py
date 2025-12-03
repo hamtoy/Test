@@ -184,6 +184,9 @@ class QAKnowledgeGraph:
             graph_provider=self._graph_provider,
         )
 
+        # Ensure required formatting rule schema is present
+        self._ensure_formatting_rule_schema()
+
     def _record_vector_metrics(
         self,
         *,
@@ -446,8 +449,9 @@ class QAKnowledgeGraph:
     ) -> List[Dict[str, Any]]:
         """Return formatting rules for a given query type (or all)."""
         cypher = """
-        MATCH (fr:FormattingRule)
-        WHERE fr.applies_to = 'all' OR fr.applies_to = $query_type
+        OPTIONAL MATCH (fr:FormattingRule)
+        WHERE (fr.applies_to = 'all' OR fr.applies_to = $query_type)
+        WITH fr WHERE fr IS NOT NULL
         RETURN fr.name AS name,
                fr.description AS description,
                fr.priority AS priority,
@@ -471,13 +475,17 @@ class QAKnowledgeGraph:
             return []
 
         async def _run() -> List[Dict[str, Any]]:
-            async with provider.session() as session:
-                result = await session.run(cypher, query_type=query_type)
-                if hasattr(result, "__aiter__"):
-                    records = [record async for record in result]
-                else:
-                    records = list(result)
-                return [dict(r) for r in records]
+            try:
+                async with provider.session() as session:
+                    result = await session.run(cypher, query_type=query_type)
+                    if hasattr(result, "__aiter__"):
+                        records = [record async for record in result]
+                    else:
+                        records = list(result)
+                    return [dict(r) for r in records]
+            except (Neo4jError, ServiceUnavailable) as exc:
+                logger.warning("Formatting rule query failed (async): %s", exc)
+                return []
 
         return run_async_safely(_run())
 
@@ -531,6 +539,45 @@ class QAKnowledgeGraph:
                 return self._format_rules(rules_data)
 
         return run_async_safely(_run())
+
+    def _ensure_formatting_rule_schema(self) -> None:
+        """Ensure FormattingRule label and default node exist."""
+        statements = [
+            "CREATE CONSTRAINT IF NOT EXISTS FOR (fr:FormattingRule) REQUIRE fr.name IS UNIQUE",
+            """
+            MERGE (fr:FormattingRule {name: 'default'})
+            SET fr.applies_to = 'all',
+                fr.description = 'Default formatting rule',
+                fr.priority = 0,
+                fr.category = 'general',
+                fr.examples_good = '',
+                fr.examples_bad = ''
+            """,
+        ]
+
+        if self._graph is not None:
+            try:
+                with self._graph.session() as session:
+                    for stmt in statements:
+                        session.run(stmt)
+                return
+            except (Neo4jError, ServiceUnavailable) as exc:
+                logger.warning("FormattingRule schema ensure failed (sync): %s", exc)
+
+        provider = getattr(self, "_graph_provider", None)
+        if provider is None:
+            logger.info("Skipping FormattingRule schema ensure; no graph provider")
+            return
+
+        async def _run() -> None:
+            try:
+                async with provider.session() as session:
+                    for stmt in statements:
+                        await session.run(stmt)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("FormattingRule schema ensure failed (async): %s", exc)
+
+        run_async_safely(_run())
 
     def _format_rules(self, rules_data: List[Dict[str, Any]]) -> str:
         """Format rules data into markdown structure.
