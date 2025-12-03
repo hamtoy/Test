@@ -556,13 +556,21 @@ class QAKnowledgeGraph:
         ]
 
         if self._graph is not None:
-            try:
-                with self._graph.session() as session:
-                    for stmt in statements:
-                        session.run(stmt)
-                return
-            except (Neo4jError, ServiceUnavailable) as exc:
-                logger.warning("FormattingRule schema ensure failed (sync): %s", exc)
+            raw_driver = getattr(self._graph, "driver", None)
+            if raw_driver is None or not hasattr(raw_driver, "session"):
+                logger.info(
+                    "Skip FormattingRule schema ensure: driver has no session()"
+                )
+            else:
+                try:
+                    with self._graph.session() as session:
+                        for stmt in statements:
+                            session.run(stmt)
+                    return
+                except (Neo4jError, ServiceUnavailable) as exc:
+                    logger.warning(
+                        "FormattingRule schema ensure failed (sync): %s", exc
+                    )
 
         provider = getattr(self, "_graph_provider", None)
         if provider is None:
