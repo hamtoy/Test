@@ -16,6 +16,7 @@ class AgentContextManager:
     """Wrapper around GeminiAgent cache/budget helpers."""
 
     def __init__(self, agent: "GeminiAgent") -> None:
+        """Initialize the context manager wrapper."""
         self.agent = agent
 
     def track_cache_usage(self, hit: bool) -> None:

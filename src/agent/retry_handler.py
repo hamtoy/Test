@@ -22,6 +22,7 @@ class RetryHandler:
     """Isolated retry/backoff logic extracted from `GeminiAgent`."""
 
     def __init__(self, agent: "GeminiAgent") -> None:
+        """Initialize the retry handler."""
         self.agent = agent
 
     async def call(self, model: Any, prompt: str) -> str:

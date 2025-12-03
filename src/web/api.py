@@ -157,10 +157,12 @@ def get_config() -> AppConfig:
 
 # 유틸리티 래퍼 (기존 import 경로 유지)
 def load_ocr_text() -> str:
+    """Load OCR text from persisted storage."""
     return _load_ocr_text(config)
 
 
 def save_ocr_text(text: str) -> None:
+    """Persist OCR text to storage."""
     _save_ocr_text(config, text)
 
 
@@ -174,6 +176,7 @@ def log_review_session(
     *,
     base_dir: Optional[Path] = None,
 ) -> None:
+    """Append a log review session entry to storage."""
     _log_review_session(
         mode=mode,
         question=question,

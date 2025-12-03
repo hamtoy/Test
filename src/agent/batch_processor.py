@@ -463,12 +463,14 @@ class AsyncRateLimiter:
     """간단한 비동기 Rate Limiter (분당 요청 수 기준)."""
 
     def __init__(self, requests_per_minute: int = 60):
+        """Initialize the rate limiter with a per-minute quota."""
         self.rpm = max(1, requests_per_minute)
         self.interval = 60.0 / self.rpm
         self._last_request = 0.0
         self._lock = asyncio.Lock()
 
     async def acquire(self) -> None:
+        """Wait until the next allowed request slot is available."""
         async with self._lock:
             now = asyncio.get_event_loop().time()
             wait_time = self._last_request + self.interval - now
@@ -491,6 +493,7 @@ class SmartBatchProcessor(Generic[T, R]):
         retry_delay: float = 1.0,
         on_progress: Optional[Callable[[int, int], None]] = None,
     ):
+        """Initialize the smart batch processor."""
         self.semaphore = asyncio.Semaphore(max(1, max_concurrent))
         self.rate_limiter = AsyncRateLimiter(requests_per_minute)
         self.max_retries = max(0, max_retries)

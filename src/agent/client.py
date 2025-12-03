@@ -24,6 +24,7 @@ class GeminiClient:
     def __init__(
         self, agent: "GeminiAgent", log_metrics_fn: Callable[..., None]
     ) -> None:
+        """Initialize the Gemini client wrapper."""
         self.agent = agent
         self._log_metrics = log_metrics_fn
 

@@ -22,6 +22,7 @@ class QueryGeneratorService:
     """Encapsulates query generation steps."""
 
     def __init__(self, agent: GeminiAgent) -> None:
+        """Initialize the query generator service."""
         self.agent = agent
 
     async def generate_query(
@@ -34,6 +35,7 @@ class QueryGeneratorService:
         kg: Optional["QAKnowledgeGraph"],
         constraints: Optional[List[Dict[str, Any]]],
     ) -> List[str]:
+        """Generate candidate queries from OCR text and intent."""
         agent = self.agent
         agent._api_call_counter.add(1, {"operation": "generate_query"})  # noqa: SLF001
         user_template_name = template_name or "user/query_gen.j2"
@@ -164,6 +166,7 @@ class ResponseEvaluatorService:
     """Encapsulates response evaluation steps."""
 
     def __init__(self, agent: GeminiAgent) -> None:
+        """Initialize the response evaluator service."""
         self.agent = agent
 
     async def evaluate_responses(
@@ -175,6 +178,7 @@ class ResponseEvaluatorService:
         query_type: str,
         kg: Optional["QAKnowledgeGraph"],
     ) -> Optional["EvaluationResultSchema"]:
+        """Evaluate candidate answers and return the best choice metadata."""
         if not query:
             return None
         agent = self.agent
@@ -267,6 +271,7 @@ class RewriterService:
     """Encapsulates answer rewrite steps."""
 
     def __init__(self, agent: GeminiAgent) -> None:
+        """Initialize the rewrite service."""
         self.agent = agent
 
     async def rewrite_best_answer(
@@ -278,6 +283,7 @@ class RewriterService:
         cached_content: Optional["caching.CachedContent"],
         query_type: str,
     ) -> str:
+        """Rewrite a selected answer using constraints and formatting rules."""
         agent = self.agent
         constraint_list: List[Dict[str, Any]] = []
         rules: List[str] = []
