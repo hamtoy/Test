@@ -2,11 +2,12 @@
 
 import logging
 from types import SimpleNamespace
-from typing import Any, AsyncIterator, List
+from typing import Any, AsyncIterator, List, cast
 
 import pytest
 
 from src.agent.core import GeminiAgent
+from src.config import AppConfig
 
 
 class _DummyConfig:
@@ -40,7 +41,7 @@ class _FakeGenAI:
 @pytest.mark.asyncio
 async def test_generate_stream_yields_chunks(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = GeminiAgent.__new__(GeminiAgent)
-    agent.config = _DummyConfig()
+    agent.config = cast(AppConfig, _DummyConfig())
     agent.safety_settings = {}
     agent.logger = logging.getLogger("test")
 
@@ -67,7 +68,7 @@ async def test_generate_stream_handles_empty_chunks(
         GenerativeModel = _EmptyModel
 
     agent = GeminiAgent.__new__(GeminiAgent)
-    agent.config = _DummyConfig()
+    agent.config = cast(AppConfig, _DummyConfig())
     agent.safety_settings = {}
     agent.logger = logging.getLogger("test")
     monkeypatch.setattr(GeminiAgent, "_genai", property(lambda self: _FakeGenAIMixed()))
