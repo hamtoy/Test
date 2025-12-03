@@ -1,100 +1,71 @@
-# GitHub Copilot Instructions
+# GitHub Copilot 지침 및 코드 품질 가이드라인
 
-## 코드 스타일 및 품질 체크리스트
+이 문서는 모든 코드 작업에 적용되는 **절대적인** 품질 및 스타일 표준을 정의합니다. Copilot은 이 지침을 준수하도록 코드를 제안해야 합니다.
 
-### ⚠️ PR 생성 전 필수 사항
+## 🛠️ IDE 및 Pre-Commit 통합 필수 사항
 
-모든 PR을 생성하기 **전에** 다음 명령어들을 **반드시** 실행해야 합니다:
+IDE(VS Code, PyCharm 등)를 다음 툴체인과 통합하여 코드를 저장하거나 커밋하기 전에 자동으로 품질 검사를 수행하세요.
+
+| 품질 검사 | 필수 툴 | IDE 설정 권장 사항 |
+| :--- | :--- | :--- |
+| **코드 포맷팅** | `ruff format` | 저장 시 자동 실행 |
+| **린트 검사** | `ruff check --fix` | 실시간 에러/경고 표시, 자동 수정 활성화 |
+| **타입 체크** | `mypy` | 실시간/빌드 시 타입 검사 확장 기능 사용 |
+| **테스트 실행** | `pytest` | IDE 기본 테스트 러너로 설정 |
+
+**PR 생성 전 수동 검증(환경에 따라 `uv run` 또는 `poetry run` 사용 가능):**
 
 ```bash
-# 1. 코드 포맷팅 (자동 수정)
-uv run ruff format .
-
-# 2. 린트 검사 및 자동 수정
-uv run ruff check --fix .
-
-# 3. 타입 체크
-uv run mypy src/ scripts/
-
-# 4. 테스트 실행
-uv run pytest
+ruff format .
+ruff check --fix .
+mypy src/ scripts/
+pytest
 ```
 
-### 🎯 중요 규칙
+---
 
-1. **절대 `ruff format`을 건너뛰지 마세요**
-   - CI에서 `ruff format --check`가 실패하면 안 됩니다
-   - 포맷팅 오류로 인한 PR은 반복적인 문제를 야기합니다
+## 🎯 핵심 코드 품질 규칙
 
-2. **Deprecated Imports 사용 금지**
-   - 구버전 import 경로를 사용하지 마세요
-   - 예시:
-     - ❌ `from src.utils import ...`
-     - ✅ `from src.infra.utils import ...`
-     - ❌ `from src.constants import ...`
-     - ✅ `from src.config.constants import ...`
+1. **포맷팅 필수**: CI의 포맷 검사 실패 금지 (`ruff format --check` 통과).
+2. **Deprecated import 금지**: 항상 최신/정식 모듈 경로 사용.
+3. **타입 힌트 필수**: `mypy --strict` 통과를 목표로 모든 새 코드에 타입 추가.
+4. **테스트 커버리지**: 새 기능/수정마다 유닛 테스트 작성, 최소 80% 유지.
 
-3. **타입 힌트 필수**
-   - 모든 함수에 타입 힌트를 추가하세요
-   - `mypy --strict` 모드를 지향합니다
-
-4. **테스트 커버리지 유지**
-   - 새로운 코드에는 반드시 테스트를 작성하세요
-   - 최소 80% 커버리지를 유지하세요
-
-### 📁 프로젝트 구조
+## 📁 프로젝트 구조 (Copilot 참고용)
 
 ```
 src/
 ├── agent/          # 에이전트 코어 로직
 ├── analysis/       # 분석 모듈
-├── config/         # 설정 관리
+├── config/         # 설정 관리 (상수, 환경 변수 로드)
 ├── core/           # 핵심 인터페이스 및 모델
 ├── features/       # 기능 모듈
-├── graph/          # Neo4j 그래프
-├── infra/          # 인프라 (로깅, 헬스체크)
+├── graph/          # 그래프 데이터베이스
+├── infra/          # 인프라 (로깅, 헬스체크 등 공통 유틸리티)
 ├── llm/            # LLM 관련
 ├── qa/             # QA 시스템
 ├── workflow/       # 워크플로우 로직
 └── web/            # 웹 API
 ```
 
-### 🚫 금지 사항
+## 🚫 금지 사항 (코드/워크플로우)
 
-- ❌ `--no-verify`로 pre-commit hook 건너뛰기
-- ❌ 테스트 없이 코드 변경
-- ❌ 타입 힌트 없는 새 함수
-- ❌ CI 실패를 무시하고 PR 병합
-- ❌ 하드코딩된 설정값 (환경 변수 사용)
+- ❌ `--no-verify` 등으로 pre-commit/품질 검사 건너뛰기
+- ❌ 테스트 없이 코드 변경/추가
+- ❌ 타입 힌트 없는 새 함수/메소드
+- ❌ 포맷팅·린트·타입 체크 실패한 채 CI/PR 진행
+- ❌ 하드코딩된 설정값(민감 정보는 환경 변수 또는 `config` 사용)
 
-### ✅ 권장 워크플로우
+## ✅ 권장 개발 워크플로우
 
-1. 기능 브랜치 생성
-2. 코드 작성
-3. 테스트 작성
-4. Pre-commit 체크 통과 확인
-5. **ruff format & check 실행**
-6. 테스트 실행
-7. PR 생성
-8. CI 통과 확인
-9. 리뷰 후 병합
-
-### 🔧 자주 사용하는 명령어
-
-```bash
-# 전체 품질 체크
-uv run ruff format . && uv run ruff check --fix . && uv run mypy src/ && uv run pytest
-
-# Pre-commit hook 수동 실행
-pre-commit run --all-files
-
-# 특정 파일만 포맷팅
-uv run ruff format path/to/file.py
-
-# 커버리지 리포트
-uv run pytest --cov=src --cov-report=html
-```
+1. 기능 브랜치 생성 및 체크아웃
+2. 코드 작성과 동시에 테스트 작성
+3. IDE 자동 포맷팅/린팅 활성화(저장 시 실행)
+4. IDE 테스트 러너로 유닛 테스트 즉시 실행
+5. 푸시 전 전체 품질 체크(포맷팅, 린팅, 타입, 테스트)
+6. Pre-commit hook 통과 확인
+7. PR 생성 → CI 통과 → 리뷰/병합
 
 ---
 
-> 💡 **참고**: 이 가이드라인을 따르면 반복적인 포맷팅 PR을 방지하고 코드 품질을 높일 수 있습니다.
+> 💡 **참고**: 이 가이드라인을 엄격히 준수하면 반복적인 품질 문제를 예방하고 일관된 고품질 코드를 유지할 수 있습니다.
