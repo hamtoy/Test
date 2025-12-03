@@ -201,7 +201,7 @@ class TestUnifiedWorkspaceAPI:
             patch("src.web.api.config") as mock_config,
             patch("src.web.api.agent", mock_agent),
             patch("src.web.api.kg", None),
-            patch("src.web.api.edit_content", mock_edit_content),
+            patch("src.web.routers.workspace.edit_content", mock_edit_content),
         ):
             mock_config.input_dir = inputs_dir
             response = client.post(
@@ -233,7 +233,7 @@ class TestUnifiedWorkspaceAPI:
             patch("src.web.api.config") as mock_config,
             patch("src.web.api.agent", mock_agent),
             patch("src.web.api.kg", None),
-            patch("src.web.api.edit_content", mock_edit_content),
+            patch("src.web.routers.workspace.edit_content", mock_edit_content),
         ):
             mock_config.input_dir = inputs_dir
             response = client.post(
@@ -265,7 +265,7 @@ class TestUnifiedWorkspaceAPI:
             patch("src.web.api.config") as mock_config,
             patch("src.web.api.agent", mock_agent),
             patch("src.web.api.kg", None),
-            patch("src.web.api.edit_content", mock_edit_content),
+            patch("src.web.routers.workspace.edit_content", mock_edit_content),
         ):
             mock_config.input_dir = inputs_dir
             response = client.post(
@@ -298,7 +298,7 @@ class TestUnifiedWorkspaceAPI:
             patch("src.web.api.config") as mock_config,
             patch("src.web.api.agent", mock_agent),
             patch("src.web.api.kg", None),
-            patch("src.web.api.inspect_answer", mock_inspect_answer),
+            patch("src.web.routers.workspace.edit_content", mock_inspect_answer),
         ):
             mock_config.input_dir = inputs_dir
             response = client.post(
@@ -314,7 +314,7 @@ class TestUnifiedWorkspaceAPI:
             data = response.json()
             assert data["workflow"] == "rewrite"
             assert data["answer"] == "Inspected answer"
-            assert "검수 완료" in data["changes"]
+            assert "재작성 완료" in data["changes"]
 
     def test_unified_workspace_agent_not_initialized(self, client: Any) -> None:
         """Test unified workspace when agent is not initialized."""

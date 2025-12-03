@@ -178,10 +178,6 @@ class TestGenerateSingleQA:
 
         with (
             patch("src.web.api.kg", None),
-            patch(
-                "src.web.api.inspect_answer",
-                new=AsyncMock(return_value="검수된 최종 답변"),
-            ),
         ):
             result = await generate_single_qa(mock_agent, "OCR 텍스트", "reasoning")
 
@@ -230,10 +226,6 @@ class TestGenerateSingleQA:
                 "src.processing.template_generator.DynamicTemplateGenerator",
                 return_value=mock_template_gen,
             ),
-            patch(
-                "src.web.api.inspect_answer",
-                new=AsyncMock(return_value="검수된 최종 답변"),
-            ),
         ):
             result = await generate_single_qa(
                 mock_agent, "OCR 텍스트", "global_explanation"
@@ -249,50 +241,50 @@ class TestLogReviewSessionEdgeCases:
 
     def test_log_review_session_unicode_content(self, tmp_path: Path) -> None:
         """Test log_review_session handles unicode content."""
-        with patch("src.web.api.REPO_ROOT", tmp_path):
-            log_review_session(
-                mode="edit",
-                question="한글 질문 🎉",
-                answer_before="이모지 포함 답변 ✨",
-                answer_after="수정된 답변 🚀",
-                edit_request_used="더 자세하게",
-                inspector_comment="잘했어요 👍",
-            )
+        log_review_session(
+            mode="edit",
+            question="한글 질문 🎉",
+            answer_before="이모지 포함 답변 ✨",
+            answer_after="수정된 답변 🚀",
+            edit_request_used="더 자세하게",
+            inspector_comment="잘했어요 👍",
+            base_dir=tmp_path,
+        )
 
-            log_dir = tmp_path / "data" / "outputs" / "review_logs"
-            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-            log_file = log_dir / f"review_{today}.jsonl"
+        log_dir = tmp_path / "data" / "outputs" / "review_logs"
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        log_file = log_dir / f"review_{today}.jsonl"
 
-            with open(log_file, "r", encoding="utf-8") as f:
-                entry = json.loads(f.readline())
+        with open(log_file, "r", encoding="utf-8") as f:
+            entry = json.loads(f.readline())
 
-            assert "🎉" in entry["question"]
-            assert "✨" in entry["answer_before"]
-            assert "🚀" in entry["answer_after"]
-            assert "👍" in entry["inspector_comment"]
+        assert "🎉" in entry["question"]
+        assert "✨" in entry["answer_before"]
+        assert "🚀" in entry["answer_after"]
+        assert "👍" in entry["inspector_comment"]
 
     def test_log_review_session_long_content(self, tmp_path: Path) -> None:
         """Test log_review_session handles very long content."""
         long_text = "A" * 10000
 
-        with patch("src.web.api.REPO_ROOT", tmp_path):
-            log_review_session(
-                mode="inspect",
-                question=long_text,
-                answer_before=long_text,
-                answer_after=long_text,
-                edit_request_used=long_text,
-                inspector_comment=long_text,
-            )
+        log_review_session(
+            mode="inspect",
+            question=long_text,
+            answer_before=long_text,
+            answer_after=long_text,
+            edit_request_used=long_text,
+            inspector_comment=long_text,
+            base_dir=tmp_path,
+        )
 
-            log_dir = tmp_path / "data" / "outputs" / "review_logs"
-            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-            log_file = log_dir / f"review_{today}.jsonl"
+        log_dir = tmp_path / "data" / "outputs" / "review_logs"
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        log_file = log_dir / f"review_{today}.jsonl"
 
-            with open(log_file, "r", encoding="utf-8") as f:
-                entry = json.loads(f.readline())
+        with open(log_file, "r", encoding="utf-8") as f:
+            entry = json.loads(f.readline())
 
-            assert len(entry["question"]) == 10000
+        assert len(entry["question"]) == 10000
 
 
 class TestHealthCheck:
@@ -372,7 +364,7 @@ class TestWorkspaceApiExtended:
             with patch("src.web.api.config") as mock_config:
                 mock_config.input_dir = inputs_dir
 
-                with patch("src.web.api.inspect_answer") as mock_inspect:
+                with patch("src.web.routers.workspace.inspect_answer") as mock_inspect:
                     mock_inspect.return_value = "수정된 답변"
 
                     response = client.post(
@@ -410,7 +402,7 @@ class TestWorkspaceApiExtended:
             with patch("src.web.api.config") as mock_config:
                 mock_config.input_dir = inputs_dir
 
-                with patch("src.web.api.edit_content") as mock_edit:
+                with patch("src.web.routers.workspace.edit_content") as mock_edit:
                     mock_edit.return_value = "수정된 내용"
 
                     response = client.post(
@@ -456,10 +448,6 @@ class TestQAGenerateApiExtended:
 
                 with (
                     patch("src.web.api.kg", None),
-                    patch(
-                        "src.web.api.inspect_answer",
-                        new=AsyncMock(return_value="검수된 답변"),
-                    ),
                 ):
                     response = client.post(
                         "/api/qa/generate",

@@ -405,6 +405,20 @@ def main(args: list[str] | None = None) -> int:
         print(f"Error: Path '{path}' does not exist", file=sys.stderr)
         return 1
 
+    if path.is_dir():
+        if not any(path.rglob("*.py")):
+            print(
+                f"Error: Path '{path}' does not exist or contains no Python files",
+                file=sys.stderr,
+            )
+            return 1
+    elif path.is_file() and path.suffix != ".py":
+        print(
+            f"Error: Path '{path}' does not exist or contains no Python files",
+            file=sys.stderr,
+        )
+        return 1
+
     stats = analyze_usage(path, parsed_args.exclude)
 
     # Output summary unless quiet
