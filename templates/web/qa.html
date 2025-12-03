@@ -124,7 +124,7 @@
         try {
             const payload = { mode, ocr_text: ocrText };
             if (mode === 'single') {
-                payload.query_type = qtype;
+                payload.qtype = qtype || 'global_explanation';
             }
 
             const result = await apiCall('/api/qa/generate', 'POST', payload);
