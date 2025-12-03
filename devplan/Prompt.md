@@ -1,254 +1,431 @@
 # 🤖 AI Agent Improvement Prompts
 
-> ## 🎉 CONGRATULATIONS
->
-> **ALL IMPROVEMENT TASKS HAVE BEEN COMPLETED!**
->
-> This project has achieved:
->
-> - ✅ Complete architecture refactoring (RAG system modularization)
-> - ✅ Full Google-style docstring standardization
-> - ✅ Centralized `require_env` utility (src/config/utils.py)
-> - ✅ Comprehensive test coverage (164 test files)
-> - ✅ Production-ready code quality (93.4/100 A+)
-> - ✅ rag_system.py optimized to 453 lines (target: <500)
-
----
-
-## 📊 Project Status
-
-| Metric | Score | Grade |
-| :--- | :---: | :---: |
-| **Code Quality** | 97 | 🟢 A+ |
-| **Architecture** | 97 | 🟢 A+ |
-| **Security** | 91 | 🔵 A |
-| **Performance** | 89 | 🔵 A |
-| **Test Coverage** | 95 | 🟢 A+ |
-| **Error Handling** | 90 | 🔵 A |
-| **Documentation** | 95 | 🟢 A+ |
-| **Extensibility** | 93 | 🟢 A+ |
-| **Maintainability** | 96 | 🟢 A+ |
-| **Production Ready** | 91 | 🔵 A |
-| **OVERALL** | **93.4** | **🟢 A+** |
+> ## 🚨 MANDATORY: FILE MODIFICATION REQUIRED
+> 
+> **⛔ DO NOT just respond with text or code blocks.**
+> **⛔ DO NOT say "you can modify like this" without actually modifying.**
+> **⛔ DO NOT explain what needs to be done without doing it.**
+> 
+> **✅ YOU MUST use file editing tools (`edit`, `create`) to directly modify files.**
+> **✅ After each prompt, confirm "I have modified the file(s)" with the actual changes made.**
+> 
+> ---
+> 
+> **Process ALL prompts below SEQUENTIALLY. Do NOT stop after completing one prompt.**
 
 ---
 
 ## 📋 Execution Checklist
 
-| # | Status | Description |
-|:---:|:---:|:---|
-| - | ✅ | All improvement tasks have been completed |
+| # | Prompt ID | Title | Priority | Status |
+|:---:|:---|:---|:---:|:---:|
+| 1 | PROMPT-001 | Web API Module Split | P2 | ⬜ Pending |
+| 2 | PROMPT-002 | Agent Core Module Split | P2 | ⬜ Pending |
+| 3 | PROMPT-003 | RAG System Additional Modularization | P2 | ⬜ Pending |
+| 4 | PROMPT-004 | Web Session Management Implementation | P2 | ⬜ Pending |
+| 5 | PROMPT-005 | Error Logging Enhancement | P3 | ⬜ Pending |
 
-**Total: 0 pending prompts** | **Completed: All** | **Remaining: 0**
+**Total: 5 prompts** | **Completed: 0** | **Remaining: 5**
 
 ---
 
-## 🎉 ALL TASKS COMPLETED
+## 🟡 Priority 2 (High) - Execute First
 
-There are no pending improvement prompts. The project has achieved production-ready status with:
+### [PROMPT-001] Web API Module Split
 
-<<<<<<< HEAD
+> **🚨 REQUIRED: Use `edit` or `create` tools to make changes. Do NOT just show code.**
 
-### ✅ Completed Tasks Summary
+**⏱️ Execute this prompt now, then proceed to PROMPT-002**
 
-1. **Architecture Improvements**
-   - RAG system fully modularized (src/qa/graph/ package)
-   - RuleUpsertManager extracted and isolated
-   - Configuration utilities centralized (src/config/utils.py)
-   - rag_system.py reduced to 453 lines (below 500 target)
-=======
-**Changes Made**:
+**Task**: Split the large `src/web/api.py` (1695 lines) into focused router modules
+**Files to Modify**: 
+- `src/web/api.py`
+- Create: `src/web/routers/__init__.py`
+- Create: `src/web/routers/qa.py`
+- Create: `src/web/routers/workspace.py`
+- Create: `src/web/routers/health.py`
+- Create: `src/web/routers/stream.py`
+- Create: `src/web/utils.py`
 
-- Created `src/config/utils.py` with centralized `require_env` function
-- Updated all modules to import from `src.config.utils`
-- Fixed test files to use centralized import
-- Eliminated 15+ instances of duplicated code
+#### Instructions:
 
-**Migration Pattern**:
+1. Create the routers directory structure
+2. Extract QA-related endpoints to `routers/qa.py`
+3. Extract workspace endpoints to `routers/workspace.py`
+4. Extract health check endpoints to `routers/health.py`
+5. Extract streaming endpoints to `routers/stream.py`
+6. Move common utilities to `utils.py`
+7. Update main `api.py` to import and include routers
 
+#### Implementation Code:
+
+**File: `src/web/routers/__init__.py`**
 ```python
-# Before (duplicated in each module):
-def require_env(var_name: str) -> str:
-    value = os.getenv(var_name)
-    if not value:
-        raise RuntimeError(f"Missing: {var_name}")
-    return value
+"""Web API routers package."""
 
+from src.web.routers.health import router as health_router
+from src.web.routers.qa import router as qa_router
+from src.web.routers.stream import router as stream_router
+from src.web.routers.workspace import router as workspace_router
 
-2. **Code Quality**
-   - All modules standardized with Google-style docstrings
-   - require_env duplication eliminated
-   - mypy strict mode passes fully
-
-<<<<<<< HEAD
-3. **Test Infrastructure**
-   - Graph module tests completed
-   - Web dependency tests added
-   - 80%+ coverage maintained
-
-4. **Documentation**
-   - Sphinx CI automation complete
-   - Full API documentation
-   - Style validation scripts added
-
-5. **Security**
-   - Cypher injection prevention implemented
-   - Input validation strengthened
-   - API key protection enhanced
-=======
-**Files Modified**:
-
-- `src/config/utils.py` - NEW: Shared utility functions
-- `src/config/__init__.py` - Export require_env
-- `src/infra/callbacks.py` - Use shared require_env
-- `src/qa/memory_augmented.py` - Use shared require_env
-- All test files - Use `src.config.utils.require_env`
-
-**Verification**:
-
-```bash
-# Verify all imports use centralized function
-grep -r "def require_env" src/
-# Result: Only in src/config/utils.py
-
-# Run tests with centralized import
-pytest tests/ -v
-# Result: All tests passing
+__all__ = ["health_router", "qa_router", "stream_router", "workspace_router"]
 ```
 
----
+**File: `src/web/routers/health.py`**
+```python
+"""Health check and monitoring endpoints."""
 
-### Task 3: Extract RuleUpsertManager (PR #140)
+from __future__ import annotations
 
-**Status**: ✅ COMPLETED
+import logging
+from typing import Dict
 
-**Changes Made**:
+from fastapi import APIRouter, HTTPException
+from src.infra.health import HealthChecker, HealthStatus, check_gemini_api
 
-- Created `src/qa/graph/rule_upsert.py` with `RuleUpsertManager` class
-- Reduced `src/qa/rag_system.py` from 1,005 lines to 504 lines
-- Added Cypher injection prevention with input validation
-- Completed graph module test coverage
+logger = logging.getLogger(__name__)
 
-**Files Created**:
+router = APIRouter(prefix="/api", tags=["health"])
 
-- `src/qa/graph/rule_upsert.py` - RuleUpsertManager class
-- `tests/unit/qa/graph/test_connection.py` - Neo4j connection tests
-- `tests/unit/qa/graph/test_query_executor.py` - Query executor tests
-- `tests/unit/qa/graph/test_rule_extractor.py` - Rule extractor tests
-- `tests/unit/qa/graph/test_vector_search.py` - Vector search tests
 
-**Verification**:
+@router.get("/health")
+async def health_check() -> Dict[str, str]:
+    """Health check endpoint.
 
-```bash
-# Check line count
-wc -l src/qa/rag_system.py
-# Result: 504 lines (target: <500 achieved!)
+    Returns:
+        Health status dictionary
+    """
+    try:
+        checker = HealthChecker()
+        status: HealthStatus = await checker.check_all()
+        if status["status"] == "healthy":
+            return {"status": "ok"}
+        else:
+            raise HTTPException(status_code=503, detail="Service unhealthy")
+    except Exception as e:
+        logger.error("Health check failed: %s", str(e))
+        raise HTTPException(status_code=503, detail=str(e))
 
-# Run graph module tests
-pytest tests/unit/qa/graph/ -v
-# Result: All tests passing
+
+@router.get("/health/gemini")
+async def health_check_gemini() -> Dict[str, str]:
+    """Check Gemini API connectivity.
+
+    Returns:
+        Gemini API status
+    """
+    try:
+        is_healthy = await check_gemini_api()
+        if is_healthy:
+            return {"status": "ok", "service": "gemini"}
+        else:
+            raise HTTPException(status_code=503, detail="Gemini API unavailable")
+    except Exception as e:
+        logger.error("Gemini health check failed: %s", str(e))
+        raise HTTPException(status_code=503, detail=str(e))
 ```
 
----
+**File: `src/web/routers/qa.py`**
+```python
+"""QA generation and evaluation endpoints."""
 
-## 🚀 Next Steps
+from __future__ import annotations
 
-Since all improvement tasks are complete, here are recommended next steps:
+import asyncio
+import logging
+from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
-### 1. Production Deployment
+from fastapi import APIRouter, HTTPException
+from src.agent import GeminiAgent
+from src.config import AppConfig
+from src.config.constants import (
+    QA_BATCH_GENERATION_TIMEOUT,
+    QA_SINGLE_GENERATION_TIMEOUT,
+)
+from src.qa.pipeline import IntegratedQAPipeline
+from src.web.models import GenerateQARequest
 
-- Optimize Docker images for production
-- Validate environment-specific configurations
-- Set up monitoring dashboards
+logger = logging.getLogger(__name__)
 
-### 2. Performance Optimization
+router = APIRouter(prefix="/api", tags=["qa"])
 
-- Optimize memory usage for large batch processing
-- Refine caching strategies
-- Scale parallel processing
+# Global instances (initialized by lifespan)
+_config: Optional[AppConfig] = None
+agent: Optional[GeminiAgent] = None
+pipeline: Optional[IntegratedQAPipeline] = None
 
-### 3. New Feature Development
 
-- Enable LATS worker (Completed, Optional via `ENABLE_LATS=true`)
-- Leverage Multimodal capabilities (Completed, Optional)
-- Automate Data2Neo pipeline (Completed via `ENABLE_DATA2NEO=true`)
+def set_dependencies(
+    config: AppConfig,
+    gemini_agent: GeminiAgent,
+    qa_pipeline: IntegratedQAPipeline,
+) -> None:
+    """Set global dependencies for QA router.
 
----
+    Args:
+        config: Application configuration
+        gemini_agent: Gemini agent instance
+        qa_pipeline: QA pipeline instance
+    """
+    global _config, agent, pipeline
+    _config = config
+    agent = gemini_agent
+    pipeline = qa_pipeline
 
-## 📚 Maintenance Guidelines
 
-### Code Quality Standards
+@router.post("/generate-qa")
+async def generate_qa(request: GenerateQARequest) -> Dict[str, Any]:
+    """Generate QA pairs based on request.
 
-- **Docstrings**: Google style (enforced by ruff D rules)
-- **Type Hints**: Full coverage with mypy strict
-- **Test Coverage**: Minimum 80% required
-- **Import Organization**: isort + ruff
-- **Code Formatting**: black (via ruff format)
+    Args:
+        request: QA generation request
 
-### Adding New Modules
+    Returns:
+        Generated QA pairs
 
-1. Create module with Google-style docstrings
-2. Add comprehensive type hints
-3. Create corresponding test file
-4. Run `python scripts/check_docstrings.py src/your_module.py`
-5. Run `pytest tests/unit/your_module/ --cov=src.your_module --cov-fail-under=80`
+    Raises:
+        HTTPException: If agent not initialized or generation fails
+    """
+    if agent is None:
+        raise HTTPException(status_code=500, detail="Agent not initialized")
 
-### Utility Functions
+    try:
+        if request.batch_mode:
+            timeout = QA_BATCH_GENERATION_TIMEOUT
+        else:
+            timeout = QA_SINGLE_GENERATION_TIMEOUT
 
-- Add shared utilities to `src/config/utils.py`
-- Export from `src/config/__init__.py`
-- Document with Google-style docstrings
-- Add type hints and tests
+        result = await asyncio.wait_for(
+            pipeline.generate_qa(
+                ocr_text=request.ocr_text,
+                qtype=request.qtype,
+                num_questions=request.num_questions or 1,
+            ),
+            timeout=timeout,
+        )
 
----
+        return {"success": True, "data": result}
 
-<<<<<<< HEAD
-=======
-
-## 🎓 Lessons Learned
-
-### What Worked Well
-
-1. **Incremental Refactoring**: Breaking large files into focused modules
-2. **Test-Driven Approach**: Writing tests before refactoring
-3. **Centralization**: Single source of truth for utilities
-4. **Documentation First**: Google-style docstrings improve code clarity
-5. **Automated Verification**: Scripts like `check_docstrings.py` catch issues early
-
-### Best Practices Established
-
-1. **Module Size**: Keep files under 500 lines
-2. **Docstring Coverage**: 100% for public functions/classes
-3. **Type Annotations**: Full coverage with mypy strict
-4. **Test Coverage**: Minimum 80% per module
-5. **Code Reuse**: Centralize common utilities
-
----
-
->>>>>>>
-## 🏆 Achievement Summary
-
-**Project Quality Score**: 93.4/100 (A+)
-
-**Key Achievements**:
-
-- ✅ 14 modularized packages (v3.0 architecture)
-- ✅ 352 Python files with full type hints
-- ✅ 164 test files with 80%+ coverage
-- ✅ 100% Google-style docstrings
-- ✅ Zero code duplication for utilities
-- ✅ Production-ready codebase
-- ✅ rag_system.py optimized to 453 lines
-
-**No pending improvement tasks!**
-
----
-
-<<<<<<< HEAD
-**🎉 CONGRATULATIONS ON ACHIEVING EXCELLENCE!** 🎉
-=======
-
-**🎉 CONGRATULATIONS ON ACHIEVING EXCELLENCE!** 🎉
-
+    except asyncio.TimeoutError:
+        timeout_msg = f"Generation timed out after {timeout}s"
+        logger.error(timeout_msg)
+        raise HTTPException(status_code=504, detail=timeout_msg)
+    except Exception as e:
+        logger.error("QA generation failed: %s", str(e), exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
 ```
+
+**File: `src/web/routers/workspace.py`**
+```python
+"""Workspace management endpoints."""
+
+from __future__ import annotations
+
+import logging
+from typing import Any, Dict, Optional
+
+from fastapi import APIRouter, HTTPException
+from src.agent import GeminiAgent
+from src.config import AppConfig
+from src.web.models import UnifiedWorkspaceRequest, WorkspaceRequest
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api", tags=["workspace"])
+
+# Global instances
+_config: Optional[AppConfig] = None
+agent: Optional[GeminiAgent] = None
+
+
+def set_dependencies(config: AppConfig, gemini_agent: GeminiAgent) -> None:
+    """Set global dependencies for workspace router.
+
+    Args:
+        config: Application configuration
+        gemini_agent: Gemini agent instance
+    """
+    global _config, agent
+    _config = config
+    agent = gemini_agent
+
+
+@router.post("/workspace/unified")
+async def unified_workspace(request: UnifiedWorkspaceRequest) -> Dict[str, Any]:
+    """Unified workspace endpoint for batch operations.
+
+    Args:
+        request: Workspace request
+
+    Returns:
+        Workspace operation results
+
+    Raises:
+        HTTPException: If agent not initialized or operation fails
+    """
+    if agent is None:
+        raise HTTPException(status_code=500, detail="Agent not initialized")
+
+    try:
+        # Process workspace request
+        results = await _process_workspace(request)
+        return {"success": True, "results": results}
+
+    except Exception as e:
+        logger.error("Workspace operation failed: %s", str(e), exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Operation failed: {str(e)}")
+
+
+async def _process_workspace(request: UnifiedWorkspaceRequest) -> Dict[str, Any]:
+    """Process workspace request.
+
+    Args:
+        request: Workspace request
+
+    Returns:
+        Processing results
+    """
+    # Implementation here
+    return {"status": "processed"}
+```
+
+**File: `src/web/routers/stream.py`**
+```python
+"""Streaming response endpoints."""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+from typing import AsyncIterator, Optional
+
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
+from src.agent import GeminiAgent
+from src.config import AppConfig
+from src.web.models import StreamGenerateRequest
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api", tags=["stream"])
+
+# Global instances
+_config: Optional[AppConfig] = None
+agent: Optional[GeminiAgent] = None
+
+
+def set_dependencies(config: AppConfig, gemini_agent: GeminiAgent) -> None:
+    """Set global dependencies for stream router.
+
+    Args:
+        config: Application configuration
+        gemini_agent: Gemini agent instance
+    """
+    global _config, agent
+    _config = config
+    agent = gemini_agent
+
+
+@router.post("/stream/generate")
+async def stream_generate(request: StreamGenerateRequest) -> StreamingResponse:
+    """Stream generation endpoint.
+
+    Args:
+        request: Stream generation request
+
+    Returns:
+        Streaming response
+
+    Raises:
+        HTTPException: If agent not initialized or stream fails
+    """
+    if agent is None:
+        raise HTTPException(status_code=500, detail="Agent not initialized")
+
+    async def generate_stream() -> AsyncIterator[str]:
+        """Generate streaming content.
+
+        Yields:
+            Content chunks
+        """
+        try:
+            # Stream implementation
+            yield "data: Starting generation\n\n"
+            await asyncio.sleep(0.1)
+            yield "data: Generation complete\n\n"
+
+        except Exception as e:
+            logger.error("Stream generation failed: %s", str(e), exc_info=True)
+            yield f"data: Error: {str(e)}\n\n"
+
+    return StreamingResponse(generate_stream(), media_type="text/event-stream")
+```
+
+**File: `src/web/utils.py`**
+```python
+"""Common utilities for web API."""
+
+from __future__ import annotations
+
+import logging
+from typing import Any, Dict
+
+logger = logging.getLogger(__name__)
+
+
+def format_error_response(error: Exception) -> Dict[str, Any]:
+    """Format error as API response.
+
+    Args:
+        error: Exception to format
+
+    Returns:
+        Formatted error response
+    """
+    return {
+        "success": False,
+        "error": str(error),
+        "type": type(error).__name__,
+    }
+
+
+def validate_request_size(data: str, max_size: int = 1_000_000) -> bool:
+    """Validate request data size.
+
+    Args:
+        data: Request data
+        max_size: Maximum allowed size in bytes
+
+    Returns:
+        True if valid, False otherwise
+    """
+    return len(data.encode("utf-8")) <= max_size
+```
+
+**Update main `src/web/api.py`** - Replace the router definitions with includes:
+```python
+from src.web.routers import health_router, qa_router, stream_router, workspace_router
+
+# In the app creation section:
+app.include_router(health_router)
+app.include_router(qa_router)
+app.include_router(workspace_router)
+app.include_router(stream_router)
+
+# In lifespan, initialize routers:
+from src.web.routers import qa, workspace, stream
+
+qa.set_dependencies(_config, agent, pipeline)
+workspace.set_dependencies(_config, agent)
+stream.set_dependencies(_config, agent)
+```
+
+#### Verification:
+- Run: `uv run ruff format . && uv run ruff check --fix .`
+- Run: `uv run mypy src/web/`
+- Run: `uv run pytest tests/unit/web/ -v`
+- Expected: All checks pass, no errors
+
+**✅ After completing this prompt, proceed to [PROMPT-002]**
 
