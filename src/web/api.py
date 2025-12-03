@@ -55,6 +55,7 @@ logger = logging.getLogger(__name__)
 _config: Optional[AppConfig] = None
 agent: Optional[GeminiAgent] = None
 kg: Optional[QAKnowledgeGraph] = None
+mm: Optional[Any] = None  # Legacy placeholder for removed multimodal module
 pipeline: Optional[IntegratedQAPipeline] = None
 session_manager = SessionManager()
 REQUEST_ID_HEADER = "X-Request-Id"
