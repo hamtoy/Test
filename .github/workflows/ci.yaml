@@ -133,8 +133,7 @@ jobs:
   e2e-tests:
     runs-on: ubuntu-latest
     needs: test # 유닛 테스트 통과 후 실행
-    # secrets 컨텍스트는 조건에서 직접 사용 가능
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.GEMINI_API_KEY != ''
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.GEMINI_API_KEY != '' }}
     env:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
     services:
