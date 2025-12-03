@@ -1,6 +1,5 @@
 """Tests for web API module to improve coverage."""
 
-import io
 import json
 import sys
 import types
@@ -103,12 +102,10 @@ class TestInitResources:
         # Reset global state
         original_agent = api_module.agent
         original_kg = api_module.kg
-        original_mm = api_module.mm
 
         try:
             api_module.agent = None
             api_module.kg = None
-            api_module.mm = None
 
             with patch("src.web.api.REPO_ROOT", tmp_path):
                 # Create templates directory
@@ -129,7 +126,6 @@ class TestInitResources:
             # Restore original state
             api_module.agent = original_agent
             api_module.kg = original_kg
-            api_module.mm = original_mm
 
     @pytest.mark.asyncio
     async def test_init_resources_with_kg_success(self, tmp_path: Path) -> None:
@@ -138,12 +134,10 @@ class TestInitResources:
 
         original_agent = api_module.agent
         original_kg = api_module.kg
-        original_mm = api_module.mm
 
         try:
             api_module.agent = None
             api_module.kg = None
-            api_module.mm = None
 
             with patch("src.web.api.REPO_ROOT", tmp_path):
                 templates_dir = tmp_path / "templates"
@@ -153,17 +147,14 @@ class TestInitResources:
                 with (
                     patch("src.web.api.GeminiAgent"),
                     patch("src.web.api.QAKnowledgeGraph", return_value=mock_kg),
-                    patch("src.web.api.MultimodalUnderstanding") as mock_mm_class,
                 ):
                     await init_resources()
 
                     # After init_resources, kg should be set (use getattr to break type narrowing)
                     assert getattr(api_module, "kg") is not None
-                    mock_mm_class.assert_called_once_with(kg=mock_kg)
         finally:
             api_module.agent = original_agent
             api_module.kg = original_kg
-            api_module.mm = original_mm
 
 
 class TestGenerateSingleQA:
@@ -296,12 +287,10 @@ class TestHealthCheck:
 
         original_agent = api_module.agent
         original_kg = api_module.kg
-        original_mm = api_module.mm
 
         try:
             api_module.agent = None
             api_module.kg = None
-            api_module.mm = None
 
             response = client.get("/health")
             assert response.status_code == 200
@@ -314,7 +303,6 @@ class TestHealthCheck:
         finally:
             api_module.agent = original_agent
             api_module.kg = original_kg
-            api_module.mm = original_mm
 
     def test_health_check_with_agent(self, client: Any) -> None:
         """Test health check when agent is initialized."""
@@ -322,12 +310,10 @@ class TestHealthCheck:
 
         original_agent = api_module.agent
         original_kg = api_module.kg
-        original_mm = api_module.mm
 
         try:
             api_module.agent = MagicMock()
             api_module.kg = None
-            api_module.mm = None
 
             response = client.get("/health")
             assert response.status_code == 200
@@ -338,7 +324,6 @@ class TestHealthCheck:
         finally:
             api_module.agent = original_agent
             api_module.kg = original_kg
-            api_module.mm = original_mm
 
 
 class TestWorkspaceApiExtended:
@@ -505,103 +490,3 @@ class TestEvalApiExtended:
                     assert len(data["results"]) == 3
         finally:
             api_module.agent = original_agent
-
-
-class TestMultimodalApiExtended:
-    """Extended tests for multimodal API."""
-
-    def test_multimodal_with_mocked_mm(self, client: Any, tmp_path: Path) -> None:
-        """Test multimodal analysis with mocked mm."""
-        import src.web.api as api_module
-
-        original_mm = api_module.mm
-
-        inputs_dir = tmp_path / "inputs"
-        inputs_dir.mkdir()
-
-        try:
-            mock_mm = MagicMock()
-            mock_mm.analyze_image_deep.return_value = {
-                "extracted_text": "추출된 텍스트",
-                "has_table": True,
-            }
-            api_module.mm = mock_mm
-
-            with patch("src.web.api.config") as mock_config:
-                mock_config.input_dir = inputs_dir
-
-                # Create a minimal PNG image
-                image_content = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
-                files = {"file": ("test.png", io.BytesIO(image_content), "image/png")}
-
-                response = client.post("/api/multimodal/analyze", files=files)
-
-                assert response.status_code == 200
-                data = response.json()
-                assert data["filename"] == "test.png"
-                assert "metadata" in data
-        finally:
-            api_module.mm = original_mm
-
-    def test_multimodal_invalid_content_type(self, client: Any) -> None:
-        """Test multimodal with invalid content type when mm is available."""
-        import src.web.api as api_module
-
-        original_mm = api_module.mm
-
-        try:
-            mock_mm = MagicMock()
-            api_module.mm = mock_mm
-
-            files = {"file": ("test.txt", io.BytesIO(b"text"), "text/plain")}
-
-            response = client.post("/api/multimodal/analyze", files=files)
-
-            assert response.status_code == 400
-        finally:
-            api_module.mm = original_mm
-
-    def test_multimodal_missing_content_type(self, client: Any) -> None:
-        """Test multimodal with missing content type when mm is available."""
-        import src.web.api as api_module
-
-        original_mm = api_module.mm
-
-        try:
-            mock_mm = MagicMock()
-            api_module.mm = mock_mm
-
-            # File with None content type
-            files = {"file": ("test.bin", io.BytesIO(b"binary"), None)}
-
-            response = client.post("/api/multimodal/analyze", files=files)
-
-            assert response.status_code == 400
-        finally:
-            api_module.mm = original_mm
-
-    def test_multimodal_analysis_error(self, client: Any, tmp_path: Path) -> None:
-        """Test multimodal handles analysis errors."""
-        import src.web.api as api_module
-
-        original_mm = api_module.mm
-
-        inputs_dir = tmp_path / "inputs"
-        inputs_dir.mkdir()
-
-        try:
-            mock_mm = MagicMock()
-            mock_mm.analyze_image_deep.side_effect = Exception("Analysis failed")
-            api_module.mm = mock_mm
-
-            with patch("src.web.api.config") as mock_config:
-                mock_config.input_dir = inputs_dir
-
-                image_content = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
-                files = {"file": ("test.png", io.BytesIO(image_content), "image/png")}
-
-                response = client.post("/api/multimodal/analyze", files=files)
-
-                assert response.status_code == 500
-        finally:
-            api_module.mm = original_mm

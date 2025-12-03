@@ -33,33 +33,42 @@
     <!-- 오른쪽: 통합 워크스페이스 -->
     <div class="right-panel">
         <h2>🔥 워크스페이스</h2>
+
+        <!-- 탭 선택 -->
+        <div class="workspace-mode-tabs">
+            <button class="mode-tab active" data-mode="full">🔥 전체</button>
+            <button class="mode-tab" data-mode="query-only">❓ 질문만</button>
+            <button class="mode-tab" data-mode="answer-only">💡 답변만</button>
+        </div>
         
-        <!-- 질의 (선택) -->
-        <div class="form-group">
-            <label for="query">질의 (선택)</label>
+        <!-- 질의 입력 -->
+        <div class="form-group" id="query-section">
+            <label for="query">
+                질의
+                <span class="field-badge optional" id="query-badge">선택</span>
+            </label>
             <div class="input-with-copy">
                 <textarea id="query" rows="3" placeholder="질문을 입력하세요 (비우면 OCR에서 자동 생성)"></textarea>
-                <button type="button" class="copy-btn-float" onclick="copyFieldContent('query', this)">📋 복사</button>
+                <button type="button" class="copy-btn-float" onclick="copyFieldContent('query', this)">📋</button>
             </div>
-            <small style="color: var(--text-secondary, #666); font-size: 0.85em;">
-                💡 비워두면 자동으로 생성됩니다
-            </small>
+            <small class="help-text" id="query-help">💡 비워두면 자동으로 생성됩니다</small>
         </div>
 
-        <!-- 답변 (선택) -->
-        <div class="form-group">
-            <label for="answer">답변 (선택)</label>
+        <!-- 답변 입력 -->
+        <div class="form-group" id="answer-section">
+            <label for="answer">
+                답변
+                <span class="field-badge optional" id="answer-badge">선택</span>
+            </label>
             <div class="input-with-copy">
                 <textarea id="answer" rows="8" placeholder="답변을 입력하세요 (비우면 질문 기반 자동 생성)"></textarea>
-                <button type="button" class="copy-btn-float" onclick="copyFieldContent('answer', this)">📋 복사</button>
+                <button type="button" class="copy-btn-float" onclick="copyFieldContent('answer', this)">📋</button>
             </div>
-            <small style="color: var(--text-secondary, #666); font-size: 0.85em;">
-                💡 비워두면 자동으로 생성됩니다
-            </small>
+            <small class="help-text" id="answer-help">💡 비워두면 자동으로 생성됩니다</small>
         </div>
 
         <!-- 질문/답변 유형 선택 -->
-        <div class="form-group">
+        <div class="form-group" id="query-type-section">
             <label for="query-type">질문/답변 유형 (선택)</label>
             <select
                 id="query-type"
@@ -169,6 +178,72 @@
         margin-bottom: 8px;
         color: var(--text-primary, #1f2121);
     }
+
+    .workspace-mode-tabs {
+        display: flex;
+        gap: 10px;
+        margin: 12px 0 20px;
+    }
+
+    .workspace-mode-tabs .mode-tab {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid var(--border, rgba(94, 82, 64, 0.2));
+        border-radius: 8px;
+        background: var(--bg-secondary, #f5f5f5);
+        color: var(--text-primary, #1f2121);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .workspace-mode-tabs .mode-tab:hover {
+        border-color: var(--primary, #21808d);
+        color: var(--primary, #21808d);
+    }
+
+    .workspace-mode-tabs .mode-tab.active {
+        background: var(--accent-primary-soft, rgba(16, 185, 129, 0.1));
+        border-color: var(--accent-primary, #10b981);
+        color: var(--accent-primary, #10b981);
+    }
+
+    .field-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        margin-left: 8px;
+        vertical-align: middle;
+    }
+
+    .field-badge.optional {
+        background: var(--bg-tertiary, #ececec);
+        color: var(--text-secondary, #666);
+    }
+
+    .field-badge.required {
+        background: var(--accent-primary, #10b981);
+        color: #fff;
+    }
+
+    .field-badge.output {
+        background: var(--accent-secondary, #3b82f6);
+        color: #fff;
+    }
+
+    textarea.output-only {
+        background: var(--bg-secondary, #f5f5f5);
+        border: 2px dashed var(--accent-secondary, #3b82f6);
+        font-style: italic;
+        cursor: not-allowed;
+    }
+
+    textarea.required-input {
+        border: 2px solid var(--accent-primary, #10b981);
+        box-shadow: 0 0 0 3px var(--accent-primary-soft, rgba(16, 185, 129, 0.15));
+    }
 </style>
 {% endblock %}
 
@@ -215,6 +290,98 @@
         }
     }
 
+    const WorkspaceMode = {
+        current: 'full',
+        switchTo(mode) {
+            this.current = mode;
+            const queryField = document.getElementById('query');
+            const answerField = document.getElementById('answer');
+            const queryBadge = document.getElementById('query-badge');
+            const answerBadge = document.getElementById('answer-badge');
+            const queryHelp = document.getElementById('query-help');
+            const answerHelp = document.getElementById('answer-help');
+            const queryTypeSection = document.getElementById('query-type-section');
+            const executeBtn = document.getElementById('execute-btn');
+
+            queryField.readOnly = false;
+            answerField.readOnly = false;
+            queryField.classList.remove('output-only', 'required-input');
+            answerField.classList.remove('output-only', 'required-input');
+
+            if (mode === 'full') {
+                queryBadge.textContent = '선택';
+                queryBadge.className = 'field-badge optional';
+                answerBadge.textContent = '선택';
+                answerBadge.className = 'field-badge optional';
+
+                queryHelp.textContent = '💡 비워두면 자동으로 생성됩니다';
+                answerHelp.textContent = '💡 비워두면 자동으로 생성됩니다';
+
+                queryField.placeholder = '질문을 입력하세요 (비우면 자동 생성)';
+                answerField.placeholder = '답변을 입력하세요 (비우면 자동 생성)';
+
+                queryTypeSection.style.display = 'block';
+                executeBtn.textContent = '🚀 실행';
+            } else if (mode === 'query-only') {
+                queryBadge.textContent = '자동 생성';
+                queryBadge.className = 'field-badge output';
+                answerBadge.textContent = '필수 입력';
+                answerBadge.className = 'field-badge required';
+
+                queryHelp.innerHTML = '🤖 <strong>답변 기반으로 자동 생성됩니다</strong>';
+                answerHelp.innerHTML = '✅ <strong>답변을 입력하세요</strong> (이 내용으로 질문 생성)';
+
+                queryField.placeholder = '여기에 생성된 질문이 표시됩니다';
+                answerField.placeholder = '질문을 생성할 답변을 입력하세요';
+
+                queryField.readOnly = true;
+                queryField.classList.add('output-only');
+                answerField.classList.add('required-input');
+
+                queryTypeSection.style.display = 'none';
+                executeBtn.textContent = '❓ 질문 생성';
+            } else if (mode === 'answer-only') {
+                queryBadge.textContent = '필수 입력';
+                queryBadge.className = 'field-badge required';
+                answerBadge.textContent = '자동 생성';
+                answerBadge.className = 'field-badge output';
+
+                queryHelp.innerHTML = '✅ <strong>질문을 입력하세요</strong> (이 내용으로 답변 생성)';
+                answerHelp.innerHTML = '🤖 <strong>질문 기반으로 자동 생성됩니다</strong>';
+
+                queryField.placeholder = '답변을 생성할 질문을 입력하세요';
+                answerField.placeholder = '여기에 생성된 답변이 표시됩니다';
+
+                answerField.readOnly = true;
+                answerField.classList.add('output-only');
+                queryField.classList.add('required-input');
+
+                queryTypeSection.style.display = 'block';
+                executeBtn.textContent = '💡 답변 생성';
+            }
+
+            this.updateValidation();
+        },
+        updateValidation() {
+            const queryVal = document.getElementById('query').value.trim();
+            const answerVal = document.getElementById('answer').value.trim();
+            const ocrVal = document.getElementById('ocr-input').value.trim();
+            const executeBtn = document.getElementById('execute-btn');
+
+            let isValid = false;
+            if (this.current === 'query-only') {
+                isValid = Boolean(answerVal || ocrVal);
+            } else if (this.current === 'answer-only') {
+                isValid = Boolean(queryVal);
+            } else {
+                isValid = Boolean(ocrVal);
+            }
+
+            executeBtn.disabled = !isValid;
+            executeBtn.style.opacity = isValid ? '1' : '0.6';
+        },
+    };
+
     // 실행 버튼 (중복 실행 방지)
     let isExecuting = false;
     let abortController = null;
@@ -236,6 +403,7 @@
         const ocrText = document.getElementById('ocr-input').value;
         const queryType = document.getElementById('query-type').value;
         const globalExplanationRef = document.getElementById('global-explanation-ref').value.trim();
+        const mode = WorkspaceMode.current;
 
         const resultsDiv = document.getElementById('workspace-results');
         
@@ -250,13 +418,24 @@
         setButtonLoading(executeBtn, true);
 
         try {
-            const result = await apiCall('/api/workspace/unified', 'POST', {
+            const payload = {
+                mode,
                 query: query || null,
                 answer: answer || null,
                 edit_request: editRequest || null,
                 ocr_text: ocrText || null,
                 query_type: queryType || null,
                 global_explanation_ref: globalExplanationRef || null,
+            };
+
+            if (mode === 'query-only') {
+                payload.query = null;
+            } else if (mode === 'answer-only') {
+                payload.answer = null;
+            }
+
+            const result = await apiCall('/api/workspace/unified', 'POST', {
+                ...payload,
             }, abortController?.signal);
 
             displayResult(result);
@@ -379,8 +558,26 @@
         sessionStorage.removeItem('workspace_answer');
     }
 
+    // 탭 이벤트
+    document.querySelectorAll('.workspace-mode-tabs .mode-tab').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            document
+                .querySelectorAll('.workspace-mode-tabs .mode-tab')
+                .forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
+            WorkspaceMode.switchTo(btn.dataset.mode);
+        });
+    });
+
+    // 입력 변경 시 검증 업데이트
+    ['query', 'answer', 'ocr-input'].forEach((id) => {
+        const el = document.getElementById(id);
+        el.addEventListener('input', () => WorkspaceMode.updateValidation());
+    });
+
     // 초기화
     loadOCR();
     document.getElementById('save-ocr-btn').addEventListener('click', saveOCR);
+    WorkspaceMode.switchTo('full');
 </script>
 {% endblock %}
