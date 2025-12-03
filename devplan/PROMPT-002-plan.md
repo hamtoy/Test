@@ -1,4 +1,4 @@
-## PROMPT-002 — Agent Core Module Split (WIP)
+## PROMPT-002 — Agent Core Module Split (Completed)
 
 ### Goal
 - Break down `src/agent/core.py` (≈1k lines) into focused components to improve maintainability and testing.
@@ -14,12 +14,12 @@
 - `src/agent/core.py` — thin facade (`GeminiAgent`) orchestrating the above.
 
 ### Incremental Steps
-1) Extract low-level API call logic (current `_call_api_with_retry`, budgeting, telemetry) into `client.py`, keep interfaces stable. **(DONE: stubs added in `src/agent/client.py`)**
-2) Extract cache/budget/context handling helpers into `context_manager.py`; route existing cache-hit/miss metrics through this layer. **(DONE: stub added in `src/agent/context_manager.py`)**
-3) Isolate retry/backoff policies into `retry_handler.py`; import into client. **(DONE: stub added in `src/agent/retry_handler.py`)**
-4) Trim `GeminiAgent` to composition of the above; keep public methods and signatures unchanged to protect tests. **(NEXT)**
-5) Add unit tests for each new component (API client, context manager, retry handler) with lightweight mocks. **(NEXT)**
-6) Update imports/usages across agents, routers, and tests; ensure mypy/pytest pass. **(NEXT)**
+1) Extract low-level API call logic (current `_call_api_with_retry`, budgeting, telemetry) into `client.py`, keep interfaces stable. **(DONE: logic migrated, delegates to `GeminiClient.execute`)**
+2) Extract cache/budget/context handling helpers into `context_manager.py`; route existing cache-hit/miss metrics through this layer. **(DONE: cache helpers proxied)**
+3) Isolate retry/backoff policies into `retry_handler.py`; import into client. **(DONE: retry/backoff extracted)**
+4) Trim `GeminiAgent` to composition of the above; keep public methods and signatures unchanged to protect tests. **(DONE: delegates to helpers, smaller core)**  
+5) Add unit tests for each new component (API client, context manager, retry handler) with lightweight mocks. **(DONE: `tests/unit/agent/test_split_helpers.py`)**
+6) Update imports/usages across agents, routers, and tests; ensure mypy/pytest pass. **(DONE: ruff/mypy hooks pass on commit, targeted pytest added)**
 
 ### Acceptance
 - No public API breakage for `GeminiAgent`.

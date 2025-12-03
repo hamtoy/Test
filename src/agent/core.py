@@ -11,7 +11,6 @@ import datetime
 import json
 import logging
 import sys
-import time
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -37,7 +36,6 @@ from src.config.constants import MIN_CACHE_TOKENS
 from src.config.exceptions import (
     APIRateLimitError,
     CacheCreationError,
-    SafetyFilterError,
     ValidationFailedError,
 )
 from src.core.models import EvaluationResultSchema, QueryResult
@@ -125,7 +123,8 @@ class GeminiAgent:
         self._token_counter = meter.create_counter(
             "gemini.tokens.total", description="Total tokens used"
         )
-        self.client = GeminiClient(self)
+        self._log_metrics = _get_log_metrics()
+        self.client = GeminiClient(self, self._log_metrics)
         self.context_manager = AgentContextManager(self)
         self.retry_handler = RetryHandler(self)
 
@@ -271,7 +270,7 @@ class GeminiAgent:
 
     def _track_cache_usage(self, cached: bool) -> None:
         """캐시 사용량 추적."""
-        self._cache_manager.track_cache_usage(cached)
+        self.context_manager.track_cache_usage(cached)
 
     def _local_cache_manifest_path(self) -> Any:
         """로컬 캐시 매니페스트 경로."""
@@ -279,11 +278,11 @@ class GeminiAgent:
 
     def _cleanup_expired_cache(self, ttl_minutes: int) -> None:
         """만료된 캐시 정리."""
-        self._cache_manager.cleanup_expired_cache(ttl_minutes)
+        self.context_manager.cleanup_expired_cache(ttl_minutes)
 
     def _load_local_cache(self, fingerprint: str, ttl_minutes: int) -> Any:
         """로컬 캐시 로드."""
-        return self._cache_manager.load_local_cache(
+        return self.context_manager.load_local_cache(
             fingerprint, ttl_minutes, self._caching
         )
 
@@ -291,7 +290,7 @@ class GeminiAgent:
         self, fingerprint: str, cache_name: str, ttl_minutes: int
     ) -> None:
         """로컬 캐시 저장."""
-        self._cache_manager.store_local_cache(fingerprint, cache_name, ttl_minutes)
+        self.context_manager.store_local_cache(fingerprint, cache_name, ttl_minutes)
 
     # ==================== 모델 생성 ====================
 
@@ -394,177 +393,12 @@ class GeminiAgent:
     # ==================== API 호출 ====================
 
     async def _call_api_with_retry(self, model: Any, prompt_text: str) -> str:
-        """재시도 로직이 포함된 API 호출."""
-        exceptions = self._google_exceptions()
-        retry_exceptions = (
-            exceptions.ResourceExhausted,
-            exceptions.ServiceUnavailable,
-            exceptions.DeadlineExceeded,
-            exceptions.Cancelled,
-            TimeoutError,
-        )
-
-        async def _adaptive_backoff(attempt: int) -> None:
-            self.api_retries += 1
-            delay = min(10, 2 * attempt)
-            self.logger.warning(
-                "Retrying API call (attempt=%s, delay=%ss)", attempt, delay
-            )
-            await asyncio.sleep(delay)
-
-        @retry(
-            stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=2, max=10),
-            retry=retry_if_exception_type(retry_exceptions),
-            reraise=True,
-        )
-        async def _execute_with_retry() -> str:
-            def _get_retry_attempt() -> int:
-                """Extract attempt number from tenacity retry statistics."""
-                retry_obj = getattr(_execute_with_retry, "retry", None)
-                stats_dict: Dict[str, Any] = {}
-                if retry_obj is not None and hasattr(retry_obj, "statistics"):
-                    stats_dict = retry_obj.statistics
-                return stats_dict.get("attempt_number", 1) or 1
-
-            if self._rate_limiter:
-                async with self._rate_limiter, self._semaphore:
-                    try:
-                        return await self._execute_api_call(model, prompt_text)
-                    except retry_exceptions:
-                        attempt = _get_retry_attempt()
-                        await _adaptive_backoff(attempt)
-                        raise
-            async with self._semaphore:
-                try:
-                    return await self._execute_api_call(model, prompt_text)
-                except retry_exceptions:
-                    attempt = _get_retry_attempt()
-                    await _adaptive_backoff(attempt)
-                    raise
-
-        try:
-            result: str = await _execute_with_retry()
-            return result
-        except Exception:
-            self.api_failures += 1
-            raise
+        """재시도 로직이 포함된 API 호출 (RetryHandler 위임)."""
+        return await self.retry_handler.call(model, prompt_text)
 
     async def _execute_api_call(self, model: Any, prompt_text: str) -> str:
-        """실제 API 호출 로직."""
-        if self.llm_provider:
-            start = time.perf_counter()
-            system_instruction = getattr(model, "_agent_system_instruction", None)
-            response_schema = getattr(model, "_agent_response_schema", None)
-            result = await self.llm_provider.generate_content_async(
-                prompt_text,
-                system_instruction=system_instruction,
-                temperature=self.config.temperature,
-                max_output_tokens=self.config.max_output_tokens,
-                response_schema=response_schema,
-                request_options={"timeout": self.config.timeout},
-            )
-            latency_ms = (time.perf_counter() - start) * 1000
-
-            prompt_tokens = result.usage.get("prompt_tokens", 0)
-            completion_tokens = result.usage.get("completion_tokens", 0)
-            self._cost_tracker.add_tokens(prompt_tokens, completion_tokens)
-
-            _get_log_metrics()(
-                self.logger,
-                latency_ms=latency_ms,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                cache_hits=self.cache_hits,
-                cache_misses=self.cache_misses,
-                api_retries=self.api_retries,
-                api_failures=self.api_failures,
-            )
-
-            finish_reason = result.finish_reason
-            if finish_reason and finish_reason.upper() not in {"STOP", "MAX_TOKENS"}:
-                safety_info = result.safety_ratings or ""
-                raise SafetyFilterError(
-                    "Blocked by safety filter or other reason: %s.%s"
-                    % (finish_reason, safety_info)
-                )
-            return result.content
-
-        protos = self._protos()
-        self.logger.debug(
-            "API Call - Model: %s, Prompt Length: %s",
-            self.config.model_name,
-            len(prompt_text),
-        )
-        start = time.perf_counter()
-        response = await model.generate_content_async(
-            prompt_text, request_options={"timeout": self.config.timeout}
-        )
-        latency_ms = (time.perf_counter() - start) * 1000
-        self.logger.info("API latency: %.2f ms", latency_ms)
-
-        if hasattr(response, "usage_metadata") and response.usage_metadata:
-            usage = response.usage_metadata
-            self._cost_tracker.add_tokens(
-                usage.prompt_token_count, usage.candidates_token_count
-            )
-
-            self.logger.info(
-                "Token Usage - Prompt: %s, Response: %s, Total: %s",
-                usage.prompt_token_count,
-                usage.candidates_token_count,
-                usage.total_token_count,
-            )
-            _get_log_metrics()(
-                self.logger,
-                latency_ms=latency_ms,
-                prompt_tokens=usage.prompt_token_count,
-                completion_tokens=usage.candidates_token_count,
-                cache_hits=self.cache_hits,
-                cache_misses=self.cache_misses,
-                api_retries=self.api_retries,
-                api_failures=self.api_failures,
-            )
-
-        if response.candidates:
-            candidate = response.candidates[0]
-            finish_reason = candidate.finish_reason
-            self.logger.debug("API Response - Finish Reason: %s", finish_reason)
-
-            if finish_reason not in [
-                protos.Candidate.FinishReason.STOP,
-                protos.Candidate.FinishReason.MAX_TOKENS,
-            ]:
-                safety_info = ""
-                if hasattr(response, "prompt_feedback") and response.prompt_feedback:
-                    safety_info = " Safety Ratings: %s" % response.prompt_feedback
-
-                self.logger.warning(
-                    "⚠️ Generation stopped unexpectedly. Finish Reason: %s.%s",
-                    finish_reason,
-                    safety_info,
-                )
-                raise SafetyFilterError(
-                    "Blocked by safety filter or other reason: %s.%s"
-                    % (finish_reason, safety_info)
-                )
-
-        try:
-            return str(response.text)
-        except ValueError:
-            safety_info = ""
-            if hasattr(response, "prompt_feedback") and response.prompt_feedback:
-                safety_info = " Safety Filter: %s" % response.prompt_feedback
-
-            error_msg = "No text content in response.%s" % safety_info
-            self.logger.error(error_msg)
-
-            if response.candidates and response.candidates[0].content.parts:
-                parts = response.candidates[0].content.parts
-                if len(parts) > 0 and hasattr(parts[0], "text"):
-                    return str(parts[0].text)
-
-            raise SafetyFilterError(error_msg)
+        """실제 API 호출 로직 (GeminiClient 위임)."""
+        return await self.client.execute(model, prompt_text)
 
     # ==================== Query 생성 ====================
 
