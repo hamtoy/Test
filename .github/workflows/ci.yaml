@@ -83,7 +83,19 @@ jobs:
       - name: Wait for Neo4j
         run: |
           for i in {1..30}; do
-            uv run python -c "from neo4j import GraphDatabase; uri='bolt://localhost:7687'; auth=('neo4j','testpassword'); driver=GraphDatabase.driver(uri, auth=auth); with driver.session() as s: s.run('RETURN 1'); driver.close()"
+            uv run python - <<'PY'
+              import sys
+              from neo4j import GraphDatabase
+
+              uri = "bolt://localhost:7687"
+              auth = ("neo4j", "testpassword")
+
+              driver = GraphDatabase.driver(uri, auth=auth)
+              with driver.session() as session:
+                  session.run("RETURN 1")
+              driver.close()
+              sys.exit(0)
+            PY
             status=$?
             if [ $status -eq 0 ]; then
               exit 0
@@ -171,7 +183,19 @@ jobs:
       - name: Wait for Neo4j (e2e)
         run: |
           for i in {1..30}; do
-            uv run python -c "from neo4j import GraphDatabase; uri='bolt://localhost:7687'; auth=('neo4j','testpassword'); driver=GraphDatabase.driver(uri, auth=auth); with driver.session() as s: s.run('RETURN 1'); driver.close()"
+            uv run python - <<'PY'
+              import sys
+              from neo4j import GraphDatabase
+
+              uri = "bolt://localhost:7687"
+              auth = ("neo4j", "testpassword")
+
+              driver = GraphDatabase.driver(uri, auth=auth)
+              with driver.session() as session:
+                  session.run("RETURN 1")
+              driver.close()
+              sys.exit(0)
+            PY
             status=$?
             if [ $status -eq 0 ]; then
               exit 0
