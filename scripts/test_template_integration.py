@@ -110,18 +110,52 @@ async def test_template_rules_integration():
         print(f"  ✓ 자주 틀리는 부분 섹션 포함: {has_mistakes_section}")
 
         if has_guide_section and has_mistakes_section:
-            print("\n  ✅ 템플릿에 CSV 가이드 데이터가 정상적으로 포함되었습니다!")
-
-            # 렌더링 결과 미리보기 (처음 800자)
-            print("\n  📄 렌더링 결과 미리보기:")
-            print("  " + "-" * 66)
-            preview_lines = rendered[:800].split("\n")
-            for line in preview_lines[:20]:  # 처음 20줄만
-                print(f"  {line}")
-            if len(preview_lines) > 20:
-                print(f"  ... ({len(preview_lines) - 20} 줄 더 있음)")
+            print(
+                "\n  ✅ rewrite.j2 템플릿에 CSV 가이드 데이터가 정상적으로 포함되었습니다!"
+            )
         else:
-            print("\n  ⚠️  일부 섹션이 누락되었습니다.")
+            print("\n  ⚠️  rewrite.j2 일부 섹션이 누락되었습니다.")
+
+        # 2-2. query_gen.j2 템플릿 테스트 (질의 생성 단계)
+        print("\n  Testing query_gen.j2 (context_stage='query')...")
+
+        # 질의 생성 단계 컨텍스트 가져오기
+        q_context = get_all_template_context(
+            query_type="explanation",
+            **neo4j_config,
+            include_mistakes=True,
+            context_stage="query",
+        )
+        q_mistakes = q_context.get("common_mistakes", [])
+
+        # 질의 생성 템플릿 로드
+        q_template = env.get_template("system/query_gen.j2")
+        q_rendered = q_template.render(
+            response_schema="{}",
+            rules=[],
+            constraints=[],
+            formatting_rules="",
+            guide_rules=q_context.get("guide_rules", []),
+            common_mistakes=q_mistakes,
+        )
+
+        has_q_guide = "<guide_rules>" in q_rendered
+        has_q_mistakes = "<common_mistakes>" in q_rendered
+
+        print(f"  query_gen.j2 렌더링 길이: {len(q_rendered)} 자")
+        print(f"  ✓ <guide_rules> 태그 포함: {has_q_guide}")
+        print(f"  ✓ <common_mistakes> 태그 포함: {has_q_mistakes}")
+
+        if q_mistakes:
+            print(
+                f"  ✓ 질의 생성 단계 실수 예시: {q_mistakes[0]['title']} (Category: {q_mistakes[0]['subcategory']})"
+            )
+            if q_mistakes[0]["subcategory"] == "질의":
+                print("  ✅ 올바르게 '질의' 카테고리 실수를 가져왔습니다.")
+            else:
+                print(
+                    f"  ⚠️  경고: '질의' 카테고리가 아닙니다. ({q_mistakes[0]['subcategory']})"
+                )
 
     except Exception as e:
         print(f"❌ 템플릿 렌더링 테스트 실패: {e}")

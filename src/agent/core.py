@@ -631,6 +631,30 @@ class GeminiAgent:
         except Exception as e:  # noqa: BLE001
             self.logger.debug("Formatting rules 조회 실패: %s", e)
 
+        # Get CSV guide rules and common mistakes from Neo4j
+        guide_rules: List[Dict[str, str]] = []
+        common_mistakes: List[Dict[str, str]] = []
+        try:
+            from src.qa.template_rules import (
+                get_all_template_context,
+                get_neo4j_config,
+            )
+
+            neo4j_config = get_neo4j_config()
+            if neo4j_config.get("neo4j_password"):
+                template_context = get_all_template_context(
+                    query_type=query_type,  # e.g. "explanation"
+                    neo4j_uri=neo4j_config["neo4j_uri"],
+                    neo4j_user=neo4j_config["neo4j_user"],
+                    neo4j_password=neo4j_config["neo4j_password"],
+                    include_mistakes=True,
+                    context_stage="query",  # 질의 생성 단계임
+                )
+                guide_rules = template_context.get("guide_rules", []) or []
+                common_mistakes = template_context.get("common_mistakes", []) or []
+        except Exception as e:  # noqa: BLE001
+            self.logger.debug("CSV 가이드 조회 실패 (선택사항): %s", e)
+
         system_template_name = "system/query_gen.j2"
         try:
             system_template = self.jinja_env.get_template(system_template_name)
@@ -639,6 +663,8 @@ class GeminiAgent:
                 rules=rules,
                 constraints=constraint_list,
                 formatting_rules=formatting_rules,
+                guide_rules=guide_rules,
+                common_mistakes=common_mistakes,
             )
         except Exception as e:  # noqa: BLE001
             self.logger.debug("템플릿 렌더링 실패: %s", e)
