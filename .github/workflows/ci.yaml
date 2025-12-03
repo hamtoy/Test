@@ -133,7 +133,7 @@ jobs:
   e2e-tests:
     runs-on: ubuntu-latest
     needs: test # 유닛 테스트 통과 후 실행
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.GEMINI_API_KEY != '' }}
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     env:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
     services:
