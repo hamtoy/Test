@@ -311,28 +311,17 @@
             card.appendChild(answerSection);
         }
 
-        // 버튼
+        // 버튼 (복사 버튼 제거, 반영/초기화만 남김)
         const btnRow = document.createElement('div');
         btnRow.className = 'btn-row';
         btnRow.style.marginTop = '15px';
         btnRow.style.display = 'flex';
         btnRow.style.gap = '10px';
-        btnRow.style.flexWrap = 'wrap';
-
-        const copyQueryBtn = document.createElement('button');
-        copyQueryBtn.className = 'btn-secondary';
-        copyQueryBtn.textContent = '📋 질의 복사';
-        copyQueryBtn.onclick = () => copyToClipboard(data.query);
-
-        const copyAnswerBtn = document.createElement('button');
-        copyAnswerBtn.className = 'btn-secondary';
-        copyAnswerBtn.textContent = '📋 답변 복사';
-        copyAnswerBtn.onclick = () => copyToClipboard(data.answer);
+        btnRow.style.justifyContent = 'flex-end';
 
         const applyBtn = document.createElement('button');
         applyBtn.className = 'btn-primary';
         applyBtn.textContent = '⬆️ 입력 필드에 반영';
-        applyBtn.style.marginLeft = 'auto';
         applyBtn.onclick = () => {
             document.getElementById('query').value = data.query || '';
             document.getElementById('answer').value = data.answer || '';
@@ -357,8 +346,6 @@
             resultsDiv.innerHTML = '';
         };
 
-        btnRow.appendChild(copyQueryBtn);
-        btnRow.appendChild(copyAnswerBtn);
         btnRow.appendChild(applyBtn);
         btnRow.appendChild(clearBtn);
         card.appendChild(btnRow);
