@@ -82,23 +82,27 @@ jobs:
         run: |
           for i in {1..30}; do
             uv run python - <<'PY'
-          import sys
-          from neo4j import GraphDatabase
-          uri = "bolt://localhost:7687"
-          auth = ("neo4j", "testpassword")
-          try:
-              driver = GraphDatabase.driver(uri, auth=auth)
-              with driver.session() as session:
-                  session.run("RETURN 1")
-              driver.close()
-              sys.exit(0)
-          except Exception as e:
-              print(f"Neo4j not ready: {e}")
-              sys.exit(1)
-          PY
-            if [ $? -eq 0 ]; then exit 0; fi
+import sys
+from neo4j import GraphDatabase
+uri = "bolt://localhost:7687"
+auth = ("neo4j", "testpassword")
+try:
+    driver = GraphDatabase.driver(uri, auth=auth)
+    with driver.session() as session:
+        session.run("RETURN 1")
+    driver.close()
+    sys.exit(0)
+except Exception as e:
+    print(f"Neo4j not ready: {e}")
+    sys.exit(1)
+PY
+            status=$?
+            if [ $status -eq 0 ]; then
+              exit 0
+            fi
             sleep 5
           done
+          echo "Neo4j did not become ready in time"
           exit 1
 
       - name: Test v3.0 public API imports
@@ -128,7 +132,30 @@ jobs:
   e2e-tests:
     runs-on: ubuntu-latest
     needs: test # 유닛 테스트 통과 후 실행
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.GEMINI_API_KEY != ''
+    services:
+      neo4j:
+        image: neo4j:latest
+        env:
+          NEO4J_AUTH: neo4j/testpassword
+        ports:
+          - 7687:7687
+          - 7474:7474
+        options: >-
+          --health-cmd "wget -q --spider http://localhost:7474 || exit 1"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -150,11 +177,38 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev
 
+      - name: Wait for Neo4j (e2e)
+        run: |
+          for i in {1..30}; do
+            uv run python - <<'PY'
+import sys
+from neo4j import GraphDatabase
+uri = "bolt://localhost:7687"
+auth = ("neo4j", "testpassword")
+try:
+    driver = GraphDatabase.driver(uri, auth=auth)
+    with driver.session() as session:
+        session.run("RETURN 1")
+    driver.close()
+    sys.exit(0)
+except Exception as e:
+    print(f"Neo4j not ready: {e}")
+    sys.exit(1)
+PY
+            status=$?
+            if [ $status -eq 0 ]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Neo4j did not become ready in time"
+          exit 1
+
       - name: Run E2E tests
         run: uv run pytest tests/ -v -m e2e
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           NEO4J_URI: "bolt://localhost:7687"
           NEO4J_USER: "neo4j"
-          NEO4J_PASSWORD: "dummy_password_for_e2e"
+          NEO4J_PASSWORD: "testpassword"
           REDIS_URL: "redis://localhost:6379"
