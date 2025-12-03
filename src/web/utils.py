@@ -156,8 +156,10 @@ def postprocess_answer(answer: str, qtype: str) -> str:
     answer = strip_output_tags(answer)
     # 1.1 숫자 포맷 깨짐 복원
     answer = fix_broken_numbers(answer)
-    # 1.2 비정상 볼드 폐쇄 수정 및 단독 * 제거
-    answer = re.sub(r"\*\*([^*]+)\*(?!\*)", r"**\1**", answer)
+    # 1.2 볼드 마커 정규화: 짝이 안 맞는 **텍스트* / *텍스트** 제거
+    answer = re.sub(r"\*\*([^*]+)\*(?!\*)", r"\1", answer)
+    answer = re.sub(r"\*([^*]+)\*\*", r"\1", answer)
+    answer = re.sub(r"\*\*(.*?)\*\*", r"**\1**", answer)
     answer = re.sub(r"(?<!\*)\*(?!\*)", "", answer)
 
     # 2. ###/## 소제목 → **소제목** + 줄바꿈
@@ -181,6 +183,8 @@ def postprocess_answer(answer: str, qtype: str) -> str:
                 answer = answer + "."
     elif qtype in {"global_explanation", "explanation", "reasoning"}:
         # 서술문 앞의 불릿(-, •) 제거 및 문단 정리
+        # 설명/추론 답변에서는 남아 있는 볼드 마커를 제거해 불필요한 강조를 없앰
+        answer = re.sub(r"\*\*(.*?)\*\*", r"\1", answer)
         lines: list[str] = []
         for line in answer.splitlines():
             stripped = line.strip()
