@@ -5,47 +5,13 @@ import asyncio
 import logging
 import os
 import weakref
-from collections.abc import Sized
 from contextlib import contextmanager, suppress
-from typing import TYPE_CHECKING, Any, Dict, Generator, List, Optional
+from typing import Any, Dict, Generator, List, Optional
 
-import google.generativeai as genai
 from dotenv import load_dotenv
-
-if TYPE_CHECKING:
-    from typing import Protocol
-
-    class Embeddings(Protocol):
-        """Protocol for text embedding models."""
-
-        def embed_documents(self, texts: List[str]) -> List[List[float]]:
-            """Embed multiple documents.
-
-            Args:
-                texts: List of text documents to embed
-
-            Returns:
-                List of embedding vectors
-            """
-            ...
-
-        def embed_query(self, text: str) -> List[float]:
-            """Embed a single query text.
-
-            Args:
-                text: Query text to embed
-
-            Returns:
-                Embedding vector
-            """
-            ...
-else:
-    from langchain_core.embeddings import Embeddings
-from langchain_core.exceptions import LangChainException
 from neo4j import GraphDatabase
 from neo4j.exceptions import Neo4jError, ServiceUnavailable
 
-from checks.validate_session import validate_turns
 from src.caching.analytics import CacheMetrics
 from src.config import AppConfig
 from src.config.utils import require_env
@@ -55,57 +21,21 @@ from src.infra.metrics import measure_latency
 from src.infra.neo4j import SafeDriver, create_sync_driver
 from src.infra.utils import run_async_safely
 from src.qa.graph.rule_upsert import RuleUpsertManager
+from src.qa.graph.utils import (
+    CustomGeminiEmbeddings,
+    ensure_formatting_rule_schema,
+    format_rules,
+    init_vector_store,
+    len_if_sized,
+    record_vector_metrics,
+)
+from src.qa.graph.validators import validate_session_structure
 
 logger = logging.getLogger(__name__)
-
-
-def _len_if_sized(obj: Any) -> int:
-    """Return length if the object supports __len__, else 0."""
-    if isinstance(obj, Sized):
-        return len(obj)
-    return 0
+__all__ = ["QAKnowledgeGraph", "CustomGeminiEmbeddings"]
 
 
 load_dotenv()
-
-
-class CustomGeminiEmbeddings(Embeddings):
-    """Gemini 임베딩 래퍼."""
-
-    def __init__(self, api_key: str, model: str = "models/text-embedding-004") -> None:
-        """Initialize the Gemini embeddings wrapper.
-
-        Args:
-            api_key: The Google AI API key.
-            model: The embedding model name to use.
-        """
-        genai.configure(api_key=api_key)
-        self.model = model
-
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        """Embed a list of documents.
-
-        Args:
-            texts: List of text documents to embed.
-
-        Returns:
-            List of embedding vectors.
-        """
-        return [self.embed_query(text) for text in texts]
-
-    def embed_query(self, text: str) -> List[float]:
-        """Embed a single query text.
-
-        Args:
-            text: The query text to embed.
-
-        Returns:
-            The embedding vector.
-        """
-        result = genai.embed_content(
-            model=self.model, content=text, task_type="retrieval_query"
-        )
-        return list(result["embedding"])
 
 
 class QAKnowledgeGraph:
@@ -185,32 +115,9 @@ class QAKnowledgeGraph:
         )
 
         # Ensure required formatting rule schema is present
-        self._ensure_formatting_rule_schema()
-
-    def _record_vector_metrics(
-        self,
-        *,
-        query: str,
-        k: int,
-        result_count: int,
-        success: bool,
-        duration_ms: float,
-    ) -> Dict[str, Any]:
-        """Record vector search metrics and return structured log extras."""
-        status = "hit" if success else "error"
-        self.cache_metrics.record_query(
-            "vector_search",
-            duration_ms=duration_ms,
-            result_count=result_count,
-            status=status,
+        ensure_formatting_rule_schema(
+            driver=self._graph, provider=self._graph_provider, logger=logger
         )
-        return {
-            "metric": "vector_search",
-            "duration_ms": round(duration_ms, 2),
-            "k": k,
-            "query_length": len(query),
-            "result_count": result_count,
-        }
 
     @property
     def cache_metrics(self) -> CacheMetrics:
@@ -221,51 +128,24 @@ class QAKnowledgeGraph:
 
     def _init_vector_store(self) -> None:
         """GEMINI_API_KEY로 임베딩을 생성합니다. 키가 없거나 인덱스가 없으면 건너뜀."""
-        try:
-            from langchain_neo4j import Neo4jVector
-
-            gemini_api_key = os.getenv("GEMINI_API_KEY")
-
-            if not gemini_api_key:
-                logger.debug(
-                    "GEMINI_API_KEY not set; skipping vector store initialization."
-                )
-                return
-
-            embedding_model: Any = CustomGeminiEmbeddings(api_key=gemini_api_key)
-
-            self._vector_store = Neo4jVector.from_existing_graph(
-                embedding_model,
-                url=self.neo4j_uri,
-                username=self.neo4j_user,
-                password=self.neo4j_password,
-                index_name="rule_embeddings",
-                node_label="Rule",
-                text_node_properties=["text", "section"],
-                embedding_node_property="embedding",
-            )
-        except ImportError as exc:
-            logger.debug(
-                "langchain_neo4j not installed; skipping vector store. (%s)", exc
-            )
-            self._vector_store = None
-        except (
-            Neo4jError,
-            ServiceUnavailable,
-            LangChainException,
-            ValueError,
-        ) as exc:
-            logger.warning("Failed to initialize Neo4j vector store: %s", exc)
-            self._vector_store = None
+        self._vector_store = init_vector_store(
+            neo4j_uri=self.neo4j_uri,
+            neo4j_user=self.neo4j_user,
+            neo4j_password=self.neo4j_password,
+            logger=logger,
+        )
 
     @measure_latency(
         "vector_search",
-        get_extra=lambda args, kwargs, result, success, elapsed_ms: args[
-            0
-        ]._record_vector_metrics(
+        get_extra=lambda args,
+        kwargs,
+        result,
+        success,
+        elapsed_ms: record_vector_metrics(
+            args[0].cache_metrics,
             query=kwargs.get("query", args[1]),
             k=kwargs.get("k", args[2] if len(args) > 2 else 5),
-            result_count=_len_if_sized(result),
+            result_count=len_if_sized(result),
             success=success,
             duration_ms=elapsed_ms,
         ),
@@ -284,7 +164,7 @@ class QAKnowledgeGraph:
         "get_constraints",
         get_extra=lambda args, kwargs, result, success, elapsed_ms: {
             "query_type": kwargs.get("query_type", args[1]),
-            "result_count": _len_if_sized(result),
+            "result_count": len_if_sized(result),
         },
     )
     def get_constraints_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
@@ -331,7 +211,7 @@ class QAKnowledgeGraph:
         "get_best_practices",
         get_extra=lambda args, kwargs, result, success, elapsed_ms: {
             "query_type": kwargs.get("query_type", args[1]),
-            "result_count": _len_if_sized(result),
+            "result_count": len_if_sized(result),
         },
     )
     def get_best_practices(self, query_type: str) -> List[Dict[str, str]]:
@@ -365,7 +245,7 @@ class QAKnowledgeGraph:
         "get_examples",
         get_extra=lambda args, kwargs, result, success, elapsed_ms: {
             "limit": kwargs.get("limit", args[1] if len(args) > 1 else 5),
-            "result_count": _len_if_sized(result),
+            "result_count": len_if_sized(result),
         },
     )
     def get_examples(self, limit: int = 5) -> List[Dict[str, str]]:
@@ -398,21 +278,7 @@ class QAKnowledgeGraph:
     )
     def validate_session(self, session: Dict[str, Any]) -> Dict[str, Any]:
         """checks/validate_session 로직을 활용해 세션 구조 검증."""
-        from scripts.build_session import SessionContext
-
-        turns = session.get("turns", [])
-        if not turns:
-            return {"ok": False, "issues": ["turns가 비어있습니다."]}
-
-        ctx_kwargs = session.get("context", {})
-        try:
-            ctx = SessionContext(**ctx_kwargs)
-            res = validate_turns([type("T", (), t) for t in turns], ctx)
-            return res
-        except (TypeError, ValueError) as exc:
-            return {"ok": False, "issues": [f"컨텍스트 생성 실패: {exc}"]}
-        except (AttributeError, KeyError, RuntimeError) as exc:
-            return {"ok": False, "issues": [f"컨텍스트 검증 실패: {exc}"]}
+        return validate_session_structure(session)
 
     @measure_latency(
         "upsert_auto_generated_rules",
@@ -441,7 +307,7 @@ class QAKnowledgeGraph:
         "get_formatting_rules_for_query_type",
         get_extra=lambda args, kwargs, result, success, elapsed_ms: {
             "query_type": kwargs.get("query_type", args[1] if len(args) > 1 else "all"),
-            "result_count": _len_if_sized(result),
+            "result_count": len_if_sized(result),
         },
     )
     def get_formatting_rules_for_query_type(
@@ -493,7 +359,7 @@ class QAKnowledgeGraph:
         "get_formatting_rules",
         get_extra=lambda args, kwargs, result, success, elapsed_ms: {
             "template_type": kwargs.get("template_type", args[1]),
-            "result_length": _len_if_sized(result),
+            "result_length": len_if_sized(result),
         },
     )
     def get_formatting_rules(self, template_type: str) -> str:
@@ -518,7 +384,7 @@ class QAKnowledgeGraph:
                 with self._graph.session() as session:
                     records = session.run(cypher, template_type=template_type)
                     rules_data = [dict(r) for r in records]
-                    return self._format_rules(rules_data)
+                    return format_rules(rules_data)
             except (Neo4jError, ServiceUnavailable) as exc:
                 logger.warning("Sync formatting rules query failed: %s", exc)
 
@@ -536,85 +402,9 @@ class QAKnowledgeGraph:
                 else:
                     records = list(result)
                 rules_data = [dict(r) for r in records]
-                return self._format_rules(rules_data)
+                return format_rules(rules_data)
 
         return run_async_safely(_run())
-
-    def _ensure_formatting_rule_schema(self) -> None:
-        """Ensure FormattingRule label and default node exist."""
-        statements = [
-            "CREATE CONSTRAINT IF NOT EXISTS FOR (fr:FormattingRule) REQUIRE fr.name IS UNIQUE",
-            """
-            MERGE (fr:FormattingRule {name: 'default'})
-            SET fr.applies_to = 'all',
-                fr.description = 'Default formatting rule',
-                fr.priority = 0,
-                fr.category = 'general',
-                fr.examples_good = '',
-                fr.examples_bad = ''
-            """,
-        ]
-
-        if self._graph is not None:
-            raw_driver = getattr(self._graph, "driver", None)
-            if raw_driver is None or not hasattr(raw_driver, "session"):
-                logger.info(
-                    "Skip FormattingRule schema ensure: driver has no session()"
-                )
-            else:
-                try:
-                    with self._graph.session() as session:
-                        for stmt in statements:
-                            session.run(stmt)
-                    return
-                except (Neo4jError, ServiceUnavailable) as exc:
-                    logger.warning(
-                        "FormattingRule schema ensure failed (sync): %s", exc
-                    )
-
-        provider = getattr(self, "_graph_provider", None)
-        if provider is None:
-            logger.info("Skipping FormattingRule schema ensure; no graph provider")
-            return
-
-        async def _run() -> None:
-            try:
-                async with provider.session() as session:
-                    for stmt in statements:
-                        await session.run(stmt)
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("FormattingRule schema ensure failed (async): %s", exc)
-
-        run_async_safely(_run())
-
-    def _format_rules(self, rules_data: List[Dict[str, Any]]) -> str:
-        """Format rules data into markdown structure.
-
-        Args:
-            rules_data: List of rule dictionaries with category, text, priority
-
-        Returns:
-            Formatted markdown string
-        """
-        if not rules_data:
-            return ""
-
-        # Group rules by category
-        categories: Dict[str, List[str]] = {}
-        for rule in rules_data:
-            category = rule.get("category", "general")
-            text = rule.get("text", "")
-            if category not in categories:
-                categories[category] = []
-            categories[category].append(text)
-
-        # Format as markdown
-        rules_texts = [rule.get("text", "") for rule in rules_data if rule.get("text")]
-        if not rules_texts:
-            return ""
-        lines = ["### Formatting Rules"]
-        lines.extend(f"- {text}" for text in rules_texts)
-        return "\n".join(lines)
 
     def rollback_batch(self, batch_id: str) -> Dict[str, Any]:
         """특정 batch_id로 생성된 모든 노드 삭제 (롤백).
@@ -699,25 +489,3 @@ class QAKnowledgeGraph:
         """Destructor to ensure resources are cleaned up."""
         with suppress(Exception):
             self.close()
-
-
-if __name__ == "__main__":
-    kg = QAKnowledgeGraph()
-
-    print("🔍 '설명문 작성' 관련 규칙 (벡터 검색):")
-    for i, rule in enumerate(kg.find_relevant_rules("설명문을 어떻게 작성하나요?"), 1):
-        print(f"  {i}. {rule[:120]}...")
-
-    print("\n📋 'explanation' 유형 제약 조건:")
-    for c in kg.get_constraints_for_query_type("explanation"):
-        print(f"  - {c.get('id')}: {c.get('description')}")
-
-    print("\n🧭 'explanation' 모범 사례:")
-    for bp in kg.get_best_practices("explanation"):
-        print(f"  - {bp['text']}")
-
-    print("\n📑 예시 샘플:")
-    for ex in kg.get_examples():
-        print(f"  [{ex['type']}] {ex['text'][:80]}...")
-
-    kg.close()
