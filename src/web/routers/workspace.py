@@ -17,6 +17,7 @@ from src.config.constants import (
     WORKSPACE_GENERATION_TIMEOUT,
     WORKSPACE_UNIFIED_TIMEOUT,
 )
+from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
 from src.web.models import UnifiedWorkspaceRequest, WorkspaceRequest
 from src.web.utils import (
@@ -37,18 +38,21 @@ router = APIRouter(prefix="/api", tags=["workspace"])
 _config: Optional[AppConfig] = None
 agent: Optional[GeminiAgent] = None
 kg: Optional[QAKnowledgeGraph] = None
+pipeline: Optional[IntegratedQAPipeline] = None
 
 
 def set_dependencies(
     config: AppConfig,
     gemini_agent: GeminiAgent,
     kg_ref: Optional[QAKnowledgeGraph],
+    qa_pipeline: Optional[IntegratedQAPipeline] = None,
 ) -> None:
     """주요 의존성 주입."""
-    global _config, agent, kg
+    global _config, agent, kg, pipeline
     _config = config
     agent = gemini_agent
     kg = kg_ref
+    pipeline = qa_pipeline
 
 
 def _get_agent() -> Optional[GeminiAgent]:
@@ -67,6 +71,15 @@ def _get_kg() -> Optional[QAKnowledgeGraph]:
         return api_module.kg
     except Exception:
         return kg
+
+
+def _get_pipeline() -> Optional[IntegratedQAPipeline]:
+    try:
+        from src.web import api as api_module
+
+        return api_module.pipeline
+    except Exception:
+        return pipeline
 
 
 def _get_config() -> AppConfig:
@@ -292,6 +305,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     """통합 워크스페이스 - 모든 조합 지원."""
     current_agent = _get_agent()
     current_kg = _get_kg()
+    current_pipeline = _get_pipeline()
     if current_agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
@@ -511,6 +525,24 @@ OCR에 없는 정보는 추가하지 마세요.
             raise HTTPException(status_code=400, detail="알 수 없는 워크플로우")
 
         if answer:
+            if current_pipeline is not None:
+                try:
+                    validation = current_pipeline.validate_output(
+                        normalized_qtype, answer
+                    )
+                    if not validation.get("valid", True):
+                        violations = validation.get("violations", [])
+                        if violations:
+                            changes.append(
+                                f"규칙 위반 감지: {', '.join(violations[:3])}"
+                            )
+                    missing_rules = validation.get("missing_rules_hint", [])
+                    if missing_rules:
+                        changes.append(
+                            f"추가 검증 필요 규칙: {', '.join(missing_rules[:3])}"
+                        )
+                except Exception as exc:  # noqa: BLE001
+                    logger.debug("Pipeline validation skipped: %s", exc)
             answer = postprocess_answer(answer, query_type)
 
         return {

@@ -190,7 +190,7 @@ async def init_resources() -> None:
 
     # 라우터 의존성 주입
     qa_router_module.set_dependencies(app_config, agent, pipeline, kg)
-    workspace_router_module.set_dependencies(app_config, agent, kg)
+    workspace_router_module.set_dependencies(app_config, agent, kg, pipeline)
     stream_router_module.set_dependencies(app_config, agent)
     health_router_module.set_dependencies(
         health_checker, agent=agent, kg=kg, mm=mm, pipeline=pipeline
