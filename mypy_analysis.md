@@ -52,13 +52,13 @@
 
 ### Phase 2: Domain Fixes (중간 우선순위)
 
-4. **llm/, qa/ 타입 강화** (27개)
-5. **analysis/, processing/ 타입 강화** (24개)
+1. **llm/, qa/ 타입 강화** (27개)
+2. **analysis/, processing/ 타입 강화** (24개)
 
 ### Phase 3: Feature Fixes (낮은 우선순위)
 
-6. **features/, caching/, core/ 타입 강화** (15개)
-7. **기타 파일** (22개)
+1. **features/, caching/, core/ 타입 강화** (15개)
+2. **기타 파일** (22개)
 
 ## 예상 작업 일정
 

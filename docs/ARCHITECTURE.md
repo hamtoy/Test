@@ -83,7 +83,7 @@ if prompt_tokens >= 2048:  # Gemini API 최소 임계값
 
 **데이터 플로우**:
 
-```
+```text
 Notion 페이지
     ↓
 notion-neo4j-graph/import_pipeline.py
@@ -148,7 +148,7 @@ python scripts/latency_baseline.py
 
 **디렉토리 구조**:
 
-```
+```text
 templates/
 ├── system/                # 시스템 프롬프트
 │   ├── base.j2
@@ -184,7 +184,7 @@ python scripts/render_prompt.py \
 
 ### 기본 워크플로우 (Gemini Only)
 
-```
+```text
 1. OCR 입력 파일 로드
    ↓
 2. GeminiAgent.generate_query()
@@ -206,7 +206,7 @@ python scripts/render_prompt.py \
 
 ### 고급 워크플로우 (Gemini + QA RAG)
 
-```
+```text
 1. OCR 입력 파일 로드
    ↓
 2. IntegratedQAPipeline 실행
@@ -235,7 +235,7 @@ python scripts/render_prompt.py \
 
 ### Neo4j 그래프 구축
 
-```
+```text
 1. Notion API → notion-neo4j-graph/import_pipeline.py
    ├─→ Rule 노드 추출
    ├─→ Constraint 노드 추출
@@ -253,7 +253,7 @@ python scripts/render_prompt.py \
 
 ### Session 검증 흐름
 
-```
+```text
 1. scripts/build_session.py
    ├─→ examples/session_input.json 로드
    ├─→ SessionContext 생성
@@ -396,7 +396,7 @@ graph TD
 
 ### Module Tree
 
-```
+```text
 src/
 ├── agent/
     ├── batch_processor.py

@@ -117,6 +117,28 @@ def get_meter():
     return _meter or metrics.get_meter(__name__)
 
 
+def _build_status(name: str, description: Optional[str] = None) -> Optional[Any]:
+    """Safely construct a span status object if OpenTelemetry is available."""
+    if trace is None:
+        return None
+    status_mod = getattr(trace, "status", None)
+    status_cls = getattr(status_mod, "Status", None) if status_mod else None
+    code_cls = getattr(status_mod, "StatusCode", None) if status_mod else None
+    if not status_cls or not code_cls:
+        return None
+    code = getattr(code_cls, name, None)
+    if code is None:
+        return None
+    try:
+        return (
+            status_cls(code, description)
+            if description is not None
+            else status_cls(code)
+        )
+    except Exception:
+        return None
+
+
 def traced(
     operation: str, attributes: Optional[dict[str, Any]] = None
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
@@ -135,24 +157,17 @@ def traced(
                             continue
                 try:
                     result = func(*args, **kwargs)
-                    if hasattr(span, "set_status"):
-                        span.set_status(
-                            getattr(trace.status, "Status", object())(
-                                getattr(trace.status.StatusCode, "OK", 0)
-                            )
-                        )  # type: ignore[attr-defined]
+                    ok_status = _build_status("OK")
+                    if ok_status and hasattr(span, "set_status"):
+                        span.set_status(ok_status)
                     return result
                 except Exception as exc:  # noqa: BLE001
                     try:
                         span.record_exception(exc)  # type: ignore[attr-defined]
                     finally:
-                        if hasattr(span, "set_status"):
-                            span.set_status(
-                                getattr(trace.status, "Status", object())(
-                                    getattr(trace.status.StatusCode, "ERROR", 1),
-                                    str(exc),
-                                )
-                            )  # type: ignore[attr-defined]
+                        error_status = _build_status("ERROR", str(exc))
+                        if error_status and hasattr(span, "set_status"):
+                            span.set_status(error_status)
                     raise
 
         return wrapper
@@ -178,24 +193,17 @@ def traced_async(
                             continue
                 try:
                     result = await func(*args, **kwargs)  # type: ignore[misc]
-                    if hasattr(span, "set_status"):
-                        span.set_status(
-                            getattr(trace.status, "Status", object())(
-                                getattr(trace.status.StatusCode, "OK", 0)
-                            )
-                        )  # type: ignore[attr-defined]
+                    ok_status = _build_status("OK")
+                    if ok_status and hasattr(span, "set_status"):
+                        span.set_status(ok_status)
                     return result
                 except Exception as exc:  # noqa: BLE001
                     try:
                         span.record_exception(exc)  # type: ignore[attr-defined]
                     finally:
-                        if hasattr(span, "set_status"):
-                            span.set_status(
-                                getattr(trace.status, "Status", object())(
-                                    getattr(trace.status.StatusCode, "ERROR", 1),
-                                    str(exc),
-                                )
-                            )  # type: ignore[attr-defined]
+                        error_status = _build_status("ERROR", str(exc))
+                        if error_status and hasattr(span, "set_status"):
+                            span.set_status(error_status)
                     raise
 
         return wrapper

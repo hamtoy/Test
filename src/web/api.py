@@ -583,8 +583,14 @@ async def api_save_ocr(payload: OCRTextInput) -> Dict[str, str]:
 async def api_health() -> JSONResponse:
     """상세 헬스 체크."""
     result = await health_checker.check_all()
+    payload = result.to_dict()
+    payload["services"] = {
+        "agent": agent is not None,
+        "neo4j": kg is not None,
+        "multimodal": mm is not None,
+    }
     status_code = 200 if result.status == HealthStatus.HEALTHY else 503
-    return JSONResponse(result.to_dict(), status_code=status_code)
+    return JSONResponse(payload, status_code=status_code)
 
 
 @app.get("/health/live")

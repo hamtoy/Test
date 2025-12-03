@@ -38,7 +38,7 @@ uv run python notion-neo4j-graph/verify_import.py
 
 ## 📂 프로젝트 구조
 
-```
+```text
 notion-neo4j-graph/
 ├── import_pipeline.py   # 메인 파이프라인 (Notion → Neo4j)
 ├── verify_import.py     # 데이터 검증
