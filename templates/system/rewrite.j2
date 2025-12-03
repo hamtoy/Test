@@ -23,6 +23,18 @@
             <list_indentation>
                 목록 하위 항목은 4칸(스페이스) 단위로 들여쓴다. 가변 들여쓰기는 금지한다.
             </list_indentation>
+            <paragraph_structure>
+                전체 설명문은 반드시 3-4개 문단으로 구분한다. 각 문단 사이에는 빈 줄을 1줄 삽입한다. 한 문단은 2-4문장으로 제한하며, 10줄 이상 이어지는 장문 단락을 절대 만들지 않는다.
+            </paragraph_structure>
+            <reasoning_structure>
+                추론 시 '**근거**', '**추론**', '**결론**'과 같은 명시적 레이블을 절대 사용하지 않는다. 자연스러운 문단 전개로 논리 흐름을 표현한다.
+            </reasoning_structure>
+            <list_marker_usage>
+                목록 마커(-, • 등)는 목록형 나열에서만 사용한다. 서술문/일반 문장 앞에는 절대 사용하지 않는다.
+            </list_marker_usage>
+            <bold_text_usage>
+                볼드체는 소제목과 목록 키워드에만 사용하고, 본문 서술문 안의 단어 강조에는 사용하지 않는다.
+            </bold_text_usage>
             <formatting_rules>
                 {{ formatting_rules | default("") }}
             </formatting_rules>
@@ -114,6 +126,7 @@
                 <item>질의 의도를 벗어난 부가 정보를 제거했는가?</item>
                 <item>텍스트 근거 없이 표/그래프 정보를 암시하지 않았는가?</item>
                 <item>서술문은 완성된 문장으로, 목록만 예외적으로 축약형을 사용했는가?</item>
+                <item>전체 설명문을 3-4개 문단으로 나누고, 문단 사이에 빈 줄을 넣었는가?</item>
             </rewrite_checklist>
 
             <critical_constraints>
@@ -145,8 +158,30 @@
                 <step>2. TIME_CHECK: '현재', '최근'이라는 단어가 보이는가? 보이면 즉시 '기준점'을 추가한다. (예: 현재(X) -> 보고서 기준 현재(O))</step>
                 <step>3. FORMAT_CHECK: 목록 앞뒤에 빈 줄이 있는가? 볼드체(**) 안에 콜론(:)이 들어갔는가? (예: **항목:**(X) -> **항목**: (O)로 수정)
                 </step>
-                <step>4. HALLUCINATION_CHECK: 문장을 매끄럽게 하려고 이미지에 없는 형용사(폭발적인, 엄청난 등)를 넣지 않았는가?</step>
+                <step>4. LIST_MARKER_CHECK: 서술문 앞에 불릿(-, •)이 붙어 있지 않은지 확인하고 제거한다.</step>
+                <step>5. BOLD_CHECK: 본문 서술문 안의 **단어** 강조를 제거하고, 소제목/목록 키워드에만 볼드를 남긴다.</step>
+                <step>6. REASONING_LABEL_CHECK: '**근거**', '**추론**', '**결론**' 같은 레이블을 제거하고 자연스러운 문단으로 재작성했는가?</step>
+                <step>7. PARAGRAPH_CHECK: 전체 설명문이 3-4개 문단으로 나뉘고 문단 사이에 빈 줄이 있는지 확인한다.</step>
+                <step>8. HALLUCINATION_CHECK: 문장을 매끄럽게 하려고 이미지에 없는 형용사(폭발적인, 엄청난 등)를 넣지 않았는가?</step>
             </verification_steps>
         </pre_output_verification>
+
+        <bad_examples>
+            <example>
+                - 근거: 매출 증가
+                - 추론: 내년에도 증가
+                - 결론: 전망 밝음
+                한 단락에 줄바꿈 없이 장문 작성
+            </example>
+        </bad_examples>
+        <good_examples>
+            <example>
+                첫 문단에서 시점을 밝히고 개요를 제시한다.
+
+                두 번째 문단에서 주요 수치를 설명한다. 필요 시 목록을 활용하되, 목록 앞뒤에 빈 줄을 넣고 서술문 앞에 불릿을 붙이지 않는다.
+
+                세 번째 문단에서 함의를 요약한다. 추론은 자연스러운 문장 흐름으로 표현하며 레이블을 쓰지 않는다.
+            </example>
+        </good_examples>
     </output_protocol>
 </specialist_agent_kernel>
