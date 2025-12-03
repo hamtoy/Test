@@ -169,7 +169,7 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
     if current_agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
-    ocr_text = load_ocr_text(_get_config())
+    ocr_text = body.ocr_text or load_ocr_text(_get_config())
 
     try:
         if body.mode == "batch":

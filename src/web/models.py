@@ -27,6 +27,11 @@ class GenerateQARequest(BaseModel):
         default="batch",
         description="Generation mode: 'batch' for all 4 types, 'single' for one type",
     )
+    ocr_text: Optional[str] = Field(
+        default=None,
+        max_length=MAX_OCR_TEXT_LENGTH,
+        description="Optional OCR text override; if absent, server loads from file",
+    )
     qtype: Optional[
         Literal["global_explanation", "reasoning", "target_short", "target_long"]
     ] = Field(
