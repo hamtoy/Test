@@ -219,17 +219,10 @@
         
         // 진행 상황 표시
         resultsDiv.innerHTML = `
-            <div style="text-align: center; padding: 30px; background: var(--bg-secondary, #f5f5f5); border-radius: 8px; border: 1px solid var(--border, rgba(94, 82, 64, 0.12));">
-                <h3 style="margin-bottom: 15px; color: var(--text-primary, #1f2121);">⏳ 처리 중...</h3>
-                <div style="margin: 20px auto; width: 250px; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden;">
-                    <div class="progress-fill" style="width: 0%; height: 100%; background: var(--primary, #21808d); transition: width 0.5s;"></div>
-                </div>
-                <p style="color: var(--text-secondary, #666); font-size: 0.9em;">자동으로 최적 워크플로우 실행 중...</p>
+            <div style="text-align: center; padding: 20px; background: var(--bg-secondary, #f5f5f5); border-radius: 8px; margin-top: 20px;">
+                <p style="color: var(--text-primary, #1f2121); margin: 0;">⏳ 처리 중...</p>
             </div>
         `;
-
-        const progressBar = document.querySelector('.progress-fill');
-        setTimeout(() => progressBar.style.width = '50%', 300);
 
         isExecuting = true;
         executeBtn.disabled = true;
@@ -246,12 +239,13 @@
                 global_explanation_ref: globalExplanationRef || null,
             });
 
-            progressBar.style.width = '100%';
-            await new Promise(resolve => setTimeout(resolve, 300));
-
             displayResult(result);
         } catch (error) {
-            resultsDiv.innerHTML = `<p style="color: var(--danger, red)">작업 실패: ${error.message}</p>`;
+            resultsDiv.innerHTML = `
+                <div style="text-align: center; padding: 20px; background: #ffebee; border-radius: 8px; border: 1px solid #f44336; margin-top: 20px;">
+                    <p style="color: #f44336; margin: 0;">❌ 작업 실패: ${error.message}</p>
+                </div>
+            `;
         } finally {
             isExecuting = false;
             executeBtn.disabled = false;
@@ -261,99 +255,43 @@
     });
 
     function displayResult(data) {
-        const resultsDiv = document.getElementById('workspace-results');
-        resultsDiv.innerHTML = '';
-
-        const card = document.createElement('div');
-        card.className = 'result-card';
-
-        // 워크플로우 배지
-        const badge = document.createElement('div');
-        badge.className = 'workflow-badge';
-        badge.textContent = getWorkflowLabel(data.workflow);
-        card.appendChild(badge);
-
-        // 변경 사항 목록
-        if (data.changes && data.changes.length > 0) {
-            const changesList = document.createElement('ul');
-            changesList.style.fontSize = '0.9em';
-            changesList.style.color = 'var(--text-secondary, #666)';
-            changesList.style.marginTop = '10px';
-            data.changes.forEach(change => {
-                const li = document.createElement('li');
-                li.textContent = change;
-                changesList.appendChild(li);
-            });
-            card.appendChild(changesList);
-        }
-
-        // 질의 표시
+        // 질의/답변을 입력 필드에 직접 채우기 + 하이라이트
         if (data.query) {
-            const querySection = document.createElement('div');
-            querySection.className = 'result-section';
-            querySection.innerHTML = `<strong>💬 질의</strong><div style="margin-top: 6px;">${escapeHtml(data.query)}</div>`;
-            card.appendChild(querySection);
-        }
-
-        // 답변 표시
-        if (data.answer) {
-            const answerSection = document.createElement('div');
-            answerSection.className = 'result-section';
-
-            const escapedAnswer = escapeHtml(data.answer);
-            let formattedAnswer = escapedAnswer
-                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-                .replace(/\n\n/g, '<br><br>')
-                .replace(/\n/g, '<br>')
-                .replace(/^- /gm, '• ');
-
-            answerSection.innerHTML = `<strong>✨ 답변</strong><div class="answer-content" style="margin-top: 6px;">${formattedAnswer}</div>`;
-            card.appendChild(answerSection);
-        }
-
-        // 버튼 (복사 버튼 제거, 반영/초기화만 남김)
-        const btnRow = document.createElement('div');
-        btnRow.className = 'btn-row';
-        btnRow.style.marginTop = '20px';
-        btnRow.style.display = 'flex';
-        btnRow.style.gap = '10px';
-        btnRow.style.justifyContent = 'flex-end';
-
-        const applyBtn = document.createElement('button');
-        applyBtn.className = 'btn-primary';
-        applyBtn.textContent = '⬆️ 입력 필드에 반영';
-        applyBtn.style.padding = '10px 16px';
-        applyBtn.onclick = () => {
-            if (data.query) {
-                document.getElementById('query').value = data.query;
-            }
-            if (data.answer) {
-                document.getElementById('answer').value = data.answer;
-            }
-            applyBtn.textContent = '✅ 반영됨';
-            applyBtn.disabled = true;
+            const queryField = document.getElementById('query');
+            queryField.value = data.query;
+            queryField.style.borderColor = 'var(--primary, #21808d)';
+            queryField.style.boxShadow = '0 0 0 3px rgba(33, 128, 141, 0.2)';
             setTimeout(() => {
-                applyBtn.textContent = '⬆️ 입력 필드에 반영';
-                applyBtn.disabled = false;
+                queryField.style.borderColor = '';
+                queryField.style.boxShadow = '';
             }, 2000);
-        };
+        }
 
-        const clearBtn = document.createElement('button');
-        clearBtn.className = 'btn-secondary';
-        clearBtn.textContent = '🗑️ 결과 지우기';
-        clearBtn.style.padding = '10px 16px';
-        clearBtn.style.background = 'var(--danger, #e74c3c)';
-        clearBtn.style.color = 'white';
-        clearBtn.style.borderColor = 'var(--danger, #e74c3c)';
-        clearBtn.onclick = () => {
+        if (data.answer) {
+            const answerField = document.getElementById('answer');
+            answerField.value = data.answer;
+            answerField.style.borderColor = 'var(--primary, #21808d)';
+            answerField.style.boxShadow = '0 0 0 3px rgba(33, 128, 141, 0.2)';
+            setTimeout(() => {
+                answerField.style.borderColor = '';
+                answerField.style.boxShadow = '';
+            }, 2000);
+        }
+
+        // 간단한 성공 메시지 표시 후 자동 제거
+        const resultsDiv = document.getElementById('workspace-results');
+        resultsDiv.innerHTML = `
+            <div style="text-align: center; padding: 20px; background: #e8f5e9; border-radius: 8px; border: 1px solid #4caf50; margin-top: 20px; animation: fadeIn 0.3s;">
+                <h3 style="margin: 0 0 10px 0; color: #4caf50;">✅ ${getWorkflowLabel(data.workflow)} 완료</h3>
+                <p style="margin: 0; color: #666; font-size: 0.9em;">
+                    ${data.query ? '질의' : ''}${data.query && data.answer ? '와 ' : ''}${data.answer ? '답변' : ''}이 입력 필드에 자동으로 채워졌습니다.
+                </p>
+            </div>
+        `;
+
+        setTimeout(() => {
             resultsDiv.innerHTML = '';
-        };
-
-        btnRow.appendChild(applyBtn);
-        btnRow.appendChild(clearBtn);
-        card.appendChild(btnRow);
-
-        resultsDiv.appendChild(card);
+        }, 3000);
     }
 
     function getWorkflowLabel(workflow) {
