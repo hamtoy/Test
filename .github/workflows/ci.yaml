@@ -83,7 +83,7 @@ jobs:
       - name: Wait for Neo4j
         run: |
           for i in {1..30}; do
-            uv run python -c "from neo4j import GraphDatabase; uri='bolt://localhost:7687'; auth=('neo4j','testpassword'); driver=GraphDatabase.driver(uri, auth=auth); session=driver.session(); session.run('RETURN 1'); session.close(); driver.close()"
+            uv run python -c "import os; from neo4j import GraphDatabase; uri=os.environ['NEO4J_URI']; auth=(os.environ['NEO4J_USER'], os.environ['NEO4J_PASSWORD']); driver=GraphDatabase.driver(uri, auth=auth); session=driver.session(); session.run('RETURN 1'); session.close(); driver.close()"
             status=$?
             if [ $status -eq 0 ]; then
               exit 0
@@ -116,6 +116,9 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     env:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      NEO4J_URI: bolt://localhost:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: testpassword
     services:
       neo4j:
         image: neo4j:latest
@@ -163,7 +166,7 @@ jobs:
       - name: Wait for Neo4j (e2e)
         run: |
           for i in {1..30}; do
-            uv run python -c "from neo4j import GraphDatabase; uri='bolt://localhost:7687'; auth=('neo4j','testpassword'); driver=GraphDatabase.driver(uri, auth=auth); session=driver.session(); session.run('RETURN 1'); session.close(); driver.close()"
+            uv run python -c "import os; from neo4j import GraphDatabase; uri=os.environ['NEO4J_URI']; auth=(os.environ['NEO4J_USER'], os.environ['NEO4J_PASSWORD']); driver=GraphDatabase.driver(uri, auth=auth); session=driver.session(); session.run('RETURN 1'); session.close(); driver.close()"
             status=$?
             if [ $status -eq 0 ]; then
               exit 0
@@ -177,7 +180,4 @@ jobs:
         run: uv run pytest tests/ -v -m e2e
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          NEO4J_URI: "bolt://localhost:7687"
-          NEO4J_USER: "neo4j"
-          NEO4J_PASSWORD: "testpassword"
           REDIS_URL: "redis://localhost:6379"
