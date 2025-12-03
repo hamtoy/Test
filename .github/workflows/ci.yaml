@@ -83,23 +83,7 @@ jobs:
       - name: Wait for Neo4j
         run: |
           for i in {1..30}; do
-            uv run python - <<'PY'
-              import sys
-              from neo4j import GraphDatabase
-
-              uri = "bolt://localhost:7687"
-              auth = ("neo4j", "testpassword")
-
-              try:
-                  driver = GraphDatabase.driver(uri, auth=auth)
-                  with driver.session() as session:
-                      session.run("RETURN 1")
-                  driver.close()
-                  sys.exit(0)
-              except Exception as e:
-                  print(f"Neo4j not ready: {e}")
-                  sys.exit(1)
-            PY
+            uv run python -c $'import sys\\nfrom neo4j import GraphDatabase\\nuri=\"bolt://localhost:7687\"\\nauth=(\"neo4j\",\"testpassword\")\\ntry:\\n    driver=GraphDatabase.driver(uri, auth=auth)\\n    with driver.session() as session:\\n        session.run(\"RETURN 1\")\\n    driver.close()\\n    sys.exit(0)\\nexcept Exception as e:\\n    print(f\"Neo4j not ready: {e}\")\\n    sys.exit(1)'
             status=$?
             if [ $status -eq 0 ]; then
               exit 0
@@ -187,23 +171,7 @@ jobs:
       - name: Wait for Neo4j (e2e)
         run: |
           for i in {1..30}; do
-            uv run python - <<'PY'
-              import sys
-              from neo4j import GraphDatabase
-
-              uri = "bolt://localhost:7687"
-              auth = ("neo4j", "testpassword")
-
-              try:
-                  driver = GraphDatabase.driver(uri, auth=auth)
-                  with driver.session() as session:
-                      session.run("RETURN 1")
-                  driver.close()
-                  sys.exit(0)
-              except Exception as e:
-                  print(f"Neo4j not ready: {e}")
-                  sys.exit(1)
-            PY
+            uv run python -c $'import sys\\nfrom neo4j import GraphDatabase\\nuri=\"bolt://localhost:7687\"\\nauth=(\"neo4j\",\"testpassword\")\\ntry:\\n    driver=GraphDatabase.driver(uri, auth=auth)\\n    with driver.session() as session:\\n        session.run(\"RETURN 1\")\\n    driver.close()\\n    sys.exit(0)\\nexcept Exception as e:\\n    print(f\"Neo4j not ready: {e}\")\\n    sys.exit(1)'
             status=$?
             if [ $status -eq 0 ]; then
               exit 0
