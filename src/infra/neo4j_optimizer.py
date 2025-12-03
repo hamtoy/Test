@@ -49,34 +49,34 @@ class TwoTierIndexManager:
             """
             CREATE INDEX rule_id_idx IF NOT EXISTS
             FOR (r:Rule) ON (r.id)
-            """
+            """,
             """
             CREATE INDEX rule_type_idx IF NOT EXISTS
             FOR (r:Rule) ON (r.type)
-            """
+            """,
             """
             CREATE INDEX rule_composite_idx IF NOT EXISTS
             FOR (r:Rule) ON (r.id, r.type)
-            """
+            """,
             # RuleExtraction node index
             """
             CREATE INDEX extraction_id_idx IF NOT EXISTS
             FOR (e:RuleExtraction) ON (e.id)
-            """
+            """,
             # Document node indexes
             """
             CREATE INDEX document_id_idx IF NOT EXISTS
             FOR (d:Document) ON (d.id)
-            """
+            """,
             """
             CREATE INDEX document_title_idx IF NOT EXISTS
             FOR (d:Document) ON (d.title)
-            """
+            """,
             # Chunk node indexes (for Vector Search)
             """
             CREATE INDEX chunk_id_idx IF NOT EXISTS
             FOR (c:Chunk) ON (c.id)
-            """
+            """,
             # Vector index for embedding similarity search.
             # Note: Backticks around property names are Neo4j's required syntax
             # for index configuration options (not JSON).
@@ -89,7 +89,7 @@ class TwoTierIndexManager:
                     `vector.similarity_function`: 'cosine'
                 }
             }
-            """
+            """,
         ]
 
         for query in queries:
@@ -112,25 +112,25 @@ class TwoTierIndexManager:
             CREATE INDEX triad_document_rule_idx IF NOT EXISTS
             FOR ()-[r:DOCUMENT_RULE]->()
             ON (r.document_id, r.rule_id)
-            """
+            """,
             # EXTRACTED_FROM relationship index
             """
             CREATE INDEX triad_extracted_from_idx IF NOT EXISTS
             FOR ()-[r:EXTRACTED_FROM]->()
             ON (r.extraction_id, r.document_id)
-            """
+            """,
             # HAS_CHUNK relationship index
             """
             CREATE INDEX triad_has_chunk_idx IF NOT EXISTS
             FOR ()-[r:HAS_CHUNK]->()
             ON (r.document_id, r.chunk_id)
-            """
+            """,
             # RELATES_TO relationship index (rule-to-rule associations)
             """
             CREATE INDEX triad_relates_to_idx IF NOT EXISTS
             FOR ()-[r:RELATES_TO]->()
             ON (r.source_rule_id, r.target_rule_id, r.relation_type)
-            """
+            """,
         ]
 
         for query in queries:
