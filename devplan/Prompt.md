@@ -19,13 +19,13 @@
 
 | # | Prompt ID | Title | Priority | Status |
 |:---:|:---|:---|:---:|:---:|
-| 1 | PROMPT-001 | Web API Module Split | P2 | ⬜ Pending |
-| 2 | PROMPT-002 | Agent Core Module Split | P2 | ⬜ Pending |
+| 1 | PROMPT-001 | Web API Module Split | P2 | ✅ Completed |
+| 2 | PROMPT-002 | Agent Core Module Split | P2 | 🔄 In Progress |
 | 3 | PROMPT-003 | RAG System Additional Modularization | P2 | ⬜ Pending |
 | 4 | PROMPT-004 | Web Session Management Implementation | P2 | ⬜ Pending |
 | 5 | PROMPT-005 | Error Logging Enhancement | P3 | ⬜ Pending |
 
-**Total: 5 prompts** | **Completed: 0** | **Remaining: 5**
+**Total: 5 prompts** | **Completed: 1** | **Remaining: 4**
 
 ---
 
@@ -428,4 +428,3 @@ stream.set_dependencies(_config, agent)
 - Expected: All checks pass, no errors
 
 **✅ After completing this prompt, proceed to [PROMPT-002]**
-
