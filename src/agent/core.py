@@ -31,14 +31,12 @@ from tenacity import (
 
 from src.config import AppConfig
 from src.config.exceptions import (
-    APIRateLimitError,
     CacheCreationError,
     ValidationFailedError,
 )
-from src.core.models import EvaluationResultSchema, QueryResult
+from src.core.models import EvaluationResultSchema
 from src.infra.logging import log_metrics as _log_metrics
 from src.infra.telemetry import get_meter, traced_async
-from src.infra.utils import clean_markdown_code_block, safe_json_parse
 
 from .cache_manager import CacheManager
 from .client import GeminiClient
@@ -46,6 +44,11 @@ from .context_manager import AgentContextManager
 from .cost_tracker import CostTracker
 from .rate_limiter import RateLimiter
 from .retry_handler import RetryHandler
+from .services import (
+    QueryGeneratorService,
+    ResponseEvaluatorService,
+    RewriterService,
+)
 
 if TYPE_CHECKING:
     import google.generativeai.caching as caching
@@ -124,6 +127,9 @@ class GeminiAgent:
         self.client = GeminiClient(self, self._log_metrics)
         self.context_manager = AgentContextManager(self)
         self.retry_handler = RetryHandler(self)
+        self.query_service = QueryGeneratorService(self)
+        self.evaluator_service = ResponseEvaluatorService(self)
+        self.rewriter_service = RewriterService(self)
 
         # 하위 호환성을 위한 속성
         self._semaphore = self._rate_limiter_module.semaphore
@@ -379,133 +385,15 @@ class GeminiAgent:
         Returns:
             생성된 쿼리 목록
         """
-        self._api_call_counter.add(1, {"operation": "generate_query"})
-        user_template_name = template_name or "user/query_gen.j2"
-        user_template = self.jinja_env.get_template(user_template_name)
-        user_prompt = user_template.render(ocr_text=ocr_text, user_intent=user_intent)
-
-        schema_json = json.dumps(
-            QueryResult.model_json_schema(), indent=2, ensure_ascii=False
+        return await self.query_service.generate_query(
+            ocr_text=ocr_text,
+            user_intent=user_intent,
+            cached_content=cached_content,
+            template_name=template_name,
+            query_type=query_type,
+            kg=kg,
+            constraints=constraints,
         )
-
-        # constraints가 직접 전달되었으면 사용, 아니면 Neo4j 조회
-        constraint_list = constraints if constraints is not None else []
-        kg_obj = kg
-        try:
-            if not constraint_list and kg_obj is None:
-                from src.qa.rag_system import QAKnowledgeGraph
-
-                kg_obj = QAKnowledgeGraph()
-            if not constraint_list and kg_obj is not None:
-                all_constraints = kg_obj.get_constraints_for_query_type(query_type)
-                constraint_list = [
-                    c for c in all_constraints if c.get("category") in ["query", "both"]
-                ]
-        except Exception as e:  # noqa: BLE001
-            self.logger.debug("Neo4j 제약사항 조회 실패: %s", e)
-
-        # priority 높은 순으로 정렬
-        if constraint_list:
-            constraint_list.sort(key=lambda x: x.get("priority", 0), reverse=True)
-
-        rules: List[str] = []
-        try:
-            if kg_obj is not None:
-                rules = kg_obj.find_relevant_rules(ocr_text[:500], k=10)
-        except Exception as e:  # noqa: BLE001
-            self.logger.debug("Neo4j 규칙 조회 실패: %s", e)
-
-        # Get formatting rules from Neo4j
-        formatting_rules = ""
-        try:
-            if kg_obj:
-                formatting_rules = kg_obj.get_formatting_rules("query_gen")
-        except Exception as e:  # noqa: BLE001
-            self.logger.debug("Formatting rules 조회 실패: %s", e)
-
-        # Get CSV guide rules and common mistakes from Neo4j
-        guide_rules: List[Dict[str, str]] = []
-        common_mistakes: List[Dict[str, str]] = []
-        try:
-            from src.qa.template_rules import (
-                get_all_template_context,
-                get_neo4j_config,
-            )
-
-            neo4j_config = get_neo4j_config()
-            if neo4j_config.get("neo4j_password"):
-                template_context = get_all_template_context(
-                    query_type=query_type,  # e.g. "explanation"
-                    neo4j_uri=neo4j_config["neo4j_uri"],
-                    neo4j_user=neo4j_config["neo4j_user"],
-                    neo4j_password=neo4j_config["neo4j_password"],
-                    include_mistakes=True,
-                    context_stage="query",  # 질의 생성 단계임
-                )
-                guide_rules = template_context.get("guide_rules", []) or []
-                common_mistakes = template_context.get("common_mistakes", []) or []
-        except Exception as e:  # noqa: BLE001
-            self.logger.debug("CSV 가이드 조회 실패 (선택사항): %s", e)
-
-        system_template_name = "system/query_gen.j2"
-        try:
-            system_template = self.jinja_env.get_template(system_template_name)
-            system_prompt = system_template.render(
-                response_schema=schema_json,
-                rules=rules,
-                constraints=constraint_list,
-                formatting_rules=formatting_rules,
-                guide_rules=guide_rules,
-                common_mistakes=common_mistakes,
-            )
-        except Exception as e:  # noqa: BLE001
-            self.logger.debug("템플릿 렌더링 실패: %s", e)
-            system_prompt = self.jinja_env.get_template(system_template_name).render(
-                response_schema=schema_json,
-                formatting_rules=formatting_rules,
-                constraints=constraint_list,
-            )
-
-        model = self._create_generative_model(
-            system_prompt, response_schema=QueryResult, cached_content=cached_content
-        )
-
-        self.context_manager.track_cache_usage(cached_content is not None)
-
-        try:
-            response_text = await self.retry_handler.call(model, user_prompt)
-        except Exception as e:
-            if self._is_rate_limit_error(e):
-                raise APIRateLimitError(
-                    "Rate limit exceeded during query generation: %s" % e
-                ) from e
-            raise
-
-        cleaned_response = clean_markdown_code_block(response_text)
-        if not cleaned_response or not cleaned_response.strip():
-            self.logger.error("Query Generation: Empty response received")
-            return []
-
-        try:
-            result = QueryResult.model_validate_json(cleaned_response)
-            return result.queries if result.queries else []
-        except ValidationError as e:
-            self.logger.error(
-                "Query Validation Failed: %s. Response: %s...",
-                e,
-                cleaned_response[:200],
-            )
-            return []
-        except json.JSONDecodeError as e:
-            self.logger.error(
-                "Query JSON Parse Failed: %s. Response: %s...",
-                e,
-                cleaned_response[:200],
-            )
-            return []
-        except (TypeError, KeyError, AttributeError) as e:
-            self.logger.error("Unexpected error in query parsing: %s", e)
-            return []
 
     # ==================== 평가 ====================
 
@@ -528,95 +416,14 @@ class GeminiAgent:
         kg: Optional["QAKnowledgeGraph"] = None,
     ) -> Optional[EvaluationResultSchema]:
         """후보 답변을 평가하고 점수를 부여."""
-        if not query:
-            return None
-        self._api_call_counter.add(1, {"operation": "evaluate"})
-
-        input_data = {
-            "ocr_ground_truth": ocr_text,
-            "target_query": query,
-            "candidates": candidates,
-        }
-
-        rules: List[str] = []
-        constraints: List[str] = []
-        kg_obj = kg
-        try:
-            if kg_obj is None:
-                from src.qa.rag_system import QAKnowledgeGraph
-
-                kg_obj = QAKnowledgeGraph()
-            constraint_list = kg_obj.get_constraints_for_query_type(query_type)
-            for c in constraint_list:
-                desc = c.get("description")
-                if desc:
-                    constraints.append(desc)
-            rules = kg_obj.find_relevant_rules(ocr_text[:500], k=10)
-        except Exception as e:  # noqa: BLE001
-            self.logger.debug("Neo4j 규칙 조회 실패: %s", e)
-
-        # Get formatting rules from Neo4j
-        formatting_rules = ""
-        try:
-            if kg_obj:
-                formatting_rules = kg_obj.get_formatting_rules("eval")
-        except Exception as e:  # noqa: BLE001
-            self.logger.debug("Formatting rules 조회 실패: %s", e)
-
-        try:
-            system_template = self.jinja_env.get_template("system/qa/compare_eval.j2")
-            system_prompt = system_template.render(
-                rules=rules,
-                constraints=constraints,
-                formatting_rules=formatting_rules,
-            )
-        except Exception as e:  # noqa: BLE001
-            self.logger.debug("동적 템플릿 실패, 기본 사용: %s", e)
-            system_prompt = self.jinja_env.get_template("system/eval.j2").render(
-                formatting_rules=formatting_rules
-            )
-
-        model = self._create_generative_model(
-            system_prompt,
-            response_schema=EvaluationResultSchema,
+        return await self.evaluator_service.evaluate_responses(
+            ocr_text=ocr_text,
+            query=query,
+            candidates=candidates,
             cached_content=cached_content,
+            query_type=query_type,
+            kg=kg,
         )
-
-        self.context_manager.track_cache_usage(cached_content is not None)
-
-        try:
-            response_text = await self.retry_handler.call(
-                model, json.dumps(input_data, ensure_ascii=False)
-            )
-        except Exception as e:
-            if self._is_rate_limit_error(e):
-                raise APIRateLimitError(
-                    "Rate limit exceeded during evaluation: %s" % e
-                ) from e
-            raise
-        cleaned_response = clean_markdown_code_block(response_text)
-
-        if not cleaned_response or not cleaned_response.strip():
-            self.logger.error("Evaluation: Empty response received")
-            raise ValueError("Empty evaluation response")
-
-        try:
-            result = EvaluationResultSchema.model_validate_json(cleaned_response)
-            return result
-        except ValidationError as e:
-            self.logger.error(
-                "Evaluation Validation Failed: %s. Response: %s...",
-                e,
-                cleaned_response[:200],
-            )
-            raise ValidationFailedError("Evaluation validation failed: %s" % e) from e
-        except json.JSONDecodeError as e:
-            self.logger.error(
-                "Evaluation JSON Parse Failed: %s. Response: %s...",
-                e,
-                cleaned_response[:200],
-            )
-            raise ValidationFailedError("Evaluation JSON parsing failed: %s" % e) from e
 
     # ==================== Rewrite ====================
 
@@ -635,114 +442,14 @@ class GeminiAgent:
 
         Neo4j 규칙을 동적으로 주입하여 templates/system/*.j2 사용.
         """
-        from src.qa.rag_system import QAKnowledgeGraph
-
-        template = self.jinja_env.get_template("user/rewrite.j2")
-        payload = template.render(
-            ocr_text=ocr_text, best_answer=best_answer, edit_request=edit_request
+        return await self.rewriter_service.rewrite_best_answer(
+            user_query=ocr_text,
+            selected_answer=best_answer,
+            edit_request=edit_request,
+            formatting_rules=None,
+            cached_content=cached_content,
+            query_type=query_type,
         )
-
-        # constraints가 직접 전달되었으면 사용, 아니면 Neo4j 조회
-        constraint_list = constraints if constraints is not None else []
-        rules: List[str] = []
-        kg_obj = kg
-        try:
-            if not constraint_list and kg_obj is None:
-                from src.qa.rag_system import QAKnowledgeGraph
-
-                kg_obj = QAKnowledgeGraph()
-            if not constraint_list and kg_obj is not None:
-                all_constraints = kg_obj.get_constraints_for_query_type(query_type)
-                constraint_list = [
-                    c
-                    for c in all_constraints
-                    if c.get("category") in ["answer", "both"]
-                ]
-            if kg_obj is not None:
-                rules = kg_obj.find_relevant_rules(best_answer[:500], k=10)
-        except Exception as e:  # noqa: BLE001
-            self.logger.warning("Neo4j 규칙 조회 실패, 기본 템플릿 사용: %s", e)
-
-        # priority 높은 순으로 정렬
-        if constraint_list:
-            constraint_list.sort(key=lambda x: x.get("priority", 0), reverse=True)
-
-        # Get formatting rules from Neo4j
-        formatting_rules = ""
-        try:
-            if kg_obj:
-                formatting_rules = kg_obj.get_formatting_rules("rewrite")
-        except Exception as e:  # noqa: BLE001
-            self.logger.debug("Formatting rules 조회 실패: %s", e)
-
-        # Get CSV guide rules and common mistakes from Neo4j
-        guide_rules: List[Dict[str, str]] = []
-        common_mistakes: List[Dict[str, str]] = []
-        try:
-            from src.qa.template_rules import (
-                get_all_template_context,
-                get_neo4j_config,
-            )
-
-            neo4j_config = get_neo4j_config()
-            if neo4j_config.get("neo4j_password"):  # Neo4j 설정이 있으면
-                template_context = get_all_template_context(
-                    query_type=query_type,
-                    neo4j_uri=neo4j_config["neo4j_uri"],
-                    neo4j_user=neo4j_config["neo4j_user"],
-                    neo4j_password=neo4j_config["neo4j_password"],
-                    include_mistakes=True,
-                )
-                guide_rules = template_context.get("guide_rules", []) or []
-                common_mistakes = template_context.get("common_mistakes", []) or []
-                self.logger.debug(
-                    "CSV 가이드 로드: rules=%d, mistakes=%d",
-                    len(guide_rules),
-                    len(common_mistakes),
-                )
-        except Exception as e:  # noqa: BLE001
-            self.logger.debug("CSV 가이드 조회 실패 (선택사항): %s", e)
-
-        try:
-            system_template = self.jinja_env.get_template("system/qa/rewrite.j2")
-            system_prompt = system_template.render(
-                rules=rules,
-                constraints=constraint_list,
-                guide_rules=guide_rules,
-                common_mistakes=common_mistakes,
-                has_table_chart=False,
-                formatting_rules=formatting_rules,
-                length_constraint=length_constraint,
-            )
-        except Exception as e:  # noqa: BLE001
-            self.logger.warning("동적 템플릿 실패, 기본 사용: %s", e)
-            system_prompt = self.jinja_env.get_template("system/rewrite.j2").render(
-                formatting_rules=formatting_rules,
-                constraints=constraint_list,
-                length_constraint=length_constraint,
-            )
-
-        model = self._create_generative_model(
-            system_prompt, cached_content=cached_content
-        )
-
-        self.context_manager.track_cache_usage(cached_content is not None)
-
-        try:
-            response_text = await self.retry_handler.call(model, payload)
-        except Exception as e:
-            if self._is_rate_limit_error(e):
-                raise APIRateLimitError(
-                    "Rate limit exceeded during rewrite: %s" % e
-                ) from e
-            raise
-
-        unwrapped = safe_json_parse(response_text, "rewritten_answer")
-
-        if isinstance(unwrapped, str):
-            return unwrapped
-
-        return response_text if response_text else ""
 
     # ==================== 비용 계산 ====================
 
