@@ -95,7 +95,7 @@ jobs:
               except Exception as e:
                   print(f"Neo4j not ready: {e}")
                   sys.exit(1)
-PY
+            PY
             status=$?
             if [ $status -eq 0 ]; then
               exit 0
@@ -116,7 +116,7 @@ PY
             from src.config.exceptions import BudgetExceededError, APIRateLimitError, ValidationFailedError
 
             print(f"✅ All v3.0 imports successful (version: {__version__})")
-          PY
+        PY
 
       - name: Pytest
         run: uv run pytest -s --cov=src --cov-report=xml --cov-fail-under=75
