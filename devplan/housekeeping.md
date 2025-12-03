@@ -1,16 +1,15 @@
 # Repo Housekeeping Plan
 
-목표: 루트 디렉터리의 산출물/도구/데이터를 구분해 가독성과 유지보수성을 높입니다. 코드 경로나 스크립트 참조를 깨지 않도록 순차 적용합니다.
+목표: 루트 디렉터리의 산출물/도구/데이터를 구분해 가독성과 유지보수성을 높입니다. 코드 경로나 스크립트 참조를 깨지 않도록 순차 적용합니다. (artifacts/, data/neo4j 정리는 완료됨)
 
 ## 1) 실행 산출물/로그 분리
-- 새 폴더 제안: `artifacts/` (커버리지, 분석 로그 등)
-- 이동 대상: `coverage.xml`, `.coverage`, `semantic_analysis.log`, `verification_result.txt`
+- 완료: `artifacts/` 생성 및 `verification_result.txt` 이동
+- 남은 이동 대상: `coverage.xml`, `.coverage`, `semantic_analysis.log`
 - 후속 작업: CI/스크립트에서 커버리지 경로를 `artifacts/coverage.xml`로 읽도록 확인 후 반영.
 
 ## 2) 대용량 CSV/임포트 스크립트 정리
-- 새 폴더 제안: `data/neo4j/`
-- 이동 대상: `guide.csv`, `qna.csv`, `import_guide_data.cypher`, `import_qna_data.cypher`, `import_log.txt`, `README_AURA_IMPORT.md`, `README_IMPORT.md`
-- 후속 작업: 임포트 스크립트/문서의 경로를 `data/neo4j/` 기준으로 업데이트.
+- 완료: `data/neo4j/` 생성 및 CSV/임포트 스크립트/README 이동
+- 후속 작업: 임포트 스크립트/문서의 경로를 `data/neo4j/` 기준으로 업데이트 검증.
 
 ## 3) 외부 도구/백업 분리
 - 새 폴더 제안: `tools/` → `Redis-x64-5.0.14.1` 이동
