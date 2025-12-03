@@ -41,12 +41,6 @@ class TestPageRoutes:
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
 
-    def test_multimodal_page(self, client: TestClient) -> None:
-        """Test multimodal page."""
-        response = client.get("/multimodal")
-        assert response.status_code == 200
-        assert "text/html" in response.headers["content-type"]
-
 
 class TestOCREndpoint:
     """Test OCR endpoint."""

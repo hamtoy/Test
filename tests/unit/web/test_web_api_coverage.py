@@ -310,7 +310,7 @@ class TestHealthCheck:
             assert "services" in data
             assert data["services"]["agent"] is False
             assert data["services"]["neo4j"] is False
-            assert data["services"]["multimodal"] is False
+            assert "multimodal" not in data["services"]
         finally:
             api_module.agent = original_agent
             api_module.kg = original_kg

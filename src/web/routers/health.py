@@ -38,7 +38,6 @@ async def api_health() -> JSONResponse:
         payload["services"] = {
             "agent": api_module.agent is not None,
             "neo4j": api_module.kg is not None,
-            "multimodal": api_module.mm is not None,
             "pipeline": api_module.pipeline is not None,
         }
     except Exception:
