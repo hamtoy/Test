@@ -91,7 +91,7 @@
         </button>
 
         <!-- 결과 영역 -->
-        <div id="workspace-results" class="results-area"></div>
+        <div id="workspace-results" class="results-area" aria-live="polite" aria-atomic="true"></div>
     </div>
 </div>
 
@@ -175,6 +175,23 @@
 {% block scripts %}
 <script>
     // OCR 로드/저장
+    function setButtonLoading(button, isLoading) {
+        if (!button) return;
+        button.disabled = isLoading;
+        button.setAttribute('aria-busy', String(isLoading));
+        if (isLoading) {
+            button.dataset.originalText = button.dataset.originalText || button.textContent;
+            button.setAttribute('aria-label', '처리 중입니다. 잠시만 기다려주세요.');
+            button.textContent = '⏳ 처리 중...';
+            button.style.opacity = '0.6';
+        } else {
+            button.textContent = button.dataset.originalText || button.textContent;
+            button.setAttribute('aria-label', '실행');
+            button.style.opacity = '1';
+            button.removeAttribute('aria-busy');
+        }
+    }
+
     async function loadOCR() {
         try {
             const data = await apiCall('/api/ocr');
@@ -200,6 +217,7 @@
 
     // 실행 버튼 (중복 실행 방지)
     let isExecuting = false;
+    let abortController = null;
 
     document.getElementById('execute-btn').addEventListener('click', async () => {
         if (isExecuting) {
@@ -207,6 +225,10 @@
             return;
         }
         const executeBtn = document.getElementById('execute-btn');
+        if (abortController) {
+            abortController.abort();
+        }
+        abortController = new AbortController();
 
         const query = document.getElementById('query').value.trim();
         const answer = document.getElementById('answer').value.trim();
@@ -225,9 +247,7 @@
         `;
 
         isExecuting = true;
-        executeBtn.disabled = true;
-        executeBtn.textContent = '⏳ 처리 중...';
-        executeBtn.style.opacity = '0.6';
+        setButtonLoading(executeBtn, true);
 
         try {
             const result = await apiCall('/api/workspace/unified', 'POST', {
@@ -237,20 +257,19 @@
                 ocr_text: ocrText || null,
                 query_type: queryType || null,
                 global_explanation_ref: globalExplanationRef || null,
-            });
+            }, abortController?.signal);
 
             displayResult(result);
         } catch (error) {
             resultsDiv.innerHTML = `
                 <div style="text-align: center; padding: 20px; background: #ffebee; border-radius: 8px; border: 1px solid #f44336; margin-top: 20px;">
                     <p style="color: #f44336; margin: 0;">❌ 작업 실패: ${error.message}</p>
+                    <button type="button" class="btn-secondary" onclick="document.getElementById('execute-btn').click()">🔄 다시 시도</button>
                 </div>
             `;
         } finally {
             isExecuting = false;
-            executeBtn.disabled = false;
-            executeBtn.textContent = '🚀 실행';
-            executeBtn.style.opacity = '1';
+            setButtonLoading(executeBtn, false);
         }
     });
 
@@ -334,8 +353,13 @@
         }
     });
 
+    let saveRefTimeout;
     document.getElementById('global-explanation-ref').addEventListener('input', (e) => {
-        localStorage.setItem(GLOBAL_EXPLANATION_KEY, e.target.value);
+        clearTimeout(saveRefTimeout);
+        const value = e.target.value;
+        saveRefTimeout = setTimeout(() => {
+            localStorage.setItem(GLOBAL_EXPLANATION_KEY, value);
+        }, 300);
     });
 
     document.getElementById('clear-reference-btn').addEventListener('click', () => {

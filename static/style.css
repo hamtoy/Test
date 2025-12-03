@@ -343,6 +343,12 @@ main {
     background: var(--accent-primary);
     color: white;
     border-color: var(--accent-primary);
+    animation: pulse 0.3s ease;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
 }
 
 .btn--danger {

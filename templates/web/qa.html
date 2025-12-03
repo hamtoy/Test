@@ -203,11 +203,12 @@
 
     function formatAnswer(text) {
         const escaped = escapeHtml(text);
-        return escaped
+        const formatted = escaped
             .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
             .replace(/\n\n/g, '<br><br>')
             .replace(/\n/g, '<br>')
             .replace(/^- /gm, '• ');
+        return DOMPurify.sanitize(formatted);
     }
 
     function escapeHtml(text) {

@@ -15,10 +15,11 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-async function apiCall(url, method = 'GET', body = null) {
+async function apiCall(url, method = 'GET', body = null, signal = undefined) {
     const options = {
         method,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        signal,
     };
 
     if (body) {
