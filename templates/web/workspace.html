@@ -219,8 +219,8 @@
         
         // 진행 상황 표시
         resultsDiv.innerHTML = `
-            <div style="text-align: center; padding: 30px; background: var(--bg-secondary, #f5f5f5); border-radius: 8px;">
-                <h3 style="margin-bottom: 15px;">⏳ 처리 중...</h3>
+            <div style="text-align: center; padding: 30px; background: var(--bg-secondary, #f5f5f5); border-radius: 8px; border: 1px solid var(--border, rgba(94, 82, 64, 0.12));">
+                <h3 style="margin-bottom: 15px; color: var(--text-primary, #1f2121);">⏳ 처리 중...</h3>
                 <div style="margin: 20px auto; width: 250px; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden;">
                     <div class="progress-fill" style="width: 0%; height: 100%; background: var(--primary, #21808d); transition: width 0.5s;"></div>
                 </div>
@@ -262,7 +262,7 @@
 
     function displayResult(data) {
         const resultsDiv = document.getElementById('workspace-results');
-        resultsDiv.innerHTML = '<h3>✨ 결과</h3>';
+        resultsDiv.innerHTML = '';
 
         const card = document.createElement('div');
         card.className = 'result-card';
@@ -291,7 +291,7 @@
         if (data.query) {
             const querySection = document.createElement('div');
             querySection.className = 'result-section';
-            querySection.innerHTML = `<strong>질의:</strong>${escapeHtml(data.query)}`;
+            querySection.innerHTML = `<strong>💬 질의</strong><div style="margin-top: 6px;">${escapeHtml(data.query)}</div>`;
             card.appendChild(querySection);
         }
 
@@ -307,14 +307,14 @@
                 .replace(/\n/g, '<br>')
                 .replace(/^- /gm, '• ');
 
-            answerSection.innerHTML = `<strong>답변:</strong><div class="answer-content">${formattedAnswer}</div>`;
+            answerSection.innerHTML = `<strong>✨ 답변</strong><div class="answer-content" style="margin-top: 6px;">${formattedAnswer}</div>`;
             card.appendChild(answerSection);
         }
 
         // 버튼 (복사 버튼 제거, 반영/초기화만 남김)
         const btnRow = document.createElement('div');
         btnRow.className = 'btn-row';
-        btnRow.style.marginTop = '15px';
+        btnRow.style.marginTop = '20px';
         btnRow.style.display = 'flex';
         btnRow.style.gap = '10px';
         btnRow.style.justifyContent = 'flex-end';
@@ -322,9 +322,14 @@
         const applyBtn = document.createElement('button');
         applyBtn.className = 'btn-primary';
         applyBtn.textContent = '⬆️ 입력 필드에 반영';
+        applyBtn.style.padding = '10px 16px';
         applyBtn.onclick = () => {
-            document.getElementById('query').value = data.query || '';
-            document.getElementById('answer').value = data.answer || '';
+            if (data.query) {
+                document.getElementById('query').value = data.query;
+            }
+            if (data.answer) {
+                document.getElementById('answer').value = data.answer;
+            }
             applyBtn.textContent = '✅ 반영됨';
             applyBtn.disabled = true;
             setTimeout(() => {
@@ -335,14 +340,12 @@
 
         const clearBtn = document.createElement('button');
         clearBtn.className = 'btn-secondary';
-        clearBtn.textContent = '🗑️ 초기화';
+        clearBtn.textContent = '🗑️ 결과 지우기';
+        clearBtn.style.padding = '10px 16px';
         clearBtn.style.background = 'var(--danger, #e74c3c)';
         clearBtn.style.color = 'white';
         clearBtn.style.borderColor = 'var(--danger, #e74c3c)';
         clearBtn.onclick = () => {
-            document.getElementById('query').value = '';
-            document.getElementById('answer').value = '';
-            document.getElementById('edit-request').value = '';
             resultsDiv.innerHTML = '';
         };
 

@@ -407,6 +407,7 @@ main {
     padding: 20px;
     margin-bottom: 20px;
     transition: all 0.2s ease;
+    animation: slideIn 0.3s ease-out;
 }
 
 .result-card:hover {
@@ -465,6 +466,11 @@ main {
     line-height: 1.7;
     white-space: pre-wrap;
     word-break: break-word;
+}
+
+.answer-content {
+    line-height: 1.6;
+    color: var(--text-primary);
 }
 
 /* Reference Section */
@@ -799,4 +805,15 @@ footer {
 .toast--success {
     border-color: var(--accent-primary);
     background: var(--accent-primary-soft);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
