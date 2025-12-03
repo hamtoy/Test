@@ -109,14 +109,14 @@ jobs:
         run: |
           echo "🔍 Testing v3.0 public API imports..."
           uv run python - <<'PY'
-from src import __version__
-from src.agent import GeminiAgent
-from src.core.models import WorkflowResult, EvaluationResultSchema, QueryResult
-from src.config import AppConfig
-from src.config.exceptions import BudgetExceededError, APIRateLimitError, ValidationFailedError
+            from src import __version__
+            from src.agent import GeminiAgent
+            from src.core.models import WorkflowResult, EvaluationResultSchema, QueryResult
+            from src.config import AppConfig
+            from src.config.exceptions import BudgetExceededError, APIRateLimitError, ValidationFailedError
 
-print(f"✅ All v3.0 imports successful (version: {__version__})")
-PY
+            print(f"✅ All v3.0 imports successful (version: {__version__})")
+          PY
 
       - name: Pytest
         run: uv run pytest -s --cov=src --cov-report=xml --cov-fail-under=75
