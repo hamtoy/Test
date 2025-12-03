@@ -125,6 +125,7 @@ class CacheMetrics:
     last_status: str = "unknown"
 
     def __post_init__(self) -> None:
+        """Register this namespace in the global cache metrics registry."""
         _register_namespace(self)
 
     @property
