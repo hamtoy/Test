@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Dict, List, Tuple
+from types import TracebackType
+from typing import Any, Callable, Dict, List, Tuple, cast
 
 import pytest
 
@@ -15,7 +16,12 @@ class DummyAsyncContext:
         self.entered += 1
         return self
 
-    async def __aexit__(self, exc_type, exc, tb) -> bool:  # type: ignore[override]
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> bool:
         return False
 
 
@@ -34,20 +40,20 @@ class _GoogleExceptions:
 
 
 class FakeClient:
-    def __init__(self, side_effects: List[Any]) -> None:
+    def __init__(self, side_effects: List[str | Exception]) -> None:
         self.side_effects = side_effects
         self.calls = 0
 
     async def execute(self, model: Any, prompt: str) -> str:
         self.calls += 1
-        outcome = self.side_effects.pop(0)
+        outcome: str | Exception = self.side_effects.pop(0)
         if isinstance(outcome, Exception):
             raise outcome
         return outcome
 
 
 class FakeAgentForRetry:
-    def __init__(self, side_effects: List[Any]) -> None:
+    def __init__(self, side_effects: List[str | Exception]) -> None:
         self.logger = logging.getLogger("test-retry")
         self._rate_limiter = DummyAsyncContext()
         self._semaphore = DummyAsyncContext()
@@ -97,7 +103,7 @@ class FakeLLMProvider:
 
 
 class FakeAgentForClient:
-    def __init__(self, log_fn) -> None:
+    def __init__(self, log_fn: Callable[..., None]) -> None:
         class _Config:
             temperature = 0.1
             max_output_tokens = 10
@@ -117,9 +123,9 @@ class FakeAgentForClient:
 
 @pytest.mark.asyncio
 async def test_retry_handler_retries_and_succeeds() -> None:
-    side_effects = [TimeoutError("boom"), "ok"]
+    side_effects: List[str | Exception] = [TimeoutError("boom"), "ok"]
     agent = FakeAgentForRetry(side_effects)
-    handler = RetryHandler(agent)
+    handler = RetryHandler(cast(Any, agent))
 
     result = await handler.call(object(), "prompt")
 
@@ -135,11 +141,11 @@ async def test_retry_handler_retries_and_succeeds() -> None:
 async def test_gemini_client_executes_with_llm_provider() -> None:
     log_calls = []
 
-    def _log_fn(*args, **kwargs):
+    def _log_fn(*args: Any, **kwargs: Any) -> None:
         log_calls.append(kwargs)
 
     agent = FakeAgentForClient(_log_fn)
-    client = GeminiClient(agent, _log_fn)
+    client = GeminiClient(cast(Any, agent), _log_fn)
 
     result = await client.execute(object(), "hello")
 

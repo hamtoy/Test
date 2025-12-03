@@ -31,8 +31,8 @@ class CustomGeminiEmbeddings:
 
     def __init__(self, api_key: str, model: str = "models/text-embedding-004") -> None:
         """Initialize the Gemini embeddings wrapper."""
-        self._genai: Any = cast(Any, genai)
-        self._genai.configure(api_key=api_key)
+        genai_any = cast(Any, genai)
+        genai_any.configure(api_key=api_key)
         self.model = model
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
@@ -41,7 +41,8 @@ class CustomGeminiEmbeddings:
 
     def embed_query(self, text: str) -> List[float]:
         """Embed a single query text."""
-        result = self._genai.embed_content(
+        genai_any = cast(Any, genai)
+        result = genai_any.embed_content(
             model=self.model, content=text, task_type="retrieval_query"
         )
         return list(result["embedding"])
