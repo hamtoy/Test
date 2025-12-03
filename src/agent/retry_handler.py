@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, cast
 
 from tenacity import (
     retry,
@@ -43,16 +43,10 @@ class RetryHandler:
             )
             await asyncio.sleep(delay)
 
-        @retry(  # type: ignore[misc]
-            stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=2, max=10),
-            retry=retry_if_exception_type(retry_exceptions),
-            reraise=True,
-        )
-        async def _execute_with_retry() -> str:
+        async def _execute_with_retry_raw() -> str:
             def _get_retry_attempt() -> int:
                 """Extract attempt number from tenacity retry statistics."""
-                retry_obj = getattr(_execute_with_retry, "retry", None)
+                retry_obj = getattr(_execute_with_retry_raw, "retry", None)
                 stats_dict: Dict[str, Any] = {}
                 if retry_obj is not None and hasattr(retry_obj, "statistics"):
                     stats_dict = retry_obj.statistics
@@ -75,6 +69,16 @@ class RetryHandler:
                     attempt = _get_retry_attempt()
                     await _adaptive_backoff(attempt)
                     raise
+
+        _execute_with_retry = cast(
+            Callable[[], Awaitable[str]],
+            retry(
+                stop=stop_after_attempt(3),
+                wait=wait_exponential(multiplier=1, min=2, max=10),
+                retry=retry_if_exception_type(retry_exceptions),
+                reraise=True,
+            )(_execute_with_retry_raw),
+        )
 
         try:
             result: str = await _execute_with_retry()
