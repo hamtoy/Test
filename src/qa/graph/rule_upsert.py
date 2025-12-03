@@ -194,7 +194,11 @@ class RuleUpsertManager:
 
         provider = self._graph_provider
         if provider is None:
-            with self._graph.session() as session:  # type: ignore[union-attr]
+            if self._graph is None:
+                raise ValueError(
+                    "Graph driver must be initialized when provider is None"
+                )
+            with self._graph.session() as session:
                 existing = list(session.run(check_cypher, id=rule_id))
                 is_new = len(existing) == 0
                 session.run(
@@ -261,7 +265,11 @@ class RuleUpsertManager:
 
         provider = self._graph_provider
         if provider is None:
-            with self._graph.session() as session:  # type: ignore[union-attr]
+            if self._graph is None:
+                raise ValueError(
+                    "Graph driver must be initialized when provider is None"
+                )
+            with self._graph.session() as session:
                 existing = list(session.run(check_cypher, id=constraint_id))
                 is_new = len(existing) == 0
                 session.run(
@@ -327,7 +335,11 @@ class RuleUpsertManager:
 
         provider = self._graph_provider
         if provider is None:
-            with self._graph.session() as session:  # type: ignore[union-attr]
+            if self._graph is None:
+                raise ValueError(
+                    "Graph driver must be initialized when provider is None"
+                )
+            with self._graph.session() as session:
                 existing = list(session.run(check_cypher, id=bp_id))
                 is_new = len(existing) == 0
                 session.run(
@@ -396,7 +408,11 @@ class RuleUpsertManager:
 
         provider = self._graph_provider
         if provider is None:
-            with self._graph.session() as session:  # type: ignore[union-attr]
+            if self._graph is None:
+                raise ValueError(
+                    "Graph driver must be initialized when provider is None"
+                )
+            with self._graph.session() as session:
                 existing = list(session.run(check_cypher, id=example_id))
                 is_new = len(existing) == 0
                 session.run(
@@ -452,7 +468,11 @@ class RuleUpsertManager:
 
         provider = self._graph_provider
         if provider is None:
-            with self._graph.session() as session:  # type: ignore[union-attr]
+            if self._graph is None:
+                raise ValueError(
+                    "Graph driver must be initialized when provider is None"
+                )
+            with self._graph.session() as session:
                 records = session.run(cypher, batch_id=batch_id)
                 return [dict(r) for r in records]
 
@@ -482,7 +502,11 @@ class RuleUpsertManager:
 
         provider = self._graph_provider
         if provider is None:
-            with self._graph.session() as session:  # type: ignore[union-attr]
+            if self._graph is None:
+                raise ValueError(
+                    "Graph driver must be initialized when provider is None"
+                )
+            with self._graph.session() as session:
                 count_result = list(session.run(count_cypher, batch_id=batch_id))
                 count = count_result[0]["cnt"] if count_result else 0
                 session.run(delete_cypher, batch_id=batch_id)

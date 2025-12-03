@@ -238,7 +238,11 @@ class QAKnowledgeGraph:
         """
         provider = getattr(self, "_graph_provider", None)
         if provider is None:
-            with self._graph.session() as session:  # type: ignore[union-attr]
+            if self._graph is None:
+                raise ValueError(
+                    "Graph driver must be initialized when provider is None"
+                )
+            with self._graph.session() as session:
                 return [dict(r) for r in session.run(cypher, qt=query_type)]
 
         prov = provider
@@ -266,7 +270,11 @@ class QAKnowledgeGraph:
         """
         provider = getattr(self, "_graph_provider", None)
         if provider is None:
-            with self._graph.session() as session:  # type: ignore[union-attr]
+            if self._graph is None:
+                raise ValueError(
+                    "Graph driver must be initialized when provider is None"
+                )
+            with self._graph.session() as session:
                 return [dict(r) for r in session.run(cypher, limit=limit)]
 
         prov = provider
