@@ -23,6 +23,7 @@ def mock_config() -> AppConfig:
         "os.environ",
         {
             "GEMINI_API_KEY": "AIza" + "x" * 35,
+            "GOOGLE_API_KEY": "AIza" + "x" * 35,
             "GEMINI_MODEL_NAME": "gemini-flash-latest",
         },
     ):
@@ -43,10 +44,22 @@ def mock_jinja_env() -> MagicMock:
 @pytest.fixture
 def mock_agent(mock_config: AppConfig, mock_jinja_env: MagicMock) -> GeminiAgent:
     """Create a GeminiAgent with mocked dependencies."""
-    return GeminiAgent(
+    agent = GeminiAgent(
         config=mock_config,
         jinja_env=mock_jinja_env,
     )
+    # Stub model factory to avoid real genai usage
+    agent._create_generative_model = MagicMock(return_value=MagicMock())
+
+    # Route client execution to the patched _call_api_with_retry used in tests
+    async def _client_execute(model: Any, prompt_text: str) -> str:
+        return await agent._call_api_with_retry(model, prompt_text)
+
+    agent.client.execute = _client_execute  # type: ignore[method-assign]
+    agent.retry_handler.call = _client_execute  # type: ignore[method-assign]
+    # Ensure LLM provider path is not used
+    agent.llm_provider = None
+    return agent
 
 
 class TestWorkflowE2E:
@@ -199,10 +212,10 @@ class TestWorkflowPerformance:
         import time
 
         with patch.object(
-            mock_agent,
-            "_call_api_with_retry",
+            mock_agent.query_service,
+            "generate_query",
             new_callable=AsyncMock,
-            return_value='{"queries": ["Quick query"]}',
+            return_value=["Quick query"],
         ):
             start = time.perf_counter()
             await mock_agent.generate_query("Test OCR text")
