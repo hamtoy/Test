@@ -1,12 +1,12 @@
 name: Docker Build
 
 on:
-  pull_request:
-    paths:
-      - "Dockerfile"
-      - "docker-compose*.yml"
-      - "pyproject.toml"
-      - "src/**"
+  push:
+    tags:
+      - "v*" # Only on version tags
+  release:
+    types: [published]
+  workflow_dispatch: # Manual trigger
 
 permissions:
   contents: read

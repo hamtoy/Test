@@ -1,3 +1,9 @@
+"""Application Configuration Settings.
+
+Pydantic-based configuration management with environment variable loading
+and comprehensive validation for the Gemini QA system.
+"""
+
 # mypy: disable-error-code=misc
 import logging
 import os
@@ -9,10 +15,10 @@ from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from src.config.constants import (
-    CacheConfig,
     ERROR_MESSAGES,
     GEMINI_API_KEY_LENGTH,
     MIN_CACHE_TOKENS,
+    CacheConfig,
 )
 
 logger = logging.getLogger(__name__)
@@ -122,7 +128,22 @@ class AppConfig(BaseSettings):
     @field_validator("api_key")
     @classmethod
     def validate_api_key(cls, v: str) -> str:
-        """Validate Gemini API key format and structure."""
+        """Validate Gemini API key format and structure.
+
+        Args:
+            v (str): API 키 문자열.
+
+        Returns:
+            str: 검증된 API 키.
+
+        Raises:
+            ValueError: 키가 비어있거나, 'AIza'로 시작하지 않거나,
+                길이가 39자가 아니거나, 형식이 잘못된 경우.
+
+        Examples:
+            >>> AppConfig.validate_api_key("AIzaSyABC123...")
+            'AIzaSyABC123...'
+        """
         if not v or v == "your_api_key_here":
             raise ValueError(ERROR_MESSAGES["api_key_missing"])
 
@@ -154,7 +175,17 @@ class AppConfig(BaseSettings):
     @field_validator("max_concurrency")
     @classmethod
     def validate_concurrency(cls, v: int) -> int:
-        """Validate concurrency is within allowed range."""
+        """Validate concurrency is within allowed range.
+
+        Args:
+            v (int): 동시성 제한 값.
+
+        Returns:
+            int: 검증된 동시성 값 (1-20 범위).
+
+        Raises:
+            ValueError: 값이 1-20 범위를 벗어난 경우.
+        """
         if not 1 <= v <= 20:
             raise ValueError(ERROR_MESSAGES["concurrency_range"])
         return v
@@ -162,7 +193,17 @@ class AppConfig(BaseSettings):
     @field_validator("timeout")
     @classmethod
     def validate_timeout(cls, v: int) -> int:
-        """Validate timeout is within allowed range."""
+        """Validate timeout is within allowed range.
+
+        Args:
+            v (int): 타임아웃 값 (초).
+
+        Returns:
+            int: 검증된 타임아웃 값 (30-600초 범위).
+
+        Raises:
+            ValueError: 값이 30-600초 범위를 벗어난 경우.
+        """
         if not 30 <= v <= 600:
             raise ValueError(ERROR_MESSAGES["timeout_range"])
         return v
@@ -245,7 +286,8 @@ class AppConfig(BaseSettings):
 
     @staticmethod
     def _detect_project_root() -> Path:
-        """Detect the project root by checking several hints:
+        """Detect the project root by checking several hints.
+
         1. PROJECT_ROOT env var (highest priority)
         2. The nearest directory containing `.git`, `templates`, or `data`
         3. Fallback to the parent of this file (legacy behavior)
@@ -265,22 +307,22 @@ class AppConfig(BaseSettings):
 
     @property
     def base_dir(self) -> Path:
-        """프로젝트 루트 디렉토리 반환"""
+        """프로젝트 루트 디렉토리 반환."""
         return self._detect_project_root()
 
     @property
     def template_dir(self) -> Path:
-        """Jinja2 템플릿 디렉토리 반환"""
+        """Jinja2 템플릿 디렉토리 반환."""
         return self.base_dir / "templates"
 
     @property
     def input_dir(self) -> Path:
-        """입력 데이터 디렉토리 반환"""
+        """입력 데이터 디렉토리 반환."""
         return self.base_dir / "data" / "inputs"
 
     @property
     def output_dir(self) -> Path:
-        """출력 데이터 디렉토리 반환"""
+        """출력 데이터 디렉토리 반환."""
         return self.base_dir / "data" / "outputs"
 
     def _ensure_directories(self) -> None:

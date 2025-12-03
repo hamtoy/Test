@@ -1,10 +1,9 @@
 name: Deprecation
 
 on:
-  push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
+  schedule:
+    - cron: "0 0 * * 1" # Every Monday at midnight UTC
+  workflow_dispatch: # Manual trigger
 
 permissions:
   contents: read

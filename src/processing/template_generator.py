@@ -1,3 +1,9 @@
+"""Dynamic Template Generator with Neo4j Integration.
+
+이 모듈은 Neo4j 그래프 데이터베이스에서 규칙, 제약사항, 예시를 가져와
+Jinja2 템플릿에 주입하여 QA 프롬프트를 동적으로 생성합니다.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -24,7 +30,8 @@ TEMPLATE_DIR = REPO_ROOT / "templates"
 
 
 class DynamicTemplateGenerator:
-    """그래프에 저장된 Rule/Constraint/Example을 템플릿 컨텍스트에 주입해
+    """그래프에 저장된 Rule/Constraint/Example을 템플릿 컨텍스트에 주입해 프롬프트를 렌더링.
+
     질의 유형별 프롬프트를 렌더링하고, 세션 검증 체크리스트를 생성합니다.
     """
 
@@ -55,7 +62,15 @@ class DynamicTemplateGenerator:
             self.driver.close()
 
     def _run(self, cypher: str, params: Optional[Dict[str, Any]] = None) -> List[Any]:
-        """Run a Cypher query and return list of records."""
+        """Cypher 쿼리를 실행하고 레코드 리스트 반환.
+
+        Args:
+            cypher (str): 실행할 Cypher 쿼리문.
+            params (Optional[Dict[str, Any]]): 쿼리 파라미터. None이면 빈 딕셔너리 사용.
+
+        Returns:
+            List[Any]: Neo4j 쿼리 결과 레코드 리스트.
+        """
         params = params or {}
         with self.driver.session() as session:
             return list(session.run(cypher, **params))
@@ -63,7 +78,26 @@ class DynamicTemplateGenerator:
     def generate_prompt_for_query_type(
         self, query_type: str, context: Dict[str, Any]
     ) -> str:
-        """질의 유형에 맞는 시스템 템플릿을 그래프 지식과 합쳐 렌더링."""
+        """질의 유형에 맞는 시스템 템플릿을 그래프 지식과 합쳐 렌더링.
+
+        Args:
+            query_type (str): 질의 유형 식별자. 'explanation', 'reasoning',
+                'summary', 'target_short', 'target_long' 등.
+            context (Dict[str, Any]): 템플릿 렌더링에 필요한 추가 컨텍스트.
+                일반적으로 다음 키를 포함:
+                - image_path (str): 이미지 파일 경로
+                - has_table_chart (bool): 표/차트 포함 여부
+                - language_hint (str): 언어 힌트 (예: 'ko', 'en')
+                - text_density (str): 텍스트 밀도 ('high', 'medium', 'low')
+
+        Returns:
+            str: 렌더링된 시스템 프롬프트 문자열. Neo4j 그래프의 규칙/제약/예시와
+                CSV 가이드 데이터가 주입된 완성된 프롬프트.
+
+        Raises:
+            ValueError: QueryType을 Neo4j에서 찾을 수 없는 경우.
+            TemplateNotFound: 템플릿 파일이 존재하지 않는 경우 (fallback 사용).
+        """
         cypher = """
         MATCH (qt:QueryType {name: $type})
         OPTIONAL MATCH (qt)<-[:APPLIES_TO]-(r:Rule)
@@ -139,7 +173,25 @@ class DynamicTemplateGenerator:
     def generate_validation_checklist(
         self, session: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
-        """세션에 포함된 QueryType에 대해 그래프에서 제약을 수집해 체크리스트 생성."""
+        """세션에 포함된 QueryType에 대해 그래프에서 제약을 수집해 체크리스트 생성.
+
+        Args:
+            session (Dict[str, Any]): QA 세션 정보. 'turns' 키에 질의 목록을 포함:
+                {'turns': [{'type': 'explanation'}, {'type': 'reasoning'}, ...]}
+
+        Returns:
+            List[Dict[str, Any]]: 검증 체크리스트. 각 항목은 다음 키를 포함:
+                - item (str): 체크할 제약사항 설명
+                - category (str): 제약사항 카테고리
+                - query_type (str): 해당 제약이 적용되는 QueryType
+
+        Examples:
+            >>> checklist = generator.generate_validation_checklist({
+            ...     'turns': [{'type': 'explanation'}, {'type': 'reasoning'}]
+            ... })
+            >>> len(checklist) > 0
+            True
+        """
         query_types = {t.get("type") for t in session.get("turns", []) if t.get("type")}
         checklist: List[Dict[str, Any]] = []
         cypher = """

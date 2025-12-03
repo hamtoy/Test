@@ -1,4 +1,4 @@
-"""Neo4j Template Rules Helper
+"""Neo4j Template Rules Helper.
 
 Neo4j에서 Jinja2 템플릿에 사용할 작업 가이드 규칙을 가져오는 헬퍼 모듈.
 guide.csv와 qna.csv의 내용을 QueryType별로 필터링하여 반환.
@@ -15,7 +15,7 @@ def get_rules_for_query_type(
     neo4j_user: str,
     neo4j_password: str,
 ) -> List[Dict[str, str]]:
-    """Neo4j에서 특정 QueryType에 연결된 Guide Item 규칙 가져오기
+    """Neo4j에서 특정 QueryType에 연결된 Guide Item 규칙 가져오기.
 
     Args:
         query_type: explanation, reasoning, target_short, target_long 등
@@ -73,24 +73,24 @@ def get_common_mistakes(
     neo4j_user: str,
     neo4j_password: str,
 ) -> List[Dict[str, str]]:
-    """Neo4j에서 자주 틀리는 부분 (QATopic) 가져오기
+    """Neo4j에서 자주 틀리는 부분 (QATopic) 가져오기.
 
     Args:
-        category: '질의', '답변', '작업 규칙' 등 (None이면 전체)
-        neo4j_uri: Neo4j 연결 URI
-        neo4j_user: Neo4j 사용자명
-        neo4j_password: Neo4j 비밀번호
+        category (Optional[str]): 필터링할 카테고리. '질의', '답변', '작업 규칙' 등.
+            None이면 모든 카테고리 반환 (최대 15개).
+        neo4j_uri (str): Neo4j 데이터베이스 연결 URI.
+        neo4j_user (str): Neo4j 사용자명.
+        neo4j_password (str): Neo4j 비밀번호.
 
     Returns:
-        자주 틀리는 부분 리스트:
-        [
-            {
-                'title': '1. 문장이 부자연스러운 경우',
-                'preview': '☑️ 가독성 향상을 위해...',
-                'subcategory': '답변'
-            },
-            ...
-        ]
+        List[Dict[str, str]]: 자주 틀리는 부분 리스트. 각 딕셔너리는 다음 키를 포함:
+            - title (str): 실수 항목 제목 (예: '1. 문장이 부자연스러운 경우')
+            - preview (str): 내용 미리보기 (최대 150자)
+            - subcategory (str): 하위 카테고리 (예: '답변', '질의')
+
+    Note:
+        이 함수는 @lru_cache(maxsize=128)로 캐싱되므로 동일 인자로
+        반복 호출 시 네트워크 요청 없이 즉시 반환됩니다.
     """
     from neo4j import GraphDatabase
 
@@ -143,15 +143,19 @@ def get_best_practices(
     neo4j_user: str,
     neo4j_password: str,
 ) -> List[str]:
-    """Neo4j에서 Best Practice 관련 Item 가져오기
+    """Neo4j에서 Best Practice 관련 Item 가져오기.
 
     Args:
-        neo4j_uri: Neo4j 연결 URI
-        neo4j_user: Neo4j 사용자명
-        neo4j_password: Neo4j 비밀번호
+        neo4j_uri (str): Neo4j 데이터베이스 연결 URI.
+        neo4j_user (str): Neo4j 사용자명.
+        neo4j_password (str): Neo4j 비밀번호.
 
     Returns:
-        Best Practice 항목 리스트
+        List[str]: Best Practice 문자열 리스트 (최대 10개).
+            각 항목은 "제목: 미리보기..." 형식.
+
+    Note:
+        이 함수는 @lru_cache(maxsize=64)로 캐싱됩니다.
     """
     from neo4j import GraphDatabase
 
@@ -181,16 +185,22 @@ def get_constraint_details(
     neo4j_user: str,
     neo4j_password: str,
 ) -> List[str]:
-    """Neo4j에서 제약조건 관련 Item 가져오기
+    """Neo4j에서 제약조건 관련 Item 가져오기.
 
     Args:
-        query_type: 특정 query type으로 필터링 (None이면 전체)
-        neo4j_uri: Neo4j 연결 URI
-        neo4j_user: Neo4j 사용자명
-        neo4j_password: Neo4j 비밀번호
+        query_type (Optional[str]): 특정 QueryType으로 필터링.
+            None이면 모든 제약조건 반환.
+        neo4j_uri (str): Neo4j 데이터베이스 연결 URI.
+        neo4j_user (str): Neo4j 사용자명.
+        neo4j_password (str): Neo4j 비밀번호.
 
     Returns:
-        제약조건 항목 리스트
+        List[str]: 제약조건 문자열 리스트 (최대 15개).
+            각 항목은 "제목: 미리보기(200자)..." 형식.
+
+    Note:
+        현재 구현은 query_type 파라미터를 사용하지 않고 모든 제약조건을 반환합니다.
+        이 함수는 @lru_cache(maxsize=128)로 캐싱됩니다.
     """
     from neo4j import GraphDatabase
 
@@ -223,7 +233,7 @@ def get_all_template_context(
     include_constraints: bool = False,
     context_stage: str = "answer",  # "answer" or "query"
 ) -> Dict[str, Any]:
-    """템플릿에 필요한 모든 컨텍스트를 한 번에 가져오기
+    """템플릿에 필요한 모든 컨텍스트를 한 번에 가져오기.
 
     Args:
         query_type: explanation, reasoning, etc.
@@ -278,7 +288,7 @@ def get_all_template_context(
 
 # 환경변수에서 Neo4j 설정 가져오기
 def get_neo4j_config() -> Dict[str, str]:
-    """환경변수에서 Neo4j 연결 정보 가져오기"""
+    """환경변수에서 Neo4j 연결 정보 가져오기."""
     import os
 
     return {

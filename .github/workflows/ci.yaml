@@ -18,6 +18,26 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
 
+    env:
+      NEO4J_URI: bolt://localhost:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: testpassword
+
+    services:
+      neo4j:
+        image: neo4j:latest
+        env:
+          NEO4J_AUTH: neo4j/testpassword
+        ports:
+          - 7687:7687
+          - 7474:7474
+        options: >-
+          --health-cmd "wget -q --spider http://localhost:7474 || exit 1"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 10
+          --health-start-period 30s
+
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -54,6 +74,45 @@ jobs:
       - name: Mypy
         run: uv run mypy .
 
+      - name: Pydocstyle (Google convention)
+        run: uv run pydocstyle --convention=google --add-ignore=D100,D104,D403 src/
+        continue-on-error: false # Fail CI if docstring issues found
+
+      - name: Wait for Neo4j
+        run: |
+          for i in {1..30}; do
+            uv run python - <<'PY'
+          import sys
+          from neo4j import GraphDatabase
+          uri = "bolt://localhost:7687"
+          auth = ("neo4j", "testpassword")
+          try:
+              driver = GraphDatabase.driver(uri, auth=auth)
+              with driver.session() as session:
+                  session.run("RETURN 1")
+              driver.close()
+              sys.exit(0)
+          except Exception as e:
+              print(f"Neo4j not ready: {e}")
+              sys.exit(1)
+          PY
+            if [ $? -eq 0 ]; then exit 0; fi
+            sleep 5
+          done
+          exit 1
+
+      - name: Test v3.0 public API imports
+        run: |
+          echo "🔍 Testing v3.0 public API imports..."
+          uv run python -c "
+          from src import __version__
+          from src.agent import GeminiAgent
+          from src.core.models import WorkflowResult, EvaluationResultSchema, QueryResult
+          from src.config import AppConfig
+          from src.config.exceptions import BudgetExceededError, APIRateLimitError, ValidationFailedError
+          print(f'✅ All v3.0 imports successful (version: {__version__})')
+          "
+
       - name: Pytest
         run: uv run pytest -s --cov=src --cov-report=xml --cov-fail-under=75
 
@@ -68,7 +127,7 @@ jobs:
 
   e2e-tests:
     runs-on: ubuntu-latest
-    needs: test  # 유닛 테스트 통과 후 실행
+    needs: test # 유닛 테스트 통과 후 실행
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout

@@ -2,17 +2,12 @@ name: Docs
 
 on:
   push:
-    branches: [main]
+    branches: [main] # Only on main push
     paths:
       - "docs/**"
       - "src/**/*.py"
       - ".github/workflows/docs.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "docs/**"
-      - "src/**/*.py"
-  workflow_dispatch:
+  workflow_dispatch: # Manual trigger
 
 permissions:
   contents: read

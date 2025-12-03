@@ -272,7 +272,11 @@ class GeminiAgent:
     # ==================== 캐시 관련 메서드 ====================
 
     def _track_cache_usage(self, cached: bool) -> None:
-        """캐시 사용량 추적."""
+        """캐시 사용 여부를 추적하여 메트릭 기록.
+
+        Args:
+            cached (bool): 캐시를 사용했는지 여부. True면 캐시 히트 카운트 증가.
+        """
         self.context_manager.track_cache_usage(cached)
 
     def _local_cache_manifest_path(self) -> Any:
@@ -292,7 +296,13 @@ class GeminiAgent:
     def _store_local_cache(
         self, fingerprint: str, cache_name: str, ttl_minutes: int
     ) -> None:
-        """로컬 캐시 저장."""
+        """로컬 캐시 저장.
+
+        Args:
+            fingerprint (str): 컨텐츠의 고유 해시 값(식별자).
+            cache_name (str): 저장할 캐시 이름.
+            ttl_minutes (int): 캐시 수명 시간(분).
+        """
         self.context_manager.store_local_cache(fingerprint, cache_name, ttl_minutes)
 
     # ==================== 모델 생성 ====================
@@ -303,7 +313,17 @@ class GeminiAgent:
         response_schema: type[BaseModel] | None = None,
         cached_content: Optional["caching.CachedContent"] = None,
     ) -> Any:
-        """GenerativeModel 인스턴스를 생성하는 팩토리 메서드."""
+        """GenerativeModel 인스턴스를 생성하는 팩토리 메서드.
+
+        Args:
+            system_prompt (str): 시스템 프롬프트 텍스트.
+            response_schema (Optional[type[BaseModel]]): JSON 응답 스키마.
+                None이면 일반 텍스트 응답.
+            cached_content (Optional[caching.CachedContent]): 재사용할 캐시 객체.
+
+        Returns:
+            Any: 설정된 GenerativeModel 인스턴스.
+        """
         generation_config: Dict[str, object] = {
             "temperature": self.config.temperature,
             "max_output_tokens": self.config.max_output_tokens,
@@ -373,17 +393,35 @@ class GeminiAgent:
     ) -> List[str]:
         """OCR 텍스트와 사용자 의도에 기반한 전략적 쿼리 생성.
 
+        이 메서드는 Neo4j에서 query_type별 규칙과 제약사항을 가져와
+        Jinja2 템플릿에 주입하여 질의를 생성합니다.
+
         Args:
-            ocr_text: OCR 텍스트
-            user_intent: 사용자 의도
-            cached_content: 캐시된 컨텐츠
-            template_name: 사용자 템플릿 이름 (A/B 테스트용, None이면 기본 템플릿 사용)
-            query_type: 질의 유형 (Neo4j 규칙 조회용)
-            kg: 재사용할 QAKnowledgeGraph 인스턴스 (없으면 새로 생성)
-            constraints: Neo4j에서 미리 조회한 제약사항 리스트 (없으면 내부 조회)
+            ocr_text (str): 이미지에서 추출한 OCR 텍스트.
+            user_intent (Optional[str]): 사용자가 명시한 의도 또는 요구사항.
+                None이면 OCR 텍스트만으로 질의 생성.
+            cached_content (Optional[caching.CachedContent]): Gemini 캐시 객체.
+                같은 OCR 텍스트로 반복 호출 시 캐시 재사용.
+            template_name (Optional[str]): A/B 테스트용 템플릿 이름.
+                None이면 기본 'system/query_gen.j2' 사용.
+            query_type (str): 질의 유형. 'explanation', 'reasoning', 'summary' 등.
+                Neo4j에서 해당 타입의 규칙을 조회하는 데 사용.
+            kg (Optional[QAKnowledgeGraph]): 재사용할 Neo4j 연결 인스턴스.
+            constraints (Optional[List[Dict[str, Any]]]): 미리 조회한 제약사항.
 
         Returns:
-            생성된 쿼리 목록
+            List[str]: 생성된 전략적 쿼리 목록 (보통 3-4개).
+
+        Examples:
+            >>> agent = GeminiAgent(config)
+            >>> queries = await agent.generate_query(
+            ...     ocr_text="2024년 1분기 매출 100억원",
+            ...     query_type="explanation"
+            ... )
+            >>> len(queries)
+            3
+            >>> queries[0]
+            '2024년 1분기 매출 성과에 대해 설명해 주십시오.'
         """
         return await self.query_service.generate_query(
             ocr_text=ocr_text,
@@ -415,7 +453,36 @@ class GeminiAgent:
         query_type: str = "explanation",
         kg: Optional["QAKnowledgeGraph"] = None,
     ) -> Optional[EvaluationResultSchema]:
-        """후보 답변을 평가하고 점수를 부여."""
+        """후보 답변을 평가하고 점수를 부여.
+
+        여러 후보 답변 중 최적의 답변을 선택하기 위해 각 답변을 평가합니다.
+
+        Args:
+            ocr_text (str): 원본 OCR 텍스트 (평가 기준).
+            query (str): 질의 문장.
+            candidates (Dict[str, str]): 평가할 후보 답변들.
+                키는 후보 식별자, 값은 답변 텍스트.
+            cached_content (Optional[caching.CachedContent]): Gemini 캐시 객체.
+            query_type (str): 질의 유형 (Neo4j 규칙 조회용).
+            kg (Optional[QAKnowledgeGraph]): 재사용할 Neo4j 인스턴스.
+
+        Returns:
+            Optional[EvaluationResultSchema]: 평가 결과. 각 후보의 점수와
+                선택된 최고 답변 정보를 포함. 평가 실패 시 None.
+
+        Examples:
+            >>> candidates = {
+            ...     "A": "2024년 1분기 매출은 100억원입니다.",
+            ...     "B": "매출이 100억원을 달성했습니다."
+            ... }
+            >>> result = await agent.evaluate_responses(
+            ...     ocr_text="2024 Q1 매출: 100억",
+            ...     query="매출에 대해 설명해주세요",
+            ...     candidates=candidates
+            ... )
+            >>> result.best_answer
+            'A'
+        """
         return await self.evaluator_service.evaluate_responses(
             ocr_text=ocr_text,
             query=query,
@@ -440,7 +507,32 @@ class GeminiAgent:
     ) -> str:
         """선택된 최고 답변을 가독성 및 안전성 측면에서 개선.
 
-        Neo4j 규칙을 동적으로 주입하여 templates/system/*.j2 사용.
+        Neo4j에서 query_type별 규칙과 자주 틀리는 부분(CSV 데이터)을
+        동적으로 주입하여 답변을 재작성합니다.
+
+        Args:
+            ocr_text (str): 원본 OCR 텍스트.
+            best_answer (str): 재작성할 답변 텍스트.
+            edit_request (Optional[str]): 사용자 지정 편집 요청사항.
+            cached_content (Optional[caching.CachedContent]): Gemini 캐시 객체.
+            query_type (str): 질의 유형 (Neo4j 규칙 조회용).
+            kg (Optional[QAKnowledgeGraph]): 재사용할 Neo4j 인스턴스.
+            constraints (Optional[List[Dict[str, Any]]]): 미리 조회한 제약사항.
+            length_constraint (str): 글자 수 제약 (예: "200자 이내").
+
+        Returns:
+            str: 재작성된 답변. 오류 발생 시 원본 답변 반환.
+
+        Examples:
+            >>> rewritten = await agent.rewrite_best_answer(
+            ...     ocr_text="2024 Q1 매출: 100억",
+            ...     best_answer="매출은 100억원입니다.",
+            ...     query_type="explanation"
+            ... )
+            >>> len(rewritten) > 0
+            True
+            >>> "100억" in rewritten
+            True
         """
         return await self.rewriter_service.rewrite_best_answer(
             user_query=ocr_text,
