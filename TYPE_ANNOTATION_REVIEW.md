@@ -216,16 +216,20 @@ if provider is None:
 
 # After (without type: ignore) ✅
 if provider is None:
-    assert self._graph is not None, "Graph driver must be initialized when provider is None"
+    if self._graph is None:
+        raise ValueError(
+            "Graph driver must be initialized when provider is None"
+        )
     with self._graph.session() as session:
         ...
 ```
 
 **Benefits**:
 - ✅ Better type safety - mypy can now verify the code
-- ✅ Runtime error clarity - explicit message when invariant is violated
-- ✅ No runtime overhead in production (assertions can be disabled with -O flag)
+- ✅ Runtime error clarity - explicit ValueError with clear message
+- ✅ Production-safe - ValueError always raised (not disabled with -O flag)
 - ✅ Self-documenting code - makes the assumption explicit
+- ✅ Better than assertions - explicit checks that cannot be disabled
 
 #### 4. TypedDict Argument Type (1 instance)
 **Files**: `src/automation/promote_rules.py`  
@@ -377,11 +381,11 @@ The repository demonstrates **exceptional** type annotation quality:
 The type annotation quality was already excellent, but we made it even better:
 
 1. **Eliminated 8 type: ignore comments** (50% reduction):
-   - Replaced all `type: ignore[union-attr]` with explicit assertions
-   - Improved both type safety and runtime error messages
+   - Replaced all `type: ignore[union-attr]` with explicit ValueError checks
+   - Production-safe (ValueError cannot be disabled unlike assertions)
    
 2. **Enhanced code clarity**:
-   - Made implicit assumptions explicit through assertions
+   - Made implicit assumptions explicit through ValueError checks
    - Better error messages when preconditions are violated
    
 3. **Verified correctness**:
