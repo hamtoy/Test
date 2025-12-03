@@ -82,19 +82,19 @@ jobs:
         run: |
           for i in {1..30}; do
             uv run python - <<'PY'
-import sys
-from neo4j import GraphDatabase
-uri = "bolt://localhost:7687"
-auth = ("neo4j", "testpassword")
-try:
-    driver = GraphDatabase.driver(uri, auth=auth)
-    with driver.session() as session:
-        session.run("RETURN 1")
-    driver.close()
-    sys.exit(0)
-except Exception as e:
-    print(f"Neo4j not ready: {e}")
-    sys.exit(1)
+              import sys
+              from neo4j import GraphDatabase
+              uri = "bolt://localhost:7687"
+              auth = ("neo4j", "testpassword")
+              try:
+                  driver = GraphDatabase.driver(uri, auth=auth)
+                  with driver.session() as session:
+                      session.run("RETURN 1")
+                  driver.close()
+                  sys.exit(0)
+              except Exception as e:
+                  print(f"Neo4j not ready: {e}")
+                  sys.exit(1)
 PY
             status=$?
             if [ $status -eq 0 ]; then
@@ -181,19 +181,19 @@ PY
         run: |
           for i in {1..30}; do
             uv run python - <<'PY'
-import sys
-from neo4j import GraphDatabase
-uri = "bolt://localhost:7687"
-auth = ("neo4j", "testpassword")
-try:
-    driver = GraphDatabase.driver(uri, auth=auth)
-    with driver.session() as session:
-        session.run("RETURN 1")
-    driver.close()
-    sys.exit(0)
-except Exception as e:
-    print(f"Neo4j not ready: {e}")
-    sys.exit(1)
+              import sys
+              from neo4j import GraphDatabase
+              uri = "bolt://localhost:7687"
+              auth = ("neo4j", "testpassword")
+              try:
+                  driver = GraphDatabase.driver(uri, auth=auth)
+                  with driver.session() as session:
+                      session.run("RETURN 1")
+                  driver.close()
+                  sys.exit(0)
+              except Exception as e:
+                  print(f"Neo4j not ready: {e}")
+                  sys.exit(1)
 PY
             status=$?
             if [ $status -eq 0 ]; then
