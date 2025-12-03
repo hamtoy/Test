@@ -318,10 +318,11 @@
         const field = document.getElementById(fieldId);
         const text = field.value.trim();
         if (!text) {
-            alert('복사할 내용이 없습니다.');
+            showToast('복사할 내용이 없습니다.', 'error');
             return;
         }
         copyToClipboard(text, buttonEl);
+        showToast('클립보드에 복사했습니다.', 'success');
     }
 
     // 전체 설명문 참조 저장/복원
