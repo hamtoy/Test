@@ -33,11 +33,12 @@ async def test_call_api_with_retry_adaptive_backoff(
 
     call_count = {"n": 0}
 
-    async def _boom(*_a: Any, **_k: Any) -> None:
+    async def _boom(*_a: Any, **_k: Any) -> str:
         call_count["n"] += 1
         raise Boom("fail")
 
-    monkeypatch.setattr(agent, "_execute_api_call", _boom)
+    agent.client.execute = _boom  # type: ignore[method-assign]
+    agent.llm_provider = None
 
     with pytest.raises(Boom):
         await agent._call_api_with_retry(types.SimpleNamespace(), "payload")
@@ -59,7 +60,8 @@ async def test_call_api_with_retry_success_after_backoff(
             raise TimeoutError("first fail")
         return "ok"
 
-    monkeypatch.setattr(agent, "_execute_api_call", _flaky)
+    agent.client.execute = _flaky  # type: ignore[method-assign]
+    agent.llm_provider = None
     result = await agent._call_api_with_retry(types.SimpleNamespace(), "payload")
     assert result == "ok"
     assert attempts["n"] == 2

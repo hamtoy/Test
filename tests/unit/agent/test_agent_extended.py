@@ -4,7 +4,7 @@ import asyncio
 import tempfile
 import types
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import google.generativeai.caching as caching
 import pytest
@@ -255,7 +255,8 @@ async def test_agent_call_api_with_retry(
             raise TimeoutError("retry me")
         return "ok"
 
-    agent._execute_api_call = _fake_exec  # type: ignore[method-assign]
+    agent.client.execute = _fake_exec  # type: ignore[method-assign]
+    agent.llm_provider = None
 
     class _Sem:
         async def __aenter__(self) -> None:
@@ -269,7 +270,7 @@ async def test_agent_call_api_with_retry(
         ) -> bool:
             return False
 
-    agent._semaphore = _Sem()  # type: ignore[assignment]
+    agent._semaphore = cast(Any, _Sem())
 
     class _Model:
         pass

@@ -128,12 +128,20 @@ class QAKnowledgeGraph:
 
     def _init_vector_store(self) -> None:
         """GEMINI_API_KEY로 임베딩을 생성합니다. 키가 없거나 인덱스가 없으면 건너뜀."""
-        self._vector_store = init_vector_store(
+        if not os.getenv("GEMINI_API_KEY"):
+            # 환경변수 없으면 현재 값을 유지하고 조용히 반환
+            logger.debug(
+                "GEMINI_API_KEY not set; skipping vector store initialization."
+            )
+            return
+
+        new_store = init_vector_store(
             neo4j_uri=self.neo4j_uri,
             neo4j_user=self.neo4j_user,
             neo4j_password=self.neo4j_password,
             logger=logger,
         )
+        self._vector_store = new_store
 
     @measure_latency(
         "vector_search",

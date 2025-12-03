@@ -68,6 +68,9 @@ async def test_execute_api_call_logs_metrics(
     import src.agent as agent_mod
 
     monkeypatch.setattr(agent_mod, "log_metrics", _log_metrics)
+    # Agent/Client가 이미 생성된 후이므로 직접 덮어쓴다.
+    agent._log_metrics = _log_metrics
+    agent.client._log_metrics = _log_metrics
 
     class _Resp:
         def __init__(self) -> None:

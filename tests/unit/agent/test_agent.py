@@ -1,11 +1,13 @@
-import pytest
 import asyncio
-from unittest.mock import MagicMock, AsyncMock, PropertyMock, patch
+from pathlib import Path
+from typing import Any, Generator, cast
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
+
+import pytest
+
 from src.agent import GeminiAgent
 from src.config import AppConfig
 from src.core.models import EvaluationResultSchema
-from typing import Any, Generator
-from pathlib import Path
 
 
 class TestGeminiAgent:
@@ -39,8 +41,8 @@ class TestGeminiAgent:
         agent.total_output_tokens = 1_000_000  # 1M tokens
 
         cost = agent.get_total_cost()
-        # gemini-flash-latest 기본 단가 적용: 입력 $4.00 + 출력 $18.00 = $22.00
-        assert cost == 22.0
+        # gemini-flash-latest 최신 단가 적용: 입력 $0.30 + 출력 $2.50 = $2.80
+        assert cost == 2.8
 
     @pytest.mark.asyncio
     async def test_cache_monitoring(self, agent: Any) -> None:
@@ -49,6 +51,24 @@ class TestGeminiAgent:
         agent._call_api_with_retry = AsyncMock(
             return_value='{"best_candidate": "A", "evaluations": []}'
         )
+
+        # Stub LLM provider so GeminiClient uses provider path (avoids awaiting MagicMocks)
+        class _StubLLMResult:
+            finish_reason = "STOP"
+            content = (
+                '{"best_candidate": "A", "evaluations": '
+                '[{"candidate_id": "A", "score": 10, "reason": "good"}]}'
+            )
+            usage = {"prompt_tokens": 1, "completion_tokens": 1}
+            safety_ratings: dict[str, str] = {}
+
+        class _StubLLMProvider:
+            async def generate_content_async(
+                self, *args: Any, **kwargs: Any
+            ) -> "_StubLLMResult":
+                return _StubLLMResult()
+
+        agent.llm_provider = cast(Any, _StubLLMProvider())
 
         # Mock lazy properties using patch.object
         mock_genai = MagicMock()
@@ -104,7 +124,15 @@ class TestGeminiAgent:
             active = False
             return "ok"
 
-        agent._execute_api_call = fake_execute  # type: ignore[method-assign]
+        # RetryHandler가 사용하는 클라이언트 실행 경로를 스텁하여 동시성만 검증
+        agent.client.execute = fake_execute  # type: ignore[method-assign]
+
+        # LLM provider를 설정해 protos 경로를 건너뛰도록 함
+        class _StubLLMProvider:
+            async def generate_content_async(self, *args: Any, **kwargs: Any) -> Any:
+                return None
+
+        agent.llm_provider = cast(Any, _StubLLMProvider())
 
         model = object()
         await asyncio.gather(
@@ -122,6 +150,10 @@ class TestGeminiAgent:
         agent._call_api_with_retry = AsyncMock(
             return_value='{"queries": ["query1", "query2"]}'
         )
+        agent.client.execute = AsyncMock(
+            return_value='{"queries": ["query1", "query2"]}'
+        )
+        agent.llm_provider = None
 
         # Mock lazy properties using patch.object
         mock_genai = MagicMock()
@@ -163,6 +195,8 @@ class TestGeminiAgent:
         # Mock internal methods to avoid API calls
         agent._create_generative_model = MagicMock()
         agent._call_api_with_retry = AsyncMock(return_value='{"queries": ["query1"]}')
+        agent.client.execute = AsyncMock(return_value='{"queries": ["query1"]}')
+        agent.llm_provider = None
 
         # Mock lazy properties using patch.object
         mock_genai = MagicMock()

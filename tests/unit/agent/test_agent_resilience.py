@@ -28,8 +28,8 @@ async def test_generate_query_rate_limit(monkeypatch: pytest.MonkeyPatch) -> Non
     class ResourceExhausted(Exception):
         pass
 
-    mock_call = AsyncMock(side_effect=ResourceExhausted("quota"))
-    monkeypatch.setattr(agent, "_call_api_with_retry", mock_call)
+    agent.client.execute = AsyncMock(side_effect=ResourceExhausted("quota"))  # type: ignore[method-assign]
+    agent.llm_provider = None
 
     with pytest.raises(APIRateLimitError):
         await agent.generate_query("ocr")
@@ -38,7 +38,8 @@ async def test_generate_query_rate_limit(monkeypatch: pytest.MonkeyPatch) -> Non
 @pytest.mark.asyncio
 async def test_generate_query_empty_response(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _stub_agent(monkeypatch)
-    monkeypatch.setattr(agent, "_call_api_with_retry", AsyncMock(return_value=""))
+    agent.client.execute = AsyncMock(return_value="")  # type: ignore[method-assign]
+    agent.llm_provider = None
 
     result = await agent.generate_query("ocr text")
     assert result == []
@@ -47,7 +48,8 @@ async def test_generate_query_empty_response(monkeypatch: pytest.MonkeyPatch) ->
 @pytest.mark.asyncio
 async def test_generate_query_invalid_json(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _stub_agent(monkeypatch)
-    monkeypatch.setattr(agent, "_call_api_with_retry", AsyncMock(return_value="{bad"))
+    agent.client.execute = AsyncMock(return_value="{bad")  # type: ignore[method-assign]
+    agent.llm_provider = None
 
     result = await agent.generate_query("ocr text")
     assert result == []

@@ -9,12 +9,16 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+
 # 프로젝트 루트를 sys.path에 추가
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+pytestmark = pytest.mark.asyncio
 
-async def test_template_rules_integration():
+
+async def test_template_rules_integration() -> None:
     """템플릿 규칙 통합 테스트"""
     print("=" * 70)
     print("CSV 가이드 데이터 템플릿 통합 테스트")
@@ -47,7 +51,11 @@ async def test_template_rules_integration():
         # explanation 타입 규칙 가져오기
         print("\n📚 explanation 타입 규칙 가져오기...")
         context = get_all_template_context(
-            query_type="explanation", **neo4j_config, include_mistakes=True
+            query_type="explanation",
+            neo4j_uri=neo4j_config["neo4j_uri"],
+            neo4j_user=neo4j_config["neo4j_user"],
+            neo4j_password=neo4j_config["neo4j_password"],
+            include_mistakes=True,
         )
 
         guide_rules = context.get("guide_rules", [])
@@ -122,7 +130,9 @@ async def test_template_rules_integration():
         # 질의 생성 단계 컨텍스트 가져오기
         q_context = get_all_template_context(
             query_type="explanation",
-            **neo4j_config,
+            neo4j_uri=neo4j_config["neo4j_uri"],
+            neo4j_user=neo4j_config["neo4j_user"],
+            neo4j_password=neo4j_config["neo4j_password"],
             include_mistakes=True,
             context_stage="query",
         )

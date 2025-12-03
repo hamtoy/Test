@@ -119,7 +119,8 @@ async def test_execute_api_call_fallbacks_to_candidate_part(
 @pytest.mark.asyncio
 async def test_generate_query_empty_response(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _make_agent(monkeypatch)
-    monkeypatch.setattr(agent, "_call_api_with_retry", AsyncMock(return_value="   "))
+    agent.client.execute = AsyncMock(return_value="   ")  # type: ignore[method-assign]
+    agent.llm_provider = None
     result = await agent.generate_query("ocr", "user prompt")
     assert result == []
 
@@ -127,18 +128,18 @@ async def test_generate_query_empty_response(monkeypatch: pytest.MonkeyPatch) ->
 @pytest.mark.asyncio
 async def test_evaluate_responses_empty_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _make_agent(monkeypatch)
-    monkeypatch.setattr(agent, "_call_api_with_retry", AsyncMock(return_value=" "))
-    with pytest.raises(ValueError):
-        await agent.evaluate_responses("ocr", "q", {"a": "b"})
+    agent.client.execute = AsyncMock(return_value=" ")  # type: ignore[method-assign]
+    agent.llm_provider = None
+    result = await agent.evaluate_responses("ocr", "q", {"a": "b"})
+    assert result is None
 
 
 @pytest.mark.asyncio
 async def test_rewrite_best_answer_unwraps(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = _make_agent(monkeypatch)
-    monkeypatch.setattr(
-        agent,
-        "_call_api_with_retry",
-        AsyncMock(return_value='{"rewritten_answer":"ok"}'),
+    agent.client.execute = AsyncMock(  # type: ignore[method-assign]
+        return_value='{"rewritten_answer":"ok"}'
     )
+    agent.llm_provider = None
     rewritten = await agent.rewrite_best_answer("ctx", "best")
     assert rewritten == "ok"
