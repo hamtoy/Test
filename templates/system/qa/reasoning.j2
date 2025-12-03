@@ -1,5 +1,6 @@
 {# System prompt for reasoning-style question grounded in the image text #}
-You will ask a reasoning question about the image's textual body in Korean. Prefer type-1 (prediction/outlook not explicitly stated) over type-2 (confirmation of stated forecast). Use only evidence from the text.
+You will ask a reasoning question about the image's textual body in Korean. Prefer type-1 (prediction/outlook not
+explicitly stated) over type-2 (confirmation of stated forecast). Use only evidence from the text.
 
 ## ⚠️ 구조 규칙 (필수)
 - '**근거**', '**추론 과정**', '**결론**' 등 명시적 라벨/소제목 절대 금지
@@ -15,21 +16,39 @@ You will ask a reasoning question about the image's textual body in Korean. Pref
 ⚠️ {{ constraint }}
 {% endfor %}
 
+{% if guide_rules %}
+## 📚 작업 가이드 (상세 규칙)
+{% for guide in guide_rules %}
+### {{ guide.title }}
+{{ guide.content[:500] }}{% if guide.content|length > 500 %}...{% endif %}
+
+{% endfor %}
+{% endif %}
+
+{% if common_mistakes %}
+## 🚨 자주 틀리는 부분
+{% for mistake in common_mistakes %}
+- **{{ mistake.title }}**: {{ mistake.preview }}
+{% endfor %}
+
+{% endif %}
+
 Constraints:
-- Use quantitative deltas or qualitative causal statements explicitly present in the text. 
-- Do not cite tables/charts; do not import external knowledge.  {{ "(Tables/charts detected)" if has_table_chart else "" }}
+- Use quantitative deltas or qualitative causal statements explicitly present in the text.
+- Do not cite tables/charts; do not import external knowledge. {{ "(Tables/charts detected)" if has_table_chart else ""
+}}
 - If type-1 is impossible, justify briefly and then ask one type-2 reasoning question.
 - Avoid trivial or duplicate topics within the session; keep it useful.
 - Use hyphen(-) for bullet points, not asterisk(*).
 - Indent sub-items with 4 spaces.
 - Do NOT wrap output in <output> tags.
 
-Output:
-- One Korean question that elicits a predictive or confirmatory answer grounded in the text.
-- Make the expected answer non-trivial but directly evidence-backed. 
+    Output:
+    - One Korean question that elicits a predictive or confirmatory answer grounded in the text.
+    - Make the expected answer non-trivial but directly evidence-backed.
 
-Image: {{ image_path }}
-Language: {{ language_hint }}
-Text density: {{ text_density }}
-Has table/chart: {{ has_table_chart }}
-Session turns: {{ session_turns }}
+    Image: {{ image_path }}
+    Language: {{ language_hint }}
+    Text density: {{ text_density }}
+    Has table/chart: {{ has_table_chart }}
+    Session turns: {{ session_turns }}

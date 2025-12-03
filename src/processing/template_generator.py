@@ -36,6 +36,9 @@ class DynamicTemplateGenerator:
             neo4j_user: Neo4j username.
             neo4j_password: Neo4j password.
         """
+        self.neo4j_uri = neo4j_uri
+        self.neo4j_user = neo4j_user
+        self.neo4j_password = neo4j_password
         self.driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
         self.logger = logging.getLogger(__name__)
         self.jinja_env = Environment(
@@ -79,6 +82,24 @@ class DynamicTemplateGenerator:
             raise ValueError(f"QueryType '{query_type}'을(를) 찾을 수 없습니다.")
         data = records[0]
 
+        # CSV 가이드 데이터 가져오기
+        guide_rules: list[dict[str, str]] = []
+        common_mistakes: list[dict[str, str]] = []
+        try:
+            from src.qa.template_rules import get_all_template_context
+
+            template_context = get_all_template_context(
+                query_type=query_type,
+                neo4j_uri=self.neo4j_uri,
+                neo4j_user=self.neo4j_user,
+                neo4j_password=self.neo4j_password,
+                include_mistakes=True,
+            )
+            guide_rules = template_context.get("guide_rules", []) or []
+            common_mistakes = template_context.get("common_mistakes", []) or []
+        except Exception as e:
+            self.logger.warning("CSV 가이드 데이터 조회 실패: %s", e)
+
         template_map = {
             "explanation": "system/qa/explanation.j2",
             "global_explanation": "system/qa/global.j2",
@@ -107,6 +128,8 @@ class DynamicTemplateGenerator:
             "constraints": data["constraints"],
             "best_practices": data["best_practices"],
             "examples": data["examples"],
+            "guide_rules": guide_rules,
+            "common_mistakes": common_mistakes,
             "calc_allowed": context.get(
                 "calc_allowed", context.get("used_calc_query_count", 0) < 1
             ),

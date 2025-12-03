@@ -39,6 +39,28 @@
       <formatting_rules>
         {{ formatting_rules | default("") }}
       </formatting_rules>
+
+      {% if guide_rules %}
+      <guide_rules>
+        <!-- 작업 가이드 (상세 규칙) -->
+        {% for guide in guide_rules %}
+        <rule title="{{ guide.title }}">
+          {{ guide.content[:500] }}{% if guide.content|length > 500 %}...{% endif %}
+        </rule>
+        {% endfor %}
+      </guide_rules>
+      {% endif %}
+
+      {% if common_mistakes %}
+      <common_mistakes>
+        <!-- 자주 틀리는 부분 -->
+        {% for mistake in common_mistakes %}
+        <mistake title="{{ mistake.title }}">
+          {{ mistake.preview }}
+        </mistake>
+        {% endfor %}
+      </common_mistakes>
+      {% endif %}
     </fundamental_constraints>
   </axiomatic_principles>
 
@@ -75,7 +97,8 @@
         <!-- 기본 질의 타입 정의 (Neo4j 없을 때만) -->
         <type name="A_EXPLANATION">
           이미지 전체를 관통하는 주제에 대해 설명을 요청한다.
-          [CRITICAL_CONSTRAINT]: '부분 설명문'은 생성을 금지한다. 반드시 전체 내용을 대상으로 해야 하며, "이 이미지 설명해줘"(X) 대신 "동국제약의 재무 성과에 대해 설명해줘"(O)와 같이 구체적 주제를 명시한다.
+          [CRITICAL_CONSTRAINT]: '부분 설명문'은 생성을 금지한다. 반드시 전체 내용을 대상으로 해야 하며, "이 이미지 설명해줘"(X) 대신 "동국제약의 재무 성과에 대해
+          설명해줘"(O)와 같이 구체적 주제를 명시한다.
         </type>
 
         <type name="B_SUMMARY">
@@ -138,7 +161,8 @@
     <final_output_specification>
       <rules>
         <rule>"Output must be a valid JSON object matching the schema: {{ response_schema }}"</rule>
-        <rule>"Generate a list of 3-4 strategic search queries that best address the constraints or cover the key information."</rule>
+        <rule>"Generate a list of 3-4 strategic search queries that best address the constraints or cover the key
+          information."</rule>
         {% if constraints %}
         <rule>"All queries must strictly comply with Neo4j constraints, especially those with priority >= 90."</rule>
         {% endif %}

@@ -1,5 +1,6 @@
 {# System prompt for rewriting a top-scoring answer #}
-You will rewrite the selected top-scoring answer into smoother, more natural Korean while preserving meaning and all named entities, economic terms, and numeric values exactly.  
+You will rewrite the selected top-scoring answer into smoother, more natural Korean while preserving meaning and all
+named entities, economic terms, and numeric values exactly.
 
 {% if constraints %}
 ## 🚨 절대 준수 제약사항 (CRITICAL - MUST FOLLOW) 🚨
@@ -19,51 +20,43 @@ You will rewrite the selected top-scoring answer into smoother, more natural Kor
 ## 추가 가이드라인
 
 {% for constraint in constraints | sort(attribute='priority', reverse=true) %}
-{% if constraint.priority < 90 %}
-- [Priority {{ constraint.priority }}] **{{ constraint.name }}**: {{ constraint.description }}
-{% endif %}
-{% endfor %}
-{% endif %}
-{% endif %}
+{% if constraint.priority < 90 %} - [Priority {{ constraint.priority }}] **{{ constraint.name }}**: {{
+    constraint.description }} {% endif %} {% endfor %} {% endif %} {% endif %} {% if length_constraint %} ## ⚠️ 길이 제약
+    (엄격히 준수) ⚠️ {{ length_constraint }} **답변 작성 후 반드시 검증:** 1. 마침표(.)로 문장 개수 세기 2. 제한 초과 시 가장 덜 중요한 문장 삭제 3. 재검증 후 제출 {%
+    endif %} {% if rules %} ## 준수해야 할 규칙 {% for rule in rules | default([]) -%} - {{ rule }} {% endfor %} {% endif %} {%
+    if guide_rules %} ## 📚 작업 가이드 (상세 규칙) {% for guide in guide_rules %} ### {{ guide.title }} {{ guide.content[:500]
+    }}{% if guide.content|length> 500 %}...{% endif %}
 
-{% if length_constraint %}
-## ⚠️ 길이 제약 (엄격히 준수) ⚠️
+    {% endfor %}
+    {% endif %}
 
-{{ length_constraint }}
+    {% if common_mistakes %}
+    ## 🚨 자주 틀리는 부분
+    {% for mistake in common_mistakes %}
+    - **{{ mistake.title }}**: {{ mistake.preview }}
+    {% endfor %}
 
-**답변 작성 후 반드시 검증:**
-1. 마침표(.)로 문장 개수 세기
-2. 제한 초과 시 가장 덜 중요한 문장 삭제
-3. 재검증 후 제출
+    {% endif %}
 
-{% endif %}
+    ## 볼드체 규칙 (필수)
+    - 볼드체(**)는 소제목과 목록의 핵심 키워드에만 사용한다.
+    - 본문 문장 내에서 단어를 강조하기 위해 볼드체를 절대 사용하지 않는다.
+    - 올바른 예: **매출 현황** (소제목), - **매출**: 증가 (목록)
+    - 잘못된 예: **달러화**는 상승했습니다. (본문 내 강조 금지)
 
-{% if rules %}
-## 준수해야 할 규칙
-{% for rule in rules | default([]) -%}
-- {{ rule }}
-{% endfor %}
-{% endif %}
+    ## 마크다운 규칙
+    - 불릿은 하이픈(-)만 사용. 별표(*) 금지.
+    - 들여쓰기는 4칸 스페이스.
+    - 시간 범위는 공백 없이 하이픈 (예: 2023-2024).
+    - <output> 태그 사용 금지. 답변 내용만 바로 출력.
 
-## 볼드체 규칙 (필수)
-- 볼드체(**)는 소제목과 목록의 핵심 키워드에만 사용한다.
-- 본문 문장 내에서 단어를 강조하기 위해 볼드체를 절대 사용하지 않는다. 
-- 올바른 예: **매출 현황** (소제목), - **매출**: 증가 (목록)
-- 잘못된 예: **달러화**는 상승했습니다.  (본문 내 강조 금지)
+        ## 서식 규칙
+        - 문체: '-습니다'체로 통일.
+        - 서술어: 동일한 서술어 3회 연속 반복 금지.
+        - 목록 앞뒤에 빈 줄 필수.
+        - 콜론(:)은 볼드체 밖에 위치. **항목**: (O), **항목:**: (X)
 
-## 마크다운 규칙
-- 불릿은 하이픈(-)만 사용.  별표(*) 금지.
-- 들여쓰기는 4칸 스페이스. 
-- 시간 범위는 공백 없이 하이픈 (예: 2023-2024). 
-- <output> 태그 사용 금지.  답변 내용만 바로 출력. 
-
-## 서식 규칙
-- 문체: '-습니다'체로 통일.
-- 서술어: 동일한 서술어 3회 연속 반복 금지.
-- 목록 앞뒤에 빈 줄 필수. 
-- 콜론(:)은 볼드체 밖에 위치.  **항목**: (O), **항목:**: (X)
-
-Constraints:
-- Do not introduce information not grounded in the image text.
-- Do not cite tables/charts as evidence.  {{ "(Tables/charts detected)" if has_table_chart else "" }}
-- Maintain utility and completeness of the original best answer.
+        Constraints:
+        - Do not introduce information not grounded in the image text.
+        - Do not cite tables/charts as evidence. {{ "(Tables/charts detected)" if has_table_chart else "" }}
+        - Maintain utility and completeness of the original best answer.
