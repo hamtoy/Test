@@ -11,7 +11,7 @@ from typing import Any, AsyncIterator, Dict, Literal, Optional
 from uuid import uuid4
 
 from checks.detect_forbidden_patterns import find_violations
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from fastapi.responses import HTMLResponse, RedirectResponse, Response, JSONResponse
@@ -23,6 +23,7 @@ from src.analysis.cross_validation import CrossValidationSystem
 from src.agent import GeminiAgent
 from src.config import AppConfig
 from src.config.constants import DEFAULT_ANSWER_RULES
+from src.features.multimodal import MultimodalUnderstanding
 from src.infra.health import (
     HealthChecker,
     check_gemini_api,
@@ -55,7 +56,7 @@ logger = logging.getLogger(__name__)
 _config: Optional[AppConfig] = None
 agent: Optional[GeminiAgent] = None
 kg: Optional[QAKnowledgeGraph] = None
-mm: Optional[Any] = None  # Legacy placeholder for removed multimodal module
+mm: Optional[MultimodalUnderstanding] = None
 pipeline: Optional[IntegratedQAPipeline] = None
 session_manager = SessionManager()
 REQUEST_ID_HEADER = "X-Request-Id"
@@ -214,7 +215,7 @@ async def _init_health_checks() -> None:
 
 async def init_resources() -> None:
     """전역 리소스 초기화 (서버 시작 시 호출)."""
-    global agent, kg, pipeline
+    global agent, kg, mm, pipeline
     app_config = get_config()
 
     if agent is None:
@@ -235,6 +236,13 @@ async def init_resources() -> None:
         except Exception as e:
             logger.warning("Neo4j 연결 실패 (RAG 비활성화): %s", e)
             kg = None
+    if mm is None and kg is not None:
+        try:
+            mm = MultimodalUnderstanding(kg=kg)
+            logger.info("MultimodalUnderstanding 초기화 완료")
+        except Exception as e:
+            logger.warning("Multimodal 초기화 실패: %s", e)
+            mm = None
 
     if pipeline is None:
         try:
@@ -252,7 +260,7 @@ async def init_resources() -> None:
     workspace_router_module.set_dependencies(app_config, agent, kg, pipeline)
     stream_router_module.set_dependencies(app_config, agent)
     health_router_module.set_dependencies(
-        health_checker, agent=agent, kg=kg, pipeline=pipeline
+        health_checker, agent=agent, kg=kg, mm=mm, pipeline=pipeline
     )
 
 
@@ -319,6 +327,12 @@ async def page_workspace(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "workspace.html")
 
 
+@app.get("/multimodal", response_class=HTMLResponse)
+async def page_multimodal(request: Request) -> HTMLResponse:
+    """이미지 분석 페이지 (테스트 호환용 더미)."""
+    return templates.TemplateResponse(request, "multimodal.html")
+
+
 @app.get("/api/session")
 async def get_session(request: Request) -> Dict[str, Any]:
     """현재 세션 정보를 조회합니다."""
@@ -371,6 +385,57 @@ async def api_save_ocr(request: Request, payload: OCRTextInput) -> Dict[str, str
             "Failed to save OCR text", request=request, exc=exc, logger_obj=logger
         )
         raise HTTPException(status_code=500, detail="OCR 텍스트 저장 실패") from exc
+
+
+# ============================================================================
+# 멀티모달 (테스트 호환용 최소 구현)
+# ============================================================================
+
+
+@app.post("/api/multimodal/analyze")
+async def api_analyze_image(
+    request: Request, file: UploadFile = File(...)
+) -> Dict[str, Any]:
+    """이미지 업로드 + 구조 분석 (테스트 호환을 위한 최소 구현)."""
+    if mm is None:
+        raise HTTPException(
+            status_code=500, detail="Multimodal 기능 비활성화 (Neo4j 필요)"
+        )
+
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
+
+    temp_dir = config.input_dir / "temp"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    original_filename = file.filename or "uploaded_image"
+    safe_name = Path(original_filename).name
+    ext = Path(safe_name).suffix.lower()
+    allowed_extensions = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tiff"}
+    if ext not in allowed_extensions:
+        ext = ""
+    secure_filename = f"{uuid4().hex}{ext}"
+    temp_path = temp_dir / secure_filename
+
+    try:
+        content = await file.read()
+        temp_path.write_bytes(content)
+
+        metadata = mm.analyze_image_deep(str(temp_path))
+
+        return {"filename": file.filename, "metadata": metadata}
+
+    except Exception as exc:  # noqa: BLE001
+        _log_api_error(
+            "이미지 분석 실패",
+            request=request,
+            exc=exc,
+            logger_obj=logger,
+        )
+        raise HTTPException(status_code=500, detail="분석 실패") from exc
+
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
 
 
 # ============================================================================
