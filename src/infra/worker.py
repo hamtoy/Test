@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -72,11 +73,9 @@ def get_config() -> AppConfig:
 # Initialize Broker with default URL (redis://localhost:6379)
 # Note: RedisBroker default URL matches AppConfig.redis_url default
 # The broker connects during app.run() startup, not at instantiation
-broker = RedisBroker()
+broker = RedisBroker(url=os.getenv("REDIS_URL", "redis://localhost:6379"))
 app = FastStream(broker)
 redis_client = None
-
-# Lazy-initialized providers (initialized on first use via _init_providers)
 llm_provider = None
 lats_agent: Optional[GeminiAgent] = None
 graph_provider = None

@@ -79,7 +79,9 @@ class AppConfig(BaseSettings):
 
     # Async Queue Configuration
     redis_url: str = Field(
-        "redis://localhost:6379", description="Redis URL for FastStream"
+        "redis://localhost:6379",
+        alias="REDIS_URL",
+        description="Redis URL for FastStream",
     )
 
     model_config = SettingsConfigDict(
