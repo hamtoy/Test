@@ -16,13 +16,12 @@ class PricingTier(TypedDict):
 PRICING_TIERS: Final[dict[str, List[PricingTier]]] = {
     # Default model
     "gemini-flash-latest": [
-        {"max_input_tokens": 200_000, "input_rate": 2.00, "output_rate": 12.00},
-        {"max_input_tokens": None, "input_rate": 4.00, "output_rate": 18.00},
+        # Pricing per 1M tokens, all context lengths (see latest Gemini pricing)
+        {"max_input_tokens": None, "input_rate": 0.30, "output_rate": 2.50},
     ],
     # Backward compatibility
     "gemini-3-pro-preview": [
-        {"max_input_tokens": 200_000, "input_rate": 2.00, "output_rate": 12.00},
-        {"max_input_tokens": None, "input_rate": 4.00, "output_rate": 18.00},
+        {"max_input_tokens": None, "input_rate": 0.30, "output_rate": 2.50},
     ],
 }
 

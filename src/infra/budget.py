@@ -7,9 +7,9 @@ from typing import Any, Dict, List, Optional
 # Gemini Flash pricing (USD per 1M tokens)
 # Source: Google AI Studio pricing page (<=200K tokens tier)
 GEMINI_FLASH_PRICING = {
-    "input": 2.0,  # $2.00 per 1M input tokens
-    "output": 12.0,  # $12.00 per 1M output tokens
-    "cached_input": 0.5,  # $0.50 per 1M cached tokens (estimate)
+    "input": 0.30,  # $0.30 per 1M input tokens
+    "output": 2.50,  # $2.50 per 1M output tokens
+    "cached_input": 0.075,  # $0.075 per 1M cached tokens (estimate)
 }
 
 # Note: >200K tokens tier has higher rates:
