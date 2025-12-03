@@ -82,6 +82,11 @@ python -m src.main
 - **Data2Neo** (`ENABLE_DATA2NEO=true`): 데이터-Neo4j 변환
 - **Redis** (`REDIS_URL`): 캐시 서버 연동
 
+## 데이터/산출물 위치
+
+- Neo4j 임포트 CSV/스크립트: `data/neo4j/` (`guide.csv`, `qna.csv`, `import_*.cypher`, README 포함)
+- 테스트/리포트 산출물: `artifacts/` (예: `verification_result.txt`, 커버리지 파일 등)
+
 ## 출력 및 로그
 
 - 결과: `data/outputs/result_turn_<id>_<timestamp>.md`
