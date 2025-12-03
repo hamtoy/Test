@@ -7,10 +7,28 @@ jobs:
     permissions:
       actions: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
       - name: Delete all caches
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Fetching list of cache keys..."
-          gh cache delete --all
+          REPO="${{ github.repository }}"
+          
+          # 모든 캐시 키 가져오기
+          cache_keys=$(gh cache list -R "$REPO" --json key --jq '.[].key')
+          
+          if [ -z "$cache_keys" ]; then
+            echo "No caches found."
+            exit 0
+          fi
+          
+          # 각 캐시 개별 삭제
+          echo "$cache_keys" | while read -r key; do
+            echo "Deleting cache: $key"
+            gh cache delete "$key" -R "$REPO" --confirm
+          done
+          
           echo "Done! All caches cleared."
