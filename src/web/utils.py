@@ -90,7 +90,7 @@ def strip_output_tags(text: str) -> str:
 
 
 def detect_workflow(
-    query: str, answer: str, edit_request: Optional[str]
+    query: Optional[str], answer: Optional[str], edit_request: Optional[str]
 ) -> Literal[
     "full_generation",
     "edit_both",
