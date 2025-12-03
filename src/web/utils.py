@@ -89,6 +89,31 @@ def strip_output_tags(text: str) -> str:
     return text.replace("<output>", "").replace("</output>", "").strip()
 
 
+def fix_broken_numbers(text: str) -> str:
+    r"""잘못 분리된 숫자/소수 표현을 복원한다.
+
+    예:
+        "61\n- 7만건" -> "61.7만건"
+        "873\n- 3만 건" -> "873.3만 건"
+    """
+    # 패턴 1: 숫자 + 줄바꿈 + 불릿 + 숫자 → 소수점으로 병합
+    text = re.sub(r"(\\d)\\s*[\\r\\n]+-\\s*(\\d)", r"\\1.\\2", text)
+
+    # 패턴 2: 연속된 불릿 라인 중 숫자로 시작하는 경우 이전 줄과 병합
+    lines = text.splitlines()
+    merged: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("- ") and len(stripped) > 2:
+            rest = stripped[2:]
+            if rest and rest[0].isdigit() and merged:
+                merged[-1] = merged[-1].rstrip() + "." + rest
+                continue
+        merged.append(line)
+
+    return "\n".join(merged)
+
+
 def detect_workflow(
     query: Optional[str], answer: Optional[str], edit_request: Optional[str]
 ) -> Literal[
@@ -129,6 +154,8 @@ def postprocess_answer(answer: str, qtype: str) -> str:
     """답변 후처리 - 서식 규칙 위반 자동 수정."""
     # 1. 태그 제거
     answer = strip_output_tags(answer)
+    # 1.1 숫자 포맷 깨짐 복원
+    answer = fix_broken_numbers(answer)
 
     # 2. ###/## 소제목 → **소제목** + 줄바꿈
     answer = re.sub(r"\s*###\s+([^#\n]+)", r"\n\n**\1**\n\n", answer)
@@ -140,9 +167,15 @@ def postprocess_answer(answer: str, qtype: str) -> str:
 
     # 4. 질의 유형별 후처리
     if qtype in {"target_short", "target_long"}:
-        # 문장 단위로 분리 후 정리
-        sentences = [s.strip() for s in answer.split(".") if s.strip()]
-        answer = "\n".join(f"- {s}" for s in sentences)
+        # 소수점이 포함된 숫자를 보존하면서 문장 단위로 정리
+        sentences = [
+            s.strip() for s in re.split(r"(?<!\d)\.(?!\d)", answer) if s.strip()
+        ]
+        if sentences:
+            # 문장 사이에는 한 칸을 둔 줄글 형태로 반환
+            answer = ". ".join(sentences)
+            if not answer.endswith("."):
+                answer = answer + "."
 
     return answer.strip()
 
@@ -151,6 +184,7 @@ __all__ = [
     "QTYPE_MAP",
     "REPO_ROOT",
     "detect_workflow",
+    "fix_broken_numbers",
     "load_ocr_text",
     "log_review_session",
     "postprocess_answer",
