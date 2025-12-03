@@ -34,7 +34,14 @@ class SessionManager:
     def _is_expired(self, sess: SessionData) -> bool:
         return (time.time() - sess.last_access) > self.ttl_seconds
 
+    def _cleanup_expired(self) -> None:
+        """Remove all expired sessions."""
+        expired = [sid for sid, sess in self._store.items() if self._is_expired(sess)]
+        for sid in expired:
+            self.destroy(sid)
+
     def get(self, session_id: str) -> Optional[SessionData]:
+        self._cleanup_expired()
         session = self._store.get(session_id)
         if session and self._is_expired(session):
             self.destroy(session_id)
@@ -51,6 +58,7 @@ class SessionManager:
         return session
 
     def get_or_create(self, session_id: Optional[str]) -> SessionData:
+        self._cleanup_expired()
         if session_id:
             existing = self.get(session_id)
             if existing:
@@ -88,7 +96,8 @@ def session_middleware(
             "session_id",
             session.session_id,
             httponly=True,
-            samesite="lax",
+            samesite="strict",
+            secure=True,
             max_age=manager.ttl_seconds,
         )
         return response

@@ -14,7 +14,7 @@ from checks.detect_forbidden_patterns import find_violations
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.requests import Request
@@ -93,6 +93,38 @@ def _log_api_error(
         },
         exc_info=True,
     )
+
+
+async def _error_logging_middleware(
+    request: Request, call_next: RequestResponseEndpoint
+) -> Response:
+    """Capture unhandled exceptions with request context."""
+    try:
+        return await call_next(request)
+    except HTTPException as http_exc:
+        logger.warning(
+            "HTTPException",
+            extra={
+                "request_id": _get_request_id(request),
+                "path": request.url.path,
+                "method": request.method,
+                "status_code": http_exc.status_code,
+                "error_type": http_exc.__class__.__name__,
+            },
+            exc_info=False,
+        )
+        raise
+    except Exception as exc:  # noqa: BLE001
+        _log_api_error(
+            "Unhandled API error", request=request, exc=exc, logger_obj=logger
+        )
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": "Internal server error",
+                "request_id": _get_request_id(request),
+            },
+        )
 
 
 # 정적 파일 & 템플릿 경로
@@ -250,6 +282,7 @@ app.add_middleware(
 )
 app.add_middleware(BaseHTTPMiddleware, dispatch=session_middleware(session_manager))
 app.add_middleware(BaseHTTPMiddleware, dispatch=_request_id_middleware)
+app.add_middleware(BaseHTTPMiddleware, dispatch=_error_logging_middleware)
 
 # 정적 파일 & 템플릿
 app.mount("/static", StaticFiles(directory=str(REPO_ROOT / "static")), name="static")
