@@ -75,7 +75,7 @@ jobs:
         run: uv run mypy .
 
       - name: Pydocstyle (Google convention)
-        run: uv run pydocstyle --convention=google --add-ignore=D100,D104,D403 src/
+        run: uvx pydocstyle --convention=google --add-ignore=D100,D104,D403 src/
         continue-on-error: false # Fail CI if docstring issues found
 
       - name: Wait for Neo4j
