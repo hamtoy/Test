@@ -1,6 +1,6 @@
 # Neo4j Aura CSV Import Guide
 
-바탕화면의 CSV 파일을 Neo4j Aura 클라우드 데이터베이스로 임포트하는 가이드입니다.
+`data/neo4j/` 디렉터리의 CSV 파일을 Neo4j Aura 클라우드 데이터베이스로 임포트하는 가이드입니다.
 
 ## 사전 준비
 

@@ -1,6 +1,6 @@
 # CSV to Neo4j Cypher Import Guide
 
-바탕화면의 CSV 파일들을 Neo4j로 임포트하기 위한 Cypher 스크립트입니다.
+`data/neo4j/` 디렉터리에 있는 CSV 파일들을 Neo4j로 임포트하기 위한 Cypher 스크립트입니다.
 
 ## 파일 구성
 
