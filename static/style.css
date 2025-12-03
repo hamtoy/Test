@@ -55,7 +55,7 @@ body {
     background: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.6;
-    font-size: 14px;
+    font-size: 15px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -126,7 +126,7 @@ main {
 
 .split-layout {
     display: grid;
-    grid-template-columns: 420px 1fr;
+    grid-template-columns: minmax(360px, 400px) 1fr;
     gap: 24px;
     align-items: start;
 }
@@ -255,33 +255,47 @@ main {
 }
 
 /* Buttons */
-.btn-primary {
-    background: var(--accent-primary);
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
-    width: 100%;
-    transition: all 0.2s ease;
-    display: flex;
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-small,
+.copy-btn-small {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    font-weight: 600;
     gap: 8px;
 }
 
+.btn,
+.btn--primary,
+.btn-primary {
+    padding: 12px 20px;
+    font-size: 14px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    box-shadow: none;
+    width: 100%;
+}
+
+.btn--primary:hover,
 .btn-primary:hover {
     background: var(--accent-primary-hover);
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);
 }
 
+.btn--primary:active,
 .btn-primary:active {
     transform: translateY(0);
 }
 
+.btn--primary:disabled,
 .btn-primary:disabled {
     background: var(--border);
     cursor: not-allowed;
@@ -289,56 +303,52 @@ main {
     box-shadow: none;
 }
 
+.btn--secondary,
 .btn-secondary {
     background: var(--bg-tertiary);
     color: var(--text-primary);
     border: 1px solid var(--border);
     padding: 8px 16px;
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
-    transition: all 0.2s ease;
 }
 
+.btn--secondary:hover,
 .btn-secondary:hover {
     background: var(--bg-hover);
     border-color: var(--border-light);
 }
 
-.btn-small {
+.btn--small,
+.btn-small,
+.copy-btn-small {
     background: var(--bg-tertiary);
     border: 1px solid var(--border);
     padding: 6px 12px;
     border-radius: var(--radius-sm);
-    cursor: pointer;
     color: var(--text-secondary);
     font-size: 12px;
-    transition: all 0.2s ease;
-}
-
-.btn-small:hover {
-    background: var(--accent-danger);
-    color: white;
-    border-color: var(--accent-danger);
-}
-
-.copy-btn-small {
-    padding: 4px 10px;
-    font-size: 12px;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    color: var(--text-secondary);
     font-weight: 500;
 }
 
+.btn--small:hover,
+.btn-small:hover,
 .copy-btn-small:hover {
     background: var(--accent-primary);
     color: white;
     border-color: var(--accent-primary);
+}
+
+.copy-btn-small.copied {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.btn--danger {
+    background: var(--accent-danger);
+    border-color: var(--accent-danger);
+    color: white;
 }
 
 .btn-row {
@@ -451,7 +461,7 @@ main {
 .qa-text {
     margin: 0;
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.7;
     white-space: pre-wrap;
     word-break: break-word;
@@ -530,12 +540,12 @@ table td {
 table th {
     background: var(--bg-secondary);
     font-weight: 600;
-    font-size: 13px;
+    font-size: 14px;
     color: var(--text-secondary);
 }
 
 table td {
-    font-size: 13px;
+    font-size: 14px;
 }
 
 table tr:last-child td {
@@ -604,6 +614,21 @@ footer {
 @keyframes spin {
     to {
         transform: rotate(360deg);
+    }
+}
+
+.progress-fill.indeterminate {
+    position: relative;
+    width: 35%;
+    animation: progress-indeterminate 1.2s infinite;
+}
+
+@keyframes progress-indeterminate {
+    0% {
+        margin-left: -35%;
+    }
+    100% {
+        margin-left: 100%;
     }
 }
 
@@ -742,4 +767,36 @@ footer {
 ::selection {
     background: var(--accent-primary-soft);
     color: var(--accent-primary);
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(120px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    color: var(--text-primary);
+}
+
+.toast--show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.toast--error {
+    border-color: var(--accent-danger);
+    background: var(--accent-danger-soft);
+}
+
+.toast--success {
+    border-color: var(--accent-primary);
+    background: var(--accent-primary-soft);
 }

@@ -2,6 +2,19 @@
 // 공통 함수
 // ============================================================================
 
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast--${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => toast.classList.add('toast--show'));
+    setTimeout(() => {
+        toast.classList.remove('toast--show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 async function apiCall(url, method = 'GET', body = null) {
     const options = {
         method,
@@ -23,7 +36,7 @@ async function apiCall(url, method = 'GET', body = null) {
         return await response.json();
     } catch (error) {
         console.error('API Error:', error);
-        alert('오류: ' + error.message);
+        showToast('오류: ' + error.message, 'error');
         throw error;
     }
 }
@@ -39,22 +52,18 @@ function copyToClipboard(text, buttonEl = null) {
         .then(() => {
             if (buttonEl) {
                 const originalText = buttonEl.textContent;
-                const originalBg = buttonEl.style.background;
-                const originalColor = buttonEl.style.color;
                 buttonEl.textContent = '✅ 복사됨';
-                buttonEl.style.background = 'var(--success, #4caf50)';
-                buttonEl.style.color = '#fff';
+                buttonEl.classList.add('copied');
                 setTimeout(() => {
                     buttonEl.textContent = originalText;
-                    buttonEl.style.background = originalBg;
-                    buttonEl.style.color = originalColor;
+                    buttonEl.classList.remove('copied');
                 }, 1500);
             } else {
-                alert('클립보드에 복사되었습니다!');
+                showToast('클립보드에 복사되었습니다!', 'success');
             }
         })
         .catch((err) => {
-            alert('복사 실패: ' + err.message);
+            showToast('복사 실패: ' + err.message, 'error');
         });
 }
 
@@ -146,10 +155,7 @@ async function generateQA(mode, qtype) {
     `;
 
     const progressBar = document.querySelector('.progress-fill');
-    setTimeout(() => progressBar.style.width = '20%', 500);
-    setTimeout(() => progressBar.style.width = '45%', 3000);
-    setTimeout(() => progressBar.style.width = '70%', 7000);
-    setTimeout(() => progressBar.style.width = '90%', 12000);
+    progressBar.classList.add('indeterminate');
 
     try {
         const body = { mode };
@@ -160,6 +166,7 @@ async function generateQA(mode, qtype) {
         const data = await apiCall('/api/qa/generate', 'POST', body);
 
         // 완료 애니메이션
+        progressBar.classList.remove('indeterminate');
         progressBar.style.width = '100%';
         await new Promise(resolve => setTimeout(resolve, 400));
 
@@ -183,6 +190,7 @@ async function generateQA(mode, qtype) {
                     <button onclick="location.reload()" class="btn-primary" style="padding: 10px 20px; cursor: pointer;">새로고침</button>
                 </div>`;
         } else {
+            progressBar.classList.remove('indeterminate');
             resultsDiv.innerHTML = `<p style="color: var(--danger, red)">생성 실패: ${error.message}</p>`;
         }
     }
