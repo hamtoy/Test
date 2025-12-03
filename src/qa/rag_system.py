@@ -8,6 +8,7 @@ import weakref
 from contextlib import contextmanager, suppress
 from typing import Any, Dict, Generator, List, Optional
 
+import google.generativeai as genai  # noqa: F401
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 from neo4j.exceptions import Neo4jError, ServiceUnavailable
@@ -29,7 +30,7 @@ from src.qa.graph.utils import (
     len_if_sized,
     record_vector_metrics,
 )
-from src.qa.graph.validators import validate_session_structure
+from src.qa.graph.validators import validate_session_structure, validate_turns  # noqa: F401
 
 logger = logging.getLogger(__name__)
 __all__ = ["QAKnowledgeGraph", "CustomGeminiEmbeddings"]
