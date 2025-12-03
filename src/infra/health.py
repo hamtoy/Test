@@ -37,7 +37,7 @@ DEFAULT_TIMEOUT = 3.0
 
 
 async def check_redis() -> dict[str, Any]:
-    """Redis 연결 및 응답 시간 확인 (타임아웃 3초)
+    """Redis 연결 및 응답 시간 확인 (타임아웃 3초).
 
     Returns:
         Redis 상태 정보 딕셔너리
@@ -73,7 +73,7 @@ async def check_redis() -> dict[str, Any]:
 
 
 async def check_neo4j() -> dict[str, Any]:
-    """Neo4j 연결 및 쿼리 테스트 (타임아웃 3초)
+    """Neo4j 연결 및 쿼리 테스트 (타임아웃 3초).
 
     Returns:
         Neo4j 상태 정보 딕셔너리
@@ -123,7 +123,7 @@ async def check_neo4j() -> dict[str, Any]:
 
 
 def _sync_check_neo4j(uri: str, user: str, password: str) -> bool:
-    """동기적으로 Neo4j 연결 확인"""
+    """동기적으로 Neo4j 연결 확인."""
     from neo4j import GraphDatabase
 
     driver = None
@@ -140,7 +140,7 @@ def _sync_check_neo4j(uri: str, user: str, password: str) -> bool:
 
 
 async def check_gemini_api() -> dict[str, Any]:
-    """Gemini API 키 유효성 확인
+    """Gemini API 키 유효성 확인.
 
     Returns:
         Gemini API 상태 정보 딕셔너리
@@ -161,7 +161,7 @@ async def check_gemini_api() -> dict[str, Any]:
 
 
 async def check_dependencies() -> dict[str, Any]:
-    """필수 의존성 버전 확인
+    """필수 의존성 버전 확인.
 
     Returns:
         의존성 버전 정보 딕셔너리
@@ -206,7 +206,7 @@ async def check_dependencies() -> dict[str, Any]:
 
 
 async def check_disk() -> dict[str, Any]:
-    """디스크 공간 확인
+    """디스크 공간 확인.
 
     Returns:
         디스크 상태 정보 딕셔너리
@@ -235,7 +235,7 @@ async def check_disk() -> dict[str, Any]:
 
 
 async def check_memory() -> dict[str, Any]:
-    """메모리 사용량 확인
+    """메모리 사용량 확인.
 
     Returns:
         메모리 상태 정보 딕셔너리
@@ -280,7 +280,7 @@ async def check_memory() -> dict[str, Any]:
 
 
 async def health_check_async() -> dict[str, Any]:
-    """전체 헬스체크 실행 (비동기)
+    """전체 헬스체크 실행 (비동기).
 
     Returns:
         전체 상태 정보 딕셔너리
@@ -373,7 +373,7 @@ def health_check() -> dict[str, Any]:
 
 
 async def liveness_check() -> dict[str, Any]:
-    """Kubernetes liveness probe - 프로세스 살아있는지 확인
+    """Kubernetes liveness probe - 프로세스 살아있는지 확인.
 
     Returns:
         간단한 상태 딕셔너리
@@ -492,7 +492,7 @@ async def check_redis_with_url(url: str) -> Dict[str, Any]:
 
 
 async def readiness_check() -> dict[str, Any]:
-    """Kubernetes readiness probe - Redis와 Neo4j만 체크
+    """Kubernetes readiness probe - Redis와 Neo4j만 체크.
 
     Returns:
         준비 상태 딕셔너리

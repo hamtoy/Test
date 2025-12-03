@@ -11,6 +11,7 @@ from src.qa.rag_system import CustomGeminiEmbeddings
 
 class AdvancedContextAugmentation:
     """유사 사례/규칙/예시를 찾아 프롬프트에 주입하는 보조 유틸.
+
     - GEMINI_API_KEY가 없으면 벡터 검색을 건너뛰고 그래프 기반 대체 검색을 사용.
     """
 

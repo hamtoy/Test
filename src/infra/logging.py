@@ -21,7 +21,7 @@ def _resolve_log_level(explicit: str | None = None) -> int:
 
 
 class SensitiveDataFilter(logging.Filter):
-    """[Security] 로그에서 민감한 정보(API Key 등)를 마스킹하는 필터"""
+    """[Security] 로그에서 민감한 정보(API Key 등)를 마스킹하는 필터."""
 
     sensitive_regex = re.compile(SENSITIVE_PATTERN)
 
@@ -88,7 +88,7 @@ def _build_console_handler(
 def setup_logging(
     env: str | None = None, log_level: str | None = None
 ) -> Tuple[logging.Logger, logging.handlers.QueueListener]:
-    """[Non-Blocking Logging] QueueHandler 패턴 + 환경별 포맷/출력 제어
+    """[Non-Blocking Logging] QueueHandler 패턴 + 환경별 포맷/출력 제어.
 
     - production: JSON 포맷, 파일만(회전)
     - local/dev: 텍스트 포맷, 콘솔 + 파일(회전)
@@ -146,7 +146,7 @@ def setup_logging(
 
 
 def get_log_level() -> int:
-    """환경에 따른 로그 레벨 결정
+    """환경에 따른 로그 레벨 결정.
 
     Returns:
         로그 레벨 (logging.DEBUG, logging.INFO 등)
@@ -170,7 +170,7 @@ def get_log_level() -> int:
 
 
 def set_log_level(level: str) -> bool:
-    """런타임에 로그 레벨 동적 변경
+    """런타임에 로그 레벨 동적 변경.
 
     Args:
         level: 로그 레벨 문자열 (DEBUG, INFO, WARNING, ERROR, CRITICAL)
@@ -193,7 +193,7 @@ def set_log_level(level: str) -> bool:
 
 
 def get_current_log_level() -> str:
-    """현재 로그 레벨 반환
+    """현재 로그 레벨 반환.
 
     Returns:
         현재 로그 레벨 문자열
@@ -249,13 +249,13 @@ def log_metrics(
 
 
 class StructuredLogger:
-    """구조화된 로깅을 위한 래퍼 클래스
+    """구조화된 로깅을 위한 래퍼 클래스.
 
     API 호출, 캐시 이벤트 등을 표준화된 형식으로 로깅합니다.
     """
 
     def __init__(self, name: str):
-        """StructuredLogger 초기화
+        """StructuredLogger 초기화.
 
         Args:
             name: 로거 이름
@@ -270,7 +270,7 @@ class StructuredLogger:
         latency_ms: float,
         status: str,
     ) -> None:
-        """API 호출 로그 (분석 용이)
+        """API 호출 로그 (분석 용이).
 
         Args:
             model: 모델 이름
@@ -298,7 +298,7 @@ class StructuredLogger:
         hit: bool,
         ttl_remaining: int | None = None,
     ) -> None:
-        """캐시 이벤트 로그
+        """캐시 이벤트 로그.
 
         Args:
             cache_key: 캐시 키
@@ -322,7 +322,7 @@ class StructuredLogger:
         message: str,
         context: dict[str, Any] | None = None,
     ) -> None:
-        """에러 로그
+        """에러 로그.
 
         Args:
             error_type: 에러 유형
@@ -346,7 +346,7 @@ class StructuredLogger:
         duration_ms: float | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
-        """워크플로우 진행 로그
+        """워크플로우 진행 로그.
 
         Args:
             workflow_name: 워크플로우 이름

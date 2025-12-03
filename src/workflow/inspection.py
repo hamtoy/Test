@@ -24,7 +24,7 @@ async def inspect_query(
     difficulty: Optional[AdaptiveDifficultyAdjuster] = None,
     cache: Optional[RedisEvalCache] = None,
 ) -> str:
-    """질의 종합 검수 (Zero-Rejection 목표)
+    """질의 종합 검수 (Zero-Rejection 목표).
 
     Pipeline:
     1. 캐시 확인 (동일 질의 반복 수정 방지)
@@ -117,7 +117,7 @@ async def inspect_answer(
     validator: Optional[Any] = None,
     cache: Optional[RedisEvalCache] = None,
 ) -> str:
-    """답변 종합 검수 - 규칙 주입 + 자기 교정 최소화 버전"""
+    """답변 종합 검수 - 규칙 주입 + 자기 교정 최소화 버전."""
     if context is None:
         context = {}
     query_type = context.get("type", "general")

@@ -44,6 +44,7 @@ def compare_structure(driver: Any) -> List[Dict[str, Any]]:
 
 def find_common_content(driver: Any, limit: int = 10) -> List[Tuple[str, List[str]]]:
     """여러 페이지에서 동일하게 등장하는 블록 콘텐츠 찾기.
+
     content별로 그룹화하여 카티전 곱을 피함.
     """
     query = """

@@ -1,4 +1,4 @@
-"""Prometheus 메트릭 수집
+"""Prometheus 메트릭 수집.
 
 애플리케이션 상태와 성능 메트릭을 Prometheus 형식으로 제공합니다.
 """
@@ -149,7 +149,7 @@ workflow_status = Counter(
 
 
 def get_metrics() -> bytes:
-    """Prometheus 포맷으로 메트릭 반환
+    """Prometheus 포맷으로 메트릭 반환.
 
     Returns:
         Prometheus 텍스트 형식의 메트릭 데이터
@@ -164,7 +164,7 @@ def get_metrics() -> bytes:
 
 
 def record_api_call(model: str, status: str, latency_seconds: float) -> None:
-    """API 호출 메트릭 기록
+    """API 호출 메트릭 기록.
 
     Args:
         model: 사용된 모델명
@@ -177,7 +177,7 @@ def record_api_call(model: str, status: str, latency_seconds: float) -> None:
 
 
 def record_api_error(model: str, error_type: str) -> None:
-    """API 에러 메트릭 기록
+    """API 에러 메트릭 기록.
 
     Args:
         model: 사용된 모델명
@@ -188,7 +188,7 @@ def record_api_error(model: str, error_type: str) -> None:
 
 
 def record_cache_access(cache_type: str, hit: bool) -> None:
-    """캐시 접근 메트릭 기록
+    """캐시 접근 메트릭 기록.
 
     Args:
         cache_type: 캐시 타입
@@ -202,7 +202,7 @@ def record_cache_access(cache_type: str, hit: bool) -> None:
 
 
 def record_token_usage(prompt_tokens: int, completion_tokens: int) -> None:
-    """토큰 사용량 메트릭 기록
+    """토큰 사용량 메트릭 기록.
 
     Args:
         prompt_tokens: 입력 토큰 수
@@ -214,7 +214,7 @@ def record_token_usage(prompt_tokens: int, completion_tokens: int) -> None:
 
 
 def record_workflow_completion(status: str, duration_seconds: float) -> None:
-    """워크플로우 완료 메트릭 기록
+    """워크플로우 완료 메트릭 기록.
 
     Args:
         status: 완료 상태

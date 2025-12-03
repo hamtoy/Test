@@ -41,6 +41,7 @@ load_dotenv()
 
 class QAKnowledgeGraph:
     """RAG + 그래프 기반 QA 헬퍼.
+
     - Neo4j 그래프 쿼리
     - (선택) Rule 벡터 검색
     - 세션 구조 검증
@@ -178,6 +179,7 @@ class QAKnowledgeGraph:
     )
     def get_constraints_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
         """QueryType과 연결된 제약 조건 조회.
+
         - QueryType-[:HAS_CONSTRAINT]->Constraint 관계 사용
         """
         cypher = """
@@ -466,6 +468,7 @@ class QAKnowledgeGraph:
     @contextmanager
     def graph_session(self) -> Generator[Any, None, None]:
         """동기 Neo4j 세션 헬퍼.
+
         - _graph가 있으면 동기 세션 반환
         - _graph_provider가 있으면 별도 이벤트 루프로 async 세션을 동기화
         - 모두 없으면 None yield

@@ -38,13 +38,13 @@ DEFAULT_OCR_PATH = "data/inputs/input_ocr.txt"
 
 
 def show_error_with_guide(error_type: str, message: str, solution: str) -> None:
-    """에러 메시지 + 해결 방법 표시"""
+    """에러 메시지 + 해결 방법 표시."""
     console.print(f"\n[red]✗ {error_type}: {message}[/red]")
     console.print(f"[dim]💡 해결 방법: {solution}[/dim]\n")
 
 
 def show_main_menu() -> int:
-    """메인 메뉴 - 기능 플래그 상태 표시 포함"""
+    """메인 메뉴 - 기능 플래그 상태 표시 포함."""
     console.clear()
 
     # 기능 플래그 자동 감지
@@ -77,7 +77,7 @@ def show_main_menu() -> int:
 async def run_workflow_interactive(
     agent: GeminiAgent, config: AppConfig, logger: logging.Logger
 ) -> None:
-    """질의 생성 및 평가 - 에러 핸들링 강화"""
+    """질의 생성 및 평가 - 에러 핸들링 강화."""
     # 1. API 키 검증
     if not config.api_key or not config.api_key.startswith("AIza"):
         show_error_with_guide(
@@ -237,7 +237,7 @@ async def run_workflow_interactive(
 
 
 async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> None:
-    """질의 검수 핸들러 (Direct Input -> CLI Output)
+    """질의 검수 핸들러 (Direct Input -> CLI Output).
 
     UX 원칙:
     - 질의 직접 입력 (복붙)
@@ -302,7 +302,7 @@ async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> Non
 
 
 async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> None:
-    """답변 검수 핸들러 (File Input -> File Output)
+    """답변 검수 핸들러 (File Input -> File Output).
 
     UX 원칙:
     - 파일 경로 입력 (긴 텍스트)
@@ -391,7 +391,7 @@ async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> No
 
 
 async def _handle_edit_menu(agent: GeminiAgent, config: AppConfig) -> None:
-    """수정 메뉴 핸들러 (사용자 요청 기반 재작성)
+    """수정 메뉴 핸들러 (사용자 요청 기반 재작성).
 
     UX 원칙:
     - 답변 파일 입력
@@ -493,7 +493,7 @@ async def _handle_edit_menu(agent: GeminiAgent, config: AppConfig) -> None:
 
 
 def show_cache_statistics(config: AppConfig) -> None:
-    """캐시 통계 분석"""
+    """캐시 통계 분석."""
     console.print("\n[bold]캐시 통계 분석[/bold]")
     try:
         summary = analyze_cache_stats(config.cache_stats_path)
@@ -510,7 +510,7 @@ def _display_workflow_summary(
     config: AppConfig,
     timestamp: str,
 ) -> None:
-    """워크플로우 완료 후 결과 요약 표시"""
+    """워크플로우 완료 후 결과 요약 표시."""
     console.print("\n[bold green]═══ 워크플로우 완료 ═══[/bold green]\n")
 
     # 처리 결과 테이블
@@ -548,7 +548,7 @@ def _display_workflow_summary(
 async def interactive_main(
     agent: GeminiAgent, config: AppConfig, logger: logging.Logger
 ) -> None:
-    """대화형 메인 루프"""
+    """대화형 메인 루프."""
     while True:
         try:
             choice = show_main_menu()

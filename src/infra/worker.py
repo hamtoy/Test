@@ -8,14 +8,14 @@ from faststream import FastStream
 from faststream.redis import RedisBroker
 from pydantic import BaseModel, Field
 
+from src.agent import GeminiAgent
 from src.config import AppConfig
 from src.config.constants import DEFAULT_CACHE_TTL_SECONDS
-from src.agent import GeminiAgent
 from src.core.factory import get_graph_provider, get_llm_provider
 from src.core.interfaces import ProviderError, RateLimitError, SafetyBlockedError
-from src.features.lats import LATSSearcher, SearchState, ValidationResult
 from src.features.action_executor import ActionExecutor
 from src.features.data2neo_extractor import Data2NeoExtractor
+from src.features.lats import LATSSearcher, SearchState, ValidationResult
 
 # Export private functions for backward compatibility with tests
 __all__ = [
@@ -170,6 +170,7 @@ class DLQMessage(BaseModel):
 
 
 def _append_jsonl(path: Path, record: Dict[str, Any]) -> None:
+    """Append a record to a JSONL file."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -177,6 +178,7 @@ def _append_jsonl(path: Path, record: Dict[str, Any]) -> None:
 
 async def check_rate_limit(key: str, limit: int, window: int) -> bool:
     """Checks if the rate limit is exceeded for the given key.
+
     Returns True if allowed, False if blocked.
     """
     if not redis_client:
@@ -203,6 +205,7 @@ async def ensure_redis_ready() -> None:
 
 async def _process_task(task: OCRTask) -> Dict[str, Any]:
     """Minimal OCR/LLM processing stub.
+
     - Reads text if the path is a .txt file; otherwise uses filename as content.
     - If llm_provider is available, rewrites/cleans text via LLM.
     """
@@ -307,8 +310,8 @@ async def _run_data2neo_extraction(task: OCRTask) -> Dict[str, Any]:
 
 async def _run_task_with_lats(task: OCRTask) -> Dict[str, Any]:
     """LATS 토글 시 사용되는 경량 트리 탐색 래퍼."""
-    from src.infra.budget import BudgetTracker
     from src.caching.redis_cache import RedisEvalCache
+    from src.infra.budget import BudgetTracker
 
     config = get_config()
 

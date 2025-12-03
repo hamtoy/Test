@@ -30,7 +30,7 @@ from .context import WorkflowContext
 
 
 def save_result_to_file(result: WorkflowResult, config: Any) -> None:
-    """결과를 Markdown 파일로 저장 (하드코딩 제거)"""
+    """결과를 Markdown 파일로 저장 (하드코딩 제거)."""
     assert result.evaluation is not None
     output_dir = config.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)

@@ -92,6 +92,7 @@ class GraphProvider(ABC):
     @abstractmethod
     def session(self) -> Any:
         """Returns an async context manager for a database session.
+
         Usage:
             async with provider.session() as session:
                 await session.run(...)

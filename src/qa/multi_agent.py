@@ -9,7 +9,8 @@ from src.qa.rag_system import QAKnowledgeGraph
 
 
 class MultiAgentQASystem:
-    """간소화된 멀티-스텝 품질 파이프라인:
+    """간소화된 멀티-스텝 품질 파이프라인:.
+
     - 규칙/제약 수집
     - 예시 수집
     - Gemini 생성

@@ -1,5 +1,6 @@
 # src/qa/ab_test.py
 """A/B Testing Framework for Prompt Optimization in hamtoy/Test.
+
 Comparing different prompt strategies for OCR and RAG tasks.
 """
 

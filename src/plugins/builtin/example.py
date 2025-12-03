@@ -1,4 +1,4 @@
-"""예제 플러그인
+"""예제 플러그인.
 
 플러그인 구현 방법을 보여주는 예제입니다.
 """
@@ -11,7 +11,7 @@ from src.plugins.base import Plugin
 
 
 class ExamplePlugin(Plugin):
-    """예제 플러그인
+    """예제 플러그인.
 
     플러그인 구현 방법을 보여줍니다.
     """
@@ -25,7 +25,7 @@ class ExamplePlugin(Plugin):
         self._prefix: str = ""
 
     def initialize(self, config: dict[str, Any]) -> None:
-        """플러그인 초기화
+        """플러그인 초기화.
 
         Args:
             config: prefix를 포함할 수 있는 설정 딕셔너리
@@ -33,7 +33,7 @@ class ExamplePlugin(Plugin):
         self._prefix = config.get("prefix", "[EXAMPLE]")
 
     def process(self, context: dict[str, Any]) -> dict[str, Any]:
-        """텍스트를 대문자로 변환
+        """텍스트를 대문자로 변환.
 
         Args:
             context: text 키를 포함한 컨텍스트
@@ -46,7 +46,7 @@ class ExamplePlugin(Plugin):
         return {"text": result, "transformed": True}
 
     def cleanup(self) -> None:
-        """정리 작업"""
+        """정리 작업."""
         self._prefix = ""
 
 

@@ -40,6 +40,7 @@ class _RedisClientProto(Protocol):
 
 class CachingLayer:
     """Rule 조회에 Redis 캐시를 덧붙이는 간단한 레이어.
+
     Redis가 없으면 그래프에서 직접 조회합니다.
     """
 

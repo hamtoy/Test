@@ -400,7 +400,7 @@ async def execute_workflow_simple(
     query: str,
     turn_id: int,
 ) -> Optional[WorkflowResult]:
-    """대화형 메뉴 전용 간소화 버전
+    """대화형 메뉴 전용 간소화 버전.
 
     - 체크포인트 제거
     - 진행바 제거

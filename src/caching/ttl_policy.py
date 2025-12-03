@@ -1,4 +1,4 @@
-"""캐시 TTL 차등 정책
+"""캐시 TTL 차등 정책.
 
 캐시 키 패턴에 따라 최적화된 TTL을 적용합니다.
 """
@@ -9,7 +9,7 @@ from enum import IntEnum
 
 
 class CacheTTL(IntEnum):
-    """캐시 타입별 TTL (초 단위)"""
+    """캐시 타입별 TTL (초 단위)."""
 
     SYSTEM_PROMPT = 3600  # 60분 - 거의 변하지 않음
     EVALUATION_PROMPT = 1800  # 30분 - 중간 빈도
@@ -20,7 +20,7 @@ class CacheTTL(IntEnum):
 
 
 class CacheTTLPolicy:
-    """캐시 TTL 정책 관리"""
+    """캐시 TTL 정책 관리."""
 
     # 키 접두사와 TTL 매핑
     _PREFIX_MAP: dict[str, CacheTTL] = {
@@ -33,7 +33,7 @@ class CacheTTLPolicy:
 
     @classmethod
     def get_ttl(cls, cache_key: str) -> int:
-        """캐시 키 패턴에 따라 적절한 TTL 반환
+        """캐시 키 패턴에 따라 적절한 TTL 반환.
 
         Args:
             cache_key: 캐시 키 (예: "system:prompt:v1")
@@ -48,7 +48,7 @@ class CacheTTLPolicy:
 
     @classmethod
     def register_prefix(cls, prefix: str, ttl: CacheTTL) -> None:
-        """새로운 접두사-TTL 매핑 등록
+        """새로운 접두사-TTL 매핑 등록.
 
         Args:
             prefix: 캐시 키 접두사
@@ -58,7 +58,7 @@ class CacheTTLPolicy:
 
     @classmethod
     def get_all_policies(cls) -> dict[str, int]:
-        """모든 TTL 정책 반환
+        """모든 TTL 정책 반환.
 
         Returns:
             접두사와 TTL 초 단위 딕셔너리
@@ -67,7 +67,7 @@ class CacheTTLPolicy:
 
 
 def calculate_ttl_by_token_count(token_count: int) -> int:
-    """토큰 수에 따른 동적 TTL 계산
+    """토큰 수에 따른 동적 TTL 계산.
 
     토큰 수가 많을수록 캐시 가치가 높으므로 TTL을 늘립니다.
 

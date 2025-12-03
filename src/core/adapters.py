@@ -173,6 +173,7 @@ class Neo4jProvider(GraphProvider):
     @asynccontextmanager
     async def session(self) -> AsyncIterator[Any]:
         """Yields an async session.
+
         Enforces explicit transaction scope via async context manager.
         """
         async with self._driver.session() as session:

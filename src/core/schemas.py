@@ -1,4 +1,4 @@
-"""입력/출력 데이터 검증 스키마
+"""입력/출력 데이터 검증 스키마.
 
 Pydantic을 사용하여 입력 데이터의 유효성을 검증하고
 오류를 조기에 차단합니다.
@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class OCRInput(BaseModel):
-    """OCR 텍스트 입력 검증"""
+    """OCR 텍스트 입력 검증."""
 
     text: str = Field(..., min_length=10, max_length=50000)
     language: Literal["ko", "en"] = "ko"
@@ -43,14 +43,14 @@ class OCRInput(BaseModel):
 
 
 class CandidateAnswer(BaseModel):
-    """후보 답변 검증"""
+    """후보 답변 검증."""
 
     id: Literal["A", "B", "C"]
     content: str = Field(..., min_length=10, max_length=10000)
 
 
 class EvaluationRequest(BaseModel):
-    """평가 요청 검증"""
+    """평가 요청 검증."""
 
     query: str = Field(..., min_length=5, max_length=1000)
     candidates: list[CandidateAnswer] = Field(..., min_length=2, max_length=3)
@@ -76,7 +76,7 @@ class EvaluationRequest(BaseModel):
 
 
 class QAGenerationRequest(BaseModel):
-    """QA 생성 요청 검증"""
+    """QA 생성 요청 검증."""
 
     mode: Literal["batch", "single"]
     qtype: (

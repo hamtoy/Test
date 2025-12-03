@@ -33,6 +33,7 @@ class GraphEnhancedRouter:
         self, user_input: str, handlers: Dict[str, Callable[[str], Any]]
     ) -> Dict[str, Any]:
         """사용자의 입력을 분석해 타입을 선택하고 해당 핸들러를 실행합니다.
+
         handlers: {"explanation": func, "summary": func, ...}
         """
         qtypes = self._fetch_query_types()

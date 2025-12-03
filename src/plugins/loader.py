@@ -1,4 +1,4 @@
-"""플러그인 로더
+"""플러그인 로더.
 
 플러그인을 자동으로 발견하고 로드하는 기능을 제공합니다.
 """
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_plugin(file_path: Path) -> list[type["Plugin"]]:
-    """단일 플러그인 파일에서 Plugin 클래스들을 로드
+    """단일 플러그인 파일에서 Plugin 클래스들을 로드.
 
     Args:
         file_path: 플러그인 파일 경로
@@ -58,7 +58,7 @@ def load_plugin(file_path: Path) -> list[type["Plugin"]]:
 
 
 def discover_plugins(plugin_dir: Path | None = None) -> list["Plugin"]:
-    """플러그인 자동 발견 및 로드
+    """플러그인 자동 발견 및 로드.
 
     지정된 디렉토리에서 모든 플러그인을 찾아 인스턴스화합니다.
 

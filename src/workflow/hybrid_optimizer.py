@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class HybridWorkflowOptimizer:
-    """Orchestrator that routes queries to either LATS (Deep Reasoning)
+    """Orchestrator that routes queries to either LATS (Deep Reasoning).
+
     or MCTS (Fast Optimization).
     """
 

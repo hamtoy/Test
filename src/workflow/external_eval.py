@@ -1,4 +1,4 @@
-"""외부 답변 평가 워크플로우"""
+"""외부 답변 평가 워크플로우."""
 
 from __future__ import annotations
 

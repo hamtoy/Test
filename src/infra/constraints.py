@@ -22,6 +22,7 @@ class RealTimeConstraintEnforcer:
         self, generator: Iterable[str], query_type: str
     ) -> Iterable[Dict[str, object]]:
         """LLM 출력을 스트리밍하면서 실시간 검증.
+
         chunk 단위로 content/violation 이벤트를 생성합니다.
         """
         buffer = ""
@@ -80,6 +81,7 @@ class RealTimeConstraintEnforcer:
 
     def _get_original_blocks(self) -> List[Dict[str, str]]:
         """원문 블록을 일부 조회하여 유사도 검증에 사용.
+
         Neo4j 연결에 실패하면 빈 리스트를 반환합니다.
         """
         try:

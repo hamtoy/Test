@@ -21,6 +21,7 @@ __all__ = [
 
 class SafeDriver:
     """Thin wrapper around Neo4j sync Driver that guarantees close is called.
+
     Supports context manager semantics to encourage explicit lifecycle control.
     """
 

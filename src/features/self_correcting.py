@@ -8,6 +8,7 @@ from src.qa.rag_system import QAKnowledgeGraph
 
 class SelfCorrectingQAChain:
     """Gemini 기반 자기 교정형 QA 체인.
+
     초안 → 비평 → 수정 → 최종 검증을 반복합니다.
     """
 

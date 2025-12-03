@@ -8,7 +8,7 @@ from src.qa.rag_system import QAKnowledgeGraph
 
 
 class MultimodalUnderstanding:
-    """이미지 구조 분석으로 메타데이터 자동 생성 (OCR은 사용자 직접 입력)"""
+    """이미지 구조 분석으로 메타데이터 자동 생성 (OCR은 사용자 직접 입력)."""
 
     def __init__(self, kg: QAKnowledgeGraph):
         """Initialize the multimodal understanding system.

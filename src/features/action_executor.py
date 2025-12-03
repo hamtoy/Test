@@ -22,7 +22,8 @@ class ActionExecutor:
     async def execute_action(
         self, *, action: str, text: str, max_length: int = 120, use_llm: bool = False
     ) -> Any:
-        """Run a simple action. When an LLM provider is available and requested, try
+        """Run a simple action. When an LLM provider is available and requested, try.
+
         it; otherwise return a deterministic placeholder.
         """
         # Reset usage tracking per execution
