@@ -46,8 +46,11 @@ from src.infra.telemetry import get_meter, traced_async
 from src.infra.utils import clean_markdown_code_block, safe_json_parse
 
 from .cache_manager import CacheManager
+from .client import GeminiClient
+from .context_manager import AgentContextManager
 from .cost_tracker import CostTracker
 from .rate_limiter import RateLimiter
+from .retry_handler import RetryHandler
 
 if TYPE_CHECKING:
     import google.generativeai.caching as caching
@@ -122,6 +125,9 @@ class GeminiAgent:
         self._token_counter = meter.create_counter(
             "gemini.tokens.total", description="Total tokens used"
         )
+        self.client = GeminiClient(self)
+        self.context_manager = AgentContextManager(self)
+        self.retry_handler = RetryHandler(self)
 
         # 하위 호환성을 위한 속성
         self._semaphore = self._rate_limiter_module.semaphore
@@ -678,10 +684,10 @@ class GeminiAgent:
             system_prompt, response_schema=QueryResult, cached_content=cached_content
         )
 
-        self._track_cache_usage(cached_content is not None)
+        self.context_manager.track_cache_usage(cached_content is not None)
 
         try:
-            response_text = await self._call_api_with_retry(model, user_prompt)
+            response_text = await self.retry_handler.call(model, user_prompt)
         except Exception as e:
             if self._is_rate_limit_error(e):
                 raise APIRateLimitError(
@@ -790,10 +796,10 @@ class GeminiAgent:
             cached_content=cached_content,
         )
 
-        self._track_cache_usage(cached_content is not None)
+        self.context_manager.track_cache_usage(cached_content is not None)
 
         try:
-            response_text = await self._call_api_with_retry(
+            response_text = await self.retry_handler.call(
                 model, json.dumps(input_data, ensure_ascii=False)
             )
         except Exception as e:
@@ -934,10 +940,10 @@ class GeminiAgent:
             system_prompt, cached_content=cached_content
         )
 
-        self._track_cache_usage(cached_content is not None)
+        self.context_manager.track_cache_usage(cached_content is not None)
 
         try:
-            response_text = await self._call_api_with_retry(model, payload)
+            response_text = await self.retry_handler.call(model, payload)
         except Exception as e:
             if self._is_rate_limit_error(e):
                 raise APIRateLimitError(
