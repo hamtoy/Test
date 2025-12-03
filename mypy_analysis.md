@@ -41,11 +41,9 @@
 1. **main.py AppConfig 호출 수정** (24개 오류 해결)
    - BaseSettings이므로 생성자 인자 전달 불필요
    - `AppConfig()`로 변경
-
 2. **agent/ 타입 강화** (35개)
    - GeminiAgent.run() 타입 주석
    - cost_tracker, cache_manager 타입 명시
-
 3. **infra/ 타입 강화** (33개)
    - utils.py, logging.py 함수 시그니처
    - TypedDict, Literal 활용
@@ -72,5 +70,5 @@
 ## 다음 단계
 
 1. ✅ 현재 상태 분석 완료
-2. **→ implementation_plan.md 업데이트**
+2. → implementation_plan.md 업데이트
 3. Phase 1 작업 시작: main.py, agent/, infra/
