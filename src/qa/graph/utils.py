@@ -7,7 +7,9 @@ import os
 from collections.abc import Sized
 from typing import Any, Dict, List, Optional
 
+
 import google.generativeai as genai
+from typing import cast
 from langchain_core.exceptions import LangChainException
 from neo4j.exceptions import Neo4jError, ServiceUnavailable
 
@@ -29,7 +31,8 @@ class CustomGeminiEmbeddings:
 
     def __init__(self, api_key: str, model: str = "models/text-embedding-004") -> None:
         """Initialize the Gemini embeddings wrapper."""
-        genai.configure(api_key=api_key)
+        self._genai: Any = cast(Any, genai)
+        self._genai.configure(api_key=api_key)
         self.model = model
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
@@ -38,7 +41,7 @@ class CustomGeminiEmbeddings:
 
     def embed_query(self, text: str) -> List[float]:
         """Embed a single query text."""
-        result = genai.embed_content(
+        result = self._genai.embed_content(
             model=self.model, content=text, task_type="retrieval_query"
         )
         return list(result["embedding"])
