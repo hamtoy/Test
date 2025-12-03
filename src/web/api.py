@@ -13,6 +13,7 @@ from uuid import uuid4
 from checks.detect_forbidden_patterns import find_violations
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -31,6 +32,7 @@ from src.infra.health import (
 )
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
+from src.web.session import SessionManager, session_middleware
 from src.web.models import OCRTextInput
 from src.web.routers import health_router, qa_router, stream_router, workspace_router
 from src.web.routers import health as health_router_module
@@ -56,6 +58,7 @@ agent: Optional[GeminiAgent] = None
 kg: Optional[QAKnowledgeGraph] = None
 mm: Optional[MultimodalUnderstanding] = None
 pipeline: Optional[IntegratedQAPipeline] = None
+session_manager = SessionManager()
 
 # 정적 파일 & 템플릿 경로
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -163,12 +166,6 @@ async def init_resources() -> None:
         except Exception as e:
             logger.warning("Neo4j 연결 실패 (RAG 비활성화): %s", e)
             kg = None
-    if kg is not None:
-        try:
-            kg._ensure_formatting_rule_schema()
-        except Exception as e:  # noqa: BLE001
-            logger.warning("FormattingRule 스키마 보강 실패: %s", e)
-
     if mm is None and kg is not None:
         try:
             mm = MultimodalUnderstanding(kg=kg)
@@ -216,6 +213,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(BaseHTTPMiddleware, dispatch=session_middleware(session_manager))
 
 # 정적 파일 & 템플릿
 app.mount("/static", StaticFiles(directory=str(REPO_ROOT / "static")), name="static")
@@ -261,6 +259,25 @@ async def page_workspace(request: Request) -> HTMLResponse:
 async def page_multimodal(request: Request) -> HTMLResponse:
     """이미지 분석 페이지."""
     return templates.TemplateResponse(request, "multimodal.html")
+
+
+@app.get("/api/session")
+async def get_session(request: Request) -> Dict[str, Any]:
+    """현재 세션 정보를 조회합니다."""
+    session = getattr(request.state, "session", None)
+    if session is None:
+        raise HTTPException(status_code=500, detail="세션을 초기화할 수 없습니다.")
+    return session_manager.serialize(session)
+
+
+@app.delete("/api/session")
+async def delete_session(request: Request) -> Dict[str, Any]:
+    """현재 세션을 종료합니다."""
+    session = getattr(request.state, "session", None)
+    if session is None:
+        raise HTTPException(status_code=500, detail="세션을 초기화할 수 없습니다.")
+    session_manager.destroy(session.session_id)
+    return {"cleared": True}
 
 
 # ============================================================================
