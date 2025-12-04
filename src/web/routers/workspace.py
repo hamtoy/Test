@@ -140,7 +140,7 @@ def _get_config() -> AppConfig:
         ]:
             if not hasattr(cfg, name):
                 setattr(cfg, name, default)
-        return cfg  # type: ignore[return-value]
+        return cfg
     except Exception:
         try:
             from src.web import dependencies

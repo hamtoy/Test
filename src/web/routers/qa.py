@@ -169,7 +169,7 @@ def _get_config() -> AppConfig:
             ]:
                 if not hasattr(cfg, name):
                     setattr(cfg, name, default)
-            return cfg  # type: ignore[return-value]
+            return cfg
     except Exception:
         if _config is not None:
             return _config
@@ -531,7 +531,7 @@ async def generate_single_qa(
             try:
                 validator_cls = _get_validator_class()
                 validator = validator_cls(kg_wrapper)
-                rule_check = validator._check_rule_compliance(  # type: ignore[attr-defined]
+                rule_check = validator._check_rule_compliance(
                     draft_answer, normalized_qtype
                 )
                 if rule_check.get("violations") and rule_check.get("score", 1.0) < 0.3:
