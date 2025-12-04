@@ -662,6 +662,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
 
     async def _execute_workflow() -> Dict[str, Any]:
         nonlocal query, answer
+        length_constraint = ""
         if workflow == "full_generation":
             changes.append("OCR에서 전체 생성")
 
@@ -691,7 +692,6 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
                 except Exception as exc:
                     logger.debug("Rule 로드 실패: %s", exc)
 
-            length_constraint = ""
             if query_type == "target_short":
                 length_constraint = "답변은 불릿·마크다운(볼드/기울임) 없이 한 문장으로, 최대 50단어 이내로 작성하세요."
                 rules_list = rules_list[:3]
@@ -995,8 +995,40 @@ OCR에 없는 정보는 추가하지 마세요.
                 answer = _dedup_with_reference(answer, reference_text, query_type)
 
             answer = _sanitize_output(answer)
-            # 통합 검증: 위반 요약을 changes에 추가 (답변은 유지)
+            # 통합 검증: 위반 시 재작성 시도
             val_result = unified_validator.validate_all(answer, normalized_qtype)
+            if val_result.has_errors() or val_result.warnings:
+                edit_request_parts: list[str] = []
+                if val_result.has_errors():
+                    edit_request_parts.append(val_result.get_error_summary())
+                if val_result.warnings:
+                    edit_request_parts.extend(val_result.warnings[:2])
+                edit_request = "; ".join(
+                    [p for p in edit_request_parts if p] or ["형식/규칙 위반 수정"]
+                )
+                try:
+                    answer = await current_agent.rewrite_best_answer(
+                        ocr_text=ocr_text,
+                        best_answer=answer,
+                        edit_request=edit_request,
+                        cached_content=None,
+                        constraints=answer_constraints,
+                        length_constraint=length_constraint,
+                    )
+                    answer = strip_output_tags(answer)
+                    answer = postprocess_answer(answer, query_type)
+                    if reference_text and query_type in {
+                        "target_short",
+                        "target_long",
+                        "reasoning",
+                    }:
+                        answer = _dedup_with_reference(
+                            answer, reference_text, query_type
+                        )
+                    answer = _sanitize_output(answer)
+                    changes.append("검증 기반 재작성 완료")
+                except Exception as exc:  # noqa: BLE001
+                    logger.debug("재작성 실패, 기존 답변 유지: %s", exc)
             if val_result.has_errors():
                 changes.append(val_result.get_error_summary())
             if val_result.warnings:
