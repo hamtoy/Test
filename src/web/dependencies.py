@@ -4,14 +4,20 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional, TYPE_CHECKING
 
 from jinja2 import Environment, FileSystemLoader
 
-from src.agent import GeminiAgent
 from src.config import AppConfig
-from src.qa.pipeline import IntegratedQAPipeline
-from src.qa.rag_system import QAKnowledgeGraph
+
+if TYPE_CHECKING:
+    from src.agent import GeminiAgent
+    from src.qa.pipeline import IntegratedQAPipeline
+    from src.qa.rag_system import QAKnowledgeGraph
+else:  # pragma: no cover - runtime import is lazy
+    GeminiAgent = Any
+    IntegratedQAPipeline = Any
+    QAKnowledgeGraph = Any
 
 # Backward-compatible constant
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -73,12 +79,17 @@ class ServiceContainer:
         return cls._config
 
     @classmethod
-    def get_agent(cls, config: Optional[AppConfig] = None) -> GeminiAgent:
+    def get_agent(cls, config: Optional[AppConfig] = None) -> Optional[GeminiAgent]:
         if cls._agent is not None:
             return cls._agent
         cfg = config or cls.get_config()
-        jinja_env = get_jinja_env()
-        cls._agent = GeminiAgent(config=cfg, jinja_env=jinja_env)
+        try:
+            from src.agent import GeminiAgent as Agent
+
+            jinja_env = get_jinja_env()
+            cls._agent = Agent(config=cfg, jinja_env=jinja_env)
+        except Exception:
+            cls._agent = None
         return cls._agent
 
     @classmethod
@@ -98,7 +109,9 @@ class ServiceContainer:
         if cls._pipeline is not None:
             return cls._pipeline
         try:
-            cls._pipeline = IntegratedQAPipeline()
+            from src.qa.pipeline import IntegratedQAPipeline as Pipeline
+
+            cls._pipeline = Pipeline()
         except Exception:
             cls._pipeline = None
         return cls._pipeline
@@ -124,7 +137,7 @@ def get_config() -> AppConfig:
     return ServiceContainer.get_config()
 
 
-def get_agent(config: Optional[AppConfig] = None) -> GeminiAgent:
+def get_agent(config: Optional[AppConfig] = None) -> Optional[GeminiAgent]:
     return ServiceContainer.get_agent(config)
 
 
@@ -141,4 +154,17 @@ def get_pipeline() -> Optional[IntegratedQAPipeline]:
 
 
 # Legacy alias for previous code paths/tests
-container = ServiceContainer
+container: type[ServiceContainer] = ServiceContainer
+
+__all__ = [
+    "REPO_ROOT",
+    "ServiceContainer",
+    "get_app_config",
+    "get_jinja_env",
+    "get_config",
+    "get_agent",
+    "get_knowledge_graph",
+    "get_multimodal",
+    "get_pipeline",
+    "container",
+]
