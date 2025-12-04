@@ -29,6 +29,7 @@ from src.infra.health import (
     check_neo4j_with_params,
     check_redis_with_url,
 )
+from src.infra.structured_logging import setup_structured_logging
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
 from src.web.session import SessionManager, session_middleware
@@ -59,6 +60,15 @@ kg: Optional[QAKnowledgeGraph] = None
 pipeline: Optional[IntegratedQAPipeline] = None
 session_manager = SessionManager()
 REQUEST_ID_HEADER = "X-Request-Id"
+
+# Optional structured logging
+if os.getenv("ENABLE_STRUCT_LOGGING", "").lower() == "true":
+    try:
+        setup_structured_logging(os.getenv("LOG_LEVEL", "INFO"))
+    except Exception as exc:  # noqa: BLE001
+        logging.getLogger(__name__).warning(
+            "Structured logging init failed: %s", exc
+        )
 
 
 def _get_request_id(request: Request) -> str:
