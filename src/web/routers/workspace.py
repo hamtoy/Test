@@ -341,6 +341,7 @@ async def api_generate_query_from_answer(body: Dict[str, Any]) -> Dict[str, Any]
     answer = body.get("answer", "")
     config = _get_config()
     ocr_text = body.get("ocr_text") or load_ocr_text(config)
+    meta_start = datetime.now()
 
     try:
         prompt = f"""
