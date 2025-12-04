@@ -14,7 +14,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 def test_rendering():
     """템플릿 렌더링 테스트."""
-    templates_dir = Path("c:/shining-quasar/templates/system/qa")
+    repo_root = Path(__file__).resolve().parents[1]
+    templates_dir = repo_root / "templates" / "system" / "qa"
     env = Environment(loader=FileSystemLoader(str(templates_dir)))
 
     # 테스트할 템플릿
