@@ -83,13 +83,12 @@ def _get_agent() -> Optional[GeminiAgent]:
 
         return dependencies.get_agent()
     except Exception:
-        pass
-    try:
-        from src.web import api as api_module
+        try:
+            from src.web import api as api_module
 
-        return api_module.agent
-    except Exception:
-        return agent
+            return api_module.agent
+        except Exception:
+            return agent
 
 
 def _get_kg() -> Optional[QAKnowledgeGraph]:
@@ -98,13 +97,12 @@ def _get_kg() -> Optional[QAKnowledgeGraph]:
 
         return dependencies.get_knowledge_graph()
     except Exception:
-        pass
-    try:
-        from src.web import api as api_module
+        try:
+            from src.web import api as api_module
 
-        return api_module.kg
-    except Exception:
-        return kg
+            return api_module.kg
+        except Exception:
+            return kg
 
 
 def _get_pipeline() -> Optional[IntegratedQAPipeline]:
@@ -113,13 +111,12 @@ def _get_pipeline() -> Optional[IntegratedQAPipeline]:
 
         return dependencies.get_pipeline()
     except Exception:
-        pass
-    try:
-        from src.web import api as api_module
+        try:
+            from src.web import api as api_module
 
-        return api_module.pipeline
-    except Exception:
-        return pipeline
+            return api_module.pipeline
+        except Exception:
+            return pipeline
 
 
 def _get_config() -> AppConfig:
@@ -128,15 +125,14 @@ def _get_config() -> AppConfig:
 
         return dependencies.get_config()
     except Exception:
-        pass
-    if _config is not None:
-        return _config
-    try:
-        from src.web import api as api_module
+        if _config is not None:
+            return _config
+        try:
+            from src.web import api as api_module
 
-        return api_module.get_config()
-    except Exception:
-        return AppConfig()
+            return api_module.get_config()
+        except Exception:
+            return AppConfig()
 
 
 def _get_validator_class() -> type[CrossValidationSystem]:
@@ -663,6 +659,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     async def _execute_workflow() -> Dict[str, Any]:
         nonlocal query, answer
         length_constraint: str = ""
+        answer_constraints: list[Dict[str, Any]] = []
         if workflow == "full_generation":
             changes.append("OCR에서 전체 생성")
 
