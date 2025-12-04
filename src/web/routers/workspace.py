@@ -348,8 +348,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     query = body.query or ""
     answer = body.answer or ""
     changes: list[str] = []
-    allow_reference = query_type not in {"target_short", "target_long"}
-    reference_text = global_explanation_ref if allow_reference else ""
+    reference_text = global_explanation_ref or ""
 
     def _sanitize_output(text: str) -> str:
         """불릿/마크다운/여분 공백을 제거해 일관된 문장만 남긴다."""
@@ -392,6 +391,8 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
                 )
                 if num_match:
                     return num_match.group(0).strip()
+            if qtype in {"target_short", "target_long"}:
+                return "참조 내용과 중복되지 않는 추가 정보가 없습니다."
             return sentences[0].strip() if sentences else text.strip()
         return ". ".join(kept[:4])
 
