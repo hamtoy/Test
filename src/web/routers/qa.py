@@ -414,6 +414,15 @@ async def generate_single_qa(
         except Exception as e:
             logger.warning("규칙 조회 실패: %s", e)
 
+    # 질의 중복/복합 방지용 공통 제약 추가
+    query_constraints.append(
+        {
+            "description": "단일 과업만 묻기: '와/과/및/또는'으로 병렬 질문(두 가지 이상 요구) 금지",
+            "priority": 100,
+            "category": "query",
+        }
+    )
+
     if not rules_list:
         rules_list = list(DEFAULT_ANSWER_RULES)
         logger.info("Neo4j 규칙 없음, 기본 규칙 사용")
