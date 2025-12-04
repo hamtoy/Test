@@ -1,169 +1,68 @@
-"""FastAPI dependency injection for web API services.
-
-Provides factory functions for injecting services into API endpoints,
-enabling better testability and horizontal scaling.
-"""
+"""Lightweight service container for web layer dependencies."""
 
 from __future__ import annotations
 
-import logging
-from functools import lru_cache
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Optional
 
-from fastapi import Depends
-
-if TYPE_CHECKING:
-    from src.agent import GeminiAgent
-    from src.config import AppConfig
-    from src.features.multimodal import MultimodalUnderstanding
-    from src.qa.rag_system import QAKnowledgeGraph
-
-logger = logging.getLogger(__name__)
-
-# Repository root for template loading
-REPO_ROOT = Path(__file__).resolve().parents[2]
-
-
-@lru_cache()
-def get_app_config() -> "AppConfig":
-    """Get cached application configuration.
-
-    Returns:
-        AppConfig instance (singleton)
-    """
-    from src.config import AppConfig
-
-    return AppConfig()
-
-
-def get_jinja_env() -> Any:
-    """Get Jinja2 environment for template rendering.
-
-    Returns:
-        Configured Jinja2 Environment
-    """
-    from jinja2 import Environment, FileSystemLoader
-
-    return Environment(
-        loader=FileSystemLoader(str(REPO_ROOT / "templates")),
-        trim_blocks=True,
-        lstrip_blocks=True,
-    )
+from src.agent import GeminiAgent
+from src.config import AppConfig
+from src.qa.pipeline import IntegratedQAPipeline
+from src.qa.rag_system import QAKnowledgeGraph
 
 
 class ServiceContainer:
-    """Container for lazily initialized services.
+    """Simple dependency container to avoid scattered globals."""
 
-    Provides singleton instances of services that are expensive
-    to create, such as AI agents and database connections.
-    """
+    def __init__(self) -> None:
+        self._config: Optional[AppConfig] = None
+        self._agent: Optional[GeminiAgent] = None
+        self._kg: Optional[QAKnowledgeGraph] = None
+        self._pipeline: Optional[IntegratedQAPipeline] = None
 
-    _agent: Optional["GeminiAgent"] = None
-    _kg: Optional["QAKnowledgeGraph"] = None
-    _mm: Optional["MultimodalUnderstanding"] = None
+    def set_config(self, config: AppConfig) -> None:
+        self._config = config
 
-    @classmethod
-    def get_agent(
-        cls, config: "AppConfig" = Depends(get_app_config)
-    ) -> Optional["GeminiAgent"]:
-        """Get or create GeminiAgent instance.
+    def set_agent(self, agent: GeminiAgent) -> None:
+        self._agent = agent
 
-        Args:
-            config: Application configuration
+    def set_kg(self, kg: Optional[QAKnowledgeGraph]) -> None:
+        self._kg = kg
 
-        Returns:
-            GeminiAgent instance or None if initialization fails
-        """
-        if cls._agent is None:
-            from src.agent import GeminiAgent
+    def set_pipeline(self, pipeline: Optional[IntegratedQAPipeline]) -> None:
+        self._pipeline = pipeline
 
-            cls._agent = GeminiAgent(
-                config=config,
-                jinja_env=get_jinja_env(),
-            )
-            logger.info("GeminiAgent initialized via DI")
-        return cls._agent
+    def get_config(self) -> AppConfig:
+        if self._config is None:
+            raise RuntimeError("Config not initialized")
+        return self._config
 
-    @classmethod
-    def get_knowledge_graph(cls) -> Optional["QAKnowledgeGraph"]:
-        """Get or create QAKnowledgeGraph instance.
+    def get_agent(self) -> GeminiAgent:
+        if self._agent is None:
+            raise RuntimeError("Agent not initialized")
+        return self._agent
 
-        Returns:
-            QAKnowledgeGraph instance or None if Neo4j unavailable
-        """
-        if cls._kg is None:
-            try:
-                from src.qa.rag_system import QAKnowledgeGraph
+    def get_kg(self) -> Optional[QAKnowledgeGraph]:
+        return self._kg
 
-                cls._kg = QAKnowledgeGraph()
-                logger.info("QAKnowledgeGraph initialized via DI")
-            except Exception as e:
-                logger.warning("Neo4j connection failed: %s", e)
-        return cls._kg
-
-    @classmethod
-    def get_multimodal(cls) -> Optional["MultimodalUnderstanding"]:
-        """Get or create MultimodalUnderstanding instance.
-
-        Returns:
-            MultimodalUnderstanding instance or None if prerequisites missing
-        """
-        if cls._mm is None:
-            kg = cls.get_knowledge_graph()
-            if kg is not None:
-                from src.features.multimodal import MultimodalUnderstanding
-
-                cls._mm = MultimodalUnderstanding(kg=kg)
-                logger.info("MultimodalUnderstanding initialized via DI")
-        return cls._mm
-
-    @classmethod
-    def reset(cls) -> None:
-        """Reset all service instances (for testing)."""
-        cls._agent = None
-        cls._kg = None
-        cls._mm = None
+    def get_pipeline(self) -> Optional[IntegratedQAPipeline]:
+        return self._pipeline
 
 
-# Dependency functions for FastAPI
-def get_agent(
-    config: "AppConfig" = Depends(get_app_config),
-) -> Optional["GeminiAgent"]:
-    """FastAPI dependency for GeminiAgent.
-
-    Args:
-        config: Injected application configuration
-
-    Returns:
-        GeminiAgent instance
-    """
-    return ServiceContainer.get_agent(config)
+# Global container instance (still module-level, but centralized)
+container = ServiceContainer()
 
 
-def get_knowledge_graph() -> Optional["QAKnowledgeGraph"]:
-    """FastAPI dependency for QAKnowledgeGraph.
-
-    Returns:
-        QAKnowledgeGraph instance or None
-    """
-    return ServiceContainer.get_knowledge_graph()
+def get_config() -> AppConfig:
+    return container.get_config()
 
 
-def get_multimodal() -> Optional["MultimodalUnderstanding"]:
-    """FastAPI dependency for MultimodalUnderstanding.
-
-    Returns:
-        MultimodalUnderstanding instance or None
-    """
-    return ServiceContainer.get_multimodal()
+def get_agent() -> GeminiAgent:
+    return container.get_agent()
 
 
-__all__ = [
-    "get_app_config",
-    "get_agent",
-    "get_knowledge_graph",
-    "get_multimodal",
-    "ServiceContainer",
-    "REPO_ROOT",
-]
+def get_kg() -> Optional[QAKnowledgeGraph]:
+    return container.get_kg()
+
+
+def get_pipeline() -> Optional[IntegratedQAPipeline]:
+    return container.get_pipeline()

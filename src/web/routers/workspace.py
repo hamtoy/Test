@@ -59,9 +59,24 @@ def set_dependencies(
     pipeline = qa_pipeline
     global _validator
     _validator = None  # reset so it uses latest kg
+    try:
+        from src.web.dependencies import container
+
+        container.set_config(config)
+        container.set_agent(gemini_agent)
+        container.set_kg(kg_ref)
+        container.set_pipeline(qa_pipeline)
+    except Exception:
+        pass
 
 
 def _get_agent() -> Optional[GeminiAgent]:
+    try:
+        from src.web.dependencies import container
+
+        return container.get_agent()
+    except Exception:
+        pass
     try:
         from src.web import api as api_module
 
@@ -72,6 +87,12 @@ def _get_agent() -> Optional[GeminiAgent]:
 
 def _get_kg() -> Optional[QAKnowledgeGraph]:
     try:
+        from src.web.dependencies import container
+
+        return container.get_kg()
+    except Exception:
+        pass
+    try:
         from src.web import api as api_module
 
         return api_module.kg
@@ -81,6 +102,12 @@ def _get_kg() -> Optional[QAKnowledgeGraph]:
 
 def _get_pipeline() -> Optional[IntegratedQAPipeline]:
     try:
+        from src.web.dependencies import container
+
+        return container.get_pipeline()
+    except Exception:
+        pass
+    try:
         from src.web import api as api_module
 
         return api_module.pipeline
@@ -89,6 +116,12 @@ def _get_pipeline() -> Optional[IntegratedQAPipeline]:
 
 
 def _get_config() -> AppConfig:
+    try:
+        from src.web.dependencies import container
+
+        return container.get_config()
+    except Exception:
+        pass
     if _config is not None:
         return _config
     try:
