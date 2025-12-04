@@ -5,11 +5,11 @@
     <!-- 왼쪽: OCR 영역 -->
     <div class="left-panel">
     <h2>📄 OCR 텍스트</h2>
-    <textarea id="ocr-input" class="ocr-box" rows="15" placeholder="OCR 텍스트를 직접 입력하세요..."></textarea>
-    <div class="btn-row">
-        <button id="save-ocr-btn" class="btn-primary" style="width: 100%;">💾 저장</button>
-    </div>
-    <span id="ocr-save-status" class="status-text"></span>
+        <textarea id="ocr-input" class="ocr-box" rows="15" placeholder="OCR 텍스트를 직접 입력하세요..."></textarea>
+        <div class="btn-row">
+            <button id="save-ocr-btn" class="btn-primary" style="width: 100%;">💾 저장</button>
+        </div>
+        <span id="ocr-save-status" class="status-text"></span>
 
     <!-- 전체 설명문 참조 영역 -->
     <div class="reference-section" style="margin-top: 20px;">
@@ -35,10 +35,10 @@
         <h2>🔥 워크스페이스</h2>
 
         <!-- 탭 선택 -->
-        <div class="workspace-mode-tabs">
-            <button class="mode-tab active" data-mode="full">🔥 전체</button>
-            <button class="mode-tab" data-mode="query-only">❓ 질문만</button>
-            <button class="mode-tab" data-mode="answer-only">💡 답변만</button>
+        <div class="workspace-mode-tabs" role="tablist" aria-label="워크스페이스 모드 선택">
+            <button class="mode-tab active" data-mode="full" role="tab" aria-selected="true" aria-controls="workspace-panel">🔥 전체</button>
+            <button class="mode-tab" data-mode="query-only" role="tab" aria-selected="false" aria-controls="workspace-panel">❓ 질문만</button>
+            <button class="mode-tab" data-mode="answer-only" role="tab" aria-selected="false" aria-controls="workspace-panel">💡 답변만</button>
         </div>
         
         <!-- 질의 입력 -->
@@ -49,7 +49,7 @@
             </label>
             <div class="input-with-copy">
                 <textarea id="query" rows="3" placeholder="질문을 입력하세요 (비우면 OCR에서 자동 생성)"></textarea>
-                <button type="button" class="copy-btn-float" onclick="copyFieldContent('query', this)">📋</button>
+                <button type="button" class="copy-btn-float" data-copy-target="query">📋</button>
             </div>
             <small class="help-text" id="query-help">💡 비워두면 자동으로 생성됩니다</small>
         </div>
@@ -62,7 +62,7 @@
             </label>
             <div class="input-with-copy">
                 <textarea id="answer" rows="8" placeholder="답변을 입력하세요 (비우면 질문 기반 자동 생성)"></textarea>
-                <button type="button" class="copy-btn-float" onclick="copyFieldContent('answer', this)">📋</button>
+                <button type="button" class="copy-btn-float" data-copy-target="answer">📋</button>
             </div>
             <small class="help-text" id="answer-help">💡 비워두면 자동으로 생성됩니다</small>
         </div>
@@ -95,12 +95,20 @@
         </div>
 
         <!-- 실행 버튼 -->
-        <button id="execute-btn" class="btn-primary" style="width: 100%; padding: 14px; font-size: 16px; font-weight: 600;">
+        <button 
+            id="execute-btn" 
+            class="btn-primary" 
+            style="width: 100%; padding: 14px; font-size: 16px; font-weight: 600;"
+            aria-label="선택한 모드에 따라 질의와 답변 생성"
+            aria-describedby="execute-help">
             🚀 실행
         </button>
+        <div id="execute-help" class="sr-only">
+            현재 선택된 모드와 입력값을 기반으로 AI가 질의와 답변을 생성합니다
+        </div>
 
         <!-- 결과 영역 -->
-        <div id="workspace-results" class="results-area" aria-live="polite" aria-atomic="true"></div>
+        <div id="workspace-results" class="results-area" role="region" aria-live="polite" aria-atomic="true" aria-label="작업 결과"></div>
     </div>
 </div>
 
@@ -247,349 +255,4 @@
 </style>
 {% endblock %}
 
-{% block scripts %}
-<script>
-    // OCR 로드/저장
-    function setButtonLoading(button, isLoading) {
-        if (!button) return;
-        button.disabled = isLoading;
-        button.setAttribute('aria-busy', String(isLoading));
-        if (isLoading) {
-            button.dataset.originalText = button.dataset.originalText || button.textContent;
-            button.setAttribute('aria-label', '처리 중입니다. 잠시만 기다려주세요.');
-            button.textContent = '⏳ 처리 중...';
-            button.style.opacity = '0.6';
-        } else {
-            button.textContent = button.dataset.originalText || button.textContent;
-            button.setAttribute('aria-label', '실행');
-            button.style.opacity = '1';
-            button.removeAttribute('aria-busy');
-        }
-    }
-
-    async function loadOCR() {
-        try {
-            const data = await apiCall('/api/ocr');
-            document.getElementById('ocr-input').value = data.ocr || '';
-        } catch (error) {
-            document.getElementById('ocr-input').placeholder = 'OCR 로드 실패';
-        }
-    }
-
-    async function saveOCR() {
-        const text = document.getElementById('ocr-input').value;
-        const statusEl = document.getElementById('ocr-save-status');
-        try {
-            await apiCall('/api/ocr', 'POST', { text });
-            statusEl.textContent = '✅ 저장됨';
-            statusEl.style.color = 'var(--success, green)';
-            setTimeout(() => statusEl.textContent = '', 2000);
-        } catch (error) {
-            statusEl.textContent = '❌ 저장 실패';
-            statusEl.style.color = 'var(--danger, red)';
-        }
-    }
-
-    const WorkspaceMode = {
-        current: 'full',
-        switchTo(mode) {
-            this.current = mode;
-            const queryField = document.getElementById('query');
-            const answerField = document.getElementById('answer');
-            const queryBadge = document.getElementById('query-badge');
-            const answerBadge = document.getElementById('answer-badge');
-            const queryHelp = document.getElementById('query-help');
-            const answerHelp = document.getElementById('answer-help');
-            const queryTypeSection = document.getElementById('query-type-section');
-            const executeBtn = document.getElementById('execute-btn');
-
-            queryField.readOnly = false;
-            answerField.readOnly = false;
-            queryField.classList.remove('output-only', 'required-input');
-            answerField.classList.remove('output-only', 'required-input');
-
-            if (mode === 'full') {
-                queryBadge.textContent = '선택';
-                queryBadge.className = 'field-badge optional';
-                answerBadge.textContent = '선택';
-                answerBadge.className = 'field-badge optional';
-
-                queryHelp.textContent = '💡 비워두면 자동으로 생성됩니다';
-                answerHelp.textContent = '💡 비워두면 자동으로 생성됩니다';
-
-                queryField.placeholder = '질문을 입력하세요 (비우면 자동 생성)';
-                answerField.placeholder = '답변을 입력하세요 (비우면 자동 생성)';
-
-                queryTypeSection.style.display = 'block';
-                executeBtn.textContent = '🚀 실행';
-            } else if (mode === 'query-only') {
-                queryBadge.textContent = '자동 생성';
-                queryBadge.className = 'field-badge output';
-                answerBadge.textContent = '필수 입력';
-                answerBadge.className = 'field-badge required';
-
-                queryHelp.innerHTML = '🤖 <strong>답변 기반으로 자동 생성됩니다</strong>';
-                answerHelp.innerHTML = '✅ <strong>답변을 입력하세요</strong> (이 내용으로 질문 생성)';
-
-                queryField.placeholder = '여기에 생성된 질문이 표시됩니다';
-                answerField.placeholder = '질문을 생성할 답변을 입력하세요';
-
-                queryField.readOnly = true;
-                queryField.classList.add('output-only');
-                answerField.classList.add('required-input');
-
-                queryTypeSection.style.display = 'none';
-                executeBtn.textContent = '❓ 질문 생성';
-            } else if (mode === 'answer-only') {
-                queryBadge.textContent = '필수 입력';
-                queryBadge.className = 'field-badge required';
-                answerBadge.textContent = '자동 생성';
-                answerBadge.className = 'field-badge output';
-
-                queryHelp.innerHTML = '✅ <strong>질문을 입력하세요</strong> (이 내용으로 답변 생성)';
-                answerHelp.innerHTML = '🤖 <strong>질문 기반으로 자동 생성됩니다</strong>';
-
-                queryField.placeholder = '답변을 생성할 질문을 입력하세요';
-                answerField.placeholder = '여기에 생성된 답변이 표시됩니다';
-
-                answerField.readOnly = true;
-                answerField.classList.add('output-only');
-                queryField.classList.add('required-input');
-
-                queryTypeSection.style.display = 'block';
-                executeBtn.textContent = '💡 답변 생성';
-            }
-
-            this.updateValidation();
-        },
-        updateValidation() {
-            const queryVal = document.getElementById('query').value.trim();
-            const answerVal = document.getElementById('answer').value.trim();
-            const ocrVal = document.getElementById('ocr-input').value.trim();
-            const globalRefVal = document
-                .getElementById('global-explanation-ref')
-                .value.trim();
-            const executeBtn = document.getElementById('execute-btn');
-
-            let isValid = false;
-            if (this.current === 'query-only') {
-                isValid = Boolean(answerVal || ocrVal);
-            } else if (this.current === 'answer-only') {
-                isValid = Boolean(queryVal);
-            } else {
-                isValid = Boolean(ocrVal || globalRefVal || queryVal || answerVal);
-            }
-
-            executeBtn.disabled = !isValid;
-            executeBtn.style.opacity = isValid ? '1' : '0.6';
-        },
-    };
-
-    // 실행 버튼 (중복 실행 방지)
-    let isExecuting = false;
-    let abortController = null;
-
-    document.getElementById('execute-btn').addEventListener('click', async () => {
-        if (isExecuting) {
-            console.log('이미 실행 중입니다.');
-            return;
-        }
-        const executeBtn = document.getElementById('execute-btn');
-        if (abortController) {
-            abortController.abort();
-        }
-        abortController = new AbortController();
-
-        const query = document.getElementById('query').value.trim();
-        const answer = document.getElementById('answer').value.trim();
-        const editRequest = document.getElementById('edit-request').value.trim();
-        const ocrText = document.getElementById('ocr-input').value;
-        const queryType = document.getElementById('query-type').value;
-        const globalExplanationRef = document.getElementById('global-explanation-ref').value.trim();
-        const mode = WorkspaceMode.current;
-        const hasEditRequest = Boolean(editRequest);
-
-        const resultsDiv = document.getElementById('workspace-results');
-        
-        // 진행 상황 표시
-        resultsDiv.innerHTML = `
-            <div style="text-align: center; padding: 20px; background: var(--bg-secondary, #f5f5f5); border-radius: 8px; margin-top: 20px;">
-                <p style="color: var(--text-primary, #1f2121); margin: 0;">⏳ 처리 중...</p>
-            </div>
-        `;
-
-        isExecuting = true;
-        setButtonLoading(executeBtn, true);
-
-        try {
-            const payload = {
-                mode,
-                query: query || null,
-                answer: answer || null,
-                edit_request: editRequest || null,
-                ocr_text: ocrText || null,
-            query_type: queryType || null,
-            global_explanation_ref: globalExplanationRef || null,
-        };
-
-        if (mode === 'query-only' && !hasEditRequest) {
-            payload.query = null;
-        } else if (mode === 'answer-only' && !hasEditRequest) {
-            payload.answer = null;
-        }
-
-        const result = await apiCall('/api/workspace/unified', 'POST', {
-            ...payload,
-            }, abortController?.signal);
-
-            displayResult(result);
-        } catch (error) {
-            resultsDiv.innerHTML = `
-                <div style="text-align: center; padding: 20px; background: #ffebee; border-radius: 8px; border: 1px solid #f44336; margin-top: 20px;">
-                    <p style="color: #f44336; margin: 0;">❌ 작업 실패: ${error.message}</p>
-                    <button type="button" class="btn-secondary" onclick="document.getElementById('execute-btn').click()">🔄 다시 시도</button>
-                </div>
-            `;
-        } finally {
-            isExecuting = false;
-            setButtonLoading(executeBtn, false);
-        }
-    });
-
-    function displayResult(data) {
-        // 질의/답변을 입력 필드에 직접 채우기 + 하이라이트
-        const currentMode = WorkspaceMode.current;
-        const canUpdateQuery = ['full_generation', 'query_generation', 'edit_query', 'edit_both'].includes(
-            data.workflow,
-        );
-
-        if (data.query && currentMode !== 'answer-only' && canUpdateQuery) {
-            const queryField = document.getElementById('query');
-            queryField.value = data.query;
-            queryField.style.borderColor = 'var(--primary, #21808d)';
-            queryField.style.boxShadow = '0 0 0 3px rgba(33, 128, 141, 0.2)';
-            setTimeout(() => {
-                queryField.style.borderColor = '';
-                queryField.style.boxShadow = '';
-            }, 2000);
-        }
-
-        if (data.answer) {
-            const answerField = document.getElementById('answer');
-            answerField.value = data.answer;
-            answerField.style.borderColor = 'var(--primary, #21808d)';
-            answerField.style.boxShadow = '0 0 0 3px rgba(33, 128, 141, 0.2)';
-            setTimeout(() => {
-                answerField.style.borderColor = '';
-                answerField.style.boxShadow = '';
-            }, 2000);
-        }
-
-        // 간단한 성공 메시지 표시 후 자동 제거
-        const resultsDiv = document.getElementById('workspace-results');
-        resultsDiv.innerHTML = `
-            <div style="text-align: center; padding: 20px; background: #e8f5e9; border-radius: 8px; border: 1px solid #4caf50; margin-top: 20px; animation: fadeIn 0.3s;">
-                <h3 style="margin: 0 0 10px 0; color: #4caf50;">✅ ${getWorkflowLabel(data.workflow)} 완료</h3>
-                <p style="margin: 0; color: #666; font-size: 0.9em;">
-                    ${data.query ? '질의' : ''}${data.query && data.answer ? '와 ' : ''}${data.answer ? '답변' : ''}이 입력 필드에 자동으로 채워졌습니다.
-                </p>
-            </div>
-        `;
-
-        setTimeout(() => {
-            resultsDiv.innerHTML = '';
-        }, 3000);
-    }
-
-    function getWorkflowLabel(workflow) {
-        const labels = {
-            'full_generation': '🎯 전체 생성',
-            'query_generation': '❓ 질의 생성',
-            'answer_generation': '💡 답변 생성',
-            'edit_query': '✏️ 질의 수정',
-            'edit_answer': '✏️ 답변 수정',
-            'edit_both': '✏️ 질의+답변 수정',
-            'rewrite': '✅ 재작성/검수'
-        };
-        return labels[workflow] || workflow;
-    }
-
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text || '';
-        return div.innerHTML;
-    }
-
-    // 필드 내용 복사
-    function copyFieldContent(fieldId, buttonEl) {
-        const field = document.getElementById(fieldId);
-        const text = field.value.trim();
-        if (!text) {
-            showToast('복사할 내용이 없습니다.', 'error');
-            return;
-        }
-        copyToClipboard(text, buttonEl);
-        showToast('클립보드에 복사했습니다.', 'success');
-    }
-
-    // 전체 설명문 참조 저장/복원
-    const GLOBAL_EXPLANATION_KEY = 'workspace_global_explanation';
-    document.addEventListener('DOMContentLoaded', () => {
-        const savedRef = localStorage.getItem(GLOBAL_EXPLANATION_KEY);
-        if (savedRef) {
-            document.getElementById('global-explanation-ref').value = savedRef;
-        }
-    });
-
-    let saveRefTimeout;
-    document.getElementById('global-explanation-ref').addEventListener('input', (e) => {
-        clearTimeout(saveRefTimeout);
-        const value = e.target.value;
-        saveRefTimeout = setTimeout(() => {
-            localStorage.setItem(GLOBAL_EXPLANATION_KEY, value);
-        }, 300);
-    });
-
-    document.getElementById('clear-reference-btn').addEventListener('click', () => {
-        document.getElementById('global-explanation-ref').value = '';
-        localStorage.removeItem(GLOBAL_EXPLANATION_KEY);
-    });
-
-    // 세션 복원
-    const savedQuery = sessionStorage.getItem('workspace_query');
-    const savedAnswer = sessionStorage.getItem('workspace_answer');
-    if (savedQuery) {
-        document.getElementById('query').value = savedQuery;
-        sessionStorage.removeItem('workspace_query');
-    }
-    if (savedAnswer) {
-        document.getElementById('answer').value = savedAnswer;
-        sessionStorage.removeItem('workspace_answer');
-    }
-
-    // 탭 이벤트
-    document.querySelectorAll('.workspace-mode-tabs .mode-tab').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            document
-                .querySelectorAll('.workspace-mode-tabs .mode-tab')
-                .forEach((b) => b.classList.remove('active'));
-            btn.classList.add('active');
-            WorkspaceMode.switchTo(btn.dataset.mode);
-        });
-    });
-
-    // 입력 변경 시 검증 업데이트
-    ['query', 'answer', 'ocr-input'].forEach((id) => {
-        const el = document.getElementById(id);
-        el.addEventListener('input', () => WorkspaceMode.updateValidation());
-    });
-    document
-        .getElementById('global-explanation-ref')
-        .addEventListener('input', () => WorkspaceMode.updateValidation());
-
-    // 초기화
-    loadOCR();
-    document.getElementById('save-ocr-btn').addEventListener('click', saveOCR);
-    WorkspaceMode.switchTo('full');
-</script>
 {% endblock %}

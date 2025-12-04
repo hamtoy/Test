@@ -42,27 +42,4 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-    // 페이지 로드 시 OCR 텍스트 로드
-    loadOCR();
-
-    // 저장 버튼 이벤트
-    document.getElementById('save-ocr-btn').addEventListener('click', saveOCR);
-
-    document.getElementById('eval-btn').addEventListener('click', async () => {
-        const query = document.getElementById('query').value;
-        const answers = [
-            document.getElementById('answer-a').value,
-            document.getElementById('answer-b').value,
-            document.getElementById('answer-c').value,
-        ];
-
-        if (!query || answers.some(a => !a.trim())) {
-            alert('모든 필드를 입력해주세요.');
-            return;
-        }
-
-        await evaluateAnswers(query, answers);
-    });
-</script>
 {% endblock %}
