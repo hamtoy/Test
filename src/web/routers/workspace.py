@@ -690,11 +690,13 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
 
             rules_text = "\n".join(f"- {r}" for r in rules_list)
             extra_rules_text = "\n".join(f"- {t}" for t in rule_texts[:5])
+            evidence_clause = "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거 문장을 1개 포함하세요."
             prompt = f"""[지시사항]
 반드시 한국어로 답변하세요.
 OCR에 없는 정보는 추가하지 마세요.
 {length_constraint}
 {dedup_section}
+{evidence_clause}
 
 [준수 규칙]
 {rules_text}

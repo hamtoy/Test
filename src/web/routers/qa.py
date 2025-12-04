@@ -452,6 +452,9 @@ async def generate_single_qa(
                 f"[우선순위 {c.get('priority', 0)}] {c.get('description', '')}"
                 for c in answer_constraints
             )
+        evidence_clause = (
+            "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거가 되는 문장을 1개 포함하세요."
+        )
         answer_prompt = f"""{length_constraint}
 
 {formatting_text}
@@ -465,6 +468,7 @@ async def generate_single_qa(
 {truncated_ocr}
 
 위 길이/형식 제약과 규칙을 엄격히 준수하여 한국어로 답변하세요.
+{evidence_clause}
 {extra_instructions}"""
 
         draft_answer = await agent.rewrite_best_answer(
