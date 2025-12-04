@@ -953,6 +953,8 @@ OCR에 없는 정보는 추가하지 마세요.
             val_result = unified_validator.validate_all(answer, normalized_qtype)
             if val_result.has_errors():
                 changes.append(val_result.get_error_summary())
+            if val_result.warnings:
+                changes.extend(val_result.warnings)
 
         return {
             "workflow": workflow,

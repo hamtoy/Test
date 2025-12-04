@@ -515,6 +515,8 @@ async def generate_single_qa(
 
         if val_result.has_errors():
             all_violations.extend([v.get("type", "rule") for v in val_result.violations])
+        if val_result.warnings:
+            all_issues.extend(val_result.warnings)
 
         if all_violations:
             all_issues.extend(all_violations[:3])
