@@ -66,71 +66,80 @@ def set_dependencies(
     pipeline = qa_pipeline
     global _validator
     _validator = None  # reset so it uses latest kg
-    try:
-        from src.web.dependencies import container
-
-        container.set_config(config)
-        container.set_agent(gemini_agent)
-        container.set_kg(kg_ref)
-        container.set_pipeline(qa_pipeline)
-    except Exception:
-        pass
 
 
 def _get_agent() -> Optional[GeminiAgent]:
+    try:
+        from src.web import api as api_module
+
+        if getattr(api_module, "agent", None) is not None:
+            return api_module.agent
+    except Exception:
+        pass
     try:
         from src.web import dependencies
 
         return dependencies.get_agent()
     except Exception:
-        try:
-            from src.web import api as api_module
-
-            return api_module.agent
-        except Exception:
-            return agent
+        return agent
 
 
 def _get_kg() -> Optional[QAKnowledgeGraph]:
+    try:
+        from src.web import api as api_module
+
+        if getattr(api_module, "kg", None) is not None:
+            return api_module.kg
+    except Exception:
+        pass
     try:
         from src.web import dependencies
 
         return dependencies.get_knowledge_graph()
     except Exception:
-        try:
-            from src.web import api as api_module
-
-            return api_module.kg
-        except Exception:
-            return kg
+        return kg
 
 
 def _get_pipeline() -> Optional[IntegratedQAPipeline]:
+    try:
+        from src.web import api as api_module
+
+        if getattr(api_module, "pipeline", None) is not None:
+            return api_module.pipeline
+    except Exception:
+        pass
     try:
         from src.web import dependencies
 
         return dependencies.get_pipeline()
     except Exception:
-        try:
-            from src.web import api as api_module
-
-            return api_module.pipeline
-        except Exception:
-            return pipeline
+        return pipeline
 
 
 def _get_config() -> AppConfig:
     try:
-        from src.web import dependencies
+        from src.web import api as api_module
 
-        return dependencies.get_config()
+        if getattr(api_module, "config", None) is not None:
+            cfg = api_module.config
+        elif _config is not None:
+            cfg = _config
+        else:
+            raise RuntimeError
+        for name, default in [
+            ("qa_single_timeout", QA_SINGLE_GENERATION_TIMEOUT),
+            ("qa_batch_timeout", QA_BATCH_GENERATION_TIMEOUT),
+            ("workspace_timeout", WORKSPACE_GENERATION_TIMEOUT),
+            ("workspace_unified_timeout", WORKSPACE_UNIFIED_TIMEOUT),
+        ]:
+            if not hasattr(cfg, name):
+                setattr(cfg, name, default)
+        return cfg  # type: ignore[return-value]
     except Exception:
-        if _config is not None:
-            return _config
         try:
-            from src.web import api as api_module
+            from src.web import dependencies
 
-            return api_module.get_config()
+            return dependencies.get_config()
         except Exception:
             return AppConfig()
 

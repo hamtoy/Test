@@ -34,7 +34,6 @@ from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
 from src.web.session import SessionManager, session_middleware
 from src.web.models import OCRTextInput
-from src.web.dependencies import container
 from src.web.routers import health_router, qa_router, stream_router, workspace_router
 from src.web.routers import health as health_router_module
 from src.web.routers import qa as qa_router_module
@@ -224,8 +223,6 @@ async def init_resources() -> None:
     """전역 리소스 초기화 (서버 시작 시 호출)."""
     global agent, kg, pipeline
     app_config = get_config()
-    container.set_config(app_config)
-
     if agent is None:
         from jinja2 import Environment, FileSystemLoader
 
@@ -236,13 +233,11 @@ async def init_resources() -> None:
         )
         agent = GeminiAgent(config=app_config, jinja_env=jinja_env)
         logger.info("GeminiAgent 초기화 완료")
-        container.set_agent(agent)
 
     if kg is None:
         try:
             kg = QAKnowledgeGraph()
             logger.info("QAKnowledgeGraph 초기화 완료")
-            container.set_kg(kg)
         except Exception as e:
             logger.warning("Neo4j 연결 실패 (RAG 비활성화): %s", e)
             kg = None
@@ -251,7 +246,6 @@ async def init_resources() -> None:
         try:
             pipeline = IntegratedQAPipeline()
             logger.info("IntegratedQAPipeline 초기화 완료")
-            container.set_pipeline(pipeline)
         except Exception as e:
             logger.warning(
                 "IntegratedQAPipeline 초기화 실패 (Neo4j 환경변수 필요: NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD): %s",

@@ -99,76 +99,80 @@ def set_dependencies(
     agent = gemini_agent
     pipeline = qa_pipeline
     kg = kg_ref
-    try:
-        from src.web.dependencies import container
-
-        container.set_config(config)
-        container.set_agent(gemini_agent)
-        container.set_pipeline(qa_pipeline)
-        container.set_kg(kg_ref)
-    except Exception:
-        # 컨테이너가 없는 테스트 환경을 고려해 조용히 무시
-        pass
 
 
 def _get_agent() -> Optional[GeminiAgent]:
     try:
-        from src.web import dependencies
+        from src.web import api as api_module
 
-        return dependencies.get_agent()
+        if getattr(api_module, "agent", None) is not None:
+            return api_module.agent
     except Exception:
         pass
     try:
-        from src.web import api as api_module
+        from src.web import dependencies
 
-        return api_module.agent
+        return dependencies.get_agent()
     except Exception:
         return agent
 
 
 def _get_pipeline() -> Optional[IntegratedQAPipeline]:
     try:
-        from src.web import dependencies
+        from src.web import api as api_module
 
-        return dependencies.get_pipeline()
+        if getattr(api_module, "pipeline", None) is not None:
+            return api_module.pipeline
     except Exception:
         pass
     try:
-        from src.web import api as api_module
+        from src.web import dependencies
 
-        return api_module.pipeline
+        return dependencies.get_pipeline()
     except Exception:
         return pipeline
 
 
 def _get_kg() -> Optional[QAKnowledgeGraph]:
     try:
-        from src.web import dependencies
+        from src.web import api as api_module
 
-        return dependencies.get_knowledge_graph()
+        if getattr(api_module, "kg", None) is not None:
+            return api_module.kg
     except Exception:
         pass
     try:
-        from src.web import api as api_module
+        from src.web import dependencies
 
-        return api_module.kg
+        return dependencies.get_knowledge_graph()
     except Exception:
         return kg
 
 
 def _get_config() -> AppConfig:
     try:
+        from src.web import api as api_module
+
+        cfg = getattr(api_module, "config", None)
+        if cfg is None and _config is not None:
+            cfg = _config
+        if cfg is not None:
+            for name, default in [
+                ("qa_single_timeout", QA_SINGLE_GENERATION_TIMEOUT),
+                ("qa_batch_timeout", QA_BATCH_GENERATION_TIMEOUT),
+                ("workspace_timeout", WORKSPACE_GENERATION_TIMEOUT),
+                ("workspace_unified_timeout", WORKSPACE_UNIFIED_TIMEOUT),
+            ]:
+                if not hasattr(cfg, name):
+                    setattr(cfg, name, default)
+            return cfg  # type: ignore[return-value]
+    except Exception:
+        if _config is not None:
+            return _config
+    try:
         from src.web import dependencies
 
         return dependencies.get_config()
-    except Exception:
-        pass
-    if _config is not None:
-        return _config
-    try:
-        from src.web import api as api_module
-
-        return api_module.get_config()
     except Exception:
         return AppConfig()
 
@@ -517,6 +521,19 @@ async def generate_single_qa(
             "요약문" in draft_answer or "요약" in draft_answer.splitlines()[0]
         ):
             all_violations.append("summary_header_not_allowed")
+
+        # Explicit rule compliance check when KG is available (for tests/validation)
+        if kg_wrapper is not None:
+            try:
+                validator_cls = _get_validator_class()
+                validator = validator_cls(kg_wrapper)
+                rule_check = validator._check_rule_compliance(  # type: ignore[attr-defined]
+                    draft_answer, normalized_qtype
+                )
+                if rule_check.get("violations") and rule_check.get("score", 1.0) < 0.3:
+                    all_violations.extend(rule_check.get("violations", []))
+            except Exception:
+                pass
 
         # 기존 탐지 + 통합 검증 병합
         violations = find_violations(draft_answer)
