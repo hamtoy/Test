@@ -157,9 +157,11 @@ def postprocess_answer(answer: str, qtype: str) -> str:
     # 1.1 숫자 포맷 깨짐 복원
     answer = fix_broken_numbers(answer)
     # 1.2 볼드 마커 정규화: 짝이 안 맞는 **텍스트* / *텍스트** 제거
+    # Case: **Text* \n * (Broken bold across lines)
+    answer = re.sub(r"\*\*([^*]+)\*\s*\n\s*\*", r"**\1**", answer)
     answer = re.sub(r"\*\*([^*]+)\*(?!\*)", r"\1", answer)
     answer = re.sub(r"\*([^*]+)\*\*", r"\1", answer)
-    answer = re.sub(r"\*\*(.*?)\*\*", r"**\1**", answer)
+    answer = re.sub(r"\*\*(.*?)\*\*", r"**\1**", answer, flags=re.DOTALL)
     answer = re.sub(r"(?<!\*)\*(?!\*)", "", answer)
 
     # 2. ###/## 소제목 → **소제목** + 줄바꿈
@@ -192,8 +194,15 @@ def postprocess_answer(answer: str, qtype: str) -> str:
         else:
             answer = answer.strip()
         answer = re.sub(r"\s+", " ", answer).strip()
+
+        # 타겟 유형은 마크다운 제거 강제
+        answer = re.sub(r"\*\*(.*?)\*\*", r"\1", answer, flags=re.DOTALL)
+        answer = re.sub(r"\*(.*?)\*", r"\1", answer)
+        answer = re.sub(r"[_]{1,2}(.*?)[_]{1,2}", r"\1", answer)
+
         if qtype == "target_short" and answer.endswith("."):
             answer = answer[:-1].strip()
+
     elif qtype in {"global_explanation", "explanation", "reasoning"}:
         # 서술문 앞의 불릿(-, •) 제거 및 문단 정리
         paragraph_lines: list[str] = []
@@ -223,11 +232,8 @@ def postprocess_answer(answer: str, qtype: str) -> str:
             paragraphs.append(paragraph)
         answer = "\n\n".join(paragraphs)
 
-    # 5. 공통 정리: 남은 마크다운 제거 및 불릿 제거
-    answer = re.sub(r"\*\*(.*?)\*\*", r"\1", answer)  # 볼드 제거
-    answer = re.sub(r"\*(.*?)\*", r"\1", answer)  # 기울임 제거
-    answer = re.sub(r"[_]{1,2}(.*?)[_]{1,2}", r"\1", answer)  # 언더라인 마크다운 제거
-    answer = answer.replace("*", "")  # 남은 별표 제거
+    # 5. 공통 정리: 남은 불릿 및 과도한 개행 제거 (마크다운은 보존)
+    answer = answer.replace("*", "")  # 남은 별표(강조 아님) 제거
     answer = re.sub(r"^[-•]\s*", "", answer, flags=re.MULTILINE)
     answer = re.sub(r"^#+\s*", "", answer, flags=re.MULTILINE)
     answer = re.sub(r"\n{3,}", "\n\n", answer)

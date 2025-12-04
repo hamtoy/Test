@@ -348,7 +348,8 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     query = body.query or ""
     answer = body.answer or ""
     changes: list[str] = []
-    reference_text = global_explanation_ref
+    allow_reference = query_type not in {"target_short", "target_long"}
+    reference_text = global_explanation_ref if allow_reference else ""
 
     def _sanitize_output(text: str) -> str:
         """불릿/마크다운/여분 공백을 제거해 일관된 문장만 남긴다."""
@@ -472,12 +473,12 @@ OCR에 없는 정보는 추가하지 마세요.
 
 위 OCR 텍스트를 기반으로 답변을 작성하세요."""
 
-            answer = await current_agent.rewrite_best_answer(
-                ocr_text=ocr_text,
-                best_answer=prompt,
-                cached_content=None,
-                query_type=normalized_qtype,
+            # Direct LLM call for answer generation (not rewrite)
+            system_prompt = (
+                "당신은 한국어로 정확하고 간결한 답변을 작성하는 어시스턴트입니다."
             )
+            model = current_agent._create_generative_model(system_prompt)
+            answer = await current_agent._call_api_with_retry(model, prompt)
             answer = strip_output_tags(answer)
             changes.append("답변 생성 완료")
 
@@ -553,14 +554,17 @@ OCR에 없는 정보는 추가하지 마세요.
 [질의]
 {query}
 
+[추가 지침]
+{body.edit_request or "(없음)"}
+
 위 OCR 텍스트를 기반으로 답변을 작성하세요."""
 
-            answer = await current_agent.rewrite_best_answer(
-                ocr_text=ocr_text,
-                best_answer=prompt,
-                cached_content=None,
-                query_type=normalized_qtype,
+            # Direct LLM call for answer generation
+            system_prompt = (
+                "당신은 한국어로 정확하고 간결한 답변을 작성하는 어시스턴트입니다."
             )
+            model = current_agent._create_generative_model(system_prompt)
+            answer = await current_agent._call_api_with_retry(model, prompt)
             answer = strip_output_tags(answer)
             changes.append("답변 생성 완료")
 

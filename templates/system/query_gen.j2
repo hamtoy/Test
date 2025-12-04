@@ -136,6 +136,13 @@
           <rule>PARENTHESIS_BAN: 질의 문장에 소괄호 '()'를 포함하는 것을 절대 금지한다.</rule>
           <rule>COPY_PASTE_BAN: 본문 문장을 그대로 복사하여 질문을 만들지 않는다.</rule>
           <rule>COMPOSITE_QUERY_BAN: 두 가지 과업을 '와/과'로 연결하여 병렬적으로 묻는 것을 금지한다.</rule>
+          {% if reference_text %}
+          <rule>DEDUPLICATION_CONSTRAINT: 다음 [참조 텍스트]에 이미 포함된 정보에 대한 질의는 절대 생성하지 않는다. 참조 텍스트에 없는 새로운 정보나, 더 구체적인 세부 사항만을
+            물어야 한다.
+            [참조 텍스트]:
+            {{ reference_text[:1000] }}
+          </rule>
+          {% endif %}
         </prohibited_patterns>
       </step_3_apply_safety_rules>
 
