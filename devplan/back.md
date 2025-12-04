@@ -1,110 +1,117 @@
-제공해주신 내용은 마크다운 코드 블록(` ``` `)이 중첩되거나 닫히지 않아 형식이 깨진 것으로 보입니다.
+---
 
-아래에 **올바른 마크다운 형식으로 수정한 전문**을 정리해 드립니다. 이를 그대로 복사하여 노션(Notion), 깃허브(GitHub), 또는 문서 도구에 붙여넣으시면 됩니다.
+# hamtoy/Test 백엔드 개선 작업 - 최종 통합본
+
+## 📌 문서 개요
+
+이 문서는 hamtoy/Test 프로젝트의 web.api 백엔드를 개선하기 위한 실전 가이드입니다.
+- **목표**: 전역 상태 제거, 모듈화, 테스트 가능성 향상
+- **원칙**: 기존 코드 시그니처 검증 → 점진적 적용 → 롤백 가능
+- **위험 완화**: 각 Phase별 체크리스트 및 롤백 계획 포함
 
 ---
 
-# hamtoy/Test web.api 백엔드 개선 작업 (최종 검증판)
-
-## ⚠️ 적용 전 필수 사전 조사
+## 🔴 Critical: 적용 전 필수 사전 조사
 
 ### 1. 현재 코드베이스 스냅샷
-```bash
-# 1.1 기존 workflow 모듈 구조
-ls -la src/workflow/
-# 예상 출력: edit.py, inspection.py 등
-# 확인: executor.py, unified_executor.py 등 충돌 가능 파일
 
-# 1.2 현재 의존성 확인
+```bash
+# 1.1 기존 workflow 모듈 구조 확인
+ls -la src/workflow/
+# 예상: edit.py, inspection.py
+# 주의: executor.py, unified_executor.py 충돌 가능
+
+# 1.2 의존성 확인
 cat pyproject.toml | grep -A 50 "dependencies"
-# tenacity, jinja2, fastapi 버전 확인
+# tenacity 유무 확인 (없으면 uv add tenacity)
 
 # 1.3 기존 검증 로직 파악
 find src/qa -name "*valid*.py" -o -name "*check*.py"
-# UnifiedValidator, IntegratedQAPipeline.validate_output 위치 확인
+# UnifiedValidator 위치 확인
 
-# 1.4 현재 Agent/Pipeline 시그니처 확인
-grep -A 5 "class GeminiAgent" src/agent/*.py
-grep -A 5 "class IntegratedQAPipeline" src/qa/pipeline.py
-grep -A 3 "def __init__" src/agent/*.py | head -20
+# 1.4 Agent/Pipeline 시그니처 확인 (가장 중요!)
+python -c "
+from src.agent import GeminiAgent
+from src.qa.pipeline import IntegratedQAPipeline
+from src.qa.rag_system import QAKnowledgeGraph
+import inspect
+print('GeminiAgent.__init__:', inspect.signature(GeminiAgent.__init__))
+print('Pipeline.__init__:', inspect.signature(IntegratedQAPipeline.__init__))
+print('KG.__init__:', inspect.signature(QAKnowledgeGraph.__init__))
+"
 ```
 
-### 2. 테스트 커버리지 확인
+### 2. 테스트 현황 확인
+
 ```bash
-# 현재 테스트 실행
+# 전체 테스트 실행
 pytest tests/ -v --tb=short
 
-# 특정 모듈 테스트 확인
-pytest tests/web/ -v
-pytest tests/workflow/ -v 2>/dev/null || echo "workflow 테스트 없음"
+# 커버리지 확인
+pytest tests/ --cov=src/web --cov-report=term-missing
 ```
 
 ### 3. API 계약 확인
+
 ```bash
-# 클라이언트가 사용하는 엔드포인트 확인
+# 클라이언트 엔드포인트 사용 확인
 grep -r "/workspace" static/*.js templates/*.html
 grep -r "api_unified_workspace" tests/
 
-# 현재 응답 스키마 확인
+# 현재 Request/Response 모델 확인
 grep -A 10 "class.*Request" src/web/models.py
-grep -A 10 "class.*Response" src/web/models.py
 ```
 
 ---
 
-## Phase 0: 기존 시그니처 검증 (필수)
+## Phase 0: 실제 시그니처 검증 (필수)
 
-### 실제 코드와 맞추기
+### ⚠️ 주의: 예시 코드는 가정입니다. 실제 시그니처를 먼저 확인하세요!
 
-#### src/agent/__init__.py 또는 src/agent/agent.py 확인
 ```python
-# 실제 GeminiAgent 초기화 확인
+# src/agent/agent.py 예시
 class GeminiAgent:
     def __init__(
         self,
         config: AppConfig,
-        jinja_env: Environment,  # ← 이 파라미터 이름 확인
-        # 다른 파라미터가 있는지 확인
+        jinja_env: Environment,
+        # ← 이 파라미터들이 실제와 일치하는지 확인!
     ):
         ...
-```
 
-#### src/qa/pipeline.py 확인
-```python
-# 실제 IntegratedQAPipeline 초기화 확인
+# src/qa/pipeline.py 예시
 class IntegratedQAPipeline:
-    def __init__(
-        self,
-        # 파라미터 확인 (kg 필요한지, config 필요한지)
-    ):
+    def __init__(self):  # ← 파라미터가 있는지 확인!
+        ...
+
+# src/qa/rag_system.py 예시
+class QAKnowledgeGraph:
+    def __init__(self):  # ← URI/user/password 받는지 확인!
         ...
 ```
 
-#### src/qa/rag_system.py 확인
-```python
-# QAKnowledgeGraph 초기화 확인
-class QAKnowledgeGraph:
-    def __init__(
-        self,
-        # URI, user, password를 받는지
-        # 아니면 환경변수에서 자동으로 읽는지
-    ):
-        ...
-```
+**검증 스크립트 실행 후 devplan/back.md의 예시 코드와 비교하세요!**
 
 ---
 
 ## Phase 1: 서비스 레지스트리 도입 (1-2일)
 
-### 1.1 ServiceRegistry 구현
+### 목표
+- 전역 변수 `_config`, `agent`, `kg`, `pipeline` 제거
+- 싱글톤 패턴 ServiceRegistry로 의존성 관리
+- 테스트 격리 가능하도록 `reset_registry_for_test()` 제공
+
+### 1.1 ServiceRegistry 생성
 
 #### src/web/service_registry.py (신규)
+
 ```python
 """서비스 레지스트리 - 싱글톤 패턴."""
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 import threading
 import logging
+import os
 
 if TYPE_CHECKING:
     from src.config import AppConfig
@@ -124,6 +131,18 @@ class ServiceRegistry:
         self._kg: Optional[QAKnowledgeGraph] = None
         self._pipeline: Optional[IntegratedQAPipeline] = None
         self._lock = threading.Lock()
+        self._worker_id = os.getpid()
+    
+    def _check_worker(self):
+        """프로세스가 바뀌면 경고 (멀티프로세스 디버깅용)."""
+        current_pid = os.getpid()
+        if current_pid != self._worker_id:
+            logger.warning(
+                "ServiceRegistry accessed from different process: "
+                "original=%d, current=%d",
+                self._worker_id,
+                current_pid
+            )
     
     def register_config(self, config: AppConfig) -> None:
         with self._lock:
@@ -147,22 +166,26 @@ class ServiceRegistry:
     
     @property
     def config(self) -> AppConfig:
+        self._check_worker()
         if self._config is None:
             raise RuntimeError("Config not registered. Call init_resources first.")
         return self._config
     
     @property
     def agent(self) -> GeminiAgent:
+        self._check_worker()
         if self._agent is None:
             raise RuntimeError("Agent not registered. Call init_resources first.")
         return self._agent
     
     @property
     def kg(self) -> Optional[QAKnowledgeGraph]:
+        self._check_worker()
         return self._kg
     
     @property
     def pipeline(self) -> Optional[IntegratedQAPipeline]:
+        self._check_worker()
         return self._pipeline
     
     def is_initialized(self) -> bool:
@@ -199,8 +222,9 @@ def reset_registry_for_test() -> None:
 ### 1.2 api.py 수정
 
 #### src/web/api.py (수정)
+
 ```python
-# ===== 기존 전역 변수 제거 =====
+# ===== 기존 전역 변수 삭제 =====
 # 삭제: _config, agent, kg, pipeline
 # 삭제: get_config() 함수
 
@@ -230,18 +254,16 @@ async def init_resources() -> None:
         lstrip_blocks=True,
     )
     
-    # ⚠️ 실제 GeminiAgent 시그니처에 맞춰 수정 필요
+    # ⚠️ Phase 0에서 확인한 실제 시그니처에 맞춰 수정!
     gemini_agent = GeminiAgent(
         config=app_config,
         jinja_env=jinja_env,
-        # 추가 파라미터가 있다면 여기 추가
     )
     registry.register_agent(gemini_agent)
     logger.info("GeminiAgent initialized")
     
     # 3. KG 등록
     try:
-        # ⚠️ 실제 QAKnowledgeGraph 시그니처 확인
         knowledge_graph = QAKnowledgeGraph()
         registry.register_kg(knowledge_graph)
         logger.info("QAKnowledgeGraph initialized")
@@ -251,7 +273,6 @@ async def init_resources() -> None:
     
     # 4. Pipeline 등록
     try:
-        # ⚠️ 실제 IntegratedQAPipeline 시그니처 확인
         qa_pipeline = IntegratedQAPipeline()
         registry.register_pipeline(qa_pipeline)
         logger.info("IntegratedQAPipeline initialized")
@@ -260,7 +281,7 @@ async def init_resources() -> None:
         registry.register_pipeline(None)
     
     # 5. 라우터 의존성 주입
-    # ⚠️ 각 모듈의 set_dependencies 시그니처 확인 필요
+    # ⚠️ 각 라우터의 set_dependencies 시그니처 확인 필요!
     qa_router_module.set_dependencies(
         registry.config,
         registry.agent,
@@ -300,11 +321,11 @@ def save_ocr_text(text: str) -> None:
 ### 1.3 라우터 수정
 
 #### src/web/routers/workspace.py (수정)
+
 ```python
 # ===== 전역 변수 완전 제거 =====
 # 삭제: _config, agent, kg, pipeline, _validator, _service
-# 삭제: set_dependencies 함수
-# 삭제: _get_agent, _get_kg, _get_pipeline, _get_config 함수
+# 삭제: set_dependencies, _get_agent, _get_kg, _get_pipeline, _get_config
 
 from src.web.service_registry import get_registry
 
@@ -314,7 +335,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     """통합 워크스페이스 - ServiceRegistry 사용."""
     registry = get_registry()
     
-    # 필요한 서비스 가져오기
+    # 서비스 가져오기
     config = registry.config
     agent = registry.agent
     kg = registry.kg
@@ -323,13 +344,9 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     # OCR 텍스트 로드
     ocr_text = body.ocr_text or load_ocr_text()
     
-    # 기존 로직 유지
-    # ... (detect_workflow, 프롬프트 생성 등)
-    
-    # 예시: 간단한 워크플로우 실행
+    # 기존 로직 유지 (또는 Phase 2에서 WorkspaceExecutor로 이동)
     try:
-        # ⚠️ 기존 로직을 여기 유지하거나
-        # Phase 2에서 WorkspaceExecutor로 이동
+        # ... 기존 워크플로우 로직 ...
         pass
     except Exception as e:
         logger.error("Workflow failed: %s", e)
@@ -339,6 +356,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
 ### 1.4 테스트 작성
 
 #### tests/web/test_service_registry.py (신규)
+
 ```python
 """ServiceRegistry 테스트."""
 import pytest
@@ -406,21 +424,35 @@ def test_service_registry_clear():
     assert registry._config is None
 ```
 
-### 1.5 기존 테스트 업데이트
-
 #### tests/conftest.py (수정)
+
 ```python
 """테스트 픽스처."""
 import pytest
-from src.web.service_registry import reset_registry_for_test
+from src.web.service_registry import reset_registry_for_test, _registry
 
 
-@pytest.fixture(autouse=True)
-def reset_registry():
-    """각 테스트 전 레지스트리 초기화."""
+@pytest.fixture(scope="function", autouse=True)
+def isolate_registry():
+    """각 테스트마다 레지스트리 격리."""
+    # 현재 상태 백업
+    original_state = {
+        'config': _registry._config,
+        'agent': _registry._agent,
+        'kg': _registry._kg,
+        'pipeline': _registry._pipeline,
+    }
+    
+    # 테스트 전 초기화
     reset_registry_for_test()
+    
     yield
-    reset_registry_for_test()
+    
+    # 테스트 후 복원
+    _registry._config = original_state['config']
+    _registry._agent = original_state['agent']
+    _registry._kg = original_state['kg']
+    _registry._pipeline = original_state['pipeline']
 
 
 @pytest.fixture
@@ -438,28 +470,41 @@ def mock_registry():
     return registry
 ```
 
+### Phase 1 체크리스트
+
+- [ ] ServiceRegistry 생성 완료
+- [ ] api.py 수정 완료 (시그니처 검증 후)
+- [ ] workspace.py 전역 변수 제거 완료
+- [ ] 테스트 작성 완료
+- [ ] `pytest tests/web/test_service_registry.py -v` 통과
+- [ ] `pytest tests/ -v` 전체 통과
+- [ ] 로컬 서버 기동 확인
+- [ ] `/health` 엔드포인트 정상 응답 확인
+
 ---
 
 ## Phase 2: 워크스페이스 로직 분리 (3-5일)
 
-### 2.1 파일명 충돌 확인 및 결정
+### 목표
+- 1,000줄+ workspace.py를 WorkspaceExecutor로 분리
+- 7가지 워크플로우 타입별 핸들러 구조화
+- 기존 기능 유지하며 테스트 가능하게
+
+### 2.1 파일명 충돌 확인
+
 ```bash
 # 기존 파일 확인
 ls -la src/workflow/
 
-# 출력 예시:
-# edit.py
-# inspection.py
-# (executor.py가 없다면 그대로 사용 가능)
-
 # executor.py가 이미 있다면:
-# - workspace_executor.py 사용
-# - 또는 qa_executor.py 사용
+# → workspace_executor.py 사용
+# → 또는 qa_executor.py 사용
 ```
 
 ### 2.2 WorkspaceExecutor 구현
 
 #### src/workflow/workspace_executor.py (신규)
+
 ```python
 """워크스페이스 워크플로우 실행기."""
 from __future__ import annotations
@@ -554,18 +599,14 @@ class WorkspaceExecutor:
         
         return await handler(context)
     
-    async def _handle_full_generation(
-        self, ctx: WorkflowContext
-    ) -> WorkflowResult:
+    # ===== 워크플로우 핸들러 (기존 workspace.py 로직 이동) =====
+    
+    async def _handle_full_generation(self, ctx: WorkflowContext) -> WorkflowResult:
         """전체 생성 워크플로우."""
         changes: List[str] = ["OCR에서 전체 생성"]
         
         # 1. 질의 생성
-        query_intent = self._get_query_intent(
-            ctx.query_type,
-            ctx.global_explanation_ref
-        )
-        
+        query_intent = self._get_query_intent(ctx.query_type, ctx.global_explanation_ref)
         queries = await self.agent.generate_query(
             ctx.ocr_text,
             user_intent=query_intent,
@@ -575,15 +616,12 @@ class WorkspaceExecutor:
         
         query = queries if queries else "질문 생성 실패"
         
-        # 타겟 단답은 짧게
         if ctx.query_type == "target_short":
             query = self._shorten_query(query)
         
         changes.append("질의 생성 완료")
         
         # 2. 답변 생성
-        # ⚠️ 기존 workspace.py의 프롬프트 생성 로직을 여기로 이동
-        # 또는 Phase 3에서 템플릿으로 분리
         answer = await self._generate_answer(ctx, query)
         changes.append("답변 생성 완료")
         
@@ -595,186 +633,11 @@ class WorkspaceExecutor:
             query_type=ctx.query_type,
         )
     
-    async def _handle_query_generation(
-        self, ctx: WorkflowContext
-    ) -> WorkflowResult:
-        """질의 생성 워크플로우."""
-        changes: List[str] = ["질문 생성 요청"]
-        
-        query_intent = self._get_query_intent(
-            ctx.query_type,
-            ctx.global_explanation_ref
-        )
-        
-        queries = await self.agent.generate_query(
-            ctx.ocr_text,
-            user_intent=query_intent,
-            query_type=ctx.query_type,
-            kg=self.kg,
-        )
-        
-        query = queries if queries else "질문 생성 실패"
-        
-        if ctx.query_type == "target_short":
-            query = self._shorten_query(query)
-        
-        changes.append("질문 생성 완료")
-        
-        return WorkflowResult(
-            workflow="query_generation",
-            query=query,
-            answer=ctx.answer,  # 기존 답변 유지
-            changes=changes,
-            query_type=ctx.query_type,
-        )
+    # ... (나머지 핸들러는 기존 workspace.py 로직 참조)
     
-    async def _handle_answer_generation(
-        self, ctx: WorkflowContext
-    ) -> WorkflowResult:
-        """답변 생성 워크플로우."""
-        changes: List[str] = ["답변 생성 요청"]
-        
-        answer = await self._generate_answer(ctx, ctx.query)
-        changes.append("답변 생성 완료")
-        
-        return WorkflowResult(
-            workflow="answer_generation",
-            query=ctx.query,
-            answer=answer,
-            changes=changes,
-            query_type=ctx.query_type,
-        )
+    # ===== 헬퍼 메서드 =====
     
-    async def _handle_rewrite(
-        self, ctx: WorkflowContext
-    ) -> WorkflowResult:
-        """재작성 워크플로우."""
-        changes: List[str] = ["답변 재작성 요청"]
-        
-        # edit_content 사용
-        from src.workflow.edit import edit_content
-        
-        answer = await edit_content(
-            agent=self.agent,
-            answer=ctx.answer,
-            ocr_text=ctx.ocr_text,
-            query=ctx.query,
-            edit_request="형식/길이 위반을 자동 교정",
-            kg=self.kg,
-            cache=None,
-        )
-        
-        changes.append("재작성 완료")
-        
-        return WorkflowResult(
-            workflow="rewrite",
-            query=ctx.query,
-            answer=answer,
-            changes=changes,
-            query_type=ctx.query_type,
-        )
-    
-    async def _handle_edit_query(
-        self, ctx: WorkflowContext
-    ) -> WorkflowResult:
-        """질의 수정 워크플로우."""
-        changes: List[str] = ["질의 수정 요청"]
-        
-        from src.workflow.edit import edit_content
-        
-        edited_query = await edit_content(
-            agent=self.agent,
-            answer=ctx.query,
-            ocr_text=ctx.ocr_text,
-            query="",
-            edit_request=ctx.edit_request,
-            kg=self.kg,
-            cache=None,
-        )
-        
-        changes.append("질의 수정 완료")
-        
-        return WorkflowResult(
-            workflow="edit_query",
-            query=edited_query,
-            answer=ctx.answer,
-            changes=changes,
-            query_type=ctx.query_type,
-        )
-    
-    async def _handle_edit_answer(
-        self, ctx: WorkflowContext
-    ) -> WorkflowResult:
-        """답변 수정 워크플로우."""
-        changes: List[str] = [f"답변 수정 요청: {ctx.edit_request}"]
-        
-        from src.workflow.edit import edit_content
-        
-        edited_answer = await edit_content(
-            agent=self.agent,
-            answer=ctx.answer,
-            ocr_text=ctx.ocr_text,
-            query=ctx.query,
-            edit_request=ctx.edit_request,
-            kg=self.kg,
-            cache=None,
-        )
-        
-        changes.append("답변 수정 완료")
-        
-        return WorkflowResult(
-            workflow="edit_answer",
-            query=ctx.query,
-            answer=edited_answer,
-            changes=changes,
-            query_type=ctx.query_type,
-        )
-    
-    async def _handle_edit_both(
-        self, ctx: WorkflowContext
-    ) -> WorkflowResult:
-        """질의+답변 수정 워크플로우."""
-        changes: List[str] = [f"질의+답변 수정 요청: {ctx.edit_request}"]
-        
-        from src.workflow.edit import edit_content
-        
-        # 답변 수정
-        edited_answer = await edit_content(
-            agent=self.agent,
-            answer=ctx.answer,
-            ocr_text=ctx.ocr_text,
-            query=ctx.query,
-            edit_request=ctx.edit_request,
-            kg=self.kg,
-            cache=None,
-        )
-        changes.append("답변 수정 완료")
-        
-        # 질의 조정
-        edited_query = await edit_content(
-            agent=self.agent,
-            answer=ctx.query,
-            ocr_text=ctx.ocr_text,
-            query="",
-            edit_request=f"다음 답변에 맞게 질의 조정: {edited_answer[:200]}...",
-            kg=self.kg,
-            cache=None,
-        )
-        changes.append("질의 조정 완료")
-        
-        return WorkflowResult(
-            workflow="edit_both",
-            query=edited_query,
-            answer=edited_answer,
-            changes=changes,
-            query_type=ctx.query_type,
-        )
-    
-    # === 헬퍼 메서드 ===
-    
-    def _get_query_intent(
-        self, query_type: str, global_ref: str
-    ) -> Optional[str]:
+    def _get_query_intent(self, query_type: str, global_ref: str) -> Optional[str]:
         """쿼리 타입별 인텐트 생성."""
         intents = {
             "target_short": "간단한 사실 확인 질문",
@@ -807,14 +670,11 @@ class WorkspaceExecutor:
             candidate = " ".join(words[:20])
         return candidate.strip()
     
-    async def _generate_answer(
-        self, ctx: WorkflowContext, query: str
-    ) -> str:
+    async def _generate_answer(self, ctx: WorkflowContext, query: str) -> str:
         """답변 생성 (공통 로직)."""
-        # ⚠️ 기존 workspace.py의 답변 생성 로직을 여기로 이동
-        # 또는 Phase 3에서 템플릿으로 분리
+        # ⚠️ 기존 workspace.py의 프롬프트 생성 로직을 여기로 이동
+        # Phase 3에서 템플릿으로 분리 가능
         
-        # 임시 구현 (실제로는 프롬프트 생성 + agent 호출)
         prompt = f"""[질의]
 {query}
 
@@ -841,6 +701,7 @@ class WorkspaceExecutor:
 ### 2.3 라우터에서 Executor 사용
 
 #### src/web/routers/workspace.py (수정)
+
 ```python
 from src.workflow.workspace_executor import (
     WorkspaceExecutor,
@@ -858,7 +719,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     meta_start = datetime.now()
     
     # OCR 텍스트
-    ocr_text = body.ocr_text or load_ocr_text(registry.config)
+    ocr_text = body.ocr_text or load_ocr_text()
     
     # 워크플로우 감지
     workflow_str = detect_workflow(
@@ -918,7 +779,6 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
             detail=f"워크플로우 시간 초과 ({registry.config.workspace_unified_timeout}초)"
         )
     except ValueError as e:
-        # 잘못된 워크플로우 타입 등
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error("Workflow execution failed: %s", e, exc_info=True)
@@ -928,91 +788,164 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
         )
 ```
 
----
+### Phase 2 체크리스트
 
-## Phase 3-7: 나머지 개선 사항
-
-### 간략 체크리스트
-- [ ] **Phase 3**: 프롬프트 템플릿 외부화 (templates/prompts/workspace/)
-- [ ] **Phase 4**: 검증 레이어 통합 (src/qa/validator.py 확장)
-- [ ] **Phase 5**: 에러 처리 개선 (src/web/exceptions.py)
-- [ ] **Phase 6**: 재시도 로직 (src/infra/retry.py)
-- [ ] **Phase 7**: 캐싱 개선 (RuleLoader 메모이제이션)
-
-*(상세 구현은 기존 devplan/back.md Phase 3-7 참조)*
-
----
-
-## 최종 검증 체크리스트
-
-### 적용 전
-- [ ] `src/workflow/executor.py` 충돌 확인 완료
-- [ ] `GeminiAgent.__init__` 시그니처 확인 완료
-- [ ] `IntegratedQAPipeline.__init__` 시그니처 확인 완료
-- [ ] `QAKnowledgeGraph.__init__` 시그니처 확인 완료
-- [ ] 기존 테스트 전체 통과 확인
-
-### Phase 1 적용 후
-- [ ] `pytest tests/web/test_service_registry.py -v` 통과
-- [ ] `pytest tests/ -v` 전체 통과
-- [ ] 로컬 서버 기동 (`uvicorn src.web.api:app --reload`)
-- [ ] `/health` 엔드포인트 정상 응답
-- [ ] `/workspace` 페이지 로드 확인
-
-### Phase 2 적용 후
-- [ ] `WorkspaceExecutor` 단위 테스트 작성 및 통과
+- [ ] WorkspaceExecutor 생성 완료
+- [ ] 기존 workspace.py 로직 이동 완료
+- [ ] 라우터에서 Executor 사용 완료
+- [ ] WorkspaceExecutor 단위 테스트 작성
 - [ ] `/api/workspace/unified` POST 요청 테스트
-- [ ] 기존 클라이언트 동작 확인 (static/app.js)
-- [ ] 기존 테스트 전체 통과
+- [ ] 기존 클라이언트 동작 확인
+- [ ] 전체 테스트 통과
 
-### 성능 비교
+---
+
+## Phase 3-7: 추가 개선 (선택)
+
+### Phase 3: 프롬프트 템플릿 외부화
+- `templates/prompts/workspace/answer_generation.jinja2` 생성
+- Jinja2로 프롬프트 렌더링
+- 버전 관리 가능, 다국어 지원 용이
+
+### Phase 4: 검증 레이어 통합
+- 기존 `UnifiedValidator` 확장
+- `validate_format()`, `validate_length()` 메서드 추가
+- 중복 검증 로직 제거
+
+### Phase 5: 에러 처리 개선
+- `src/web/exceptions.py` 생성
+- `AppError`, `RetryableError`, `TimeoutError` 정의
+- 에러 타입별 HTTP 상태 코드 매핑
+
+### Phase 6: 재시도 로직
+- `src/infra/retry.py` 생성
+- `async_retry` 데코레이터 구현
+- Agent 호출에 적용
+
+### Phase 7: 캐싱 개선
+- `RuleLoader.get_rules_for_type()` 메모이제이션
+- `@lru_cache` 데코레이터 사용
+
+---
+
+## 🎯 우선순위 및 적용 순서
+
+### Day 1: 시그니처 검증 (필수)
 ```bash
-# 개선 전
-time curl -X POST http://localhost:8000/api/workspace/unified \
-  -H "Content-Type: application/json" \
-  -d '{"query":"test","answer":"test","ocr_text":"test"}'
-
-# 개선 후 (동일 요청 반복)
+# Phase 0 실행
+python -c "
+from src.agent import GeminiAgent
+import inspect
+print(inspect.signature(GeminiAgent.__init__))
+"
+# 출력 결과를 devplan/back.md의 예시와 비교
 ```
 
+### Day 2-3: Phase 1 적용
+1. ServiceRegistry 생성
+2. api.py 수정 (주석 참조하며 신중히)
+3. workspace.py 전역 변수 제거
+4. 테스트 작성 및 실행
+
+### Day 4-5: Phase 2 적용
+1. WorkspaceExecutor 생성
+2. 한 워크플로우씩 이동 (FULL_GENERATION부터)
+3. 각 단계마다 테스트 확인
+
+### Day 6-10: Phase 3-7 (선택)
+필요한 개선사항만 선택적으로 적용
+
 ---
 
-## 롤백 계획
+## 🛡️ 위험 관리
 
-### Phase 1 롤백
+### 롤백 계획
+
 ```bash
+# Phase 1 롤백
 git checkout HEAD -- src/web/service_registry.py
 git checkout HEAD -- src/web/api.py
 git checkout HEAD -- src/web/routers/workspace.py
-pytest tests/ -v  # 롤백 후 테스트 확인
-```
+pytest tests/ -v
 
-### Phase 2 롤백
-```bash
+# Phase 2 롤백
 git checkout HEAD -- src/workflow/workspace_executor.py
 git checkout HEAD -- src/web/routers/workspace.py
 pytest tests/ -v
 ```
 
+### 위험 신호 (즉시 롤백 고려)
+
+1. **테스트 실패율 30% 이상** → 시그니처 재확인
+2. **로컬 서버 기동 실패** → api.py 초기화 로직 검토
+3. **메모리 누수 발견** → ServiceRegistry 생명주기 재설계
+4. **성능 저하 20% 이상** → 병목 지점 프로파일링
+
+### Quick Win (당장 적용 가능)
+
+```python
+# src/web/routers/workspace.py에만 적용
+# 전역 변수 하나씩 제거
+
+# Before:
+_config: Optional[AppConfig] = None
+
+# After:
+def _get_config() -> AppConfig:
+    from src.web.service_registry import get_registry
+    return get_registry().config
+
+# 모든 _config 사용처를 _get_config()로 변경
+# 테스트 통과하면 나머지도 순차 제거
+```
+
 ---
 
-## 추가 주의사항
+## 📋 최종 체크리스트
+
+### 적용 전
+- [ ] 시그니처 검증 완료
+- [ ] 기존 테스트 전체 통과
+- [ ] 백업 브랜치 생성
+
+### Phase 1 완료 후
+- [ ] ServiceRegistry 테스트 통과
+- [ ] 전체 테스트 통과
+- [ ] 로컬 서버 정상 기동
+- [ ] `/health` 정상 응답
+
+### Phase 2 완료 후
+- [ ] WorkspaceExecutor 테스트 통과
+- [ ] API 엔드포인트 정상 동작
+- [ ] 클라이언트 정상 동작
+- [ ] 성능 회귀 없음
+
+### 최종 완료
+- [ ] 문서 업데이트
+- [ ] PR 생성
+- [ ] 코드 리뷰 요청
+
+---
+
+## 💡 추가 주의사항
 
 ### 멀티프로세스 환경
-- ServiceRegistry는 프로세스당 하나의 인스턴스만 유지
-- Gunicorn 등 멀티워커 환경에서는 각 워커가 독립적으로 초기화
+- ServiceRegistry는 프로세스당 독립 인스턴스
+- Gunicorn 멀티워커 환경에서 각 워커가 독립 초기화
 - 프로세스 간 상태 공유 불가 (Redis/DB 사용 고려)
 
 ### 테스트 격리
 - `conftest.py`의 `reset_registry` 픽스처 필수
-- 각 테스트 전후로 `reset_registry_for_test()` 호출
-- Mock 객체 사용 시 레지스트리에 명시적 등록
+- Mock 객체는 레지스트리에 명시적 등록
+- 각 테스트 전후 `reset_registry_for_test()` 호출
 
-### 실제 Agent API 맞추기
-```python
-# 예시: Agent 메서드 시그니처 확인
-import inspect
-print(inspect.signature(GeminiAgent.__init__))
-print(inspect.signature(GeminiAgent.generate_query))
-print(inspect.signature(GeminiAgent.rewrite_best_answer))
-```
+### 실전 팁
+- 한 번에 하나의 Phase만 적용
+- 각 Phase 완료 후 커밋
+- 문제 발생 시 즉시 이전 커밋으로 롤백
+
+---
+
+**작성일**: 2025-12-05  
+**버전**: 1.0 (최종 통합본)  
+**다음 업데이트**: Phase 3-7 상세 구현 가이드
