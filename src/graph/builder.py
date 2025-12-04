@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 from neo4j import GraphDatabase
 from neo4j.exceptions import Neo4jError
 
+from src.config.utils import require_env
+
 from .mappings import CONSTRAINT_KEYWORDS, EXAMPLE_RULE_MAPPINGS, QUERY_TYPE_KEYWORDS
 from .schema import (
     BEST_PRACTICES,
@@ -19,7 +21,6 @@ from .schema import (
     QUERY_TYPES,
     TEMPLATES,
 )
-from src.config.utils import require_env
 
 load_dotenv()
 
@@ -161,22 +162,63 @@ class QAGraphBuilder:
         print(f"✅ 질의 유형 {len(QUERY_TYPES)}개 생성/병합")
 
     def extract_constraints(self) -> None:
-        """제약 조건 추출."""
+        """제약 조건 추출 및 query_type 자동 설정.
+
+        TEMPLATES의 enforces 관계를 분석하여 각 Constraint가
+        어떤 query_type에서 사용되는지 자동으로 매핑합니다.
+        """
+        # 1. Constraint를 사용하는 Template 매핑 생성
+        constraint_to_query_types: Dict[str, List[str]] = {}
+
+        for template in TEMPLATES:
+            # template['name']에서 query_type 추출
+            # 예: "explanation_system" -> "explanation"
+            # "target_user" -> "target"
+            template_name = template["name"]
+            query_type = template_name.split("_")[0]  # 첫 번째 부분이 query_type
+
+            # 이 템플릿이 enforce하는 모든 constraint에 query_type 매핑
+            for constraint_id in template.get("enforces", []):
+                if constraint_id not in constraint_to_query_types:
+                    constraint_to_query_types[constraint_id] = []
+                if query_type not in constraint_to_query_types[constraint_id]:
+                    constraint_to_query_types[constraint_id].append(query_type)
+
+        # 2. Constraint 생성 시 query_type 설정
         with self.driver.session() as session:
             for c in CONSTRAINTS:
+                constraint_id = c["id"]
+                query_types = constraint_to_query_types.get(constraint_id, [])
+
+                # 여러 query_type에서 사용되면 첫 번째 것 사용
+                # 전역 제약사항(모든 타입에서 사용)이면 None
+                if not query_types or len(query_types) >= 3:
+                    query_type = None
+                else:
+                    query_type = query_types[0]  # 첫 번째 query_type 사용
+
                 session.run(
                     """
                     MERGE (c:Constraint {id: $id})
                     SET c.description = $desc,
                         c.type = $type,
+                        c.query_type = $query_type,
                         c += $props
                     """,
-                    id=c["id"],
+                    id=constraint_id,
                     desc=c["description"],
                     type=c["type"],
+                    query_type=query_type,
                     props=c,
                 )
-        print(f"✅ 제약 조건 {len(CONSTRAINTS)}개 생성/병합")
+
+                # 로깅
+                qt_display = query_type or "전역"
+                self.logger.debug(
+                    f"Constraint '{constraint_id}' -> query_type: {qt_display}"
+                )
+
+        print(f"✅ 제약 조건 {len(CONSTRAINTS)}개 생성/병합 (query_type 자동 설정)")
 
     def link_rules_to_constraints(self) -> None:
         """규칙과 제약 조건 연결(기본 포함 매칭 + 키워드 기반 보강)."""
