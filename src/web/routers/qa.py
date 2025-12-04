@@ -376,6 +376,18 @@ async def generate_single_qa(
     elif qtype == "global_explanation":
         query_intent = "전체 내용 설명 질문"
 
+    # 중복/병렬 질문 방지 공통 지시
+    single_focus_clause = """
+[단일 포커스 필수]
+- 한 가지 과업만 질문 (근거+전망처럼 두 항목을 동시에 묻지 말 것)
+- '와/과/및/또는'으로 서로 다른 질문을 병렬 연결 금지
+- 필요하면 한 항목만 묻도록 재작성
+"""
+    if query_intent:
+        query_intent += single_focus_clause
+    else:
+        query_intent = single_focus_clause
+
     rule_loader = RuleLoader(current_kg)
     rules_list = rule_loader.get_rules_for_type(normalized_qtype, DEFAULT_ANSWER_RULES)
     query_constraints: list[Dict[str, Any]] = []
