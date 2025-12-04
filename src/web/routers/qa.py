@@ -183,6 +183,15 @@ def _get_validator_class() -> type[CrossValidationSystem] | Any:
         return CrossValidationSystem
 
 
+def _difficulty_hint(ocr_text: str) -> str:
+    length = len(ocr_text)
+    if length > 4000:
+        return "본문이 매우 길어요. 숫자·고유명사 중심으로 2-3문장 이내로 답하세요."
+    if length > 2000:
+        return "본문이 길어 핵심만 압축해 답하세요. 숫자·고유명사만 그대로 사용하세요."
+    return "필요 이상의 부연 없이 핵심 숫자·근거 1문장을 포함해 간결히 답하세요."
+
+
 def get_cached_kg() -> Optional["_CachedKG"]:
     """Return a cached KG wrapper valid for 5 minutes."""
     global _kg_cache, _kg_cache_timestamp
@@ -458,6 +467,7 @@ async def generate_single_qa(
                 f"[우선순위 {c.get('priority', 0)}] {c.get('description', '')}"
                 for c in answer_constraints
             )
+        difficulty_text = _difficulty_hint(ocr_text)
         evidence_clause = (
             "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거가 되는 문장을 1개 포함하세요."
         )
@@ -474,6 +484,7 @@ async def generate_single_qa(
 {truncated_ocr}
 
 위 길이/형식 제약과 규칙을 엄격히 준수하여 한국어로 답변하세요.
+{difficulty_text}
 {evidence_clause}
 {extra_instructions}"""
 

@@ -46,6 +46,10 @@ agent: Optional[GeminiAgent] = None
 kg: Optional[QAKnowledgeGraph] = None
 pipeline: Optional[IntegratedQAPipeline] = None
 _validator: Optional[CrossValidationSystem] = None
+_difficulty_levels = {
+    "long": "본문이 길어 핵심 숫자·근거만 간결히 답하세요.",
+    "medium": "불필요한 서론 없이 핵심을 짧게 서술하세요.",
+}
 
 
 def set_dependencies(
@@ -160,6 +164,15 @@ def _get_validator() -> Optional[CrossValidationSystem]:
         logger.debug("Validator 초기화 실패: %s", exc)
         _validator = None
     return _validator
+
+
+def _difficulty_hint(ocr_text: str) -> str:
+    length = len(ocr_text)
+    if length > 4000:
+        return _difficulty_levels["long"]
+    if length > 2000:
+        return _difficulty_levels["long"]
+    return _difficulty_levels["medium"]
 
 
 @router.post("/workspace")
@@ -694,14 +707,16 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
 {reference_text[:500]}
 ---"""
 
-            rules_text = "\n".join(f"- {r}" for r in rules_list)
-            extra_rules_text = "\n".join(f"- {t}" for t in rule_texts[:5])
-            evidence_clause = "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거 문장을 1개 포함하세요."
-            prompt = f"""[지시사항]
+        rules_text = "\n".join(f"- {r}" for r in rules_list)
+        extra_rules_text = "\n".join(f"- {t}" for t in rule_texts[:5])
+        difficulty_text = _difficulty_hint(ocr_text)
+        evidence_clause = "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거 문장을 1개 포함하세요."
+        prompt = f"""[지시사항]
 반드시 한국어로 답변하세요.
 OCR에 없는 정보는 추가하지 마세요.
 {length_constraint}
 {dedup_section}
+{difficulty_text}
 {evidence_clause}
 
 [준수 규칙]
