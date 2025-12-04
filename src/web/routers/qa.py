@@ -265,10 +265,13 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
 
             duration = (datetime.now() - start).total_seconds()
             meta = APIMetadata(duration=duration)
-            return build_response(
-                {"mode": "batch", "pairs": results},
-                metadata=meta,
-                config=_get_config(),
+            return cast(
+                Dict[str, Any],
+                build_response(
+                    {"mode": "batch", "pairs": results},
+                    metadata=meta,
+                    config=_get_config(),
+                ),
             )
 
         if not body.qtype:
@@ -279,10 +282,13 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
         )
         duration = (datetime.now() - start).total_seconds()
         meta = APIMetadata(duration=duration)
-        return build_response(
-            {"mode": "single", "pair": pair},
-            metadata=meta,
-            config=_get_config(),
+        return cast(
+            Dict[str, Any],
+            build_response(
+                {"mode": "single", "pair": pair},
+                metadata=meta,
+                config=_get_config(),
+            ),
         )
 
     except asyncio.TimeoutError:
@@ -582,10 +588,13 @@ async def api_eval_external(body: EvalExternalRequest) -> Dict[str, Any]:
 
         best = max(results, key=lambda x: x.get("score", 0))
         meta = APIMetadata(duration=0.0)
-        return build_response(
-            {"results": results, "best": best.get("candidate_id", "A")},
-            metadata=meta,
-            config=cfg,
+        return cast(
+            Dict[str, Any],
+            build_response(
+                {"results": results, "best": best.get("candidate_id", "A")},
+                metadata=meta,
+                config=cfg,
+            ),
         )
 
     except Exception as e:

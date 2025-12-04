@@ -30,7 +30,9 @@ class RuleLoader:
             try:
                 constraints = self.kg.get_constraints_for_query_type(query_type)
                 rules = [
-                    c.get("description") for c in constraints if c.get("description")
+                    desc
+                    for desc in (c.get("description") for c in constraints)
+                    if isinstance(desc, str)
                 ]
             except Exception as exc:  # noqa: BLE001
                 logger.debug("규칙 로드 실패 (폴백 사용): %s", exc)

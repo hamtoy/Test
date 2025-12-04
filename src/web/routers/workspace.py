@@ -8,7 +8,7 @@ import contextlib
 from datetime import datetime
 import logging
 import re
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
 from fastapi import APIRouter, HTTPException
 
@@ -242,7 +242,7 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
         )
         duration = (datetime.now() - meta_start).total_seconds()
         meta = APIMetadata(duration=duration)
-        return build_response(result, metadata=meta, config=config)
+        return cast(Dict[str, Any], build_response(result, metadata=meta, config=config))
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
@@ -319,8 +319,11 @@ OCR에 없는 정보는 추가하지 마세요.
 
         duration = (datetime.now() - meta_start).total_seconds()
         meta = APIMetadata(duration=duration)
-        return build_response(
-            {"query": query, "answer": answer}, metadata=meta, config=config
+        return cast(
+            Dict[str, Any],
+            build_response(
+                {"query": query, "answer": answer}, metadata=meta, config=config
+            ),
         )
     except asyncio.TimeoutError:
         raise HTTPException(
@@ -363,8 +366,11 @@ async def api_generate_query_from_answer(body: Dict[str, Any]) -> Dict[str, Any]
 
         duration = (datetime.now() - meta_start).total_seconds()
         meta = APIMetadata(duration=duration)
-        return build_response(
-            {"query": query, "answer": answer}, metadata=meta, config=config
+        return cast(
+            Dict[str, Any],
+            build_response(
+                {"query": query, "answer": answer}, metadata=meta, config=config
+            ),
         )
     except asyncio.TimeoutError:
         raise HTTPException(
