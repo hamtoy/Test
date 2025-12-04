@@ -487,12 +487,12 @@ OCR에 없는 정보는 추가하지 마세요.
 
 위 OCR 텍스트를 기반으로 답변을 작성하세요."""
 
-            # Direct LLM call for answer generation (not rewrite)
-            system_prompt = (
-                "당신은 한국어로 정확하고 간결한 답변을 작성하는 어시스턴트입니다."
+            answer = await current_agent.rewrite_best_answer(
+                ocr_text=ocr_text,
+                best_answer=prompt,
+                cached_content=None,
+                query_type=normalized_qtype,
             )
-            model = current_agent._create_generative_model(system_prompt)
-            answer = await current_agent._call_api_with_retry(model, prompt)
             answer = strip_output_tags(answer)
             changes.append("답변 생성 완료")
 
@@ -575,12 +575,12 @@ OCR에 없는 정보는 추가하지 마세요.
 
 위 OCR 텍스트를 기반으로 답변을 작성하세요."""
 
-            # Direct LLM call for answer generation
-            system_prompt = (
-                "당신은 한국어로 정확하고 간결한 답변을 작성하는 어시스턴트입니다."
+            answer = await current_agent.rewrite_best_answer(
+                ocr_text=ocr_text,
+                best_answer=prompt,
+                cached_content=None,
+                query_type=normalized_qtype,
             )
-            model = current_agent._create_generative_model(system_prompt)
-            answer = await current_agent._call_api_with_retry(model, prompt)
             answer = strip_output_tags(answer)
             changes.append("답변 생성 완료")
 

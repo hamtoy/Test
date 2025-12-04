@@ -170,6 +170,7 @@
         <rule>"Output must be a valid JSON object matching the schema: {{ response_schema }}"</rule>
         <rule>"Generate a list of 3-4 strategic search queries that best address the constraints or cover the key
           information."</rule>
+        <rule>"각 질의는 서로 다른 주제/관점을 다루어야 한다. 동일한 정보를 반복해서 묻지 않으며, 이미지 내 다양한 측면을 포괄하도록 질의를 구성한다."</rule>
         {% if constraints %}
         <rule>"All queries must strictly comply with Neo4j constraints, especially those with priority >= 90."</rule>
         {% endif %}
