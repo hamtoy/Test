@@ -157,10 +157,9 @@ def _get_config() -> AppConfig:
     try:
         from src.web import api as api_module
 
-        cfg = getattr(api_module, "config", None)
-        if cfg is None and _config is not None:
-            cfg = _config
-        if cfg is not None:
+        cfg_raw = getattr(api_module, "config", None) or _config
+        if cfg_raw is not None:
+            cfg = cast(AppConfig, cfg_raw)
             for name, default in [
                 ("qa_single_timeout", QA_SINGLE_GENERATION_TIMEOUT),
                 ("qa_batch_timeout", QA_BATCH_GENERATION_TIMEOUT),
