@@ -193,6 +193,10 @@ class UnifiedWorkspaceRequest(BaseModel):
         max_length=MAX_ANSWER_LENGTH,
         description="Reference global explanation text to avoid duplication",
     )
+    use_lats: bool = Field(
+        default=True,
+        description="Enable LATS (Language Agent Tree Search) for answer generation",
+    )
 
 
 class StreamGenerateRequest(BaseModel):

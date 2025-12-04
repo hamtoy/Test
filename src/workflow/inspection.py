@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any, Dict, List, Optional
 
 from src.agent.core import GeminiAgent
@@ -12,6 +13,15 @@ from src.features.self_correcting import SelfCorrectingQAChain
 from src.qa.rag_system import QAKnowledgeGraph
 
 logger = logging.getLogger(__name__)
+
+
+def _should_enable_lats(agent: GeminiAgent, lats: Optional[LATSSearcher]) -> bool:
+    """Check whether LATS should be activated based on env/config."""
+    if lats is not None:
+        return True
+    env_flag = os.getenv("ENABLE_LATS", "").lower() == "true"
+    config_flag = bool(getattr(getattr(agent, "config", None), "enable_lats", False))
+    return bool(env_flag or config_flag)
 
 
 async def inspect_query(
@@ -172,7 +182,18 @@ async def inspect_answer(
         # kg가 없으면 원본 answer 반환
         final_answer = answer
 
-    if lats is not None:
+    lats_enabled = _should_enable_lats(agent, lats)
+    if lats is None and lats_enabled:
+        provider = getattr(agent, "llm_provider", None)
+        if provider:
+            try:
+                lats = LATSSearcher(llm_provider=provider)
+            except Exception as exc:  # noqa: BLE001
+                logger.debug("LATS init skipped: %s", exc)
+        else:
+            logger.debug("LATS disabled: llm_provider not available")
+
+    if lats_enabled and lats is not None:
         try:
             initial_state = SearchState(
                 query=query,

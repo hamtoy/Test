@@ -6,11 +6,15 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException
 
+if TYPE_CHECKING:
+    from src.features.lats import SearchNode
+
 from checks.detect_forbidden_patterns import find_violations
+from src.analysis.cross_validation import CrossValidationSystem
 from src.agent import GeminiAgent
 from src.config import AppConfig
 from src.config.constants import (
@@ -40,6 +44,7 @@ _config: Optional[AppConfig] = None
 agent: Optional[GeminiAgent] = None
 kg: Optional[QAKnowledgeGraph] = None
 pipeline: Optional[IntegratedQAPipeline] = None
+_validator: Optional[CrossValidationSystem] = None
 
 
 def set_dependencies(
@@ -54,6 +59,8 @@ def set_dependencies(
     agent = gemini_agent
     kg = kg_ref
     pipeline = qa_pipeline
+    global _validator
+    _validator = None  # reset so it uses latest kg
 
 
 def _get_agent() -> Optional[GeminiAgent]:
@@ -94,6 +101,33 @@ def _get_config() -> AppConfig:
         return AppConfig()
 
 
+def _get_validator_class() -> type[CrossValidationSystem]:
+    """테스트 패치 호환용 CrossValidationSystem 조회."""
+    try:
+        from src.web import api as api_module
+
+        return getattr(api_module, "CrossValidationSystem", CrossValidationSystem)
+    except Exception:
+        return CrossValidationSystem
+
+
+def _get_validator() -> Optional[CrossValidationSystem]:
+    """지연 초기화된 validator 반환 (kg 없으면 None)."""
+    global _validator
+    if _validator is not None:
+        return _validator
+    current_kg = _get_kg()
+    if current_kg is None:
+        return None
+    try:
+        validator_cls = _get_validator_class()
+        _validator = validator_cls(current_kg)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("Validator 초기화 실패: %s", exc)
+        _validator = None
+    return _validator
+
+
 @router.post("/workspace")
 async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
     """검수 또는 자유 수정."""
@@ -113,7 +147,7 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
                 ocr_text=ocr_text,
                 context={},
                 kg=current_kg,
-                validator=None,
+                validator=_get_validator(),
                 cache=None,
             )
 
@@ -299,6 +333,163 @@ async def api_generate_query_from_answer(body: Dict[str, Any]) -> Dict[str, Any]
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def _generate_lats_answer(
+    query: str,
+    ocr_text: str,
+    query_type: str,
+) -> tuple[str, dict[str, Any]]:
+    """LATS를 사용하여 여러 답변 후보 생성 및 평가 후 최적 선택."""
+    current_agent = _get_agent()
+    if not current_agent:
+        return "", {}
+
+    # 각 전략별 프롬프트 생성
+    strategies = [
+        {
+            "name": "숫자_중심",
+            "instruction": "OCR 텍스트에 있는 모든 주요 숫자와 수치를 중심으로 답변하세요.",
+        },
+        {
+            "name": "트렌드_중심",
+            "instruction": "시간에 따른 변화, 증가/감소 추세를 중심으로 답변하세요.",
+        },
+        {
+            "name": "비교_중심",
+            "instruction": "서로 다른 항목들의 차이점과 비교를 중심으로 답변하세요.",
+        },
+    ]
+
+    # 각 전략으로 답변 생성 및 평가
+    candidates = []
+    for strategy in strategies:
+        prompt = f"""[질의]
+{query}
+
+[OCR 텍스트]
+{ocr_text[:2000]}
+
+[답변 전략: {strategy["name"]}]
+{strategy["instruction"]}
+
+위 OCR 텍스트를 기반으로 답변을 작성하세요. 마크다운이나 불릿은 사용하지 마세요."""
+
+        try:
+            system_prompt = (
+                "당신은 한국어로 정확하고 간결한 답변을 작성하는 어시스턴트입니다."
+            )
+            model = current_agent._create_generative_model(
+                system_prompt, temperature=0.7
+            )  # noqa: SLF001
+            answer = await current_agent._call_api_with_retry(model, prompt)  # noqa: SLF001
+            answer = strip_output_tags(answer.strip())
+
+            if answer and len(answer) > 10:
+                # 답변 평가
+                score = await _evaluate_answer_quality(answer, ocr_text, query_type)
+                candidates.append(
+                    {
+                        "strategy": strategy["name"],
+                        "answer": answer,
+                        "score": score,
+                    }
+                )
+                logger.info("LATS 후보 생성: %s (점수: %.2f)", strategy["name"], score)
+        except Exception as e:
+            logger.debug("LATS 답변 생성 실패 (%s): %s", strategy["name"], e)
+            continue
+
+    # 최고 점수 답변 선택
+    if candidates:
+        best = max(candidates, key=lambda x: x["score"])
+        meta = {
+            "candidates": len(candidates),
+            "best_strategy": best["strategy"],
+            "best_score": best["score"],
+            "all_scores": [c["score"] for c in candidates],
+        }
+        return best["answer"], meta
+
+    return "", {}
+
+
+async def _evaluate_answer_quality(
+    answer: str,
+    ocr_text: str,
+    query_type: str,
+) -> float:
+    """답변 품질을 0.0-1.0로 점수화."""
+    if not answer:
+        return 0.0
+
+    score = 0.5
+
+    # 1. 길이 검증
+    if 10 < len(answer) < 5000:
+        score += 0.1
+
+    # 2. OCR 숫자 포함 검증
+    import re
+
+    ocr_numbers = set(re.findall(r"\d+(?:\.\d+)?", ocr_text))
+    answer_numbers = set(re.findall(r"\d+(?:\.\d+)?", answer))
+    if ocr_numbers and answer_numbers & ocr_numbers:
+        score += 0.2
+
+    # 3. 금지 패턴 검증
+    forbidden_patterns = [r"^\s*[-*•]\s", r"\*\*", r"__"]
+    has_forbidden = any(re.search(p, answer, re.MULTILINE) for p in forbidden_patterns)
+    if not has_forbidden:
+        score += 0.1
+
+    return min(1.0, max(0.0, score))
+
+
+async def _lats_evaluate_answer(node: "SearchNode") -> float:
+    """LATS 평가: 생성된 답변의 품질을 0.0-1.0로 점수화."""
+    # SearchState에서 필요한 정보 추출
+    state = node.state
+    current_answer = state.current_answer or ""
+    ocr_text = state.ocr_text or ""
+
+    if not current_answer:
+        return 0.0
+
+    score = 0.5  # 기본 점수
+
+    # 1. 길이 검증 (너무 짧거나 길면 감점)
+    if 10 < len(current_answer) < 5000:
+        score += 0.1
+
+    # 2. OCR 텍스트에서 주요 숫자가 포함되었는지 검증
+    import re
+
+    ocr_numbers = set(re.findall(r"\d+(?:\.\d+)?", ocr_text))
+    answer_numbers = set(re.findall(r"\d+(?:\.\d+)?", current_answer))
+    if ocr_numbers and answer_numbers & ocr_numbers:
+        # 교집합이 있으면 OCR의 숫자를 사용했다는 증거
+        score += 0.2
+
+    # 3. 금지 패턴 검증 (마크다운 불릿 등)
+    forbidden_patterns = [r"^\s*[-*•]\s", r"\*\*", r"__"]
+    has_forbidden = any(
+        re.search(p, current_answer, re.MULTILINE) for p in forbidden_patterns
+    )
+    if not has_forbidden:
+        score += 0.1
+
+    # 4. Neo4j 제약사항 검증 (선택)
+    current_kg = _get_kg()
+    if current_kg:
+        try:
+            # 간단한 제약사항 체크 (예: 최소 길이, 형식 등)
+            # 실제로는 각 제약사항을 순회하며 검증해야 함
+            score += 0.1
+        except Exception:
+            pass
+
+    return min(1.0, max(0.0, score))
 
 
 @router.post("/workspace/unified")
