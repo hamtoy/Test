@@ -67,6 +67,41 @@ def get_rules_for_query_type(
 
 
 @lru_cache(maxsize=128)
+def get_rules_from_neo4j(
+    query_type: str,
+    neo4j_uri: str,
+    neo4j_user: str,
+    neo4j_password: str,
+) -> List[Dict[str, Any]]:
+    """Neo4j Rule 노드 조회 (APPLIES_TO 관계 또는 applies_to 속성)."""
+    from neo4j import GraphDatabase
+
+    driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
+    cypher = """
+    MATCH (qt:QueryType {name: $qt})
+    OPTIONAL MATCH (r:Rule)-[:APPLIES_TO]->(qt)
+    WITH qt, collect(r) AS rules_rel
+    OPTIONAL MATCH (r2:Rule)
+    WHERE r2.applies_to IN ['all', $qt]
+    WITH rules_rel + collect(r2) AS rules
+    UNWIND rules AS r
+    WITH DISTINCT r
+    RETURN
+        coalesce(r.name, '') AS name,
+        coalesce(r.text, '') AS text,
+        coalesce(r.category, '') AS category,
+        coalesce(r.priority, 0) AS priority
+    ORDER BY priority DESC
+    """
+    try:
+        with driver.session() as session:
+            records = session.run(cypher, qt=query_type)
+            return [dict(rec) for rec in records]
+    finally:
+        driver.close()
+
+
+@lru_cache(maxsize=128)
 def get_common_mistakes(
     category: Optional[str],
     neo4j_uri: str,
@@ -282,6 +317,14 @@ def get_all_template_context(
         context["constraint_details"] = get_constraint_details(
             query_type, neo4j_uri, neo4j_user, neo4j_password
         )
+
+    # Rule 노드도 함께 주입 (필수 아님)
+    try:
+        context["rules"] = get_rules_from_neo4j(
+            query_type, neo4j_uri, neo4j_user, neo4j_password
+        )
+    except Exception:
+        context["rules"] = []
 
     return context
 
