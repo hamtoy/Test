@@ -21,6 +21,7 @@ from src.config.constants import (
     QA_GENERATION_OCR_TRUNCATE_LENGTH,
 )
 from src.qa.pipeline import IntegratedQAPipeline
+from src.qa.rule_loader import RuleLoader
 from src.qa.rag_system import QAKnowledgeGraph
 from src.web.models import EvalExternalRequest, GenerateQARequest
 from src.web.utils import QTYPE_MAP, load_ocr_text, postprocess_answer
@@ -170,6 +171,7 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
     ocr_text = body.ocr_text or load_ocr_text(_get_config())
 
     try:
+        rule_loader = RuleLoader(current_kg)
         if body.mode == "batch":
             results: list[Dict[str, Any]] = []
 
@@ -298,7 +300,8 @@ async def generate_single_qa(
     elif qtype == "global_explanation":
         query_intent = "전체 내용 설명 질문"
 
-    rules_list: list[str] = []
+    rule_loader = RuleLoader(current_kg)
+    rules_list = rule_loader.get_rules_for_type(normalized_qtype, DEFAULT_ANSWER_RULES)
     query_constraints: list[Dict[str, Any]] = []
     answer_constraints: list[Dict[str, Any]] = []
     formatting_rules: list[str] = []
@@ -307,10 +310,6 @@ async def generate_single_qa(
     if kg_wrapper is not None:
         try:
             constraints = kg_wrapper.get_constraints_for_query_type(qtype)
-            for c in constraints:
-                desc = c.get("description")
-                if desc:
-                    rules_list.append(desc)
             query_constraints = [
                 c for c in constraints if c.get("category") in ["query", "both"]
             ]
@@ -322,7 +321,7 @@ async def generate_single_qa(
                     normalized_qtype
                 )
                 for fr in fmt_rules:
-                    desc = fr.get("description")
+                    desc = fr.get("description") or fr.get("text")
                     if desc:
                         formatting_rules.append(desc)
                 logger.info("서식 규칙 %s개 로드", len(formatting_rules))
