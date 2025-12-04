@@ -21,6 +21,11 @@
                 <input type="radio" id="mode-batch" name="mode" value="batch" checked>
                 4타입 일괄 생성
             </label>
+
+            <label for="mode-batch-three">
+                <input type="radio" id="mode-batch-three" name="mode" value="batch_three">
+                3타입 일괄 생성 (전체/추론/타겟 단답)
+            </label>
             
             <label for="mode-single">
                 <input type="radio" id="mode-single" name="mode" value="single">
@@ -101,13 +106,23 @@
         }
 
         // 프로그레스 바 표시
+        const modeLabel = mode === 'batch'
+            ? '⚡ 4개 타입 동시 생성 중...'
+            : mode === 'batch_three'
+                ? '⚡ 3개 타입 동시 생성 중...'
+                : '🚀 답변 생성 중...';
+        const etaLabel = mode === 'batch'
+            ? '30초~2분'
+            : mode === 'batch_three'
+                ? '20초~90초'
+                : '15초~1분';
         resultsDiv.innerHTML = `
             <div style="text-align: center; padding: 40px; background: var(--bg-secondary, #f5f5f5); border-radius: 8px; margin-top: 20px;">
-                <h3 style="margin-bottom: 15px; color: var(--text-primary, #1f2121);">${mode === 'batch' ? '⚡ 4개 타입 동시 생성 중...' : '🚀 답변 생성 중...'}</h3>
+                <h3 style="margin-bottom: 15px; color: var(--text-primary, #1f2121);">${modeLabel}</h3>
                 <div style="margin: 20px auto; width: 300px; height: 12px; background: #e0e0e0; border-radius: 6px; overflow: hidden;">
                     <div class="progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #21808d, #3ba1b0); transition: width 0.3s ease;"></div>
                 </div>
-                <p style="margin-top: 15px; color: var(--text-secondary, #666); font-size: 0.9em;">예상 소요 시간: <strong>${mode === 'batch' ? '30초~2분' : '15초~1분'}</strong></p>
+                <p style="margin-top: 15px; color: var(--text-secondary, #666); font-size: 0.9em;">예상 소요 시간: <strong>${etaLabel}</strong></p>
                 <p style="color: var(--text-secondary, #888); font-size: 0.85em;">병렬 처리로 빠르게 완료됩니다 ✨</p>
             </div>
         `;
