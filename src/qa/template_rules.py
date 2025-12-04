@@ -291,8 +291,11 @@ def get_neo4j_config() -> Dict[str, str]:
     """환경변수에서 Neo4j 연결 정보 가져오기."""
     import os
 
+    # 환경 변수 이름 혼용 대응: NEO4J_USERNAME 우선, 없으면 NEO4J_USER 사용
+    username: str = os.getenv("NEO4J_USERNAME") or os.getenv("NEO4J_USER") or "neo4j"
+
     return {
         "neo4j_uri": os.getenv("NEO4J_URI", "neo4j+s://6a85a996.databases.neo4j.io"),
-        "neo4j_user": os.getenv("NEO4J_USERNAME", "neo4j"),
+        "neo4j_user": username,
         "neo4j_password": os.getenv("NEO4J_PASSWORD", ""),
     }

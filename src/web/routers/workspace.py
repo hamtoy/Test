@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -347,6 +348,51 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     query = body.query or ""
     answer = body.answer or ""
     changes: list[str] = []
+    reference_text = global_explanation_ref
+
+    def _sanitize_output(text: str) -> str:
+        """불릿/마크다운/여분 공백을 제거해 일관된 문장만 남긴다."""
+        text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
+        text = re.sub(r"\*(.*?)\*", r"\1", text)
+        text = re.sub(r"[_]{1,2}(.*?)[_]{1,2}", r"\1", text)
+        text = text.replace("*", "")
+        text = re.sub(r"^[\-\u2022]\s*", "", text, flags=re.MULTILINE)
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
+
+    def _dedup_with_reference(text: str, reference: str, qtype: str) -> str:
+        """참조 문단과 중복되는 문장을 제거 (간단 정규화 기반)."""
+
+        def normalize(chunk: str) -> str:
+            chunk = chunk.lower()
+            chunk = re.sub(r"[\s\*\-_`~#]+", "", chunk)
+            chunk = re.sub(r"[.,:;\"'’”“‘!?()/\\]", "", chunk)
+            chunk = chunk.replace(",", "")
+            return chunk
+
+        ref_norm = normalize(reference)
+        sentences = [
+            s.strip() for s in re.split(r"(?<=[.!?])\s+|\n+", text) if s.strip()
+        ]
+        kept: list[str] = []
+        for s in sentences:
+            norm = normalize(s.strip(" -•\t"))
+            if not norm or len(norm) < 10:
+                continue
+            if norm in ref_norm:
+                continue
+            kept.append(s.strip())
+        if not kept:
+            # 타겟 단답일 때는 숫자/퍼센트를 우선 추출해 중복 최소화
+            if qtype == "target_short":
+                num_match = re.search(
+                    r"[0-9][0-9,\.]*\s*억\s*달러|[0-9]+(?:\.[0-9]+)?\s*%|[0-9][0-9,\.]*",
+                    text,
+                )
+                if num_match:
+                    return num_match.group(0).strip()
+            return sentences[0].strip() if sentences else text.strip()
+        return ". ".join(kept[:4])
 
     async def _execute_workflow() -> Dict[str, Any]:
         nonlocal query, answer
@@ -381,18 +427,28 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
 
             length_constraint = ""
             if query_type == "target_short":
-                length_constraint = "답변은 1-2문장, 최대 50단어 이내로 작성하세요."
+                length_constraint = "답변은 불릿·마크다운(볼드/기울임) 없이 한 문장으로, 최대 50단어 이내로 작성하세요."
                 rules_list = rules_list[:3]
             elif query_type == "target_long":
-                length_constraint = "답변은 3-4문장, 최대 100단어 이내로 작성하세요."
+                length_constraint = "답변은 불릿·마크다운(볼드/기울임) 없이 3-4문장, 최대 100단어 이내로 작성하세요."
             elif query_type == "reasoning":
-                length_constraint = "근거 2~3개와 결론을 명확히 제시하세요."
+                length_constraint = "불릿·마크다운(볼드/기울임) 없이 한 단락으로 간결하게 추론을 제시하세요."
+
+            dedup_section = ""
+            if reference_text:
+                dedup_section = f"""
+[중복 금지]
+다음 전체 설명문에 이미 나온 표현/숫자를 그대로 복사하지 말고, 필요한 경우 다른 문장으로 요약하세요:
+---
+{reference_text[:500]}
+---"""
 
             rules_text = "\n".join(f"- {r}" for r in rules_list)
             prompt = f"""[지시사항]
 반드시 한국어로 답변하세요.
 OCR에 없는 정보는 추가하지 마세요.
 {length_constraint}
+{dedup_section}
 
 [준수 규칙]
 {rules_text}
@@ -429,9 +485,30 @@ OCR에 없는 정보는 추가하지 마세요.
             changes.append("답변 생성 요청")
             rules_list = list(DEFAULT_ANSWER_RULES)
             rules_text = "\n".join(f"- {r}" for r in rules_list)
+            length_constraint = ""
+            if query_type == "target_short":
+                length_constraint = "답변은 불릿·마크다운(볼드/기울임) 없이 한 문장으로, 최대 50단어 이내로 작성하세요."
+            elif query_type == "target_long":
+                length_constraint = "답변은 불릿·마크다운(볼드/기울임) 없이 3-4문장, 최대 100단어 이내로 작성하세요."
+            elif query_type == "reasoning":
+                length_constraint = (
+                    "불릿·마크다운(볼드/기울임) 없이 한 단락으로 간결하게 추론을 제시하세요. "
+                    "근거/추론/결론 같은 섹션 제목은 사용하지 마세요."
+                )
+
+            dedup_section = ""
+            if reference_text:
+                dedup_section = f"""
+[중복 금지]
+다음 전체 설명문에 이미 나온 표현/숫자를 그대로 복사하지 말고, 필요한 경우 다른 문장으로 요약하세요:
+---
+{reference_text[:500]}
+---"""
             prompt = f"""[지시사항]
 반드시 한국어로 답변하세요.
 OCR에 없는 정보는 추가하지 마세요.
+{length_constraint}
+{dedup_section}
 
 [준수 규칙]
 {rules_text}
@@ -544,6 +621,14 @@ OCR에 없는 정보는 추가하지 마세요.
                 except Exception as exc:  # noqa: BLE001
                     logger.debug("Pipeline validation skipped: %s", exc)
             answer = postprocess_answer(answer, query_type)
+            if reference_text and query_type in {
+                "target_short",
+                "target_long",
+                "reasoning",
+            }:
+                answer = _dedup_with_reference(answer, reference_text, query_type)
+
+            answer = _sanitize_output(answer)
 
         return {
             "workflow": workflow,

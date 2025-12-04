@@ -172,40 +172,65 @@ def postprocess_answer(answer: str, qtype: str) -> str:
 
     # 4. 질의 유형별 후처리
     if qtype in {"target_short", "target_long"}:
-        # 소수점이 포함된 숫자를 보존하면서 문장 단위로 정리
+        # 불릿/개행 제거 후 짧은 문장으로 압축
+        lines = [
+            re.sub(r"^[\-\*\u2022]\s*", "", line).strip(" -•\t")
+            for line in answer.splitlines()
+            if line.strip()
+        ]
+        if lines:
+            answer = ". ".join(lines)
+
         sentences = [
-            s.strip() for s in re.split(r"(?<!\d)\.(?!\d)", answer) if s.strip()
+            s.strip()
+            for s in re.split(r"(?<!\d)\.(?!\d)", answer.replace("\n", ". "))
+            if s.strip()
         ]
         if sentences:
-            # 문장 사이에는 한 칸을 둔 줄글 형태로 반환
-            answer = ". ".join(sentences)
-            if not answer.endswith("."):
-                answer = answer + "."
+            max_sentences = 1 if qtype == "target_short" else 4
+            answer = ". ".join(sentences[:max_sentences]).strip()
+        else:
+            answer = answer.strip()
+        answer = re.sub(r"\s+", " ", answer).strip()
+        if qtype == "target_short" and answer.endswith("."):
+            answer = answer[:-1].strip()
     elif qtype in {"global_explanation", "explanation", "reasoning"}:
         # 서술문 앞의 불릿(-, •) 제거 및 문단 정리
-        # 설명/추론 답변에서는 남아 있는 볼드 마커를 제거해 불필요한 강조를 없앰
-        answer = re.sub(r"\*\*(.*?)\*\*", r"\1", answer)
-        lines: list[str] = []
+        paragraph_lines: list[str] = []
         for line in answer.splitlines():
             stripped = line.strip()
             if not stripped:
-                lines.append("")
+                paragraph_lines.append("")
                 continue
             cleaned = re.sub(r"^[-•]\s*", "", stripped)
-            lines.append(cleaned)
-        normalized: list[str] = []
-        for line in lines:
-            if line == "":
-                if normalized and normalized[-1] != "":
-                    normalized.append("")
+            paragraph_lines.append(cleaned)
+        # 빈 줄 기준으로 문단 분리 후, 단락 내 개행을 공백으로 치환
+        paragraphs: list[str] = []
+        for paragraph in "\n".join(paragraph_lines).split("\n\n"):
+            if not paragraph.strip():
                 continue
-            normalized.append(line)
-        # 빈 줄 기준으로 문단 분리 후 재조합
-        answer = "\n\n".join(
-            paragraph
-            for paragraph in "\n".join(normalized).split("\n\n")
-            if paragraph.strip()
-        )
+            # 콜론 뒤 개행 제거 (예: 제목\n: 내용 → 제목: 내용)
+            paragraph = re.sub(r"\n\s*:\s*", ": ", paragraph)
+            paragraph = re.sub(r"\s*\n\s*", " ", paragraph)
+            paragraph = re.sub(r"\s+", " ", paragraph).strip(" -•\t")
+            if qtype == "reasoning":
+                paragraph = re.sub(
+                    r"^(근거|추론|결론|배경|요약)\s*[:\-]\s*",
+                    "",
+                    paragraph,
+                    flags=re.IGNORECASE,
+                )
+            paragraphs.append(paragraph)
+        answer = "\n\n".join(paragraphs)
+
+    # 5. 공통 정리: 남은 마크다운 제거 및 불릿 제거
+    answer = re.sub(r"\*\*(.*?)\*\*", r"\1", answer)  # 볼드 제거
+    answer = re.sub(r"\*(.*?)\*", r"\1", answer)  # 기울임 제거
+    answer = re.sub(r"[_]{1,2}(.*?)[_]{1,2}", r"\1", answer)  # 언더라인 마크다운 제거
+    answer = answer.replace("*", "")  # 남은 별표 제거
+    answer = re.sub(r"^[-•]\s*", "", answer, flags=re.MULTILINE)
+    answer = re.sub(r"^#+\s*", "", answer, flags=re.MULTILINE)
+    answer = re.sub(r"\n{3,}", "\n\n", answer)
 
     return answer.strip()
 

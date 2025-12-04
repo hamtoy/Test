@@ -366,6 +366,9 @@
             const queryVal = document.getElementById('query').value.trim();
             const answerVal = document.getElementById('answer').value.trim();
             const ocrVal = document.getElementById('ocr-input').value.trim();
+            const globalRefVal = document
+                .getElementById('global-explanation-ref')
+                .value.trim();
             const executeBtn = document.getElementById('execute-btn');
 
             let isValid = false;
@@ -374,7 +377,7 @@
             } else if (this.current === 'answer-only') {
                 isValid = Boolean(queryVal);
             } else {
-                isValid = Boolean(ocrVal);
+                isValid = Boolean(ocrVal || globalRefVal || queryVal || answerVal);
             }
 
             executeBtn.disabled = !isValid;
@@ -404,6 +407,7 @@
         const queryType = document.getElementById('query-type').value;
         const globalExplanationRef = document.getElementById('global-explanation-ref').value.trim();
         const mode = WorkspaceMode.current;
+        const hasEditRequest = Boolean(editRequest);
 
         const resultsDiv = document.getElementById('workspace-results');
         
@@ -424,18 +428,18 @@
                 answer: answer || null,
                 edit_request: editRequest || null,
                 ocr_text: ocrText || null,
-                query_type: queryType || null,
-                global_explanation_ref: globalExplanationRef || null,
-            };
+            query_type: queryType || null,
+            global_explanation_ref: globalExplanationRef || null,
+        };
 
-            if (mode === 'query-only') {
-                payload.query = null;
-            } else if (mode === 'answer-only') {
-                payload.answer = null;
-            }
+        if (mode === 'query-only' && !hasEditRequest) {
+            payload.query = null;
+        } else if (mode === 'answer-only' && !hasEditRequest) {
+            payload.answer = null;
+        }
 
-            const result = await apiCall('/api/workspace/unified', 'POST', {
-                ...payload,
+        const result = await apiCall('/api/workspace/unified', 'POST', {
+            ...payload,
             }, abortController?.signal);
 
             displayResult(result);
@@ -454,7 +458,12 @@
 
     function displayResult(data) {
         // 질의/답변을 입력 필드에 직접 채우기 + 하이라이트
-        if (data.query) {
+        const currentMode = WorkspaceMode.current;
+        const canUpdateQuery = ['full_generation', 'query_generation', 'edit_query', 'edit_both'].includes(
+            data.workflow,
+        );
+
+        if (data.query && currentMode !== 'answer-only' && canUpdateQuery) {
             const queryField = document.getElementById('query');
             queryField.value = data.query;
             queryField.style.borderColor = 'var(--primary, #21808d)';
@@ -574,6 +583,9 @@
         const el = document.getElementById(id);
         el.addEventListener('input', () => WorkspaceMode.updateValidation());
     });
+    document
+        .getElementById('global-explanation-ref')
+        .addEventListener('input', () => WorkspaceMode.updateValidation());
 
     // 초기화
     loadOCR();
