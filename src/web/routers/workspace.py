@@ -350,6 +350,17 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     changes: list[str] = []
     reference_text = global_explanation_ref or ""
 
+    def _shorten_target_query(text: str) -> str:
+        """타겟 단답용 질의가 장문/설명문으로 생성될 때 한 문장으로 압축."""
+        clean = re.sub(r"\s+", " ", text or "").strip()
+        # 문장 단위로 자르되, 없으면 단어 수로 제한
+        parts = re.split(r"[?.!]\s*", clean)
+        candidate = parts[0] if parts and parts[0] else clean
+        words = candidate.split()
+        if len(words) > 20:
+            candidate = " ".join(words[:20])
+        return candidate.strip()
+
     def _sanitize_output(text: str) -> str:
         """불릿/마크다운/여분 공백을 제거해 일관된 문장만 남긴다."""
         text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
@@ -409,6 +420,8 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
             )
             if queries:
                 query = queries[0]
+                if query_type == "target_short":
+                    query = _shorten_target_query(query)
                 changes.append("질의 생성 완료")
 
             rules_list: list[str] = []
@@ -492,6 +505,8 @@ OCR에 없는 정보는 추가하지 마세요.
                 kg=current_kg,
             )
             query = queries[0] if queries else "질문 생성 실패"
+            if query_type == "target_short":
+                query = _shorten_target_query(query)
             changes.append("질문 생성 완료")
 
         elif workflow == "answer_generation":
