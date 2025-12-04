@@ -255,7 +255,9 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
         )
         duration = (datetime.now() - meta_start).total_seconds()
         meta = APIMetadata(duration=duration)
-        return cast(Dict[str, Any], build_response(result, metadata=meta, config=config))
+        return cast(
+            Dict[str, Any], build_response(result, metadata=meta, config=config)
+        )
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
@@ -710,7 +712,9 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
         rules_text = "\n".join(f"- {r}" for r in rules_list)
         extra_rules_text = "\n".join(f"- {t}" for t in rule_texts[:5])
         difficulty_text = _difficulty_hint(ocr_text)
-        evidence_clause = "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거 문장을 1개 포함하세요."
+        evidence_clause = (
+            "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거 문장을 1개 포함하세요."
+        )
         prompt = f"""[지시사항]
 반드시 한국어로 답변하세요.
 OCR에 없는 정보는 추가하지 마세요.
@@ -731,35 +735,30 @@ OCR에 없는 정보는 추가하지 마세요.
 
 위 OCR 텍스트를 기반으로 답변을 작성하세요."""
 
-            # LATS 다중 후보 생성 활성화
-            if body.use_lats and _get_config().enable_lats:
-                try:
-                    logger.info("LATS 다중 후보 생성 시작 (full_generation)")
-                    answer, lats_meta = await _generate_lats_answer(
-                        query=query,
-                        ocr_text=ocr_text,
-                        query_type=normalized_qtype,
-                    )
-                    if answer:
-                        answer = strip_output_tags(answer)
-                        changes.append(
-                            f"LATS: {lats_meta.get('candidates', 0)}개 후보, "
-                            f"최적={lats_meta.get('best_strategy', 'N/A')}, "
-                            f"점수={lats_meta.get('best_score', 0):.2f}"
-                        )
-                    else:
-                        raise ValueError("LATS 답변 후보 없음")
-                except Exception as e:
-                    logger.warning("LATS 실패, 기본 생성: %s", e)
-                    answer = await current_agent.rewrite_best_answer(
-                        ocr_text=ocr_text,
-                        best_answer=prompt,
-                        cached_content=None,
-                        query_type=normalized_qtype,
-                    )
+        # LATS 다중 후보 생성 활성화
+        if (
+            workflow == "full_generation"
+            and body.use_lats
+            and _get_config().enable_lats
+        ):
+            try:
+                logger.info("LATS 다중 후보 생성 시작 (full_generation)")
+                answer, lats_meta = await _generate_lats_answer(
+                    query=query,
+                    ocr_text=ocr_text,
+                    query_type=normalized_qtype,
+                )
+                if answer:
                     answer = strip_output_tags(answer)
-                    changes.append("답변 생성 완료 (기본)")
-            else:
+                    changes.append(
+                        f"LATS: {lats_meta.get('candidates', 0)}개 후보, "
+                        f"최적={lats_meta.get('best_strategy', 'N/A')}, "
+                        f"점수={lats_meta.get('best_score', 0):.2f}"
+                    )
+                else:
+                    raise ValueError("LATS 답변 후보 없음")
+            except Exception as e:
+                logger.warning("LATS 실패, 기본 생성: %s", e)
                 answer = await current_agent.rewrite_best_answer(
                     ocr_text=ocr_text,
                     best_answer=prompt,
@@ -767,7 +766,16 @@ OCR에 없는 정보는 추가하지 마세요.
                     query_type=normalized_qtype,
                 )
                 answer = strip_output_tags(answer)
-                changes.append("답변 생성 완료")
+                changes.append("답변 생성 완료 (기본)")
+        elif workflow == "full_generation":
+            answer = await current_agent.rewrite_best_answer(
+                ocr_text=ocr_text,
+                best_answer=prompt,
+                cached_content=None,
+                query_type=normalized_qtype,
+            )
+            answer = strip_output_tags(answer)
+            changes.append("답변 생성 완료")
 
         elif workflow == "query_generation":
             changes.append("질문 생성 요청")

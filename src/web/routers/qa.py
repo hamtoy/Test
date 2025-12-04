@@ -468,9 +468,7 @@ async def generate_single_qa(
                 for c in answer_constraints
             )
         difficulty_text = _difficulty_hint(ocr_text)
-        evidence_clause = (
-            "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거가 되는 문장을 1개 포함하세요."
-        )
+        evidence_clause = "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거가 되는 문장을 1개 포함하세요."
         answer_prompt = f"""{length_constraint}
 
 {formatting_text}
