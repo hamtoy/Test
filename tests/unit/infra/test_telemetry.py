@@ -17,9 +17,7 @@ from src.infra.telemetry import (
 class TestInitTelemetry:
     """Tests for init_telemetry function."""
 
-    @patch.dict(
-        os.environ, {"OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4317"}
-    )
+    @patch.dict(os.environ, {"OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4317"})
     @patch("src.infra.telemetry.trace")
     @patch("src.infra.telemetry.metrics")
     @patch("src.infra.telemetry.Resource")
