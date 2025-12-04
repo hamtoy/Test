@@ -444,6 +444,7 @@ async def generate_single_qa(
     if normalized_qtype == "reasoning":
         extra_instructions = """추론형 답변입니다.
 - '근거', '추론 과정', '결론' 등 명시적 라벨/소제목 절대 금지
+- 소제목을 쓰면 자연스러운 서론-본론-결론 흐름만 유지(헤더로 '서론/본론/결론' 금지)
 - 두괄식으로 핵심 전망을 먼저 제시
 - '이러한 배경에는', '이를 통해', '따라서' 등 자연스러운 연결어 사용
 - '요약문', '정리하면' 등의 헤더 금지"""
@@ -453,6 +454,10 @@ async def generate_single_qa(
 - '요약문' 같은 헤더 사용 금지
 - 근거 2~3개와 결론을 명확히 제시
 """
+    elif normalized_qtype == "explanation":
+        extra_instructions = """설명형 답변입니다.
+- 소제목을 쓸 때는 자연스러운 서론-본론-결론 흐름 유지 (헤더에 '서론/본론/결론' 직접 표기 금지)
+- 불필요한 반복, 장황한 수식어 금지"""
     elif normalized_qtype == "target":
         if qtype == "target_short":
             length_constraint = """
@@ -471,6 +476,7 @@ async def generate_single_qa(
 - 최대 100단어 이내
 - 핵심 요점만 간결하게
 - 불필요한 반복 금지
+- 소제목 사용 시 자연스러운 흐름만 유지(헤더에 '서론/본론/결론' 표기 금지)
 """
             rules_list = rules_list[:5]
 
