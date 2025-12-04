@@ -1,3 +1,6 @@
+"""Inspect 모드 테스트 스크립트."""
+# mypy: disable-error-code=import-untyped
+
 import json
 
 import requests
