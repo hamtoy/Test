@@ -141,7 +141,7 @@ try:
         WITH qt, collect(r) AS rules_rel
         OPTIONAL MATCH (r2:Rule)
         WHERE r2.applies_to IN ['all', $qt]
-        WITH rules_rel + collect(r2) AS rules
+        WITH qt, rules_rel + collect(r2) AS rules
         UNWIND rules AS r
         WITH DISTINCT r
         RETURN
