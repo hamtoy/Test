@@ -1045,7 +1045,9 @@ OCR에 없는 정보는 추가하지 마세요.
         )
         duration = (datetime.now() - meta_start).total_seconds()
         meta = APIMetadata(duration=duration)
-        return cast(Dict[str, Any], build_response(result, metadata=meta, config=config))
+        return cast(
+            Dict[str, Any], build_response(result, metadata=meta, config=config)
+        )
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
