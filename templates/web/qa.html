@@ -24,7 +24,7 @@
 
             <label for="mode-batch-three">
                 <input type="radio" id="mode-batch-three" name="mode" value="batch_three">
-                3타입 일괄 생성 (전체/추론/타겟 단답)
+                3타입 일괄 생성 (전체/추론/타겟 장답)
             </label>
             
             <label for="mode-single">
@@ -146,7 +146,7 @@
                 payload.batch_types = [
                     'global_explanation',
                     'reasoning',
-                    'target_short',
+                    'target_long',
                 ];
             }
 
@@ -177,7 +177,13 @@
         const resultsDiv = document.getElementById('results');
         resultsDiv.innerHTML = '';
 
-        const pairs = data.pairs || (data.pair ? [data.pair] : []);
+        let pairs = data.pairs || (data.pair ? [data.pair] : []);
+        // 3타입 모드에서 예상 타입만 필터 (백엔드가 4개를 돌려줄 경우 대비)
+        const selectedMode = document.querySelector('input[name="mode"]:checked')?.value;
+        if (selectedMode === 'batch_three') {
+            const allowed = new Set(['global_explanation', 'reasoning', 'target_long']);
+            pairs = pairs.filter((p) => allowed.has(p.type));
+        }
         if (!pairs.length) {
             resultsDiv.innerHTML = `
                 <div class="qa-card">
