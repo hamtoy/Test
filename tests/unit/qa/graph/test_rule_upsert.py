@@ -1,9 +1,7 @@
 """Tests for Neo4j rule upsert manager."""
 
-from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 
-import pytest
 
 from src.qa.graph.rule_upsert import RuleUpsertManager
 

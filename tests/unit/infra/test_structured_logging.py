@@ -181,7 +181,6 @@ class TestSetupStructuredLogging:
         # Add a dummy handler
         dummy_handler = logging.StreamHandler()
         root.addHandler(dummy_handler)
-        initial_count = len(root.handlers)
 
         setup_structured_logging()
 

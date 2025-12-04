@@ -1,6 +1,6 @@
 """Tests for agent services module."""
 
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from pydantic import ValidationError
@@ -32,7 +32,9 @@ class TestQueryGeneratorService:
         mock_agent._create_generative_model = Mock()
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
-        mock_agent.retry_handler.call = AsyncMock(return_value='{"queries": ["Query 1", "Query 2"]}')
+        mock_agent.retry_handler.call = AsyncMock(
+            return_value='{"queries": ["Query 1", "Query 2"]}'
+        )
         mock_agent._is_rate_limit_error = Mock(return_value=False)
 
         # Setup template
@@ -115,9 +117,20 @@ class TestQueryGeneratorService:
 
         service = QueryGeneratorService(mock_agent)
 
-        with patch("src.agent.services.QueryResult.model_validate_json") as mock_validate:
+        with patch(
+            "src.agent.services.QueryResult.model_validate_json"
+        ) as mock_validate:
             mock_validate.side_effect = ValidationError.from_exception_data(
-                "Test", [{"type": "value_error", "loc": ("test",), "msg": "Test error", "input": {}, "ctx": {"error": "test"}}]
+                "Test",
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("test",),
+                        "msg": "Test error",
+                        "input": {},
+                        "ctx": {"error": "test"},
+                    }
+                ],
             )
 
             result = await service.generate_query(
@@ -143,7 +156,7 @@ class TestQueryGeneratorService:
         mock_agent._create_generative_model = Mock()
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
-        
+
         rate_limit_exception = Exception("429 Rate Limit")
         mock_agent.retry_handler.call = AsyncMock(side_effect=rate_limit_exception)
         mock_agent._is_rate_limit_error = Mock(return_value=True)
@@ -176,7 +189,9 @@ class TestQueryGeneratorService:
         mock_agent._create_generative_model = Mock()
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
-        mock_agent.retry_handler.call = AsyncMock(return_value='{"queries": ["Query 1"]}')
+        mock_agent.retry_handler.call = AsyncMock(
+            return_value='{"queries": ["Query 1"]}'
+        )
         mock_agent._is_rate_limit_error = Mock(return_value=False)
 
         mock_template = Mock()
@@ -244,7 +259,9 @@ class TestResponseEvaluatorService:
         mock_agent._create_generative_model = Mock()
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
-        mock_agent.retry_handler.call = AsyncMock(return_value='{"best_choice": "A", "score": 0.95}')
+        mock_agent.retry_handler.call = AsyncMock(
+            return_value='{"best_choice": "A", "score": 0.95}'
+        )
         mock_agent._is_rate_limit_error = Mock(return_value=False)
 
         mock_template = Mock()

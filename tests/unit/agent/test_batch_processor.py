@@ -2,7 +2,7 @@
 
 import asyncio
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from datetime import datetime, timezone
 
 import pytest
@@ -53,7 +53,9 @@ class TestSmartBatchProcessor:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         # force rate limiter to sleep on second call
-        processor = SmartBatchProcessor[int, int](max_concurrent=2, requests_per_minute=60)
+        processor = SmartBatchProcessor[int, int](
+            max_concurrent=2, requests_per_minute=60
+        )
         calls: list[float] = []
 
         async def record(x: int) -> int:

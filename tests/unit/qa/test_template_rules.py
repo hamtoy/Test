@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from src.qa.template_rules import (
     get_all_template_context,
@@ -320,15 +319,13 @@ class TestGetAllTemplateContext:
     @patch("src.qa.template_rules.get_rules_for_query_type")
     @patch("src.qa.template_rules.get_common_mistakes")
     @patch("src.qa.template_rules.get_rules_from_neo4j")
-    def test_query_stage_context(
-        self, mock_rules_neo4j, mock_mistakes, mock_rules
-    ):
+    def test_query_stage_context(self, mock_rules_neo4j, mock_mistakes, mock_rules):
         """Test context generation for query stage."""
         mock_rules.return_value = []
         mock_mistakes.return_value = []
         mock_rules_neo4j.return_value = []
 
-        context = get_all_template_context(
+        get_all_template_context(
             query_type="explanation",
             neo4j_uri="uri",
             neo4j_user="user",
@@ -363,7 +360,9 @@ class TestGetNeo4jConfig:
         assert config["neo4j_password"] == "secret"
 
     @patch.dict(
-        "os.environ", {"NEO4J_USER": "user_legacy", "NEO4J_PASSWORD": "pass123"}, clear=True
+        "os.environ",
+        {"NEO4J_USER": "user_legacy", "NEO4J_PASSWORD": "pass123"},
+        clear=True,
     )
     def test_fallback_to_neo4j_user(self):
         """Test fallback to NEO4J_USER when USERNAME not set."""
