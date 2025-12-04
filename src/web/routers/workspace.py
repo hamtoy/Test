@@ -20,6 +20,7 @@ from src.analysis.cross_validation import CrossValidationSystem
 from src.config import AppConfig
 from src.config.constants import DEFAULT_ANSWER_RULES
 from src.qa.rule_loader import RuleLoader
+from src.qa.validator import UnifiedValidator
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
 from src.web.models import UnifiedWorkspaceRequest, WorkspaceRequest
@@ -521,6 +522,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     current_kg = _get_kg()
     current_pipeline = _get_pipeline()
     config = _get_config()
+    unified_validator = UnifiedValidator(current_kg, current_pipeline)
     if current_agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
@@ -947,6 +949,10 @@ OCR에 없는 정보는 추가하지 마세요.
                 answer = _dedup_with_reference(answer, reference_text, query_type)
 
             answer = _sanitize_output(answer)
+            # 통합 검증: 위반 요약을 changes에 추가 (답변은 유지)
+            val_result = unified_validator.validate_all(answer, normalized_qtype)
+            if val_result.has_errors():
+                changes.append(val_result.get_error_summary())
 
         return {
             "workflow": workflow,
