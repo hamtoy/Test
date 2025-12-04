@@ -157,6 +157,14 @@ def _get_config() -> AppConfig:
                 except Exception:
                     value = default
                 setattr(cfg, name, value)
+            try:
+                cfg.enable_standard_response = bool(
+                    getattr(cfg, "enable_standard_response", False)
+                )
+                cfg.enable_lats = bool(getattr(cfg, "enable_lats", False))
+            except Exception:
+                cfg.enable_standard_response = False
+                cfg.enable_lats = False
             return cfg
     except Exception:
         if _config is not None:

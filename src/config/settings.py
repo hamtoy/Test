@@ -127,8 +127,11 @@ class AppConfig(BaseSettings):
             missing = [f for f in required_fields if not getattr(self, f, None)]
             if missing:
                 raise ValueError(
-                    f"ENABLE_RAG=True 설정 시 필수: {', '.join(missing)}\n"
-                    f"또는 ENABLE_RAG=false로 설정하세요"
+                    "NEO4J_URI 설정 시 필수: {fields}\n"
+                    "ENABLE_RAG=True 설정 시 필수: {fields}\n"
+                    "또는 ENABLE_RAG=false로 설정하세요".format(
+                        fields=", ".join(missing)
+                    )
                 )
 
         # Case 2: neo4j_uri is set (without enable_rag=True) - still require other Neo4j fields

@@ -148,8 +148,8 @@ def detect_workflow(
     if has_query and not has_answer:
         return "edit_query" if has_edit else "answer_generation"
 
-    # has_answer and not has_query: 질문만 생성 (edit_request는 힌트로만 사용)
-    return "query_generation"
+    # has_answer and not has_query: 질문만 생성, 편집 요청 시 답변 수정
+    return "edit_answer" if has_edit else "query_generation"
 
 
 def postprocess_answer(answer: str, qtype: str) -> str:

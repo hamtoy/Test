@@ -126,6 +126,14 @@ def _get_config() -> AppConfig:
             except Exception:
                 value = default
             setattr(cfg, name, value)
+        try:
+            cfg.enable_standard_response = bool(
+                getattr(cfg, "enable_standard_response", False)
+            )
+            cfg.enable_lats = bool(getattr(cfg, "enable_lats", False))
+        except Exception:
+            cfg.enable_standard_response = False
+            cfg.enable_lats = False
         return cfg
     except Exception:
         try:
@@ -661,6 +669,9 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
         nonlocal query, answer
         length_constraint: str = ""
         answer_constraints: list[Dict[str, Any]] = []
+        rules_list: list[str] = []
+        rule_texts: list[str] = []
+        dedup_section = ""
         if workflow == "full_generation":
             changes.append("OCR에서 전체 생성")
 
@@ -676,10 +687,9 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
                     query = _shorten_target_query(query)
                 changes.append("질의 생성 완료")
 
-            rules_list: list[str] = rule_loader.get_rules_for_type(
+            rules_list = rule_loader.get_rules_for_type(
                 normalized_qtype, DEFAULT_ANSWER_RULES
             )
-            rule_texts: list[str] = []
             if current_kg is not None:
                 try:
                     kg_rules = current_kg.get_rules_for_query_type(normalized_qtype)
@@ -698,7 +708,6 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
             elif query_type == "reasoning":
                 length_constraint = "불릿·마크다운(볼드/기울임) 없이 한 단락으로 간결하게 추론을 제시하세요."
 
-            dedup_section = ""
             if reference_text:
                 dedup_section = f"""
 [중복 금지]
@@ -733,12 +742,10 @@ OCR에 없는 정보는 추가하지 마세요.
 
 위 OCR 텍스트를 기반으로 답변을 작성하세요."""
 
+        cfg = _get_config()
+        use_lats = bool(body.use_lats and getattr(cfg, "enable_lats", False))
         # LATS 다중 후보 생성 활성화
-        if (
-            workflow == "full_generation"
-            and body.use_lats
-            and _get_config().enable_lats
-        ):
+        if workflow == "full_generation" and use_lats:
             try:
                 logger.info("LATS 다중 후보 생성 시작 (full_generation)")
                 answer, lats_meta = await _generate_lats_answer(

@@ -27,10 +27,14 @@ def build_response(
 ) -> Any:
     """Wrap response if standard response is enabled; otherwise pass through."""
     if config and getattr(config, "enable_standard_response", False):
-        return {
+        base = {
             "success": success,
             "data": data,
             "metadata": metadata.__dict__ if metadata else None,
             "errors": errors,
         }
+        # 역호환: dict 데이터를 상위 키로 노출
+        if isinstance(data, dict):
+            base.update(data)
+        return base
     return data

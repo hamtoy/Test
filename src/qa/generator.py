@@ -206,7 +206,17 @@ def _run_example() -> None:
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key or not api_key.startswith("AIza"):
         os.environ["GEMINI_API_KEY"] = "AIza" + ("x" * 35)
-    config = AppConfig()
+    # 테스트/로컬 실행 시 RAG 의존성 우회
+    os.environ["ENABLE_RAG"] = "false"
+    for key in ("NEO4J_URI", "NEO4J_USER", "NEO4J_PASSWORD"):
+        os.environ.setdefault(key, "")
+    config = AppConfig(
+        enable_rag=False,
+        neo4j_uri=None,
+        neo4j_user=None,
+        neo4j_password=None,
+        _env_file=None,
+    )
     generator = QAGenerator(config)
     sample_ocr = _load_default_ocr_text()
     pairs = generator.generate_qa(sample_ocr, query_count=4)
