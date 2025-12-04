@@ -113,9 +113,9 @@ def set_dependencies(
 
 def _get_agent() -> Optional[GeminiAgent]:
     try:
-        from src.web.dependencies import container
+        from src.web import dependencies
 
-        return container.get_agent()
+        return dependencies.get_agent()
     except Exception:
         pass
     try:
@@ -128,9 +128,9 @@ def _get_agent() -> Optional[GeminiAgent]:
 
 def _get_pipeline() -> Optional[IntegratedQAPipeline]:
     try:
-        from src.web.dependencies import container
+        from src.web import dependencies
 
-        return container.get_pipeline()
+        return dependencies.get_pipeline()
     except Exception:
         pass
     try:
@@ -143,9 +143,9 @@ def _get_pipeline() -> Optional[IntegratedQAPipeline]:
 
 def _get_kg() -> Optional[QAKnowledgeGraph]:
     try:
-        from src.web.dependencies import container
+        from src.web import dependencies
 
-        return container.get_kg()
+        return dependencies.get_knowledge_graph()
     except Exception:
         pass
     try:
@@ -158,9 +158,9 @@ def _get_kg() -> Optional[QAKnowledgeGraph]:
 
 def _get_config() -> AppConfig:
     try:
-        from src.web.dependencies import container
+        from src.web import dependencies
 
-        return container.get_config()
+        return dependencies.get_config()
     except Exception:
         pass
     if _config is not None:

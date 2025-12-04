@@ -138,3 +138,7 @@ def get_multimodal() -> Optional[object]:
 
 def get_pipeline() -> Optional[IntegratedQAPipeline]:
     return ServiceContainer.get_pipeline()
+
+
+# Legacy alias for previous code paths/tests
+container = ServiceContainer

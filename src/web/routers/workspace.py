@@ -79,9 +79,9 @@ def set_dependencies(
 
 def _get_agent() -> Optional[GeminiAgent]:
     try:
-        from src.web.dependencies import container
+        from src.web import dependencies
 
-        return container.get_agent()
+        return dependencies.get_agent()
     except Exception:
         pass
     try:
@@ -94,9 +94,9 @@ def _get_agent() -> Optional[GeminiAgent]:
 
 def _get_kg() -> Optional[QAKnowledgeGraph]:
     try:
-        from src.web.dependencies import container
+        from src.web import dependencies
 
-        return container.get_kg()
+        return dependencies.get_knowledge_graph()
     except Exception:
         pass
     try:
@@ -109,9 +109,9 @@ def _get_kg() -> Optional[QAKnowledgeGraph]:
 
 def _get_pipeline() -> Optional[IntegratedQAPipeline]:
     try:
-        from src.web.dependencies import container
+        from src.web import dependencies
 
-        return container.get_pipeline()
+        return dependencies.get_pipeline()
     except Exception:
         pass
     try:
@@ -124,9 +124,9 @@ def _get_pipeline() -> Optional[IntegratedQAPipeline]:
 
 def _get_config() -> AppConfig:
     try:
-        from src.web.dependencies import container
+        from src.web import dependencies
 
-        return container.get_config()
+        return dependencies.get_config()
     except Exception:
         pass
     if _config is not None:
@@ -662,7 +662,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
 
     async def _execute_workflow() -> Dict[str, Any]:
         nonlocal query, answer
-        length_constraint = ""
+        length_constraint: str = ""
         if workflow == "full_generation":
             changes.append("OCR에서 전체 생성")
 
@@ -1048,7 +1048,7 @@ OCR에 없는 정보는 추가하지 마세요.
         )
         duration = (datetime.now() - meta_start).total_seconds()
         meta = APIMetadata(duration=duration)
-        return build_response(result, metadata=meta, config=config)
+        return cast(Dict[str, Any], build_response(result, metadata=meta, config=config))
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
