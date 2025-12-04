@@ -162,6 +162,10 @@
 
     // 결과 표시 함수
     function displayResults(data) {
+        // 언래핑(표준 응답 포맷 대비)
+        if (data && data.success !== undefined && data.data) {
+            data = data.data;
+        }
         const resultsDiv = document.getElementById('results');
         resultsDiv.innerHTML = '';
 

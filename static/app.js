@@ -30,7 +30,15 @@ async function apiCall(url, method = 'GET', body = null, signal = undefined) {
         const response = await fetch(url, options);
         if (!response.ok) {
             const error = await response.json();
-            const err = new Error(error.detail || '요청 실패');
+            let detail = error.detail || error.message || '요청 실패';
+            if (typeof detail === 'object') {
+                try {
+                    detail = JSON.stringify(detail);
+                } catch {
+                    detail = '[object Object]';
+                }
+            }
+            const err = new Error(detail);
             err.status = response.status;  // Add status code to error object
             throw err;
         }
