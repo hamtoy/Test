@@ -129,38 +129,89 @@ class CrossValidationSystem:
         return violations
 
     def _check_repetition(self, answer: str, max_repeat: int = 2) -> List[str]:
-        """반복 표현 검증 (repetition_check)."""
+        """반복 표현 검증 (repetition_check) - 형태소 분석 기반."""
         violations = []
-        # 한국어 stopwords (간단한 버전)
-        stopwords = {
-            "것",
-            "등",
-            "및",
-            "또는",
-            "이",
-            "그",
-            "저",
-            "수",
-            "때",
-            "중",
-            "안",
-            "밖",
-        }
 
-        # 전체 단어 빈도 확인
-        words = re.findall(r"\b\w{2,}\b", answer)
-        word_counts: Dict[str, int] = {}
-        for word in words:
-            if word not in stopwords and not word.isdigit():
-                word_counts[word] = word_counts.get(word, 0) + 1
+        try:
+            from kiwipiepy import Kiwi
 
-        # 반복 빈도가 높은 단어만 보고 (상위 10개)
-        top_words = sorted(word_counts.items(), key=lambda x: x[1], reverse=True)[:10]
-        for word, count in top_words:
-            if count > max_repeat:
-                violations.append(
-                    f"'{word}' 과도한 반복 ({count}회, 최대 {max_repeat}회)"
-                )
+            # Kiwi 인스턴스 생성 (첫 호출 시 모델 로딩)
+            kiwi = Kiwi()
+
+            # 형태소 분석
+            result = kiwi.tokenize(answer)
+
+            # 명사(N*), 동사(V*) 어근만 추출
+            morphs = [
+                token.form
+                for token in result
+                if token.tag.startswith("N") or token.tag.startswith("V")
+            ]
+
+            # 한국어 stopwords
+            stopwords = {
+                "것",
+                "수",
+                "때",
+                "등",
+                "이",
+                "그",
+                "저",
+                "및",
+                "또는",
+                "중",
+                "안",
+                "밖",
+            }
+
+            # 빈도 계산
+            morph_counts: Dict[str, int] = {}
+            for morph in morphs:
+                if morph not in stopwords and len(morph) > 1 and not morph.isdigit():
+                    morph_counts[morph] = morph_counts.get(morph, 0) + 1
+
+            # 반복 빈도가 높은 형태소만 보고 (상위 10개)
+            top_morphs = sorted(morph_counts.items(), key=lambda x: x[1], reverse=True)[
+                :10
+            ]
+            for morph, count in top_morphs:
+                if count > max_repeat:
+                    violations.append(
+                        f"'{morph}' 과도한 반복 ({count}회, 최대 {max_repeat}회)"
+                    )
+
+        except ImportError:
+            # kiwipiepy가 없으면 기존 방식으로 fallback
+            self.logger.warning("kiwipiepy not available, using simple word matching")
+            stopwords = {
+                "것",
+                "등",
+                "및",
+                "또는",
+                "이",
+                "그",
+                "저",
+                "수",
+                "때",
+                "중",
+                "안",
+                "밖",
+            }
+
+            words = re.findall(r"\b\w{2,}\b", answer)
+            word_counts: Dict[str, int] = {}
+            for word in words:
+                if word not in stopwords and not word.isdigit():
+                    word_counts[word] = word_counts.get(word, 0) + 1
+
+            top_words = sorted(word_counts.items(), key=lambda x: x[1], reverse=True)[
+                :10
+            ]
+            for word, count in top_words:
+                if count > max_repeat:
+                    violations.append(
+                        f"'{word}' 과도한 반복 ({count}회, 최대 {max_repeat}회)"
+                    )
 
         return violations
 
