@@ -207,7 +207,6 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
     ocr_text = body.ocr_text or load_ocr_text(_get_config())
 
     try:
-        rule_loader = RuleLoader(current_kg)
         start = datetime.now()
         if body.mode == "batch":
             results: list[Dict[str, Any]] = []

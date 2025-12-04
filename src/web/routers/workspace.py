@@ -172,7 +172,6 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
 
     config = _get_config()
     ocr_text = load_ocr_text(config)
-    rule_loader = RuleLoader(current_kg)
     meta_start = datetime.now()
 
     async def _run_workspace() -> Dict[str, Any]:
@@ -266,10 +265,10 @@ async def api_generate_answer_from_query(body: Dict[str, Any]) -> Dict[str, Any]
     config = _get_config()
     ocr_text = body.get("ocr_text") or load_ocr_text(config)
     meta_start = datetime.now()
-    meta_start = datetime.now()
     query_type = body.get("query_type", "explanation")
     normalized_qtype = QTYPE_MAP.get(query_type, "explanation")
 
+    rule_loader = RuleLoader(current_kg)
     rules_list = rule_loader.get_rules_for_type(
         normalized_qtype, DEFAULT_ANSWER_RULES
     )
