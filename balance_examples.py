@@ -30,7 +30,7 @@ class ExampleBalancer:
 
     def get_current_distribution(self) -> Dict[str, int]:
         """현재 카테고리별 Example 분포 확인"""
-        with self.driver.session() as session:  # type: Session
+        with self.driver.session() as session:
             result = session.run(
                 """
                 MATCH (e:Example)
@@ -43,7 +43,7 @@ class ExampleBalancer:
 
     def add_examples_for_category(self, category: str, needed: int) -> int:
         """특정 카테고리에 Example 추가"""
-        with self.driver.session() as session:  # type: Session
+        with self.driver.session() as session:
             # 1. 이미 사용된 line_number 확인
             result = session.run(
                 """

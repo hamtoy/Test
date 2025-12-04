@@ -39,7 +39,7 @@ class ExampleExtractor:
 
     def extract_examples_for_category(self, category: str, limit: int) -> int:
         """카테고리별로 Example 후보를 추출하고 Example 노드로 변환"""
-        with self.driver.session() as session:  # type: Session
+        with self.driver.session() as session:
             # 1. 조건에 맞는 피드백 추출
             result = session.run(
                 """

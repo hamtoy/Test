@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import logging
 import re
 from typing import Any, Dict, List
@@ -133,7 +134,8 @@ class CrossValidationSystem:
         violations = []
 
         try:
-            from kiwipiepy import Kiwi
+            kiwipiepy: Any = importlib.import_module("kiwipiepy")
+            Kiwi = getattr(kiwipiepy, "Kiwi")
 
             # Kiwi 인스턴스 생성 (첫 호출 시 모델 로딩)
             kiwi = Kiwi()
