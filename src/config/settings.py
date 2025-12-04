@@ -18,6 +18,10 @@ from src.config.constants import (
     ERROR_MESSAGES,
     GEMINI_API_KEY_LENGTH,
     MIN_CACHE_TOKENS,
+    QA_BATCH_GENERATION_TIMEOUT,
+    QA_SINGLE_GENERATION_TIMEOUT,
+    WORKSPACE_GENERATION_TIMEOUT,
+    WORKSPACE_UNIFIED_TIMEOUT,
     CacheConfig,
 )
 
@@ -56,6 +60,19 @@ class AppConfig(BaseSettings):
     local_cache_dir: str = Field(".cache", alias="LOCAL_CACHE_DIR")
     budget_limit_usd: float | None = Field(None, alias="BUDGET_LIMIT_USD")
     cache_min_tokens: int = Field(MIN_CACHE_TOKENS, alias="GEMINI_CACHE_MIN_TOKENS")
+    # Timeout overrides (environment can override; defaults keep backward compatibility)
+    qa_single_timeout: int = Field(
+        QA_SINGLE_GENERATION_TIMEOUT, alias="QA_SINGLE_TIMEOUT"
+    )
+    qa_batch_timeout: int = Field(
+        QA_BATCH_GENERATION_TIMEOUT, alias="QA_BATCH_TIMEOUT"
+    )
+    workspace_timeout: int = Field(
+        WORKSPACE_GENERATION_TIMEOUT, alias="WORKSPACE_TIMEOUT"
+    )
+    workspace_unified_timeout: int = Field(
+        WORKSPACE_UNIFIED_TIMEOUT, alias="WORKSPACE_UNIFIED_TIMEOUT"
+    )
 
     # RAG Configuration
     enable_rag: bool = Field(False, alias="ENABLE_RAG")

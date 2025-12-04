@@ -18,11 +18,8 @@ from checks.detect_forbidden_patterns import find_violations
 from src.agent import GeminiAgent
 from src.analysis.cross_validation import CrossValidationSystem
 from src.config import AppConfig
-from src.config.constants import (
-    DEFAULT_ANSWER_RULES,
-    WORKSPACE_GENERATION_TIMEOUT,
-    WORKSPACE_UNIFIED_TIMEOUT,
-)
+from src.config.constants import DEFAULT_ANSWER_RULES
+from src.qa.rule_loader import RuleLoader
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
 from src.web.models import UnifiedWorkspaceRequest, WorkspaceRequest
@@ -137,7 +134,9 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
     if current_agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
-    ocr_text = load_ocr_text(_get_config())
+    config = _get_config()
+    ocr_text = load_ocr_text(config)
+    rule_loader = RuleLoader(current_kg)
 
     async def _run_workspace() -> Dict[str, Any]:
         if body.mode == "inspect":
@@ -203,12 +202,12 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
 
     try:
         return await asyncio.wait_for(
-            _run_workspace(), timeout=WORKSPACE_GENERATION_TIMEOUT
+            _run_workspace(), timeout=config.workspace_timeout
         )
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
-            detail=f"작업 시간 초과 ({WORKSPACE_GENERATION_TIMEOUT}초). 다시 시도해주세요.",
+            detail=f"작업 시간 초과 ({config.workspace_timeout}초). 다시 시도해주세요.",
         )
     except Exception as e:
         logger.error("워크스페이스 작업 실패: %s", e)
@@ -224,23 +223,14 @@ async def api_generate_answer_from_query(body: Dict[str, Any]) -> Dict[str, Any]
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
     query = body.get("query", "")
-    ocr_text = body.get("ocr_text") or load_ocr_text(_get_config())
+    config = _get_config()
+    ocr_text = body.get("ocr_text") or load_ocr_text(config)
     query_type = body.get("query_type", "explanation")
     normalized_qtype = QTYPE_MAP.get(query_type, "explanation")
 
-    rules_list: list[str] = []
-    if current_kg is not None:
-        try:
-            constraints = current_kg.get_constraints_for_query_type(normalized_qtype)
-            for c in constraints:
-                desc = c.get("description")
-                if desc:
-                    rules_list.append(desc)
-        except Exception as e:
-            logger.debug("규칙 로드 실패: %s", e)
-
-    if not rules_list:
-        rules_list = list(DEFAULT_ANSWER_RULES)
+    rules_list = rule_loader.get_rules_for_type(
+        normalized_qtype, DEFAULT_ANSWER_RULES
+    )
 
     try:
         rules_text = "\n".join(f"- {r}" for r in rules_list)
@@ -268,7 +258,7 @@ OCR에 없는 정보는 추가하지 마세요.
                 cached_content=None,
                 query_type=normalized_qtype,
             ),
-            timeout=WORKSPACE_GENERATION_TIMEOUT,
+            timeout=config.workspace_timeout,
         )
 
         answer = strip_output_tags(answer)
@@ -284,7 +274,7 @@ OCR에 없는 정보는 추가하지 마세요.
                     cached_content=None,
                     query_type=normalized_qtype,
                 ),
-                timeout=WORKSPACE_GENERATION_TIMEOUT,
+                timeout=config.workspace_timeout,
             )
             answer = strip_output_tags(answer)
 
@@ -292,7 +282,7 @@ OCR에 없는 정보는 추가하지 마세요.
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
-            detail=f"답변 생성 시간 초과 ({WORKSPACE_GENERATION_TIMEOUT}초). 다시 시도해주세요.",
+            detail=f"답변 생성 시간 초과 ({config.workspace_timeout}초). 다시 시도해주세요.",
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -306,7 +296,8 @@ async def api_generate_query_from_answer(body: Dict[str, Any]) -> Dict[str, Any]
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
     answer = body.get("answer", "")
-    ocr_text = body.get("ocr_text") or load_ocr_text(_get_config())
+    config = _get_config()
+    ocr_text = body.get("ocr_text") or load_ocr_text(config)
 
     try:
         prompt = f"""
@@ -322,7 +313,7 @@ async def api_generate_query_from_answer(body: Dict[str, Any]) -> Dict[str, Any]
 """
         queries = await asyncio.wait_for(
             current_agent.generate_query(prompt, user_intent=None),
-            timeout=WORKSPACE_GENERATION_TIMEOUT,
+            timeout=config.workspace_timeout,
         )
         query = queries[0] if queries else "질문 생성 실패"
 
@@ -330,7 +321,7 @@ async def api_generate_query_from_answer(body: Dict[str, Any]) -> Dict[str, Any]
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
-            detail=f"질의 생성 시간 초과 ({WORKSPACE_GENERATION_TIMEOUT}초). 다시 시도해주세요.",
+            detail=f"질의 생성 시간 초과 ({config.workspace_timeout}초). 다시 시도해주세요.",
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -496,6 +487,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     current_agent = _get_agent()
     current_kg = _get_kg()
     current_pipeline = _get_pipeline()
+    config = _get_config()
     if current_agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
@@ -505,6 +497,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     global_explanation_ref = body.global_explanation_ref or ""
 
     query_intent = None
+    rule_loader = RuleLoader(current_kg)
     if query_type == "target_short":
         query_intent = "간단한 사실 확인 질문"
         if global_explanation_ref:
@@ -613,19 +606,11 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
                     query = _shorten_target_query(query)
                 changes.append("질의 생성 완료")
 
-            rules_list: list[str] = []
+            rules_list: list[str] = rule_loader.get_rules_for_type(
+                normalized_qtype, DEFAULT_ANSWER_RULES
+            )
             rule_texts: list[str] = []
             if current_kg is not None:
-                try:
-                    constraints = current_kg.get_constraints_for_query_type(
-                        normalized_qtype
-                    )
-                    for c in constraints:
-                        desc = c.get("description")
-                        if desc:
-                            rules_list.append(desc)
-                except Exception as e:
-                    logger.debug("규칙 로드 실패: %s", e)
                 try:
                     kg_rules = current_kg.get_rules_for_query_type(normalized_qtype)
                     for r in kg_rules:
@@ -634,9 +619,6 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
                             rule_texts.append(txt)
                 except Exception as exc:
                     logger.debug("Rule 로드 실패: %s", exc)
-
-            if not rules_list:
-                rules_list = list(DEFAULT_ANSWER_RULES)
 
             length_constraint = ""
             if query_type == "target_short":
@@ -729,7 +711,9 @@ OCR에 없는 정보는 추가하지 마세요.
 
         elif workflow == "answer_generation":
             changes.append("답변 생성 요청")
-            rules_list = list(DEFAULT_ANSWER_RULES)
+            rules_list = rule_loader.get_rules_for_type(
+                normalized_qtype, DEFAULT_ANSWER_RULES
+            )
             answer_rule_texts: list[str] = []
             if current_kg is not None:
                 try:
@@ -941,12 +925,12 @@ OCR에 없는 정보는 추가하지 마세요.
 
     try:
         return await asyncio.wait_for(
-            _execute_workflow(), timeout=WORKSPACE_UNIFIED_TIMEOUT
+            _execute_workflow(), timeout=config.workspace_unified_timeout
         )
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
-            detail=f"워크플로우 시간 초과 ({WORKSPACE_UNIFIED_TIMEOUT}초). 다시 시도해주세요.",
+            detail=f"워크플로우 시간 초과 ({config.workspace_unified_timeout}초). 다시 시도해주세요.",
         )
     except Exception as e:
         logger.error("워크플로우 실행 실패: %s", e)

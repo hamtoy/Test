@@ -17,10 +17,8 @@ from src.analysis.cross_validation import CrossValidationSystem
 from src.config import AppConfig
 from src.config.constants import (
     DEFAULT_ANSWER_RULES,
-    QA_BATCH_GENERATION_TIMEOUT,
     QA_BATCH_TYPES,
     QA_GENERATION_OCR_TRUNCATE_LENGTH,
-    QA_SINGLE_GENERATION_TIMEOUT,
 )
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
@@ -182,7 +180,7 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
             try:
                 first_pair = await asyncio.wait_for(
                     generate_single_qa_with_retry(current_agent, ocr_text, first_type),
-                    timeout=QA_SINGLE_GENERATION_TIMEOUT,
+                    timeout=_get_config().qa_single_timeout,
                 )
                 results.append(first_pair)
                 first_query = first_pair.get("query", "")
@@ -211,7 +209,7 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
                     ],
                     return_exceptions=True,
                 ),
-                timeout=QA_BATCH_GENERATION_TIMEOUT,
+                timeout=_get_config().qa_batch_timeout,
             )
 
             for i, pair in enumerate(remaining_pairs):
@@ -233,13 +231,13 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
             raise HTTPException(status_code=400, detail="qtype이 필요합니다.")
         pair = await asyncio.wait_for(
             generate_single_qa(current_agent, ocr_text, body.qtype),
-            timeout=QA_SINGLE_GENERATION_TIMEOUT,
-        )
+                timeout=_get_config().qa_single_timeout,
+            )
         return {"mode": "single", "pair": pair}
 
     except asyncio.TimeoutError:
         timeout_msg = (
-            f"생성 시간 초과 ({QA_BATCH_GENERATION_TIMEOUT if body.mode == 'batch' else QA_SINGLE_GENERATION_TIMEOUT}초). "
+            f"생성 시간 초과 ({_get_config().qa_batch_timeout if body.mode == 'batch' else _get_config().qa_single_timeout}초). "
             "다시 시도해주세요."
         )
         raise HTTPException(status_code=504, detail=timeout_msg)
