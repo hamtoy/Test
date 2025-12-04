@@ -48,6 +48,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["workspace"])
 
 # Backward compatibility: keep global variables for modules that import them
+# TODO: Remove these in future release once all routers use ServiceRegistry exclusively
 _config: Optional[AppConfig] = None
 agent: Optional[GeminiAgent] = None
 kg: Optional[QAKnowledgeGraph] = None

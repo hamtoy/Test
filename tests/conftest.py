@@ -184,25 +184,17 @@ def mock_genai(
 @pytest.fixture(scope="function", autouse=True)
 def isolate_registry() -> Any:
     """각 테스트마다 레지스트리 격리."""
-    from src.web.service_registry import _registry
+    from src.web.service_registry import get_registry, reset_registry_for_test
+
+    registry = get_registry()
 
     # 현재 상태 백업
-    original_state = {
-        "config": _registry._config,
-        "agent": _registry._agent,
-        "kg": _registry._kg,
-        "pipeline": _registry._pipeline,
-    }
+    original_state = registry.get_state_for_test()
 
     # 테스트 전 초기화
-    from src.web.service_registry import reset_registry_for_test
-
     reset_registry_for_test()
 
     yield
 
     # 테스트 후 복원
-    _registry._config = original_state["config"]
-    _registry._agent = original_state["agent"]
-    _registry._kg = original_state["kg"]
-    _registry._pipeline = original_state["pipeline"]
+    registry.restore_state_for_test(original_state)

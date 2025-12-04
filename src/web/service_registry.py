@@ -102,6 +102,23 @@ class ServiceRegistry:
             self._pipeline = None
             logger.warning("ServiceRegistry cleared (test mode only)")
 
+    def get_state_for_test(self) -> dict[str, Any]:
+        """테스트용 - 현재 상태 가져오기."""
+        return {
+            "config": self._config,
+            "agent": self._agent,
+            "kg": self._kg,
+            "pipeline": self._pipeline,
+        }
+
+    def restore_state_for_test(self, state: dict[str, Any]) -> None:
+        """테스트용 - 상태 복원."""
+        with self._lock:
+            self._config = state.get("config")
+            self._agent = state.get("agent")
+            self._kg = state.get("kg")
+            self._pipeline = state.get("pipeline")
+
 
 # 전역 싱글톤 인스턴스
 _registry = ServiceRegistry()

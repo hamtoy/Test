@@ -297,7 +297,7 @@ class WorkspaceExecutor:
 
     # ===== 헬퍼 메서드 =====
 
-    def _get_query_intent(self, query_type: str, global_ref: str) -> Optional[str]:
+    def _get_query_intent(self, query_type: str, global_ref: str) -> str:
         """쿼리 타입별 인텐트 생성."""
         intents = {
             "target_short": "간단한 사실 확인 질문",
@@ -356,8 +356,6 @@ class WorkspaceExecutor:
 
     def _strip_output_tags(self, text: str) -> str:
         """<output> 태그 제거."""
-        import re
-
         text = re.sub(r"<output>|</output>", "", text, flags=re.IGNORECASE)
         return text.strip()
 
