@@ -23,9 +23,9 @@ MAX_PROMPT_LENGTH = 50000
 class GenerateQARequest(BaseModel):
     """Request model for QA generation endpoint."""
 
-    mode: Literal["batch", "single"] = Field(
+    mode: Literal["batch", "batch_three", "single"] = Field(
         default="batch",
-        description="Generation mode: 'batch' for all 4 types, 'single' for one type",
+        description="Generation mode: 'batch' for 4 types, 'batch_three' for 3 types, 'single' for one type",
     )
     ocr_text: Optional[str] = Field(
         default=None,
@@ -37,6 +37,13 @@ class GenerateQARequest(BaseModel):
     ] = Field(
         default=None,
         description="Question type for single mode",
+    )
+    batch_types: Optional[
+        List[Literal["global_explanation", "reasoning", "target_short", "target_long"]]
+    ] = Field(
+        default=None,
+        description="Optional custom batch types (first type runs first). "
+        "When omitted: batch→4종, batch_three→3종(explanation/reasoning/target_short).",
     )
 
 

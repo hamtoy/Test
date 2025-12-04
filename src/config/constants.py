@@ -65,6 +65,12 @@ QA_BATCH_TYPES: Final[List[str]] = [
     "target_short",
     "target_long",
 ]
+# Optional 3-type batch (global_explanation, reasoning, target_short)
+QA_BATCH_TYPES_THREE: Final[List[str]] = [
+    "global_explanation",
+    "reasoning",
+    "target_short",
+]
 
 # Workspace generation timeout settings (seconds)
 WORKSPACE_GENERATION_TIMEOUT: Final[int] = 90

@@ -19,6 +19,7 @@ from src.config.constants import (
     DEFAULT_ANSWER_RULES,
     QA_BATCH_GENERATION_TIMEOUT,
     QA_BATCH_TYPES,
+    QA_BATCH_TYPES_THREE,
     QA_GENERATION_OCR_TRUNCATE_LENGTH,
     QA_SINGLE_GENERATION_TIMEOUT,
     WORKSPACE_GENERATION_TIMEOUT,
@@ -221,10 +222,18 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
 
     try:
         start = datetime.now()
-        if body.mode == "batch":
+        if body.mode in {"batch", "batch_three"}:
             results: list[Dict[str, Any]] = []
 
-            first_type = QA_BATCH_TYPES[0]
+            batch_types = body.batch_types or QA_BATCH_TYPES
+            if body.mode == "batch_three" and body.batch_types is None:
+                batch_types = QA_BATCH_TYPES_THREE
+            if not batch_types:
+                raise HTTPException(
+                    status_code=400, detail="batch_types이 비어 있습니다."
+                )
+
+            first_type = batch_types[0]
             first_query: str = ""
 
             # 1단계: global_explanation 순차 생성
@@ -246,7 +255,7 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
                 )
 
             # 2단계: 나머지 타입 병렬 생성 (중복 방지용 previous_queries 전달)
-            remaining_types = QA_BATCH_TYPES[1:]
+            remaining_types = batch_types[1:]
             remaining_pairs = await asyncio.wait_for(
                 asyncio.gather(
                     *[

@@ -711,7 +711,8 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
             if reference_text:
                 dedup_section = f"""
 [중복 금지]
-다음 전체 설명문에 이미 나온 표현/숫자를 그대로 복사하지 말고, 필요한 경우 다른 문장으로 요약하세요:
+다음 전체 설명문에 이미 나온 표현/숫자를 그대로 복사하지 말고, 필요한 경우 다른 문장으로 요약하세요.
+전체 설명문에는 없지만 OCR 텍스트에만 등장하는 수치·사실은 꼭 포함하세요:
 ---
 {reference_text[:500]}
 ---"""
