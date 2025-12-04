@@ -73,26 +73,33 @@ def get_rules_from_neo4j(
     neo4j_user: str,
     neo4j_password: str,
 ) -> List[Dict[str, Any]]:
-    """Neo4j Rule 노드 조회 (APPLIES_TO 관계 또는 applies_to 속성)."""
+    """Neo4j Rule 노드 조회 (APPLIES_TO 관계 또는 query_type 속성)."""
     from neo4j import GraphDatabase
 
     driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
+
+    # APPLIES_TO 관계로 연결된 Rule과 query_type 속성이 일치하는 Rule을 UNION으로 결합
     cypher = """
-    MATCH (qt:QueryType {name: $qt})
-    OPTIONAL MATCH (r:Rule)-[:APPLIES_TO]->(qt)
-    WITH qt, collect(r) AS rules_rel
-    OPTIONAL MATCH (r2:Rule)
-    WHERE r2.applies_to IN ['all', $qt]
-    WITH rules_rel + collect(r2) AS rules
-    UNWIND rules AS r
-    WITH DISTINCT r
+    MATCH (r:Rule)-[:APPLIES_TO]->(qt:QueryType {name: $qt})
     RETURN
-        coalesce(r.name, '') AS name,
+        coalesce(r.name, r.id, '') AS name,
         coalesce(r.text, '') AS text,
         coalesce(r.category, '') AS category,
         coalesce(r.priority, 0) AS priority
+    
+    UNION
+    
+    MATCH (r:Rule)
+    WHERE r.query_type = $qt
+    RETURN
+        coalesce(r.name, r.id, '') AS name,
+        coalesce(r.text, '') AS text,
+        coalesce(r.category, '') AS category,
+        coalesce(r.priority, 0) AS priority
+    
     ORDER BY priority DESC
     """
+
     try:
         with driver.session() as session:
             records = session.run(cypher, qt=query_type)
