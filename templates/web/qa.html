@@ -140,6 +140,14 @@
             const payload = { mode, ocr_text: ocrText };
             if (mode === 'single') {
                 payload.qtype = qtype || 'global_explanation';
+            } else if (mode === 'batch_three') {
+                // 구버전 백엔드 호환: mode=batch로 보내고 batch_types로 3종 지정
+                payload.mode = 'batch';
+                payload.batch_types = [
+                    'global_explanation',
+                    'reasoning',
+                    'target_short',
+                ];
             }
 
             const result = await apiCall('/api/qa/generate', 'POST', payload);
