@@ -7,7 +7,7 @@ from src.agent.core import GeminiAgent
 from src.caching.redis_cache import RedisEvalCache
 from src.config.constants import DEFAULT_ANSWER_RULES
 from src.features.difficulty import AdaptiveDifficultyAdjuster
-from src.features.lats import LATSSearcher
+from src.features.lats import LATSSearcher, SearchState
 from src.features.self_correcting import SelfCorrectingQAChain
 from src.qa.rag_system import QAKnowledgeGraph
 
@@ -171,6 +171,20 @@ async def inspect_answer(
     else:
         # kg가 없으면 원본 answer 반환
         final_answer = answer
+
+    if lats is not None:
+        try:
+            initial_state = SearchState(
+                query=query,
+                ocr_text=ocr_text,
+                current_answer=final_answer,
+            )
+            best_node = await lats.run(initial_state=initial_state)
+            candidate = getattr(best_node.state, "current_answer", None)
+            if candidate:
+                final_answer = candidate
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("LATS search skipped: %s", exc)
 
     if query and validator:
         val_result = validator.cross_validate_qa_pair(
