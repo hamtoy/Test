@@ -142,21 +142,14 @@ def detect_workflow(
     if not has_query and not has_answer:
         return "full_generation"
 
-    if has_edit:
-        if has_query and has_answer:
-            return "edit_both"
-        if has_query:
-            return "edit_query"
-        if has_answer:
-            return "edit_answer"
-
-    if not has_query and has_answer:
-        return "query_generation"
+    if has_query and has_answer:
+        return "edit_both" if has_edit else "rewrite"
 
     if has_query and not has_answer:
-        return "answer_generation"
+        return "edit_query" if has_edit else "answer_generation"
 
-    return "rewrite"
+    # has_answer and not has_query: 질문만 생성 (edit_request는 힌트로만 사용)
+    return "query_generation"
 
 
 def postprocess_answer(answer: str, qtype: str) -> str:
