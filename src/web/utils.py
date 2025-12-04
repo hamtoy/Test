@@ -133,13 +133,13 @@ def detect_workflow(
     if not has_query and not has_answer:
         return "full_generation"
 
-    if has_answer and has_edit:
+    if has_edit:
+        if has_query and has_answer:
+            return "edit_both"
         if has_query:
-            return "edit_answer"  # Prioritize editing answer only, preserving query
-        return "edit_answer"
-
-    if has_query and not has_answer:
-        return "answer_generation"
+            return "edit_query"
+        if has_answer:
+            return "edit_answer"
 
     if not has_query and has_answer:
         return "query_generation"
