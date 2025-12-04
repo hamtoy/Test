@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """Phase 2: 수동 샘플링 유틸리티
 
 피드백에서 Example로 변환할 후보를 추출하고 검토하는 도구

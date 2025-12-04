@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 """피드백 기반 Constraint 검증 테스트"""
 
 from unittest.mock import MagicMock

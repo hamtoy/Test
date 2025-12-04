@@ -1,12 +1,22 @@
 import os
 
 from dotenv import load_dotenv
-from neo4j import GraphDatabase
+from neo4j import GraphDatabase, Driver, Record
 
 load_dotenv()
 
-driver = GraphDatabase.driver(
-    os.getenv("NEO4J_URI"), auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD"))
+
+def require_env(key: str) -> str:
+    """Fetch required env var or raise."""
+    value = os.getenv(key)
+    if not value:
+        raise RuntimeError(f"Missing environment variable: {key}")
+    return value
+
+
+driver: Driver = GraphDatabase.driver(
+    require_env("NEO4J_URI"),
+    auth=(require_env("NEO4J_USER"), require_env("NEO4J_PASSWORD")),
 )
 
 with driver.session() as session:
@@ -60,11 +70,14 @@ with driver.session() as session:
                count(DISTINCT c) AS constraints,
                count(DISTINCT f) AS feedbacks
     """)
-    stats = result.single()
-    print(f"  카테고리: {stats['categories']}개")
-    print(f"  생성된 Rule: {stats['rules']}개")
-    print(f"  생성된 Constraint: {stats['constraints']}개")
-    print(f"  전체 피드백: {stats['feedbacks']}개")
+    stats: Record | None = result.single()
+    if stats:
+        print(f"  카테고리: {stats['categories']}개")
+        print(f"  생성된 Rule: {stats['rules']}개")
+        print(f"  생성된 Constraint: {stats['constraints']}개")
+        print(f"  전체 피드백: {stats['feedbacks']}개")
+    else:
+        print("  통계 결과를 조회하지 못했습니다.")
 
 driver.close()
 print("\n✅ 검증 완료!")
