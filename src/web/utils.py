@@ -136,9 +136,10 @@ def detect_workflow(
     if has_edit:
         if has_query and has_answer:
             return "edit_both"
-        if has_query:
-            return "edit_query"
-        if has_answer:
+        if has_query and not has_answer:
+            # 답변이 없는데 수정 요청만 있는 경우에는 답변 생성으로 간주
+            return "answer_generation"
+        if has_answer and not has_query:
             return "edit_answer"
 
     if not has_query and has_answer:
