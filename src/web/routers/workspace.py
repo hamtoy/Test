@@ -19,7 +19,13 @@ from checks.detect_forbidden_patterns import find_violations
 from src.agent import GeminiAgent
 from src.analysis.cross_validation import CrossValidationSystem
 from src.config import AppConfig
-from src.config.constants import DEFAULT_ANSWER_RULES
+from src.config.constants import (
+    DEFAULT_ANSWER_RULES,
+    QA_BATCH_GENERATION_TIMEOUT,
+    QA_SINGLE_GENERATION_TIMEOUT,
+    WORKSPACE_GENERATION_TIMEOUT,
+    WORKSPACE_UNIFIED_TIMEOUT,
+)
 from src.qa.rule_loader import RuleLoader
 from src.qa.validator import UnifiedValidator
 from src.qa.pipeline import IntegratedQAPipeline

@@ -17,8 +17,12 @@ from src.analysis.cross_validation import CrossValidationSystem
 from src.config import AppConfig
 from src.config.constants import (
     DEFAULT_ANSWER_RULES,
+    QA_BATCH_GENERATION_TIMEOUT,
     QA_BATCH_TYPES,
     QA_GENERATION_OCR_TRUNCATE_LENGTH,
+    QA_SINGLE_GENERATION_TIMEOUT,
+    WORKSPACE_GENERATION_TIMEOUT,
+    WORKSPACE_UNIFIED_TIMEOUT,
 )
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rule_loader import RuleLoader
