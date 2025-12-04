@@ -269,9 +269,7 @@ async def api_generate_answer_from_query(body: Dict[str, Any]) -> Dict[str, Any]
     normalized_qtype = QTYPE_MAP.get(query_type, "explanation")
 
     rule_loader = RuleLoader(current_kg)
-    rules_list = rule_loader.get_rules_for_type(
-        normalized_qtype, DEFAULT_ANSWER_RULES
-    )
+    rules_list = rule_loader.get_rules_for_type(normalized_qtype, DEFAULT_ANSWER_RULES)
 
     try:
         rules_text = "\n".join(f"- {r}" for r in rules_list)
@@ -321,7 +319,9 @@ OCR에 없는 정보는 추가하지 마세요.
 
         duration = (datetime.now() - meta_start).total_seconds()
         meta = APIMetadata(duration=duration)
-        return build_response({"query": query, "answer": answer}, metadata=meta, config=config)
+        return build_response(
+            {"query": query, "answer": answer}, metadata=meta, config=config
+        )
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
@@ -363,7 +363,9 @@ async def api_generate_query_from_answer(body: Dict[str, Any]) -> Dict[str, Any]
 
         duration = (datetime.now() - meta_start).total_seconds()
         meta = APIMetadata(duration=duration)
-        return build_response({"query": query, "answer": answer}, metadata=meta, config=config)
+        return build_response(
+            {"query": query, "answer": answer}, metadata=meta, config=config
+        )
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,

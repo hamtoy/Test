@@ -275,8 +275,8 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
             raise HTTPException(status_code=400, detail="qtype이 필요합니다.")
         pair = await asyncio.wait_for(
             generate_single_qa(current_agent, ocr_text, body.qtype),
-                timeout=_get_config().qa_single_timeout,
-            )
+            timeout=_get_config().qa_single_timeout,
+        )
         duration = (datetime.now() - start).total_seconds()
         meta = APIMetadata(duration=duration)
         return build_response(
@@ -527,7 +527,9 @@ async def generate_single_qa(
                 logger.info("누락 가능성 있는 규칙: %s", missing_rules)
 
         if val_result.has_errors():
-            all_violations.extend([v.get("type", "rule") for v in val_result.violations])
+            all_violations.extend(
+                [v.get("type", "rule") for v in val_result.violations]
+            )
         if val_result.warnings:
             all_issues.extend(val_result.warnings)
 

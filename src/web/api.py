@@ -66,9 +66,7 @@ if os.getenv("ENABLE_STRUCT_LOGGING", "").lower() == "true":
     try:
         setup_structured_logging(os.getenv("LOG_LEVEL", "INFO"))
     except Exception as exc:  # noqa: BLE001
-        logging.getLogger(__name__).warning(
-            "Structured logging init failed: %s", exc
-        )
+        logging.getLogger(__name__).warning("Structured logging init failed: %s", exc)
 
 
 def _get_request_id(request: Request) -> str:
