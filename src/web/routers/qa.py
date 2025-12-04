@@ -113,12 +113,7 @@ def _get_agent() -> Optional[GeminiAgent]:
             return api_module.agent
     except Exception:
         pass
-    try:
-        from src.web import dependencies
-
-        return dependencies.get_agent()
-    except Exception:
-        return agent
+    return agent
 
 
 def _get_pipeline() -> Optional[IntegratedQAPipeline]:
@@ -129,12 +124,7 @@ def _get_pipeline() -> Optional[IntegratedQAPipeline]:
             return api_module.pipeline
     except Exception:
         pass
-    try:
-        from src.web import dependencies
-
-        return dependencies.get_pipeline()
-    except Exception:
-        return pipeline
+    return pipeline
 
 
 def _get_kg() -> Optional[QAKnowledgeGraph]:
@@ -145,12 +135,7 @@ def _get_kg() -> Optional[QAKnowledgeGraph]:
             return api_module.kg
     except Exception:
         pass
-    try:
-        from src.web import dependencies
-
-        return dependencies.get_knowledge_graph()
-    except Exception:
-        return kg
+    return kg
 
 
 def _get_config() -> AppConfig:
