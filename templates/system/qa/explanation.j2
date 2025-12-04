@@ -4,7 +4,7 @@ Korean while preserving named entities, economic terms, and numeric values exact
 
 ## 준수해야 할 규칙
 {% for rule in rules | default([]) -%}
-- {{ rule }}
+- {{ rule.text | default(rule) }}
 {% endfor %}
 
 {% for constraint in constraints | default([]) -%}

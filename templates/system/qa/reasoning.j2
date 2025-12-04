@@ -9,7 +9,7 @@ explicitly stated) over type-2 (confirmation of stated forecast). Use only evide
 
 ## 준수해야 할 규칙
 {% for rule in rules | default([]) -%}
-- {{ rule }}
+- {{ rule.text | default(rule) }}
 {% endfor %}
 
 {% for constraint in constraints | default([]) -%}

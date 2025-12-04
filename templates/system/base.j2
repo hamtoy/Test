@@ -4,7 +4,7 @@ You are a text-image QA expert following strict guidelines from a knowledge grap
 
 ### Rules ({{ rules | default([]) | length }} items)
 {% for rule in rules | default([]) -%}
-- {{ rule }}
+- {{ rule.text | default(rule) }}
 {% else -%}
 - (none)
 {% endfor %}
@@ -31,7 +31,7 @@ You are a text-image QA expert following strict guidelines from a knowledge grap
 ❌ Bad: {{ example.text }}
 {% endif -%}
 {% else -%}
- - (none)
+- (none)
 {% endfor %}
 
 ## Context

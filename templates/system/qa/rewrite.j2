@@ -23,9 +23,9 @@ named entities, economic terms, and numeric values exactly.
 {% if constraint.priority < 90 %} - [Priority {{ constraint.priority }}] **{{ constraint.name }}**: {{
     constraint.description }} {% endif %} {% endfor %} {% endif %} {% endif %} {% if length_constraint %} ## ⚠️ 길이 제약
     (엄격히 준수) ⚠️ {{ length_constraint }} **답변 작성 후 반드시 검증:** 1. 마침표(.)로 문장 개수 세기 2. 제한 초과 시 가장 덜 중요한 문장 삭제 3. 재검증 후 제출 {%
-    endif %} {% if rules %} ## 준수해야 할 규칙 {% for rule in rules | default([]) -%} - {{ rule }} {% endfor %} {% endif %} {%
-    if guide_rules %} ## 📚 작업 가이드 (상세 규칙) {% for guide in guide_rules %} ### {{ guide.title }} {{ guide.content[:500]
-    }}{% if guide.content|length> 500 %}...{% endif %}
+    endif %} {% if rules %} ## 준수해야 할 규칙 {% for rule in rules | default([]) -%} - {{ rule.text | default(rule) }} {%
+    endfor %} {% endif %} {% if guide_rules %} ## 📚 작업 가이드 (상세 규칙) {% for guide in guide_rules %} ### {{ guide.title }}
+    {{ guide.content[:500] }}{% if guide.content|length> 500 %}...{% endif %}
 
     {% endfor %}
     {% endif %}
