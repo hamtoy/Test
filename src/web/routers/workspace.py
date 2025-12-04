@@ -121,8 +121,11 @@ def _get_config() -> AppConfig:
             ("workspace_timeout", WORKSPACE_GENERATION_TIMEOUT),
             ("workspace_unified_timeout", WORKSPACE_UNIFIED_TIMEOUT),
         ]:
-            if not hasattr(cfg, name):
-                setattr(cfg, name, default)
+            try:
+                value = int(getattr(cfg, name, default))
+            except Exception:
+                value = default
+            setattr(cfg, name, value)
         return cfg
     except Exception:
         try:

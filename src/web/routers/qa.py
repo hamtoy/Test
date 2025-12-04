@@ -145,14 +145,18 @@ def _get_config() -> AppConfig:
         cfg_raw = getattr(api_module, "config", None) or _config
         if cfg_raw is not None:
             cfg = cast(AppConfig, cfg_raw)
+            # Ensure numeric timeouts even when patched with MagicMock
             for name, default in [
                 ("qa_single_timeout", QA_SINGLE_GENERATION_TIMEOUT),
                 ("qa_batch_timeout", QA_BATCH_GENERATION_TIMEOUT),
                 ("workspace_timeout", WORKSPACE_GENERATION_TIMEOUT),
                 ("workspace_unified_timeout", WORKSPACE_UNIFIED_TIMEOUT),
             ]:
-                if not hasattr(cfg, name):
-                    setattr(cfg, name, default)
+                try:
+                    value = int(getattr(cfg, name, default))
+                except Exception:
+                    value = default
+                setattr(cfg, name, value)
             return cfg
     except Exception:
         if _config is not None:
