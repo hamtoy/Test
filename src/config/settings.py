@@ -60,6 +60,10 @@ class AppConfig(BaseSettings):
     local_cache_dir: str = Field(".cache", alias="LOCAL_CACHE_DIR")
     budget_limit_usd: float | None = Field(None, alias="BUDGET_LIMIT_USD")
     cache_min_tokens: int = Field(MIN_CACHE_TOKENS, alias="GEMINI_CACHE_MIN_TOKENS")
+    # Standardized API response toggle
+    enable_standard_response: bool = Field(
+        False, alias="ENABLE_STANDARD_RESPONSE"
+    )
     # Timeout overrides (environment can override; defaults keep backward compatibility)
     qa_single_timeout: int = Field(
         QA_SINGLE_GENERATION_TIMEOUT, alias="QA_SINGLE_TIMEOUT"

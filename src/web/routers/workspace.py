@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+from datetime import datetime
 import logging
 import re
 from typing import TYPE_CHECKING, Any, Dict, Optional
@@ -24,6 +25,7 @@ from src.qa.validator import UnifiedValidator
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
 from src.web.models import UnifiedWorkspaceRequest, WorkspaceRequest
+from src.web.response import APIMetadata, build_response
 from src.web.utils import (
     QTYPE_MAP,
     detect_workflow,
@@ -171,6 +173,7 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
     config = _get_config()
     ocr_text = load_ocr_text(config)
     rule_loader = RuleLoader(current_kg)
+    meta_start = datetime.now()
 
     async def _run_workspace() -> Dict[str, Any]:
         if body.mode == "inspect":
@@ -235,9 +238,12 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
         }
 
     try:
-        return await asyncio.wait_for(
+        result = await asyncio.wait_for(
             _run_workspace(), timeout=config.workspace_timeout
         )
+        duration = (datetime.now() - meta_start).total_seconds()
+        meta = APIMetadata(duration=duration)
+        return build_response(result, metadata=meta, config=config)
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
@@ -259,6 +265,8 @@ async def api_generate_answer_from_query(body: Dict[str, Any]) -> Dict[str, Any]
     query = body.get("query", "")
     config = _get_config()
     ocr_text = body.get("ocr_text") or load_ocr_text(config)
+    meta_start = datetime.now()
+    meta_start = datetime.now()
     query_type = body.get("query_type", "explanation")
     normalized_qtype = QTYPE_MAP.get(query_type, "explanation")
 
@@ -312,7 +320,9 @@ OCR에 없는 정보는 추가하지 마세요.
             )
             answer = strip_output_tags(answer)
 
-        return {"query": query, "answer": answer}
+        duration = (datetime.now() - meta_start).total_seconds()
+        meta = APIMetadata(duration=duration)
+        return build_response({"query": query, "answer": answer}, metadata=meta, config=config)
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
@@ -351,7 +361,9 @@ async def api_generate_query_from_answer(body: Dict[str, Any]) -> Dict[str, Any]
         )
         query = queries[0] if queries else "질문 생성 실패"
 
-        return {"query": query, "answer": answer}
+        duration = (datetime.now() - meta_start).total_seconds()
+        meta = APIMetadata(duration=duration)
+        return build_response({"query": query, "answer": answer}, metadata=meta, config=config)
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
@@ -523,6 +535,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
     current_pipeline = _get_pipeline()
     config = _get_config()
     unified_validator = UnifiedValidator(current_kg, current_pipeline)
+    meta_start = datetime.now()
     if current_agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
@@ -965,9 +978,12 @@ OCR에 없는 정보는 추가하지 마세요.
         }
 
     try:
-        return await asyncio.wait_for(
+        result = await asyncio.wait_for(
             _execute_workflow(), timeout=config.workspace_unified_timeout
         )
+        duration = (datetime.now() - meta_start).total_seconds()
+        meta = APIMetadata(duration=duration)
+        return build_response(result, metadata=meta, config=config)
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
