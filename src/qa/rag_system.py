@@ -30,7 +30,10 @@ from src.qa.graph.utils import (
     len_if_sized,
     record_vector_metrics,
 )
-from src.qa.graph.validators import validate_session_structure, validate_turns  # noqa: F401
+from src.qa.graph.validators import (  # noqa: F401
+    validate_session_structure,
+    validate_turns,
+)
 
 logger = logging.getLogger(__name__)
 __all__ = ["QAKnowledgeGraph", "CustomGeminiEmbeddings"]
@@ -183,14 +186,36 @@ class QAKnowledgeGraph:
         - QueryType-[:HAS_CONSTRAINT]->Constraint 관계 사용
         """
         cypher = """
+        // 1. QueryType 연결 Constraint
         MATCH (qt:QueryType {name: $qt})-[:HAS_CONSTRAINT]->(c:Constraint)
         RETURN 
-            c.name AS name,
+            c.id AS id,
+            c.type AS type,
             c.description AS description,
+            c.pattern AS pattern,
+            c.severity AS severity,
+            c.max_repetition AS max_repetition,
+            c.rules AS rules,
             c.priority AS priority,
             c.category AS category,
             c.applies_to AS applies_to
-        ORDER BY c.priority DESC
+        
+        UNION
+        
+        // 2. 피드백 기반 Constraint
+        MATCH (c:Constraint)
+        WHERE c.source STARTS WITH 'feedback_'
+        RETURN 
+            c.id AS id,
+            c.type AS type,
+            c.description AS description,
+            c.pattern AS pattern,
+            c.severity AS severity,
+            c.max_repetition AS max_repetition,
+            c.rules AS rules,
+            c.priority AS priority,
+            c.category AS category,
+            c.applies_to AS applies_to
         """
         provider = getattr(self, "_graph_provider", None)
         # 웹 컨텍스트 등에서 이벤트 루프 충돌을 막기 위해 sync 드라이버를 우선 사용
@@ -231,17 +256,37 @@ class QAKnowledgeGraph:
         MATCH (qt:QueryType {name: $qt})
         OPTIONAL MATCH (r:Rule)-[:APPLIES_TO]->(qt)
         WITH qt, collect(r) AS rules_rel
+        
         OPTIONAL MATCH (r2:Rule)
         WHERE r2.applies_to IN ['all', $qt]
-        WITH qt, rules_rel + collect(r2) AS rules
+        WITH qt, rules_rel, collect(r2) AS rules_attr
+        
+        OPTIONAL MATCH (r3:Rule)
+        WHERE r3.source = 'feedback_analysis'
+        WITH
+            qt,
+            coalesce(rules_rel, []) AS rules_rel,
+            coalesce(rules_attr, []) AS rules_attr,
+            collect(r3) AS rules_feedback
+        WITH qt, rules_rel + rules_attr + coalesce(rules_feedback, []) AS rules
+        
         UNWIND rules AS r
         WITH DISTINCT r
         RETURN
+            coalesce(r.id, r.name) AS id,
             coalesce(r.name, '') AS name,
             coalesce(r.text, '') AS text,
             coalesce(r.category, '') AS category,
-            coalesce(r.priority, 0) AS priority
-        ORDER BY priority DESC
+            coalesce(r.priority, 0) AS priority,
+            r.source AS source
+        ORDER BY 
+            CASE r.priority
+                WHEN 'critical' THEN 4
+                WHEN 'high' THEN 3
+                WHEN 'medium' THEN 2
+                ELSE 1
+            END DESC,
+            priority DESC
         """
 
         provider = getattr(self, "_graph_provider", None)
