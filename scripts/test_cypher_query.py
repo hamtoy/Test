@@ -141,8 +141,9 @@ try:
         WITH qt, collect(r) AS rules_rel
         OPTIONAL MATCH (r2:Rule)
         WHERE r2.applies_to IN ['all', $qt]
-        WITH qt, rules_rel + collect(r2) AS rules
-        UNWIND rules AS r
+        WITH rules_rel, collect(r2) AS rules_applies
+        WITH rules_rel + rules_applies AS all_rules
+        UNWIND all_rules AS r
         WITH DISTINCT r
         RETURN
             coalesce(r.name, '') AS name,
