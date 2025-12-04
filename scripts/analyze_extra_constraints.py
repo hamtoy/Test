@@ -5,14 +5,15 @@ schema.py에 정의된 4개 외 12개 노드가 어디서 왔는지 확인.
 
 import os
 import sys
+from typing import Optional
 
 from neo4j import GraphDatabase
 
-uri = os.getenv("NEO4J_URI")
-username = os.getenv("NEO4J_USERNAME") or os.getenv("NEO4J_USER")
-password = os.getenv("NEO4J_PASSWORD")
+uri: Optional[str] = os.getenv("NEO4J_URI")
+username: Optional[str] = os.getenv("NEO4J_USERNAME") or os.getenv("NEO4J_USER")
+password: Optional[str] = os.getenv("NEO4J_PASSWORD")
 
-if not all([uri, username, password]):
+if not uri or not username or not password:
     print("❌ Neo4j 접속 정보가 설정되지 않았습니다.")
     sys.exit(1)
 

@@ -2,14 +2,15 @@
 
 import os
 import sys
+from typing import Optional
 
 from neo4j import GraphDatabase
 
-uri = os.getenv("NEO4J_URI")
-username = os.getenv("NEO4J_USERNAME") or os.getenv("NEO4J_USER")
-password = os.getenv("NEO4J_PASSWORD")
+uri: Optional[str] = os.getenv("NEO4J_URI")
+username: Optional[str] = os.getenv("NEO4J_USERNAME") or os.getenv("NEO4J_USER")
+password: Optional[str] = os.getenv("NEO4J_PASSWORD")
 
-if not all([uri, username, password]):
+if not uri or not username or not password:
     print("❌ Neo4j 접속 정보가 설정되지 않았습니다.")
     sys.exit(1)
 
@@ -65,10 +66,13 @@ try:
         """)
 
         stats = result.single()
-        print(f"\n총 Rule 노드: {stats['total']}개")
-        print(f"  - Constraint에서 변환: {stats['converted']}개")
-        print(f"  - query_type 있음: {stats['with_qt']}개")
-        print(f"  - query_type 없음: {stats['without_qt']}개")
+        if stats is None:
+            print("\nRule 통계 조회 실패 (결과 없음)")
+        else:
+            print(f"\n총 Rule 노드: {stats['total']}개")
+            print(f"  - Constraint에서 변환: {stats['converted']}개")
+            print(f"  - query_type 있음: {stats['with_qt']}개")
+            print(f"  - query_type 없음: {stats['without_qt']}개")
 
         # query_type 분포
         print("\nquery_type 분포:")

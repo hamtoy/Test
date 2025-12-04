@@ -2,14 +2,15 @@
 
 import os
 import sys
+from typing import Optional
 
 from neo4j import GraphDatabase
 
-uri = os.getenv("NEO4J_URI")
-username = os.getenv("NEO4J_USERNAME") or os.getenv("NEO4J_USER")
-password = os.getenv("NEO4J_PASSWORD")
+uri: Optional[str] = os.getenv("NEO4J_URI")
+username: Optional[str] = os.getenv("NEO4J_USERNAME") or os.getenv("NEO4J_USER")
+password: Optional[str] = os.getenv("NEO4J_PASSWORD")
 
-if not all([uri, username, password]):
+if not uri or not username or not password:
     print("❌ Neo4j 접속 정보가 설정되지 않았습니다.")
     sys.exit(1)
 
@@ -112,7 +113,8 @@ try:
             WHERE c.query_type IN ['summary', 'target_short', 'target_long']
             RETURN count(c) as cnt
         """)
-        missing_cnt = result.single()["cnt"]
+        missing_record = result.single()
+        missing_cnt = missing_record["cnt"] if missing_record else 0
 
         if missing_cnt == 0:
             print(

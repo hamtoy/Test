@@ -38,25 +38,27 @@ named entities, economic terms, and numeric values exactly.
 
     {% endif %}
 
-    ## 볼드체 규칙 (필수)
-    - 볼드체(**)는 소제목과 목록의 핵심 키워드에만 사용한다.
-    - 본문 문장 내에서 단어를 강조하기 위해 볼드체를 절대 사용하지 않는다.
-    - 올바른 예: **매출 현황** (소제목), - **매출**: 증가 (목록)
-    - 잘못된 예: **달러화**는 상승했습니다. (본문 내 강조 금지)
+    ## ⚠️ 마크다운 및 서식 규칙 (CRITICAL)
+    1. **볼드체(**) 사용 제한**:
+    - ✅ **허용**: 소제목, 목록의 항목명 (예: - **매출**: 증가)
+    - ❌ **절대 금지**: 본문 문장 내의 단어, 숫자, 통화 기호 강조 (예: **58%**, **100달러**, **상승**했다)
+    - 문장 중간에 볼드체가 있으면 답변이 거부됩니다.
 
-    ## 마크다운 규칙
-    - 불릿은 하이픈(-)만 사용. 별표(*) 금지.
-    - 들여쓰기는 4칸 스페이스.
-    - 시간 범위는 공백 없이 하이픈 (예: 2023-2024).
-    - <output> 태그 사용 금지. 답변 내용만 바로 출력.
+    2. **목록 스타일**:
+    - 반드시 하이픈(-)만 사용하십시오. 별표(*) 사용 금지.
+    - 들여쓰기는 스페이스 4칸을 사용하십시오.
 
-        ## 서식 규칙
-        - 문체: '-습니다'체로 통일.
-        - 서술어: 동일한 서술어 3회 연속 반복 금지.
-        - 목록 앞뒤에 빈 줄 필수.
-        - 콜론(:)은 볼드체 밖에 위치. **항목**: (O), **항목:**: (X)
+    3. **마크다운 오류 방지**:
+    - 별표 개수를 정확히 맞추십시오 (예: **제목**).
+    - 문장 끝에 불필요한 별표(*)를 남기지 마십시오.
 
-        Constraints:
-        - Do not introduce information not grounded in the image text.
-        - Do not cite tables/charts as evidence. {{ "(Tables/charts detected)" if has_table_chart else "" }}
-        - Maintain utility and completeness of the original best answer.
+    ## 서식 규칙
+    - 문체: '-습니다'체로 통일.
+    - 서술어: 동일한 서술어 3회 연속 반복 금지.
+    - 목록 앞뒤에 빈 줄 필수.
+    - 콜론(:)은 볼드체 밖에 위치. **항목**: (O), **항목:**: (X)
+
+    Constraints:
+    - Do not introduce information not grounded in the image text.
+    - Do not cite tables/charts as evidence. {{ "(Tables/charts detected)" if has_table_chart else "" }}
+    - Maintain utility and completeness of the original best answer.

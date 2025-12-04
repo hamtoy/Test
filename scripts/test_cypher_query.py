@@ -2,14 +2,15 @@
 
 import os
 import sys
+from typing import Optional
 
 from neo4j import GraphDatabase
 
-uri = os.getenv("NEO4J_URI")
-username = os.getenv("NEO4J_USERNAME") or os.getenv("NEO4J_USER")
-password = os.getenv("NEO4J_PASSWORD")
+uri: Optional[str] = os.getenv("NEO4J_URI")
+username: Optional[str] = os.getenv("NEO4J_USERNAME") or os.getenv("NEO4J_USER")
+password: Optional[str] = os.getenv("NEO4J_PASSWORD")
 
-if not all([uri, username, password]):
+if not uri or not username or not password:
     print("❌ Neo4j 접속 정보가 설정되지 않았습니다.")
     sys.exit(1)
 
@@ -50,7 +51,8 @@ try:
             qt=query_type,
         )
 
-        cnt = result.single()["cnt"]
+        cnt_record = result.single()
+        cnt = cnt_record["cnt"] if cnt_record else 0
         print(f"   {cnt}개")
 
         if cnt > 0:
@@ -79,7 +81,8 @@ try:
             qt=query_type,
         )
 
-        cnt = result.single()["cnt"]
+        cnt_record = result.single()
+        cnt = cnt_record["cnt"] if cnt_record else 0
         print(f"   {cnt}개")
 
         if cnt > 0:
@@ -109,7 +112,8 @@ try:
             qt=query_type,
         )
 
-        cnt = result.single()["cnt"]
+        cnt_record = result.single()
+        cnt = cnt_record["cnt"] if cnt_record else 0
         print(f"   {cnt}개")
 
         if cnt > 0:
