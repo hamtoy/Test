@@ -98,34 +98,7 @@ def final_verification():
             print("-" * 30)
 
             for qt in query_types:
-                # template_rules.py의 로직과 동일한 쿼리
-                cypher = """
-                MATCH (r:Rule)-[:APPLIES_TO]->(qt:QueryType {name: $qt})
-                RETURN count(r) as cnt
-                UNION
-                MATCH (r:Rule)
-                WHERE r.query_type = $qt
-                RETURN count(r) as cnt
-                """
-                # Note: UNION in Cypher removes duplicates if they exist in both sets (though here sets are disjoint)
-                # But to get total count correctly with UNION, we need to sum them up or use UNION ALL if we wanted duplicates.
-                # Actually, the python code uses UNION which returns distinct rows.
-                # Let's use the exact logic: get all nodes and count distinct.
-
-                sim_cypher = """
-                CALL {
-                    MATCH (r:Rule)-[:APPLIES_TO]->(qt:QueryType {name: $qt})
-                    RETURN r
-                    UNION
-                    MATCH (r:Rule)
-                    WHERE r.query_type = $qt
-                    RETURN r
-                }
-                RETURN count(r) as total_cnt
-                """
-
-                # Neo4j 4.x/5.x compatibility for UNION in subquery might vary, let's use the list approach from python code
-                # Simulating python logic:
+                # template_rules.py와 동일한 UNION 로직을 직접 실행해 개수를 센다.
                 res = session.run(
                     """
                     MATCH (r:Rule)-[:APPLIES_TO]->(qt:QueryType {name: $qt})
