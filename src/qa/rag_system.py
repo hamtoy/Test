@@ -219,6 +219,60 @@ class QAKnowledgeGraph:
         return run_async_safely(_run())
 
     @measure_latency(
+        "get_rules_for_query_type",
+        get_extra=lambda args, kwargs, result, success, elapsed_ms: {
+            "query_type": kwargs.get("query_type", args[1]),
+            "result_count": len_if_sized(result),
+        },
+    )
+    def get_rules_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
+        """Rule 노드 조회 (APPLIES_TO 관계 또는 applies_to 속성 기반)."""
+        cypher = """
+        MATCH (qt:QueryType {name: $qt})
+        OPTIONAL MATCH (r:Rule)-[:APPLIES_TO]->(qt)
+        WITH qt, collect(r) AS rules_rel
+        OPTIONAL MATCH (r2:Rule)
+        WHERE r2.applies_to IN ['all', $qt]
+        WITH qt, rules_rel + collect(r2) AS rules
+        UNWIND rules AS r
+        WITH DISTINCT r
+        RETURN
+            coalesce(r.name, '') AS name,
+            coalesce(r.text, '') AS text,
+            coalesce(r.category, '') AS category,
+            coalesce(r.priority, 0) AS priority
+        ORDER BY priority DESC
+        """
+
+        provider = getattr(self, "_graph_provider", None)
+        if self._graph is not None:
+            try:
+                with self._graph.session() as session:
+                    records = session.run(cypher, qt=query_type)
+                    return [dict(r) for r in records]
+            except (Neo4jError, ServiceUnavailable) as exc:
+                logger.warning("Rule query failed (sync): %s", exc)
+
+        if provider is None:
+            logger.warning("No graph provider available for rules")
+            return []
+
+        async def _run() -> List[Dict[str, Any]]:
+            try:
+                async with provider.session() as session:
+                    result = await session.run(cypher, qt=query_type)
+                    if hasattr(result, "__aiter__"):
+                        records = [record async for record in result]
+                    else:
+                        records = list(result)
+                    return [dict(r) for r in records]
+            except (Neo4jError, ServiceUnavailable) as exc:
+                logger.warning("Rule query failed (async): %s", exc)
+                return []
+
+        return run_async_safely(_run())
+
+    @measure_latency(
         "get_best_practices",
         get_extra=lambda args, kwargs, result, success, elapsed_ms: {
             "query_type": kwargs.get("query_type", args[1]),

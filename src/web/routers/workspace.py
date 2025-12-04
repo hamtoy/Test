@@ -410,6 +410,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
                 changes.append("질의 생성 완료")
 
             rules_list: list[str] = []
+            rule_texts: list[str] = []
             if current_kg is not None:
                 try:
                     constraints = current_kg.get_constraints_for_query_type(
@@ -421,6 +422,14 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
                             rules_list.append(desc)
                 except Exception as e:
                     logger.debug("규칙 로드 실패: %s", e)
+                try:
+                    kg_rules = current_kg.get_rules_for_query_type(normalized_qtype)
+                    for r in kg_rules:
+                        txt = r.get("text")
+                        if txt:
+                            rule_texts.append(txt)
+                except Exception as exc:
+                    logger.debug("Rule 로드 실패: %s", exc)
 
             if not rules_list:
                 rules_list = list(DEFAULT_ANSWER_RULES)
@@ -444,6 +453,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
 ---"""
 
             rules_text = "\n".join(f"- {r}" for r in rules_list)
+            extra_rules_text = "\n".join(f"- {t}" for t in rule_texts[:5])
             prompt = f"""[지시사항]
 반드시 한국어로 답변하세요.
 OCR에 없는 정보는 추가하지 마세요.
@@ -452,6 +462,7 @@ OCR에 없는 정보는 추가하지 마세요.
 
 [준수 규칙]
 {rules_text}
+{extra_rules_text}
 
 [OCR 텍스트]
 {ocr_text[:3000]}
@@ -484,7 +495,29 @@ OCR에 없는 정보는 추가하지 마세요.
         elif workflow == "answer_generation":
             changes.append("답변 생성 요청")
             rules_list = list(DEFAULT_ANSWER_RULES)
+            answer_rule_texts: list[str] = []
+            if current_kg is not None:
+                try:
+                    constraints = current_kg.get_constraints_for_query_type(
+                        normalized_qtype
+                    )
+                    for c in constraints:
+                        desc = c.get("description")
+                        if desc:
+                            rules_list.append(desc)
+                except Exception as exc:
+                    logger.debug("규칙 로드 실패: %s", exc)
+                try:
+                    kg_rules = current_kg.get_rules_for_query_type(normalized_qtype)
+                    for r in kg_rules:
+                        txt = r.get("text")
+                        if txt:
+                            answer_rule_texts.append(txt)
+                except Exception as exc:
+                    logger.debug("Rule 로드 실패: %s", exc)
+
             rules_text = "\n".join(f"- {r}" for r in rules_list)
+            extra_rules_text = "\n".join(f"- {t}" for t in answer_rule_texts[:5])
             length_constraint = ""
             if query_type == "target_short":
                 length_constraint = "답변은 불릿·마크다운(볼드/기울임) 없이 한 문장으로, 최대 50단어 이내로 작성하세요."
@@ -512,6 +545,7 @@ OCR에 없는 정보는 추가하지 마세요.
 
 [준수 규칙]
 {rules_text}
+{extra_rules_text}
 
 [OCR 텍스트]
 {ocr_text[:3000]}
