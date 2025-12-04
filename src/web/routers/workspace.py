@@ -363,7 +363,7 @@ async def _generate_lats_answer(
     ]
 
     # 각 전략으로 답변 생성 및 평가
-    candidates = []
+    candidates: list[dict[str, Any]] = []
     for strategy in strategies:
         prompt = f"""[질의]
 {query}
@@ -380,9 +380,7 @@ async def _generate_lats_answer(
             system_prompt = (
                 "당신은 한국어로 정확하고 간결한 답변을 작성하는 어시스턴트입니다."
             )
-            model = current_agent._create_generative_model(
-                system_prompt, temperature=0.7
-            )  # noqa: SLF001
+            model = current_agent._create_generative_model(system_prompt)  # noqa: SLF001
             answer = await current_agent._call_api_with_retry(model, prompt)  # noqa: SLF001
             answer = strip_output_tags(answer.strip())
 
@@ -403,14 +401,15 @@ async def _generate_lats_answer(
 
     # 최고 점수 답변 선택
     if candidates:
-        best = max(candidates, key=lambda x: x["score"])
+        best = max(candidates, key=lambda x: float(x["score"]))
         meta = {
             "candidates": len(candidates),
             "best_strategy": best["strategy"],
             "best_score": best["score"],
             "all_scores": [c["score"] for c in candidates],
         }
-        return best["answer"], meta
+        best_answer = str(best["answer"])
+        return best_answer, meta
 
     return "", {}
 

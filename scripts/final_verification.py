@@ -8,7 +8,7 @@ import os
 import sys
 
 from neo4j import GraphDatabase
-from tabulate import tabulate
+from tabulate import tabulate  # type: ignore[import-untyped]
 
 
 def final_verification():
