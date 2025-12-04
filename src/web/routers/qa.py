@@ -25,6 +25,7 @@ from src.qa.rule_loader import RuleLoader
 from src.qa.rag_system import QAKnowledgeGraph
 from src.qa.validator import UnifiedValidator
 from src.web.models import EvalExternalRequest, GenerateQARequest
+from src.web.response import APIMetadata, build_response
 from src.web.utils import QTYPE_MAP, load_ocr_text, postprocess_answer
 
 logger = logging.getLogger(__name__)
@@ -207,6 +208,7 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
 
     try:
         rule_loader = RuleLoader(current_kg)
+        start = datetime.now()
         if body.mode == "batch":
             results: list[Dict[str, Any]] = []
 
@@ -262,7 +264,13 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
                 else:
                     results.append(cast(Dict[str, Any], pair))
 
-            return {"mode": "batch", "pairs": results}
+            duration = (datetime.now() - start).total_seconds()
+            meta = APIMetadata(duration=duration)
+            return build_response(
+                {"mode": "batch", "pairs": results},
+                metadata=meta,
+                config=_get_config(),
+            )
 
         if not body.qtype:
             raise HTTPException(status_code=400, detail="qtype이 필요합니다.")
@@ -270,7 +278,13 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
             generate_single_qa(current_agent, ocr_text, body.qtype),
                 timeout=_get_config().qa_single_timeout,
             )
-        return {"mode": "single", "pair": pair}
+        duration = (datetime.now() - start).total_seconds()
+        meta = APIMetadata(duration=duration)
+        return build_response(
+            {"mode": "single", "pair": pair},
+            metadata=meta,
+            config=_get_config(),
+        )
 
     except asyncio.TimeoutError:
         timeout_msg = (
@@ -548,7 +562,8 @@ async def api_eval_external(body: EvalExternalRequest) -> Dict[str, Any]:
     if current_agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
-    ocr_text = load_ocr_text(_get_config())
+    cfg = _get_config()
+    ocr_text = load_ocr_text(cfg)
 
     try:
         from src.workflow.external_eval import evaluate_external_answers
@@ -561,8 +576,12 @@ async def api_eval_external(body: EvalExternalRequest) -> Dict[str, Any]:
         )
 
         best = max(results, key=lambda x: x.get("score", 0))
-
-        return {"results": results, "best": best.get("candidate_id", "A")}
+        meta = APIMetadata(duration=0.0)
+        return build_response(
+            {"results": results, "best": best.get("candidate_id", "A")},
+            metadata=meta,
+            config=cfg,
+        )
 
     except Exception as e:
         logger.error("평가 실패: %s", e)
