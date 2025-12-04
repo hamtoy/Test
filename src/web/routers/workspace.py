@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import re
 from typing import TYPE_CHECKING, Any, Dict, Optional
@@ -14,8 +15,8 @@ if TYPE_CHECKING:
     from src.features.lats import SearchNode
 
 from checks.detect_forbidden_patterns import find_violations
-from src.analysis.cross_validation import CrossValidationSystem
 from src.agent import GeminiAgent
+from src.analysis.cross_validation import CrossValidationSystem
 from src.config import AppConfig
 from src.config.constants import (
     DEFAULT_ANSWER_RULES,
@@ -482,12 +483,10 @@ async def _lats_evaluate_answer(node: "SearchNode") -> float:
     # 4. Neo4j 제약사항 검증 (선택)
     current_kg = _get_kg()
     if current_kg:
-        try:
-            # 간단한 제약사항 체크 (예: 최소 길이, 형식 등)
-            # 실제로는 각 제약사항을 순회하며 검증해야 함
+        # 간단한 제약사항 체크 (예: 최소 길이, 형식 등)
+        # 실제로는 각 제약사항을 순회하며 검증해야 함
+        with contextlib.suppress(Exception):
             score += 0.1
-        except Exception:
-            pass
 
     return min(1.0, max(0.0, score))
 
@@ -678,14 +677,43 @@ OCR에 없는 정보는 추가하지 마세요.
 
 위 OCR 텍스트를 기반으로 답변을 작성하세요."""
 
-            answer = await current_agent.rewrite_best_answer(
-                ocr_text=ocr_text,
-                best_answer=prompt,
-                cached_content=None,
-                query_type=normalized_qtype,
-            )
-            answer = strip_output_tags(answer)
-            changes.append("답변 생성 완료")
+            # LATS 다중 후보 생성 활성화
+            if body.use_lats and _get_config().enable_lats:
+                try:
+                    logger.info("LATS 다중 후보 생성 시작 (full_generation)")
+                    answer, lats_meta = await _generate_lats_answer(
+                        query=query,
+                        ocr_text=ocr_text,
+                        query_type=normalized_qtype,
+                    )
+                    if answer:
+                        answer = strip_output_tags(answer)
+                        changes.append(
+                            f"LATS: {lats_meta.get('candidates', 0)}개 후보, "
+                            f"최적={lats_meta.get('best_strategy', 'N/A')}, "
+                            f"점수={lats_meta.get('best_score', 0):.2f}"
+                        )
+                    else:
+                        raise ValueError("LATS 답변 후보 없음")
+                except Exception as e:
+                    logger.warning("LATS 실패, 기본 생성: %s", e)
+                    answer = await current_agent.rewrite_best_answer(
+                        ocr_text=ocr_text,
+                        best_answer=prompt,
+                        cached_content=None,
+                        query_type=normalized_qtype,
+                    )
+                    answer = strip_output_tags(answer)
+                    changes.append("답변 생성 완료 (기본)")
+            else:
+                answer = await current_agent.rewrite_best_answer(
+                    ocr_text=ocr_text,
+                    best_answer=prompt,
+                    cached_content=None,
+                    query_type=normalized_qtype,
+                )
+                answer = strip_output_tags(answer)
+                changes.append("답변 생성 완료")
 
         elif workflow == "query_generation":
             changes.append("질문 생성 요청")
@@ -766,14 +794,43 @@ OCR에 없는 정보는 추가하지 마세요.
 
 위 OCR 텍스트를 기반으로 답변을 작성하세요."""
 
-            answer = await current_agent.rewrite_best_answer(
-                ocr_text=ocr_text,
-                best_answer=prompt,
-                cached_content=None,
-                query_type=normalized_qtype,
-            )
-            answer = strip_output_tags(answer)
-            changes.append("답변 생성 완료")
+            # LATS 다중 후보 생성 활성화
+            if body.use_lats and _get_config().enable_lats:
+                try:
+                    logger.info("LATS 다중 후보 생성 시작 (answer_generation)")
+                    answer, lats_meta = await _generate_lats_answer(
+                        query=query,
+                        ocr_text=ocr_text,
+                        query_type=normalized_qtype,
+                    )
+                    if answer:
+                        answer = strip_output_tags(answer)
+                        changes.append(
+                            f"LATS: {lats_meta.get('candidates', 0)}개 후보, "
+                            f"최적={lats_meta.get('best_strategy', 'N/A')}, "
+                            f"점수={lats_meta.get('best_score', 0):.2f}"
+                        )
+                    else:
+                        raise ValueError("LATS 답변 후보 없음")
+                except Exception as e:
+                    logger.warning("LATS 실패, 기본 생성: %s", e)
+                    answer = await current_agent.rewrite_best_answer(
+                        ocr_text=ocr_text,
+                        best_answer=prompt,
+                        cached_content=None,
+                        query_type=normalized_qtype,
+                    )
+                    answer = strip_output_tags(answer)
+                    changes.append("답변 생성 완료 (기본)")
+            else:
+                answer = await current_agent.rewrite_best_answer(
+                    ocr_text=ocr_text,
+                    best_answer=prompt,
+                    cached_content=None,
+                    query_type=normalized_qtype,
+                )
+                answer = strip_output_tags(answer)
+                changes.append("답변 생성 완료")
 
         elif workflow == "rewrite":
             changes.append("답변 재작성 요청")
