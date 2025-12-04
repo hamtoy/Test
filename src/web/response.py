@@ -10,6 +10,8 @@ from src.config import AppConfig
 
 @dataclass
 class APIMetadata:
+    """Metadata for API responses (timing/cache/token usage)."""
+
     duration: float = 0.0
     cache_hit: bool = False
     token_usage: Optional[Dict[str, int]] = None
