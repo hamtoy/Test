@@ -1,4 +1,5 @@
 """Tests for Neo4j template rules functionality."""
+# mypy: ignore-errors
 
 from unittest.mock import MagicMock, patch
 

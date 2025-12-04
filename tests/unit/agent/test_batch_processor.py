@@ -1,4 +1,5 @@
 """Tests for SmartBatchProcessor and BatchProcessor."""
+# mypy: ignore-errors
 
 import asyncio
 from pathlib import Path

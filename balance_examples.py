@@ -5,9 +5,10 @@
 """
 
 import os
+from typing import Dict, List
 
 from dotenv import load_dotenv
-from neo4j import GraphDatabase
+from neo4j import GraphDatabase, Driver
 
 load_dotenv()
 
@@ -15,18 +16,21 @@ load_dotenv()
 class ExampleBalancer:
     """Example 균형을 맞추는 클래스"""
 
-    def __init__(self):
-        self.driver = GraphDatabase.driver(
-            os.getenv("NEO4J_URI"),
-            auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD")),
-        )
+    def __init__(self) -> None:
+        uri = os.getenv("NEO4J_URI")
+        user = os.getenv("NEO4J_USER")
+        password = os.getenv("NEO4J_PASSWORD")
+        if uri is None or user is None or password is None:
+            raise ValueError("NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD must be set")
+
+        self.driver: Driver = GraphDatabase.driver(uri, auth=(user, password))
 
         # 목표: 모든 카테고리 5개씩
-        self.target_count = 5
+        self.target_count: int = 5
 
-    def get_current_distribution(self):
+    def get_current_distribution(self) -> Dict[str, int]:
         """현재 카테고리별 Example 분포 확인"""
-        with self.driver.session() as session:
+        with self.driver.session() as session:  # type: Session
             result = session.run(
                 """
                 MATCH (e:Example)
@@ -35,11 +39,11 @@ class ExampleBalancer:
                 ORDER BY count ASC
                 """
             )
-            return {record["category"]: record["count"] for record in result}
+            return {record["category"]: int(record["count"]) for record in result}
 
-    def add_examples_for_category(self, category: str, needed: int):
+    def add_examples_for_category(self, category: str, needed: int) -> int:
         """특정 카테고리에 Example 추가"""
-        with self.driver.session() as session:
+        with self.driver.session() as session:  # type: Session
             # 1. 이미 사용된 line_number 확인
             result = session.run(
                 """
@@ -70,10 +74,13 @@ class ExampleBalancer:
                 limit=needed * 3,  # 여유있게 가져오기
             )
 
-            examples = [
-                {"line_number": record["line_number"], "content": record["content"]}
+            examples: List[Dict[str, object]] = [
+                {
+                    "line_number": int(record["line_number"]),
+                    "content": str(record["content"]),
+                }
                 for record in result
-                if record["line_number"] not in used_line_numbers
+                if int(record["line_number"]) not in used_line_numbers
             ][:needed]
 
             if not examples:
@@ -94,7 +101,7 @@ class ExampleBalancer:
                 print(f"⚠️  {category}: 연결된 Rule이 없습니다")
                 return 0
 
-            rule_id = rule_record["rule_id"]
+            rule_id = str(rule_record["rule_id"])
 
             # 4. Example 노드 생성 및 Rule 연결
             created_count = 0
@@ -134,7 +141,7 @@ class ExampleBalancer:
             )
             return created_count
 
-    def balance(self):
+    def balance(self) -> None:
         """Example 균형 맞추기"""
         print("=== Example 균형 맞추기 ===\n")
 
@@ -168,7 +175,7 @@ class ExampleBalancer:
         total = sum(final.values())
         print(f"\n총 Example: {total}개")
 
-    def close(self):
+    def close(self) -> None:
         """드라이버 종료"""
         self.driver.close()
 

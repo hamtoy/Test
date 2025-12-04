@@ -1,4 +1,5 @@
 """Tests for structured logging functionality."""
+# mypy: ignore-errors
 
 import json
 import logging

@@ -1,4 +1,5 @@
 """Tests for main.py entry point."""
+# mypy: ignore-errors
 
 from unittest.mock import AsyncMock, Mock, patch
 

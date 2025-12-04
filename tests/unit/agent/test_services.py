@@ -1,4 +1,5 @@
 """Tests for agent services module."""
+# mypy: ignore-errors
 
 from unittest.mock import AsyncMock, Mock, patch
 

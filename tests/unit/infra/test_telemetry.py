@@ -1,4 +1,5 @@
 """Tests for OpenTelemetry telemetry functionality."""
+# mypy: ignore-errors
 
 import os
 from unittest.mock import MagicMock, patch

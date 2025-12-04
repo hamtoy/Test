@@ -1,4 +1,5 @@
 """Tests for Neo4j rule upsert manager."""
+# mypy: ignore-errors
 
 from unittest.mock import Mock, patch
 
