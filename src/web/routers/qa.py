@@ -23,6 +23,7 @@ from src.config.constants import (
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rule_loader import RuleLoader
 from src.qa.rag_system import QAKnowledgeGraph
+from src.qa.validator import UnifiedValidator
 from src.web.models import EvalExternalRequest, GenerateQARequest
 from src.web.utils import QTYPE_MAP, load_ocr_text, postprocess_answer
 
@@ -339,6 +340,7 @@ async def generate_single_qa(
     query_constraints: list[Dict[str, Any]] = []
     answer_constraints: list[Dict[str, Any]] = []
     formatting_rules: list[str] = []
+    unified_validator = UnifiedValidator(current_kg, current_pipeline)
     kg_wrapper: Optional[Any] = get_cached_kg()
 
     if kg_wrapper is not None:
@@ -462,6 +464,8 @@ async def generate_single_qa(
             length_constraint=length_constraint,
         )
 
+        # 통합 검증으로 수집할 위반/경고
+        val_result = unified_validator.validate_all(draft_answer, normalized_qtype)
         all_issues: list[str] = []
 
         sentences = [
@@ -482,6 +486,7 @@ async def generate_single_qa(
         ):
             all_violations.append("summary_header_not_allowed")
 
+        # 기존 탐지 + 통합 검증 병합
         violations = find_violations(draft_answer)
         if violations:
             for v in violations:
@@ -508,14 +513,8 @@ async def generate_single_qa(
             if missing_rules:
                 logger.info("누락 가능성 있는 규칙: %s", missing_rules)
 
-        if kg_wrapper is not None:
-            validator_cls = _get_validator_class()
-            validator = validator_cls(kg_wrapper)
-            rule_check = validator._check_rule_compliance(
-                draft_answer, normalized_qtype
-            )
-            if rule_check.get("violations") and rule_check.get("score", 1.0) < 0.3:
-                all_violations.extend(rule_check.get("violations", []))
+        if val_result.has_errors():
+            all_violations.extend([v.get("type", "rule") for v in val_result.violations])
 
         if all_violations:
             all_issues.extend(all_violations[:3])
