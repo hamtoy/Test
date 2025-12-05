@@ -1,4 +1,3 @@
-# mypy: allow-untyped-decorators
 """워크스페이스 관련 엔드포인트."""
 
 from __future__ import annotations
@@ -32,6 +31,7 @@ from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
 from src.web.models import UnifiedWorkspaceRequest, WorkspaceRequest
 from src.web.response import APIMetadata, build_response
+from src.web.service_registry import get_registry
 from src.web.utils import (
     QTYPE_MAP,
     detect_workflow,
@@ -47,6 +47,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["workspace"])
 
+# Backward compatibility: keep global variables for modules that import them
+# TODO: Remove these in future release once all routers use ServiceRegistry exclusively
 _config: Optional[AppConfig] = None
 agent: Optional[GeminiAgent] = None
 kg: Optional[QAKnowledgeGraph] = None
@@ -75,73 +77,99 @@ def set_dependencies(
 
 
 def _get_agent() -> Optional[GeminiAgent]:
+    """Get agent from ServiceRegistry with fallback to module global."""
     try:
-        from src.web import api as api_module
+        registry = get_registry()
+        return registry.agent
+    except RuntimeError:
+        # Fallback to module global for backward compatibility
+        try:
+            from src.web import api as api_module
 
-        if getattr(api_module, "agent", None) is not None:
-            return api_module.agent
-    except Exception:
-        pass
-    return agent
+            if getattr(api_module, "agent", None) is not None:
+                return api_module.agent
+        except Exception:
+            pass
+        return agent
 
 
 def _get_kg() -> Optional[QAKnowledgeGraph]:
+    """Get KG from ServiceRegistry with fallback to module global."""
     try:
-        from src.web import api as api_module
+        registry = get_registry()
+        return registry.kg
+    except RuntimeError:
+        # Fallback to module global for backward compatibility
+        try:
+            from src.web import api as api_module
 
-        if getattr(api_module, "kg", None) is not None:
-            return api_module.kg
-    except Exception:
-        pass
-    return kg
+            if getattr(api_module, "kg", None) is not None:
+                return api_module.kg
+        except Exception:
+            pass
+        return kg
 
 
 def _get_pipeline() -> Optional[IntegratedQAPipeline]:
+    """Get pipeline from ServiceRegistry with fallback to module global."""
     try:
-        from src.web import api as api_module
+        registry = get_registry()
+        return registry.pipeline
+    except RuntimeError:
+        # Fallback to module global for backward compatibility
+        try:
+            from src.web import api as api_module
 
-        if getattr(api_module, "pipeline", None) is not None:
-            return api_module.pipeline
-    except Exception:
-        pass
-    return pipeline
+            if getattr(api_module, "pipeline", None) is not None:
+                return api_module.pipeline
+        except Exception:
+            pass
+        return pipeline
 
 
 def _get_config() -> AppConfig:
+    """Get config from ServiceRegistry with fallback to module global."""
     try:
-        from src.web import api as api_module
+        registry = get_registry()
+        cfg = registry.config
+    except RuntimeError:
+        # Fallback to module global for backward compatibility
+        try:
+            from src.web import api as api_module
 
-        cfg_raw = getattr(api_module, "config", None) or _config
-        if cfg_raw is None:
-            raise RuntimeError
-        cfg = cast(AppConfig, cfg_raw)
-        for name, default in [
-            ("qa_single_timeout", QA_SINGLE_GENERATION_TIMEOUT),
-            ("qa_batch_timeout", QA_BATCH_GENERATION_TIMEOUT),
-            ("workspace_timeout", WORKSPACE_GENERATION_TIMEOUT),
-            ("workspace_unified_timeout", WORKSPACE_UNIFIED_TIMEOUT),
-        ]:
+            cfg_raw = getattr(api_module, "config", None) or _config
+            if cfg_raw is None:
+                raise RuntimeError
+            cfg = cast(AppConfig, cfg_raw)
+        except Exception:
             try:
-                value = int(getattr(cfg, name, default))
-            except Exception:
-                value = default
-            setattr(cfg, name, value)
-        try:
-            cfg.enable_standard_response = bool(
-                getattr(cfg, "enable_standard_response", False)
-            )
-            cfg.enable_lats = bool(getattr(cfg, "enable_lats", False))
-        except Exception:
-            cfg.enable_standard_response = False
-            cfg.enable_lats = False
-        return cfg
-    except Exception:
-        try:
-            from src.web import dependencies
+                from src.web import dependencies
 
-            return dependencies.get_config()
+                cfg = dependencies.get_config()
+            except Exception:
+                cfg = AppConfig()
+
+    # Ensure required timeout attributes exist
+    for name, default in [
+        ("qa_single_timeout", QA_SINGLE_GENERATION_TIMEOUT),
+        ("qa_batch_timeout", QA_BATCH_GENERATION_TIMEOUT),
+        ("workspace_timeout", WORKSPACE_GENERATION_TIMEOUT),
+        ("workspace_unified_timeout", WORKSPACE_UNIFIED_TIMEOUT),
+    ]:
+        try:
+            value = int(getattr(cfg, name, default))
         except Exception:
-            return AppConfig()
+            value = default
+        setattr(cfg, name, value)
+    try:
+        cfg.enable_standard_response = bool(
+            getattr(cfg, "enable_standard_response", False)
+        )
+        cfg.enable_lats = bool(getattr(cfg, "enable_lats", False))
+    except Exception:
+        cfg.enable_standard_response = False
+        cfg.enable_lats = False
+    return cfg
 
 
 def _get_validator_class() -> type[CrossValidationSystem]:

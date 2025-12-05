@@ -39,6 +39,7 @@ from src.web.routers import health as health_router_module
 from src.web.routers import qa as qa_router_module
 from src.web.routers import stream as stream_router_module
 from src.web.routers import workspace as workspace_router_module
+from src.web.service_registry import get_registry
 from src.web.utils import (
     detect_workflow,
     load_ocr_text as _load_ocr_text,
@@ -53,6 +54,7 @@ from src.workflow.inspection import inspect_answer
 logger = logging.getLogger(__name__)
 
 # 전역 인스턴스 (서버 시작 시 한 번만 초기화)
+# Note: Kept for backward compatibility with existing code
 _config: Optional[AppConfig] = None
 agent: Optional[GeminiAgent] = None
 kg: Optional[QAKnowledgeGraph] = None
@@ -222,8 +224,22 @@ async def _init_health_checks() -> None:
 async def init_resources() -> None:
     """전역 리소스 초기화 (서버 시작 시 호출)."""
     global agent, kg, pipeline
-    app_config = get_config()
-    if agent is None:
+    registry = get_registry()
+
+    # ServiceRegistry를 통한 초기화
+    if registry.is_initialized():
+        logger.info("Resources already initialized via ServiceRegistry")
+        # 기존 전역 변수 동기화 (backward compatibility)
+        agent = registry.agent
+        kg = registry.kg
+        pipeline = registry.pipeline
+        app_config = registry.config
+    else:
+        # 처음 초기화하는 경우
+        app_config = get_config()
+        registry.register_config(app_config)
+        logger.info("Config registered to ServiceRegistry")
+
         from jinja2 import Environment, FileSystemLoader
 
         jinja_env = Environment(
@@ -231,26 +247,32 @@ async def init_resources() -> None:
             trim_blocks=True,
             lstrip_blocks=True,
         )
-        agent = GeminiAgent(config=app_config, jinja_env=jinja_env)
+        gemini_agent = GeminiAgent(config=app_config, jinja_env=jinja_env)
+        registry.register_agent(gemini_agent)
+        agent = gemini_agent
         logger.info("GeminiAgent 초기화 완료")
 
-    if kg is None:
         try:
-            kg = QAKnowledgeGraph()
+            knowledge_graph = QAKnowledgeGraph()
+            registry.register_kg(knowledge_graph)
+            kg = knowledge_graph
             logger.info("QAKnowledgeGraph 초기화 완료")
         except Exception as e:
             logger.warning("Neo4j 연결 실패 (RAG 비활성화): %s", e)
+            registry.register_kg(None)
             kg = None
 
-    if pipeline is None:
         try:
-            pipeline = IntegratedQAPipeline()
+            qa_pipeline = IntegratedQAPipeline()
+            registry.register_pipeline(qa_pipeline)
+            pipeline = qa_pipeline
             logger.info("IntegratedQAPipeline 초기화 완료")
         except Exception as e:
             logger.warning(
                 "IntegratedQAPipeline 초기화 실패 (Neo4j 환경변수 필요: NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD): %s",
                 e,
             )
+            registry.register_pipeline(None)
             pipeline = None
 
     # 라우터 의존성 주입

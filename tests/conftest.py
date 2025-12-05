@@ -179,3 +179,22 @@ def mock_genai(
     monkeypatch.setattr("google.generativeai.configure", mock_genai.configure)
 
     return mock_genai
+
+
+@pytest.fixture(scope="function", autouse=True)
+def isolate_registry() -> Any:
+    """각 테스트마다 레지스트리 격리."""
+    from src.web.service_registry import get_registry, reset_registry_for_test
+
+    registry = get_registry()
+
+    # 현재 상태 백업
+    original_state = registry.get_state_for_test()
+
+    # 테스트 전 초기화
+    reset_registry_for_test()
+
+    yield
+
+    # 테스트 후 복원
+    registry.restore_state_for_test(original_state)
