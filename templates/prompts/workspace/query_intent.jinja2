@@ -1,0 +1,15 @@
+{# Query intent template for different query types #}
+{% if query_type == "target_short" %}간단한 사실 확인 질문{% elif query_type == "target_long" %}핵심 요점을 묻는 질문{% elif query_type == "reasoning" %}추론/예측 질문{% else %}전체 내용 설명 질문{% endif %}
+{%- if global_explanation_ref and query_type in ["target_short", "target_long"] %}
+
+[중복 방지 필수]
+다음 전체 설명문에서 이미 다룬 내용과 중복되지 않는 새로운 세부 사실/수치를 질문하세요:
+---
+{{ global_explanation_ref[:500] }}
+---
+{%- if query_type == "target_short" %}
+전체 설명에서 다루지 않은 구체적 정보(날짜, 수치, 특정 명칭 등)에 집중하세요.
+{%- else %}
+전체 설명과 다른 관점의 핵심 요점을 질문하세요.
+{%- endif %}
+{%- endif %}
