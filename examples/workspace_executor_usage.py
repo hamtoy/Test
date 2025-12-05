@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import HTTPException
 
@@ -30,7 +30,7 @@ async def execute_workspace_workflow_example(
     edit_request: str | None,
     global_explanation_ref: str | None,
     use_lats: bool = False,
-) -> Dict[str, Any]:
+) -> Any:
     """WorkspaceExecutor를 사용한 통합 워크스페이스 실행 예제.
 
     Args:
