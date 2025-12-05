@@ -83,7 +83,7 @@ class WorkspaceExecutor:
         self.kg = kg
         self.pipeline = pipeline
         self.config = config
-        
+
         # Jinja2 environment for prompt templates
         self.jinja_env = Environment(
             loader=FileSystemLoader(str(REPO_ROOT / "templates")),
@@ -329,9 +329,11 @@ class WorkspaceExecutor:
     def _get_query_intent(self, query_type: str, global_ref: str) -> str:
         """쿼리 타입별 인텐트 생성 (Jinja2 템플릿 사용)."""
         template = self.jinja_env.get_template("prompts/workspace/query_intent.jinja2")
-        return template.render(
-            query_type=query_type,
-            global_explanation_ref=global_ref,
+        return str(
+            template.render(
+                query_type=query_type,
+                global_explanation_ref=global_ref,
+            )
         )
 
     def _shorten_query(self, text: str) -> str:
@@ -350,13 +352,13 @@ class WorkspaceExecutor:
         normalized_qtype = QTYPE_MAP.get(ctx.query_type, "explanation")
         rules_list = []
         extra_rules = []
-        
+
         if self.kg is not None:
             rule_loader = RuleLoader(self.kg)
             rules_list = rule_loader.get_rules_for_type(
                 normalized_qtype, DEFAULT_ANSWER_RULES
             )
-            
+
             # Get additional rules from KG
             try:
                 kg_rules = self.kg.get_rules_for_query_type(normalized_qtype)
@@ -368,10 +370,10 @@ class WorkspaceExecutor:
                 logger.debug("Rule 로드 실패: %s", exc)
         else:
             rules_list = DEFAULT_ANSWER_RULES
-        
+
         # Length constraint based on query type
         length_constraint = self._get_length_constraint(ctx.query_type)
-        
+
         # Deduplication section
         dedup_section = ""
         if ctx.global_explanation_ref:
@@ -381,19 +383,25 @@ class WorkspaceExecutor:
 ---
 {ctx.global_explanation_ref[:500]}
 ---"""
-        
+
         # Difficulty hint
         difficulty_hint = self._get_difficulty_hint(ctx.ocr_text)
-        
+
         # Evidence clause
-        evidence_clause = "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거 문장을 1개 포함하세요."
-        
+        evidence_clause = (
+            "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거 문장을 1개 포함하세요."
+        )
+
         # Render prompt using Jinja2 template
-        template = self.jinja_env.get_template("prompts/workspace/answer_generation.jinja2")
+        template = self.jinja_env.get_template(
+            "prompts/workspace/answer_generation.jinja2"
+        )
         prompt = template.render(
             query=query,
             ocr_text=ctx.ocr_text,
-            rules_list=rules_list[:5] if ctx.query_type == "target_short" else rules_list,
+            rules_list=rules_list[:5]
+            if ctx.query_type == "target_short"
+            else rules_list,
             extra_rules=extra_rules[:5] if extra_rules else [],
             length_constraint=length_constraint,
             dedup_section=dedup_section,
@@ -411,35 +419,39 @@ class WorkspaceExecutor:
         # 후처리
         answer = self._strip_output_tags(answer)
         answer = self._postprocess_answer(answer, ctx.query_type)
-        
+
         # Validate answer and optionally rewrite if validation fails
         answer = await self._validate_and_fix_answer(
             answer, ctx, normalized_qtype, length_constraint
         )
 
         return answer
-    
+
     async def _validate_and_fix_answer(
-        self, answer: str, ctx: WorkflowContext, normalized_qtype: str, length_constraint: str
+        self,
+        answer: str,
+        ctx: WorkflowContext,
+        normalized_qtype: str,
+        length_constraint: str,
     ) -> str:
         """Validate answer and optionally rewrite if validation fails."""
         validator = UnifiedValidator(self.kg, self.pipeline)
         val_result = validator.validate_all(answer, normalized_qtype)
-        
+
         # If there are errors or warnings, attempt to rewrite
         if val_result.has_errors() or val_result.warnings:
             edit_request_parts: List[str] = []
-            
+
             if val_result.has_errors():
                 edit_request_parts.append(val_result.get_error_summary())
-            
+
             if val_result.warnings:
                 edit_request_parts.extend(val_result.warnings[:2])
-            
+
             edit_request = "; ".join(
                 [p for p in edit_request_parts if p] or ["형식/규칙 위반 수정"]
             )
-            
+
             try:
                 logger.info("답변 검증 실패, 재작성 시도: %s", edit_request)
                 answer = await self.agent.rewrite_best_answer(
@@ -454,19 +466,18 @@ class WorkspaceExecutor:
                 logger.info("검증 기반 재작성 완료")
             except Exception as exc:
                 logger.debug("재작성 실패, 기존 답변 유지: %s", exc)
-        
+
         return answer
-    
+
     def _get_length_constraint(self, query_type: str) -> str:
         """Get length constraint based on query type."""
-        if query_type == "target_short":
-            return "답변은 불릿·마크다운(볼드/기울임) 없이 한 문장으로, 최대 50단어 이내로 작성하세요."
-        elif query_type == "target_long":
-            return "답변은 불릿·마크다운(볼드/기울임) 없이 3-4문장, 최대 100단어 이내로 작성하세요."
-        elif query_type == "reasoning":
-            return "불릿·마크다운(볼드/기울임) 없이 한 단락으로 간결하게 추론을 제시하세요."
-        return ""
-    
+        constraints = {
+            "target_short": "답변은 불릿·마크다운(볼드/기울임) 없이 한 문장으로, 최대 50단어 이내로 작성하세요.",
+            "target_long": "답변은 불릿·마크다운(볼드/기울임) 없이 3-4문장, 최대 100단어 이내로 작성하세요.",
+            "reasoning": "불릿·마크다운(볼드/기울임) 없이 한 단락으로 간결하게 추론을 제시하세요.",
+        }
+        return constraints.get(query_type, "")
+
     def _get_difficulty_hint(self, ocr_text: str) -> str:
         """Get difficulty hint based on OCR text length."""
         length = len(ocr_text)
@@ -484,7 +495,7 @@ class WorkspaceExecutor:
         # Sanitize output
         answer = self._sanitize_output(answer)
         return answer.strip()
-    
+
     def _sanitize_output(self, text: str) -> str:
         """불릿/마크다운/여분 공백을 제거해 일관된 문장만 남긴다."""
         text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)

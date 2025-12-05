@@ -27,7 +27,6 @@ from src.config.constants import (
     WORKSPACE_UNIFIED_TIMEOUT,
 )
 from src.qa.rule_loader import RuleLoader
-from src.qa.validator import UnifiedValidator
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
 from src.web.models import UnifiedWorkspaceRequest, WorkspaceRequest
@@ -38,7 +37,6 @@ from src.web.utils import (
     detect_workflow,
     load_ocr_text,
     log_review_session,
-    postprocess_answer,
     strip_output_tags,
 )
 from src.workflow.edit import edit_content
@@ -524,7 +522,6 @@ async def _evaluate_answer_quality(
         score += 0.1
 
     # 2. OCR 숫자 포함 검증
-    import re
 
     ocr_numbers = set(re.findall(r"\d+(?:\.\d+)?", ocr_text))
     answer_numbers = set(re.findall(r"\d+(?:\.\d+)?", answer))
@@ -557,7 +554,6 @@ async def _lats_evaluate_answer(node: "SearchNode") -> float:
         score += 0.1
 
     # 2. OCR 텍스트에서 주요 숫자가 포함되었는지 검증
-    import re
 
     ocr_numbers = set(re.findall(r"\d+(?:\.\d+)?", ocr_text))
     answer_numbers = set(re.findall(r"\d+(?:\.\d+)?", current_answer))
@@ -592,30 +588,32 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
         WorkflowType,
         WorkspaceExecutor,
     )
-    
+
     # Get services from registry
     current_agent = _get_agent()
     current_kg = _get_kg()
     current_pipeline = _get_pipeline()
     config = _get_config()
     meta_start = datetime.now()
-    
+
     if current_agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
     # Load OCR text
     ocr_text = body.ocr_text or load_ocr_text(config)
-    
+
     # Detect workflow
     workflow_str = detect_workflow(
         body.query or "", body.answer or "", body.edit_request or ""
     )
-    
+
     try:
         workflow_type = WorkflowType(workflow_str)
     except ValueError:
-        raise HTTPException(status_code=400, detail=f"알 수 없는 워크플로우: {workflow_str}")
-    
+        raise HTTPException(
+            status_code=400, detail=f"알 수 없는 워크플로우: {workflow_str}"
+        )
+
     # Build context
     context = WorkflowContext(
         query=body.query or "",
@@ -626,7 +624,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
         global_explanation_ref=body.global_explanation_ref or "",
         use_lats=body.use_lats or False,
     )
-    
+
     # Create executor and execute workflow
     executor = WorkspaceExecutor(
         agent=current_agent,
@@ -634,17 +632,17 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
         pipeline=current_pipeline,
         config=config,
     )
-    
+
     try:
         result = await asyncio.wait_for(
             executor.execute(workflow_type, context),
             timeout=config.workspace_unified_timeout,
         )
-        
+
         # Build response
         duration = (datetime.now() - meta_start).total_seconds()
         meta = APIMetadata(duration=duration)
-        
+
         result_dict = {
             "workflow": result.workflow,
             "query": result.query,
@@ -652,11 +650,11 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
             "changes": result.changes,
             "query_type": result.query_type,
         }
-        
+
         return cast(
             Dict[str, Any], build_response(result_dict, metadata=meta, config=config)
         )
-    
+
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
