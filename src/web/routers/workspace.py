@@ -586,513 +586,86 @@ async def _lats_evaluate_answer(node: "SearchNode") -> float:
 
 @router.post("/workspace/unified")
 async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]:
-    """통합 워크스페이스 - 모든 조합 지원."""
+    """통합 워크스페이스 - WorkspaceExecutor 사용 (Phase 3, 4 완료)."""
+    from src.workflow.workspace_executor import (
+        WorkflowContext,
+        WorkflowType,
+        WorkspaceExecutor,
+    )
+    
+    # Get services from registry
     current_agent = _get_agent()
     current_kg = _get_kg()
     current_pipeline = _get_pipeline()
     config = _get_config()
-    unified_validator = UnifiedValidator(current_kg, current_pipeline)
     meta_start = datetime.now()
+    
     if current_agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
-    ocr_text = body.ocr_text or load_ocr_text(_get_config())
-    query_type = body.query_type or "global_explanation"
-    normalized_qtype = QTYPE_MAP.get(query_type, "explanation")
-    global_explanation_ref = body.global_explanation_ref or ""
-
-    query_intent = None
-    rule_loader = RuleLoader(current_kg)
-    if query_type == "target_short":
-        query_intent = "간단한 사실 확인 질문"
-        if global_explanation_ref:
-            query_intent += f"""
-
-[중복 방지 필수]
-다음 전체 설명문에서 이미 다룬 내용과 중복되지 않는 새로운 세부 사실/수치를 질문하세요:
----
-{global_explanation_ref[:500]}
----
-전체 설명에서 다루지 않은 구체적 정보(날짜, 수치, 특정 명칭 등)에 집중하세요."""
-    elif query_type == "target_long":
-        query_intent = "핵심 요점을 묻는 질문"
-        if global_explanation_ref:
-            query_intent += f"""
-
-[중복 방지 필수]
-다음 전체 설명문과 다른 관점의 핵심 요점을 질문하세요:
----
-{global_explanation_ref[:500]}
----"""
-    elif query_type == "reasoning":
-        query_intent = "추론/예측 질문"
-    elif query_type == "global_explanation":
-        query_intent = "전체 내용 설명 질문"
-
-    workflow = detect_workflow(body.query or "", body.answer or "", body.edit_request)
-    logger.info("워크플로우 감지: %s, 질문 유형: %s", workflow, query_type)
-
-    query = body.query or ""
-    answer = body.answer or ""
-    changes: list[str] = []
-    reference_text = global_explanation_ref or ""
-
-    def _shorten_target_query(text: str) -> str:
-        """타겟 단답용 질의가 장문/설명문으로 생성될 때 한 문장으로 압축."""
-        clean = re.sub(r"\s+", " ", text or "").strip()
-        # 문장 단위로 자르되, 없으면 단어 수로 제한
-        parts = re.split(r"[?.!]\s*", clean)
-        candidate = parts[0] if parts and parts[0] else clean
-        words = candidate.split()
-        if len(words) > 20:
-            candidate = " ".join(words[:20])
-        return candidate.strip()
-
-    def _sanitize_output(text: str) -> str:
-        """불릿/마크다운/여분 공백을 제거해 일관된 문장만 남긴다."""
-        text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
-        text = re.sub(r"\*(.*?)\*", r"\1", text)
-        text = re.sub(r"[_]{1,2}(.*?)[_]{1,2}", r"\1", text)
-        text = text.replace("*", "")
-        text = re.sub(r"^[\-\u2022]\s*", "", text, flags=re.MULTILINE)
-        text = re.sub(r"\s+", " ", text).strip()
-        return text
-
-    def _dedup_with_reference(text: str, reference: str, qtype: str) -> str:
-        """참조 문단과 중복되는 문장을 제거 (간단 정규화 기반)."""
-
-        def normalize(chunk: str) -> str:
-            chunk = chunk.lower()
-            chunk = re.sub(r"[\s\*\-_`~#]+", "", chunk)
-            chunk = re.sub(r"[.,:;\"'’”“‘!?()/\\]", "", chunk)
-            chunk = chunk.replace(",", "")
-            return chunk
-
-        ref_norm = normalize(reference)
-        sentences = [
-            s.strip() for s in re.split(r"(?<=[.!?])\s+|\n+", text) if s.strip()
-        ]
-        kept: list[str] = []
-        for s in sentences:
-            norm = normalize(s.strip(" -•\t"))
-            if not norm or len(norm) < 10:
-                continue
-            if norm in ref_norm:
-                continue
-            kept.append(s.strip())
-        if not kept:
-            # 타겟 단답일 때는 숫자/퍼센트를 우선 추출해 중복 최소화
-            if qtype == "target_short":
-                num_match = re.search(
-                    r"[0-9][0-9,\.]*\s*억\s*달러|[0-9]+(?:\.[0-9]+)?\s*%|[0-9][0-9,\.]*",
-                    text,
-                )
-                if num_match:
-                    return num_match.group(0).strip()
-            if qtype in {"target_short", "target_long"}:
-                return "참조 내용과 중복되지 않는 추가 정보가 없습니다."
-            return sentences[0].strip() if sentences else text.strip()
-        return ". ".join(kept[:4])
-
-    async def _execute_workflow() -> Dict[str, Any]:
-        nonlocal query, answer
-        length_constraint: str = ""
-        answer_constraints: list[Dict[str, Any]] = []
-        rules_list: list[str] = []
-        rule_texts: list[str] = []
-        dedup_section = ""
-        if workflow == "full_generation":
-            changes.append("OCR에서 전체 생성")
-
-            queries = await current_agent.generate_query(
-                ocr_text,
-                user_intent=query_intent,
-                query_type=query_type,
-                kg=current_kg,
-            )
-            if queries:
-                query = queries[0]
-                if query_type == "target_short":
-                    query = _shorten_target_query(query)
-                changes.append("질의 생성 완료")
-
-            rules_list = rule_loader.get_rules_for_type(
-                normalized_qtype, DEFAULT_ANSWER_RULES
-            )
-            if current_kg is not None:
-                try:
-                    kg_rules = current_kg.get_rules_for_query_type(normalized_qtype)
-                    for r in kg_rules:
-                        txt = r.get("text")
-                        if txt:
-                            rule_texts.append(txt)
-                except Exception as exc:
-                    logger.debug("Rule 로드 실패: %s", exc)
-
-            if query_type == "target_short":
-                length_constraint = "답변은 불릿·마크다운(볼드/기울임) 없이 한 문장으로, 최대 50단어 이내로 작성하세요."
-                rules_list = rules_list[:3]
-            elif query_type == "target_long":
-                length_constraint = "답변은 불릿·마크다운(볼드/기울임) 없이 3-4문장, 최대 100단어 이내로 작성하세요."
-            elif query_type == "reasoning":
-                length_constraint = "불릿·마크다운(볼드/기울임) 없이 한 단락으로 간결하게 추론을 제시하세요."
-
-            if reference_text:
-                dedup_section = f"""
-[중복 금지]
-다음 전체 설명문에 이미 나온 표현/숫자를 그대로 복사하지 말고, 필요한 경우 다른 문장으로 요약하세요.
-전체 설명문에는 없지만 OCR 텍스트에만 등장하는 수치·사실은 꼭 포함하세요:
----
-{reference_text[:500]}
----"""
-
-        rules_text = "\n".join(f"- {r}" for r in rules_list)
-        extra_rules_text = "\n".join(f"- {t}" for t in rule_texts[:5])
-        difficulty_text = _difficulty_hint(ocr_text)
-        evidence_clause = (
-            "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거 문장을 1개 포함하세요."
-        )
-        prompt = f"""[지시사항]
-반드시 한국어로 답변하세요.
-OCR에 없는 정보는 추가하지 마세요.
-{length_constraint}
-{dedup_section}
-{difficulty_text}
-{evidence_clause}
-
-[준수 규칙]
-{rules_text}
-{extra_rules_text}
-
-[OCR 텍스트]
-{ocr_text[:3000]}
-
-[질의]
-{query}
-
-위 OCR 텍스트를 기반으로 답변을 작성하세요."""
-
-        cfg = _get_config()
-        use_lats = bool(body.use_lats and getattr(cfg, "enable_lats", False))
-        # LATS 다중 후보 생성 활성화
-        if workflow == "full_generation" and use_lats:
-            try:
-                logger.info("LATS 다중 후보 생성 시작 (full_generation)")
-                answer, lats_meta = await _generate_lats_answer(
-                    query=query,
-                    ocr_text=ocr_text,
-                    query_type=normalized_qtype,
-                )
-                if answer:
-                    answer = strip_output_tags(answer)
-                    changes.append(
-                        f"LATS: {lats_meta.get('candidates', 0)}개 후보, "
-                        f"최적={lats_meta.get('best_strategy', 'N/A')}, "
-                        f"점수={lats_meta.get('best_score', 0):.2f}"
-                    )
-                else:
-                    raise ValueError("LATS 답변 후보 없음")
-            except Exception as e:
-                logger.warning("LATS 실패, 기본 생성: %s", e)
-                answer = await current_agent.rewrite_best_answer(
-                    ocr_text=ocr_text,
-                    best_answer=prompt,
-                    cached_content=None,
-                    query_type=normalized_qtype,
-                )
-                answer = strip_output_tags(answer)
-                changes.append("답변 생성 완료 (기본)")
-        elif workflow == "full_generation":
-            answer = await current_agent.rewrite_best_answer(
-                ocr_text=ocr_text,
-                best_answer=prompt,
-                cached_content=None,
-                query_type=normalized_qtype,
-            )
-            answer = strip_output_tags(answer)
-            changes.append("답변 생성 완료")
-
-        elif workflow == "query_generation":
-            changes.append("질문 생성 요청")
-            queries = await current_agent.generate_query(
-                ocr_text,
-                user_intent=query_intent,
-                query_type=query_type,
-                kg=current_kg,
-            )
-            query = queries[0] if queries else "질문 생성 실패"
-            if query_type == "target_short":
-                query = _shorten_target_query(query)
-            changes.append("질문 생성 완료")
-
-        elif workflow == "answer_generation":
-            changes.append("답변 생성 요청")
-            rules_list = rule_loader.get_rules_for_type(
-                normalized_qtype, DEFAULT_ANSWER_RULES
-            )
-            answer_rule_texts: list[str] = []
-            if current_kg is not None:
-                try:
-                    constraints = current_kg.get_constraints_for_query_type(
-                        normalized_qtype
-                    )
-                    for c in constraints:
-                        desc = c.get("description")
-                        if desc:
-                            rules_list.append(desc)
-                except Exception as exc:
-                    logger.debug("규칙 로드 실패: %s", exc)
-                try:
-                    kg_rules = current_kg.get_rules_for_query_type(normalized_qtype)
-                    for r in kg_rules:
-                        txt = r.get("text")
-                        if txt:
-                            answer_rule_texts.append(txt)
-                except Exception as exc:
-                    logger.debug("Rule 로드 실패: %s", exc)
-
-            rules_text = "\n".join(f"- {r}" for r in rules_list)
-            extra_rules_text = "\n".join(f"- {t}" for t in answer_rule_texts[:5])
-            length_constraint = ""
-            if query_type == "target_short":
-                length_constraint = "답변은 불릿·마크다운(볼드/기울임) 없이 한 문장으로, 최대 50단어 이내로 작성하세요."
-            elif query_type == "target_long":
-                length_constraint = "답변은 불릿·마크다운(볼드/기울임) 없이 3-4문장, 최대 100단어 이내로 작성하세요."
-            elif query_type == "reasoning":
-                length_constraint = (
-                    "불릿·마크다운(볼드/기울임) 없이 한 단락으로 간결하게 추론을 제시하세요. "
-                    "근거/추론/결론 같은 섹션 제목은 사용하지 마세요."
-                )
-
-            dedup_section = ""
-            if reference_text:
-                dedup_section = f"""
-[중복 금지]
-다음 전체 설명문에 이미 나온 표현/숫자를 그대로 복사하지 말고, 필요한 경우 다른 문장으로 요약하세요:
----
-{reference_text[:500]}
----"""
-            prompt = f"""[지시사항]
-반드시 한국어로 답변하세요.
-OCR에 없는 정보는 추가하지 마세요.
-{length_constraint}
-{dedup_section}
-
-[준수 규칙]
-{rules_text}
-{extra_rules_text}
-
-[OCR 텍스트]
-{ocr_text[:3000]}
-
-[질의]
-{query}
-
-[추가 지침]
-{body.edit_request or "(없음)"}
-
-위 OCR 텍스트를 기반으로 답변을 작성하세요."""
-
-            # LATS 다중 후보 생성 활성화
-            if body.use_lats and _get_config().enable_lats:
-                try:
-                    logger.info("LATS 다중 후보 생성 시작 (answer_generation)")
-                    answer, lats_meta = await _generate_lats_answer(
-                        query=query,
-                        ocr_text=ocr_text,
-                        query_type=normalized_qtype,
-                    )
-                    if answer:
-                        answer = strip_output_tags(answer)
-                        changes.append(
-                            f"LATS: {lats_meta.get('candidates', 0)}개 후보, "
-                            f"최적={lats_meta.get('best_strategy', 'N/A')}, "
-                            f"점수={lats_meta.get('best_score', 0):.2f}"
-                        )
-                    else:
-                        raise ValueError("LATS 답변 후보 없음")
-                except Exception as e:
-                    logger.warning("LATS 실패, 기본 생성: %s", e)
-                    answer = await current_agent.rewrite_best_answer(
-                        ocr_text=ocr_text,
-                        best_answer=prompt,
-                        cached_content=None,
-                        query_type=normalized_qtype,
-                    )
-                    answer = strip_output_tags(answer)
-                    changes.append("답변 생성 완료 (기본)")
-            else:
-                answer = await current_agent.rewrite_best_answer(
-                    ocr_text=ocr_text,
-                    best_answer=prompt,
-                    cached_content=None,
-                    query_type=normalized_qtype,
-                )
-                answer = strip_output_tags(answer)
-                changes.append("답변 생성 완료")
-
-        elif workflow == "rewrite":
-            changes.append("답변 재작성 요청")
-            answer = await edit_content(
-                agent=current_agent,
-                answer=answer,
-                ocr_text=ocr_text,
-                query=query,
-                edit_request="형식/길이 위반을 자동 교정",
-                kg=current_kg,
-                cache=None,
-            )
-            answer = strip_output_tags(answer)
-            changes.append("재작성 완료")
-
-        elif workflow == "edit_query":
-            changes.append("질의 수정 요청")
-            edited_query = await edit_content(
-                agent=current_agent,
-                answer=query,
-                ocr_text=ocr_text,
-                query="",
-                edit_request=body.edit_request or "",
-                kg=current_kg,
-                cache=None,
-            )
-            query = edited_query
-            changes.append("질의 수정 완료")
-
-        elif workflow == "edit_answer":
-            changes.append(f"답변 수정 요청: {body.edit_request}")
-            edited_answer = await edit_content(
-                agent=current_agent,
-                answer=answer,
-                ocr_text=ocr_text,
-                query=query,
-                edit_request=body.edit_request or "",
-                kg=current_kg,
-                cache=None,
-            )
-            answer = edited_answer
-            changes.append("답변 수정 완료")
-
-        elif workflow == "edit_both":
-            changes.append(f"질의+답변 수정 요청: {body.edit_request}")
-            edited_answer = await edit_content(
-                agent=current_agent,
-                answer=answer,
-                ocr_text=ocr_text,
-                query=query,
-                edit_request=body.edit_request or "",
-                kg=current_kg,
-                cache=None,
-            )
-            answer = edited_answer
-            changes.append("답변 수정 완료")
-
-            edited_query = await edit_content(
-                agent=current_agent,
-                answer=query,
-                ocr_text=ocr_text,
-                query="",
-                edit_request=f"다음 답변에 맞게 질의 조정: {answer[:200]}...",
-                kg=current_kg,
-                cache=None,
-            )
-            query = edited_query
-            changes.append("질의 조정 완료")
-
-        else:
-            raise HTTPException(status_code=400, detail="알 수 없는 워크플로우")
-
-        if answer:
-            if current_pipeline is not None:
-                try:
-                    validation = current_pipeline.validate_output(
-                        normalized_qtype, answer
-                    )
-                    if not validation.get("valid", True):
-                        violations = validation.get("violations", [])
-                        if violations:
-                            changes.append(
-                                f"규칙 위반 감지: {', '.join(violations[:3])}"
-                            )
-                    missing_rules = validation.get("missing_rules_hint", [])
-                    if missing_rules:
-                        changes.append(
-                            f"추가 검증 필요 규칙: {', '.join(missing_rules[:3])}"
-                        )
-                except Exception as exc:  # noqa: BLE001
-                    logger.debug("Pipeline validation skipped: %s", exc)
-            answer = postprocess_answer(answer, query_type)
-            if reference_text and query_type in {
-                "target_short",
-                "target_long",
-                "reasoning",
-            }:
-                answer = _dedup_with_reference(answer, reference_text, query_type)
-
-            answer = _sanitize_output(answer)
-            # 통합 검증: 위반 시 재작성 시도
-            val_result = unified_validator.validate_all(answer, normalized_qtype)
-            if val_result.has_errors() or val_result.warnings:
-                edit_request_parts: list[str] = []
-                if val_result.has_errors():
-                    edit_request_parts.append(val_result.get_error_summary())
-                if val_result.warnings:
-                    edit_request_parts.extend(val_result.warnings[:2])
-                edit_request = "; ".join(
-                    [p for p in edit_request_parts if p] or ["형식/규칙 위반 수정"]
-                )
-                try:
-                    answer = await current_agent.rewrite_best_answer(
-                        ocr_text=ocr_text,
-                        best_answer=answer,
-                        edit_request=edit_request,
-                        cached_content=None,
-                        constraints=answer_constraints,
-                        length_constraint=length_constraint,
-                    )
-                    answer = strip_output_tags(answer)
-                    answer = postprocess_answer(answer, query_type)
-                    if reference_text and query_type in {
-                        "target_short",
-                        "target_long",
-                        "reasoning",
-                    }:
-                        answer = _dedup_with_reference(
-                            answer, reference_text, query_type
-                        )
-                    answer = _sanitize_output(answer)
-                    changes.append("검증 기반 재작성 완료")
-                except Exception as exc:  # noqa: BLE001
-                    logger.debug("재작성 실패, 기존 답변 유지: %s", exc)
-            if val_result.has_errors():
-                changes.append(val_result.get_error_summary())
-            if val_result.warnings:
-                changes.extend(val_result.warnings)
-
-        return {
-            "workflow": workflow,
-            "query": query,
-            "answer": answer,
-            "changes": changes,
-            "query_type": query_type,
-        }
-
+    # Load OCR text
+    ocr_text = body.ocr_text or load_ocr_text(config)
+    
+    # Detect workflow
+    workflow_str = detect_workflow(
+        body.query or "", body.answer or "", body.edit_request or ""
+    )
+    
+    try:
+        workflow_type = WorkflowType(workflow_str)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"알 수 없는 워크플로우: {workflow_str}")
+    
+    # Build context
+    context = WorkflowContext(
+        query=body.query or "",
+        answer=body.answer or "",
+        ocr_text=ocr_text,
+        query_type=body.query_type or "global_explanation",
+        edit_request=body.edit_request or "",
+        global_explanation_ref=body.global_explanation_ref or "",
+        use_lats=body.use_lats or False,
+    )
+    
+    # Create executor and execute workflow
+    executor = WorkspaceExecutor(
+        agent=current_agent,
+        kg=current_kg,
+        pipeline=current_pipeline,
+        config=config,
+    )
+    
     try:
         result = await asyncio.wait_for(
-            _execute_workflow(), timeout=config.workspace_unified_timeout
+            executor.execute(workflow_type, context),
+            timeout=config.workspace_unified_timeout,
         )
+        
+        # Build response
         duration = (datetime.now() - meta_start).total_seconds()
         meta = APIMetadata(duration=duration)
+        
+        result_dict = {
+            "workflow": result.workflow,
+            "query": result.query,
+            "answer": result.answer,
+            "changes": result.changes,
+            "query_type": result.query_type,
+        }
+        
         return cast(
-            Dict[str, Any], build_response(result, metadata=meta, config=config)
+            Dict[str, Any], build_response(result_dict, metadata=meta, config=config)
         )
+    
     except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
             detail=f"워크플로우 시간 초과 ({config.workspace_unified_timeout}초). 다시 시도해주세요.",
         )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error("워크플로우 실행 실패: %s", e)
+        logger.error("워크플로우 실행 실패: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=f"실행 실패: {str(e)}")
 
 

@@ -6,7 +6,10 @@ import logging
 import re
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional
+
+from jinja2 import Environment, FileSystemLoader
 
 if TYPE_CHECKING:
     from src.agent import GeminiAgent
@@ -15,6 +18,9 @@ if TYPE_CHECKING:
     from src.qa.rag_system import QAKnowledgeGraph
 
 logger = logging.getLogger(__name__)
+
+# Get repository root for template loading
+REPO_ROOT = Path(__file__).parent.parent.parent
 
 
 class WorkflowType(Enum):
@@ -71,6 +77,13 @@ class WorkspaceExecutor:
         self.kg = kg
         self.pipeline = pipeline
         self.config = config
+        
+        # Jinja2 environment for prompt templates
+        self.jinja_env = Environment(
+            loader=FileSystemLoader(str(REPO_ROOT / "templates")),
+            trim_blocks=True,
+            lstrip_blocks=True,
+        )
 
     async def execute(
         self,
@@ -308,27 +321,12 @@ class WorkspaceExecutor:
     # ===== 헬퍼 메서드 =====
 
     def _get_query_intent(self, query_type: str, global_ref: str) -> str:
-        """쿼리 타입별 인텐트 생성."""
-        intents = {
-            "target_short": "간단한 사실 확인 질문",
-            "target_long": "핵심 요점을 묻는 질문",
-            "reasoning": "추론/예측 질문",
-            "global_explanation": "전체 내용 설명 질문",
-        }
-
-        base_intent = intents.get(query_type, "전체 내용 설명 질문")
-
-        # 중복 방지 추가
-        if global_ref and query_type in {"target_short", "target_long"}:
-            base_intent += f"""
-
-[중복 방지 필수]
-다음 전체 설명문에서 이미 다룬 내용과 중복되지 않는 새로운 세부 사실/수치를 질문하세요:
----
-{global_ref[:500]}
----"""
-
-        return base_intent
+        """쿼리 타입별 인텐트 생성 (Jinja2 템플릿 사용)."""
+        template = self.jinja_env.get_template("prompts/workspace/query_intent.jinja2")
+        return template.render(
+            query_type=query_type,
+            global_explanation_ref=global_ref,
+        )
 
     def _shorten_query(self, text: str) -> str:
         """타겟 단답용 질의 압축."""
@@ -341,28 +339,140 @@ class WorkspaceExecutor:
         return candidate.strip()
 
     async def _generate_answer(self, ctx: WorkflowContext, query: str) -> str:
-        """답변 생성 (공통 로직)."""
-        # 단순화된 프롬프트 생성
-        prompt = f"""[질의]
-{query}
-
-[OCR 텍스트]
-{ctx.ocr_text[:2000]}
-
-위 OCR 텍스트를 기반으로 답변을 작성하세요."""
+        """답변 생성 (공통 로직 - Jinja2 템플릿 사용)."""
+        # Get rules from KG if available
+        from src.config.constants import DEFAULT_ANSWER_RULES
+        from src.qa.rule_loader import RuleLoader
+        from src.web.utils import QTYPE_MAP
+        
+        normalized_qtype = QTYPE_MAP.get(ctx.query_type, "explanation")
+        rules_list = []
+        extra_rules = []
+        
+        if self.kg is not None:
+            rule_loader = RuleLoader(self.kg)
+            rules_list = rule_loader.get_rules_for_type(
+                normalized_qtype, DEFAULT_ANSWER_RULES
+            )
+            
+            # Get additional rules from KG
+            try:
+                kg_rules = self.kg.get_rules_for_query_type(normalized_qtype)
+                for r in kg_rules:
+                    txt = r.get("text")
+                    if txt:
+                        extra_rules.append(txt)
+            except Exception as exc:
+                logger.debug("Rule 로드 실패: %s", exc)
+        else:
+            rules_list = DEFAULT_ANSWER_RULES
+        
+        # Length constraint based on query type
+        length_constraint = self._get_length_constraint(ctx.query_type)
+        
+        # Deduplication section
+        dedup_section = ""
+        if ctx.global_explanation_ref:
+            dedup_section = f"""[중복 금지]
+다음 전체 설명문에 이미 나온 표현/숫자를 그대로 복사하지 말고, 필요한 경우 다른 문장으로 요약하세요.
+전체 설명문에는 없지만 OCR 텍스트에만 등장하는 수치·사실은 꼭 포함하세요:
+---
+{ctx.global_explanation_ref[:500]}
+---"""
+        
+        # Difficulty hint
+        difficulty_hint = self._get_difficulty_hint(ctx.ocr_text)
+        
+        # Evidence clause
+        evidence_clause = "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거 문장을 1개 포함하세요."
+        
+        # Render prompt using Jinja2 template
+        template = self.jinja_env.get_template("prompts/workspace/answer_generation.jinja2")
+        prompt = template.render(
+            query=query,
+            ocr_text=ctx.ocr_text,
+            rules_list=rules_list[:5] if ctx.query_type == "target_short" else rules_list,
+            extra_rules=extra_rules[:5] if extra_rules else [],
+            length_constraint=length_constraint,
+            dedup_section=dedup_section,
+            difficulty_hint=difficulty_hint,
+            evidence_clause=evidence_clause,
+        )
 
         answer = await self.agent.rewrite_best_answer(
             ocr_text=ctx.ocr_text,
             best_answer=prompt,
             cached_content=None,
-            query_type=ctx.query_type,
+            query_type=normalized_qtype,
         )
 
         # 후처리
         answer = self._strip_output_tags(answer)
         answer = self._postprocess_answer(answer, ctx.query_type)
+        
+        # Phase 4: Validation layer integration
+        answer = await self._validate_and_fix_answer(
+            answer, ctx, normalized_qtype, length_constraint
+        )
 
         return answer
+    
+    async def _validate_and_fix_answer(
+        self, answer: str, ctx: WorkflowContext, normalized_qtype: str, length_constraint: str
+    ) -> str:
+        """Validate answer and optionally rewrite if validation fails (Phase 4)."""
+        from src.qa.validator import UnifiedValidator
+        
+        validator = UnifiedValidator(self.kg, self.pipeline)
+        val_result = validator.validate_all(answer, normalized_qtype)
+        
+        # If there are errors or warnings, attempt to rewrite
+        if val_result.has_errors() or val_result.warnings:
+            edit_request_parts: List[str] = []
+            
+            if val_result.has_errors():
+                edit_request_parts.append(val_result.get_error_summary())
+            
+            if val_result.warnings:
+                edit_request_parts.extend(val_result.warnings[:2])
+            
+            edit_request = "; ".join(
+                [p for p in edit_request_parts if p] or ["형식/규칙 위반 수정"]
+            )
+            
+            try:
+                logger.info("답변 검증 실패, 재작성 시도: %s", edit_request)
+                answer = await self.agent.rewrite_best_answer(
+                    ocr_text=ctx.ocr_text,
+                    best_answer=answer,
+                    edit_request=edit_request,
+                    cached_content=None,
+                    length_constraint=length_constraint,
+                )
+                answer = self._strip_output_tags(answer)
+                answer = self._postprocess_answer(answer, ctx.query_type)
+                logger.info("검증 기반 재작성 완료")
+            except Exception as exc:
+                logger.debug("재작성 실패, 기존 답변 유지: %s", exc)
+        
+        return answer
+    
+    def _get_length_constraint(self, query_type: str) -> str:
+        """Get length constraint based on query type."""
+        if query_type == "target_short":
+            return "답변은 불릿·마크다운(볼드/기울임) 없이 한 문장으로, 최대 50단어 이내로 작성하세요."
+        elif query_type == "target_long":
+            return "답변은 불릿·마크다운(볼드/기울임) 없이 3-4문장, 최대 100단어 이내로 작성하세요."
+        elif query_type == "reasoning":
+            return "불릿·마크다운(볼드/기울임) 없이 한 단락으로 간결하게 추론을 제시하세요."
+        return ""
+    
+    def _get_difficulty_hint(self, ocr_text: str) -> str:
+        """Get difficulty hint based on OCR text length."""
+        length = len(ocr_text)
+        if length > 2000:
+            return "본문이 길어 핵심 숫자·근거만 간결히 답하세요."
+        return "불필요한 서론 없이 핵심을 짧게 서술하세요."
 
     def _strip_output_tags(self, text: str) -> str:
         """<output> 태그 제거."""
@@ -371,5 +481,16 @@ class WorkspaceExecutor:
 
     def _postprocess_answer(self, answer: str, query_type: str) -> str:
         """답변 후처리."""
-        # query_type에 따른 추가 처리 (필요시)
+        # Sanitize output
+        answer = self._sanitize_output(answer)
         return answer.strip()
+    
+    def _sanitize_output(self, text: str) -> str:
+        """불릿/마크다운/여분 공백을 제거해 일관된 문장만 남긴다."""
+        text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
+        text = re.sub(r"\*(.*?)\*", r"\1", text)
+        text = re.sub(r"[_]{1,2}(.*?)[_]{1,2}", r"\1", text)
+        text = text.replace("*", "")
+        text = re.sub(r"^[\-\u2022]\s*", "", text, flags=re.MULTILINE)
+        text = re.sub(r"\s+", " ", text).strip()
+        return text

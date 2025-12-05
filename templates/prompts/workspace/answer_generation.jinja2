@@ -1,0 +1,32 @@
+{# Answer generation template #}
+[지시사항]
+반드시 한국어로 답변하세요.
+OCR에 없는 정보는 추가하지 마세요.
+{% if length_constraint -%}
+{{ length_constraint }}
+{% endif -%}
+{% if dedup_section -%}
+{{ dedup_section }}
+{% endif -%}
+{% if difficulty_hint -%}
+{{ difficulty_hint }}
+{% endif -%}
+{% if evidence_clause -%}
+{{ evidence_clause }}
+{% endif %}
+[준수 규칙]
+{% for rule in rules_list -%}
+- {{ rule }}
+{% endfor -%}
+{% if extra_rules -%}
+{% for rule in extra_rules -%}
+- {{ rule }}
+{% endfor -%}
+{% endif %}
+[OCR 텍스트]
+{{ ocr_text[:3000] }}
+
+[질의]
+{{ query }}
+
+위 OCR 텍스트를 기반으로 답변을 작성하세요.
