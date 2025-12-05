@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Dict, Optional, cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -9,6 +9,12 @@ from src.web.routers.workspace import (
     _generate_lats_answer,
     _lats_evaluate_answer,
 )
+
+# Import the actual type for type checking
+try:
+    from src.features.lats import SearchNode
+except ImportError:
+    SearchNode = Any  # type: ignore[misc,assignment]
 
 
 @pytest.mark.asyncio
@@ -93,7 +99,7 @@ async def test_lats_evaluate_answer_node() -> None:
 
     class MockState:
         def __init__(
-            self, answer: str, ocr: str, metadata: Optional[dict[str, Any]] = None
+            self, answer: str, ocr: str, metadata: Optional[Dict[str, Any]] = None
         ) -> None:
             self.current_answer = answer
             self.ocr_text = ocr
@@ -107,15 +113,17 @@ async def test_lats_evaluate_answer_node() -> None:
 
     # 1. Good answer (explanation default)
     state_good = MockState("100억 매출입니다.", ocr_text, {"query_type": "explanation"})
-    score = await _lats_evaluate_answer(MockNode(state_good))  # type: ignore[arg-type]
+    score = await _lats_evaluate_answer(cast(SearchNode, MockNode(state_good)))
     assert score > 0.6
 
     # 2. Table Summary (needs higher number match weight)
     state_table = MockState("100", ocr_text, {"query_type": "table_summary"})
-    score_table = await _lats_evaluate_answer(MockNode(state_table))  # type: ignore[arg-type]
+    score_table = await _lats_evaluate_answer(cast(SearchNode, MockNode(state_table)))
     assert score_table > 0.0
 
     # 3. No query_type in metadata (default to explanation)
     state_default = MockState("기본 답변", ocr_text, {})
-    score_default = await _lats_evaluate_answer(MockNode(state_default))  # type: ignore[arg-type]
+    score_default = await _lats_evaluate_answer(
+        cast(SearchNode, MockNode(state_default))
+    )
     assert score_default >= 0.0
