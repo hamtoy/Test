@@ -14,16 +14,16 @@ This module provides FastAPI endpoints for workspace operations including:
 - POST /workspace/unified - Unified workflow execution
 
 ## Structure
-Lines 1-110: Imports, constants, and LATS configuration
-Lines 118-244: Dependency injection and helper functions
-Lines 246-254: Utility functions
-Lines 255-346: `/workspace` endpoint (inspection/editing)
-Lines 348-444: `/workspace/generate-answer` endpoint
-Lines 445-491: `/workspace/generate-query` endpoint  
-Lines 492-648: LATS evaluation helpers
-Lines 711-806: `/workspace/unified` endpoint
+**Imports and Configuration** (lines 1-110): Module imports, constants, LATS config
+**Dependency Management** (lines 118-244): Dependency injection and helpers
+**Utilities** (lines 246-254): Helper functions
+**Inspection/Editing Endpoint** (lines 255-346): `/workspace` endpoint
+**Answer Generation** (lines 348-444): `/workspace/generate-answer` endpoint
+**Query Generation** (lines 445-491): `/workspace/generate-query` endpoint  
+**LATS Evaluation** (lines 492-648): LATS evaluation helper functions
+**Unified Workflow** (lines 711-end): `/workspace/unified` endpoint
 
-Note: This file is 806 lines. Consider future refactoring into:
+Note: This is a large file. Consider future refactoring into:
   - workspace_generation.py (generation endpoints)
   - workspace_review.py (inspection/editing)
   - workspace_unified.py (unified workflow)

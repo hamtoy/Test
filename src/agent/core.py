@@ -17,14 +17,14 @@ The GeminiAgent class acts as a coordinator, managing:
 - Context and retry handling
 
 ## Structure
-Lines 1-66: Imports and utilities
-Lines 67-140: GeminiAgent initialization and component setup
-Lines 141-300: Core API methods (delegating to services)
-Lines 301-450: Cache and context management
-Lines 451-600: Utility and helper methods
-Lines 601-624: Cleanup and lifecycle management
+**Imports and Utilities** (lines 1-66): Module imports and helper functions
+**Agent Initialization** (lines 67-140): GeminiAgent initialization and component setup
+**Core API Methods** (lines 141-300): Main methods delegating to services
+**Cache & Context** (lines 301-450): Cache and context management
+**Utilities** (lines 451-600): Helper methods and tracking
+**Lifecycle** (lines 601-end): Cleanup and resource management
 
-Note: This file is 624 lines. Most business logic has been extracted to services.py.
+Note: This is a large file, but most business logic has been extracted to services.py.
 Further refactoring could split by concern (initialization, API calls, management).
 """
 

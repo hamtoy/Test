@@ -12,12 +12,12 @@ This module provides FastAPI endpoints for QA pair generation and evaluation:
 - POST /eval/external - Evaluate external answers
 
 ## Structure
-Lines 1-40: Imports and router setup
-Lines 41-214: Dependency injection and helper functions
-Lines 215-659: `/qa/generate` endpoint (QA generation)
-Lines 660-703: `/eval/external` endpoint (answer evaluation)
+**Imports and Setup** (lines 1-40): Module imports and router initialization
+**Dependency Management** (lines 41-214): Dependency injection and helper functions
+**QA Generation** (lines 215-659): `/qa/generate` endpoint (batch and single)
+**Answer Evaluation** (lines 660-end): `/eval/external` endpoint
 
-Note: This file is 703 lines. Consider future refactoring into:
+Note: This is a large file. Consider future refactoring into:
   - qa_generation.py (QA pair generation logic)
   - qa_evaluation.py (Answer evaluation logic)
   - qa_batch.py (Batch processing logic)

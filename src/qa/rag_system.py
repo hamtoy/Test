@@ -12,13 +12,13 @@ This module provides the QAKnowledgeGraph class which integrates:
 - QAKnowledgeGraph: Main facade for RAG operations
 
 ## Structure
-Lines 1-46: Imports and module setup
-Lines 47-200: QAKnowledgeGraph class (initialization and connection management)
-Lines 201-350: Vector search and embedding methods
-Lines 351-500: Rule retrieval and formatting methods
-Lines 501-670: Session management and Cypher query execution
+**Imports and Setup** (lines 1-46): Module imports and configuration
+**Class Initialization** (lines 47-200): QAKnowledgeGraph initialization and connection management
+**Vector Search** (lines 201-350): Embedding and similarity search methods
+**Rule Management** (lines 351-500): Rule retrieval and formatting
+**Session & Query Execution** (lines 501-end): Session validation and Cypher execution
 
-Note: This file is 670 lines. Consider future refactoring:
+Note: This is a large file. Consider future refactoring:
   - Extract Neo4j connection management to src/qa/graph/connection.py
   - Extract vector search to src/qa/graph/vector_search.py
   - Extract session validation to src/qa/validators/session_validator.py
