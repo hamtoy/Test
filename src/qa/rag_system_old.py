@@ -1,28 +1,28 @@
 # mypy: disable-error-code=attr-defined
-"""QA Knowledge Graph - RAG System with Neo4j Integration (Refactored).
+"""QA Knowledge Graph - RAG System with Neo4j Integration.
 
-This module provides the QAKnowledgeGraph class - a simplified facade that delegates
-to specialized modules in src/qa/graph/ for actual functionality.
+This module provides the QAKnowledgeGraph class which integrates:
+- Neo4j graph database for knowledge storage
+- Vector search using Gemini embeddings
+- Rule-based answer formatting
+- Session management and validation
+- Cypher query execution with injection prevention
 
-## Architecture (PROMPT-003 Refactoring)
+## Main Class
+- QAKnowledgeGraph: Main facade for RAG operations
 
-**Delegation Pattern**:
-- Connection Management → graph/connection.py (Neo4jConnectionManager)
-- Vector Search → graph/vector_search.py (VectorSearchEngine)
-- Rule Operations → graph/rule_upsert.py (RuleUpsertManager)
-- Query Execution → graph/query_executor.py
-- Validators → graph/validators.py
+## Structure
+**Imports and Setup** (lines 1-46): Module imports and configuration
+**Class Initialization** (lines 47-200): QAKnowledgeGraph initialization and connection management
+**Vector Search** (lines 201-350): Embedding and similarity search methods
+**Rule Management** (lines 351-500): Rule retrieval and formatting
+**Session & Query Execution** (lines 501-end): Session validation and Cypher execution
 
-**Main Class**:
-- QAKnowledgeGraph: Facade coordinating graph operations
-
-**Refactoring Goals** (695 lines → ~400 lines):
-- ✅ Extract connection management (_init_connection method)
-- ✅ Leverage existing graph/ modules
-- ✅ Maintain backward compatibility
-- ✅ All 19 RAG tests passing
-
-For architecture details: docs/ARCHITECTURE.md
+Note: This is a large file. Consider future refactoring:
+  - Extract Neo4j connection management to src/qa/graph/connection.py
+  - Extract vector search to src/qa/graph/vector_search.py
+  - Extract session validation to src/qa/validators/session_validator.py
+  - Keep QAKnowledgeGraph as a thin facade (target: ~300-400 lines)
 """
 from __future__ import annotations
 
@@ -75,11 +75,6 @@ class QAKnowledgeGraph:
     - Neo4j 그래프 쿼리
     - (선택) Rule 벡터 검색
     - 세션 구조 검증
-    
-    Simplified facade that delegates to specialized modules:
-    - Connection management → graph/connection.py
-    - Vector search → graph/vector_search.py
-    - Rule operations → graph/rule_upsert.py
     """
 
     def __init__(
@@ -106,43 +101,16 @@ class QAKnowledgeGraph:
         self._graph_provider: Optional[GraphProvider] = provider
         self._graph: Optional[SafeDriver] = None
         self._graph_finalizer: Optional[Any] = None
-        self._cache_metrics = CacheMetrics(namespace="qa_kg")
-        
-        # Store credentials for later use
-        self.neo4j_uri = neo4j_uri or os.getenv("NEO4J_URI")
-        self.neo4j_user = neo4j_user or os.getenv("NEO4J_USER")
-        self.neo4j_password = neo4j_password or os.getenv("NEO4J_PASSWORD")
-        
-        # Initialize connection based on provider
-        self._init_connection(provider)
-        
-        # Initialize vector store (lazy, optional)
+        self.neo4j_uri: Optional[str] = None
+        self.neo4j_user: Optional[str] = None
+        self.neo4j_password: Optional[str] = None
         self._vector_store: Any = None
-        self._init_vector_store()
+        self._cache_metrics = CacheMetrics(namespace="qa_kg")
 
-        # Initialize RuleUpsertManager for delegation
-        self._rule_upsert_manager = RuleUpsertManager(
-            graph=self._graph,
-            graph_provider=self._graph_provider,
-        )
-
-        # Ensure required formatting rule schema is present
-        ensure_formatting_rule_schema(
-            driver=self._graph, provider=self._graph_provider, logger=logger
-        )
-
-    def _init_connection(self, provider: Optional[GraphProvider]) -> None:
-        """Initialize Neo4j connection.
-        
-        Extracted from __init__ for clarity. Uses provider if available,
-        otherwise creates direct driver connection.
-        """
         if provider is None:
-            # No provider - create direct connection
-            if not self.neo4j_uri or not self.neo4j_user or not self.neo4j_password:
-                self.neo4j_uri = require_env("NEO4J_URI")
-                self.neo4j_user = require_env("NEO4J_USER")
-                self.neo4j_password = require_env("NEO4J_PASSWORD")
+            self.neo4j_uri = neo4j_uri or require_env("NEO4J_URI")
+            self.neo4j_user = neo4j_user or require_env("NEO4J_USER")
+            self.neo4j_password = neo4j_password or require_env("NEO4J_PASSWORD")
 
             try:
                 self._graph = create_sync_driver(
@@ -156,7 +124,10 @@ class QAKnowledgeGraph:
             except Neo4jError as e:
                 raise RuntimeError(f"Neo4j 연결 실패: {e}")
         else:
-            # Provider available - use it, but also setup direct connection if credentials exist
+            # enable tests relying on _graph assignment for provider case
+            self.neo4j_uri = neo4j_uri or os.getenv("NEO4J_URI")
+            self.neo4j_user = neo4j_user or os.getenv("NEO4J_USER")
+            self.neo4j_password = neo4j_password or os.getenv("NEO4J_PASSWORD")
             if self.neo4j_uri and self.neo4j_user and self.neo4j_password:
                 self._graph = create_sync_driver(
                     self.neo4j_uri,
@@ -166,6 +137,19 @@ class QAKnowledgeGraph:
                     graph_db_factory=GraphDatabase.driver,
                 )
                 self._graph_finalizer = weakref.finalize(self._graph, self._graph.close)
+
+        self._init_vector_store()
+
+        # Initialize RuleUpsertManager for delegation
+        self._rule_upsert_manager = RuleUpsertManager(
+            graph=self._graph,
+            graph_provider=self._graph_provider,
+        )
+
+        # Ensure required formatting rule schema is present
+        ensure_formatting_rule_schema(
+            driver=self._graph, provider=self._graph_provider, logger=logger
+        )
 
     @property
     def cache_metrics(self) -> CacheMetrics:
