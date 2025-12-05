@@ -1,6 +1,7 @@
 // 공통 유틸 함수 모음
 
 const copyTimeouts = new Map();
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function showToast(message, type = "info") {
     const toast = document.createElement("div");
@@ -144,4 +145,26 @@ export function showProgressWithEstimate(mode) {
         if (bar) bar.style.width = progress + "%";
     }, 200);
     return () => clearInterval(progressInterval);
+}
+
+export async function withRetry(fn, retries = 2, initialDelayMs = 500) {
+    let attempt = 0;
+    let delay = initialDelayMs;
+    let lastError;
+    while (attempt <= retries) {
+        try {
+            return await fn();
+        } catch (err) {
+            lastError = err;
+            const retryable =
+                !err || err.canRetry || err.status === undefined || err.status >= 500;
+            if (attempt === retries || !retryable) {
+                break;
+            }
+            await sleep(delay);
+            delay *= 2;
+            attempt += 1;
+        }
+    }
+    throw lastError;
 }

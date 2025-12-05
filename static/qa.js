@@ -1,5 +1,7 @@
-import { apiCall, copyToClipboard, showToast, showProgressWithEstimate } from "./utils.js";
+import { apiCall, copyToClipboard, showToast, showProgressWithEstimate, withRetry } from "./utils.js";
 import { loadOCR, saveOCR } from "./ocr.js";
+
+let activeController = null;
 
 function getModeLabels(mode) {
     if (mode === "batch") {
@@ -137,12 +139,22 @@ async function generateQA(mode, qtype) {
             ];
         }
 
-        const result = await apiCall("/api/qa/generate", "POST", payload);
+        if (activeController) {
+            activeController.abort();
+        }
+        activeController = new AbortController();
+        const result = await withRetry(
+            () => apiCall("/api/qa/generate", "POST", payload, activeController.signal),
+            2,
+            800,
+        );
+        activeController = null;
         stopProgress();
         if (progressBar) progressBar.style.width = "100%";
         await new Promise((resolve) => setTimeout(resolve, 300));
         displayResults(result);
     } catch (error) {
+        activeController = null;
         stopProgress();
         resultsDiv.innerHTML = `
             <div style="text-align: center; padding: 30px; background: #ffebee; border-radius: 8px; border: 1px solid #f44336; margin-top: 20px;">
@@ -168,5 +180,12 @@ export function initQA() {
         const mode = document.querySelector("input[name=\"mode\"]:checked").value;
         const qtype = mode === "single" ? document.getElementById("qtype").value : null;
         await generateQA(mode, qtype);
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && activeController) {
+            activeController.abort();
+            showToast("요청을 취소했습니다.", "warning");
+        }
     });
 }

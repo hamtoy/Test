@@ -16,21 +16,23 @@
     <div class="right-panel">
         <div class="control-box">
             <h2>⚙️ 생성 옵션</h2>
-            
-            <label for="mode-batch">
-                <input type="radio" id="mode-batch" name="mode" value="batch" checked>
-                4타입 일괄 생성
-            </label>
+            <div role="radiogroup" aria-labelledby="mode-label">
+                <span id="mode-label" class="sr-only">생성 모드 선택</span>
+                <label for="mode-batch">
+                    <input type="radio" id="mode-batch" name="mode" value="batch" checked>
+                    4타입 일괄 생성
+                </label>
 
-            <label for="mode-batch-three">
-                <input type="radio" id="mode-batch-three" name="mode" value="batch_three">
-                3타입 일괄 생성 (전체/추론/타겟 장답)
-            </label>
-            
-            <label for="mode-single">
-                <input type="radio" id="mode-single" name="mode" value="single">
-                타입별 생성
-            </label>
+                <label for="mode-batch-three">
+                    <input type="radio" id="mode-batch-three" name="mode" value="batch_three">
+                    3타입 일괄 생성 (전체/추론/타겟 장답)
+                </label>
+                
+                <label for="mode-single">
+                    <input type="radio" id="mode-single" name="mode" value="single">
+                    타입별 생성
+                </label>
+            </div>
 
             <div id="type-selector" style="display:none; margin-top: 10px;">
                 <label for="qtype" style="display:block; margin-bottom: 8px;">생성 타입</label>
@@ -45,7 +47,7 @@
             <button id="generate-btn" class="btn-primary" style="width: 100%; margin-top: 15px;">🚀 생성 실행</button>
         </div>
 
-        <div id="results" class="results-area"></div>
+        <div id="results" class="results-area" aria-live="polite"></div>
     </div>
 </div>
 {% endblock %}
