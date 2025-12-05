@@ -201,7 +201,7 @@ class TestUnifiedWorkspaceAPI:
             patch("src.web.api.config") as mock_config,
             patch("src.web.api.agent", mock_agent),
             patch("src.web.api.kg", None),
-            patch("src.web.routers.workspace.edit_content", mock_edit_content),
+            patch("src.web.routers.workspace_unified.edit_content", mock_edit_content),
         ):
             mock_config.input_dir = inputs_dir
             response = client.post(
@@ -233,7 +233,7 @@ class TestUnifiedWorkspaceAPI:
             patch("src.web.api.config") as mock_config,
             patch("src.web.api.agent", mock_agent),
             patch("src.web.api.kg", None),
-            patch("src.web.routers.workspace.edit_content", mock_edit_content),
+            patch("src.web.routers.workspace_unified.edit_content", mock_edit_content),
         ):
             mock_config.input_dir = inputs_dir
             response = client.post(
@@ -265,7 +265,7 @@ class TestUnifiedWorkspaceAPI:
             patch("src.web.api.config") as mock_config,
             patch("src.web.api.agent", mock_agent),
             patch("src.web.api.kg", None),
-            patch("src.web.routers.workspace.edit_content", mock_edit_content),
+            patch("src.web.routers.workspace_unified.edit_content", mock_edit_content),
         ):
             mock_config.input_dir = inputs_dir
             response = client.post(
@@ -292,13 +292,13 @@ class TestUnifiedWorkspaceAPI:
         inputs_dir.mkdir(parents=True)
         (inputs_dir / "input_ocr.txt").write_text("Test OCR text", encoding="utf-8")
 
-        mock_inspect_answer = AsyncMock(return_value="Inspected answer")
+        mock_edit_content = AsyncMock(return_value="Rewritten answer")
 
         with (
             patch("src.web.api.config") as mock_config,
             patch("src.web.api.agent", mock_agent),
             patch("src.web.api.kg", None),
-            patch("src.web.routers.workspace.edit_content", mock_inspect_answer),
+            patch("src.web.routers.workspace_unified.edit_content", mock_edit_content),
         ):
             mock_config.input_dir = inputs_dir
             response = client.post(
@@ -313,7 +313,7 @@ class TestUnifiedWorkspaceAPI:
             assert response.status_code == 200
             data = response.json()
             assert data["workflow"] == "rewrite"
-            assert data["answer"] == "Inspected answer"
+            assert data["answer"] == "Rewritten answer"
             assert "재작성 완료" in data["changes"]
 
     def test_unified_workspace_agent_not_initialized(self, client: Any) -> None:
