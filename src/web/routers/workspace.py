@@ -586,7 +586,7 @@ async def _lats_evaluate_answer(node: "SearchNode") -> float:
 
 @router.post("/workspace/unified")
 async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]:
-    """통합 워크스페이스 - WorkspaceExecutor 사용 (Phase 3, 4 완료)."""
+    """통합 워크스페이스 - WorkspaceExecutor 기반 구현."""
     from src.workflow.workspace_executor import (
         WorkflowContext,
         WorkflowType,

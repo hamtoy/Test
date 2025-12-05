@@ -17,6 +17,12 @@ if TYPE_CHECKING:
     from src.qa.pipeline import IntegratedQAPipeline
     from src.qa.rag_system import QAKnowledgeGraph
 
+# Lazy imports to avoid circular dependencies
+from src.config.constants import DEFAULT_ANSWER_RULES
+from src.qa.rule_loader import RuleLoader
+from src.qa.validator import UnifiedValidator
+from src.web.utils import QTYPE_MAP
+
 logger = logging.getLogger(__name__)
 
 # Get repository root for template loading
@@ -341,10 +347,6 @@ class WorkspaceExecutor:
     async def _generate_answer(self, ctx: WorkflowContext, query: str) -> str:
         """답변 생성 (공통 로직 - Jinja2 템플릿 사용)."""
         # Get rules from KG if available
-        from src.config.constants import DEFAULT_ANSWER_RULES
-        from src.qa.rule_loader import RuleLoader
-        from src.web.utils import QTYPE_MAP
-        
         normalized_qtype = QTYPE_MAP.get(ctx.query_type, "explanation")
         rules_list = []
         extra_rules = []
@@ -410,7 +412,7 @@ class WorkspaceExecutor:
         answer = self._strip_output_tags(answer)
         answer = self._postprocess_answer(answer, ctx.query_type)
         
-        # Phase 4: Validation layer integration
+        # Validate answer and optionally rewrite if validation fails
         answer = await self._validate_and_fix_answer(
             answer, ctx, normalized_qtype, length_constraint
         )
@@ -420,9 +422,7 @@ class WorkspaceExecutor:
     async def _validate_and_fix_answer(
         self, answer: str, ctx: WorkflowContext, normalized_qtype: str, length_constraint: str
     ) -> str:
-        """Validate answer and optionally rewrite if validation fails (Phase 4)."""
-        from src.qa.validator import UnifiedValidator
-        
+        """Validate answer and optionally rewrite if validation fails."""
         validator = UnifiedValidator(self.kg, self.pipeline)
         val_result = validator.validate_all(answer, normalized_qtype)
         
