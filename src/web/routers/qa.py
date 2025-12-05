@@ -29,6 +29,7 @@ from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rule_loader import RuleLoader
 from src.qa.rag_system import QAKnowledgeGraph
 from src.qa.validator import UnifiedValidator
+from src.config.exceptions import SafetyFilterError
 from src.web.models import EvalExternalRequest, GenerateQARequest
 from src.web.response import APIMetadata, build_response
 from src.web.utils import QTYPE_MAP, load_ocr_text, postprocess_answer
@@ -502,7 +503,12 @@ async def generate_single_qa(
             )
         constraints_text = ""
         if answer_constraints:
-            answer_constraints.sort(key=lambda c: c.get("priority", 0), reverse=True)
+
+            def _priority_value(item: Dict[str, Any]) -> float:
+                val = item.get("priority")
+                return float(val) if isinstance(val, (int, float)) else 0.0
+
+            answer_constraints.sort(key=_priority_value, reverse=True)
             constraints_text = "\n".join(
                 f"[우선순위 {c.get('priority', 0)}] {c.get('description', '')}"
                 for c in answer_constraints
@@ -535,6 +541,8 @@ async def generate_single_qa(
             constraints=answer_constraints,
             length_constraint=length_constraint,
         )
+        if not draft_answer:
+            raise SafetyFilterError("No text content in response.")
 
         # 통합 검증으로 수집할 위반/경고
         val_result = unified_validator.validate_all(draft_answer, normalized_qtype)
@@ -566,7 +574,9 @@ async def generate_single_qa(
                 rule_check = validator._check_rule_compliance(
                     draft_answer, normalized_qtype
                 )
-                if rule_check.get("violations") and rule_check.get("score", 1.0) < 0.3:
+                score = rule_check.get("score")
+                score_val = score if isinstance(score, (int, float)) else 1.0
+                if rule_check.get("violations") and score_val < 0.3:
                     all_violations.extend(rule_check.get("violations", []))
             except Exception:
                 pass
