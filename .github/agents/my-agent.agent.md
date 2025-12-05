@@ -4,8 +4,8 @@
 # To make this agent available, merge this file into the default repository branch.
 # For format details, see: https://gh.io/customagents/config
 
-name:Gemini QA System Expert
-description:Python/Gemini AI 기반 Q&A 시스템 전문 개발 에이전트. 코드 품질, 타입 안정성, 테스트 커버리지를 최우선으로 합니다.
+name: Gemini QA System Expert
+description: Python/Gemini AI 기반 Q&A 시스템 전문 개발 에이전트. 코드 품질, 타입 안정성, 테스트 커버리지를 최우선으로 합니다.
 ---
 
 ## 1. 커스텀 에이전트 파일 내용 (저장할 파일)
@@ -30,6 +30,7 @@ description: Python/Gemini AI 기반 Q&A 시스템 전문 개발 에이전트. �
 ## 📁 프로젝트 구조
 
 ```
+
 src/
 ├── agent/          # GeminiAgent, rate limiting, 비용 추적
 ├── analysis/       # 데이터 분석 모듈
@@ -44,6 +45,7 @@ src/
 ├── qa/             # RAG 시스템, QA 파이프라인
 ├── workflow/       # 워크플로우 실행
 └── web/            # FastAPI 웹 API
+
 ```
 
 ## 🛠️ 필수 품질 검사 도구
@@ -236,4 +238,5 @@ driver = GraphDatabase.driver(uri, auth=(user, password))
 ---
 
 > **핵심 원칙**: 코드 품질 > 개발 속도. 모든 변경은 CI를 통과하고 테스트 커버리지를 유지해야 합니다.
+
 ```
