@@ -32,6 +32,7 @@ from src.infra.health import (
 from src.infra.structured_logging import setup_structured_logging
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
+from src.qa.rule_loader import set_global_kg
 from src.web.session import SessionManager, session_middleware
 from src.web.models import OCRTextInput
 from src.web.routers import health_router, qa_router, stream_router, workspace_router
@@ -261,6 +262,8 @@ async def init_resources() -> None:
             logger.warning("Neo4j 연결 실패 (RAG 비활성화): %s", e)
             registry.register_kg(None)
             kg = None
+        # RuleLoader 전역 캐시를 위한 KG 설정
+        set_global_kg(kg)
 
         try:
             qa_pipeline = IntegratedQAPipeline()
@@ -282,6 +285,8 @@ async def init_resources() -> None:
     health_router_module.set_dependencies(
         health_checker, agent=agent, kg=kg, pipeline=pipeline
     )
+    # 전역 KG 설정 (이미 초기화된 경우에도 동기화)
+    set_global_kg(kg)
 
 
 @asynccontextmanager
