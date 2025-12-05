@@ -305,13 +305,20 @@ class RewriterService:
             agent.logger.debug("Neo4j 조회 실패 (선택사항): %s", e)
 
         if constraint_list:
-            # priority가 None일 경우 0으로 처리 (TypeError 방지)
-            constraint_list.sort(
-                key=lambda x: (x.get("priority") or 0)
-                if isinstance(x.get("priority"), (int, float))
-                else 0,
-                reverse=True,
-            )
+            # [Fix] Sanitize constraints for template safety (handle NoneType comparison)
+            sanitized = []
+            for c in constraint_list:
+                if isinstance(c, dict):
+                    # Create a safe copy for template rendering
+                    c_safe = c.copy()
+                    # Ensure priority is a number for sorting and template comparison
+                    if not isinstance(c_safe.get("priority"), (int, float)):
+                        c_safe["priority"] = 0
+                    sanitized.append(c_safe)
+
+            constraint_list = sanitized
+            # Sort by priority (safe now as we ensured it's int/float)
+            constraint_list.sort(key=lambda x: x["priority"], reverse=True)
 
         guide_rules: List[Dict[str, str]] = []
         common_mistakes: List[Dict[str, str]] = []

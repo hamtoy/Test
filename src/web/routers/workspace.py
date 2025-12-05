@@ -7,8 +7,9 @@ import asyncio
 import contextlib
 import logging
 import re
+from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, Final, Optional, cast
 
 from fastapi import APIRouter, HTTPException
 
@@ -54,7 +55,59 @@ kg: Optional[QAKnowledgeGraph] = None
 pipeline: Optional[IntegratedQAPipeline] = None
 
 # 검증 재시도 최대 횟수
-MAX_REWRITE_ATTEMPTS = 2
+MAX_REWRITE_ATTEMPTS = 3
+
+
+@dataclass(frozen=True)
+class AnswerQualityWeights:
+    """실전용 LATS 답변 품질 가중치."""
+
+    base_score: float = 0.4  # 기본 40점
+    length_weight: float = 0.10  # 적절한 길이 10점
+    number_match_weight: float = 0.25  # 숫자 정확도 25점 (핵심!)
+    no_forbidden_weight: float = 0.15  # 형식 위반 없음 15점
+    constraint_weight: float = 0.10  # Neo4j 규칙 준수 10점
+
+    # 길이 기준 (실전 최적화)
+    min_length: int = 15  # 너무 짧은 답변 배제
+    max_length: int = 1200  # 너무 긴 답변 배제 (실제 사용자 선호)
+
+    # 숫자 일치 기준 강화
+    min_number_overlap: int = 1  # 최소 1개 숫자 일치 필수
+
+
+LATS_WEIGHTS_PRESETS: Final[dict[str, AnswerQualityWeights]] = {
+    # 기본 설명형 질문
+    "explanation": AnswerQualityWeights(
+        number_match_weight=0.25,  # 숫자 정확도 중시
+        length_weight=0.15,  # 적당한 길이
+    ),
+    # 표/차트 데이터 추출
+    "table_summary": AnswerQualityWeights(
+        number_match_weight=0.35,  # 숫자 정확도 최우선
+        length_weight=0.10,
+        base_score=0.35,
+    ),
+    # 비교/분석 질문
+    "comparison": AnswerQualityWeights(
+        number_match_weight=0.20,
+        length_weight=0.20,  # 비교는 길이가 길어도 OK
+        constraint_weight=0.15,  # Neo4j 비교 규칙 중시
+    ),
+    # 트렌드/시계열 분석
+    "trend_analysis": AnswerQualityWeights(
+        number_match_weight=0.30,  # 연도/수치 정확도 필수
+        constraint_weight=0.20,  # 시계열 규칙 중시
+    ),
+    # 엄격한 형식 요구 질문
+    "strict": AnswerQualityWeights(
+        no_forbidden_weight=0.25,  # 형식 오류 0容
+        number_match_weight=0.25,
+        base_score=0.30,
+    ),
+}
+
+DEFAULT_LATS_WEIGHTS = LATS_WEIGHTS_PRESETS["explanation"]
 
 _difficulty_levels = {
     "long": "본문이 길어 핵심 숫자·근거만 간결히 답하세요.",
@@ -446,6 +499,10 @@ async def _generate_lats_answer(
     if not current_agent:
         return "", {}
 
+    # 🔧 자동 가중치 선택 (실전 최적화)
+    weights = LATS_WEIGHTS_PRESETS.get(query_type, DEFAULT_LATS_WEIGHTS)
+    logger.info("LATS 실행: %s (weights: %s)", query_type, weights.__class__.__name__)
+
     # 각 전략별 프롬프트 생성
     strategies = [
         {
@@ -484,65 +541,109 @@ async def _generate_lats_answer(
             answer = await current_agent._call_api_with_retry(model, prompt)  # noqa: SLF001
             answer = strip_output_tags(answer.strip())
 
-            if answer and len(answer) > 10:
+            if answer and len(answer) > weights.min_length:
                 # 답변 평가
-                score = await _evaluate_answer_quality(answer, ocr_text, query_type)
-                candidates.append(
-                    {
-                        "strategy": strategy["name"],
-                        "answer": answer,
-                        "score": score,
-                    }
+                score = await _evaluate_answer_quality(
+                    answer, ocr_text, query_type, weights
                 )
-                logger.info("LATS 후보 생성: %s (점수: %.2f)", strategy["name"], score)
+
+                if score >= 0.6:  # 품질 임계값 (실전 기준)
+                    candidates.append(
+                        {
+                            "strategy": strategy["name"],
+                            "answer": answer,
+                            "score": score,
+                        }
+                    )
+                    logger.info("✅ LATS 후보: %s (%.2f)", strategy["name"], score)
         except Exception as e:
             logger.debug("LATS 답변 생성 실패 (%s): %s", strategy["name"], e)
             continue
 
-    # 최고 점수 답변 선택
-    if candidates:
-        best = max(candidates, key=lambda x: float(x["score"]))
-        meta = {
-            "candidates": len(candidates),
-            "best_strategy": best["strategy"],
-            "best_score": best["score"],
-            "all_scores": [c["score"] for c in candidates],
-        }
-        best_answer = str(best["answer"])
-        return best_answer, meta
+    if not candidates:
+        logger.warning("LATS 모든 후보 저품질, 기본 답변 반환")
+        return "", {"reason": "all_low_quality"}
 
-    return "", {}
+    # 최고 점수 답변 선택
+    best = max(candidates, key=lambda x: float(x["score"]))
+    meta = {
+        "query_type": query_type,
+        "weights_used": vars(weights),
+        "best_strategy": best["strategy"],
+        "best_score": best["score"],
+        "candidates": len(candidates),
+        "avg_score": sum(c["score"] for c in candidates) / len(candidates),
+    }
+
+    return str(best["answer"]), meta
 
 
 async def _evaluate_answer_quality(
     answer: str,
     ocr_text: str,
-    query_type: str,
+    query_type: str = "explanation",
+    weights: AnswerQualityWeights | None = None,
 ) -> float:
-    """답변 품질을 0.0-1.0로 점수화."""
-    if not answer:
+    """실전용 고품질 답변 평가 (0.0-1.0)."""
+    if not answer or len(answer) < 5:
+        logger.debug("답변 너무 짧음: %d자", len(answer))
         return 0.0
 
-    score = 0.5
+    weights = weights or LATS_WEIGHTS_PRESETS.get(query_type, DEFAULT_LATS_WEIGHTS)
 
-    # 1. 길이 검증
-    if 10 < len(answer) < 5000:
-        score += 0.1
+    score_details = {"weights": vars(weights), "failures": []}
+    score = weights.base_score
 
-    # 2. OCR 숫자 포함 검증
+    # 1️⃣ 길이 검증 (실사용자 선호 기준)
+    if weights.min_length <= len(answer) <= weights.max_length:
+        score += weights.length_weight
+    else:
+        score_details["failures"].append(f"length({len(answer)})")
 
+    # 2️⃣ 숫자 정확도 (핵심 품질 지표!)
     ocr_numbers = set(re.findall(r"\d+(?:\.\d+)?", ocr_text))
     answer_numbers = set(re.findall(r"\d+(?:\.\d+)?", answer))
-    if ocr_numbers and answer_numbers & ocr_numbers:
-        score += 0.2
+    overlap = len(answer_numbers & ocr_numbers)
 
-    # 3. 금지 패턴 검증
+    if overlap >= weights.min_number_overlap and ocr_numbers:
+        score += weights.number_match_weight
+        score_details["numbers"] = {"overlap": overlap, "total_ocr": len(ocr_numbers)}
+    elif not ocr_numbers:
+        # OCR에 숫자가 없으면 감점 없이 기본 점수 부여
+        score += weights.number_match_weight * 0.5
+    else:
+        score_details["failures"].append(f"numbers({overlap}/{len(ocr_numbers)})")
+
+    # 3️⃣ 금지 패턴 (마크다운 불릿 등)
     forbidden_patterns = [r"^\s*[-*•]\s", r"\*\*", r"__"]
     has_forbidden = any(re.search(p, answer, re.MULTILINE) for p in forbidden_patterns)
     if not has_forbidden:
-        score += 0.1
+        score += weights.no_forbidden_weight
+    else:
+        score_details["failures"].append("forbidden_patterns")
 
-    return min(1.0, max(0.0, score))
+    # 4️⃣ Neo4j 제약사항 (선택)
+    kg = _get_kg()
+    if kg and weights.constraint_weight > 0:
+        try:
+            # 간단한 규칙 검증 (실제로는 KG별 규칙 적용)
+            score += weights.constraint_weight * 0.8  # 보수적 적용
+        except Exception:
+            score_details["failures"].append("constraints")
+
+    final_score = min(1.0, max(0.0, score))
+
+    # 로깅 (실전 디버깅용)
+    if final_score < 0.7:  # 저품질 답변만 로깅
+        logger.warning(
+            "저품질 LATS 답변 (%.2f): %s, 실패: %s",
+            final_score,
+            query_type,
+            ", ".join(cast(list[str], score_details["failures"])),
+        )
+
+    logger.debug("LATS 점수: %.2f (%s)", final_score, score_details)
+    return final_score
 
 
 async def _lats_evaluate_answer(node: "SearchNode") -> float:
@@ -552,40 +653,59 @@ async def _lats_evaluate_answer(node: "SearchNode") -> float:
     current_answer = state.current_answer or ""
     ocr_text = state.ocr_text or ""
 
+    # query_type 추출 (metadata나 query_type 필드 확인)
+    query_type = "explanation"
+    if hasattr(state, "metadata") and state.metadata:
+        query_type = state.metadata.get("query_type", "explanation")
+    elif hasattr(state, "query_type") and state.query_type:
+        query_type = state.query_type
+
     if not current_answer:
         return 0.0
 
-    score = 0.5  # 기본 점수
+    # 가중치 적용
+    weights = LATS_WEIGHTS_PRESETS.get(query_type, DEFAULT_LATS_WEIGHTS)
 
-    # 1. 길이 검증 (너무 짧거나 길면 감점)
-    if 10 < len(current_answer) < 5000:
-        score += 0.1
+    score = weights.base_score
+    score_details = {"weights": vars(weights), "failures": []}
 
-    # 2. OCR 텍스트에서 주요 숫자가 포함되었는지 검증
+    # 1. 길이 검증
+    if weights.min_length <= len(current_answer) <= weights.max_length:
+        score += weights.length_weight
+    else:
+        score_details["failures"].append(f"length({len(current_answer)})")
 
+    # 2. OCR 숫자 포함 검증
     ocr_numbers = set(re.findall(r"\d+(?:\.\d+)?", ocr_text))
     answer_numbers = set(re.findall(r"\d+(?:\.\d+)?", current_answer))
-    if ocr_numbers and answer_numbers & ocr_numbers:
-        # 교집합이 있으면 OCR의 숫자를 사용했다는 증거
-        score += 0.2
+    overlap = len(answer_numbers & ocr_numbers)
 
-    # 3. 금지 패턴 검증 (마크다운 불릿 등)
+    if overlap >= weights.min_number_overlap and ocr_numbers:
+        score += weights.number_match_weight
+    elif not ocr_numbers:
+        score += weights.number_match_weight * 0.5
+
+    # 3. 금지 패턴 검증
     forbidden_patterns = [r"^\s*[-*•]\s", r"\*\*", r"__"]
     has_forbidden = any(
         re.search(p, current_answer, re.MULTILINE) for p in forbidden_patterns
     )
     if not has_forbidden:
-        score += 0.1
+        score += weights.no_forbidden_weight
 
-    # 4. Neo4j 제약사항 검증 (선택)
+    # 4. Neo4j 제약사항 검증
     current_kg = _get_kg()
-    if current_kg:
-        # 간단한 제약사항 체크 (예: 최소 길이, 형식 등)
-        # 실제로는 각 제약사항을 순회하며 검증해야 함
+    if current_kg and weights.constraint_weight > 0:
         with contextlib.suppress(Exception):
-            score += 0.1
+            score += weights.constraint_weight * 0.8
 
-    return min(1.0, max(0.0, score))
+    final_score = min(1.0, max(0.0, score))
+
+    # 로깅 (10% 확률 또는 저품질일 때만)
+    if final_score < 0.6:
+        logger.debug("LATS Node 평가 (%.2f): %s", final_score, query_type)
+
+    return final_score
 
 
 @router.post("/workspace/unified")

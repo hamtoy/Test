@@ -25,11 +25,11 @@ from src.config.constants import (
     WORKSPACE_GENERATION_TIMEOUT,
     WORKSPACE_UNIFIED_TIMEOUT,
 )
-from src.qa.pipeline import IntegratedQAPipeline
-from src.qa.rule_loader import RuleLoader
-from src.qa.rag_system import QAKnowledgeGraph
-from src.qa.validator import UnifiedValidator
 from src.config.exceptions import SafetyFilterError
+from src.qa.pipeline import IntegratedQAPipeline
+from src.qa.rag_system import QAKnowledgeGraph
+from src.qa.rule_loader import RuleLoader
+from src.qa.validator import UnifiedValidator
 from src.web.models import EvalExternalRequest, GenerateQARequest
 from src.web.response import APIMetadata, build_response
 from src.web.utils import QTYPE_MAP, load_ocr_text, postprocess_answer
@@ -400,17 +400,36 @@ async def generate_single_qa(
     if kg_wrapper is not None:
         try:
             constraints = kg_wrapper.get_constraints_for_query_type(qtype)
+            # [Fix] Ensure validation: filter out non-dict items
+            valid_constraints = [c for c in constraints if isinstance(c, dict)]
+            if len(valid_constraints) < len(constraints):
+                logger.warning(
+                    "Dropdown invalid constraints: %d/%d (expected dict, got types: %s)",
+                    len(constraints) - len(valid_constraints),
+                    len(constraints),
+                    {type(c).__name__ for c in constraints if not isinstance(c, dict)},
+                )
+
             query_constraints = [
-                c for c in constraints if c.get("category") in ["query", "both"]
+                c for c in valid_constraints if c.get("category") in ["query", "both"]
             ]
             answer_constraints = [
-                c for c in constraints if c.get("category") in ["answer", "both"]
+                c for c in valid_constraints if c.get("category") in ["answer", "both"]
             ]
             try:
                 fmt_rules = kg_wrapper.get_formatting_rules_for_query_type(
                     normalized_qtype
                 )
-                for fr in fmt_rules:
+                # [Fix] Sanitize formatting rules
+                valid_fmt_rules = [fr for fr in fmt_rules if isinstance(fr, dict)]
+                if len(valid_fmt_rules) < len(fmt_rules):
+                    logger.warning(
+                        "Invalid formatting rules dropped: %d/%d",
+                        len(fmt_rules) - len(valid_fmt_rules),
+                        len(fmt_rules),
+                    )
+
+                for fr in valid_fmt_rules:
                     desc = fr.get("description") or fr.get("text")
                     if desc:
                         formatting_rules.append(desc)
