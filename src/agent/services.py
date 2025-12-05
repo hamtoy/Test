@@ -62,7 +62,13 @@ class QueryGeneratorService:
             agent.logger.debug("Neo4j 제약사항 조회 실패: %s", e)
 
         if constraint_list:
-            constraint_list.sort(key=lambda x: x.get("priority", 0), reverse=True)
+            # priority가 None일 경우 0으로 처리 (TypeError 방지)
+            constraint_list.sort(
+                key=lambda x: (x.get("priority") or 0)
+                if isinstance(x.get("priority"), (int, float))
+                else 0,
+                reverse=True,
+            )
 
         rules: List[str] = []
         try:
@@ -299,7 +305,13 @@ class RewriterService:
             agent.logger.debug("Neo4j 조회 실패 (선택사항): %s", e)
 
         if constraint_list:
-            constraint_list.sort(key=lambda x: x.get("priority", 0), reverse=True)
+            # priority가 None일 경우 0으로 처리 (TypeError 방지)
+            constraint_list.sort(
+                key=lambda x: (x.get("priority") or 0)
+                if isinstance(x.get("priority"), (int, float))
+                else 0,
+                reverse=True,
+            )
 
         guide_rules: List[Dict[str, str]] = []
         common_mistakes: List[Dict[str, str]] = []

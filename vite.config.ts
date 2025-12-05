@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import path from "path";
 
 export default defineConfig({
+    base: "/static/dist/",
     build: {
         outDir: "static/dist",
         emptyOutDir: true,
