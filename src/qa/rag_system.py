@@ -1,4 +1,29 @@
 # mypy: disable-error-code=attr-defined
+"""QA Knowledge Graph - RAG System with Neo4j Integration.
+
+This module provides the QAKnowledgeGraph class which integrates:
+- Neo4j graph database for knowledge storage
+- Vector search using Gemini embeddings
+- Rule-based answer formatting
+- Session management and validation
+- Cypher query execution with injection prevention
+
+## Main Class
+- QAKnowledgeGraph: Main facade for RAG operations
+
+## Structure
+Lines 1-46: Imports and module setup
+Lines 47-200: QAKnowledgeGraph class (initialization and connection management)
+Lines 201-350: Vector search and embedding methods
+Lines 351-500: Rule retrieval and formatting methods
+Lines 501-670: Session management and Cypher query execution
+
+Note: This file is 670 lines. Consider future refactoring:
+  - Extract Neo4j connection management to src/qa/graph/connection.py
+  - Extract vector search to src/qa/graph/vector_search.py
+  - Extract session validation to src/qa/validators/session_validator.py
+  - Keep QAKnowledgeGraph as a thin facade (target: ~300-400 lines)
+"""
 from __future__ import annotations
 
 import asyncio

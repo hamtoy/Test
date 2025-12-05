@@ -1,5 +1,28 @@
 # mypy: allow-untyped-decorators
-"""QA 생성 및 평가 엔드포인트."""
+"""QA 생성 및 평가 엔드포인트.
+
+This module provides FastAPI endpoints for QA pair generation and evaluation:
+- QA pair generation with Neo4j rule integration
+- External answer evaluation
+- Batch and single QA generation
+- Quality validation and cross-validation
+
+## Endpoints
+- POST /qa/generate - Generate QA pairs from OCR text
+- POST /eval/external - Evaluate external answers
+
+## Structure
+Lines 1-40: Imports and router setup
+Lines 41-214: Dependency injection and helper functions
+Lines 215-659: `/qa/generate` endpoint (QA generation)
+Lines 660-703: `/eval/external` endpoint (answer evaluation)
+
+Note: This file is 703 lines. Consider future refactoring into:
+  - qa_generation.py (QA pair generation logic)
+  - qa_evaluation.py (Answer evaluation logic)
+  - qa_batch.py (Batch processing logic)
+  - qa_helpers.py (Shared utilities)
+"""
 
 from __future__ import annotations
 

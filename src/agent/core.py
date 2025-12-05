@@ -2,6 +2,30 @@
 """Gemini Agent 핵심 모듈.
 
 GeminiAgent 클래스의 메인 로직을 포함합니다.
+
+## Architecture
+This module follows the Service Pattern where business logic is delegated to:
+- QueryGeneratorService (in services.py) - Query generation logic
+- ResponseEvaluatorService (in services.py) - Response evaluation logic
+- RewriterService (in services.py) - Response rewriting logic
+
+The GeminiAgent class acts as a coordinator, managing:
+- API client lifecycle
+- Rate limiting and concurrency control
+- Cost tracking and budget management
+- Cache management
+- Context and retry handling
+
+## Structure
+Lines 1-66: Imports and utilities
+Lines 67-140: GeminiAgent initialization and component setup
+Lines 141-300: Core API methods (delegating to services)
+Lines 301-450: Cache and context management
+Lines 451-600: Utility and helper methods
+Lines 601-624: Cleanup and lifecycle management
+
+Note: This file is 624 lines. Most business logic has been extracted to services.py.
+Further refactoring could split by concern (initialization, API calls, management).
 """
 
 from __future__ import annotations

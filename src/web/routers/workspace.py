@@ -1,4 +1,34 @@
-"""워크스페이스 관련 엔드포인트."""
+"""워크스페이스 관련 엔드포인트.
+
+This module provides FastAPI endpoints for workspace operations including:
+- Query/Answer generation
+- Answer inspection and review
+- Content editing with AI assistance
+- LATS (Language Agent Tree Search) based answer evaluation
+- Unified workflow execution
+
+## Endpoints
+- POST /workspace - Inspect or edit answers
+- POST /workspace/generate-answer - Generate answer from query
+- POST /workspace/generate-query - Generate query from answer
+- POST /workspace/unified - Unified workflow execution
+
+## Structure
+Lines 1-110: Imports, constants, and LATS configuration
+Lines 118-244: Dependency injection and helper functions
+Lines 246-254: Utility functions
+Lines 255-346: `/workspace` endpoint (inspection/editing)
+Lines 348-444: `/workspace/generate-answer` endpoint
+Lines 445-491: `/workspace/generate-query` endpoint  
+Lines 492-648: LATS evaluation helpers
+Lines 711-806: `/workspace/unified` endpoint
+
+Note: This file is 806 lines. Consider future refactoring into:
+  - workspace_generation.py (generation endpoints)
+  - workspace_review.py (inspection/editing)
+  - workspace_unified.py (unified workflow)
+  - workspace_lats.py (LATS evaluation logic)
+"""
 # mypy: ignore-errors
 
 from __future__ import annotations
