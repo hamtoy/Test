@@ -84,15 +84,36 @@ function copyToWorkspace(query: string, answer: string): void {
     window.location.href = "/workspace";
 }
 
-function displayResults(data: QAData | any): void {
-    if (data && data.success !== undefined && data.data) {
-        data = data.data;
-    }
+function isQAPair(value: unknown): value is QAPair {
+    if (!value || typeof value !== "object") return false;
+    const candidate = value as Record<string, unknown>;
+    return (
+        typeof candidate.type === "string" &&
+        typeof candidate.query === "string" &&
+        typeof candidate.answer === "string"
+    );
+}
+
+function extractPairs(raw: unknown): QAPair[] {
+    if (!raw || typeof raw !== "object") return [];
+
+    const payload = raw as QAData;
+    const candidates: unknown[] = [];
+
+    if (payload.pairs) candidates.push(...payload.pairs);
+    if (payload.pair) candidates.push(payload.pair);
+    if (payload.data?.pairs) candidates.push(...payload.data.pairs);
+    if (payload.data?.pair) candidates.push(payload.data.pair);
+
+    return candidates.filter(isQAPair);
+}
+
+function displayResults(raw: unknown): void {
+    let pairs = extractPairs(raw);
     const resultsDiv = document.getElementById("results");
     if (!resultsDiv) return;
     resultsDiv.innerHTML = "";
 
-    let pairs: QAPair[] = data.pairs || (data.pair ? [data.pair] : []);
     const selectedMode = (document.querySelector("input[name=\"mode\"]:checked") as HTMLInputElement)?.value;
     if (selectedMode === "batch_three") {
         const allowed = new Set(["global_explanation", "reasoning", "target_long"]);
@@ -138,7 +159,16 @@ function displayResults(data: QAData | any): void {
     });
 }
 
-async function generateQA(mode: string, qtype: string | null): Promise<void> {
+type GenerateMode = "single" | "batch" | "batch_three";
+
+interface GeneratePayload {
+    mode: "single" | "batch";
+    ocr_text: string;
+    qtype?: string;
+    batch_types?: string[];
+}
+
+async function generateQA(mode: GenerateMode, qtype: string | null): Promise<void> {
     const resultsDiv = document.getElementById("results");
     if (!resultsDiv) return;
     const ocrInput = document.getElementById("ocr-input") as HTMLTextAreaElement;
@@ -154,11 +184,19 @@ async function generateQA(mode: string, qtype: string | null): Promise<void> {
     const progressBar = document.querySelector(".progress-fill") as HTMLElement;
 
     try {
-        const payload: any = { mode, ocr_text: ocrText };
-        if (mode === "single") {
-            payload.qtype = qtype || "global_explanation";
-        } else if (mode === "batch_three") {
-            payload.mode = "batch";
+        const payload: GeneratePayload =
+            mode === "single"
+                ? {
+                      mode: "single",
+                      ocr_text: ocrText,
+                      qtype: qtype || "global_explanation",
+                  }
+                : {
+                      mode: "batch",
+                      ocr_text: ocrText,
+                  };
+
+        if (mode === "batch_three") {
             payload.batch_types = [
                 "global_explanation",
                 "reasoning",
@@ -171,7 +209,7 @@ async function generateQA(mode: string, qtype: string | null): Promise<void> {
         }
         activeController = new AbortController();
         const result = await withRetry(
-            () => apiCall("/api/qa/generate", "POST", payload, activeController!.signal),
+            () => apiCall<QAData>("/api/qa/generate", "POST", payload, activeController!.signal),
             2,
             800,
         );
@@ -180,13 +218,15 @@ async function generateQA(mode: string, qtype: string | null): Promise<void> {
         if (progressBar) progressBar.style.width = "100%";
         await new Promise((resolve) => setTimeout(resolve, 300));
         displayResults(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
         activeController = null;
         stopProgress();
+        const message =
+            error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.";
         resultsDiv.innerHTML = `
             <div style="text-align: center; padding: 30px; background: #ffebee; border-radius: 8px; border: 1px solid #f44336; margin-top: 20px;">
                 <h3 style="color: #f44336; margin-bottom: 10px;">❌ 생성 실패</h3>
-                <p style="color: #666; margin: 0;">${error.message}</p>
+                <p style="color: #666; margin: 0;">${message}</p>
             </div>
         `;
     }
@@ -207,7 +247,7 @@ export function initQA(): void {
 
     document.getElementById("generate-btn")?.addEventListener("click", async () => {
         const modeInput = document.querySelector("input[name=\"mode\"]:checked") as HTMLInputElement;
-        const mode = modeInput.value;
+        const mode = (modeInput?.value || "single") as GenerateMode;
         const qtypeInput = document.getElementById("qtype") as HTMLSelectElement;
         const qtype = mode === "single" ? qtypeInput.value : null;
         await generateQA(mode, qtype);

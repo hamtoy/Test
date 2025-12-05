@@ -11,8 +11,7 @@
     "noEmitOnError": false,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "allowImportingTsExtensions": true
+    "skipLibCheck": true
   },
   "include": ["static/**/*.ts"],
   "exclude": ["static/dist", "node_modules"]

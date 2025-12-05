@@ -306,9 +306,12 @@ export function initWorkspace() {
         catch (error) {
             const resultsDiv = document.getElementById("workspace-results");
             if (resultsDiv) {
+                const message = error instanceof Error
+                    ? error.message
+                    : "알 수 없는 오류가 발생했습니다.";
                 resultsDiv.innerHTML = `
                     <div style="text-align: center; padding: 20px; background: #ffebee; border-radius: 8px; border: 1px solid #f44336; margin-top: 20px;">
-                        <p style="color: #f44336; margin: 0;">❌ 작업 실패: ${error.message}</p>
+                        <p style="color: #f44336; margin: 0;">❌ 작업 실패: ${message}</p>
                     </div>
                 `;
             }

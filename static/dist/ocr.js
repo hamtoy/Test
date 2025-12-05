@@ -52,7 +52,8 @@ export async function saveOCR(sourceId = "ocr-input", statusId = "ocr-save-statu
             statusEl.className = "status-text error";
         }
         else {
-            showToast("OCR 저장 실패: " + error.message, "error");
+            const message = error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.";
+            showToast("OCR 저장 실패: " + message, "error");
         }
     }
 }

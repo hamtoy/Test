@@ -52,16 +52,37 @@ function copyToWorkspace(query, answer) {
     sessionStorage.setItem("workspace_answer", answer);
     window.location.href = "/workspace";
 }
-function displayResults(data) {
+function isQAPair(value) {
+    if (!value || typeof value !== "object")
+        return false;
+    const candidate = value;
+    return (typeof candidate.type === "string" &&
+        typeof candidate.query === "string" &&
+        typeof candidate.answer === "string");
+}
+function extractPairs(raw) {
+    var _a, _b;
+    if (!raw || typeof raw !== "object")
+        return [];
+    const payload = raw;
+    const candidates = [];
+    if (payload.pairs)
+        candidates.push(...payload.pairs);
+    if (payload.pair)
+        candidates.push(payload.pair);
+    if ((_a = payload.data) === null || _a === void 0 ? void 0 : _a.pairs)
+        candidates.push(...payload.data.pairs);
+    if ((_b = payload.data) === null || _b === void 0 ? void 0 : _b.pair)
+        candidates.push(payload.data.pair);
+    return candidates.filter(isQAPair);
+}
+function displayResults(raw) {
     var _a;
-    if (data && data.success !== undefined && data.data) {
-        data = data.data;
-    }
+    let pairs = extractPairs(raw);
     const resultsDiv = document.getElementById("results");
     if (!resultsDiv)
         return;
     resultsDiv.innerHTML = "";
-    let pairs = data.pairs || (data.pair ? [data.pair] : []);
     const selectedMode = (_a = document.querySelector("input[name=\"mode\"]:checked")) === null || _a === void 0 ? void 0 : _a.value;
     if (selectedMode === "batch_three") {
         const allowed = new Set(["global_explanation", "reasoning", "target_long"]);
@@ -116,12 +137,17 @@ async function generateQA(mode, qtype) {
     const stopProgress = showProgressWithEstimate(mode === "batch" || mode === "batch_three" ? "batch" : "single");
     const progressBar = document.querySelector(".progress-fill");
     try {
-        const payload = { mode, ocr_text: ocrText };
-        if (mode === "single") {
-            payload.qtype = qtype || "global_explanation";
-        }
-        else if (mode === "batch_three") {
-            payload.mode = "batch";
+        const payload = mode === "single"
+            ? {
+                mode: "single",
+                ocr_text: ocrText,
+                qtype: qtype || "global_explanation",
+            }
+            : {
+                mode: "batch",
+                ocr_text: ocrText,
+            };
+        if (mode === "batch_three") {
             payload.batch_types = [
                 "global_explanation",
                 "reasoning",
@@ -143,10 +169,11 @@ async function generateQA(mode, qtype) {
     catch (error) {
         activeController = null;
         stopProgress();
+        const message = error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.";
         resultsDiv.innerHTML = `
             <div style="text-align: center; padding: 30px; background: #ffebee; border-radius: 8px; border: 1px solid #f44336; margin-top: 20px;">
                 <h3 style="color: #f44336; margin-bottom: 10px;">❌ 생성 실패</h3>
-                <p style="color: #666; margin: 0;">${error.message}</p>
+                <p style="color: #666; margin: 0;">${message}</p>
             </div>
         `;
     }
@@ -165,7 +192,7 @@ export function initQA() {
     });
     (_b = document.getElementById("generate-btn")) === null || _b === void 0 ? void 0 : _b.addEventListener("click", async () => {
         const modeInput = document.querySelector("input[name=\"mode\"]:checked");
-        const mode = modeInput.value;
+        const mode = ((modeInput === null || modeInput === void 0 ? void 0 : modeInput.value) || "single");
         const qtypeInput = document.getElementById("qtype");
         const qtype = mode === "single" ? qtypeInput.value : null;
         await generateQA(mode, qtype);

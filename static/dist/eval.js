@@ -50,6 +50,7 @@ async function evaluateAnswers(query, answers) {
         resultsDiv.appendChild(table);
     }
     catch (error) {
-        resultsDiv.innerHTML = `<p style="color: var(--danger)">평가 실패: ${error.message}</p>`;
+        const message = error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.";
+        resultsDiv.innerHTML = `<p style="color: var(--danger)">평가 실패: ${message}</p>`;
     }
 }

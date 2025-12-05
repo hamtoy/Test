@@ -21,7 +21,7 @@ export function showToast(message: string, type: ToastType = "info"): void {
 export interface ApiErrorData {
     detail?: string;
     message?: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export class ApiError extends Error {
@@ -52,19 +52,21 @@ export class ApiError extends Error {
     }
 }
 
-function handleApiError(error: any): void {
+function handleApiError(error: unknown): void {
     console.error("API Error:", error);
-    if (error.canRetry) {
+    if (error instanceof ApiError && error.canRetry) {
         showToast(`${error.message} [다시 시도 가능]`, "warning");
-    } else {
+    } else if (error instanceof Error) {
         showToast(error.message, "error");
+    } else {
+        showToast("알 수 없는 오류가 발생했습니다.", "error");
     }
 }
 
-export async function apiCall<T = any>(
+export async function apiCall<T = unknown>(
     url: string,
     method: string = "GET",
-    body: any = null,
+    body?: unknown,
     signal?: AbortSignal
 ): Promise<T> {
     const options: RequestInit = {
@@ -87,8 +89,8 @@ export async function apiCall<T = any>(
             throw new ApiError(response.status, errorData);
         }
         return await response.json();
-    } catch (error: any) {
-        if (error.name === "AbortError") {
+    } catch (error: unknown) {
+        if (error instanceof DOMException && error.name === "AbortError") {
             throw new Error("요청이 취소되었습니다");
         }
         handleApiError(error);
@@ -129,13 +131,13 @@ export function copyToClipboard(text: string, buttonEl: HTMLElement | null = nul
 }
 
 export interface SSEParseResult {
-    events: any[];
+    events: unknown[];
     remainder: string;
 }
 
 // SSE 버퍼 파서 (불완전 청크 처리)
 export function parseSSEBuffer(buffer: string): SSEParseResult {
-    const events: any[] = [];
+    const events: unknown[] = [];
     let startIdx = 0;
 
     while (true) {
@@ -176,14 +178,20 @@ export async function withRetry<T>(
 ): Promise<T> {
     let attempt = 0;
     let delay = initialDelayMs;
-    let lastError: any;
+    let lastError: unknown;
     while (attempt <= retries) {
         try {
             return await fn();
-        } catch (err: any) {
+        } catch (err: unknown) {
             lastError = err;
             const retryable =
-                !err || err.canRetry || err.status === undefined || err.status >= 500;
+                !err ||
+                (err instanceof ApiError && err.canRetry) ||
+                (typeof err === "object" &&
+                    err !== null &&
+                    "status" in err &&
+                    typeof (err as { status?: number }).status === "number" &&
+                    (err as { status: number }).status >= 500);
             if (attempt === retries || !retryable) {
                 break;
             }

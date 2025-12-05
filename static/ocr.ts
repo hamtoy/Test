@@ -2,7 +2,6 @@ import { apiCall, showToast } from "./utils.js";
 
 interface OcrResponse {
     ocr?: string;
-    [key: string]: any;
 }
 
 export async function loadOCR(targetId: string = "ocr-input"): Promise<void> {
@@ -25,7 +24,7 @@ export async function loadOCR(targetId: string = "ocr-input"): Promise<void> {
             input.textContent = value || "OCR 파일이 없습니다.";
             if (!value) input.style.color = "#999";
         }
-    } catch (error) {
+    } catch (error: unknown) {
         if (input.tagName === "TEXTAREA") {
             (input as HTMLTextAreaElement).value = "";
             (input as HTMLTextAreaElement).placeholder = "OCR 로드 실패";
@@ -49,12 +48,14 @@ export async function saveOCR(sourceId: string = "ocr-input", statusId: string =
             statusEl.className = "status-text success";
             setTimeout(() => (statusEl.textContent = ""), 2000);
         }
-    } catch (error: any) {
+    } catch (error: unknown) {
         if (statusEl) {
             statusEl.textContent = "❌ 저장 실패";
             statusEl.className = "status-text error";
         } else {
-            showToast("OCR 저장 실패: " + error.message, "error");
+            const message =
+                error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.";
+            showToast("OCR 저장 실패: " + message, "error");
         }
     }
 }

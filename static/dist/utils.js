@@ -36,14 +36,17 @@ export class ApiError extends Error {
 }
 function handleApiError(error) {
     console.error("API Error:", error);
-    if (error.canRetry) {
+    if (error instanceof ApiError && error.canRetry) {
         showToast(`${error.message} [다시 시도 가능]`, "warning");
     }
-    else {
+    else if (error instanceof Error) {
         showToast(error.message, "error");
     }
+    else {
+        showToast("알 수 없는 오류가 발생했습니다.", "error");
+    }
 }
-export async function apiCall(url, method = "GET", body = null, signal) {
+export async function apiCall(url, method = "GET", body, signal) {
     const options = {
         method,
         headers: { "Content-Type": "application/json" },
@@ -67,7 +70,7 @@ export async function apiCall(url, method = "GET", body = null, signal) {
         return await response.json();
     }
     catch (error) {
-        if (error.name === "AbortError") {
+        if (error instanceof DOMException && error.name === "AbortError") {
             throw new Error("요청이 취소되었습니다");
         }
         handleApiError(error);
@@ -152,7 +155,13 @@ export async function withRetry(fn, retries = 2, initialDelayMs = 500) {
         }
         catch (err) {
             lastError = err;
-            const retryable = !err || err.canRetry || err.status === undefined || err.status >= 500;
+            const retryable = !err ||
+                (err instanceof ApiError && err.canRetry) ||
+                (typeof err === "object" &&
+                    err !== null &&
+                    "status" in err &&
+                    typeof err.status === "number" &&
+                    err.status >= 500);
             if (attempt === retries || !retryable) {
                 break;
             }

@@ -66,7 +66,9 @@ async function evaluateAnswers(query: string, answers: string[]): Promise<void> 
             </tbody>
         `;
         resultsDiv.appendChild(table);
-    } catch (error: any) {
-        resultsDiv.innerHTML = `<p style="color: var(--danger)">평가 실패: ${error.message}</p>`;
+    } catch (error: unknown) {
+        const message =
+            error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.";
+        resultsDiv.innerHTML = `<p style="color: var(--danger)">평가 실패: ${message}</p>`;
     }
 }
