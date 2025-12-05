@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { ApiError, parseSSEBuffer, withRetry } from "../utils.js";
+import { describe, expect, it, vi } from "vitest";
+import { ApiError, apiCallWithRetry, parseSSEBuffer, withRetry } from "../utils.js";
 
 describe("parseSSEBuffer", () => {
     it("parses complete SSE events and leaves no remainder", () => {
@@ -36,5 +36,34 @@ describe("withRetry", () => {
         );
         expect(result).toBe("ok");
         expect(attempts).toBe(2);
+    });
+});
+
+describe("apiCallWithRetry", () => {
+    it("retries failed responses and succeeds", async () => {
+        const originalFetch = global.fetch;
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce({
+                ok: false,
+                status: 500,
+                json: async () => ({ detail: "error" }),
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ ok: true }),
+            });
+        // @ts-expect-error - assign mock fetch
+        global.fetch = fetchMock;
+
+        const result = await apiCallWithRetry<{ ok: boolean }>({
+            url: "/api/test",
+            retries: 1,
+            initialDelayMs: 1,
+        });
+        expect(result).toEqual({ ok: true });
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+
+        global.fetch = originalFetch;
     });
 });

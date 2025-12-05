@@ -6,6 +6,10 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export type ToastType = "info" | "success" | "warning" | "error";
 
 export function showToast(message: string, type: ToastType = "info"): void {
+    if (typeof document === "undefined") {
+        console.warn(`[toast:${type}] ${message}`);
+        return;
+    }
     const toast = document.createElement("div");
     toast.className = `toast toast--${type}`;
     toast.textContent = message;
@@ -84,6 +88,13 @@ export function registerGlobalErrorHandlers(): void {
     });
 }
 
+export interface ApiCallParams {
+    url: string;
+    method?: string;
+    body?: unknown;
+    signal?: AbortSignal;
+}
+
 export async function apiCall<T = unknown>(
     url: string,
     method: string = "GET",
@@ -117,6 +128,17 @@ export async function apiCall<T = unknown>(
         handleApiError(error);
         throw error;
     }
+}
+
+export async function apiCallWithRetry<T = unknown>(
+    params: ApiCallParams & { retries?: number; initialDelayMs?: number },
+): Promise<T> {
+    const { retries = 2, initialDelayMs = 500, ...rest } = params;
+    return withRetry(
+        () => apiCall<T>(rest.url, rest.method, rest.body, rest.signal),
+        retries,
+        initialDelayMs,
+    );
 }
 
 export function showLoading(elementId: string): void {

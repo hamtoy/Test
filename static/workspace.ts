@@ -1,4 +1,4 @@
-import { apiCall, copyToClipboard, showToast } from "./utils.js";
+import { apiCallWithRetry, copyToClipboard, showToast } from "./utils.js";
 import { loadOCR, saveOCR } from "./ocr.js";
 
 const GLOBAL_EXPLANATION_KEY = "workspace_global_explanation";
@@ -308,7 +308,14 @@ async function executeWorkspace(
         body.answer = null;
     }
 
-    const result = await apiCall<WorkspaceResult>("/api/workspace/unified", "POST", body, signal);
+    const result = await apiCallWithRetry<WorkspaceResult>({
+        url: "/api/workspace/unified",
+        method: "POST",
+        body,
+        signal,
+        retries: 2,
+        initialDelayMs: 400,
+    });
     displayResult(result);
 }
 
