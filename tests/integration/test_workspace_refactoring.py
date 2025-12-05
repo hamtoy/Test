@@ -12,7 +12,7 @@ from src.workflow.workspace_executor import WorkflowResult
 
 
 @pytest.mark.asyncio
-async def test_api_unified_workspace_uses_executor():
+async def test_api_unified_workspace_uses_executor() -> None:
     """Test that api_unified_workspace uses WorkspaceExecutor."""
     # Create a mock request
     request = UnifiedWorkspaceRequest(
@@ -74,7 +74,7 @@ async def test_api_unified_workspace_uses_executor():
 
 
 @pytest.mark.asyncio
-async def test_api_unified_workspace_workflow_detection():
+async def test_api_unified_workspace_workflow_detection() -> None:
     """Test that workflow detection works correctly."""
     # Test different scenarios
     test_cases = [
