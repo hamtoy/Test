@@ -112,6 +112,8 @@ function displayResults(raw: unknown): void {
     let pairs = extractPairs(raw);
     const resultsDiv = document.getElementById("results");
     if (!resultsDiv) return;
+    resultsDiv.setAttribute("role", "status");
+    resultsDiv.setAttribute("aria-live", "polite");
     resultsDiv.innerHTML = "";
 
     const selectedMode = (document.querySelector("input[name=\"mode\"]:checked") as HTMLInputElement)?.value;
@@ -232,6 +234,39 @@ async function generateQA(mode: GenerateMode, qtype: string | null): Promise<voi
     }
 }
 
+function setupModeKeyboardNavigation(): void {
+    const radios = Array.from(document.querySelectorAll<HTMLInputElement>("input[name=\"mode\"]"));
+    if (!radios.length) return;
+
+    const focusRadio = (index: number) => {
+        const target = radios[index];
+        target.focus();
+        target.checked = true;
+        target.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+
+    radios.forEach((radio, idx) => {
+        radio.addEventListener("keydown", (e: KeyboardEvent) => {
+            let nextIndex = idx;
+            if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                nextIndex = (idx + 1) % radios.length;
+                e.preventDefault();
+                focusRadio(nextIndex);
+            } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                nextIndex = (idx - 1 + radios.length) % radios.length;
+                e.preventDefault();
+                focusRadio(nextIndex);
+            } else if (e.key === "Home") {
+                e.preventDefault();
+                focusRadio(0);
+            } else if (e.key === "End") {
+                e.preventDefault();
+                focusRadio(radios.length - 1);
+            }
+        });
+    });
+}
+
 export function initQA(): void {
     loadOCR();
     document.getElementById("save-ocr-btn")?.addEventListener("click", () => saveOCR());
@@ -252,6 +287,8 @@ export function initQA(): void {
         const qtype = mode === "single" ? qtypeInput.value : null;
         await generateQA(mode, qtype);
     });
+
+    setupModeKeyboardNavigation();
 
     document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && activeController) {
