@@ -631,6 +631,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
         kg=current_kg,
         pipeline=current_pipeline,
         config=config,
+        edit_fn=edit_content,
     )
 
     try:

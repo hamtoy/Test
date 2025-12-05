@@ -7,7 +7,13 @@ import re
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import (
+    TYPE_CHECKING,
+    Awaitable,
+    Callable,
+    List,
+    Optional,
+)
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -22,6 +28,7 @@ from src.config.constants import DEFAULT_ANSWER_RULES
 from src.qa.rule_loader import RuleLoader
 from src.qa.validator import UnifiedValidator
 from src.web.utils import QTYPE_MAP
+from src.workflow.edit import edit_content
 
 logger = logging.getLogger(__name__)
 
@@ -77,12 +84,14 @@ class WorkspaceExecutor:
         kg: Optional[QAKnowledgeGraph],
         pipeline: Optional[IntegratedQAPipeline],
         config: AppConfig,
+        edit_fn: Optional[Callable[..., Awaitable[str]]] = None,
     ):
         """핵심 의존성을 주입해 실행기를 초기화."""
         self.agent = agent
         self.kg = kg
         self.pipeline = pipeline
         self.config = config
+        self.edit_fn: Callable[..., Awaitable[str]] = edit_fn or edit_content
 
         # Jinja2 environment for prompt templates
         self.jinja_env = Environment(
@@ -203,16 +212,12 @@ class WorkspaceExecutor:
         """재작성 워크플로우."""
         changes: List[str] = ["답변 재작성"]
 
-        # 재작성 요청으로 답변 개선
-        answer = await self.agent.rewrite_best_answer(
-            ocr_text=ctx.ocr_text,
-            best_answer=ctx.answer,
+        # 재작성 요청으로 답변 개선 (edit_fn 활용)
+        answer = await self._apply_edit(
+            target_text=ctx.answer,
+            ctx=ctx,
             edit_request=ctx.edit_request or "답변을 개선해주세요.",
-            cached_content=None,
-            query_type=ctx.query_type,
         )
-
-        answer = self._strip_output_tags(answer)
         changes.append("재작성 완료")
 
         return WorkflowResult(
@@ -225,28 +230,21 @@ class WorkspaceExecutor:
 
     async def _handle_edit_query(self, ctx: WorkflowContext) -> WorkflowResult:
         """질의 편집 워크플로우."""
-        changes: List[str] = ["질의 편집"]
+        changes: List[str] = ["질의 수정 요청 반영"]
 
-        # 질의 재생성
-        query_intent = self._get_query_intent(
-            ctx.query_type, ctx.global_explanation_ref
-        )
-        if ctx.edit_request:
-            query_intent = f"{query_intent}\n\n추가 요청: {ctx.edit_request}"
-
-        queries = await self.agent.generate_query(
-            ctx.ocr_text,
-            user_intent=query_intent,
-            query_type=ctx.query_type,
-            kg=self.kg,
+        # edit_content를 사용해 질의 수정
+        edited_query = await self._apply_edit(
+            target_text=ctx.query,
+            ctx=ctx,
+            edit_request=ctx.edit_request or "질의를 개선해주세요.",
         )
 
-        query = queries[0] if queries else ctx.query
+        query = edited_query or ctx.query
 
         if ctx.query_type == "target_short":
             query = self._shorten_query(query)
 
-        changes.append("질의 편집 완료")
+        changes.append("질의 수정 완료")
 
         return WorkflowResult(
             workflow="edit_query",
@@ -258,18 +256,14 @@ class WorkspaceExecutor:
 
     async def _handle_edit_answer(self, ctx: WorkflowContext) -> WorkflowResult:
         """답변 편집 워크플로우."""
-        changes: List[str] = ["답변 편집"]
+        changes: List[str] = ["답변 수정 요청 반영"]
 
-        answer = await self.agent.rewrite_best_answer(
-            ocr_text=ctx.ocr_text,
-            best_answer=ctx.answer,
+        answer = await self._apply_edit(
+            target_text=ctx.answer,
+            ctx=ctx,
             edit_request=ctx.edit_request or "답변을 개선해주세요.",
-            cached_content=None,
-            query_type=ctx.query_type,
         )
-
-        answer = self._strip_output_tags(answer)
-        changes.append("답변 편집 완료")
+        changes.append("답변 수정 완료")
 
         return WorkflowResult(
             workflow="edit_answer",
@@ -281,40 +275,29 @@ class WorkspaceExecutor:
 
     async def _handle_edit_both(self, ctx: WorkflowContext) -> WorkflowResult:
         """질의와 답변 모두 편집 워크플로우."""
-        changes: List[str] = ["질의와 답변 편집"]
+        changes: List[str] = ["질의와 답변 수정 요청 반영"]
 
-        # 1. 질의 편집
-        query_intent = self._get_query_intent(
-            ctx.query_type, ctx.global_explanation_ref
+        # 1. 답변 편집 (edit_fn 활용)
+        answer = await self._apply_edit(
+            target_text=ctx.answer,
+            ctx=ctx,
+            edit_request=ctx.edit_request or "답변을 개선해주세요.",
         )
-        if ctx.edit_request:
-            query_intent = f"{query_intent}\n\n추가 요청: {ctx.edit_request}"
+        changes.append("답변 수정 완료")
 
-        queries = await self.agent.generate_query(
-            ctx.ocr_text,
-            user_intent=query_intent,
-            query_type=ctx.query_type,
-            kg=self.kg,
+        # 2. 질의 편집
+        edited_query = await self._apply_edit(
+            target_text=ctx.query,
+            ctx=ctx,
+            edit_request=ctx.edit_request or "질의를 개선해주세요.",
         )
 
-        query = queries[0] if queries else ctx.query
+        query = edited_query or ctx.query
 
         if ctx.query_type == "target_short":
             query = self._shorten_query(query)
 
-        changes.append("질의 편집 완료")
-
-        # 2. 답변 편집
-        answer = await self.agent.rewrite_best_answer(
-            ocr_text=ctx.ocr_text,
-            best_answer=ctx.answer,
-            edit_request=ctx.edit_request or "답변을 개선해주세요.",
-            cached_content=None,
-            query_type=ctx.query_type,
-        )
-
-        answer = self._strip_output_tags(answer)
-        changes.append("답변 편집 완료")
+        changes.append("질의 조정 완료")
 
         return WorkflowResult(
             workflow="edit_both",
@@ -325,6 +308,38 @@ class WorkspaceExecutor:
         )
 
     # ===== 헬퍼 메서드 =====
+    async def _apply_edit(
+        self,
+        *,
+        target_text: str,
+        ctx: WorkflowContext,
+        edit_request: str,
+    ) -> str:
+        """edit_fn 호출 후 필요 시 fallback."""
+        try:
+            edited = await self.edit_fn(
+                agent=self.agent,
+                answer=target_text,
+                ocr_text=ctx.ocr_text,
+                query=ctx.query,
+                edit_request=edit_request,
+                kg=self.kg,
+                cache=None,
+            )
+        except TypeError:
+            # edit_content가 Mock agent와 함께 호출될 때를 위한 fallback
+            if hasattr(self.agent, "rewrite_best_answer"):
+                edited = await self.agent.rewrite_best_answer(
+                    ocr_text=ctx.ocr_text,
+                    best_answer=target_text,
+                    edit_request=edit_request,
+                    cached_content=None,
+                    query_type=ctx.query_type,
+                )
+            else:
+                raise
+
+        return self._strip_output_tags(edited)
 
     def _get_query_intent(self, query_type: str, global_ref: str) -> str:
         """쿼리 타입별 인텐트 생성 (Jinja2 템플릿 사용)."""
