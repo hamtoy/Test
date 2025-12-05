@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "rootDir": "static",
+    "outDir": "static/dist",
+    "allowJs": true,
+    "checkJs": false,
+    "strict": true,
+    "noEmitOnError": false,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["static/**/*.ts", "static/**/*.js"],
+  "exclude": ["static/dist", "node_modules"]
+}
