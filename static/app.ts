@@ -1,6 +1,3 @@
-import { initQA } from "./qa.js";
-import { initWorkspace } from "./workspace.js";
-import { initEval } from "./eval.js";
 import { registerGlobalErrorHandlers } from "./utils.js";
 
 // Entry point: 페이지별 초기화
@@ -8,10 +5,16 @@ document.addEventListener("DOMContentLoaded", () => {
     registerGlobalErrorHandlers();
     const path = window.location.pathname;
     if (path === "/qa") {
-        initQA();
+        import("./qa.js")
+            .then(({ initQA }) => initQA())
+            .catch((err) => console.error("QA 모듈 로드 실패:", err));
     } else if (path === "/workspace") {
-        initWorkspace();
+        import("./workspace.js")
+            .then(({ initWorkspace }) => initWorkspace())
+            .catch((err) => console.error("Workspace 모듈 로드 실패:", err));
     } else if (path === "/eval") {
-        initEval();
+        import("./eval.js")
+            .then(({ initEval }) => initEval())
+            .catch((err) => console.error("Eval 모듈 로드 실패:", err));
     }
 });
