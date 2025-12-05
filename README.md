@@ -1,6 +1,6 @@
 # Gemini 워크플로우 - Q&A 시스템
 
-[![CI](https://github.com/hamtoy/Test/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hamtoy/Test/actions/workflows/ci.yml)
+[![CI](https://github.com/hamtoy/Test/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/hamtoy/Test/actions/workflows/ci.yaml)
 [![codecov](https://codecov.io/gh/hamtoy/Test/branch/main/graph/badge.svg)](https://codecov.io/gh/hamtoy/Test)
 
 Google Gemini AI를 활용한 Q&A 응답 평가 및 재작성 워크플로우 시스템입니다.
