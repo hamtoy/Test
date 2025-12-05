@@ -7,7 +7,7 @@ import contextlib
 import logging
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, Final, Optional
+from typing import TYPE_CHECKING, Final, Optional
 
 from src.agent import GeminiAgent
 from src.analysis.cross_validation import CrossValidationSystem
@@ -263,7 +263,9 @@ async def _evaluate_answer_quality(
         score += weights.no_forbidden_weight
 
     # Neo4j 규칙 준수 (간단한 키워드 매칭)
-    if rules_list and any(rule_keyword in answer for rule_keyword in ["기준", "근거", "정확"]):
+    if rules_list and any(
+        rule_keyword in answer for rule_keyword in ["기준", "근거", "정확"]
+    ):
         score += weights.constraint_weight
 
     return min(score, 1.0)

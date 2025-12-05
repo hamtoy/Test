@@ -3,30 +3,22 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from typing import Any, Dict, cast
 
-# Import all from qa_common
-from .qa_common import *  # noqa: F403
+from fastapi import APIRouter, HTTPException
 
-# Explicitly import commonly used items
-from .qa_common import (  # noqa: F401
-    EvalExternalRequest,
-    UnifiedValidator,
+from src.web.models import EvalExternalRequest
+from src.web.response import APIMetadata, build_response
+from src.web.utils import load_ocr_text
+
+from .qa_common import (
     _get_agent,
     _get_config,
-    _get_kg,
-    _get_validator_class,
-    get_cached_kg,
-    build_response,
-    APIMetadata,
-    HTTPException,
-    asyncio,
-    datetime,
     logger,
-    cast,
 )
 
 router = APIRouter(prefix="/api", tags=["qa-evaluation"])
+
 
 @router.post("/eval/external")
 async def api_eval_external(body: EvalExternalRequest) -> Dict[str, Any]:
@@ -65,10 +57,6 @@ async def api_eval_external(body: EvalExternalRequest) -> Dict[str, Any]:
 
 
 __all__ = [
-    "api_generate_qa",
     "api_eval_external",
-    "generate_single_qa",
-    "generate_single_qa_with_retry",
     "router",
-    "set_dependencies",
 ]

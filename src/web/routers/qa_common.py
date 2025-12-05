@@ -26,36 +26,22 @@ Note: This is a large file. Consider future refactoring into:
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, cast
 
-from fastapi import APIRouter, HTTPException
-from tenacity import retry, stop_after_attempt, wait_exponential
 
-from checks.detect_forbidden_patterns import find_formatting_violations, find_violations
 from src.agent import GeminiAgent
 from src.analysis.cross_validation import CrossValidationSystem
 from src.config import AppConfig
 from src.config.constants import (
-    DEFAULT_ANSWER_RULES,
     QA_BATCH_GENERATION_TIMEOUT,
-    QA_BATCH_TYPES,
-    QA_BATCH_TYPES_THREE,
-    QA_GENERATION_OCR_TRUNCATE_LENGTH,
     QA_SINGLE_GENERATION_TIMEOUT,
     WORKSPACE_GENERATION_TIMEOUT,
     WORKSPACE_UNIFIED_TIMEOUT,
 )
-from src.config.exceptions import SafetyFilterError
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
-from src.qa.rule_loader import RuleLoader
-from src.qa.validator import UnifiedValidator
-from src.web.models import EvalExternalRequest, GenerateQARequest
-from src.web.response import APIMetadata, build_response
-from src.web.utils import QTYPE_MAP, load_ocr_text, postprocess_answer
 
 logger = logging.getLogger(__name__)
 
@@ -233,5 +219,3 @@ def get_cached_kg() -> Optional["_CachedKG"]:
     _kg_cache = _CachedKG(current_kg)
     _kg_cache_timestamp = now
     return _kg_cache
-
-

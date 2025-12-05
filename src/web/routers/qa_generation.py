@@ -3,47 +3,41 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+import asyncio
+from datetime import datetime
+from typing import Any, Dict, Optional, cast
 
-# Import all from qa_common
-from .qa_common import *  # noqa: F403
+from fastapi import APIRouter, HTTPException
+from tenacity import retry, stop_after_attempt, wait_exponential
 
-# Explicitly import commonly used functions for mypy
-from .qa_common import (  # noqa: F401
-    QTYPE_MAP,
+from checks.detect_forbidden_patterns import find_formatting_violations, find_violations
+from src.agent import GeminiAgent
+from src.config.constants import (
     DEFAULT_ANSWER_RULES,
-    QA_BATCH_GENERATION_TIMEOUT,
     QA_BATCH_TYPES,
     QA_BATCH_TYPES_THREE,
     QA_GENERATION_OCR_TRUNCATE_LENGTH,
-    QA_SINGLE_GENERATION_TIMEOUT,
-    GenerateQARequest,
+)
+from src.config.exceptions import SafetyFilterError
+from src.qa.rule_loader import RuleLoader
+from src.qa.validator import UnifiedValidator
+from src.web.models import GenerateQARequest
+from src.web.response import APIMetadata, build_response
+from src.web.utils import QTYPE_MAP, load_ocr_text, postprocess_answer
+
+from .qa_common import (
+    _difficulty_hint,
     _get_agent,
     _get_config,
     _get_kg,
     _get_pipeline,
     _get_validator_class,
-    _difficulty_hint,
     get_cached_kg,
-    load_ocr_text,
-    postprocess_answer,
-    build_response,
-    APIMetadata,
-    find_formatting_violations,
-    find_violations,
-    RuleLoader,
-    SafetyFilterError,
-    HTTPException,
-    asyncio,
-    datetime,
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    cast,
     logger,
 )
 
 router = APIRouter(prefix="/api", tags=["qa-generation"])
+
 
 @router.post("/qa/generate")
 async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
@@ -488,5 +482,3 @@ async def generate_single_qa(
     except Exception as e:
         logger.error("QA 생성 실패: %s", e)
         raise
-
-
