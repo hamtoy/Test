@@ -36,6 +36,7 @@ from src.qa.rule_loader import set_global_kg
 from src.web.session import SessionManager, session_middleware
 from src.web.models import OCRTextInput
 from src.web.routers import health_router, qa_router, stream_router, workspace_router
+from src.web.routers import admin as admin_router
 from src.web.routers import health as health_router_module
 from src.web.routers import qa as qa_router_module
 from src.web.routers import stream as stream_router_module
@@ -321,6 +322,10 @@ app.include_router(health_router)
 app.include_router(qa_router)
 app.include_router(workspace_router)
 app.include_router(stream_router)
+# 관리자 엔드포인트: 로컬/테스트 전용 (ENABLE_ADMIN_API=true 시)
+if os.getenv("ENABLE_ADMIN_API", "false").lower() == "true":
+    app.include_router(admin_router.router)
+    logger.warning("Admin API enabled - do NOT expose publicly")
 
 
 # ============================================================================
