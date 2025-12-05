@@ -22,6 +22,7 @@ from .qa_common import (  # noqa: F401
     _get_config,
     _get_kg,
     _get_pipeline,
+    _get_validator_class,
     _difficulty_hint,
     get_cached_kg,
     load_ocr_text,
