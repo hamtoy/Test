@@ -3,7 +3,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.features.lats import SearchNode, SearchState
 from src.web.routers.workspace import (
     LATS_WEIGHTS_PRESETS,
     _evaluate_answer_quality,
@@ -93,7 +92,9 @@ async def test_lats_evaluate_answer_node() -> None:
     """LATS 노드 평가 로직 테스트."""
 
     class MockState:
-        def __init__(self, answer: str, ocr: str, metadata: Optional[dict[str, Any]] = None) -> None:
+        def __init__(
+            self, answer: str, ocr: str, metadata: Optional[dict[str, Any]] = None
+        ) -> None:
             self.current_answer = answer
             self.ocr_text = ocr
             self.metadata = metadata
