@@ -1,10 +1,11 @@
 """서비스 레지스트리 - 싱글톤 패턴."""
+
 from __future__ import annotations
 
 import logging
 import os
 import threading
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from src.agent import GeminiAgent
@@ -19,6 +20,7 @@ class ServiceRegistry:
     """스레드 안전 서비스 레지스트리."""
 
     def __init__(self) -> None:
+        """빈 레지스트리를 초기화."""
         self._config: Optional[AppConfig] = None
         self._agent: Optional[GeminiAgent] = None
         self._kg: Optional[QAKnowledgeGraph] = None

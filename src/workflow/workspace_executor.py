@@ -1,11 +1,12 @@
 """워크스페이스 워크플로우 실행기."""
+
 from __future__ import annotations
 
 import logging
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
     from src.agent import GeminiAgent
@@ -54,7 +55,7 @@ class WorkflowResult:
 
 class WorkspaceExecutor:
     """워크스페이스 워크플로우 실행 엔진.
-    
+
     기존 workspace.py의 복잡한 로직을 분리하여 테스트 가능하고 유지보수하기 쉽게 만듦.
     """
 
@@ -65,6 +66,7 @@ class WorkspaceExecutor:
         pipeline: Optional[IntegratedQAPipeline],
         config: AppConfig,
     ):
+        """핵심 의존성을 주입해 실행기를 초기화."""
         self.agent = agent
         self.kg = kg
         self.pipeline = pipeline
@@ -105,7 +107,9 @@ class WorkspaceExecutor:
         changes: List[str] = ["OCR에서 전체 생성"]
 
         # 1. 질의 생성
-        query_intent = self._get_query_intent(ctx.query_type, ctx.global_explanation_ref)
+        query_intent = self._get_query_intent(
+            ctx.query_type, ctx.global_explanation_ref
+        )
         queries = await self.agent.generate_query(
             ctx.ocr_text,
             user_intent=query_intent,
@@ -136,7 +140,9 @@ class WorkspaceExecutor:
         """질의 생성 워크플로우."""
         changes: List[str] = ["기존 답변 기반 질의 생성"]
 
-        query_intent = self._get_query_intent(ctx.query_type, ctx.global_explanation_ref)
+        query_intent = self._get_query_intent(
+            ctx.query_type, ctx.global_explanation_ref
+        )
         queries = await self.agent.generate_query(
             ctx.ocr_text,
             user_intent=query_intent,
@@ -203,7 +209,9 @@ class WorkspaceExecutor:
         changes: List[str] = ["질의 편집"]
 
         # 질의 재생성
-        query_intent = self._get_query_intent(ctx.query_type, ctx.global_explanation_ref)
+        query_intent = self._get_query_intent(
+            ctx.query_type, ctx.global_explanation_ref
+        )
         if ctx.edit_request:
             query_intent = f"{query_intent}\n\n추가 요청: {ctx.edit_request}"
 
@@ -257,7 +265,9 @@ class WorkspaceExecutor:
         changes: List[str] = ["질의와 답변 편집"]
 
         # 1. 질의 편집
-        query_intent = self._get_query_intent(ctx.query_type, ctx.global_explanation_ref)
+        query_intent = self._get_query_intent(
+            ctx.query_type, ctx.global_explanation_ref
+        )
         if ctx.edit_request:
             query_intent = f"{query_intent}\n\n추가 요청: {ctx.edit_request}"
 

@@ -1,4 +1,5 @@
 """재시도 로직 및 데코레이터."""
+
 from __future__ import annotations
 
 import asyncio
@@ -25,13 +26,13 @@ def async_retry(
     retry_on: tuple[type[Exception], ...] = (Exception,),
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """비동기 함수용 재시도 데코레이터.
-    
+
     Args:
         max_attempts: 최대 시도 횟수
         min_wait: 최소 대기 시간 (초)
         max_wait: 최대 대기 시간 (초)
         retry_on: 재시도할 예외 타입들
-    
+
     Example:
         @async_retry(max_attempts=3, retry_on=(RetryableError,))
         async def my_function():
@@ -70,17 +71,18 @@ async def retry_with_backoff(
     **kwargs: Any,
 ) -> Any:
     """백오프를 사용한 재시도 유틸리티 함수.
-    
+
     Args:
         func: 실행할 비동기 함수
+        *args: ``func``에 전달할 위치 인자들
         max_attempts: 최대 시도 횟수
         initial_delay: 초기 지연 시간 (초)
         backoff_factor: 백오프 배수
-        *args, **kwargs: func에 전달할 인자들
-    
+        **kwargs: ``func``에 전달할 키워드 인자들
+
     Returns:
         함수 실행 결과
-    
+
     Raises:
         마지막 시도에서 발생한 예외
     """
@@ -88,12 +90,12 @@ async def retry_with_backoff(
     delay = initial_delay
 
     for attempt in range(1, max_attempts + 1):
-        try:
+        try:  # noqa: PERF203
             logger.debug(
                 "Executing %s (attempt %d/%d)", func.__name__, attempt, max_attempts
             )
             return await func(*args, **kwargs)
-        except Exception as e:
+        except Exception as e:  # noqa: PERF203
             last_exception = e
             if attempt < max_attempts:
                 logger.warning(
