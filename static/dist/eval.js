@@ -20,6 +20,8 @@ export function initEval() {
 }
 async function evaluateAnswers(query, answers) {
     const resultsDiv = document.getElementById("eval-results");
+    if (!resultsDiv)
+        return;
     resultsDiv.innerHTML = "<div class=\"loading\"></div> 처리 중...";
     try {
         const data = await apiCall("/api/eval/external", "POST", { query, answers });

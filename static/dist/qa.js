@@ -1,4 +1,4 @@
-import { apiCall, copyToClipboard, showToast, showProgressWithEstimate, withRetry } from "./utils.js";
+import { apiCall, showToast, showProgressWithEstimate, withRetry } from "./utils.js";
 import { loadOCR, saveOCR } from "./ocr.js";
 let activeController = null;
 function getModeLabels(mode) {
@@ -58,6 +58,8 @@ function displayResults(data) {
         data = data.data;
     }
     const resultsDiv = document.getElementById("results");
+    if (!resultsDiv)
+        return;
     resultsDiv.innerHTML = "";
     let pairs = data.pairs || (data.pair ? [data.pair] : []);
     const selectedMode = (_a = document.querySelector("input[name=\"mode\"]:checked")) === null || _a === void 0 ? void 0 : _a.value;
@@ -94,7 +96,7 @@ function displayResults(data) {
             </div>
         `;
         const copyBtn = card.querySelector(".qa-copy-btn");
-        copyBtn.addEventListener("click", () => {
+        copyBtn === null || copyBtn === void 0 ? void 0 : copyBtn.addEventListener("click", () => {
             copyToWorkspace(item.query || "", item.answer || "");
         });
         resultsDiv.appendChild(card);
@@ -102,13 +104,16 @@ function displayResults(data) {
 }
 async function generateQA(mode, qtype) {
     const resultsDiv = document.getElementById("results");
-    const ocrText = document.getElementById("ocr-input").value;
+    if (!resultsDiv)
+        return;
+    const ocrInput = document.getElementById("ocr-input");
+    const ocrText = ocrInput.value;
     if (!ocrText.trim()) {
         showToast("OCR 텍스트를 먼저 입력하세요.", "error");
         return;
     }
     resultsDiv.innerHTML = renderProgress(mode);
-    const stopProgress = showProgressWithEstimate(mode);
+    const stopProgress = showProgressWithEstimate(mode === "batch" || mode === "batch_three" ? "batch" : "single");
     const progressBar = document.querySelector(".progress-fill");
     try {
         const payload = { mode, ocr_text: ocrText };
@@ -153,12 +158,16 @@ export function initQA() {
     document.querySelectorAll("input[name=\"mode\"]").forEach((radio) => {
         radio.addEventListener("change", (e) => {
             const selector = document.getElementById("type-selector");
-            selector.style.display = e.target.value === "single" ? "block" : "none";
+            if (selector) {
+                selector.style.display = e.target.value === "single" ? "block" : "none";
+            }
         });
     });
     (_b = document.getElementById("generate-btn")) === null || _b === void 0 ? void 0 : _b.addEventListener("click", async () => {
-        const mode = document.querySelector("input[name=\"mode\"]:checked").value;
-        const qtype = mode === "single" ? document.getElementById("qtype").value : null;
+        const modeInput = document.querySelector("input[name=\"mode\"]:checked");
+        const mode = modeInput.value;
+        const qtypeInput = document.getElementById("qtype");
+        const qtype = mode === "single" ? qtypeInput.value : null;
         await generateQA(mode, qtype);
     });
     document.addEventListener("keydown", (e) => {

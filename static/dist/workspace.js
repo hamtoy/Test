@@ -65,9 +65,7 @@ const WorkspaceMode = {
         const queryVal = document.getElementById("query").value.trim();
         const answerVal = document.getElementById("answer").value.trim();
         const ocrVal = document.getElementById("ocr-input").value.trim();
-        const globalRefVal = document
-            .getElementById("global-explanation-ref")
-            .value.trim();
+        const globalRefVal = document.getElementById("global-explanation-ref").value.trim();
         const executeBtn = document.getElementById("execute-btn");
         let isValid = false;
         if (this.current === "query-only") {
@@ -90,7 +88,7 @@ function setButtonLoading(button, isLoading) {
     button.setAttribute("aria-busy", String(isLoading));
     if (isLoading) {
         button.dataset.originalText =
-            button.dataset.originalText || button.textContent;
+            button.dataset.originalText || button.textContent || "";
         button.setAttribute("aria-label", "처리 중입니다. 잠시만 기다려주세요.");
         button.textContent = "⏳ 처리 중...";
         button.style.opacity = "0.6";
@@ -109,6 +107,18 @@ function handleResultHighlight(field) {
         field.style.borderColor = "";
         field.style.boxShadow = "";
     }, 2000);
+}
+function getWorkflowLabel(workflow) {
+    const labels = {
+        full_generation: "🎯 전체 생성",
+        query_generation: "❓ 질의 생성",
+        answer_generation: "💡 답변 생성",
+        edit_query: "✏️ 질의 수정",
+        edit_answer: "✏️ 답변 수정",
+        edit_both: "✏️ 질의+답변 수정",
+        rewrite: "✅ 재작성/검수",
+    };
+    return labels[workflow] || workflow;
 }
 function displayResult(data) {
     const currentMode = WorkspaceMode.current;
@@ -129,6 +139,8 @@ function displayResult(data) {
         handleResultHighlight(answerField);
     }
     const resultsDiv = document.getElementById("workspace-results");
+    if (!resultsDiv)
+        return;
     resultsDiv.innerHTML = `
         <div style="text-align: center; padding: 20px; background: #e8f5e9; border-radius: 8px; border: 1px solid #4caf50; margin-top: 20px; animation: fadeIn 0.3s;">
             <h3 style="margin: 0 0 10px 0; color: #4caf50;">✅ ${getWorkflowLabel(data.workflow)} 완료</h3>
@@ -140,18 +152,6 @@ function displayResult(data) {
     setTimeout(() => {
         resultsDiv.innerHTML = "";
     }, 3000);
-}
-function getWorkflowLabel(workflow) {
-    const labels = {
-        full_generation: "🎯 전체 생성",
-        query_generation: "❓ 질의 생성",
-        answer_generation: "💡 답변 생성",
-        edit_query: "✏️ 질의 수정",
-        edit_answer: "✏️ 답변 수정",
-        edit_both: "✏️ 질의+답변 수정",
-        rewrite: "✅ 재작성/검수",
-    };
-    return labels[workflow] || workflow;
 }
 function copyFieldContent(fieldId, buttonEl) {
     const field = document.getElementById(fieldId);
@@ -181,32 +181,35 @@ function restoreReference() {
     }
 }
 function setupReferenceAutoSave() {
-    let saveRefTimeout;
-    document
-        .getElementById("global-explanation-ref")
-        .addEventListener("input", (e) => {
+    var _a;
+    let saveRefTimeout; // Browser setTimeout returns number
+    const refElement = document.getElementById("global-explanation-ref");
+    refElement.addEventListener("input", (e) => {
         clearTimeout(saveRefTimeout);
         const value = e.target.value;
         saveRefTimeout = setTimeout(() => {
             localStorage.setItem(GLOBAL_EXPLANATION_KEY, value);
         }, 300);
     });
-    document.getElementById("clear-reference-btn").addEventListener("click", () => {
-        document.getElementById("global-explanation-ref").value = "";
+    (_a = document.getElementById("clear-reference-btn")) === null || _a === void 0 ? void 0 : _a.addEventListener("click", () => {
+        refElement.value = "";
         localStorage.removeItem(GLOBAL_EXPLANATION_KEY);
     });
 }
 function setupTabs() {
     const tabs = document.querySelectorAll(".workspace-mode-tabs .mode-tab");
     tabs.forEach((btn) => {
-        btn.addEventListener("click", () => {
+        const htmlBtn = btn;
+        htmlBtn.addEventListener("click", () => {
             tabs.forEach((b) => b.classList.remove("active"));
-            btn.classList.add("active");
-            WorkspaceMode.switchTo(btn.dataset.mode);
+            htmlBtn.classList.add("active");
+            if (htmlBtn.dataset.mode) {
+                WorkspaceMode.switchTo(htmlBtn.dataset.mode);
+            }
         });
         // 키보드 네비게이션
-        btn.addEventListener("keydown", (e) => {
-            const index = Array.from(tabs).indexOf(btn);
+        htmlBtn.addEventListener("keydown", (e) => {
+            const index = Array.from(tabs).indexOf(htmlBtn);
             let newIndex = index;
             if (e.key === "ArrowRight")
                 newIndex = (index + 1) % tabs.length;
@@ -239,6 +242,8 @@ function setupValidationInputs() {
 }
 async function executeWorkspace(mode, query, answer, editRequest, signal) {
     const resultsDiv = document.getElementById("workspace-results");
+    if (!resultsDiv)
+        return;
     resultsDiv.innerHTML = `
         <div style="text-align: center; padding: 20px; background: var(--bg-secondary, #f5f5f5); border-radius: 8px; margin-top: 20px;">
             <p style="color: var(--text-primary, #1f2121); margin: 0;">⏳ 처리 중...</p>
@@ -274,8 +279,11 @@ export function initWorkspace() {
     WorkspaceMode.switchTo("full");
     // 복사 버튼들
     document.querySelectorAll("[data-copy-target]").forEach((btn) => {
-        btn.addEventListener("click", () => {
-            copyFieldContent(btn.dataset.copyTarget, btn);
+        const htmlBtn = btn;
+        htmlBtn.addEventListener("click", () => {
+            if (htmlBtn.dataset.copyTarget) {
+                copyFieldContent(htmlBtn.dataset.copyTarget, htmlBtn);
+            }
         });
     });
     let isExecuting = false;
@@ -297,11 +305,13 @@ export function initWorkspace() {
         }
         catch (error) {
             const resultsDiv = document.getElementById("workspace-results");
-            resultsDiv.innerHTML = `
-                <div style="text-align: center; padding: 20px; background: #ffebee; border-radius: 8px; border: 1px solid #f44336; margin-top: 20px;">
-                    <p style="color: #f44336; margin: 0;">❌ 작업 실패: ${error.message}</p>
-                </div>
-            `;
+            if (resultsDiv) {
+                resultsDiv.innerHTML = `
+                    <div style="text-align: center; padding: 20px; background: #ffebee; border-radius: 8px; border: 1px solid #f44336; margin-top: 20px;">
+                        <p style="color: #f44336; margin: 0;">❌ 작업 실패: ${error.message}</p>
+                    </div>
+                `;
+            }
         }
         finally {
             isExecuting = false;
