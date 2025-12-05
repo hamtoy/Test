@@ -1,4 +1,5 @@
 """WorkspaceExecutor 테스트."""
+
 import pytest
 from unittest.mock import AsyncMock, Mock
 
@@ -174,9 +175,7 @@ def test_get_query_intent(workspace_executor):
 
 def test_get_query_intent_with_reference(workspace_executor):
     """중복 방지 참조 포함 인텐트 생성."""
-    intent = workspace_executor._get_query_intent(
-        "target_short", "기존 내용입니다."
-    )
+    intent = workspace_executor._get_query_intent("target_short", "기존 내용입니다.")
     assert "중복 방지" in intent
     assert "기존 내용" in intent
 

@@ -1,4 +1,5 @@
 """Retry logic tests."""
+
 import pytest
 from unittest.mock import AsyncMock
 

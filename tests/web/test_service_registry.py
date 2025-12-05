@@ -1,10 +1,10 @@
 """ServiceRegistry 테스트."""
+
 import pytest
 from unittest.mock import Mock
 
 from src.config import AppConfig
 from src.web.service_registry import (
-    ServiceRegistry,
     get_registry,
     reset_registry_for_test,
 )

@@ -3,6 +3,7 @@
 이 파일은 workspace router에서 WorkspaceExecutor를 사용하는 방법을 보여줍니다.
 실제 통합 시 workspace.py의 api_unified_workspace 함수를 이 패턴으로 리팩토링할 수 있습니다.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -31,7 +32,7 @@ async def execute_workspace_workflow_example(
     use_lats: bool = False,
 ) -> Dict[str, Any]:
     """WorkspaceExecutor를 사용한 통합 워크스페이스 실행 예제.
-    
+
     Args:
         query: 사용자 질의
         answer: 사용자 답변
@@ -40,13 +41,13 @@ async def execute_workspace_workflow_example(
         edit_request: 편집 요청
         global_explanation_ref: 전역 설명 참조
         use_lats: LATS 사용 여부
-    
+
     Returns:
         API 응답 딕셔너리
-    
+
     Example:
         이 함수를 workspace router의 api_unified_workspace에서 다음과 같이 사용:
-        
+
         @router.post("/workspace/unified")
         async def api_unified_workspace(body: UnifiedWorkspaceRequest):
             return await execute_workspace_workflow_example(
