@@ -149,8 +149,11 @@ def get_config() -> AppConfig:
     """Lazy config initialization to avoid module-level validation errors during testing."""
     global _config
     if _config is None:
-        # 개인/테스트 용도: 필수 키가 없으면 더미값으로 설정해 검증 실패를 방지
         if not os.getenv("GEMINI_API_KEY"):
+            # 프로덕션에서는 반드시 키가 필요
+            if os.getenv("ENVIRONMENT", "").lower() == "production":
+                raise ValueError("GEMINI_API_KEY required in production")
+            # 개인/테스트 용도: 더미값으로 설정해 검증 실패를 방지
             os.environ["GEMINI_API_KEY"] = "dummy-key-for-tests"
         _config = AppConfig()
     return _config
