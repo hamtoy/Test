@@ -4,10 +4,12 @@ This test verifies that the refactored api_unified_workspace endpoint
 works correctly with WorkspaceExecutor.
 """
 
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
-from src.web.routers.workspace import api_unified_workspace
+
 from src.web.models import UnifiedWorkspaceRequest
+from src.web.routers.workspace_unified import api_unified_workspace
 from src.workflow.workspace_executor import WorkflowResult
 
 
