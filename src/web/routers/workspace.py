@@ -5,9 +5,9 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
-from datetime import datetime
 import logging
 import re
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
 from fastapi import APIRouter, HTTPException
@@ -26,9 +26,9 @@ from src.config.constants import (
     WORKSPACE_GENERATION_TIMEOUT,
     WORKSPACE_UNIFIED_TIMEOUT,
 )
-from src.qa.rule_loader import RuleLoader
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
+from src.qa.rule_loader import RuleLoader
 from src.web.models import UnifiedWorkspaceRequest, WorkspaceRequest
 from src.web.response import APIMetadata, build_response
 from src.web.service_registry import get_registry
@@ -52,7 +52,10 @@ _config: Optional[AppConfig] = None
 agent: Optional[GeminiAgent] = None
 kg: Optional[QAKnowledgeGraph] = None
 pipeline: Optional[IntegratedQAPipeline] = None
-_validator: Optional[CrossValidationSystem] = None
+
+# 검증 재시도 최대 횟수
+MAX_REWRITE_ATTEMPTS = 2
+
 _difficulty_levels = {
     "long": "본문이 길어 핵심 숫자·근거만 간결히 답하세요.",
     "medium": "불필요한 서론 없이 핵심을 짧게 서술하세요.",
@@ -71,17 +74,17 @@ def set_dependencies(
     agent = gemini_agent
     kg = kg_ref
     pipeline = qa_pipeline
-    global _validator
-    _validator = None  # reset so it uses latest kg
+    # Reset validator in registry
+    with contextlib.suppress(RuntimeError):
+        get_registry().register_validator(None)
 
 
 def _get_agent() -> Optional[GeminiAgent]:
-    """Get agent from ServiceRegistry with fallback to module global."""
+    """Registry에서 agent 가져오기. 실패 시 api 모듈 fallback."""
     try:
-        registry = get_registry()
-        return registry.agent
+        return get_registry().agent
     except RuntimeError:
-        # Fallback to module global for backward compatibility
+        # api 모듈 fallback (테스트 호환성)
         try:
             from src.web import api as api_module
 
@@ -89,16 +92,17 @@ def _get_agent() -> Optional[GeminiAgent]:
                 return api_module.agent
         except Exception:
             pass
-        return agent
+        if agent is not None:
+            return agent
+        logger.error("Agent 초기화 안 됨")
+        return None
 
 
 def _get_kg() -> Optional[QAKnowledgeGraph]:
-    """Get KG from ServiceRegistry with fallback to module global."""
+    """Registry에서 KG 가져오기. 실패 시 api 모듈 fallback."""
     try:
-        registry = get_registry()
-        return registry.kg
+        return get_registry().kg
     except RuntimeError:
-        # Fallback to module global for backward compatibility
         try:
             from src.web import api as api_module
 
@@ -110,12 +114,10 @@ def _get_kg() -> Optional[QAKnowledgeGraph]:
 
 
 def _get_pipeline() -> Optional[IntegratedQAPipeline]:
-    """Get pipeline from ServiceRegistry with fallback to module global."""
+    """Registry에서 pipeline 가져오기. 실패 시 api 모듈 fallback."""
     try:
-        registry = get_registry()
-        return registry.pipeline
+        return get_registry().pipeline
     except RuntimeError:
-        # Fallback to module global for backward compatibility
         try:
             from src.web import api as api_module
 
@@ -127,75 +129,65 @@ def _get_pipeline() -> Optional[IntegratedQAPipeline]:
 
 
 def _get_config() -> AppConfig:
-    """Get config from ServiceRegistry with fallback to module global."""
+    """Registry에서 config 가져오기. 실패 시 api 모듈 fallback."""
     try:
-        registry = get_registry()
-        cfg = registry.config
+        cfg = get_registry().config
     except RuntimeError:
-        # Fallback to module global for backward compatibility
+        cfg = None
         try:
             from src.web import api as api_module
 
-            cfg_raw = getattr(api_module, "config", None) or _config
-            if cfg_raw is None:
-                raise RuntimeError
-            cfg = cast(AppConfig, cfg_raw)
+            cfg = getattr(api_module, "config", None)
         except Exception:
-            try:
-                from src.web import dependencies
+            pass
+        if cfg is None:
+            cfg = _config
+        if cfg is None:
+            logger.warning("Registry 초기화 안 됨, 기본 Config 사용")
+            cfg = AppConfig()
 
-                cfg = dependencies.get_config()
-            except Exception:
-                cfg = AppConfig()
-
-    # Ensure required timeout attributes exist
-    for name, default in [
-        ("qa_single_timeout", QA_SINGLE_GENERATION_TIMEOUT),
-        ("qa_batch_timeout", QA_BATCH_GENERATION_TIMEOUT),
+    # 테스트 호환성: timeout 필드가 정수인지 확인 (MagicMock 방어)
+    timeout_defaults = [
         ("workspace_timeout", WORKSPACE_GENERATION_TIMEOUT),
         ("workspace_unified_timeout", WORKSPACE_UNIFIED_TIMEOUT),
-    ]:
-        try:
-            value = int(getattr(cfg, name, default))
-        except Exception:
-            value = default
-        setattr(cfg, name, value)
+        ("qa_single_timeout", QA_SINGLE_GENERATION_TIMEOUT),
+        ("qa_batch_timeout", QA_BATCH_GENERATION_TIMEOUT),
+    ]
     try:
-        cfg.enable_standard_response = bool(
-            getattr(cfg, "enable_standard_response", False)
-        )
-        cfg.enable_lats = bool(getattr(cfg, "enable_lats", False))
+        for name, default in timeout_defaults:
+            val = getattr(cfg, name, None)
+            if not isinstance(val, int):
+                setattr(cfg, name, default)
     except Exception:
-        cfg.enable_standard_response = False
-        cfg.enable_lats = False
+        # MagicMock이나 다른 예외 발생 시 모든 기본값 설정
+        for name, default in timeout_defaults:
+            setattr(cfg, name, default)
+
     return cfg
 
 
-def _get_validator_class() -> type[CrossValidationSystem]:
-    """테스트 패치 호환용 CrossValidationSystem 조회."""
-    try:
-        from src.web import api as api_module
-
-        return getattr(api_module, "CrossValidationSystem", CrossValidationSystem)
-    except Exception:
-        return CrossValidationSystem
-
-
 def _get_validator() -> Optional[CrossValidationSystem]:
-    """지연 초기화된 validator 반환 (kg 없으면 None)."""
-    global _validator
-    if _validator is not None:
-        return _validator
-    current_kg = _get_kg()
-    if current_kg is None:
-        return None
+    """Registry에서 validator 가져오기. 없으면 생성."""
     try:
-        validator_cls = _get_validator_class()
-        _validator = validator_cls(current_kg)
-    except Exception as exc:  # noqa: BLE001
+        registry = get_registry()
+
+        # 캐시된 validator 반환
+        if registry.validator is not None:
+            return registry.validator
+
+        # kg 없으면 None
+        kg_instance = registry.kg
+        if kg_instance is None:
+            return None
+
+        # 새로 생성 및 등록
+        validator = CrossValidationSystem(kg_instance)
+        registry.register_validator(validator)
+        return validator
+
+    except Exception as exc:
         logger.debug("Validator 초기화 실패: %s", exc)
-        _validator = None
-    return _validator
+        return None
 
 
 def _difficulty_hint(ocr_text: str) -> str:
@@ -349,20 +341,36 @@ OCR에 없는 정보는 추가하지 마세요.
 
         answer = strip_output_tags(answer)
 
-        violations = find_violations(answer)
-        if violations:
-            violation_types = ", ".join(set(v["type"] for v in violations))
-            answer = await asyncio.wait_for(
-                current_agent.rewrite_best_answer(
-                    ocr_text=ocr_text,
-                    best_answer=answer,
-                    edit_request=f"한국어로 다시 작성하고 다음 패턴 제거: {violation_types}. <output> 태그 사용 금지.",
-                    cached_content=None,
-                    query_type=normalized_qtype,
-                ),
-                timeout=config.workspace_timeout,
-            )
-            answer = strip_output_tags(answer)
+        # 검증 및 재시도 (최대 MAX_REWRITE_ATTEMPTS회)
+        for attempt in range(MAX_REWRITE_ATTEMPTS):
+            violations = find_violations(answer)
+            if not violations:
+                break
+
+            if attempt < MAX_REWRITE_ATTEMPTS - 1:
+                violation_types = ", ".join(set(v["type"] for v in violations))
+                logger.warning(
+                    "답변에 금지 패턴 발견 (시도 %d/%d): %s",
+                    attempt + 1,
+                    MAX_REWRITE_ATTEMPTS,
+                    violation_types,
+                )
+                answer = await asyncio.wait_for(
+                    current_agent.rewrite_best_answer(
+                        ocr_text=ocr_text,
+                        best_answer=answer,
+                        edit_request=f"한국어로 다시 작성하고 다음 패턴 제거: {violation_types}. <output> 태그 사용 금지.",
+                        cached_content=None,
+                        query_type=normalized_qtype,
+                    ),
+                    timeout=config.workspace_timeout,
+                )
+                answer = strip_output_tags(answer)
+            else:
+                logger.error(
+                    "최대 재시도 횟수 초과. 마지막 답변 반환 (violations: %d)",
+                    len(violations),
+                )
 
         duration = (datetime.now() - meta_start).total_seconds()
         meta = APIMetadata(duration=duration)

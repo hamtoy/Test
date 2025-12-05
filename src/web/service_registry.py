@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from src.agent import GeminiAgent
+    from src.analysis.cross_validation import CrossValidationSystem
     from src.config import AppConfig
     from src.qa.pipeline import IntegratedQAPipeline
     from src.qa.rag_system import QAKnowledgeGraph
@@ -25,6 +26,7 @@ class ServiceRegistry:
         self._agent: Optional[GeminiAgent] = None
         self._kg: Optional[QAKnowledgeGraph] = None
         self._pipeline: Optional[IntegratedQAPipeline] = None
+        self._validator: Optional[CrossValidationSystem] = None
         self._lock = threading.Lock()
         self._worker_id = os.getpid()
 
@@ -63,6 +65,12 @@ class ServiceRegistry:
             self._pipeline = pipeline
             logger.debug("Pipeline registered: %s", pipeline is not None)
 
+    def register_validator(self, validator: Optional[CrossValidationSystem]) -> None:
+        """Validator 등록."""
+        with self._lock:
+            self._validator = validator
+            logger.debug("Validator registered: %s", validator is not None)
+
     @property
     def config(self) -> AppConfig:
         """Config 가져오기."""
@@ -91,6 +99,12 @@ class ServiceRegistry:
         self._check_worker()
         return self._pipeline
 
+    @property
+    def validator(self) -> Optional[CrossValidationSystem]:
+        """Validator 가져오기."""
+        self._check_worker()
+        return self._validator
+
     def is_initialized(self) -> bool:
         """초기화 여부 확인."""
         return self._config is not None and self._agent is not None
@@ -102,6 +116,7 @@ class ServiceRegistry:
             self._agent = None
             self._kg = None
             self._pipeline = None
+            self._validator = None
             logger.warning("ServiceRegistry cleared (test mode only)")
 
     def get_state_for_test(self) -> dict[str, Any]:
@@ -111,6 +126,7 @@ class ServiceRegistry:
             "agent": self._agent,
             "kg": self._kg,
             "pipeline": self._pipeline,
+            "validator": self._validator,
         }
 
     def restore_state_for_test(self, state: dict[str, Any]) -> None:
@@ -120,6 +136,7 @@ class ServiceRegistry:
             self._agent = state.get("agent")
             self._kg = state.get("kg")
             self._pipeline = state.get("pipeline")
+            self._validator = state.get("validator")
 
 
 # 전역 싱글톤 인스턴스
