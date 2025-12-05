@@ -21,7 +21,7 @@ def validate_session_structure(session: Dict[str, Any]) -> Dict[str, Any]:
     ctx_kwargs = session.get("context", {})
     try:
         ctx = SessionContext(**ctx_kwargs)
-        res = validate_turns([type("T", (), t) for t in turns], ctx)
+        res: Dict[str, Any] = validate_turns([type("T", (), t) for t in turns], ctx)
         return res
     except (TypeError, ValueError) as exc:
         return {"ok": False, "issues": [f"컨텍스트 생성 실패: {exc}"]}

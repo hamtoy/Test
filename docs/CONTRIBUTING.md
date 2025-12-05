@@ -1,59 +1,86 @@
 # Contributing to Shining Quasar
 
-We welcome contributions! Please follow these guidelines.
+Thank you for your interest in contributing to Shining Quasar! This document provides guidelines for setting up your environment, running tests, and submitting pull requests.
 
-## Development Setup
+## Environment Setup
 
-1. **Install dependencies**:
+We use `uv` for fast and reliable package management.
 
-    ```bash
-    uv sync --dev
-    ```
-
-2. **Install pre-commit hooks**:
+1.  **Install `uv`** (if not already installed):
 
     ```bash
-    pre-commit install
+    pip install uv
     ```
 
-## Testing
+2.  **Sync Dependencies**:
 
-Run tests before submitting a PR:
+    ```bash
+    uv sync
+    ```
+
+    This will create a virtual environment and install all dependencies defined in `pyproject.toml`.
+
+3.  **Activate Virtual Environment**:
+    - Windows: `.venv\Scripts\activate`
+    - Linux/macOS: `source .venv/bin/activate`
+
+4.  **Install Pre-commit Hooks** (권장):
+
+    ```bash
+    uv run pre-commit install
+    # 최초 실행 시 전체 검사
+    uv run pre-commit run --all-files
+    ```
+
+## Running Tests
+
+We use `pytest` for testing. Ensure all tests pass before submitting a PR.
 
 ```bash
 pytest
 ```
 
-## Code Style
-
-We use `ruff` for linting and formatting.
+To run tests with coverage:
 
 ```bash
-ruff check .
-ruff format .
+pytest --cov=src
 ```
 
-## Pull Request Process
+## Code Style
 
-1. Create a new branch for your feature or fix.
-2. Add tests for your changes.
-3. Ensure all tests pass.
-4. Submit a PR with a clear description.
+- **Type Hints**: We enforce type hints for all function signatures.
+- **Pydantic**: Use Pydantic models for data validation and configuration.
+- **Asyncio**: Use `async/await` for I/O-bound operations.
+- **Logging**: Use the `src.logging_setup` module for logging. Do not use `print` statements.
 
-## GitHub Pages Setup
+## Documentation
 
-If you are setting up documentation deployment for a fork:
+To build the documentation locally:
+
+1.  Navigate to the `docs` directory:
+    ```bash
+    cd docs
+    ```
+2.  Build HTML documentation:
+    ```bash
+    make html
+    # or on Windows
+    make.bat html
+    ```
+3.  Open `_build/html/index.html` in your browser.
+
+### GitHub Pages Setup
+
+For documentation to be automatically deployed to GitHub Pages:
 
 1. Go to `Settings` → `Pages` in your repository
 2. Under "Build and deployment", set "Source" to "GitHub Actions"
 3. Save the changes
 
-This enables the `docs.yml` workflow to deploy Sphinx documentation to GitHub Pages.
+This enables the `docs.yml` workflow to deploy Sphinx documentation on push to main.
 
-## Deprecation Policy
+## Pull Request Process
 
-When removing or renaming features, follow the deprecation process:
-
-1. Add a warning in the old code.
-2. Add a shim if moving files.
-3. Document in `DEPRECATION.md`.
+1.  Fork the repository and create a new branch for your feature or fix.
+2.  Ensure all tests pass and code follows the style guidelines.
+3.  Submit a Pull Request with a clear description of your changes.
