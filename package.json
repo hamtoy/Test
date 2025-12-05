@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc --project tsconfig.json",
-    "build:go": "tsgo --project tsconfig.json",
+    "build": "tsgo --project tsconfig.json",
+    "build:tsc": "tsc --project tsconfig.json",
     "dev": "tsgo --watch --project tsconfig.json"
   },
   "devDependencies": {
