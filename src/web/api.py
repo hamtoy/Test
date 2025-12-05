@@ -63,6 +63,8 @@ kg: Optional[QAKnowledgeGraph] = None
 pipeline: Optional[IntegratedQAPipeline] = None
 session_manager = SessionManager()
 REQUEST_ID_HEADER = "X-Request-Id"
+ENABLE_MULTIMODAL = os.getenv("ENABLE_MULTIMODAL", "true").lower() == "true"
+ENABLE_METRICS = os.getenv("ENABLE_METRICS", "true").lower() == "true"
 
 # Optional structured logging
 if os.getenv("ENABLE_STRUCT_LOGGING", "").lower() == "true":
@@ -142,20 +144,6 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 # Alias for backward compatibility with tests
 PROJECT_ROOT = REPO_ROOT
 
-# 헬스 체크 인스턴스
-health_checker = HealthChecker(version=os.getenv("APP_VERSION", "dev"))
-
-
-class _ConfigProxy:
-    """Proxy object to allow patching of config in tests while using lazy initialization."""
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(get_config(), name)
-
-
-# Module-level config proxy for backward compatibility with tests that patch src.web.api.config
-config: Any = _ConfigProxy()
-
 
 def get_config() -> AppConfig:
     """Lazy config initialization to avoid module-level validation errors during testing."""
@@ -163,6 +151,12 @@ def get_config() -> AppConfig:
     if _config is None:
         _config = AppConfig()
     return _config
+
+
+# 헬스 체크 인스턴스
+health_checker = HealthChecker(version=os.getenv("APP_VERSION", "dev"))
+# Module-level config object (backward compatible name)
+config: AppConfig = get_config()
 
 
 # 유틸리티 래퍼 (기존 import 경로 유지)
@@ -357,11 +351,13 @@ async def page_workspace(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(request, "workspace.html")
 
 
-@app.get("/multimodal", response_class=HTMLResponse)
-async def page_multimodal() -> HTMLResponse:
-    """멀티모달 페이지 (현재 비활성화)."""
-    html = "<html><body><h1>Multimodal feature is disabled.</h1></body></html>"
-    return HTMLResponse(content=html)
+if ENABLE_MULTIMODAL:
+
+    @app.get("/multimodal", response_class=HTMLResponse)
+    async def page_multimodal() -> HTMLResponse:
+        """멀티모달 페이지."""
+        html = "<html><body><h1>Multimodal feature is disabled.</h1></body></html>"
+        return HTMLResponse(content=html)
 
 
 @app.get("/api/session")
@@ -423,13 +419,18 @@ async def api_save_ocr(request: Request, payload: OCRTextInput) -> Dict[str, str
 # ============================================================================
 
 
-@app.post("/api/multimodal/analyze")
-async def api_analyze_image_disabled(file: UploadFile = File(...)) -> Dict[str, str]:
-    """이미지 분석 엔드포인트 (멀티모달 기능 미사용 시 500 반환)."""
-    _ = file  # FastAPI 형태를 유지하면서 사용하지 않음
-    raise HTTPException(
-        status_code=500, detail="Multimodal analysis is disabled in this deployment."
-    )
+if ENABLE_MULTIMODAL:
+
+    @app.post("/api/multimodal/analyze")
+    async def api_analyze_image_disabled(
+        file: UploadFile = File(...),
+    ) -> Dict[str, str]:
+        """이미지 분석 엔드포인트 (멀티모달 기능 미사용 시 500 반환)."""
+        _ = file  # FastAPI 형태를 유지하면서 사용하지 않음
+        raise HTTPException(
+            status_code=500,
+            detail="Multimodal analysis is disabled in this deployment.",
+        )
 
 
 # ============================================================================
@@ -437,47 +438,47 @@ async def api_analyze_image_disabled(file: UploadFile = File(...)) -> Dict[str, 
 # ============================================================================
 
 
-@app.get("/metrics")
-async def metrics_endpoint() -> Response:
-    """Prometheus metrics endpoint."""
-    from src.monitoring.metrics import get_metrics
+if ENABLE_METRICS:
 
-    return Response(content=get_metrics(), media_type="text/plain")
+    @app.get("/metrics")
+    async def metrics_endpoint() -> Response:
+        """Prometheus metrics endpoint."""
+        from src.monitoring.metrics import get_metrics
 
+        return Response(content=get_metrics(), media_type="text/plain")
 
-@app.get("/api/analytics/current")
-async def current_metrics() -> Dict[str, Any]:
-    """실시간 메트릭 조회."""
-    from src.analytics.dashboard import UsageDashboard
+    @app.get("/api/analytics/current")
+    async def current_metrics() -> Dict[str, Any]:
+        """실시간 메트릭 조회."""
+        from src.analytics.dashboard import UsageDashboard
 
-    dashboard = UsageDashboard()
-    today_stats = dashboard.get_today_stats()
+        dashboard = UsageDashboard()
+        today_stats = dashboard.get_today_stats()
 
-    return {
-        "today": {
-            "sessions": today_stats["sessions"],
-            "cost": today_stats["cost"],
-            "cache_hit_rate": today_stats["cache_hit_rate"],
-        },
-        "this_week": {
-            "total_cost": dashboard.get_week_total_cost(),
-            "avg_quality": dashboard.get_week_avg_quality(),
-        },
-    }
+        return {
+            "today": {
+                "sessions": today_stats["sessions"],
+                "cost": today_stats["cost"],
+                "cache_hit_rate": today_stats["cache_hit_rate"],
+            },
+            "this_week": {
+                "total_cost": dashboard.get_week_total_cost(),
+                "avg_quality": dashboard.get_week_avg_quality(),
+            },
+        }
 
+    @app.post("/admin/log-level")
+    async def set_log_level_endpoint(level: str) -> Dict[str, str]:
+        """런타임에 로그 레벨 변경 (관리자용)."""
+        from src.infra.logging import set_log_level
 
-@app.post("/admin/log-level")
-async def set_log_level_endpoint(level: str) -> Dict[str, str]:
-    """런타임에 로그 레벨 변경 (관리자용)."""
-    from src.infra.logging import set_log_level
+        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        if level.upper() not in valid_levels:
+            raise HTTPException(400, f"Invalid level. Use: {valid_levels}")
 
-    valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-    if level.upper() not in valid_levels:
-        raise HTTPException(400, f"Invalid level. Use: {valid_levels}")
-
-    if set_log_level(level):
-        return {"message": f"Log level set to {level.upper()}"}
-    raise HTTPException(500, "Failed to set log level")
+        if set_log_level(level):
+            return {"message": f"Log level set to {level.upper()}"}
+        raise HTTPException(500, "Failed to set log level")
 
 
 __all__ = [
