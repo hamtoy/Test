@@ -129,14 +129,26 @@ class TestGenerateSingleQAWithRules:
         """Test that rule compliance is checked when Neo4j is available."""
         mock_kg = MagicMock()
         mock_kg.get_constraints_for_query_type = MagicMock(return_value=[])
+        mock_kg.get_formatting_rules_for_query_type = MagicMock(return_value=[])
+
+        # Create a cached KG wrapper
+        from src.web.routers.qa_common import _CachedKG
+        cached_kg = _CachedKG(mock_kg)
+
+        # Mock CrossValidationSystem
+        mock_validator = MagicMock()
+        mock_validator._check_rule_compliance = MagicMock(
+            return_value={"score": 0.2, "violations": ["규칙 위반 1"]}
+        )
+        mock_validator_class = MagicMock(return_value=mock_validator)
 
         with (
-            patch("src.web.api.kg", mock_kg),
+            patch("src.web.routers.qa_common.get_cached_kg", return_value=cached_kg),
             patch("src.web.api.agent") as mock_agent,
             patch(
                 "src.processing.template_generator.DynamicTemplateGenerator"
             ) as mock_template_gen,
-            patch("src.web.api.CrossValidationSystem") as mock_validator_class,
+            patch("src.web.routers.qa_common._get_validator_class", return_value=mock_validator_class),
         ):
             mock_agent.generate_query = AsyncMock(return_value=["테스트 질의"])
             mock_agent.rewrite_best_answer = AsyncMock(
@@ -150,13 +162,6 @@ class TestGenerateSingleQAWithRules:
             )
             mock_template_instance.close = MagicMock()
             mock_template_gen.return_value = mock_template_instance
-
-            # Mock CrossValidationSystem
-            mock_validator = MagicMock()
-            mock_validator._check_rule_compliance = MagicMock(
-                return_value={"score": 0.3, "violations": ["규칙 위반 1"]}
-            )
-            mock_validator_class.return_value = mock_validator
 
             from src.web.api import generate_single_qa
 
