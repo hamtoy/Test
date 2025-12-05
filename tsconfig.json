@@ -14,5 +14,5 @@
     "skipLibCheck": true
   },
   "include": ["static/**/*.ts"],
-  "exclude": ["static/dist", "node_modules"]
+  "exclude": ["static/dist", "static/__tests__", "node_modules"]
 }
