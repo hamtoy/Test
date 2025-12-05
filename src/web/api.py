@@ -154,7 +154,7 @@ def get_config() -> AppConfig:
             if os.getenv("ENVIRONMENT", "").lower() == "production":
                 raise ValueError("GEMINI_API_KEY required in production")
             # 개인/테스트 용도: 더미값으로 설정해 검증 실패를 방지
-            os.environ["GEMINI_API_KEY"] = "dummy-key-for-tests"
+            os.environ["GEMINI_API_KEY"] = "AIza-dummy-key-for-tests"
         _config = AppConfig()
     return _config
 
