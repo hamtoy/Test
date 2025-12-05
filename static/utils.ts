@@ -63,6 +63,27 @@ function handleApiError(error: unknown): void {
     }
 }
 
+export function registerGlobalErrorHandlers(): void {
+    if (typeof window === "undefined") return;
+    window.addEventListener("error", (event: ErrorEvent) => {
+        if (event.error) {
+            showToast(`오류: ${event.error.message}`, "error");
+        } else {
+            showToast("알 수 없는 오류가 발생했습니다.", "error");
+        }
+    });
+    window.addEventListener("unhandledrejection", (event: PromiseRejectionEvent) => {
+        const reason = event.reason;
+        if (reason instanceof Error) {
+            showToast(`오류: ${reason.message}`, "error");
+        } else if (typeof reason === "string") {
+            showToast(`오류: ${reason}`, "error");
+        } else {
+            showToast("알 수 없는 오류가 발생했습니다.", "error");
+        }
+    });
+}
+
 export async function apiCall<T = unknown>(
     url: string,
     method: string = "GET",
