@@ -1,7 +1,9 @@
+from typing import Any, Optional
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from src.features.lats import SearchNode, SearchState
 from src.web.routers.workspace import (
     LATS_WEIGHTS_PRESETS,
     _evaluate_answer_quality,
@@ -11,7 +13,7 @@ from src.web.routers.workspace import (
 
 
 @pytest.mark.asyncio
-async def test_evaluate_answer_quality_basics():
+async def test_evaluate_answer_quality_basics() -> None:
     """기본 품질 평가 로직 테스트."""
     ocr_text = "매출 100억원 2024년"
 
@@ -36,7 +38,7 @@ async def test_evaluate_answer_quality_basics():
 
 
 @pytest.mark.asyncio
-async def test_evaluate_answer_quality_presets():
+async def test_evaluate_answer_quality_presets() -> None:
     """프리셋별 가중치 적용 테스트."""
     ocr_text = "데이터: 1, 2, 3, 4, 5"
     answer = "데이터는 1, 2, 3입니다."  # 숫자 3개 일치
@@ -59,7 +61,7 @@ async def test_evaluate_answer_quality_presets():
 
 
 @pytest.mark.asyncio
-async def test_generate_lats_answer_auto_optimization():
+async def test_generate_lats_answer_auto_optimization() -> None:
     """LATS 자동 최적화 로직 테스트."""
     ocr_text = "테스트 텍스트 123"
     query = "테스트 질문"
@@ -68,7 +70,7 @@ async def test_generate_lats_answer_auto_optimization():
     # Mock response
     mock_agent._create_generative_model.return_value = MagicMock()
 
-    async def side_effect(model, prompt):
+    async def side_effect(model: Any, prompt: str) -> str:
         if "숫자_중심" in prompt:
             return "123을 포함한 좋은 답변입니다."
         elif "트렌드_중심" in prompt:
@@ -87,32 +89,32 @@ async def test_generate_lats_answer_auto_optimization():
 
 
 @pytest.mark.asyncio
-async def test_lats_evaluate_answer_node():
+async def test_lats_evaluate_answer_node() -> None:
     """LATS 노드 평가 로직 테스트."""
 
     class MockState:
-        def __init__(self, answer, ocr, metadata=None):
+        def __init__(self, answer: str, ocr: str, metadata: Optional[dict[str, Any]] = None) -> None:
             self.current_answer = answer
             self.ocr_text = ocr
             self.metadata = metadata
 
     class MockNode:
-        def __init__(self, state):
+        def __init__(self, state: MockState) -> None:
             self.state = state
 
     ocr_text = "매출 100억"
 
     # 1. Good answer (explanation default)
     state_good = MockState("100억 매출입니다.", ocr_text, {"query_type": "explanation"})
-    score = await _lats_evaluate_answer(MockNode(state_good))
+    score = await _lats_evaluate_answer(MockNode(state_good))  # type: ignore[arg-type]
     assert score > 0.6
 
     # 2. Table Summary (needs higher number match weight)
     state_table = MockState("100", ocr_text, {"query_type": "table_summary"})
-    score_table = await _lats_evaluate_answer(MockNode(state_table))
+    score_table = await _lats_evaluate_answer(MockNode(state_table))  # type: ignore[arg-type]
     assert score_table > 0.0
 
     # 3. No query_type in metadata (default to explanation)
     state_default = MockState("기본 답변", ocr_text, {})
-    score_default = await _lats_evaluate_answer(MockNode(state_default))
+    score_default = await _lats_evaluate_answer(MockNode(state_default))  # type: ignore[arg-type]
     assert score_default >= 0.0
