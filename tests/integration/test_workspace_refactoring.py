@@ -38,11 +38,11 @@ async def test_api_unified_workspace_uses_executor() -> None:
 
     # Patch all the required dependencies
     with (
-        patch("src.web.routers.workspace._get_agent") as mock_get_agent,
-        patch("src.web.routers.workspace._get_kg") as mock_get_kg,
-        patch("src.web.routers.workspace._get_pipeline") as mock_get_pipeline,
-        patch("src.web.routers.workspace._get_config") as mock_get_config,
-        patch("src.web.routers.workspace.load_ocr_text") as mock_load_ocr,
+        patch("src.web.routers.workspace_unified._get_agent") as mock_get_agent,
+        patch("src.web.routers.workspace_unified._get_kg") as mock_get_kg,
+        patch("src.web.routers.workspace_unified._get_pipeline") as mock_get_pipeline,
+        patch("src.web.routers.workspace_unified._get_config") as mock_get_config,
+        patch("src.web.routers.workspace_unified.load_ocr_text") as mock_load_ocr,
         patch("src.workflow.workspace_executor.WorkspaceExecutor") as MockExecutor,
     ):
         # Setup mocks
@@ -120,11 +120,11 @@ async def test_api_unified_workspace_workflow_detection() -> None:
         )
 
         with (
-            patch("src.web.routers.workspace._get_agent") as mock_get_agent,
-            patch("src.web.routers.workspace._get_kg"),
-            patch("src.web.routers.workspace._get_pipeline"),
-            patch("src.web.routers.workspace._get_config") as mock_get_config,
-            patch("src.web.routers.workspace.load_ocr_text") as mock_load_ocr,
+            patch("src.web.routers.workspace_unified._get_agent") as mock_get_agent,
+            patch("src.web.routers.workspace_unified._get_kg"),
+            patch("src.web.routers.workspace_unified._get_pipeline"),
+            patch("src.web.routers.workspace_unified._get_config") as mock_get_config,
+            patch("src.web.routers.workspace_unified.load_ocr_text") as mock_load_ocr,
             patch("src.workflow.workspace_executor.WorkspaceExecutor") as MockExecutor,
         ):
             mock_agent = Mock()
