@@ -24,6 +24,7 @@ Note: This is a large file. Consider future refactoring:
   - Extract session validation to src/qa/validators/session_validator.py
   - Keep QAKnowledgeGraph as a thin facade (target: ~300-400 lines)
 """
+
 from __future__ import annotations
 
 import asyncio

@@ -19,7 +19,7 @@ This module provides FastAPI endpoints for workspace operations including:
 **Utilities** (lines 246-254): Helper functions
 **Inspection/Editing Endpoint** (lines 255-346): `/workspace` endpoint
 **Answer Generation** (lines 348-444): `/workspace/generate-answer` endpoint
-**Query Generation** (lines 445-491): `/workspace/generate-query` endpoint  
+**Query Generation** (lines 445-491): `/workspace/generate-query` endpoint
 **LATS Evaluation** (lines 492-648): LATS evaluation helper functions
 **Unified Workflow** (lines 711-end): `/workspace/unified` endpoint
 

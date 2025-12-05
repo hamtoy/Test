@@ -85,7 +85,9 @@ async def test_generate_lats_answer_auto_optimization() -> None:
 
     mock_agent._call_api_with_retry.side_effect = side_effect
 
-    with patch("src.web.routers.workspace_generation._get_agent", return_value=mock_agent):
+    with patch(
+        "src.web.routers.workspace_generation._get_agent", return_value=mock_agent
+    ):
         answer, meta = await _generate_lats_answer(query, ocr_text, "explanation")
 
         # Best answer should be from "숫자_중심"

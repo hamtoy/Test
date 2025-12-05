@@ -21,11 +21,11 @@ def __getattr__(name: str) -> Any:
         return UsageDashboard
     elif name == "RealtimeDashboard":
         from src.analytics.realtime_dashboard import RealtimeDashboard
-        
+
         return RealtimeDashboard
     elif name == "get_dashboard":
         from src.analytics.realtime_dashboard import get_dashboard
-        
+
         return get_dashboard
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 

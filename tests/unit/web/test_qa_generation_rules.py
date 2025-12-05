@@ -133,6 +133,7 @@ class TestGenerateSingleQAWithRules:
 
         # Create a cached KG wrapper
         from src.web.routers.qa_common import _CachedKG
+
         cached_kg = _CachedKG(mock_kg)
 
         # Mock CrossValidationSystem
@@ -143,12 +144,17 @@ class TestGenerateSingleQAWithRules:
         mock_validator_class = MagicMock(return_value=mock_validator)
 
         with (
-            patch("src.web.routers.qa_generation.get_cached_kg", return_value=cached_kg),
+            patch(
+                "src.web.routers.qa_generation.get_cached_kg", return_value=cached_kg
+            ),
             patch("src.web.api.agent") as mock_agent,
             patch(
                 "src.processing.template_generator.DynamicTemplateGenerator"
             ) as mock_template_gen,
-            patch("src.web.routers.qa_generation._get_validator_class", return_value=mock_validator_class),
+            patch(
+                "src.web.routers.qa_generation._get_validator_class",
+                return_value=mock_validator_class,
+            ),
         ):
             mock_agent.generate_query = AsyncMock(return_value=["테스트 질의"])
             mock_agent.rewrite_best_answer = AsyncMock(

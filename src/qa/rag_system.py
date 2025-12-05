@@ -24,6 +24,7 @@ to specialized modules in src/qa/graph/ for actual functionality.
 
 For architecture details: docs/ARCHITECTURE.md
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -75,7 +76,7 @@ class QAKnowledgeGraph:
     - Neo4j 그래프 쿼리
     - (선택) Rule 벡터 검색
     - 세션 구조 검증
-    
+
     Simplified facade that delegates to specialized modules:
     - Connection management → graph/connection.py
     - Vector search → graph/vector_search.py
@@ -107,15 +108,15 @@ class QAKnowledgeGraph:
         self._graph: Optional[SafeDriver] = None
         self._graph_finalizer: Optional[Any] = None
         self._cache_metrics = CacheMetrics(namespace="qa_kg")
-        
+
         # Store credentials for later use
         self.neo4j_uri = neo4j_uri or os.getenv("NEO4J_URI")
         self.neo4j_user = neo4j_user or os.getenv("NEO4J_USER")
         self.neo4j_password = neo4j_password or os.getenv("NEO4J_PASSWORD")
-        
+
         # Initialize connection based on provider
         self._init_connection(provider)
-        
+
         # Initialize vector store (lazy, optional)
         self._vector_store: Any = None
         self._init_vector_store()
@@ -133,7 +134,7 @@ class QAKnowledgeGraph:
 
     def _init_connection(self, provider: Optional[GraphProvider]) -> None:
         """Initialize Neo4j connection.
-        
+
         Extracted from __init__ for clarity. Uses provider if available,
         otherwise creates direct driver connection.
         """

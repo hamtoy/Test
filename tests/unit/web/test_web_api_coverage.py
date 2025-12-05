@@ -349,7 +349,9 @@ class TestWorkspaceApiExtended:
             with patch("src.web.api.config") as mock_config:
                 mock_config.input_dir = inputs_dir
 
-                with patch("src.web.routers.workspace_review.inspect_answer") as mock_inspect:
+                with patch(
+                    "src.web.routers.workspace_review.inspect_answer"
+                ) as mock_inspect:
                     mock_inspect.return_value = "수정된 답변"
 
                     response = client.post(
@@ -387,7 +389,9 @@ class TestWorkspaceApiExtended:
             with patch("src.web.api.config") as mock_config:
                 mock_config.input_dir = inputs_dir
 
-                with patch("src.web.routers.workspace_review.edit_content") as mock_edit:
+                with patch(
+                    "src.web.routers.workspace_review.edit_content"
+                ) as mock_edit:
                     mock_edit.return_value = "수정된 내용"
 
                     response = client.post(
