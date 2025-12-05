@@ -10,7 +10,7 @@ def __getattr__(name: str) -> Any:
         name: The attribute name to retrieve.
 
     Returns:
-        The UsageDashboard class if name matches.
+        The requested class if name matches.
 
     Raises:
         AttributeError: If name is not a valid module attribute.
@@ -19,9 +19,19 @@ def __getattr__(name: str) -> Any:
         from src.analytics.dashboard import UsageDashboard
 
         return UsageDashboard
+    elif name == "RealtimeDashboard":
+        from src.analytics.realtime_dashboard import RealtimeDashboard
+        
+        return RealtimeDashboard
+    elif name == "get_dashboard":
+        from src.analytics.realtime_dashboard import get_dashboard
+        
+        return get_dashboard
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = [
     "UsageDashboard",
+    "RealtimeDashboard",
+    "get_dashboard",
 ]
