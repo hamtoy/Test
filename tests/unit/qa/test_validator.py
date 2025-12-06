@@ -76,6 +76,18 @@ class TestValidationResult:
         summary = result.get_error_summary()
         assert "unknown" in summary
 
+    def test_get_error_summary_with_string_violations(self) -> None:
+        """Test get_error_summary handles string violations (defensive coding)."""
+        # This tests the runtime defensive code even though type system expects dicts
+        result = ValidationResult(
+            violations=[{"type": "pattern"}, "string_violation"],  # type: ignore[list-item]
+            warnings=[],
+            score=1.0,
+        )
+        summary = result.get_error_summary()
+        assert "pattern" in summary
+        assert "string_violation" in summary
+
 
 class TestUnifiedValidator:
     """Test UnifiedValidator class."""

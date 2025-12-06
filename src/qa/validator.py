@@ -23,9 +23,20 @@ class ValidationResult:
         return bool(self.violations)
 
     def get_error_summary(self) -> str:
+        """안전한 에러 요약 생성 (str/dict 모두 처리)."""
         if not self.violations:
             return ""
-        types = {v.get("type", "unknown") for v in self.violations}
+
+        # [FIX] violations가 str 또는 dict를 포함할 수 있음
+        types = set()
+        for v in self.violations:
+            if isinstance(v, dict):
+                types.add(v.get("type", "unknown"))
+            elif isinstance(v, str):  # type: ignore[unreachable]
+                types.add(v)
+            else:
+                types.add("unknown")
+
         return f"다음 사항 수정 필요: {', '.join(sorted(types))}"
 
 
@@ -46,14 +57,34 @@ class UnifiedValidator:
         score = 1.0
 
         # 1) 패턴/포맷 위반 검사
-        violations.extend(find_violations(answer))
-        violations.extend(find_formatting_violations(answer))
+        pattern_violations = find_violations(answer)
+        format_violations = find_formatting_violations(answer)
 
-        # 2) 파이프라인 검증 (Neo4j/템플릿 기반)
+        # [FIX] 타입 검증: 문자열이면 dict로 변환
+        for v in pattern_violations:
+            if isinstance(v, dict):
+                violations.append(v)
+            elif isinstance(v, str):  # type: ignore[unreachable]
+                violations.append({"type": v, "description": v})
+
+        for v in format_violations:
+            if isinstance(v, dict):
+                violations.append(v)
+            elif isinstance(v, str):  # type: ignore[unreachable]
+                violations.append({"type": v, "description": v})
+
+        # 2) 파이프라인 검증
         if self.pipeline:
             try:
                 validation = self.pipeline.validate_output(query_type, answer)
-                violations.extend(validation.get("violations", []))
+                pipeline_violations = validation.get("violations", [])
+
+                for v in pipeline_violations:
+                    if isinstance(v, dict):
+                        violations.append(v)
+                    elif isinstance(v, str):
+                        violations.append({"type": v, "description": v})
+
                 if not validation.get("valid", True):
                     warnings.append("파이프라인 검증 실패")
             except Exception as exc:  # noqa: BLE001
@@ -71,11 +102,15 @@ class UnifiedValidator:
                 rule_score = rule_check.get("score", 1.0)
                 if rule_score < 1.0:
                     score = min(score, rule_score)
+
                 rule_violations = rule_check.get("violations", [])
-                # _check_rule_compliance returns list of strings in violations, wrap as dicts
-                violations.extend(
-                    [{"type": "rule", "description": v} for v in rule_violations]
-                )
+
+                for v in rule_violations:
+                    if isinstance(v, dict):
+                        violations.append(v)
+                    elif isinstance(v, str):
+                        violations.append({"type": "rule", "description": v})
+
             except Exception as exc:  # noqa: BLE001
                 warnings.append(f"규칙 검증 오류: {exc}")
 
