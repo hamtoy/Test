@@ -226,55 +226,80 @@ async def generate_single_qa(
 
     if kg_wrapper is not None:
         try:
+            # [Fix] Step 1: Enhanced type validation with detailed logging
             constraints = kg_wrapper.get_constraints_for_query_type(qtype)
-            # [Fix] Ensure constraints is a list before processing
+
             if not isinstance(constraints, list):
-                logger.warning(
-                    "Invalid constraints type: expected list, got %s",
+                logger.error(
+                    "🔴 Invalid constraints type from Neo4j: expected list, got %s. Value: %r",
                     type(constraints).__name__,
+                    constraints[:100] if isinstance(constraints, str) else constraints,
                 )
                 constraints = []
-            # [Fix] Ensure validation: filter out non-dict items
-            valid_constraints = [c for c in constraints if isinstance(c, dict)]
-            if len(valid_constraints) < len(constraints):
-                logger.warning(
-                    "Dropdown invalid constraints: %d/%d (expected dict, got types: %s)",
-                    len(constraints) - len(valid_constraints),
+
+            # [Fix] Step 2: Validate each item is a dict with detailed logging
+            valid_constraints = []
+            invalid_items = []
+
+            for c in constraints:
+                if isinstance(c, dict):
+                    valid_constraints.append(c)
+                else:
+                    invalid_items.append(
+                        {"type": type(c).__name__, "value": repr(c)[:50]}
+                    )
+
+            if invalid_items:
+                logger.error(
+                    "🔴 Invalid constraint items dropped: %d/%d. Samples: %s",
+                    len(invalid_items),
                     len(constraints),
-                    {type(c).__name__ for c in constraints if not isinstance(c, dict)},
+                    invalid_items[:3],  # Log first 3 samples only
                 )
 
+            # [Fix] Step 3: Safe category access with .get()
             query_constraints = [
                 c for c in valid_constraints if c.get("category") in ["query", "both"]
             ]
             answer_constraints = [
                 c for c in valid_constraints if c.get("category") in ["answer", "both"]
             ]
+
+            # Success logging
+            logger.info(
+                "✅ Constraints loaded: query=%d, answer=%d",
+                len(query_constraints),
+                len(answer_constraints),
+            )
+            # [Fix] Step 4: Enhanced formatting rules validation
             try:
                 fmt_rules = kg_wrapper.get_formatting_rules_for_query_type(
                     normalized_qtype
                 )
-                # [Fix] Ensure fmt_rules is a list before processing
+
+                # Type validation with detailed logging
                 if not isinstance(fmt_rules, list):
-                    logger.warning(
-                        "Invalid formatting rules type: expected list, got %s",
+                    logger.error(
+                        "🔴 Invalid formatting rules type: expected list, got %s",
                         type(fmt_rules).__name__,
                     )
                     fmt_rules = []
-                # [Fix] Sanitize formatting rules
-                valid_fmt_rules = [fr for fr in fmt_rules if isinstance(fr, dict)]
-                if len(valid_fmt_rules) < len(fmt_rules):
-                    logger.warning(
-                        "Invalid formatting rules dropped: %d/%d",
-                        len(fmt_rules) - len(valid_fmt_rules),
-                        len(fmt_rules),
-                    )
 
-                for fr in valid_fmt_rules:
-                    desc = fr.get("description") or fr.get("text")
-                    if desc:
-                        formatting_rules.append(desc)
-                logger.info("서식 규칙 %s개 로드", len(formatting_rules))
+                # Validate each rule is a dict
+                valid_fmt_rules = []
+                for fr in fmt_rules:
+                    if isinstance(fr, dict):
+                        desc = fr.get("description") or fr.get("text")
+                        if desc:
+                            formatting_rules.append(desc)
+                            valid_fmt_rules.append(fr)
+                    else:
+                        logger.warning(
+                            "Invalid formatting rule (not dict): %s",
+                            type(fr).__name__,
+                        )
+
+                logger.info("✅ Formatting rules loaded: %d", len(formatting_rules))
             except Exception as e:  # noqa: BLE001
                 logger.debug("서식 규칙 로드 실패: %s", e)
 
