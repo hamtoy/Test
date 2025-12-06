@@ -34,6 +34,12 @@ env/
 *.swo
 *~
 
+# Backup files
+*.old
+*_old.py
+*.bak
+*.backup
+
 # Environment variables (절대 커밋 금지)
 .env
 .env.local
