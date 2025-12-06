@@ -1,10 +1,9 @@
 """Tests for src/main.py to increase coverage."""
 
 import asyncio
-import sys
-from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
+import contextlib
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 
 class TestMainModule:
@@ -20,19 +19,16 @@ class TestMainModule:
         mock_run.side_effect = KeyboardInterrupt()
 
         # Import and execute the if __name__ == "__main__" block
-        with patch("sys.argv", ["main.py"]):
-            with patch("src.main.__name__", "__main__"):
-                try:
-                    exec(
-                        compile(
-                            open("/home/runner/work/Test/Test/src/main.py").read(),
-                            "main.py",
-                            "exec",
-                        ),
-                        {"__name__": "__main__"},
-                    )
-                except SystemExit:
-                    pass
+        with (
+            patch("sys.argv", ["main.py"]),
+            patch("src.main.__name__", "__main__"),
+            contextlib.suppress(SystemExit),
+            Path("/home/runner/work/Test/Test/src/main.py").open() as f,
+        ):
+            exec(
+                compile(f.read(), "main.py", "exec"),
+                {"__name__": "__main__"},
+            )
 
         mock_exit.assert_called()
 
@@ -45,19 +41,16 @@ class TestMainModule:
         """Test main() handles general exceptions."""
         mock_run.side_effect = RuntimeError("Test error")
 
-        with patch("sys.argv", ["main.py"]):
-            with patch("src.main.__name__", "__main__"):
-                try:
-                    exec(
-                        compile(
-                            open("/home/runner/work/Test/Test/src/main.py").read(),
-                            "main.py",
-                            "exec",
-                        ),
-                        {"__name__": "__main__"},
-                    )
-                except SystemExit:
-                    pass
+        with (
+            patch("sys.argv", ["main.py"]),
+            patch("src.main.__name__", "__main__"),
+            contextlib.suppress(SystemExit),
+            Path("/home/runner/work/Test/Test/src/main.py").open() as f,
+        ):
+            exec(
+                compile(f.read(), "main.py", "exec"),
+                {"__name__": "__main__"},
+            )
 
         mock_exit.assert_called_with(1)
 
@@ -69,22 +62,19 @@ class TestMainModule:
     ) -> None:
         """Test Windows event loop policy is set."""
         mock_policy = MagicMock()
-        
-        with patch("asyncio.WindowsSelectorEventLoopPolicy", return_value=mock_policy):
-            with patch("asyncio.set_event_loop_policy") as mock_set_policy:
-                with patch("sys.argv", ["main.py"]):
-                    with patch("src.main.__name__", "__main__"):
-                        try:
-                            exec(
-                                compile(
-                                    open("/home/runner/work/Test/Test/src/main.py").read(),
-                                    "main.py",
-                                    "exec",
-                                ),
-                                {"__name__": "__main__"},
-                            )
-                        except SystemExit:
-                            pass
+
+        with (
+            patch("asyncio.WindowsSelectorEventLoopPolicy", return_value=mock_policy),
+            patch("asyncio.set_event_loop_policy"),
+            patch("sys.argv", ["main.py"]),
+            patch("src.main.__name__", "__main__"),
+            contextlib.suppress(SystemExit),
+            Path("/home/runner/work/Test/Test/src/main.py").open() as f,
+        ):
+            exec(
+                compile(f.read(), "main.py", "exec"),
+                {"__name__": "__main__"},
+            )
 
     @patch("os.name", "nt")
     @patch("src.main.asyncio.run")
@@ -93,17 +83,14 @@ class TestMainModule:
         self, mock_dotenv: MagicMock, mock_run: MagicMock
     ) -> None:
         """Test Windows handles missing WindowsSelectorEventLoopPolicy."""
-        with patch.object(asyncio, "WindowsSelectorEventLoopPolicy", None, create=True):
-            with patch("sys.argv", ["main.py"]):
-                with patch("src.main.__name__", "__main__"):
-                    try:
-                        exec(
-                            compile(
-                                open("/home/runner/work/Test/Test/src/main.py").read(),
-                                "main.py",
-                                "exec",
-                            ),
-                            {"__name__": "__main__"},
-                        )
-                    except (SystemExit, AttributeError):
-                        pass
+        with (
+            patch.object(asyncio, "WindowsSelectorEventLoopPolicy", None, create=True),
+            patch("sys.argv", ["main.py"]),
+            patch("src.main.__name__", "__main__"),
+            contextlib.suppress(SystemExit, AttributeError),
+            Path("/home/runner/work/Test/Test/src/main.py").open() as f,
+        ):
+            exec(
+                compile(f.read(), "main.py", "exec"),
+                {"__name__": "__main__"},
+            )
