@@ -347,12 +347,14 @@ class QAKnowledgeGraph:
             rules_data = [dict(r) for r in records]
             return format_rules(rules_data)
 
-        return self.query_executor.execute_with_fallback(
+        result = self.query_executor.execute_with_fallback(
             CypherQueries.GET_FORMATTING_RULES,
             params={"template_type": template_type},
             default="",
             transform=transform_to_formatted,
         )
+        # When transform is provided that returns str, result will be str
+        return str(result) if not isinstance(result, str) else result
 
     def rollback_batch(self, batch_id: str) -> Dict[str, Any]:
         """특정 batch_id로 생성된 모든 노드 삭제 (롤백).

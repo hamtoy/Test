@@ -128,4 +128,5 @@ def get_query(name: str) -> str:
     Raises:
         AttributeError: If query name doesn't exist
     """
-    return getattr(CypherQueries, name)
+    query: str = getattr(CypherQueries, name)
+    return query

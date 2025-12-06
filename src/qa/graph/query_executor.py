@@ -76,7 +76,7 @@ class QueryExecutor:
         params: Optional[Dict[str, Any]] = None,
         default: Optional[T] = None,
         transform: Optional[Callable[[List[Any]], T]] = None,
-    ) -> T:
+    ) -> T | List[Dict[str, Any]]:
         """Execute query with sync-first, async-fallback pattern.
 
         Tries sync driver first, falls back to async provider if sync fails.
@@ -92,7 +92,11 @@ class QueryExecutor:
             Transformed result or default value
         """
         params = params or {}
-        transform_fn = transform or (lambda records: [dict(r) for r in records])
+        transform_fn: Callable[[List[Any]], T | List[Dict[str, Any]]]
+        if transform is not None:
+            transform_fn = transform
+        else:
+            transform_fn = lambda records: [dict(r) for r in records]
 
         # Try sync driver first
         if self._graph is not None:
@@ -106,11 +110,13 @@ class QueryExecutor:
         # Fall back to async provider
         if self._graph_provider is None:
             logger.warning("No graph provider available")
-            return default if default is not None else []
+            if default is not None:
+                return default
+            return []
 
         prov = self._graph_provider
 
-        async def _run() -> T:
+        async def _run() -> T | List[Dict[str, Any]]:
             try:
                 async with prov.session() as session:
                     result = await session.run(cypher, **params)
@@ -121,7 +127,9 @@ class QueryExecutor:
                     return transform_fn(records)
             except (Neo4jError, ServiceUnavailable) as exc:
                 logger.warning("Async query failed: %s", exc)
-                return default if default is not None else []
+                if default is not None:
+                    return default
+                return []
 
         return run_async_safely(_run())
 
