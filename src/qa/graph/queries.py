@@ -8,7 +8,7 @@ from __future__ import annotations
 
 class CypherQueries:
     """Repository of Cypher queries for graph operations."""
-    
+
     # Constraint queries
     GET_CONSTRAINTS_FOR_QUERY_TYPE = """
         // 1. QueryType 연결 Constraint
@@ -42,7 +42,7 @@ class CypherQueries:
             c.category AS category,
             c.applies_to AS applies_to
         """
-    
+
     # Rule queries
     GET_RULES_FOR_QUERY_TYPE = """
         MATCH (qt:QueryType {name: $qt})
@@ -80,20 +80,20 @@ class CypherQueries:
             END DESC,
             priority DESC
         """
-    
+
     # Best practice queries
     GET_BEST_PRACTICES = """
         MATCH (qt:QueryType {name: $qt})<-[:APPLIES_TO]-(b:BestPractice)
         RETURN b.id AS id, b.text AS text
         """
-    
+
     # Example queries
     GET_EXAMPLES = """
         MATCH (e:Example)
         RETURN e.id AS id, e.text AS text, e.type AS type
         LIMIT $limit
         """
-    
+
     # Formatting rule queries
     GET_FORMATTING_RULES_FOR_QUERY_TYPE = """
         OPTIONAL MATCH (fr:FormattingRule)
@@ -107,7 +107,7 @@ class CypherQueries:
                coalesce(fr.examples_bad, '') AS examples_bad
         ORDER BY fr.priority DESC
         """
-    
+
     GET_FORMATTING_RULES = """
         MATCH (t:Template {name: $template_type})-[:ENFORCES]->(r:Rule)
         RETURN r.text AS text, coalesce(r.priority, 999) AS priority
@@ -118,13 +118,13 @@ class CypherQueries:
 # Convenience function to get queries
 def get_query(name: str) -> str:
     """Get a Cypher query by name.
-    
+
     Args:
         name: Query name (attribute name from CypherQueries class)
-        
+
     Returns:
         Cypher query string
-        
+
     Raises:
         AttributeError: If query name doesn't exist
     """

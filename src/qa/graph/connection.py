@@ -30,28 +30,30 @@ def initialize_connection(
     provider: Optional[GraphProvider],
 ) -> tuple[Optional[SafeDriver], Optional[Any]]:
     """Initialize Neo4j connection with provider support.
-    
+
     Args:
         neo4j_uri: Neo4j database URI
         neo4j_user: Neo4j username
         neo4j_password: Neo4j password
         provider: Optional graph provider
-        
+
     Returns:
         Tuple of (driver, finalizer)
     """
     graph: Optional[SafeDriver] = None
     finalizer: Optional[Any] = None
-    
+
     if provider is None:
         # No provider - create direct connection
         uri = neo4j_uri or require_env("NEO4J_URI")
         user = neo4j_user or require_env("NEO4J_USER")
         password = neo4j_password or require_env("NEO4J_PASSWORD")
-        
+
         try:
             graph = create_sync_driver(
-                uri, user, password,
+                uri,
+                user,
+                password,
                 register_atexit=True,
                 graph_db_factory=GraphDatabase.driver,
             )
@@ -62,12 +64,14 @@ def initialize_connection(
         # Provider available - use it, but also setup direct connection if credentials exist
         if neo4j_uri and neo4j_user and neo4j_password:
             graph = create_sync_driver(
-                neo4j_uri, neo4j_user, neo4j_password,
+                neo4j_uri,
+                neo4j_user,
+                neo4j_password,
                 register_atexit=True,
                 graph_db_factory=GraphDatabase.driver,
             )
             finalizer = weakref.finalize(graph, graph.close)
-    
+
     return graph, finalizer
 
 
@@ -77,7 +81,7 @@ def close_connections(
     graph_provider: Optional[GraphProvider],
 ) -> None:
     """Close database connections and clean up resources.
-    
+
     Args:
         graph: Sync driver instance
         graph_finalizer: Weakref finalizer
@@ -86,11 +90,11 @@ def close_connections(
     if graph:
         with suppress(Exception):
             graph.close()
-    
+
     if graph_finalizer and graph_finalizer.alive:
         with suppress(Exception):
             graph_finalizer()
-    
+
     if graph_provider:
         try:
             try:
@@ -118,13 +122,13 @@ def create_graph_session(
     graph_provider: Optional[GraphProvider],
 ) -> Generator[Any, None, None]:
     """Create a synchronous Neo4j session.
-    
+
     Tries sync driver first, falls back to async provider if available.
-    
+
     Args:
         graph: Sync driver instance
         graph_provider: Async graph provider
-        
+
     Yields:
         Session instance or None
     """
