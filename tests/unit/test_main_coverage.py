@@ -2,8 +2,11 @@
 
 import asyncio
 import contextlib
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 
 class TestMainModule:
@@ -57,6 +60,7 @@ class TestMainModule:
     @patch("os.name", "nt")
     @patch("src.main.asyncio.run")
     @patch("src.main.load_dotenv")
+    @pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific test")
     def test_windows_event_loop_policy(
         self, mock_dotenv: MagicMock, mock_run: MagicMock
     ) -> None:
@@ -76,6 +80,7 @@ class TestMainModule:
                 {"__name__": "__main__"},
             )
 
+    @pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific test")
     @patch("os.name", "nt")
     @patch("src.main.asyncio.run")
     @patch("src.main.load_dotenv")
