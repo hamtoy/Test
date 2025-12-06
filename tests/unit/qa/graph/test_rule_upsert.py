@@ -3,6 +3,7 @@
 
 from unittest.mock import Mock, patch
 
+import pytest
 
 from src.qa.graph.rule_upsert import RuleUpsertManager
 
@@ -282,3 +283,408 @@ class TestRuleUpsertManager:
             # Should call with empty string for type_hint
             call_args = mock_upsert.call_args
             assert call_args[1]["type_hint"] == ""
+
+    def test_upsert_rule_node_with_graph(self):
+        """Test _upsert_rule_node with sync graph driver."""
+        mock_session = Mock()
+        mock_session.run.return_value = []  # Empty existing
+        
+        mock_graph = Mock()
+        mock_context = Mock()
+        mock_context.__enter__ = Mock(return_value=mock_session)
+        mock_context.__exit__ = Mock(return_value=None)
+        mock_graph.session.return_value = mock_context
+        
+        manager = RuleUpsertManager(graph=mock_graph)
+        
+        result = manager._upsert_rule_node(
+            rule_id="rule_001",
+            description="Test rule",
+            type_hint="explanation",
+            batch_id="batch_123",
+            timestamp="2024-01-01T00:00:00",
+        )
+        
+        assert result["created"] is True
+        assert mock_session.run.call_count == 2  # check + upsert
+
+    def test_upsert_rule_node_update_existing(self):
+        """Test _upsert_rule_node updating existing rule."""
+        mock_session = Mock()
+        # Simulate existing rule
+        mock_session.run.return_value = [{"existing_batch_id": "old_batch"}]
+        
+        mock_graph = Mock()
+        mock_context = Mock()
+        mock_context.__enter__ = Mock(return_value=mock_session)
+        mock_context.__exit__ = Mock(return_value=None)
+        mock_graph.session.return_value = mock_context
+        
+        manager = RuleUpsertManager(graph=mock_graph)
+        
+        result = manager._upsert_rule_node(
+            rule_id="rule_001",
+            description="Updated rule",
+            type_hint="explanation",
+            batch_id="batch_123",
+            timestamp="2024-01-01T00:00:00",
+        )
+        
+        assert result["created"] is False
+
+    def test_upsert_rule_node_no_graph_or_provider(self):
+        """Test _upsert_rule_node raises error when no graph/provider."""
+        manager = RuleUpsertManager()
+        
+        with pytest.raises(ValueError, match="Graph driver must be initialized"):
+            manager._upsert_rule_node(
+                rule_id="rule_001",
+                description="Test",
+                type_hint="explanation",
+                batch_id="batch",
+                timestamp="2024-01-01",
+            )
+
+    def test_upsert_constraint_node_with_graph(self):
+        """Test _upsert_constraint_node with sync graph driver."""
+        mock_session = Mock()
+        mock_session.run.return_value = []
+        
+        mock_graph = Mock()
+        mock_context = Mock()
+        mock_context.__enter__ = Mock(return_value=mock_session)
+        mock_context.__exit__ = Mock(return_value=None)
+        mock_graph.session.return_value = mock_context
+        
+        manager = RuleUpsertManager(graph=mock_graph)
+        
+        result = manager._upsert_constraint_node(
+            constraint_id="const_001",
+            description="Test constraint",
+            rule_id="rule_001",
+            batch_id="batch_123",
+            timestamp="2024-01-01T00:00:00",
+        )
+        
+        assert result["created"] is True
+
+    def test_upsert_constraint_node_no_graph_or_provider(self):
+        """Test _upsert_constraint_node raises error when no graph/provider."""
+        manager = RuleUpsertManager()
+        
+        with pytest.raises(ValueError, match="Graph driver must be initialized"):
+            manager._upsert_constraint_node(
+                constraint_id="const_001",
+                description="Test",
+                rule_id="rule_001",
+                batch_id="batch",
+                timestamp="2024-01-01",
+            )
+
+    def test_upsert_best_practice_node_with_graph(self):
+        """Test _upsert_best_practice_node with sync graph driver."""
+        mock_session = Mock()
+        mock_session.run.return_value = []
+        
+        mock_graph = Mock()
+        mock_context = Mock()
+        mock_context.__enter__ = Mock(return_value=mock_session)
+        mock_context.__exit__ = Mock(return_value=None)
+        mock_graph.session.return_value = mock_context
+        
+        manager = RuleUpsertManager(graph=mock_graph)
+        
+        result = manager._upsert_best_practice_node(
+            bp_id="bp_001",
+            text="Best practice text",
+            rule_id="rule_001",
+            batch_id="batch_123",
+            timestamp="2024-01-01T00:00:00",
+        )
+        
+        assert result["created"] is True
+
+    def test_upsert_best_practice_node_no_graph_or_provider(self):
+        """Test _upsert_best_practice_node raises error when no graph/provider."""
+        manager = RuleUpsertManager()
+        
+        with pytest.raises(ValueError, match="Graph driver must be initialized"):
+            manager._upsert_best_practice_node(
+                bp_id="bp_001",
+                text="Test",
+                rule_id="rule_001",
+                batch_id="batch",
+                timestamp="2024-01-01",
+            )
+
+    def test_upsert_example_node_with_graph(self):
+        """Test _upsert_example_node with sync graph driver."""
+        mock_session = Mock()
+        mock_session.run.return_value = []
+        
+        mock_graph = Mock()
+        mock_context = Mock()
+        mock_context.__enter__ = Mock(return_value=mock_session)
+        mock_context.__exit__ = Mock(return_value=None)
+        mock_graph.session.return_value = mock_context
+        
+        manager = RuleUpsertManager(graph=mock_graph)
+        
+        result = manager._upsert_example_node(
+            example_id="ex_001",
+            before="Before text",
+            after="After text",
+            rule_id="rule_001",
+            batch_id="batch_123",
+            timestamp="2024-01-01T00:00:00",
+        )
+        
+        assert result["created"] is True
+
+    def test_upsert_example_node_no_graph_or_provider(self):
+        """Test _upsert_example_node raises error when no graph/provider."""
+        manager = RuleUpsertManager()
+        
+        with pytest.raises(ValueError, match="Graph driver must be initialized"):
+            manager._upsert_example_node(
+                example_id="ex_001",
+                before="Before",
+                after="After",
+                rule_id="rule_001",
+                batch_id="batch",
+                timestamp="2024-01-01",
+            )
+
+    def test_get_rules_by_batch_id_with_graph(self):
+        """Test get_rules_by_batch_id with sync graph driver."""
+        mock_session = Mock()
+        mock_record1 = {"labels": ["Rule"], "id": "rule_001", "created_at": "2024-01-01"}
+        mock_record2 = {"labels": ["Constraint"], "id": "const_001", "created_at": "2024-01-01"}
+        mock_session.run.return_value = [mock_record1, mock_record2]
+        
+        mock_graph = Mock()
+        mock_context = Mock()
+        mock_context.__enter__ = Mock(return_value=mock_session)
+        mock_context.__exit__ = Mock(return_value=None)
+        mock_graph.session.return_value = mock_context
+        
+        manager = RuleUpsertManager(graph=mock_graph)
+        
+        result = manager.get_rules_by_batch_id("batch_123")
+        
+        assert len(result) == 2
+        assert result[0]["id"] == "rule_001"
+
+    def test_get_rules_by_batch_id_no_graph_or_provider(self):
+        """Test get_rules_by_batch_id raises error when no graph/provider."""
+        manager = RuleUpsertManager()
+        
+        with pytest.raises(ValueError, match="Graph driver must be initialized"):
+            manager.get_rules_by_batch_id("batch_123")
+
+    def test_rollback_batch_with_graph(self):
+        """Test rollback_batch with sync graph driver."""
+        mock_session = Mock()
+        mock_session.run.side_effect = [
+            [{"cnt": 5}],  # count query
+            None,  # delete query
+        ]
+        
+        mock_graph = Mock()
+        mock_context = Mock()
+        mock_context.__enter__ = Mock(return_value=mock_session)
+        mock_context.__exit__ = Mock(return_value=None)
+        mock_graph.session.return_value = mock_context
+        
+        manager = RuleUpsertManager(graph=mock_graph)
+        
+        result = manager.rollback_batch("batch_123")
+        
+        assert result["success"] is True
+        assert result["deleted_count"] == 5
+
+    def test_rollback_batch_no_nodes(self):
+        """Test rollback_batch when no nodes exist."""
+        mock_session = Mock()
+        mock_session.run.side_effect = [
+            [],  # empty count result
+            None,
+        ]
+        
+        mock_graph = Mock()
+        mock_context = Mock()
+        mock_context.__enter__ = Mock(return_value=mock_session)
+        mock_context.__exit__ = Mock(return_value=None)
+        mock_graph.session.return_value = mock_context
+        
+        manager = RuleUpsertManager(graph=mock_graph)
+        
+        result = manager.rollback_batch("batch_123")
+        
+        assert result["success"] is True
+        assert result["deleted_count"] == 0
+
+    def test_rollback_batch_no_graph_or_provider(self):
+        """Test rollback_batch raises error when no graph/provider."""
+        manager = RuleUpsertManager()
+        
+        with pytest.raises(ValueError, match="Graph driver must be initialized"):
+            manager.rollback_batch("batch_123")
+
+    def test_upsert_rule_node_with_async_provider(self):
+        """Test _upsert_rule_node with async graph provider."""
+        from unittest.mock import AsyncMock
+        
+        mock_provider = AsyncMock()
+        mock_session = AsyncMock()
+        
+        # Mock async iteration for existing check
+        async def mock_aiter():
+            return [].__aiter__()
+        
+        mock_result = AsyncMock()
+        mock_result.__aiter__ = mock_aiter
+        mock_session.run.return_value = mock_result
+        mock_provider.session.return_value.__aenter__.return_value = mock_session
+        mock_provider.session.return_value.__aexit__.return_value = None
+        
+        manager = RuleUpsertManager(graph_provider=mock_provider)
+        
+        with patch('src.infra.utils.run_async_safely') as mock_run_async:
+            mock_run_async.return_value = {"created": True}
+            
+            result = manager._upsert_rule_node(
+                rule_id="rule_001",
+                description="Test",
+                type_hint="explanation",
+                batch_id="batch_123",
+                timestamp="2024-01-01",
+            )
+            
+            assert result["created"] is True
+            mock_run_async.assert_called_once()
+
+    def test_upsert_constraint_node_with_async_provider(self):
+        """Test _upsert_constraint_node with async graph provider."""
+        mock_provider = Mock()
+        
+        manager = RuleUpsertManager(graph_provider=mock_provider)
+        
+        with patch('src.infra.utils.run_async_safely') as mock_run_async:
+            mock_run_async.return_value = {"created": True}
+            
+            result = manager._upsert_constraint_node(
+                constraint_id="const_001",
+                description="Test",
+                rule_id="rule_001",
+                batch_id="batch_123",
+                timestamp="2024-01-01",
+            )
+            
+            assert result["created"] is True
+            mock_run_async.assert_called_once()
+
+    def test_upsert_best_practice_node_with_async_provider(self):
+        """Test _upsert_best_practice_node with async graph provider."""
+        mock_provider = Mock()
+        
+        manager = RuleUpsertManager(graph_provider=mock_provider)
+        
+        with patch('src.infra.utils.run_async_safely') as mock_run_async:
+            mock_run_async.return_value = {"created": True}
+            
+            result = manager._upsert_best_practice_node(
+                bp_id="bp_001",
+                text="Test",
+                rule_id="rule_001",
+                batch_id="batch_123",
+                timestamp="2024-01-01",
+            )
+            
+            assert result["created"] is True
+            mock_run_async.assert_called_once()
+
+    def test_upsert_example_node_with_async_provider(self):
+        """Test _upsert_example_node with async graph provider."""
+        mock_provider = Mock()
+        
+        manager = RuleUpsertManager(graph_provider=mock_provider)
+        
+        with patch('src.infra.utils.run_async_safely') as mock_run_async:
+            mock_run_async.return_value = {"created": True}
+            
+            result = manager._upsert_example_node(
+                example_id="ex_001",
+                before="Before",
+                after="After",
+                rule_id="rule_001",
+                batch_id="batch_123",
+                timestamp="2024-01-01",
+            )
+            
+            assert result["created"] is True
+            mock_run_async.assert_called_once()
+
+    def test_get_rules_by_batch_id_with_async_provider(self):
+        """Test get_rules_by_batch_id with async graph provider."""
+        mock_provider = Mock()
+        
+        manager = RuleUpsertManager(graph_provider=mock_provider)
+        
+        with patch('src.infra.utils.run_async_safely') as mock_run_async:
+            mock_run_async.return_value = [{"id": "rule_001"}]
+            
+            result = manager.get_rules_by_batch_id("batch_123")
+            
+            assert len(result) == 1
+            mock_run_async.assert_called_once()
+
+    def test_rollback_batch_with_async_provider(self):
+        """Test rollback_batch with async graph provider."""
+        mock_provider = Mock()
+        
+        manager = RuleUpsertManager(graph_provider=mock_provider)
+        
+        with patch('src.infra.utils.run_async_safely') as mock_run_async:
+            mock_run_async.return_value = {"success": True, "deleted_count": 3}
+            
+            result = manager.rollback_batch("batch_123")
+            
+            assert result["success"] is True
+            assert result["deleted_count"] == 3
+            mock_run_async.assert_called_once()
+
+    def test_upsert_auto_generated_rules_with_all_fields(self):
+        """Test upsert with all optional fields present."""
+        mock_graph = Mock()
+        manager = RuleUpsertManager(graph=mock_graph)
+        
+        with patch.object(manager, "_upsert_rule_node") as mock_rule, \
+             patch.object(manager, "_upsert_constraint_node") as mock_constraint, \
+             patch.object(manager, "_upsert_best_practice_node") as mock_bp, \
+             patch.object(manager, "_upsert_example_node") as mock_example:
+            
+            mock_rule.return_value = {"created": True}
+            mock_constraint.return_value = {"created": True}
+            mock_bp.return_value = {"created": True}
+            mock_example.return_value = {"created": True}
+            
+            patterns = [
+                {
+                    "id": "rule_001",
+                    "rule": "Test rule",
+                    "type_hint": "explanation",
+                    "constraint": "Must be concise",
+                    "best_practice": "Use clear language",
+                    "example_before": "Bad example",
+                    "example_after": "Good example",
+                }
+            ]
+            
+            result = manager.upsert_auto_generated_rules(patterns, batch_id="test")
+            
+            assert result["success"] is True
+            assert result["created"]["rules"] == 1
+            assert result["created"]["constraints"] == 1
+            assert result["created"]["best_practices"] == 1
+            assert result["created"]["examples"] == 1

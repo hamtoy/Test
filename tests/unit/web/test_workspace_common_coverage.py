@@ -204,6 +204,214 @@ class TestDependencyInjection:
 
         assert result is None
 
+    @patch("src.web.routers.workspace_common.get_registry")
+    def test_get_validator_exception_handling(self, mock_get_registry: Mock) -> None:
+        """Test _get_validator handles exceptions gracefully."""
+        mock_registry = MagicMock()
+        mock_registry.validator = None
+        mock_kg = MagicMock()
+        mock_registry.kg = mock_kg
+        mock_get_registry.return_value = mock_registry
+
+        with patch(
+            "src.web.routers.workspace_common.CrossValidationSystem",
+            side_effect=Exception("Validator creation failed"),
+        ):
+            result = _get_validator()
+
+            assert result is None
+
+    @patch("src.web.routers.workspace_common.get_registry")
+    def test_get_agent_fallback_to_module_global(self, mock_get_registry: Mock) -> None:
+        """Test _get_agent falls back to module global when api module fails."""
+        from src.web.routers import workspace_common
+
+        mock_get_registry.side_effect = RuntimeError("Registry not initialized")
+
+        # Set module global
+        mock_agent = MagicMock()
+        workspace_common.agent = mock_agent
+
+        with patch("src.web.api.agent", None):
+            result = _get_agent()
+
+            assert result == mock_agent
+
+        # Clean up
+        workspace_common.agent = None
+
+    @patch("src.web.routers.workspace_common.get_registry")
+    def test_get_agent_fallback_to_api_module(self, mock_get_registry: Mock) -> None:
+        """Test _get_agent falls back to api module."""
+        from src.web.routers import workspace_common
+
+        mock_get_registry.side_effect = RuntimeError("Registry not initialized")
+        mock_agent = MagicMock()
+
+        # Clear module global
+        workspace_common.agent = None
+
+        with patch("src.web.api.agent", mock_agent):
+            result = _get_agent()
+
+            assert result == mock_agent
+
+    @patch("src.web.routers.workspace_common.get_registry")
+    def test_get_agent_all_fallbacks_fail(self, mock_get_registry: Mock) -> None:
+        """Test _get_agent returns None when all fallbacks fail."""
+        from src.web.routers import workspace_common
+
+        mock_get_registry.side_effect = RuntimeError("Registry not initialized")
+        workspace_common.agent = None
+
+        with patch("src.web.api", spec=[]):  # No agent attribute
+            result = _get_agent()
+
+            assert result is None
+
+    @patch("src.web.routers.workspace_common.get_registry")
+    def test_get_kg_fallback_to_api_module(self, mock_get_registry: Mock) -> None:
+        """Test _get_kg falls back to api module."""
+        mock_get_registry.side_effect = RuntimeError("Registry not initialized")
+        mock_kg = MagicMock()
+
+        with patch("src.web.api.kg", mock_kg):
+            result = _get_kg()
+
+            assert result == mock_kg
+
+    @patch("src.web.routers.workspace_common.get_registry")
+    def test_get_kg_fallback_to_module_global(self, mock_get_registry: Mock) -> None:
+        """Test _get_kg falls back to module global."""
+        from src.web.routers import workspace_common
+
+        mock_get_registry.side_effect = RuntimeError("Registry not initialized")
+        mock_kg = MagicMock()
+        workspace_common.kg = mock_kg
+
+        with patch("src.web.api.kg", None):
+            result = _get_kg()
+
+            assert result == mock_kg
+
+        # Clean up
+        workspace_common.kg = None
+
+    @patch("src.web.routers.workspace_common.get_registry")
+    def test_get_pipeline_fallback_to_api_module(self, mock_get_registry: Mock) -> None:
+        """Test _get_pipeline falls back to api module."""
+        mock_get_registry.side_effect = RuntimeError("Registry not initialized")
+        mock_pipeline = MagicMock()
+
+        with patch("src.web.api.pipeline", mock_pipeline):
+            result = _get_pipeline()
+
+            assert result == mock_pipeline
+
+    @patch("src.web.routers.workspace_common.get_registry")
+    def test_get_pipeline_fallback_to_module_global(self, mock_get_registry: Mock) -> None:
+        """Test _get_pipeline falls back to module global."""
+        from src.web.routers import workspace_common
+
+        mock_get_registry.side_effect = RuntimeError("Registry not initialized")
+        mock_pipeline = MagicMock()
+        workspace_common.pipeline = mock_pipeline
+
+        with patch("src.web.api.pipeline", None):
+            result = _get_pipeline()
+
+            assert result == mock_pipeline
+
+        # Clean up
+        workspace_common.pipeline = None
+
+    @patch("src.web.routers.workspace_common.get_registry")
+    @patch("src.web.routers.workspace_common.AppConfig")
+    def test_get_config_fallback_to_api_module(
+        self, mock_app_config: Mock, mock_get_registry: Mock
+    ) -> None:
+        """Test _get_config falls back to api module."""
+        from src.web.routers import workspace_common
+
+        mock_get_registry.side_effect = RuntimeError("Registry not initialized")
+        mock_config = MagicMock()
+        mock_config.workspace_timeout = 120
+        mock_config.workspace_unified_timeout = 180
+        mock_config.qa_single_timeout = 60
+        mock_config.qa_batch_timeout = 300
+        workspace_common._config = None
+
+        with patch("src.web.api.config", mock_config):
+            result = _get_config()
+
+            assert result == mock_config
+
+    @patch("src.web.routers.workspace_common.get_registry")
+    @patch("src.web.routers.workspace_common.AppConfig")
+    def test_get_config_fallback_to_module_global(
+        self, mock_app_config: Mock, mock_get_registry: Mock
+    ) -> None:
+        """Test _get_config falls back to module global."""
+        from src.web.routers import workspace_common
+
+        mock_get_registry.side_effect = RuntimeError("Registry not initialized")
+        mock_config = MagicMock()
+        mock_config.workspace_timeout = 120
+        mock_config.workspace_unified_timeout = 180
+        mock_config.qa_single_timeout = 60
+        mock_config.qa_batch_timeout = 300
+        workspace_common._config = mock_config
+
+        with patch("src.web.api.config", None):
+            result = _get_config()
+
+            assert result == mock_config
+
+        # Clean up
+        workspace_common._config = None
+
+    @patch("src.web.routers.workspace_common.get_registry")
+    @patch("src.web.routers.workspace_common.AppConfig")
+    def test_get_config_creates_default_when_all_fail(
+        self, mock_app_config: Mock, mock_get_registry: Mock
+    ) -> None:
+        """Test _get_config creates default AppConfig when all fallbacks fail."""
+        from src.web.routers import workspace_common
+
+        mock_get_registry.side_effect = RuntimeError("Registry not initialized")
+        workspace_common._config = None
+        mock_default_config = MagicMock()
+        mock_default_config.workspace_timeout = 120
+        mock_default_config.workspace_unified_timeout = 180
+        mock_default_config.qa_single_timeout = 60
+        mock_default_config.qa_batch_timeout = 300
+        mock_app_config.return_value = mock_default_config
+
+        with patch("src.web.api.config", None):
+            result = _get_config()
+
+            assert result == mock_default_config
+            mock_app_config.assert_called_once()
+
+    @patch("src.web.routers.workspace_common.get_registry")
+    def test_get_config_timeout_validation_exception(
+        self, mock_get_registry: Mock
+    ) -> None:
+        """Test _get_config handles exception during timeout validation."""
+        mock_registry = MagicMock()
+        mock_config = MagicMock()
+        # Make getattr raise an exception
+        mock_config.__getattribute__ = MagicMock(
+            side_effect=Exception("Attribute error")
+        )
+        mock_registry.config = mock_config
+        mock_get_registry.return_value = mock_registry
+
+        result = _get_config()
+
+        # Should still return config with default timeouts set
+        assert result is not None
+
 
 class TestDifficultyHint:
     """Test difficulty hint generation."""
