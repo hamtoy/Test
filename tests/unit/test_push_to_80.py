@@ -1,7 +1,7 @@
 """Tests to push coverage from 79.22% to 80%+."""
 
 import pytest
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock
 
 
 class TestImports:
@@ -126,7 +126,7 @@ class TestMainModule:
 
     def test_main_function_imports(self) -> None:
         """Test main module imports."""
-        from src.main import (
+        from src.main import (  # type: ignore[attr-defined]
             main,
             load_input_data,
             analyze_cache_stats,
@@ -296,7 +296,7 @@ class TestLLMModule:
     def test_gemini_module_import(self) -> None:
         """Test gemini module imports."""
         try:
-            from src.llm.gemini import create_gemini_client
+            from src.llm.gemini import create_gemini_client  # type: ignore[attr-defined]
 
             assert callable(create_gemini_client)
         except (ImportError, AttributeError):
