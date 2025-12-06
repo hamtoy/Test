@@ -399,20 +399,26 @@ class TestDependencyInjection:
     def test_get_config_timeout_validation_exception(
         self, mock_get_registry: Mock
     ) -> None:
-        """Test _get_config handles exception during timeout validation."""
+        """Test _get_config handles non-integer timeout values."""
         mock_registry = MagicMock()
         mock_config = MagicMock()
-        # Make getattr raise an exception
-        mock_config.__getattribute__ = MagicMock(
-            side_effect=Exception("Attribute error")
-        )
+        # Set non-integer timeout values that will be replaced with defaults
+        mock_config.workspace_timeout = "not_an_int"
+        mock_config.workspace_unified_timeout = MagicMock()  # Not an int
+        mock_config.qa_single_timeout = None
+        mock_config.qa_batch_timeout = []
+        
         mock_registry.config = mock_config
         mock_get_registry.return_value = mock_registry
 
         result = _get_config()
 
-        # Should still return config with default timeouts set
+        # Should return config with default timeouts set (integers)
         assert result is not None
+        assert isinstance(result.workspace_timeout, int)
+        assert isinstance(result.workspace_unified_timeout, int)
+        assert isinstance(result.qa_single_timeout, int)
+        assert isinstance(result.qa_batch_timeout, int)
 
 
 class TestDifficultyHint:

@@ -100,7 +100,7 @@ if __name__ == "__main__":
         """Test that asyncio.run works as expected."""
         import asyncio
 
-        async def dummy_main():
+        async def dummy_main() -> str:
             return "success"
 
         result = asyncio.run(dummy_main())
