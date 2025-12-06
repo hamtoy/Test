@@ -42,7 +42,7 @@ class TestInfraMetrics:
         from typing import cast, Callable
         from src.infra.metrics import measure_latency
 
-        @measure_latency("test_operation")
+        @measure_latency("test_operation")  # type: ignore[arg-type]
         def my_function(x: int) -> int:
             return x * 2
 
@@ -74,7 +74,7 @@ class TestInfraMetrics:
         from typing import cast, Callable, Awaitable
         from src.infra.metrics import measure_latency_async
 
-        @measure_latency_async("test_async_operation")
+        @measure_latency_async("test_async_operation")  # type: ignore[arg-type]
         async def my_async_function(x: int) -> int:
             return x * 2
 
