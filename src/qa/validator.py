@@ -157,7 +157,9 @@ class UnifiedValidator:
         violations.extend(self.validate_temporal_expressions(answer))
 
         # 2) 패턴/포맷 위반 검사
-        pattern_violations = self.validate_forbidden_patterns(question + answer)
+        # Combine question and answer with space separator to avoid false positives
+        combined_text = f"{question} {answer}" if question else answer
+        pattern_violations = self.validate_forbidden_patterns(combined_text)
         format_violations = self.validate_formatting(answer)
 
         # [FIX] 타입 검증: 문자열이면 dict로 변환
