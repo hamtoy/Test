@@ -104,6 +104,62 @@ class TestCachedKG:
         # Check that cache key uses truncated query (first 500 chars)
         assert (long_query[:500], 10) in cached_kg._rules
 
+    def test_get_constraints_for_query_type_handles_invalid_string(self) -> None:
+        """Test that get_constraints_for_query_type handles string return gracefully."""
+        mock_kg = MagicMock()
+        # Simulate invalid return type (string instead of list)
+        mock_kg.get_constraints_for_query_type = MagicMock(
+            return_value="no constraints"
+        )
+
+        cached_kg = _CachedKG(mock_kg)
+
+        # Should return empty list instead of crashing
+        result = cached_kg.get_constraints_for_query_type("test_type")
+        assert result == []
+        assert mock_kg.get_constraints_for_query_type.call_count == 1
+
+    def test_get_constraints_for_query_type_handles_valid_list(self) -> None:
+        """Test that get_constraints_for_query_type handles valid list return."""
+        mock_kg = MagicMock()
+        valid_constraints = [{"category": "query", "description": "test constraint"}]
+        mock_kg.get_constraints_for_query_type = MagicMock(
+            return_value=valid_constraints
+        )
+
+        cached_kg = _CachedKG(mock_kg)
+
+        result = cached_kg.get_constraints_for_query_type("test_type")
+        assert result == valid_constraints
+        assert mock_kg.get_constraints_for_query_type.call_count == 1
+
+    def test_get_formatting_rules_for_query_type_handles_invalid_string(self) -> None:
+        """Test that get_formatting_rules_for_query_type handles string return gracefully."""
+        mock_kg = MagicMock()
+        # Simulate invalid return type (string instead of list)
+        mock_kg.get_formatting_rules_for_query_type = MagicMock(return_value="no rules")
+
+        cached_kg = _CachedKG(mock_kg)
+
+        # Should return empty list instead of crashing
+        result = cached_kg.get_formatting_rules_for_query_type("test_type")
+        assert result == []
+        assert mock_kg.get_formatting_rules_for_query_type.call_count == 1
+
+    def test_get_formatting_rules_for_query_type_handles_valid_list(self) -> None:
+        """Test that get_formatting_rules_for_query_type handles valid list return."""
+        mock_kg = MagicMock()
+        valid_rules = [{"description": "test rule"}]
+        mock_kg.get_formatting_rules_for_query_type = MagicMock(
+            return_value=valid_rules
+        )
+
+        cached_kg = _CachedKG(mock_kg)
+
+        result = cached_kg.get_formatting_rules_for_query_type("test_type")
+        assert result == valid_rules
+        assert mock_kg.get_formatting_rules_for_query_type.call_count == 1
+
 
 class TestGetterFunctions:
     """Tests for dependency getter functions."""
