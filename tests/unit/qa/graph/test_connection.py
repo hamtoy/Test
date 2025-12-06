@@ -54,10 +54,7 @@ class TestNeo4jConnectionManager:
         mock_driver = MagicMock()
         mock_driver.verify_connectivity.return_value = None
 
-        with (
-            patch.dict("sys.modules", {"neo4j": MagicMock()}),
-            patch("neo4j.GraphDatabase") as mock_gd,
-        ):
+        with patch("src.qa.graph.connection.GraphDatabase") as mock_gd:
             mock_gd.driver.return_value = mock_driver
 
             manager = Neo4jConnectionManager(
@@ -92,10 +89,7 @@ class TestNeo4jConnectionManager:
 
     def test_connect_failure(self) -> None:
         """Test connection handles exceptions gracefully."""
-        with (
-            patch.dict("sys.modules", {"neo4j": MagicMock()}),
-            patch("neo4j.GraphDatabase") as mock_gd,
-        ):
+        with patch("src.qa.graph.connection.GraphDatabase") as mock_gd:
             mock_gd.driver.side_effect = Exception("Connection failed")
 
             manager = Neo4jConnectionManager(
@@ -142,10 +136,7 @@ class TestNeo4jConnectionManager:
         mock_driver = MagicMock()
         mock_driver.verify_connectivity.return_value = None
 
-        with (
-            patch.dict("sys.modules", {"neo4j": MagicMock()}),
-            patch("neo4j.GraphDatabase") as mock_gd,
-        ):
+        with patch("src.qa.graph.connection.GraphDatabase") as mock_gd:
             mock_gd.driver.return_value = mock_driver
 
             manager = Neo4jConnectionManager(

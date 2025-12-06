@@ -6,8 +6,7 @@ Provides CRUD operations for rules with automatic cache invalidation.
 from __future__ import annotations
 
 import logging
-from contextlib import contextmanager
-from typing import Any, Generator
+from typing import Any
 from uuid import uuid4
 
 from src.qa.rule_loader import clear_global_rule_cache

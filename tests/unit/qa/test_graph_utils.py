@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
-import pytest
 
 from src.qa.graph.utils import (
     format_rules,

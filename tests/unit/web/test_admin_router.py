@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from fastapi import HTTPException
-from fastapi.testclient import TestClient
 
 from src.web.routers.admin import clear_cache, get_cache_stats, cache_health
 

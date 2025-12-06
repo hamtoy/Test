@@ -37,13 +37,13 @@ from typing import Any, Dict, Generator, List, Optional
 
 import google.generativeai as genai  # noqa: F401
 from dotenv import load_dotenv
+from neo4j import GraphDatabase  # noqa: F401 - Imported for backward compatibility with test mocking
 
 from src.caching.analytics import CacheMetrics
 from src.config import AppConfig
 from src.core.factory import get_graph_provider
 from src.core.interfaces import GraphProvider
 from src.infra.metrics import measure_latency
-from src.infra.neo4j import SafeDriver
 from src.qa.graph.connection import (
     close_connections,
     create_graph_session,
@@ -65,7 +65,6 @@ from src.qa.graph.validators import (  # noqa: F401
     validate_session_structure,
     validate_turns,
 )
-from src.qa.rule_loader import clear_global_rule_cache
 
 logger = logging.getLogger(__name__)
 __all__ = ["QAKnowledgeGraph", "CustomGeminiEmbeddings"]
@@ -377,8 +376,13 @@ class QAKnowledgeGraph:
         - _graph가 있으면 동기 세션 반환
         - _graph_provider가 있으면 별도 이벤트 루프로 async 세션을 동기화
         - 모두 없으면 None yield
+
+        Note: Uses getattr() for defensive access to handle test instances
+        created via object.__new__() which bypass __init__.
         """
-        yield from create_graph_session(self._graph, self._graph_provider)
+        graph = getattr(self, "_graph", None)
+        provider = getattr(self, "_graph_provider", None)
+        yield from create_graph_session(graph, provider)
 
     # ------------------------------------------------------------------
     # Rule mutation helpers (delegates to RuleManager)
