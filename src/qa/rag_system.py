@@ -10,17 +10,18 @@ to specialized modules in src/qa/graph/ for actual functionality.
 - Connection Management → graph/connection.py (Neo4jConnectionManager)
 - Vector Search → graph/vector_search.py (VectorSearchEngine)
 - Rule Operations → graph/rule_upsert.py (RuleUpsertManager)
-- Query Execution → graph/query_executor.py
+- Query Execution → graph/query_executor.py (QueryExecutor)
 - Validators → graph/validators.py
 
 **Main Class**:
 - QAKnowledgeGraph: Facade coordinating graph operations
 
-**Refactoring Goals** (695 lines → ~400 lines):
+**Refactoring Goals** (712 lines → ~400 lines):
 - ✅ Extract connection management (_init_connection method)
 - ✅ Leverage existing graph/ modules
+- ✅ Use QueryExecutor for consistent query execution
 - ✅ Maintain backward compatibility
-- ✅ All 19 RAG tests passing
+- ✅ All RAG tests passing
 
 For architecture details: docs/ARCHITECTURE.md
 """
@@ -48,6 +49,7 @@ from src.core.interfaces import GraphProvider
 from src.infra.metrics import measure_latency
 from src.infra.neo4j import SafeDriver, create_sync_driver
 from src.infra.utils import run_async_safely
+from src.qa.graph.query_executor import QueryExecutor
 from src.qa.graph.rule_upsert import RuleUpsertManager
 from src.qa.graph.utils import (
     CustomGeminiEmbeddings,
@@ -117,6 +119,12 @@ class QAKnowledgeGraph:
         # Initialize connection based on provider
         self._init_connection(provider)
 
+        # Initialize query executor for consistent query execution
+        self.query_executor = QueryExecutor(
+            graph_driver=self._graph,
+            graph_provider=self._graph_provider,
+        )
+
         # Initialize vector store (lazy, optional)
         self._vector_store: Any = None
         self._init_vector_store()
@@ -174,6 +182,17 @@ class QAKnowledgeGraph:
         if not hasattr(self, "_cache_metrics") or self._cache_metrics is None:
             self._cache_metrics = CacheMetrics(namespace="qa_kg")
         return self._cache_metrics
+
+    @property
+    def query_executor(self) -> QueryExecutor:
+        """Lazy-initialize query executor for cases where __init__ is bypassed in tests."""
+        if not hasattr(self, "_query_executor") or self._query_executor is None:
+            _executor = QueryExecutor(
+                graph_driver=getattr(self, "_graph", None),
+                graph_provider=getattr(self, "_graph_provider", None),
+            )
+            object.__setattr__(self, "_query_executor", _executor)
+        return self._query_executor
 
     def _init_vector_store(self) -> None:
         """GEMINI_API_KEY로 임베딩을 생성합니다. 키가 없거나 인덱스가 없으면 건너뜀."""
@@ -261,31 +280,9 @@ class QAKnowledgeGraph:
             c.category AS category,
             c.applies_to AS applies_to
         """
-        provider = getattr(self, "_graph_provider", None)
-        # 웹 컨텍스트 등에서 이벤트 루프 충돌을 막기 위해 sync 드라이버를 우선 사용
-        if self._graph is not None:
-            try:
-                with self._graph.session() as session:
-                    records = session.run(cypher, qt=query_type)
-                    return [dict(r) for r in records]
-            except (Neo4jError, ServiceUnavailable) as exc:
-                logger.warning("Sync constraints query failed: %s", exc)
-
-        if provider is None:
-            return []
-
-        prov = provider
-
-        async def _run() -> List[Dict[str, Any]]:
-            async with prov.session() as session:
-                result = await session.run(cypher, qt=query_type)
-                if hasattr(result, "__aiter__"):
-                    records = [record async for record in result]
-                else:
-                    records = list(result)
-                return [dict(r) for r in records]
-
-        return run_async_safely(_run())
+        return self.query_executor.execute_with_fallback(
+            cypher, params={"qt": query_type}, default=[]
+        )
 
     @measure_latency(
         "get_rules_for_query_type",
@@ -332,34 +329,9 @@ class QAKnowledgeGraph:
             END DESC,
             priority DESC
         """
-
-        provider = getattr(self, "_graph_provider", None)
-        if self._graph is not None:
-            try:
-                with self._graph.session() as session:
-                    records = session.run(cypher, qt=query_type)
-                    return [dict(r) for r in records]
-            except (Neo4jError, ServiceUnavailable) as exc:
-                logger.warning("Rule query failed (sync): %s", exc)
-
-        if provider is None:
-            logger.warning("No graph provider available for rules")
-            return []
-
-        async def _run() -> List[Dict[str, Any]]:
-            try:
-                async with provider.session() as session:
-                    result = await session.run(cypher, qt=query_type)
-                    if hasattr(result, "__aiter__"):
-                        records = [record async for record in result]
-                    else:
-                        records = list(result)
-                    return [dict(r) for r in records]
-            except (Neo4jError, ServiceUnavailable) as exc:
-                logger.warning("Rule query failed (async): %s", exc)
-                return []
-
-        return run_async_safely(_run())
+        return self.query_executor.execute_with_fallback(
+            cypher, params={"qt": query_type}, default=[]
+        )
 
     @measure_latency(
         "get_best_practices",
@@ -381,23 +353,9 @@ class QAKnowledgeGraph:
         MATCH (qt:QueryType {name: $qt})<-[:APPLIES_TO]-(b:BestPractice)
         RETURN b.id AS id, b.text AS text
         """
-        provider = getattr(self, "_graph_provider", None)
-        if provider is None:
-            if self._graph is None:
-                raise ValueError(
-                    "Graph driver must be initialized when provider is None"
-                )
-            with self._graph.session() as session:
-                return [dict(r) for r in session.run(cypher, qt=query_type)]
-
-        prov = provider
-
-        async def _run() -> List[Dict[str, str]]:
-            async with prov.session() as session:
-                records = await session.run(cypher, qt=query_type)
-                return [dict(r) for r in records]
-
-        return run_async_safely(_run())
+        return self.query_executor.execute_with_fallback(
+            cypher, params={"qt": query_type}, default=[]
+        )
 
     @measure_latency(
         "get_examples",
@@ -413,23 +371,9 @@ class QAKnowledgeGraph:
         RETURN e.id AS id, e.text AS text, e.type AS type
         LIMIT $limit
         """
-        provider = getattr(self, "_graph_provider", None)
-        if provider is None:
-            if self._graph is None:
-                raise ValueError(
-                    "Graph driver must be initialized when provider is None"
-                )
-            with self._graph.session() as session:
-                return [dict(r) for r in session.run(cypher, limit=limit)]
-
-        prov = provider
-
-        async def _run() -> List[Dict[str, str]]:
-            async with prov.session() as session:
-                records = await session.run(cypher, limit=limit)
-                return [dict(r) for r in records]
-
-        return run_async_safely(_run())
+        return self.query_executor.execute_with_fallback(
+            cypher, params={"limit": limit}, default=[]
+        )
 
     @measure_latency(
         "validate_session",
@@ -488,34 +432,9 @@ class QAKnowledgeGraph:
                coalesce(fr.examples_bad, '') AS examples_bad
         ORDER BY fr.priority DESC
         """
-        provider = getattr(self, "_graph_provider", None)
-
-        if self._graph is not None:
-            try:
-                with self._graph.session() as session:
-                    result = session.run(cypher, query_type=query_type)
-                    return [dict(record) for record in result]
-            except (Neo4jError, ServiceUnavailable) as exc:
-                logger.warning("Formatting rule query failed (sync): %s", exc)
-
-        if provider is None:
-            logger.warning("No graph provider available for formatting rules")
-            return []
-
-        async def _run() -> List[Dict[str, Any]]:
-            try:
-                async with provider.session() as session:
-                    result = await session.run(cypher, query_type=query_type)
-                    if hasattr(result, "__aiter__"):
-                        records = [record async for record in result]
-                    else:
-                        records = list(result)
-                    return [dict(r) for r in records]
-            except (Neo4jError, ServiceUnavailable) as exc:
-                logger.warning("Formatting rule query failed (async): %s", exc)
-                return []
-
-        return run_async_safely(_run())
+        return self.query_executor.execute_with_fallback(
+            cypher, params={"query_type": query_type}, default=[]
+        )
 
     @measure_latency(
         "get_formatting_rules",
@@ -538,35 +457,17 @@ class QAKnowledgeGraph:
         RETURN r.text AS text, coalesce(r.priority, 999) AS priority
         ORDER BY priority
         """
-        provider = getattr(self, "_graph_provider", None)
-
-        # Try sync driver first if available
-        if self._graph is not None:
-            try:
-                with self._graph.session() as session:
-                    records = session.run(cypher, template_type=template_type)
-                    rules_data = [dict(r) for r in records]
-                    return format_rules(rules_data)
-            except (Neo4jError, ServiceUnavailable) as exc:
-                logger.warning("Sync formatting rules query failed: %s", exc)
-
-        if provider is None:
-            logger.warning("No graph provider available for formatting rules")
-            return ""
-
-        prov = provider
-
-        async def _run() -> str:
-            async with prov.session() as session:
-                result = await session.run(cypher, template_type=template_type)
-                if hasattr(result, "__aiter__"):
-                    records = [record async for record in result]
-                else:
-                    records = list(result)
-                rules_data = [dict(r) for r in records]
-                return format_rules(rules_data)
-
-        return run_async_safely(_run())
+        
+        def transform_to_formatted(records: List[Any]) -> str:
+            rules_data = [dict(r) for r in records]
+            return format_rules(rules_data)
+        
+        return self.query_executor.execute_with_fallback(
+            cypher,
+            params={"template_type": template_type},
+            default="",
+            transform=transform_to_formatted,
+        )
 
     def rollback_batch(self, batch_id: str) -> Dict[str, Any]:
         """특정 batch_id로 생성된 모든 노드 삭제 (롤백).

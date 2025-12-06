@@ -7,11 +7,15 @@ async/sync handling and error management.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, TypeVar
+
+from neo4j.exceptions import Neo4jError, ServiceUnavailable
 
 from src.infra.utils import run_async_safely
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar("T")
 
 
 class QueryExecutor:
@@ -63,6 +67,61 @@ class QueryExecutor:
             async with prov.session() as session:
                 records = await session.run(cypher, **params)
                 return [dict(r) for r in records]
+
+        return run_async_safely(_run())
+
+    def execute_with_fallback(
+        self,
+        cypher: str,
+        params: Optional[Dict[str, Any]] = None,
+        default: Optional[T] = None,
+        transform: Optional[Callable[[List[Any]], T]] = None,
+    ) -> T:
+        """Execute query with sync-first, async-fallback pattern.
+
+        Tries sync driver first, falls back to async provider if sync fails.
+        Commonly used pattern in rag_system.py.
+
+        Args:
+            cypher: The Cypher query string
+            params: Query parameters
+            default: Default value if both sync and async fail
+            transform: Optional function to transform result records
+
+        Returns:
+            Transformed result or default value
+        """
+        params = params or {}
+        transform_fn = transform or (lambda records: [dict(r) for r in records])
+
+        # Try sync driver first
+        if self._graph is not None:
+            try:
+                with self._graph.session() as session:
+                    records = session.run(cypher, **params)
+                    return transform_fn(records)
+            except (Neo4jError, ServiceUnavailable) as exc:
+                logger.warning("Sync query failed: %s", exc)
+
+        # Fall back to async provider
+        if self._graph_provider is None:
+            logger.warning("No graph provider available")
+            return default if default is not None else []
+
+        prov = self._graph_provider
+
+        async def _run() -> T:
+            try:
+                async with prov.session() as session:
+                    result = await session.run(cypher, **params)
+                    if hasattr(result, "__aiter__"):
+                        records = [record async for record in result]
+                    else:
+                        records = list(result)
+                    return transform_fn(records)
+            except (Neo4jError, ServiceUnavailable) as exc:
+                logger.warning("Async query failed: %s", exc)
+                return default if default is not None else []
 
         return run_async_safely(_run())
 
