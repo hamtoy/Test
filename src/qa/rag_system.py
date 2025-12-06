@@ -136,7 +136,7 @@ class QAKnowledgeGraph:
             graph=self._graph,
             graph_provider=self._graph_provider,
         )
-        
+
         # Initialize RuleManager for CRUD operations
         self._rule_manager = RuleManager(self.graph_session)
 
@@ -144,7 +144,6 @@ class QAKnowledgeGraph:
         ensure_formatting_rule_schema(
             driver=self._graph, provider=self._graph_provider, logger=logger
         )
-
 
     @property
     def cache_metrics(self) -> CacheMetrics:
@@ -343,10 +342,11 @@ class QAKnowledgeGraph:
         Returns:
             Formatted markdown string containing all rules grouped by category.
         """
+
         def transform_to_formatted(records: List[Any]) -> str:
             rules_data = [dict(r) for r in records]
             return format_rules(rules_data)
-        
+
         return self.query_executor.execute_with_fallback(
             CypherQueries.GET_FORMATTING_RULES,
             params={"template_type": template_type},

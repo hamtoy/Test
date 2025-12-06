@@ -37,12 +37,20 @@ class TestIntegratedQualitySystem:
 
         with (
             patch.object(src.qa.quality, "QAKnowledgeGraph", mock_kg_class),
-            patch.object(src.qa.quality, "AdvancedContextAugmentation", mock_augmenter_class),
-            patch.object(src.qa.quality, "RealTimeConstraintEnforcer", mock_enforcer_class),
-            patch.object(src.qa.quality, "AdaptiveDifficultyAdjuster", mock_adjuster_class),
+            patch.object(
+                src.qa.quality, "AdvancedContextAugmentation", mock_augmenter_class
+            ),
+            patch.object(
+                src.qa.quality, "RealTimeConstraintEnforcer", mock_enforcer_class
+            ),
+            patch.object(
+                src.qa.quality, "AdaptiveDifficultyAdjuster", mock_adjuster_class
+            ),
             patch.object(src.qa.quality, "CrossValidationSystem", mock_validator_class),
             patch.object(src.qa.quality, "DynamicExampleSelector", mock_selector_class),
-            patch.object(src.qa.quality, "MultimodalUnderstanding", mock_multimodal_class),
+            patch.object(
+                src.qa.quality, "MultimodalUnderstanding", mock_multimodal_class
+            ),
             patch.object(src.qa.quality, "GeminiModelClient", mock_llm_class),
         ):
             from src.qa.quality import IntegratedQualitySystem
@@ -92,12 +100,20 @@ class TestIntegratedQualitySystem:
 
         with (
             patch.object(src.qa.quality, "QAKnowledgeGraph", mock_kg_class),
-            patch.object(src.qa.quality, "AdvancedContextAugmentation", mock_augmenter_class),
-            patch.object(src.qa.quality, "RealTimeConstraintEnforcer", mock_enforcer_class),
-            patch.object(src.qa.quality, "AdaptiveDifficultyAdjuster", mock_adjuster_class),
+            patch.object(
+                src.qa.quality, "AdvancedContextAugmentation", mock_augmenter_class
+            ),
+            patch.object(
+                src.qa.quality, "RealTimeConstraintEnforcer", mock_enforcer_class
+            ),
+            patch.object(
+                src.qa.quality, "AdaptiveDifficultyAdjuster", mock_adjuster_class
+            ),
             patch.object(src.qa.quality, "CrossValidationSystem", mock_validator_class),
             patch.object(src.qa.quality, "DynamicExampleSelector", mock_selector_class),
-            patch.object(src.qa.quality, "MultimodalUnderstanding", mock_multimodal_class),
+            patch.object(
+                src.qa.quality, "MultimodalUnderstanding", mock_multimodal_class
+            ),
             patch.object(src.qa.quality, "GeminiModelClient", mock_llm_class),
         ):
             from src.qa.quality import IntegratedQualitySystem
@@ -157,12 +173,20 @@ class TestIntegratedQualitySystem:
 
         with (
             patch.object(src.qa.quality, "QAKnowledgeGraph", mock_kg_class),
-            patch.object(src.qa.quality, "AdvancedContextAugmentation", mock_augmenter_class),
-            patch.object(src.qa.quality, "RealTimeConstraintEnforcer", mock_enforcer_class),
-            patch.object(src.qa.quality, "AdaptiveDifficultyAdjuster", mock_adjuster_class),
+            patch.object(
+                src.qa.quality, "AdvancedContextAugmentation", mock_augmenter_class
+            ),
+            patch.object(
+                src.qa.quality, "RealTimeConstraintEnforcer", mock_enforcer_class
+            ),
+            patch.object(
+                src.qa.quality, "AdaptiveDifficultyAdjuster", mock_adjuster_class
+            ),
             patch.object(src.qa.quality, "CrossValidationSystem", mock_validator_class),
             patch.object(src.qa.quality, "DynamicExampleSelector", mock_selector_class),
-            patch.object(src.qa.quality, "MultimodalUnderstanding", mock_multimodal_class),
+            patch.object(
+                src.qa.quality, "MultimodalUnderstanding", mock_multimodal_class
+            ),
             patch.object(src.qa.quality, "GeminiModelClient", mock_llm_class),
         ):
             from src.qa.quality import IntegratedQualitySystem
@@ -240,12 +264,20 @@ class TestIntegratedQualitySystem:
 
         with (
             patch.object(src.qa.quality, "QAKnowledgeGraph", mock_kg_class),
-            patch.object(src.qa.quality, "AdvancedContextAugmentation", mock_augmenter_class),
-            patch.object(src.qa.quality, "RealTimeConstraintEnforcer", mock_enforcer_class),
-            patch.object(src.qa.quality, "AdaptiveDifficultyAdjuster", mock_adjuster_class),
+            patch.object(
+                src.qa.quality, "AdvancedContextAugmentation", mock_augmenter_class
+            ),
+            patch.object(
+                src.qa.quality, "RealTimeConstraintEnforcer", mock_enforcer_class
+            ),
+            patch.object(
+                src.qa.quality, "AdaptiveDifficultyAdjuster", mock_adjuster_class
+            ),
             patch.object(src.qa.quality, "CrossValidationSystem", mock_validator_class),
             patch.object(src.qa.quality, "DynamicExampleSelector", mock_selector_class),
-            patch.object(src.qa.quality, "MultimodalUnderstanding", mock_multimodal_class),
+            patch.object(
+                src.qa.quality, "MultimodalUnderstanding", mock_multimodal_class
+            ),
             patch.object(src.qa.quality, "GeminiModelClient", mock_llm_class),
         ):
             from src.qa.quality import IntegratedQualitySystem
