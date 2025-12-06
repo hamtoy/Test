@@ -51,6 +51,22 @@ class UnifiedValidator:
         self.kg = kg
         self.pipeline = pipeline
 
+    @staticmethod
+    def _normalize_violations(
+        violations: List[Any],
+    ) -> List[Dict[str, Any]]:
+        """violations를 dict 형식으로 정규화 (str → dict 변환).
+        
+        String violations are converted to {"type": str_value, "description": str_value}.
+        """
+        normalized = []
+        for v in violations:
+            if isinstance(v, dict):
+                normalized.append(v)
+            elif isinstance(v, str):
+                normalized.append({"type": v, "description": v})
+        return normalized
+
     def validate_all(self, answer: str, query_type: str) -> ValidationResult:
         violations: List[Dict[str, Any]] = []
         warnings: List[str] = []
@@ -61,17 +77,8 @@ class UnifiedValidator:
         format_violations = find_formatting_violations(answer)
 
         # [FIX] 타입 검증: 문자열이면 dict로 변환
-        for v in pattern_violations:
-            if isinstance(v, dict):
-                violations.append(v)
-            elif isinstance(v, str):  # type: ignore[unreachable]
-                violations.append({"type": v, "description": v})
-
-        for v in format_violations:
-            if isinstance(v, dict):
-                violations.append(v)
-            elif isinstance(v, str):  # type: ignore[unreachable]
-                violations.append({"type": v, "description": v})
+        violations.extend(self._normalize_violations(pattern_violations))
+        violations.extend(self._normalize_violations(format_violations))
 
         # 2) 파이프라인 검증
         if self.pipeline:
@@ -79,11 +86,7 @@ class UnifiedValidator:
                 validation = self.pipeline.validate_output(query_type, answer)
                 pipeline_violations = validation.get("violations", [])
 
-                for v in pipeline_violations:
-                    if isinstance(v, dict):
-                        violations.append(v)
-                    elif isinstance(v, str):
-                        violations.append({"type": v, "description": v})
+                violations.extend(self._normalize_violations(pipeline_violations))
 
                 if not validation.get("valid", True):
                     warnings.append("파이프라인 검증 실패")
@@ -104,7 +107,7 @@ class UnifiedValidator:
                     score = min(score, rule_score)
 
                 rule_violations = rule_check.get("violations", [])
-
+                # Rule violations need special handling: add "rule" type for strings
                 for v in rule_violations:
                     if isinstance(v, dict):
                         violations.append(v)
