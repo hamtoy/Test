@@ -27,8 +27,6 @@ class TestMetricsExporter:
     @patch("src.monitoring.metrics_exporter.logger")
     def test_init_metrics_success(self, mock_logger: Mock) -> None:
         """Test successful metrics initialization when prometheus is available."""
-        exporter = MetricsExporter()
-
         # Skip this test if prometheus_client is not installed
         # We'll test the actual behavior through other tests
         pytest.skip("prometheus_client not required for this test suite")
