@@ -288,15 +288,15 @@ class TestRuleUpsertManager:
         """Test _upsert_rule_node with sync graph driver."""
         mock_session = Mock()
         mock_session.run.return_value = []  # Empty existing
-        
+
         mock_graph = Mock()
         mock_context = Mock()
         mock_context.__enter__ = Mock(return_value=mock_session)
         mock_context.__exit__ = Mock(return_value=None)
         mock_graph.session.return_value = mock_context
-        
+
         manager = RuleUpsertManager(graph=mock_graph)
-        
+
         result = manager._upsert_rule_node(
             rule_id="rule_001",
             description="Test rule",
@@ -304,7 +304,7 @@ class TestRuleUpsertManager:
             batch_id="batch_123",
             timestamp="2024-01-01T00:00:00",
         )
-        
+
         assert result["created"] is True
         assert mock_session.run.call_count == 2  # check + upsert
 
@@ -313,15 +313,15 @@ class TestRuleUpsertManager:
         mock_session = Mock()
         # Simulate existing rule
         mock_session.run.return_value = [{"existing_batch_id": "old_batch"}]
-        
+
         mock_graph = Mock()
         mock_context = Mock()
         mock_context.__enter__ = Mock(return_value=mock_session)
         mock_context.__exit__ = Mock(return_value=None)
         mock_graph.session.return_value = mock_context
-        
+
         manager = RuleUpsertManager(graph=mock_graph)
-        
+
         result = manager._upsert_rule_node(
             rule_id="rule_001",
             description="Updated rule",
@@ -329,13 +329,13 @@ class TestRuleUpsertManager:
             batch_id="batch_123",
             timestamp="2024-01-01T00:00:00",
         )
-        
+
         assert result["created"] is False
 
     def test_upsert_rule_node_no_graph_or_provider(self):
         """Test _upsert_rule_node raises error when no graph/provider."""
         manager = RuleUpsertManager()
-        
+
         with pytest.raises(ValueError, match="Graph driver must be initialized"):
             manager._upsert_rule_node(
                 rule_id="rule_001",
@@ -349,15 +349,15 @@ class TestRuleUpsertManager:
         """Test _upsert_constraint_node with sync graph driver."""
         mock_session = Mock()
         mock_session.run.return_value = []
-        
+
         mock_graph = Mock()
         mock_context = Mock()
         mock_context.__enter__ = Mock(return_value=mock_session)
         mock_context.__exit__ = Mock(return_value=None)
         mock_graph.session.return_value = mock_context
-        
+
         manager = RuleUpsertManager(graph=mock_graph)
-        
+
         result = manager._upsert_constraint_node(
             constraint_id="const_001",
             description="Test constraint",
@@ -365,13 +365,13 @@ class TestRuleUpsertManager:
             batch_id="batch_123",
             timestamp="2024-01-01T00:00:00",
         )
-        
+
         assert result["created"] is True
 
     def test_upsert_constraint_node_no_graph_or_provider(self):
         """Test _upsert_constraint_node raises error when no graph/provider."""
         manager = RuleUpsertManager()
-        
+
         with pytest.raises(ValueError, match="Graph driver must be initialized"):
             manager._upsert_constraint_node(
                 constraint_id="const_001",
@@ -385,15 +385,15 @@ class TestRuleUpsertManager:
         """Test _upsert_best_practice_node with sync graph driver."""
         mock_session = Mock()
         mock_session.run.return_value = []
-        
+
         mock_graph = Mock()
         mock_context = Mock()
         mock_context.__enter__ = Mock(return_value=mock_session)
         mock_context.__exit__ = Mock(return_value=None)
         mock_graph.session.return_value = mock_context
-        
+
         manager = RuleUpsertManager(graph=mock_graph)
-        
+
         result = manager._upsert_best_practice_node(
             bp_id="bp_001",
             text="Best practice text",
@@ -401,13 +401,13 @@ class TestRuleUpsertManager:
             batch_id="batch_123",
             timestamp="2024-01-01T00:00:00",
         )
-        
+
         assert result["created"] is True
 
     def test_upsert_best_practice_node_no_graph_or_provider(self):
         """Test _upsert_best_practice_node raises error when no graph/provider."""
         manager = RuleUpsertManager()
-        
+
         with pytest.raises(ValueError, match="Graph driver must be initialized"):
             manager._upsert_best_practice_node(
                 bp_id="bp_001",
@@ -421,15 +421,15 @@ class TestRuleUpsertManager:
         """Test _upsert_example_node with sync graph driver."""
         mock_session = Mock()
         mock_session.run.return_value = []
-        
+
         mock_graph = Mock()
         mock_context = Mock()
         mock_context.__enter__ = Mock(return_value=mock_session)
         mock_context.__exit__ = Mock(return_value=None)
         mock_graph.session.return_value = mock_context
-        
+
         manager = RuleUpsertManager(graph=mock_graph)
-        
+
         result = manager._upsert_example_node(
             example_id="ex_001",
             before="Before text",
@@ -438,13 +438,13 @@ class TestRuleUpsertManager:
             batch_id="batch_123",
             timestamp="2024-01-01T00:00:00",
         )
-        
+
         assert result["created"] is True
 
     def test_upsert_example_node_no_graph_or_provider(self):
         """Test _upsert_example_node raises error when no graph/provider."""
         manager = RuleUpsertManager()
-        
+
         with pytest.raises(ValueError, match="Graph driver must be initialized"):
             manager._upsert_example_node(
                 example_id="ex_001",
@@ -458,27 +458,35 @@ class TestRuleUpsertManager:
     def test_get_rules_by_batch_id_with_graph(self):
         """Test get_rules_by_batch_id with sync graph driver."""
         mock_session = Mock()
-        mock_record1 = {"labels": ["Rule"], "id": "rule_001", "created_at": "2024-01-01"}
-        mock_record2 = {"labels": ["Constraint"], "id": "const_001", "created_at": "2024-01-01"}
+        mock_record1 = {
+            "labels": ["Rule"],
+            "id": "rule_001",
+            "created_at": "2024-01-01",
+        }
+        mock_record2 = {
+            "labels": ["Constraint"],
+            "id": "const_001",
+            "created_at": "2024-01-01",
+        }
         mock_session.run.return_value = [mock_record1, mock_record2]
-        
+
         mock_graph = Mock()
         mock_context = Mock()
         mock_context.__enter__ = Mock(return_value=mock_session)
         mock_context.__exit__ = Mock(return_value=None)
         mock_graph.session.return_value = mock_context
-        
+
         manager = RuleUpsertManager(graph=mock_graph)
-        
+
         result = manager.get_rules_by_batch_id("batch_123")
-        
+
         assert len(result) == 2
         assert result[0]["id"] == "rule_001"
 
     def test_get_rules_by_batch_id_no_graph_or_provider(self):
         """Test get_rules_by_batch_id raises error when no graph/provider."""
         manager = RuleUpsertManager()
-        
+
         with pytest.raises(ValueError, match="Graph driver must be initialized"):
             manager.get_rules_by_batch_id("batch_123")
 
@@ -489,17 +497,17 @@ class TestRuleUpsertManager:
             [{"cnt": 5}],  # count query
             None,  # delete query
         ]
-        
+
         mock_graph = Mock()
         mock_context = Mock()
         mock_context.__enter__ = Mock(return_value=mock_session)
         mock_context.__exit__ = Mock(return_value=None)
         mock_graph.session.return_value = mock_context
-        
+
         manager = RuleUpsertManager(graph=mock_graph)
-        
+
         result = manager.rollback_batch("batch_123")
-        
+
         assert result["success"] is True
         assert result["deleted_count"] == 5
 
@@ -510,24 +518,24 @@ class TestRuleUpsertManager:
             [],  # empty count result
             None,
         ]
-        
+
         mock_graph = Mock()
         mock_context = Mock()
         mock_context.__enter__ = Mock(return_value=mock_session)
         mock_context.__exit__ = Mock(return_value=None)
         mock_graph.session.return_value = mock_context
-        
+
         manager = RuleUpsertManager(graph=mock_graph)
-        
+
         result = manager.rollback_batch("batch_123")
-        
+
         assert result["success"] is True
         assert result["deleted_count"] == 0
 
     def test_rollback_batch_no_graph_or_provider(self):
         """Test rollback_batch raises error when no graph/provider."""
         manager = RuleUpsertManager()
-        
+
         with pytest.raises(ValueError, match="Graph driver must be initialized"):
             manager.rollback_batch("batch_123")
 
@@ -536,14 +544,14 @@ class TestRuleUpsertManager:
         mock_graph = Mock()
         mock_session = Mock()
         mock_session.run.return_value = []
-        
+
         mock_context = Mock()
         mock_context.__enter__ = Mock(return_value=mock_session)
         mock_context.__exit__ = Mock(return_value=None)
         mock_graph.session.return_value = mock_context
-        
+
         manager = RuleUpsertManager(graph=mock_graph)
-        
+
         patterns = [
             {
                 "id": "rule_001",
@@ -555,9 +563,9 @@ class TestRuleUpsertManager:
                 "example_after": "Good example",
             }
         ]
-        
+
         result = manager.upsert_auto_generated_rules(patterns, batch_id="test")
-        
+
         assert result["success"] is True
         assert result["created"]["rules"] == 1
         assert result["created"]["constraints"] == 1
@@ -568,18 +576,19 @@ class TestRuleUpsertManager:
         """Test that existing nodes are updated, not created."""
         mock_graph = Mock()
         manager = RuleUpsertManager(graph=mock_graph)
-        
+
         # Mock all upsert methods to return updated (created: False)
-        with patch.object(manager, "_upsert_rule_node") as mock_rule, \
-             patch.object(manager, "_upsert_constraint_node") as mock_constraint, \
-             patch.object(manager, "_upsert_best_practice_node") as mock_bp, \
-             patch.object(manager, "_upsert_example_node") as mock_example:
-            
+        with (
+            patch.object(manager, "_upsert_rule_node") as mock_rule,
+            patch.object(manager, "_upsert_constraint_node") as mock_constraint,
+            patch.object(manager, "_upsert_best_practice_node") as mock_bp,
+            patch.object(manager, "_upsert_example_node") as mock_example,
+        ):
             mock_rule.return_value = {"created": False}  # Updated, not created
             mock_constraint.return_value = {"created": False}
             mock_bp.return_value = {"created": False}
             mock_example.return_value = {"created": False}
-            
+
             patterns = [
                 {
                     "id": "rule_001",
@@ -591,9 +600,9 @@ class TestRuleUpsertManager:
                     "example_after": "Updated after",
                 }
             ]
-            
+
             result = manager.upsert_auto_generated_rules(patterns, batch_id="test")
-            
+
             assert result["success"] is True
             # Should count as updates, not creates
             assert result["updated"]["rules"] == 1

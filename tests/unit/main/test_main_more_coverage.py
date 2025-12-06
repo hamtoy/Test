@@ -231,45 +231,52 @@ class TestMainEntryPointExecution:
 
     def test_keyboard_interrupt_handling(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test KeyboardInterrupt handling in __main__ block."""
-        from unittest.mock import patch, MagicMock
-        
+        from unittest.mock import MagicMock, patch
+
         # Create a script that simulates the __main__ block behavior
-        with patch("src.main.asyncio.run", side_effect=KeyboardInterrupt()):
-            with patch("src.main.console") as mock_console:
-                with pytest.raises(SystemExit) as exc_info:
-                    try:
-                        import asyncio
-                        asyncio.run(MagicMock())
-                    except KeyboardInterrupt:
-                        from src.config.constants import USER_INTERRUPT_MESSAGE
-                        import sys
-                        sys.exit(130)
-                
-                assert exc_info.value.code == 130
+        with (
+            patch("src.main.asyncio.run", side_effect=KeyboardInterrupt()),
+            patch("src.main.console"),
+            pytest.raises(SystemExit) as exc_info,
+        ):
+            try:
+                import asyncio
+
+                asyncio.run(MagicMock())
+            except KeyboardInterrupt:
+                import sys
+
+                sys.exit(130)
+
+        assert exc_info.value.code == 130
 
     def test_general_exception_handling(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test general exception handling in __main__ block."""
         import logging
-        
-        with patch("src.main.asyncio.run", side_effect=RuntimeError("Test error")):
-            with patch("logging.critical") as mock_critical:
-                with pytest.raises(SystemExit) as exc_info:
-                    try:
-                        import asyncio
-                        asyncio.run(MagicMock())
-                    except Exception as e:
-                        logging.critical("Critical error: %s", e, exc_info=True)
-                        import sys
-                        sys.exit(1)
-                
-                assert exc_info.value.code == 1
+
+        with (
+            patch("src.main.asyncio.run", side_effect=RuntimeError("Test error")),
+            patch("logging.critical"),
+            pytest.raises(SystemExit) as exc_info,
+        ):
+            try:
+                import asyncio
+
+                asyncio.run(MagicMock())
+            except Exception as e:
+                logging.critical("Critical error: %s", e, exc_info=True)
+                import sys
+
+                sys.exit(1)
+
+        assert exc_info.value.code == 1
 
     def test_windows_selector_event_loop_policy_with_attribute_error(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Test Windows event loop policy when AttributeError occurs."""
         monkeypatch.setattr(os, "name", "nt")
-        
+
         # Test the try-except block for AttributeError
         try:
             policy = getattr(asyncio, "WindowsSelectorEventLoopPolicy", None)
@@ -282,7 +289,7 @@ class TestMainEntryPointExecution:
     def test_load_dotenv_execution(self) -> None:
         """Test that load_dotenv is called in __main__ block."""
         from dotenv import load_dotenv
-        
+
         # Simply test that load_dotenv can be called
         # In the actual __main__ block, it's called without arguments
         load_dotenv()  # This should not raise an error

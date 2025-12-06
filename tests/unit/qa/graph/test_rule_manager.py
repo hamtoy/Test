@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock, Mock, patch
 
-import pytest
 
 from src.qa.graph.rule_manager import RuleManager
 
