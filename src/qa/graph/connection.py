@@ -10,7 +10,7 @@ import asyncio
 import logging
 import os
 import weakref
-from contextlib import contextmanager, suppress
+from contextlib import suppress
 from typing import Any, Generator, Optional
 
 from neo4j import GraphDatabase

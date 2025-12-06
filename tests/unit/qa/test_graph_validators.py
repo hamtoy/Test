@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 from unittest.mock import Mock, patch
 
-import pytest
 
 from src.qa.graph.validators import validate_session_structure
 

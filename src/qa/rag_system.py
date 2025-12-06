@@ -44,7 +44,6 @@ from src.config import AppConfig
 from src.core.factory import get_graph_provider
 from src.core.interfaces import GraphProvider
 from src.infra.metrics import measure_latency
-from src.infra.neo4j import SafeDriver
 from src.qa.graph.connection import (
     close_connections,
     create_graph_session,
@@ -66,7 +65,6 @@ from src.qa.graph.validators import (  # noqa: F401
     validate_session_structure,
     validate_turns,
 )
-from src.qa.rule_loader import clear_global_rule_cache
 
 logger = logging.getLogger(__name__)
 __all__ = ["QAKnowledgeGraph", "CustomGeminiEmbeddings"]
