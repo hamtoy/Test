@@ -202,10 +202,12 @@ class TestUtilityFunctions:
 
     def test_metrics_measure_latency_failure(self) -> None:
         """Test measure_latency with function that raises."""
+        from typing import NoReturn
+
         from src.infra.metrics import measure_latency
 
         @measure_latency("test_op")
-        def failing_func() -> int:
+        def failing_func() -> NoReturn:
             raise ValueError("Test error")
 
         with pytest.raises(ValueError):
@@ -214,10 +216,12 @@ class TestUtilityFunctions:
     @pytest.mark.asyncio
     async def test_metrics_measure_latency_async_failure(self) -> None:
         """Test measure_latency_async with function that raises."""
+        from typing import NoReturn
+
         from src.infra.metrics import measure_latency_async
 
         @measure_latency_async("test_async_op")
-        async def failing_async_func() -> int:
+        async def failing_async_func() -> NoReturn:
             raise ValueError("Test error")
 
         with pytest.raises(ValueError):

@@ -86,7 +86,7 @@ class TestInfraMetrics:
         async def my_async_function(x: int) -> int:
             return x * 2
 
-        result = await my_async_function(5)
+        result: int = await my_async_function(5)
         assert result == 10
 
 
