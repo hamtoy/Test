@@ -346,3 +346,38 @@ async def test_run_task_with_lats_llm_budget(monkeypatch: pytest.MonkeyPatch) ->
     task = worker.OCRTask(request_id="t2", image_path="img", session_id="s2")
     result = await worker._run_task_with_lats(task)
     assert isinstance(result, dict)
+
+
+def test_budget_tracker_with_individual_token_args() -> None:
+    """Test budget tracker with individual token arguments."""
+    tracker = budget_tracker.BudgetTracker(budget_limit_usd=1.0)
+
+    # Test with individual token arguments
+    rec = tracker.record_usage(
+        usage=None,
+        input_tokens=500,
+        output_tokens=200,
+        cached_input_tokens=100,
+        total_tokens=800,
+    )
+
+    assert rec.input_tokens == 500
+    assert rec.output_tokens == 200
+    assert rec.cached_input_tokens == 100
+    assert rec.total_tokens == 800
+    assert rec.cost_usd > 0
+
+
+def test_budget_tracker_mixed_usage_args() -> None:
+    """Test budget tracker with both usage dict and individual args."""
+    tracker = budget_tracker.BudgetTracker(budget_limit_usd=1.0)
+
+    # Individual args should override usage dict
+    rec = tracker.record_usage(
+        usage={"input_tokens": 100},
+        input_tokens=500,  # This should override
+        output_tokens=200,
+    )
+
+    assert rec.input_tokens == 500
+    assert rec.output_tokens == 200
