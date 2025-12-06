@@ -5,8 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import Mock, mock_open, patch
 
-import pytest
-
 from src.processing.loader import load_examples_from_file, parse_yaml_examples
 
 

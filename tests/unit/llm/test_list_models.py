@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import Mock, patch
 
-import pytest
-
 from src.llm.list_models import list_available_models
 
 
