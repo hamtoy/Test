@@ -92,11 +92,15 @@ class QueryExecutor:
             Transformed result or default value
         """
         params = params or {}
+
+        def default_transform(records: List[Any]) -> List[Dict[str, Any]]:
+            return [dict(r) for r in records]
+
         transform_fn: Callable[[List[Any]], T | List[Dict[str, Any]]]
         if transform is not None:
             transform_fn = transform
         else:
-            transform_fn = lambda records: [dict(r) for r in records]
+            transform_fn = default_transform
 
         # Try sync driver first
         if self._graph is not None:
