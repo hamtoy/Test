@@ -15,7 +15,7 @@ class TestValidateSessionStructure:
 
     def test_validate_session_structure_empty_turns(self) -> None:
         """Test validation with empty turns."""
-        session = {"turns": []}
+        session: dict[str, Any] = {"turns": []}
 
         result = validate_session_structure(session)
 

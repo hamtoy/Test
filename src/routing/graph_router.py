@@ -127,3 +127,7 @@ class GraphEnhancedRouter:
             logger.warning("Routing log write failed: %s", exc)
         except Exception as exc:  # noqa: BLE001
             logger.warning("Routing log write failed (unknown): %s", exc)
+
+
+# Alias for backward compatibility
+GraphRouter = GraphEnhancedRouter
