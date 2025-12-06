@@ -58,6 +58,7 @@ class UnifiedValidator:
         """violations를 dict 형식으로 정규화 (str → dict 변환).
         
         String violations are converted to {"type": str_value, "description": str_value}.
+        Other types are converted to {"type": "unknown", "description": str(value)}.
         """
         normalized = []
         for v in violations:
@@ -65,6 +66,9 @@ class UnifiedValidator:
                 normalized.append(v)
             elif isinstance(v, str):
                 normalized.append({"type": v, "description": v})
+            else:
+                # Handle unexpected types gracefully
+                normalized.append({"type": "unknown", "description": str(v)})
         return normalized
 
     def validate_all(self, answer: str, query_type: str) -> ValidationResult:
@@ -113,6 +117,9 @@ class UnifiedValidator:
                         violations.append(v)
                     elif isinstance(v, str):
                         violations.append({"type": "rule", "description": v})
+                    else:
+                        # Handle unexpected types gracefully
+                        violations.append({"type": "rule", "description": str(v)})
 
             except Exception as exc:  # noqa: BLE001
                 warnings.append(f"규칙 검증 오류: {exc}")
