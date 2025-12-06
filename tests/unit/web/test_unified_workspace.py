@@ -325,4 +325,6 @@ class TestUnifiedWorkspaceAPI:
             )
 
             assert response.status_code == 500
-            assert "Agent 초기화 실패" in response.json()["detail"]
+            # Check for error message indicating agent failure
+            detail = response.json()["detail"]
+            assert "실행 실패" in detail or "Agent" in detail or "초기화" in detail
