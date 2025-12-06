@@ -41,7 +41,7 @@ class TestInfraMetrics:
         """Test measure_latency decorator."""
         from src.infra.metrics import measure_latency
 
-        @measure_latency("test_operation")
+        @measure_latency("test_operation")  # type: ignore[misc]
         def my_function(x: int) -> int:
             return x * 2
 
@@ -55,7 +55,7 @@ class TestInfraMetrics:
         def get_extra(*args: object) -> dict[str, int]:
             return {"count": 1}
 
-        @measure_latency("test_operation", get_extra=get_extra)
+        @measure_latency("test_operation", get_extra=get_extra)  # type: ignore[misc]
         def my_function(x: int) -> int:
             return x * 2
 
@@ -67,7 +67,7 @@ class TestInfraMetrics:
         """Test measure_latency_async decorator."""
         from src.infra.metrics import measure_latency_async
 
-        @measure_latency_async("test_async_operation")
+        @measure_latency_async("test_async_operation")  # type: ignore[misc]
         async def my_async_function(x: int) -> int:
             return x * 2
 
@@ -82,7 +82,7 @@ class TestInfraMetrics:
         def get_extra(*args: object) -> dict[str, int]:
             return {"count": 1}
 
-        @measure_latency_async("test_async_operation", get_extra=get_extra)
+        @measure_latency_async("test_async_operation", get_extra=get_extra)  # type: ignore[misc]
         async def my_async_function(x: int) -> int:
             return x * 2
 
