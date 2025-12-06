@@ -309,7 +309,9 @@ class TestDependencyInjection:
             assert result == mock_pipeline
 
     @patch("src.web.routers.workspace_common.get_registry")
-    def test_get_pipeline_fallback_to_module_global(self, mock_get_registry: Mock) -> None:
+    def test_get_pipeline_fallback_to_module_global(
+        self, mock_get_registry: Mock
+    ) -> None:
         """Test _get_pipeline falls back to module global."""
         from src.web.routers import workspace_common
 
