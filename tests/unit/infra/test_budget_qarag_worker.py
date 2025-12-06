@@ -351,7 +351,7 @@ async def test_run_task_with_lats_llm_budget(monkeypatch: pytest.MonkeyPatch) ->
 def test_budget_tracker_with_individual_token_args() -> None:
     """Test budget tracker with individual token arguments."""
     tracker = budget_tracker.BudgetTracker(budget_limit_usd=1.0)
-    
+
     # Test with individual token arguments
     rec = tracker.record_usage(
         usage=None,
@@ -360,7 +360,7 @@ def test_budget_tracker_with_individual_token_args() -> None:
         cached_input_tokens=100,
         total_tokens=800,
     )
-    
+
     assert rec.input_tokens == 500
     assert rec.output_tokens == 200
     assert rec.cached_input_tokens == 100
@@ -371,13 +371,13 @@ def test_budget_tracker_with_individual_token_args() -> None:
 def test_budget_tracker_mixed_usage_args() -> None:
     """Test budget tracker with both usage dict and individual args."""
     tracker = budget_tracker.BudgetTracker(budget_limit_usd=1.0)
-    
+
     # Individual args should override usage dict
     rec = tracker.record_usage(
         usage={"input_tokens": 100},
         input_tokens=500,  # This should override
         output_tokens=200,
     )
-    
+
     assert rec.input_tokens == 500
     assert rec.output_tokens == 200

@@ -17,9 +17,7 @@ class TestGetCacheStats:
 
     @patch("src.web.routers.admin.get_global_cache_info")
     @pytest.mark.asyncio
-    async def test_get_cache_stats_success(
-        self, mock_get_cache_info: Mock
-    ) -> None:
+    async def test_get_cache_stats_success(self, mock_get_cache_info: Mock) -> None:
         """Test successful cache stats retrieval."""
         mock_cache_info = {
             "hits": 100,
@@ -37,9 +35,7 @@ class TestGetCacheStats:
 
     @patch("src.web.routers.admin.get_global_cache_info")
     @pytest.mark.asyncio
-    async def test_get_cache_stats_exception(
-        self, mock_get_cache_info: Mock
-    ) -> None:
+    async def test_get_cache_stats_exception(self, mock_get_cache_info: Mock) -> None:
         """Test cache stats retrieval with exception."""
         mock_get_cache_info.side_effect = RuntimeError("Cache error")
 
@@ -51,9 +47,7 @@ class TestGetCacheStats:
 
     @patch("src.web.routers.admin.get_global_cache_info")
     @pytest.mark.asyncio
-    async def test_get_cache_stats_empty_cache(
-        self, mock_get_cache_info: Mock
-    ) -> None:
+    async def test_get_cache_stats_empty_cache(self, mock_get_cache_info: Mock) -> None:
         """Test cache stats with empty cache."""
         mock_cache_info = {
             "hits": 0,
@@ -75,9 +69,7 @@ class TestClearCache:
 
     @patch("src.web.routers.admin.clear_global_rule_cache")
     @pytest.mark.asyncio
-    async def test_clear_cache_success(
-        self, mock_clear_cache: Mock
-    ) -> None:
+    async def test_clear_cache_success(self, mock_clear_cache: Mock) -> None:
         """Test successful cache clear."""
         result = await clear_cache()
 
@@ -87,9 +79,7 @@ class TestClearCache:
 
     @patch("src.web.routers.admin.clear_global_rule_cache")
     @pytest.mark.asyncio
-    async def test_clear_cache_exception(
-        self, mock_clear_cache: Mock
-    ) -> None:
+    async def test_clear_cache_exception(self, mock_clear_cache: Mock) -> None:
         """Test cache clear with exception."""
         mock_clear_cache.side_effect = RuntimeError("Clear failed")
 
@@ -105,9 +95,7 @@ class TestCacheHealth:
 
     @patch("src.web.routers.admin.get_global_cache_info")
     @pytest.mark.asyncio
-    async def test_cache_health_ok(
-        self, mock_get_cache_info: Mock
-    ) -> None:
+    async def test_cache_health_ok(self, mock_get_cache_info: Mock) -> None:
         """Test cache health with good hit rate."""
         mock_cache_info = {
             "hits": 80,
@@ -125,9 +113,7 @@ class TestCacheHealth:
 
     @patch("src.web.routers.admin.get_global_cache_info")
     @pytest.mark.asyncio
-    async def test_cache_health_warning(
-        self, mock_get_cache_info: Mock
-    ) -> None:
+    async def test_cache_health_warning(self, mock_get_cache_info: Mock) -> None:
         """Test cache health with low hit rate."""
         mock_cache_info = {
             "hits": 30,
@@ -162,9 +148,7 @@ class TestCacheHealth:
 
     @patch("src.web.routers.admin.get_global_cache_info")
     @pytest.mark.asyncio
-    async def test_cache_health_zero_hit_rate(
-        self, mock_get_cache_info: Mock
-    ) -> None:
+    async def test_cache_health_zero_hit_rate(self, mock_get_cache_info: Mock) -> None:
         """Test cache health with zero hit rate."""
         mock_cache_info = {
             "hits": 0,
@@ -198,9 +182,7 @@ class TestCacheHealth:
 
     @patch("src.web.routers.admin.get_global_cache_info")
     @pytest.mark.asyncio
-    async def test_cache_health_none_hit_rate(
-        self, mock_get_cache_info: Mock
-    ) -> None:
+    async def test_cache_health_none_hit_rate(self, mock_get_cache_info: Mock) -> None:
         """Test cache health when hit_rate is None."""
         mock_cache_info = {
             "hits": 50,

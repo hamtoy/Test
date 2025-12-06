@@ -31,9 +31,7 @@ class TestValidationResult:
 
     def test_has_errors_with_violations(self) -> None:
         """Test has_errors returns True when violations exist."""
-        result = ValidationResult(
-            violations=[{"type": "test"}], warnings=[], score=1.0
-        )
+        result = ValidationResult(violations=[{"type": "test"}], warnings=[], score=1.0)
         assert result.has_errors() is True
 
     def test_has_errors_without_violations(self) -> None:

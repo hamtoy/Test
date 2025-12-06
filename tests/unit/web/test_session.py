@@ -183,7 +183,7 @@ class TestSessionManager:
     def test_session_manager_cleanup_expired(self) -> None:
         """Test cleanup of expired sessions."""
         manager = SessionManager(ttl_seconds=1)
-        
+
         # Create multiple sessions
         session1 = manager.create()
         session2 = manager.create()

@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 from src.routing.graph_router import GraphRouter
 
+
 def test_graph_router_init() -> None:
     """Test GraphRouter initialization."""
     mock_graph = Mock()

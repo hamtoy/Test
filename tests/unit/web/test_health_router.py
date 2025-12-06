@@ -36,7 +36,9 @@ class TestSetDependencies:
 
         mock_health_checker = Mock()
         set_dependencies(
-            health_checker=mock_health_checker, extra_arg="ignored", another="also_ignored"
+            health_checker=mock_health_checker,
+            extra_arg="ignored",
+            another="also_ignored",
         )
 
         assert health_module._health_checker is mock_health_checker
@@ -168,9 +170,11 @@ class TestApiHealth:
         try:
             health_module._health_checker = mock_health_checker
 
-            with patch("src.web.api.agent", new=Mock()), patch(
-                "src.web.api.kg", new=Mock()
-            ), patch("src.web.api.pipeline", new=None):
+            with (
+                patch("src.web.api.agent", new=Mock()),
+                patch("src.web.api.kg", new=Mock()),
+                patch("src.web.api.pipeline", new=None),
+            ):
                 result = await api_health()
 
                 assert isinstance(result, JSONResponse)

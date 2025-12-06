@@ -18,9 +18,9 @@ class TestLoadExamplesFromFile:
     ) -> None:
         """Test successful file loading."""
         mock_parse.return_value = [{"key": "value"}]
-        
+
         result = load_examples_from_file(Path("/tmp/test.yaml"))
-        
+
         assert result == [{"key": "value"}]
         mock_parse.assert_called_once()
 
@@ -28,14 +28,14 @@ class TestLoadExamplesFromFile:
     def test_load_examples_from_file_not_found(self, mock_file: Mock) -> None:
         """Test handling of missing file."""
         result = load_examples_from_file(Path("/tmp/nonexistent.yaml"))
-        
+
         assert result == []
 
     @patch("builtins.open", side_effect=PermissionError())
     def test_load_examples_from_file_permission_error(self, mock_file: Mock) -> None:
         """Test handling of permission error."""
         result = load_examples_from_file(Path("/tmp/noperm.yaml"))
-        
+
         assert result == []
 
 
@@ -45,9 +45,9 @@ class TestParseYamlExamples:
     def test_parse_yaml_examples_valid_yaml(self) -> None:
         """Test parsing valid YAML."""
         yaml_content = "examples:\n  - query: test\n    answer: result\n"
-        
+
         result = parse_yaml_examples(yaml_content)
-        
+
         assert len(result) == 1
         assert result[0]["query"] == "test"
         assert result[0]["answer"] == "result"
@@ -55,13 +55,13 @@ class TestParseYamlExamples:
     def test_parse_yaml_examples_empty_string(self) -> None:
         """Test parsing empty string."""
         result = parse_yaml_examples("")
-        
+
         assert result == []
 
     def test_parse_yaml_examples_invalid_yaml(self) -> None:
         """Test parsing invalid YAML."""
         yaml_content = "invalid: yaml: content: :"
-        
+
         result = parse_yaml_examples(yaml_content)
-        
+
         assert result == []
