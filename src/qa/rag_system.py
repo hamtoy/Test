@@ -376,7 +376,7 @@ class QAKnowledgeGraph:
         - _graph가 있으면 동기 세션 반환
         - _graph_provider가 있으면 별도 이벤트 루프로 async 세션을 동기화
         - 모두 없으면 None yield
-        
+
         Note: Uses getattr() for defensive access to handle test instances
         created via object.__new__() which bypass __init__.
         """
