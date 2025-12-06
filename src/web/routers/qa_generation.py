@@ -227,6 +227,13 @@ async def generate_single_qa(
     if kg_wrapper is not None:
         try:
             constraints = kg_wrapper.get_constraints_for_query_type(qtype)
+            # [Fix] Ensure constraints is a list before processing
+            if not isinstance(constraints, list):
+                logger.warning(
+                    "Invalid constraints type: expected list, got %s",
+                    type(constraints).__name__,
+                )
+                constraints = []
             # [Fix] Ensure validation: filter out non-dict items
             valid_constraints = [c for c in constraints if isinstance(c, dict)]
             if len(valid_constraints) < len(constraints):
@@ -247,6 +254,13 @@ async def generate_single_qa(
                 fmt_rules = kg_wrapper.get_formatting_rules_for_query_type(
                     normalized_qtype
                 )
+                # [Fix] Ensure fmt_rules is a list before processing
+                if not isinstance(fmt_rules, list):
+                    logger.warning(
+                        "Invalid formatting rules type: expected list, got %s",
+                        type(fmt_rules).__name__,
+                    )
+                    fmt_rules = []
                 # [Fix] Sanitize formatting rules
                 valid_fmt_rules = [fr for fr in fmt_rules if isinstance(fr, dict)]
                 if len(valid_fmt_rules) < len(fmt_rules):
