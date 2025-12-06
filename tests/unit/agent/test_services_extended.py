@@ -74,9 +74,7 @@ class TestQueryGeneratorServiceExtended:
         mock_agent._create_generative_model = Mock()
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
-        mock_agent.retry_handler.call = AsyncMock(
-            return_value='{"queries": ["Query"]}'
-        )
+        mock_agent.retry_handler.call = AsyncMock(return_value='{"queries": ["Query"]}')
         mock_agent._is_rate_limit_error = Mock(return_value=False)
 
         mock_template = Mock()
@@ -86,13 +84,17 @@ class TestQueryGeneratorServiceExtended:
         # Mock KG
         mock_kg = Mock()
         mock_kg.get_constraints_for_query_type = Mock(
-            return_value=[{"description": "constraint", "category": "query", "priority": 1}]
+            return_value=[
+                {"description": "constraint", "category": "query", "priority": 1}
+            ]
         )
         mock_kg.find_relevant_rules = Mock(return_value=["Rule 1", "Rule 2"])
         mock_kg.get_formatting_rules = Mock(return_value="Format rules")
 
-        with patch("src.agent.services.QueryResult") as mock_query_result, \
-             patch("src.qa.rag_system.QAKnowledgeGraph", return_value=mock_kg):
+        with (
+            patch("src.agent.services.QueryResult") as mock_query_result,
+            patch("src.qa.rag_system.QAKnowledgeGraph", return_value=mock_kg),
+        ):
             mock_result = Mock()
             mock_result.queries = ["Query"]
             mock_query_result.model_validate_json = Mock(return_value=mock_result)
@@ -157,9 +159,7 @@ class TestQueryGeneratorServiceExtended:
         mock_agent._create_generative_model = Mock()
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
-        mock_agent.retry_handler.call = AsyncMock(
-            return_value='{"invalid": "json"}'
-        )
+        mock_agent.retry_handler.call = AsyncMock(return_value='{"invalid": "json"}')
 
         mock_template = Mock()
         mock_template.render = Mock(return_value="prompt")
@@ -301,9 +301,7 @@ class TestResponseEvaluatorServiceExtended:
         mock_agent._create_generative_model = Mock()
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
-        mock_agent.retry_handler.call = AsyncMock(
-            side_effect=Exception("Rate limit")
-        )
+        mock_agent.retry_handler.call = AsyncMock(side_effect=Exception("Rate limit"))
         mock_agent._is_rate_limit_error = Mock(return_value=True)
 
         mock_template = Mock()
@@ -333,9 +331,7 @@ class TestResponseEvaluatorServiceExtended:
         mock_agent._create_generative_model = Mock()
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
-        mock_agent.retry_handler.call = AsyncMock(
-            return_value='invalid json'
-        )
+        mock_agent.retry_handler.call = AsyncMock(return_value="invalid json")
 
         mock_template = Mock()
         mock_template.render = Mock(return_value="prompt")
@@ -370,9 +366,7 @@ class TestRewriterService:
         mock_agent._create_generative_model = Mock()
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
-        mock_agent.retry_handler.call = AsyncMock(
-            return_value="Rewritten answer"
-        )
+        mock_agent.retry_handler.call = AsyncMock(return_value="Rewritten answer")
         mock_agent._is_rate_limit_error = Mock(return_value=False)
         mock_agent.config = Mock()
         mock_agent.config.target_length = None
@@ -446,9 +440,7 @@ class TestRewriterService:
         mock_agent._create_generative_model = Mock()
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
-        mock_agent.retry_handler.call = AsyncMock(
-            return_value="Answer"
-        )
+        mock_agent.retry_handler.call = AsyncMock(return_value="Answer")
         mock_agent._is_rate_limit_error = Mock(return_value=False)
         mock_agent.config = Mock()
         mock_agent.config.target_length = None
@@ -458,8 +450,10 @@ class TestRewriterService:
         mock_agent.jinja_env = Mock()
         mock_agent.jinja_env.get_template = Mock(return_value=mock_template)
 
-        with patch("src.qa.template_rules.get_all_template_context") as mock_context, \
-             patch("src.qa.template_rules.get_neo4j_config") as mock_config:
+        with (
+            patch("src.qa.template_rules.get_all_template_context") as mock_context,
+            patch("src.qa.template_rules.get_neo4j_config") as mock_config,
+        ):
             mock_config.return_value = {
                 "neo4j_uri": "bolt://localhost",
                 "neo4j_user": "neo4j",
@@ -491,9 +485,7 @@ class TestRewriterService:
         mock_agent._create_generative_model = Mock()
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
-        mock_agent.retry_handler.call = AsyncMock(
-            side_effect=Exception("Rate limit")
-        )
+        mock_agent.retry_handler.call = AsyncMock(side_effect=Exception("Rate limit"))
         mock_agent._is_rate_limit_error = Mock(return_value=True)
         mock_agent.config = Mock()
         mock_agent.config.target_length = None
@@ -523,9 +515,7 @@ class TestRewriterService:
         mock_agent._create_generative_model = Mock()
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
-        mock_agent.retry_handler.call = AsyncMock(
-            return_value="Answer"
-        )
+        mock_agent.retry_handler.call = AsyncMock(return_value="Answer")
         mock_agent._is_rate_limit_error = Mock(return_value=False)
         mock_agent.config = Mock()
         mock_agent.config.target_length = None
@@ -568,9 +558,7 @@ class TestRewriterService:
         mock_agent._create_generative_model = Mock()
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
-        mock_agent.retry_handler.call = AsyncMock(
-            return_value="Answer"
-        )
+        mock_agent.retry_handler.call = AsyncMock(return_value="Answer")
         mock_agent._is_rate_limit_error = Mock(return_value=False)
         mock_agent.config = Mock()
         mock_agent.config.target_length = None

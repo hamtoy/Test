@@ -76,7 +76,10 @@ class TestRealtimeDashboard:
         await dashboard._cleanup_old_metrics()
 
         # Since retention is 0, all metrics should be removed
-        assert "/api/test" not in dashboard._metrics or len(dashboard._metrics["/api/test"]) == 0
+        assert (
+            "/api/test" not in dashboard._metrics
+            or len(dashboard._metrics["/api/test"]) == 0
+        )
 
     @pytest.mark.asyncio
     async def test_cleanup_removes_empty_endpoints(self):
@@ -84,7 +87,7 @@ class TestRealtimeDashboard:
         dashboard = RealtimeDashboard(retention_minutes=0)
 
         await dashboard.record_request("/api/test", 100.0)
-        
+
         # Force cleanup
         await dashboard._cleanup_old_metrics()
 
@@ -118,7 +121,7 @@ class TestRealtimeDashboard:
 
         endpoint_stats = summary["endpoints"]["/api/qa"]
         assert endpoint_stats["request_count"] == 3
-        assert endpoint_stats["cache_hit_rate"] == 2/3  # 2 out of 3 cache hits
+        assert endpoint_stats["cache_hit_rate"] == 2 / 3  # 2 out of 3 cache hits
 
     @pytest.mark.asyncio
     async def test_get_summary_latency_percentiles(self):
@@ -276,8 +279,7 @@ class TestRealtimeDashboard:
 
         # Record multiple requests concurrently
         tasks = [
-            dashboard.record_request(f"/api/endpoint{i}", 100.0 + i)
-            for i in range(10)
+            dashboard.record_request(f"/api/endpoint{i}", 100.0 + i) for i in range(10)
         ]
         await asyncio.gather(*tasks)
 
