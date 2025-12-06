@@ -14,6 +14,7 @@ from neo4j.exceptions import Neo4jError
 
 from src.analysis import cross_validation
 from src.qa import rag_system as qa_rag_system
+from src.qa.graph import connection as qa_connection
 from src.agent import GeminiAgent
 from src.config import AppConfig
 from src.config.utils import require_env
@@ -155,6 +156,7 @@ def test_qa_rag_init_uses_env_and_driver(
             return _Driver(uri, auth)
 
     monkeypatch.setattr(qa_rag_system, "GraphDatabase", _GraphDB)
+    monkeypatch.setattr(qa_connection, "GraphDatabase", _GraphDB)
     monkeypatch.setattr(
         qa_rag_system.QAKnowledgeGraph, "_init_vector_store", lambda self: None
     )

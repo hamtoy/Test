@@ -37,6 +37,7 @@ from typing import Any, Dict, Generator, List, Optional
 
 import google.generativeai as genai  # noqa: F401
 from dotenv import load_dotenv
+from neo4j import GraphDatabase  # noqa: F401
 
 from src.caching.analytics import CacheMetrics
 from src.config import AppConfig
@@ -378,7 +379,9 @@ class QAKnowledgeGraph:
         - _graph_provider가 있으면 별도 이벤트 루프로 async 세션을 동기화
         - 모두 없으면 None yield
         """
-        yield from create_graph_session(self._graph, self._graph_provider)
+        graph = getattr(self, "_graph", None)
+        provider = getattr(self, "_graph_provider", None)
+        yield from create_graph_session(graph, provider)
 
     # ------------------------------------------------------------------
     # Rule mutation helpers (delegates to RuleManager)
