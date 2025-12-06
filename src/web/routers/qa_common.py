@@ -70,8 +70,8 @@ class _CachedKG:
     def get_constraints_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
         if query_type in self._constraints:
             return self._constraints[query_type]
-        data = self._base.get_constraints_for_query_type(query_type)
-        # Validate that data is a list before caching
+        data = cast(Any, self._base.get_constraints_for_query_type(query_type))
+        # Validate that data is a list before caching (defensive runtime check)
         if not isinstance(data, list):
             logger.warning(
                 "Invalid constraints data type from KG: expected list, got %s",
@@ -93,8 +93,8 @@ class _CachedKG:
     ) -> List[Dict[str, Any]]:
         if query_type in self._formatting_rules:
             return self._formatting_rules[query_type]
-        rules = self._base.get_formatting_rules_for_query_type(query_type)
-        # Validate that rules is a list before caching
+        rules = cast(Any, self._base.get_formatting_rules_for_query_type(query_type))
+        # Validate that rules is a list before caching (defensive runtime check)
         if not isinstance(rules, list):
             logger.warning(
                 "Invalid formatting rules data type from KG: expected list, got %s",
