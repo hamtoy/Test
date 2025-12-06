@@ -49,6 +49,7 @@ from src.qa.graph.connection import (
     create_graph_session,
     initialize_connection,
 )
+from src.qa.graph.queries import CypherQueries
 from src.qa.graph.query_executor import QueryExecutor
 from src.qa.graph.rule_manager import RuleManager
 from src.qa.graph.rule_upsert import RuleUpsertManager
@@ -217,40 +218,10 @@ class QAKnowledgeGraph:
 
         - QueryType-[:HAS_CONSTRAINT]->Constraint 관계 사용
         """
-        cypher = """
-        // 1. QueryType 연결 Constraint
-        MATCH (qt:QueryType {name: $qt})-[:HAS_CONSTRAINT]->(c:Constraint)
-        RETURN 
-            c.id AS id,
-            c.type AS type,
-            c.description AS description,
-            c.pattern AS pattern,
-            c.severity AS severity,
-            c.max_repetition AS max_repetition,
-            c.rules AS rules,
-            c.priority AS priority,
-            c.category AS category,
-            c.applies_to AS applies_to
-        
-        UNION
-        
-        // 2. 피드백 기반 Constraint
-        MATCH (c:Constraint)
-        WHERE c.source STARTS WITH 'feedback_'
-        RETURN 
-            c.id AS id,
-            c.type AS type,
-            c.description AS description,
-            c.pattern AS pattern,
-            c.severity AS severity,
-            c.max_repetition AS max_repetition,
-            c.rules AS rules,
-            c.priority AS priority,
-            c.category AS category,
-            c.applies_to AS applies_to
-        """
         return self.query_executor.execute_with_fallback(
-            cypher, params={"qt": query_type}, default=[]
+            CypherQueries.GET_CONSTRAINTS_FOR_QUERY_TYPE,
+            params={"qt": query_type},
+            default=[],
         )
 
     @measure_latency(
@@ -262,44 +233,10 @@ class QAKnowledgeGraph:
     )
     def get_rules_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
         """Rule 노드 조회 (APPLIES_TO 관계 또는 applies_to 속성 기반)."""
-        cypher = """
-        MATCH (qt:QueryType {name: $qt})
-        OPTIONAL MATCH (r:Rule)-[:APPLIES_TO]->(qt)
-        WITH qt, collect(r) AS rules_rel
-        
-        OPTIONAL MATCH (r2:Rule)
-        WHERE r2.applies_to IN ['all', $qt]
-        WITH qt, rules_rel, collect(r2) AS rules_attr
-        
-        OPTIONAL MATCH (r3:Rule)
-        WHERE r3.source = 'feedback_analysis'
-        WITH
-            qt,
-            coalesce(rules_rel, []) AS rules_rel,
-            coalesce(rules_attr, []) AS rules_attr,
-            collect(r3) AS rules_feedback
-        WITH qt, rules_rel + rules_attr + coalesce(rules_feedback, []) AS rules
-        
-        UNWIND rules AS r
-        WITH DISTINCT r
-        RETURN
-            coalesce(r.id, r.name) AS id,
-            coalesce(r.name, '') AS name,
-            coalesce(r.text, '') AS text,
-            coalesce(r.category, '') AS category,
-            coalesce(r.priority, 0) AS priority,
-            r.source AS source
-        ORDER BY 
-            CASE r.priority
-                WHEN 'critical' THEN 4
-                WHEN 'high' THEN 3
-                WHEN 'medium' THEN 2
-                ELSE 1
-            END DESC,
-            priority DESC
-        """
         return self.query_executor.execute_with_fallback(
-            cypher, params={"qt": query_type}, default=[]
+            CypherQueries.GET_RULES_FOR_QUERY_TYPE,
+            params={"qt": query_type},
+            default=[],
         )
 
     @measure_latency(
@@ -318,12 +255,10 @@ class QAKnowledgeGraph:
         Returns:
             List of best practice dictionaries with id and text.
         """
-        cypher = """
-        MATCH (qt:QueryType {name: $qt})<-[:APPLIES_TO]-(b:BestPractice)
-        RETURN b.id AS id, b.text AS text
-        """
         return self.query_executor.execute_with_fallback(
-            cypher, params={"qt": query_type}, default=[]
+            CypherQueries.GET_BEST_PRACTICES,
+            params={"qt": query_type},
+            default=[],
         )
 
     @measure_latency(
@@ -335,13 +270,10 @@ class QAKnowledgeGraph:
     )
     def get_examples(self, limit: int = 5) -> List[Dict[str, str]]:
         """Example 노드 조회 (현재 Rule과 직접 연결되지 않았으므로 전체에서 샘플링)."""
-        cypher = """
-        MATCH (e:Example)
-        RETURN e.id AS id, e.text AS text, e.type AS type
-        LIMIT $limit
-        """
         return self.query_executor.execute_with_fallback(
-            cypher, params={"limit": limit}, default=[]
+            CypherQueries.GET_EXAMPLES,
+            params={"limit": limit},
+            default=[],
         )
 
     @measure_latency(
@@ -389,20 +321,10 @@ class QAKnowledgeGraph:
         self, query_type: str = "all"
     ) -> List[Dict[str, Any]]:
         """Return formatting rules for a given query type (or all)."""
-        cypher = """
-        OPTIONAL MATCH (fr:FormattingRule)
-        WHERE (fr.applies_to = 'all' OR fr.applies_to = $query_type)
-        WITH fr WHERE fr IS NOT NULL
-        RETURN fr.name AS name,
-               fr.description AS description,
-               fr.priority AS priority,
-               fr.category AS category,
-               coalesce(fr.examples_good, '') AS examples_good,
-               coalesce(fr.examples_bad, '') AS examples_bad
-        ORDER BY fr.priority DESC
-        """
         return self.query_executor.execute_with_fallback(
-            cypher, params={"query_type": query_type}, default=[]
+            CypherQueries.GET_FORMATTING_RULES_FOR_QUERY_TYPE,
+            params={"query_type": query_type},
+            default=[],
         )
 
     @measure_latency(
@@ -421,18 +343,12 @@ class QAKnowledgeGraph:
         Returns:
             Formatted markdown string containing all rules grouped by category.
         """
-        cypher = """
-        MATCH (t:Template {name: $template_type})-[:ENFORCES]->(r:Rule)
-        RETURN r.text AS text, coalesce(r.priority, 999) AS priority
-        ORDER BY priority
-        """
-        
         def transform_to_formatted(records: List[Any]) -> str:
             rules_data = [dict(r) for r in records]
             return format_rules(rules_data)
         
         return self.query_executor.execute_with_fallback(
-            cypher,
+            CypherQueries.GET_FORMATTING_RULES,
             params={"template_type": template_type},
             default="",
             transform=transform_to_formatted,
