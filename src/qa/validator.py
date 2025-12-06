@@ -56,7 +56,7 @@ class UnifiedValidator:
         violations: List[Any],
     ) -> List[Dict[str, Any]]:
         """violations를 dict 형식으로 정규화 (str → dict 변환).
-        
+
         String violations are converted to {"type": str_value, "description": str_value}.
         Other types are converted to {"type": "unknown", "description": str(value)}.
         """
