@@ -407,7 +407,7 @@ class TestDependencyInjection:
         mock_config.workspace_unified_timeout = MagicMock()  # Not an int
         mock_config.qa_single_timeout = None
         mock_config.qa_batch_timeout = []
-        
+
         mock_registry.config = mock_config
         mock_get_registry.return_value = mock_registry
 
