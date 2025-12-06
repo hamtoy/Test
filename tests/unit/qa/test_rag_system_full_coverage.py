@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Generator
 from unittest.mock import MagicMock, Mock, patch
 
 from src.qa.rag_system import QAKnowledgeGraph
+
+# Fake API key format for testing (AIza prefix + 35 additional characters)
+FAKE_API_KEY = "AIza" + "A" * 35
 
 
 class FakeDoc:
@@ -59,7 +62,7 @@ class FakeDriver:
 @patch("src.qa.rag_system.ensure_formatting_rule_schema")
 @patch("src.qa.rag_system.get_graph_provider")
 @patch("src.qa.rag_system.init_vector_store")
-@patch.dict("os.environ", {"GEMINI_API_KEY": "AIza" + "A" * 35}, clear=False)
+@patch.dict("os.environ", {"GEMINI_API_KEY": FAKE_API_KEY}, clear=False)
 def test_find_relevant_rules_with_vector_store(
     mock_init_vs: Mock,
     mock_get_provider: Mock,
@@ -164,9 +167,14 @@ def test_graph_session_context_manager(
     mock_provider = MagicMock()
     mock_get_provider.return_value = mock_provider
 
-    # Mock the session that create_graph_session will yield
+    # Mock create_graph_session to be a proper generator
     mock_session = MagicMock()
-    mock_create_session.return_value = iter([mock_session])
+
+    def mock_session_generator(graph: Any, provider: Any) -> Generator[Any, None, None]:
+        """Generator that yields a session."""
+        yield mock_session
+
+    mock_create_session.side_effect = mock_session_generator
 
     # Create QAKnowledgeGraph instance
     kg = QAKnowledgeGraph()
@@ -174,7 +182,7 @@ def test_graph_session_context_manager(
     # Use the graph_session context manager - this should execute lines 383-385
     with kg.graph_session() as session:
         # Verify we got a session
-        assert session is not None
+        assert session is mock_session
 
     # Verify that create_graph_session was called with correct parameters
     mock_create_session.assert_called_once_with(kg._graph, kg._graph_provider)
