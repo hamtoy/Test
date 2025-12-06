@@ -257,7 +257,7 @@ class TestAnswerQualityEvaluation:
         answer = "짧음"
         query = "상세 설명"
         ocr_text = "긴 텍스트 내용..."
-        rules_list = []
+        rules_list: list[str] = []
         weights = AnswerQualityWeights()
 
         score = await _evaluate_answer_quality(
@@ -272,7 +272,7 @@ class TestAnswerQualityEvaluation:
         answer = "가" * 1500
         query = "간단히 설명"
         ocr_text = "데이터"
-        rules_list = []
+        rules_list: list[str] = []
         weights = AnswerQualityWeights()
 
         score = await _evaluate_answer_quality(
@@ -290,7 +290,7 @@ class TestAnswerQualityEvaluation:
         answer = "- 불릿 리스트 답변"
         query = "설명"
         ocr_text = "내용"
-        rules_list = []
+        rules_list: list[str] = []
         weights = AnswerQualityWeights()
         mock_find_violations.return_value = [{"type": "bullet"}]
 
@@ -307,7 +307,7 @@ class TestAnswerQualityEvaluation:
         answer = "2023년 매출은 100억원, 2022년은 90억원"
         query = "매출 추이"
         ocr_text = "2023년 100억원 2022년 90억원"
-        rules_list = []
+        rules_list: list[str] = []
         weights = AnswerQualityWeights()
 
         score = await _evaluate_answer_quality(
@@ -323,7 +323,7 @@ class TestAnswerQualityEvaluation:
         answer = "일반적인 설명 답변입니다"
         query = "설명"
         ocr_text = "숫자가 없는 텍스트"
-        rules_list = []
+        rules_list: list[str] = []
         weights = AnswerQualityWeights()
 
         score = await _evaluate_answer_quality(

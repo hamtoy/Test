@@ -43,7 +43,7 @@ class FakeDriver:
 def _make_kg_minimal() -> QAKnowledgeGraph:
     """Create minimal KG instance bypassing __init__."""
     kg = object.__new__(QAKnowledgeGraph)
-    kg._graph = FakeDriver()
+    kg._graph = FakeDriver()  # type: ignore[assignment]
     kg._graph_provider = None
     kg._graph_finalizer = None
     kg._vector_store = None
@@ -238,7 +238,7 @@ class TestFormattingRules:
         """Test get_formatting_rules_for_query_type."""
         fake_rules = [{"id": "rule1", "text": "Rule 1"}]
         kg = _make_kg_minimal()
-        kg._graph = FakeDriver(fake_rules)
+        kg._graph = FakeDriver(fake_rules)  # type: ignore[assignment]
         kg._query_executor = MagicMock()
         kg._query_executor.execute_with_fallback.return_value = fake_rules
 

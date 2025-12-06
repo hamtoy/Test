@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import pytest
 from fastapi import HTTPException
 
+from src.web.routers.workspace_common import AnswerQualityWeights
 from src.web.routers.workspace_generation import (
     _evaluate_answer_quality,
     _generate_lats_answer,
@@ -329,8 +330,6 @@ class TestGenerateLATSAnswer:
         mock_get_agent: Mock,
     ) -> None:
         """Test LATS answer generation with multiple strategies."""
-        from src.web.routers.workspace_generation import AnswerQualityWeights
-
         # Setup weights
         test_weights = AnswerQualityWeights(min_length=10)
         mock_weights_presets.get.return_value = test_weights
@@ -480,8 +479,6 @@ class TestEvaluateAnswerQuality:
         """Test evaluation considers KG constraints when available."""
         mock_kg = MagicMock()
         mock_get_kg.return_value = mock_kg
-
-        from src.web.routers.workspace_generation import AnswerQualityWeights
 
         weights = AnswerQualityWeights(constraint_weight=0.2)
 
