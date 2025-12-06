@@ -7,18 +7,20 @@ to specialized modules in src/qa/graph/ for actual functionality.
 ## Architecture (PROMPT-003 Refactoring)
 
 **Delegation Pattern**:
-- Connection Management → graph/connection.py (Neo4jConnectionManager)
+- Connection Management → graph/connection.py (initialize_connection, close_connections)
 - Vector Search → graph/vector_search.py (VectorSearchEngine)
 - Rule Operations → graph/rule_upsert.py (RuleUpsertManager)
 - Query Execution → graph/query_executor.py (QueryExecutor)
+- Session Management → graph/connection.py (create_graph_session)
 - Validators → graph/validators.py
 
 **Main Class**:
 - QAKnowledgeGraph: Facade coordinating graph operations
 
 **Refactoring Goals** (712 lines → ~400 lines):
-- ✅ Extract connection management (_init_connection method)
-- ✅ Leverage existing graph/ modules
+- ✅ Extract connection management
+- ✅ Extract session management
+- ✅ Extract connection cleanup
 - ✅ Use QueryExecutor for consistent query execution
 - ✅ Maintain backward compatibility
 - ✅ All RAG tests passing
@@ -28,27 +30,26 @@ For architecture details: docs/ARCHITECTURE.md
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
-import weakref
 from contextlib import contextmanager, suppress
 from typing import Any, Dict, Generator, List, Optional
 from uuid import uuid4
 
 import google.generativeai as genai  # noqa: F401
 from dotenv import load_dotenv
-from neo4j import GraphDatabase
-from neo4j.exceptions import Neo4jError, ServiceUnavailable
 
 from src.caching.analytics import CacheMetrics
 from src.config import AppConfig
-from src.config.utils import require_env
 from src.core.factory import get_graph_provider
 from src.core.interfaces import GraphProvider
 from src.infra.metrics import measure_latency
-from src.infra.neo4j import SafeDriver, create_sync_driver
-from src.infra.utils import run_async_safely
+from src.infra.neo4j import SafeDriver
+from src.qa.graph.connection import (
+    close_connections,
+    create_graph_session,
+    initialize_connection,
+)
 from src.qa.graph.query_executor import QueryExecutor
 from src.qa.graph.rule_upsert import RuleUpsertManager
 from src.qa.graph.utils import (
@@ -107,8 +108,6 @@ class QAKnowledgeGraph:
             graph_provider if graph_provider is not None else get_graph_provider(cfg)
         )
         self._graph_provider: Optional[GraphProvider] = provider
-        self._graph: Optional[SafeDriver] = None
-        self._graph_finalizer: Optional[Any] = None
         self._cache_metrics = CacheMetrics(namespace="qa_kg")
 
         # Store credentials for later use
@@ -116,11 +115,13 @@ class QAKnowledgeGraph:
         self.neo4j_user = neo4j_user or os.getenv("NEO4J_USER")
         self.neo4j_password = neo4j_password or os.getenv("NEO4J_PASSWORD")
 
-        # Initialize connection based on provider
-        self._init_connection(provider)
+        # Initialize connection using helper function
+        self._graph, self._graph_finalizer = initialize_connection(
+            self.neo4j_uri, self.neo4j_user, self.neo4j_password, provider
+        )
 
         # Initialize query executor for consistent query execution
-        self.query_executor = QueryExecutor(
+        self._query_executor = QueryExecutor(
             graph_driver=self._graph,
             graph_provider=self._graph_provider,
         )
@@ -140,41 +141,6 @@ class QAKnowledgeGraph:
             driver=self._graph, provider=self._graph_provider, logger=logger
         )
 
-    def _init_connection(self, provider: Optional[GraphProvider]) -> None:
-        """Initialize Neo4j connection.
-
-        Extracted from __init__ for clarity. Uses provider if available,
-        otherwise creates direct driver connection.
-        """
-        if provider is None:
-            # No provider - create direct connection
-            if not self.neo4j_uri or not self.neo4j_user or not self.neo4j_password:
-                self.neo4j_uri = require_env("NEO4J_URI")
-                self.neo4j_user = require_env("NEO4J_USER")
-                self.neo4j_password = require_env("NEO4J_PASSWORD")
-
-            try:
-                self._graph = create_sync_driver(
-                    self.neo4j_uri,
-                    self.neo4j_user,
-                    self.neo4j_password,
-                    register_atexit=True,
-                    graph_db_factory=GraphDatabase.driver,
-                )
-                self._graph_finalizer = weakref.finalize(self._graph, self._graph.close)
-            except Neo4jError as e:
-                raise RuntimeError(f"Neo4j 연결 실패: {e}")
-        else:
-            # Provider available - use it, but also setup direct connection if credentials exist
-            if self.neo4j_uri and self.neo4j_user and self.neo4j_password:
-                self._graph = create_sync_driver(
-                    self.neo4j_uri,
-                    self.neo4j_user,
-                    self.neo4j_password,
-                    register_atexit=True,
-                    graph_db_factory=GraphDatabase.driver,
-                )
-                self._graph_finalizer = weakref.finalize(self._graph, self._graph.close)
 
     @property
     def cache_metrics(self) -> CacheMetrics:
@@ -478,36 +444,10 @@ class QAKnowledgeGraph:
 
     def close(self) -> None:
         """Close database connections and clean up resources."""
-        if self._graph:
-            with suppress(Exception):
-                self._graph.close()
-            self._graph = None
-        if self._graph_finalizer and self._graph_finalizer.alive:
-            with suppress(Exception):
-                self._graph_finalizer()
-            self._graph_finalizer = None
-        provider = self._graph_provider
-        if provider:
-            try:
-                try:
-                    loop = asyncio.get_running_loop()
-                    running = True
-                except RuntimeError:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                    running = False
-
-                close_coro = provider.close()
-                if running and loop.is_running():
-                    loop.create_task(close_coro)
-                else:
-                    loop.run_until_complete(close_coro)
-                    if not running:
-                        loop.close()
-                        asyncio.set_event_loop(None)
-            except (RuntimeError, Neo4jError, ServiceUnavailable) as exc:
-                logger.warning("Graph provider close failed: %s", exc)
-            self._graph_provider = None
+        close_connections(self._graph, self._graph_finalizer, self._graph_provider)
+        self._graph = None
+        self._graph_finalizer = None
+        self._graph_provider = None
 
     @contextmanager
     def graph_session(self) -> Generator[Any, None, None]:
@@ -517,37 +457,7 @@ class QAKnowledgeGraph:
         - _graph_provider가 있으면 별도 이벤트 루프로 async 세션을 동기화
         - 모두 없으면 None yield
         """
-        if self._graph:
-            with self._graph.session() as session:
-                yield session
-            return
-
-        provider = self._graph_provider
-        if provider:
-            # 동기 컨텍스트에서 async provider를 동기화; 실행 중인 루프가 있으면 fallback
-            try:
-                loop = asyncio.get_running_loop()
-                if loop.is_running():
-                    logger.debug(
-                        "graph_session: event loop already running; skipping provider session"
-                    )
-                    yield None
-                    return
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-
-            session_cm = provider.session()
-            session = loop.run_until_complete(session_cm.__aenter__())
-            try:
-                yield session
-            finally:
-                loop.run_until_complete(session_cm.__aexit__(None, None, None))
-                loop.close()
-            return
-
-        logger.debug("graph_session: graph not available; yielding None")
-        yield None
+        yield from create_graph_session(self._graph, self._graph_provider)
 
     # ------------------------------------------------------------------
     # Rule mutation helpers (자동 캐시 무효화 포함)
