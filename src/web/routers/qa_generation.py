@@ -233,7 +233,7 @@ async def generate_single_qa(
                 logger.error(
                     "🔴 Invalid constraints type from Neo4j: expected list, got %s. Value: %r",
                     type(constraints).__name__,
-                    constraints[:100] if isinstance(constraints, str) else constraints,
+                    repr(constraints)[:100],
                 )
                 constraints = []
 
@@ -254,7 +254,7 @@ async def generate_single_qa(
                     "🔴 Invalid constraint items dropped: %d/%d. Samples: %s",
                     len(invalid_items),
                     len(constraints),
-                    invalid_items[:3],  # Log first 3 samples only
+                    str(invalid_items[:3])[:200],  # Limit log message size
                 )
 
             # [Fix] Step 3: Safe category access with .get()
