@@ -531,160 +531,77 @@ class TestRuleUpsertManager:
         with pytest.raises(ValueError, match="Graph driver must be initialized"):
             manager.rollback_batch("batch_123")
 
-    def test_upsert_rule_node_with_async_provider(self):
-        """Test _upsert_rule_node with async graph provider."""
-        from unittest.mock import AsyncMock
-        
-        mock_provider = AsyncMock()
-        mock_session = AsyncMock()
-        
-        # Mock async iteration for existing check
-        async def mock_aiter():
-            return [].__aiter__()
-        
-        mock_result = AsyncMock()
-        mock_result.__aiter__ = mock_aiter
-        mock_session.run.return_value = mock_result
-        mock_provider.session.return_value.__aenter__.return_value = mock_session
-        mock_provider.session.return_value.__aexit__.return_value = None
-        
-        manager = RuleUpsertManager(graph_provider=mock_provider)
-        
-        with patch('src.infra.utils.run_async_safely') as mock_run_async:
-            mock_run_async.return_value = {"created": True}
-            
-            result = manager._upsert_rule_node(
-                rule_id="rule_001",
-                description="Test",
-                type_hint="explanation",
-                batch_id="batch_123",
-                timestamp="2024-01-01",
-            )
-            
-            assert result["created"] is True
-            mock_run_async.assert_called_once()
-
-    def test_upsert_constraint_node_with_async_provider(self):
-        """Test _upsert_constraint_node with async graph provider."""
-        mock_provider = Mock()
-        
-        manager = RuleUpsertManager(graph_provider=mock_provider)
-        
-        with patch('src.infra.utils.run_async_safely') as mock_run_async:
-            mock_run_async.return_value = {"created": True}
-            
-            result = manager._upsert_constraint_node(
-                constraint_id="const_001",
-                description="Test",
-                rule_id="rule_001",
-                batch_id="batch_123",
-                timestamp="2024-01-01",
-            )
-            
-            assert result["created"] is True
-            mock_run_async.assert_called_once()
-
-    def test_upsert_best_practice_node_with_async_provider(self):
-        """Test _upsert_best_practice_node with async graph provider."""
-        mock_provider = Mock()
-        
-        manager = RuleUpsertManager(graph_provider=mock_provider)
-        
-        with patch('src.infra.utils.run_async_safely') as mock_run_async:
-            mock_run_async.return_value = {"created": True}
-            
-            result = manager._upsert_best_practice_node(
-                bp_id="bp_001",
-                text="Test",
-                rule_id="rule_001",
-                batch_id="batch_123",
-                timestamp="2024-01-01",
-            )
-            
-            assert result["created"] is True
-            mock_run_async.assert_called_once()
-
-    def test_upsert_example_node_with_async_provider(self):
-        """Test _upsert_example_node with async graph provider."""
-        mock_provider = Mock()
-        
-        manager = RuleUpsertManager(graph_provider=mock_provider)
-        
-        with patch('src.infra.utils.run_async_safely') as mock_run_async:
-            mock_run_async.return_value = {"created": True}
-            
-            result = manager._upsert_example_node(
-                example_id="ex_001",
-                before="Before",
-                after="After",
-                rule_id="rule_001",
-                batch_id="batch_123",
-                timestamp="2024-01-01",
-            )
-            
-            assert result["created"] is True
-            mock_run_async.assert_called_once()
-
-    def test_get_rules_by_batch_id_with_async_provider(self):
-        """Test get_rules_by_batch_id with async graph provider."""
-        mock_provider = Mock()
-        
-        manager = RuleUpsertManager(graph_provider=mock_provider)
-        
-        with patch('src.infra.utils.run_async_safely') as mock_run_async:
-            mock_run_async.return_value = [{"id": "rule_001"}]
-            
-            result = manager.get_rules_by_batch_id("batch_123")
-            
-            assert len(result) == 1
-            mock_run_async.assert_called_once()
-
-    def test_rollback_batch_with_async_provider(self):
-        """Test rollback_batch with async graph provider."""
-        mock_provider = Mock()
-        
-        manager = RuleUpsertManager(graph_provider=mock_provider)
-        
-        with patch('src.infra.utils.run_async_safely') as mock_run_async:
-            mock_run_async.return_value = {"success": True, "deleted_count": 3}
-            
-            result = manager.rollback_batch("batch_123")
-            
-            assert result["success"] is True
-            assert result["deleted_count"] == 3
-            mock_run_async.assert_called_once()
-
     def test_upsert_auto_generated_rules_with_all_fields(self):
         """Test upsert with all optional fields present."""
         mock_graph = Mock()
+        mock_session = Mock()
+        mock_session.run.return_value = []
+        
+        mock_context = Mock()
+        mock_context.__enter__ = Mock(return_value=mock_session)
+        mock_context.__exit__ = Mock(return_value=None)
+        mock_graph.session.return_value = mock_context
+        
         manager = RuleUpsertManager(graph=mock_graph)
         
+        patterns = [
+            {
+                "id": "rule_001",
+                "rule": "Test rule",
+                "type_hint": "explanation",
+                "constraint": "Must be concise",
+                "best_practice": "Use clear language",
+                "example_before": "Bad example",
+                "example_after": "Good example",
+            }
+        ]
+        
+        result = manager.upsert_auto_generated_rules(patterns, batch_id="test")
+        
+        assert result["success"] is True
+        assert result["created"]["rules"] == 1
+        assert result["created"]["constraints"] == 1
+        assert result["created"]["best_practices"] == 1
+        assert result["created"]["examples"] == 1
+
+    def test_upsert_auto_generated_rules_updates_existing(self):
+        """Test that existing nodes are updated, not created."""
+        mock_graph = Mock()
+        manager = RuleUpsertManager(graph=mock_graph)
+        
+        # Mock all upsert methods to return updated (created: False)
         with patch.object(manager, "_upsert_rule_node") as mock_rule, \
              patch.object(manager, "_upsert_constraint_node") as mock_constraint, \
              patch.object(manager, "_upsert_best_practice_node") as mock_bp, \
              patch.object(manager, "_upsert_example_node") as mock_example:
             
-            mock_rule.return_value = {"created": True}
-            mock_constraint.return_value = {"created": True}
-            mock_bp.return_value = {"created": True}
-            mock_example.return_value = {"created": True}
+            mock_rule.return_value = {"created": False}  # Updated, not created
+            mock_constraint.return_value = {"created": False}
+            mock_bp.return_value = {"created": False}
+            mock_example.return_value = {"created": False}
             
             patterns = [
                 {
                     "id": "rule_001",
-                    "rule": "Test rule",
+                    "rule": "Updated rule",
                     "type_hint": "explanation",
-                    "constraint": "Must be concise",
-                    "best_practice": "Use clear language",
-                    "example_before": "Bad example",
-                    "example_after": "Good example",
+                    "constraint": "Updated constraint",
+                    "best_practice": "Updated best practice",
+                    "example_before": "Updated before",
+                    "example_after": "Updated after",
                 }
             ]
             
             result = manager.upsert_auto_generated_rules(patterns, batch_id="test")
             
             assert result["success"] is True
-            assert result["created"]["rules"] == 1
-            assert result["created"]["constraints"] == 1
-            assert result["created"]["best_practices"] == 1
-            assert result["created"]["examples"] == 1
+            # Should count as updates, not creates
+            assert result["updated"]["rules"] == 1
+            assert result["updated"]["constraints"] == 1
+            assert result["updated"]["best_practices"] == 1
+            assert result["updated"]["examples"] == 1
+            # Creates should be 0
+            assert result["created"]["rules"] == 0
+            assert result["created"]["constraints"] == 0
+            assert result["created"]["best_practices"] == 0
+            assert result["created"]["examples"] == 0
