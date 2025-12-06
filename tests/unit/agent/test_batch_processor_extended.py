@@ -5,8 +5,7 @@ import asyncio
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import AsyncMock, Mock, patch
-from uuid import uuid4
+from unittest.mock import Mock
 
 import pytest
 
@@ -466,7 +465,7 @@ class TestSmartBatchProcessorExtended:
             await asyncio.sleep(0.01)
             return x * 2
         
-        result = await processor.process_batch([1, 2, 3], process)
+        await processor.process_batch([1, 2, 3], process)
         
         assert len(progress_updates) == 3
         assert progress_updates[-1] == (3, 3)

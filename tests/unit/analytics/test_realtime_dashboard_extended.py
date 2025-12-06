@@ -2,8 +2,7 @@
 # mypy: ignore-errors
 
 import asyncio
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
+from datetime import datetime
 
 import pytest
 
