@@ -2,7 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from src.monitoring import metrics
 
@@ -18,9 +17,7 @@ class TestMetricsRecordFunctions:
 
     @patch("src.monitoring.metrics.PROMETHEUS_AVAILABLE", True)
     @patch("src.monitoring.metrics.api_errors")
-    def test_record_api_error_with_prometheus(
-        self, mock_api_errors: MagicMock
-    ) -> None:
+    def test_record_api_error_with_prometheus(self, mock_api_errors: MagicMock) -> None:
         """Test record_api_error when Prometheus is available."""
         metrics.record_api_error(model="test-model", error_type="timeout")
         mock_api_errors.labels.assert_called_once_with(

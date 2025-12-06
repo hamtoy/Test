@@ -1,9 +1,7 @@
 """Tests for src/llm/lcel_chain.py to increase coverage."""
 
-from typing import Any, Dict
 from unittest.mock import MagicMock, Mock, patch
 
-import pytest
 
 from src.llm.lcel_chain import LCELChain
 
@@ -26,7 +24,7 @@ class TestLCELChainCoverage:
 
         chain = LCELChain(kg=mock_kg)
         result = chain._get_rules({"query_type": "explanation"})
-        
+
         assert result == []
 
     @patch("src.llm.lcel_chain.ChatOpenAI")
@@ -40,7 +38,7 @@ class TestLCELChainCoverage:
 
         chain = LCELChain(kg=mock_kg)
         result = chain._get_examples({})
-        
+
         assert result == []
 
     @patch("src.llm.lcel_chain.ChatOpenAI")
@@ -54,7 +52,7 @@ class TestLCELChainCoverage:
 
         chain = LCELChain(kg=mock_kg)
         result = chain._get_constraints({"query_type": "explanation"})
-        
+
         assert result == []
 
     @patch("src.llm.lcel_chain.ChatOpenAI")
@@ -71,7 +69,7 @@ class TestLCELChainCoverage:
 
         chain = LCELChain(kg=mock_kg)
         result = chain._get_examples({})
-        
+
         assert result == ["Example 1", "Example 2"]
 
     @patch("src.llm.lcel_chain.ChatOpenAI")
@@ -88,5 +86,5 @@ class TestLCELChainCoverage:
 
         chain = LCELChain(kg=mock_kg)
         result = chain._get_constraints({"query_type": "explanation"})
-        
+
         assert result == ["Constraint 1", "Constraint 2"]
