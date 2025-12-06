@@ -88,7 +88,7 @@ class TestAnalyticsComponents:
     def test_import_feedback_analysis(self) -> None:
         """Test importing feedback analysis."""
         try:
-            from src.analysis.feedback_analysis import analyze_feedback
+            from src.analysis.feedback_analysis import analyze_feedback  # type: ignore[import-not-found]
 
             assert callable(analyze_feedback)
         except (ImportError, AttributeError):
@@ -112,7 +112,7 @@ class TestWorkflowComponents:
     def test_executor_import(self) -> None:
         """Test workflow executor import."""
         try:
-            from src.workflow.executor import WorkflowExecutor
+            from src.workflow.executor import WorkflowExecutor  # type: ignore[attr-defined]
 
             assert WorkflowExecutor is not None
         except (ImportError, AttributeError):
@@ -121,7 +121,7 @@ class TestWorkflowComponents:
     def test_inspection_import(self) -> None:
         """Test workflow inspection import."""
         try:
-            from src.workflow.inspection import inspect_workflow
+            from src.workflow.inspection import inspect_workflow  # type: ignore[attr-defined]
 
             assert callable(inspect_workflow)
         except (ImportError, AttributeError):
@@ -150,7 +150,7 @@ class TestGraphComponents:
     def test_builder_import(self) -> None:
         """Test graph builder import."""
         try:
-            from src.graph.builder import GraphBuilder
+            from src.graph.builder import GraphBuilder  # type: ignore[attr-defined]
 
             assert GraphBuilder is not None
         except (ImportError, AttributeError):
