@@ -8,27 +8,27 @@ import pytest
 
 def test_structured_logging_enabled() -> None:
     """Test structured logging setup when ENABLE_STRUCT_LOGGING is true."""
-    with patch.dict(os.environ, {"ENABLE_STRUCT_LOGGING": "true", "LOG_LEVEL": "DEBUG"}):
-        with patch("src.web.api.setup_structured_logging") as mock_setup:
-            # Re-import to trigger the module-level code
-            import importlib
-            import src.web.api
-            importlib.reload(src.web.api)
-            
-            # Verify structured logging was attempted
-            # Note: This test verifies the code path is reached
+    with patch.dict(os.environ, {"ENABLE_STRUCT_LOGGING": "true", "LOG_LEVEL": "DEBUG"}), \
+         patch("src.web.api.setup_structured_logging"):
+        # Re-import to trigger the module-level code
+        import importlib
+        import src.web.api
+        importlib.reload(src.web.api)
+        
+        # Verify structured logging was attempted
+        # Note: This test verifies the code path is reached
 
 
 def test_structured_logging_exception_handling() -> None:
     """Test structured logging handles exceptions gracefully."""
-    with patch.dict(os.environ, {"ENABLE_STRUCT_LOGGING": "true"}):
-        with patch("src.web.api.setup_structured_logging", side_effect=RuntimeError("Setup failed")):
-            # Re-import to trigger the exception path
-            import importlib
-            import src.web.api
-            importlib.reload(src.web.api)
-            
-            # Should not raise, just log warning
+    with patch.dict(os.environ, {"ENABLE_STRUCT_LOGGING": "true"}), \
+         patch("src.web.api.setup_structured_logging", side_effect=RuntimeError("Setup failed")):
+        # Re-import to trigger the exception path
+        import importlib
+        import src.web.api
+        importlib.reload(src.web.api)
+        
+        # Should not raise, just log warning
 
 
 def test_get_request_id_with_request_id() -> None:
