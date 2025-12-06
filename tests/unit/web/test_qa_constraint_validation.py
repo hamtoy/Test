@@ -17,10 +17,10 @@ class TestConstraintValidation:
         mock_kg = MagicMock()
         # Simulate KG returning a string instead of a list
         mock_kg.get_constraints_for_query_type = MagicMock(return_value="error string")
-        
+
         cached_kg = _CachedKG(mock_kg)
         result = cached_kg.get_constraints_for_query_type("explanation")
-        
+
         # Should return empty list instead of string
         assert isinstance(result, list)
         assert result == []
@@ -32,11 +32,13 @@ class TestConstraintValidation:
             {"category": "query", "description": "test constraint"},
             {"category": "answer", "description": "another constraint"},
         ]
-        mock_kg.get_constraints_for_query_type = MagicMock(return_value=valid_constraints)
-        
+        mock_kg.get_constraints_for_query_type = MagicMock(
+            return_value=valid_constraints
+        )
+
         cached_kg = _CachedKG(mock_kg)
         result = cached_kg.get_constraints_for_query_type("explanation")
-        
+
         # Should return the valid list as-is
         assert isinstance(result, list)
         assert result == valid_constraints
@@ -45,11 +47,13 @@ class TestConstraintValidation:
         """Test that _CachedKG handles invalid string formatting rules gracefully."""
         mock_kg = MagicMock()
         # Simulate KG returning a string instead of a list
-        mock_kg.get_formatting_rules_for_query_type = MagicMock(return_value="error string")
-        
+        mock_kg.get_formatting_rules_for_query_type = MagicMock(
+            return_value="error string"
+        )
+
         cached_kg = _CachedKG(mock_kg)
         result = cached_kg.get_formatting_rules_for_query_type("explanation")
-        
+
         # Should return empty list instead of string
         assert isinstance(result, list)
         assert result == []
@@ -61,11 +65,13 @@ class TestConstraintValidation:
             {"description": "formatting rule 1", "priority": 1},
             {"description": "formatting rule 2", "priority": 2},
         ]
-        mock_kg.get_formatting_rules_for_query_type = MagicMock(return_value=valid_rules)
-        
+        mock_kg.get_formatting_rules_for_query_type = MagicMock(
+            return_value=valid_rules
+        )
+
         cached_kg = _CachedKG(mock_kg)
         result = cached_kg.get_formatting_rules_for_query_type("explanation")
-        
+
         # Should return the valid list as-is
         assert isinstance(result, list)
         assert result == valid_rules
@@ -75,14 +81,14 @@ class TestConstraintValidation:
         mock_kg = MagicMock()
         # First call returns invalid data, but we fix it
         mock_kg.get_constraints_for_query_type = MagicMock(return_value="error")
-        
+
         cached_kg = _CachedKG(mock_kg)
-        
+
         # First call
         result1 = cached_kg.get_constraints_for_query_type("explanation")
         # Second call should use cache
         result2 = cached_kg.get_constraints_for_query_type("explanation")
-        
+
         # Should only call the base KG once
         assert mock_kg.get_constraints_for_query_type.call_count == 1
         # Both results should be the corrected empty list
@@ -97,32 +103,37 @@ class TestGenerateSingleQAConstraintHandling:
     async def test_generate_qa_handles_string_constraints_from_kg(self) -> None:
         """Test that generate_single_qa handles invalid string constraints."""
         from src.web.routers.qa_generation import generate_single_qa
-        
+
         # Create mock KG that returns string instead of list
         mock_kg = MagicMock()
-        mock_kg.get_constraints_for_query_type = MagicMock(return_value="invalid string")
+        mock_kg.get_constraints_for_query_type = MagicMock(
+            return_value="invalid string"
+        )
         mock_kg.get_formatting_rules_for_query_type = MagicMock(return_value=[])
-        
+
         cached_kg = _CachedKG(mock_kg)
-        
+
         # Mock agent
         mock_agent = MagicMock()
         mock_agent.generate_query = AsyncMock(return_value=["test query"])
         mock_agent.rewrite_best_answer = AsyncMock(return_value="test answer")
-        
+
         with (
-            patch("src.web.routers.qa_generation.get_cached_kg", return_value=cached_kg),
+            patch(
+                "src.web.routers.qa_generation.get_cached_kg", return_value=cached_kg
+            ),
             patch("src.web.routers.qa_generation._get_kg", return_value=mock_kg),
             patch("src.web.routers.qa_generation._get_pipeline", return_value=None),
-            patch("src.web.routers.qa_generation._get_validator_class", return_value=MagicMock),
+            patch(
+                "src.web.routers.qa_generation._get_validator_class",
+                return_value=MagicMock,
+            ),
         ):
             # This should not raise an error
             result = await generate_single_qa(
-                mock_agent,
-                "OCR text sample",
-                "explanation"
+                mock_agent, "OCR text sample", "explanation"
             )
-            
+
             # Should return a valid result
             assert isinstance(result, dict)
             assert "query" in result
@@ -131,32 +142,37 @@ class TestGenerateSingleQAConstraintHandling:
     async def test_generate_qa_handles_string_formatting_rules_from_kg(self) -> None:
         """Test that generate_single_qa handles invalid string formatting rules."""
         from src.web.routers.qa_generation import generate_single_qa
-        
+
         # Create mock KG that returns string for formatting rules
         mock_kg = MagicMock()
         mock_kg.get_constraints_for_query_type = MagicMock(return_value=[])
-        mock_kg.get_formatting_rules_for_query_type = MagicMock(return_value="invalid string")
-        
+        mock_kg.get_formatting_rules_for_query_type = MagicMock(
+            return_value="invalid string"
+        )
+
         cached_kg = _CachedKG(mock_kg)
-        
+
         # Mock agent
         mock_agent = MagicMock()
         mock_agent.generate_query = AsyncMock(return_value=["test query"])
         mock_agent.rewrite_best_answer = AsyncMock(return_value="test answer")
-        
+
         with (
-            patch("src.web.routers.qa_generation.get_cached_kg", return_value=cached_kg),
+            patch(
+                "src.web.routers.qa_generation.get_cached_kg", return_value=cached_kg
+            ),
             patch("src.web.routers.qa_generation._get_kg", return_value=mock_kg),
             patch("src.web.routers.qa_generation._get_pipeline", return_value=None),
-            patch("src.web.routers.qa_generation._get_validator_class", return_value=MagicMock),
+            patch(
+                "src.web.routers.qa_generation._get_validator_class",
+                return_value=MagicMock,
+            ),
         ):
             # This should not raise an error
             result = await generate_single_qa(
-                mock_agent,
-                "OCR text sample",
-                "explanation"
+                mock_agent, "OCR text sample", "explanation"
             )
-            
+
             # Should return a valid result
             assert isinstance(result, dict)
             assert "query" in result
@@ -165,7 +181,7 @@ class TestGenerateSingleQAConstraintHandling:
     async def test_generate_qa_filters_non_dict_constraints(self) -> None:
         """Test that non-dict items in constraint list are filtered."""
         from src.web.routers.qa_generation import generate_single_qa
-        
+
         # Create mock KG that returns mixed list
         mock_kg = MagicMock()
         mock_kg.get_constraints_for_query_type = MagicMock(
@@ -177,27 +193,30 @@ class TestGenerateSingleQAConstraintHandling:
             ]
         )
         mock_kg.get_formatting_rules_for_query_type = MagicMock(return_value=[])
-        
+
         cached_kg = _CachedKG(mock_kg)
-        
+
         # Mock agent
         mock_agent = MagicMock()
         mock_agent.generate_query = AsyncMock(return_value=["test query"])
         mock_agent.rewrite_best_answer = AsyncMock(return_value="test answer")
-        
+
         with (
-            patch("src.web.routers.qa_generation.get_cached_kg", return_value=cached_kg),
+            patch(
+                "src.web.routers.qa_generation.get_cached_kg", return_value=cached_kg
+            ),
             patch("src.web.routers.qa_generation._get_kg", return_value=mock_kg),
             patch("src.web.routers.qa_generation._get_pipeline", return_value=None),
-            patch("src.web.routers.qa_generation._get_validator_class", return_value=MagicMock),
+            patch(
+                "src.web.routers.qa_generation._get_validator_class",
+                return_value=MagicMock,
+            ),
         ):
             # This should not raise an error
             result = await generate_single_qa(
-                mock_agent,
-                "OCR text sample",
-                "explanation"
+                mock_agent, "OCR text sample", "explanation"
             )
-            
+
             # Should return a valid result
             assert isinstance(result, dict)
             assert "query" in result
