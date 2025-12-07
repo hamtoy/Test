@@ -1,4 +1,14 @@
-"""워크스페이스 질의/답변 생성 엔드포인트."""
+"""워크스페이스 질의/답변 생성 엔드포인트.
+
+웹앱 사용 여부: ❌ 웹 프론트엔드 미사용 (API 전용)
+
+- 엔드포인트:
+  - POST /api/workspace/generate-answer (질문 기반 답변 생성)
+  - POST /api/workspace/generate-query (답변 기반 질문 생성)
+- 용도: 직접 API 호출용 엔드포인트 (웹 UI는 /api/workspace/unified 사용)
+- 상태: 테스트 코드 존재, 웹 프론트엔드에서는 호출하지 않음
+- 참고: workspace_unified.py가 이 기능들을 통합하여 제공
+"""
 # mypy: ignore-errors
 
 from __future__ import annotations

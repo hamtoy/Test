@@ -30,7 +30,6 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, cast
 
-
 from src.agent import GeminiAgent
 from src.analysis.cross_validation import CrossValidationSystem
 from src.config import AppConfig

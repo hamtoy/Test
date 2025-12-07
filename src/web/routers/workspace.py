@@ -5,6 +5,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
+# Import functions that tests expect
+from src.workflow.edit import edit_content  # noqa: F401
+from src.workflow.inspection import inspect_answer  # noqa: F401
+
 # Import sub-routers
 from . import (
     workspace_common,
@@ -12,10 +16,6 @@ from . import (
     workspace_review,
     workspace_unified,
 )
-
-# Import functions that tests expect
-from src.workflow.edit import edit_content  # noqa: F401
-from src.workflow.inspection import inspect_answer  # noqa: F401
 
 # Import LATS functions that may be needed
 from .workspace_generation import (  # noqa: F401
