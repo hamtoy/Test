@@ -25,15 +25,15 @@ _OCR_CACHE_LOCK = Lock()
 
 # 질의 유형 매핑 (QA/워크스페이스 공용)
 QTYPE_MAP = {
-    "global_explanation": "explanation",
-    "explanation": "explanation",
+    "global_explanation": "global_explanation",
+    "explanation": "global_explanation",
     "reasoning": "reasoning",
     "target_short": "target",
     "target_long": "target",
     "target": "target",
     "summary": "summary",
     "factual": "target",
-    "general": "explanation",
+    "general": "global_explanation",
 }
 
 
@@ -167,12 +167,11 @@ def detect_workflow(
 def apply_answer_limits(answer: str, qtype: str) -> str:
     """질의 타입별로 답변 길이 제한 적용.
     
-    Args:
-        answer: 처리할 답변 텍스트
-        qtype: 질의 타입 (reasoning, explanation, global_explanation, target)
-    
-    Returns:
-        길이가 제한된 답변
+    4가지 실제 질질 타입:
+    1. global_explanation: 질질 1 (전체 마모뇌)
+    2. reasoning: 질질 2 (추론)
+    3. target (short): 질질 3 (숫자/명칭) - 단답형 자동 탐지
+    4. target (long): 질질 4 (강조) - 서술형 자동 탐지
     """
     def _limit_words(text: str, max_words: int) -> str:
         words = text.split()
@@ -180,17 +179,18 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
             text = " ".join(words[:max_words])
         return text
     
-    # 질의 타입별 설정
+    # 실제 사용되는 4가지 질질 타입별 설정
     config = {
+        # 1. 전체 마모뇌 설명: 200단어, 최대 6문장
+        "global_explanation": {"max_words": 200, "max_sentences": 6},
+        # 2. 추론: 100단어, 최대 4문장
         "reasoning": {"max_words": 100, "max_sentences": 4},
-        "explanation": {"max_words": 200, "max_sentences": 6},
-        "global_explanation": {"max_words": 250, "max_sentences": 8},
     }
     
     if qtype in config:
         limits = config[qtype]
         
-        # 1단계: 문장 수 제한
+        # 1단계: 문장 제한
         sentences = [s.strip() for s in answer.split(".") if s.strip()]
         if sentences:
             sentences = sentences[: limits["max_sentences"]]
@@ -202,14 +202,14 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
         answer = _limit_words(answer, limits["max_words"])
     
     elif qtype == "target":
-        # 타겟 질의: 단답형 vs 서술형 자동 판단
+        # 타겟 질질: 단답형 vs 서술형 자동 판단
         word_count = len(answer.split())
         
         if word_count < 15:
-            # 단답형: 매우 간결
+            # 3. target short: 매우 간결
             answer = _limit_words(answer, 50)
         else:
-            # 서술형: 더 상세히
+            # 4. target long: 180단어, 최대 5문장
             sentences = [s.strip() for s in answer.split(".") if s.strip()]
             if sentences:
                 sentences = sentences[:5]
@@ -236,8 +236,7 @@ def postprocess_answer(answer: str, qtype: str) -> str:
     answer = _strip_code_and_links(answer)
     # 1.1 숫자 포맷 깨짐 복원
     answer = fix_broken_numbers(answer)
-    # 1.2 볼드 마커 정규화: 짝이 안 맞는 **텍스트* / *텍스트** 제거
-    # Case: **Text* \n * (Broken bold across lines)
+    # 1.2 볼드 마커 정규화: 짝이 짝된 **텍스트*나 *텍스트** 제거
     answer = re.sub(r"\*\*([^*]+)\*\s*\n\s*\*", r"**\1**", answer)
     answer = re.sub(r"\*\*([^*]+)\*(?!\*)", r"\1", answer)
     answer = re.sub(r"\*([^*]+)\*\*", r"\1", answer)
@@ -253,8 +252,8 @@ def postprocess_answer(answer: str, qtype: str) -> str:
     answer = re.sub(r"\s*\*\s+", r"\n- ", answer)
 
     # 4. 질의 유형별 후처리
-    if qtype in {"target_short", "target_long"}:
-        # 불릿/개행 제거 후 짧은 문장으로 압축
+    if qtype == "target":
+        # target 질질 (3,4번): 불릿/개행 제거 후 즕습
         lines = [
             re.sub(r"^[\-\*\u2022]\s*", "", line).strip(" -•\t")
             for line in answer.splitlines()
@@ -269,7 +268,8 @@ def postprocess_answer(answer: str, qtype: str) -> str:
             if s.strip()
         ]
         if sentences:
-            max_sentences = 1 if qtype == "target_short" else 4
+            word_cnt = len(answer.split())
+            max_sentences = 1 if word_cnt < 15 else 4
             answer = ". ".join(sentences[:max_sentences]).strip()
         else:
             answer = answer.strip()
@@ -280,11 +280,8 @@ def postprocess_answer(answer: str, qtype: str) -> str:
         answer = re.sub(r"\*(.*?)\*", r"\1", answer)
         answer = re.sub(r"[_]{1,2}(.*?)[_]{1,2}", r"\1", answer)
 
-        if qtype == "target_short" and answer.endswith("."):
-            answer = answer[:-1].strip()
-
-    elif qtype in {"global_explanation", "explanation", "reasoning"}:
-        # 서술문 앞의 불릿(-, •) 제거 및 문단 정리
+    elif qtype in {"global_explanation", "reasoning"}:
+        # 서술문 (1,2번): 불릿(-) 제거 및 문단 정리
         paragraph_lines: list[str] = []
         for line in answer.splitlines():
             stripped = line.strip()
@@ -298,11 +295,12 @@ def postprocess_answer(answer: str, qtype: str) -> str:
         for paragraph in "\n".join(paragraph_lines).split("\n\n"):
             if not paragraph.strip():
                 continue
-            # 콜론 뒤 개행 제거 (예: 제목\n: 내용 → 제목: 내용)
+            # 콜론 뒤 개행 제거
             paragraph = re.sub(r"\n\s*:\s*", ": ", paragraph)
             paragraph = re.sub(r"\s*\n\s*", " ", paragraph)
             paragraph = re.sub(r"\s+", " ", paragraph).strip(" -•\t")
             if qtype == "reasoning":
+                # reasoning: 남은 남이나 추론, 근거 등 제거
                 paragraph = re.sub(
                     r"^(근거|추론|결론|배경|요약)\s*[:\-]\s*",
                     "",
@@ -312,7 +310,7 @@ def postprocess_answer(answer: str, qtype: str) -> str:
             paragraphs.append(paragraph)
         answer = "\n\n".join(paragraphs)
 
-    # 5. 공통 정리: 남은 불릿 및 과도한 개행 제거 (마크다운은 보존)
+    # 5. 공통 정리: 남은 불릿 및 과도한 개행 제거
     answer = answer.replace("*", "")  # 남은 별표(강조 아님) 제거
     answer = re.sub(r"^[-•]\s*", "", answer, flags=re.MULTILINE)
     answer = re.sub(r"^#+\s*", "", answer, flags=re.MULTILINE)
