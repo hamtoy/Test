@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import io
 import logging
 from typing import Any, Callable, cast
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -107,13 +107,7 @@ async def test_client_logs_finish_reason_stop() -> None:
     agent = FakeAgentForClient(_log_fn, provider)
     client = GeminiClient(cast(Any, agent), _log_fn)
 
-    # Mock logger to capture log messages
-    with (
-        pytest.LogCaptureFixture.for_logger(agent.logger, level=logging.INFO)
-        if hasattr(pytest, "LogCaptureFixture")
-        else MagicMock()
-    ):
-        response = await client.execute(object(), "test prompt")
+    response = await client.execute(object(), "test prompt")
 
     assert response == "This is a complete response."
     assert result.finish_reason == "STOP"
@@ -135,8 +129,6 @@ async def test_client_logs_max_tokens_warning() -> None:
     client = GeminiClient(cast(Any, agent), _log_fn)
 
     # Capture logs
-    import io
-
     log_stream = io.StringIO()
     handler = logging.StreamHandler(log_stream)
     handler.setLevel(logging.WARNING)

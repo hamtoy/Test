@@ -75,7 +75,7 @@ class GeminiClient:
 
             # 🔍 Enhanced logging for debugging truncated responses
             self.agent.logger.info(
-                "🔍 LLM Provider Response - Finish Reason: %s, Length: %d chars, "
+                "🔍 API Response (LLM Provider) - Finish Reason: %s, Length: %d chars, "
                 "Last 100 chars: ...%s",
                 finish_reason,
                 response_length,
@@ -156,21 +156,24 @@ class GeminiClient:
             candidate = response.candidates[0]
             finish_reason = candidate.finish_reason
 
-            # Get response text early for logging
+            # Get response text early for logging (may raise ValueError/AttributeError)
+            # These exceptions are caught because response.text property can fail when:
+            # - Safety filters block the response
+            # - Response has no text content
+            # - Response is still being processed
             response_text = ""
-            # Try to get response text, silently ignore if not available yet
             if hasattr(response, "text"):
                 try:
                     response_text = str(response.text)
                 except (ValueError, AttributeError):
-                    # Will handle below if text is unavailable
+                    # Text unavailable - will be handled below in the main return logic
                     response_text = ""
 
             response_length = len(response_text)
 
             # 🔍 Enhanced logging for debugging truncated responses
             self.agent.logger.info(
-                "🔍 Gemini API Response - Finish Reason: %s, Length: %d chars, "
+                "🔍 API Response (Gemini Native) - Finish Reason: %s, Length: %d chars, "
                 "Last 100 chars: ...%s",
                 finish_reason,
                 response_length,
