@@ -1,7 +1,5 @@
 """Tests for constraint validation (Phase 3: IMPROVEMENTS.md)."""
 
-import pytest
-
 from src.qa.validator import validate_constraints
 
 
