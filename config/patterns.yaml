@@ -1,0 +1,35 @@
+# 금지된 패턴
+forbidden_patterns:
+  전체이미지: '\b전체\s*이미지(에 대해)?\s*(설명|요약)\b'
+  표참조: '\b표\s*(에 따르면|에서 보이듯|참조)\b'
+  그래프참조: '\b그래프\s*(에 따르면|에서 보이듯|참조)\b'
+  용어정의: '\b용어\s*(정의|가 뭐야|설명해)\b'
+
+# 포맷팅 규칙
+formatting_patterns:
+  prose_bold_violation:
+    pattern: '(?<!^)(?<!- )(?<!\d\. )\*\*[^*]+\*\*'
+    description: '줄글 본문 내 볼드체 사용 금지'
+    severity: 'error'
+    example_bad: '**달러화**는 상승했습니다.'
+    example_good: '달러화는 상승했습니다.'
+    
+  composite_query:
+    pattern: '.+[와과]\s+.+[은는이가]\s+무엇입니까\?'
+    description: '복합 질문 금지 (하나의 질의는 하나의 정보만)'
+    severity: 'warning'
+    example_bad: '상승률과 전망은 무엇입니까?'
+    
+  explicit_structure_label:
+    pattern: '\*\*(근거|추론\s*과정|결론|서론|본론|요약문?|정리)\*\*'
+    description: '명시적 구조 라벨/소제목 사용 금지'
+    severity: 'error'
+    example_bad: '**근거**\n- 내용...'
+    example_good: '이러한 전망의 배경에는...'
+    
+  numbered_structure:
+    pattern: '(?m)^(첫째|둘째|셋째|넷째)[,.]'
+    description: "'첫째', '둘째' 등 나열형 구조 사용 지양"
+    severity: 'warning'
+    example_bad: '첫째, ... 둘째, ...'
+    example_good: '먼저... 또한... 이와 함께...'
