@@ -6,7 +6,7 @@
 Usage:
     # From project root:
     python examples/demo_web_logging.py
-    
+
     # Or with explicit PYTHONPATH:
     PYTHONPATH=. python examples/demo_web_logging.py
 """
