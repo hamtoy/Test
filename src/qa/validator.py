@@ -259,15 +259,15 @@ def validate_constraints(
     num_paragraphs: Optional[int] = None,
 ) -> tuple[bool, str]:
     """제약 충돌 감지 (EMNLP 2025 기법).
-    
+
     Phase 3: IMPROVEMENTS.md - Length constraint conflict detection
-    
+
     Args:
         qtype: Query type (target, reasoning, explanation, etc.)
         max_length: Maximum word count constraint
         min_per_paragraph: Minimum words per paragraph
         num_paragraphs: Number of paragraphs required
-    
+
     Returns:
         Tuple of (is_valid, message)
         - (True, "제약 일관성 확인됨") if no conflicts
@@ -280,6 +280,5 @@ def validate_constraints(
                 False,
                 f"충돌: {total_needed}단어 필요하나 {max_length}단어 제한",
             )
-    
-    return (True, "제약 일관성 확인됨")
 
+    return (True, "제약 일관성 확인됨")

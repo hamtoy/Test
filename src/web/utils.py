@@ -279,8 +279,8 @@ def postprocess_answer(answer: str, qtype: str) -> str:
         # guide.csv 규칙: target은 평문만 사용
         # 제거: **bold**, *italic*, __underline__
         answer = re.sub(r"\*\*(.*?)\*\*", r"\1", answer, flags=re.DOTALL)  # bold 제거
-        answer = re.sub(r"\*(.*?)\*", r"\1", answer)                       # italic 제거
-        answer = re.sub(r"[_]{1,2}(.*?)[_]{1,2}", r"\1", answer)            # underline 제거
+        answer = re.sub(r"\*(.*?)\*", r"\1", answer)  # italic 제거
+        answer = re.sub(r"[_]{1,2}(.*?)[_]{1,2}", r"\1", answer)  # underline 제거
 
     elif qtype in {"global_explanation", "reasoning"}:
         # guide.csv 규칙: 구조만 마크다운(제목/목록), 내용은 평문

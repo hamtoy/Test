@@ -20,7 +20,11 @@ from src.web.utils import postprocess_answer
         # explanation/reasoning: Bullets removed, paragraphs combined
         # Note: Structural markdown (headings/lists) handling is done at prompt level
         # Postprocessing focuses on cleaning and paragraph formatting
-        ("global_explanation", "**주요 포인트**\n첫 번째 설명", "주요 포인트 첫 번째 설명."),
+        (
+            "global_explanation",
+            "**주요 포인트**\n첫 번째 설명",
+            "주요 포인트 첫 번째 설명.",
+        ),
         ("reasoning", "- 항목1: 설명\n- 항목2: 설명", "항목1: 설명 항목2: 설명."),
         # Additional test: Verify bold removal works in target
         ("target", "*강조* 텍스트", "강조 텍스트"),

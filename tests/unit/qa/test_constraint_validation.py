@@ -50,7 +50,7 @@ def test_validate_constraints_partial_requirements() -> None:
         min_per_paragraph=50,
     )
     assert is_valid is True
-    
+
     # Only num_paragraphs set
     is_valid, message = validate_constraints(
         qtype="target",

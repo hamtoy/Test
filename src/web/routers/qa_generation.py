@@ -387,25 +387,29 @@ async def generate_single_qa(
             formatting_text = "\n[서식 규칙 - 필수 준수]\n" + "\n".join(
                 f"- {r}" for r in formatting_rules
             )
-        
+
         # Add markdown usage policy based on qtype (Phase 1: IMPROVEMENTS.md)
         if normalized_qtype == "target":
-            formatting_text += "\n\n[마크다운 사용]\n" \
-                               "평문으로만 작성하세요. " \
-                               "마크다운(**bold**, *italic*, - 등)은 사용하지 마세요. " \
-                               "(→ 후처리에서 모두 제거됩니다)"
+            formatting_text += (
+                "\n\n[마크다운 사용]\n"
+                "평문으로만 작성하세요. "
+                "마크다운(**bold**, *italic*, - 등)은 사용하지 마세요. "
+                "(→ 후처리에서 모두 제거됩니다)"
+            )
         elif normalized_qtype in {"explanation", "reasoning"}:
-            formatting_text += "\n\n[마크다운 사용]\n" \
-                               "다음 마크다운만 사용하세요:\n" \
-                               "✓ 소제목: **텍스트** (제목은 bold)\n" \
-                               "✓ 목록: - 항목 (불릿 포인트)\n" \
-                               "✗ 본문: 평문만 (마크다운 제거)\n" \
-                               "\n예시:\n" \
-                               "**주요 포인트**\n" \
-                               "- 첫 번째: 설명\n" \
-                               "- 두 번째: 설명\n" \
-                               "추가 내용은 평문으로 작성합니다."
-        
+            formatting_text += (
+                "\n\n[마크다운 사용]\n"
+                "다음 마크다운만 사용하세요:\n"
+                "✓ 소제목: **텍스트** (제목은 bold)\n"
+                "✓ 목록: - 항목 (불릿 포인트)\n"
+                "✗ 본문: 평문만 (마크다운 제거)\n"
+                "\n예시:\n"
+                "**주요 포인트**\n"
+                "- 첫 번째: 설명\n"
+                "- 두 번째: 설명\n"
+                "추가 내용은 평문으로 작성합니다."
+            )
+
         constraints_text = ""
         if answer_constraints:
 
@@ -418,7 +422,7 @@ async def generate_single_qa(
                 f"[우선순위 {c.get('priority', 0)}] {c.get('description', '')}"
                 for c in answer_constraints
             )
-            
+
             # Phase 3: Validate constraint conflicts (IMPROVEMENTS.md)
             # Extract max_length from length_constraint if present
             max_length_val: Optional[int] = None
@@ -430,7 +434,7 @@ async def generate_single_qa(
                 max_length_val = 200
             elif "300단어" in length_constraint:
                 max_length_val = 300
-            
+
             # Check for paragraph constraints in answer_constraints
             # Note: This is a heuristic parser for constraint descriptions.
             # Expected format: "X문단, 각 Y단어 이상" or similar
@@ -440,7 +444,7 @@ async def generate_single_qa(
                 desc = constraint.get("description", "").lower()
                 if "문단" in desc and "단어" in desc:
                     # Try to extract numbers from constraint description
-                    numbers = re.findall(r'\d+', desc)
+                    numbers = re.findall(r"\d+", desc)
                     if len(numbers) >= 2:
                         # Heuristic: first number might be paragraph count, second might be words
                         try:
@@ -449,7 +453,7 @@ async def generate_single_qa(
                                 min_per_para = int(numbers[1])
                         except (ValueError, IndexError):
                             pass
-            
+
             if max_length_val:
                 is_valid, validation_msg = validate_constraints(
                     qtype=normalized_qtype,
@@ -463,12 +467,16 @@ async def generate_single_qa(
                         validation_msg,
                         normalized_qtype,
                     )
-        
+
         difficulty_text = _difficulty_hint(ocr_text)
         evidence_clause = "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거가 되는 문장을 1개 포함하세요."
-        
+
         # Phase 2: Add explicit priority hierarchy and conflict resolution (IMPROVEMENTS.md)
-        markdown_rule = "평문만 (마크다운 제거)" if normalized_qtype == "target" else "구조만 마크다운(제목/목록), 내용은 평문"
+        markdown_rule = (
+            "평문만 (마크다운 제거)"
+            if normalized_qtype == "target"
+            else "구조만 마크다운(제목/목록), 내용은 평문"
+        )
         max_length_text = ""
         if "최대 50단어" in length_constraint:
             max_length_text = "50단어"
@@ -478,7 +486,7 @@ async def generate_single_qa(
             max_length_text = "200단어"
         else:
             max_length_text = "[MAX_LENGTH]단어"
-        
+
         priority_hierarchy = f"""
 [PRIORITY HIERARCHY]
 Priority 0 (CRITICAL):
@@ -489,7 +497,7 @@ Priority 10 (HIGH):
 - 길이 제약 위반은 불가능
 
 Priority 20 (MEDIUM):
-- 구조화 형식: {formatting_text if formatting_text else '기본 서식'}
+- 구조화 형식: {formatting_text if formatting_text else "기본 서식"}
 
 Priority 30 (LOW):
 - 추가 지시: {extra_instructions}
@@ -505,7 +513,7 @@ Priority 30 (LOW):
 3. 구조화 방식은? → formatting_text 규칙 적용 (Priority 20)
 4. 추가 요청사항은? → extra_instructions 추가 처리 (Priority 30)
 """
-        
+
         answer_prompt = f"""{priority_hierarchy}
 
 {length_constraint}
