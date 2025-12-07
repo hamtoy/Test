@@ -429,8 +429,10 @@ async def generate_single_qa(
         if not draft_answer:
             raise SafetyFilterError("No text content in response.")
 
-        # 통합 검증으로 수집할 위반/경고
-        val_result = unified_validator.validate_all(draft_answer, normalized_qtype)
+        # 통합 검증으로 수집할 위반/경고 (질의 포함하여 금지 패턴 검증 강화)
+        val_result = unified_validator.validate_all(
+            draft_answer, normalized_qtype, query
+        )
         all_issues: list[str] = []
 
         sentences = [

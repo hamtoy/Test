@@ -451,7 +451,8 @@ class WorkspaceExecutor:
     ) -> str:
         """Validate answer and optionally rewrite if validation fails."""
         validator = UnifiedValidator(self.kg, self.pipeline)
-        val_result = validator.validate_all(answer, normalized_qtype)
+        # Pass query to validate forbidden patterns in questions as well
+        val_result = validator.validate_all(answer, normalized_qtype, ctx.query)
 
         # If there are errors or warnings, attempt to rewrite
         if val_result.has_errors() or val_result.warnings:
