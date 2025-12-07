@@ -203,8 +203,8 @@ class TestGenerateSingleQA:
             assert "query" in result
             assert result["query"] == "생성된 질의"
             assert "answer" in result
-            # 검수를 생략하므로 초안이 그대로 반환된다.
-            assert result["answer"] == "생성된 초안 답변"
+            # postprocess_answer가 적용되어 문장 끝에 마침표가 추가됨
+            assert result["answer"] == "생성된 초안 답변."
 
     @pytest.mark.asyncio
     async def test_generate_single_qa_empty_queries(self) -> None:
@@ -249,8 +249,8 @@ class TestGenerateSingleQA:
             )
 
             assert result["type"] == "global_explanation"
-            # 검수를 생략하므로 초안이 그대로 반환된다.
-            assert result["answer"] == "생성된 초안 답변"
+            # postprocess_answer가 적용되어 문장 끝에 마침표가 추가됨
+            assert result["answer"] == "생성된 초안 답변."
 
 
 class TestLogReviewSessionEdgeCases:
