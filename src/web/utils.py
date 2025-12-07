@@ -276,12 +276,16 @@ def postprocess_answer(answer: str, qtype: str) -> str:
             answer = answer.strip()
         answer = re.sub(r"\s+", " ", answer).strip()
 
-        # 타겟 유형은 마크다운 제거 강제
-        answer = re.sub(r"\*\*(.*?)\*\*", r"\1", answer, flags=re.DOTALL)
-        answer = re.sub(r"\*(.*?)\*", r"\1", answer)
-        answer = re.sub(r"[_]{1,2}(.*?)[_]{1,2}", r"\1", answer)
+        # guide.csv 규칙: target은 평문만 사용
+        # 제거: **bold**, *italic*, __underline__
+        answer = re.sub(r"\*\*(.*?)\*\*", r"\1", answer, flags=re.DOTALL)  # bold 제거
+        answer = re.sub(r"\*(.*?)\*", r"\1", answer)  # italic 제거
+        answer = re.sub(r"[_]{1,2}(.*?)[_]{1,2}", r"\1", answer)  # underline 제거
 
     elif qtype in {"global_explanation", "reasoning"}:
+        # guide.csv 규칙: 구조만 마크다운(제목/목록), 내용은 평문
+        # 제거: 본문의 **bold**, *italic* (제목/목록은 유지)
+        # 이는 프롬프트 레벨에서 처리되어야 함 (후처리는 complex)
         # 서술문 (1,2번): 불릿(-) 제거 및 문단 정리
         paragraph_lines: list[str] = []
         for line in answer.splitlines():

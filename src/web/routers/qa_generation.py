@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 from datetime import datetime
 from typing import Any, Dict, Optional, cast
 
@@ -20,7 +21,7 @@ from src.config.constants import (
 )
 from src.config.exceptions import SafetyFilterError
 from src.qa.rule_loader import RuleLoader
-from src.qa.validator import UnifiedValidator
+from src.qa.validator import UnifiedValidator, validate_constraints
 from src.web.models import GenerateQARequest
 from src.web.response import APIMetadata, build_response
 from src.web.utils import QTYPE_MAP, load_ocr_text, postprocess_answer
@@ -386,6 +387,29 @@ async def generate_single_qa(
             formatting_text = "\n[서식 규칙 - 필수 준수]\n" + "\n".join(
                 f"- {r}" for r in formatting_rules
             )
+
+        # Add markdown usage policy based on qtype (Phase 1: IMPROVEMENTS.md)
+        if normalized_qtype == "target":
+            formatting_text += (
+                "\n\n[마크다운 사용]\n"
+                "평문으로만 작성하세요. "
+                "마크다운(**bold**, *italic*, - 등)은 사용하지 마세요. "
+                "(→ 후처리에서 모두 제거됩니다)"
+            )
+        elif normalized_qtype in {"explanation", "reasoning"}:
+            formatting_text += (
+                "\n\n[마크다운 사용]\n"
+                "다음 마크다운만 사용하세요:\n"
+                "✓ 소제목: **텍스트** (제목은 bold)\n"
+                "✓ 목록: - 항목 (불릿 포인트)\n"
+                "✗ 본문: 평문만 (마크다운 제거)\n"
+                "\n예시:\n"
+                "**주요 포인트**\n"
+                "- 첫 번째: 설명\n"
+                "- 두 번째: 설명\n"
+                "추가 내용은 평문으로 작성합니다."
+            )
+
         constraints_text = ""
         if answer_constraints:
 
@@ -398,9 +422,101 @@ async def generate_single_qa(
                 f"[우선순위 {c.get('priority', 0)}] {c.get('description', '')}"
                 for c in answer_constraints
             )
+
+            # Phase 3: Validate constraint conflicts (IMPROVEMENTS.md)
+            # Extract max_length from length_constraint if present
+            max_length_val: Optional[int] = None
+            if "50단어" in length_constraint:
+                max_length_val = 50
+            elif "100단어" in length_constraint:
+                max_length_val = 100
+            elif "200단어" in length_constraint:
+                max_length_val = 200
+            elif "300단어" in length_constraint:
+                max_length_val = 300
+
+            # Check for paragraph constraints in answer_constraints
+            # Note: This is a heuristic parser for constraint descriptions.
+            # Expected format: "X문단, 각 Y단어 이상" or similar
+            min_per_para: Optional[int] = None
+            num_paras: Optional[int] = None
+            for constraint in answer_constraints:
+                desc = constraint.get("description", "").lower()
+                if "문단" in desc and "단어" in desc:
+                    # Try to extract numbers from constraint description
+                    numbers = re.findall(r"\d+", desc)
+                    if len(numbers) >= 2:
+                        # Heuristic: first number might be paragraph count, second might be words
+                        try:
+                            if "각" in desc or "당" in desc:
+                                num_paras = int(numbers[0])
+                                min_per_para = int(numbers[1])
+                        except (ValueError, IndexError):
+                            pass
+
+            if max_length_val:
+                is_valid, validation_msg = validate_constraints(
+                    qtype=normalized_qtype,
+                    max_length=max_length_val,
+                    min_per_paragraph=min_per_para,
+                    num_paragraphs=num_paras,
+                )
+                if not is_valid:
+                    logger.warning(
+                        "⚠️ 제약 충돌 감지: %s (qtype=%s)",
+                        validation_msg,
+                        normalized_qtype,
+                    )
+
         difficulty_text = _difficulty_hint(ocr_text)
         evidence_clause = "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거가 되는 문장을 1개 포함하세요."
-        answer_prompt = f"""{length_constraint}
+
+        # Phase 2: Add explicit priority hierarchy and conflict resolution (IMPROVEMENTS.md)
+        markdown_rule = (
+            "평문만 (마크다운 제거)"
+            if normalized_qtype == "target"
+            else "구조만 마크다운(제목/목록), 내용은 평문"
+        )
+        max_length_text = ""
+        if "최대 50단어" in length_constraint:
+            max_length_text = "50단어"
+        elif "최대 100단어" in length_constraint:
+            max_length_text = "100단어"
+        elif "200단어" in length_constraint:
+            max_length_text = "200단어"
+        else:
+            max_length_text = "[MAX_LENGTH]단어"
+
+        priority_hierarchy = f"""
+[PRIORITY HIERARCHY]
+Priority 0 (CRITICAL):
+- {normalized_qtype} 타입: {markdown_rule}
+
+Priority 10 (HIGH):
+- 최대 길이: {max_length_text} 이내
+- 길이 제약 위반은 불가능
+
+Priority 20 (MEDIUM):
+- 구조화 형식: {formatting_text if formatting_text else "기본 서식"}
+
+Priority 30 (LOW):
+- 추가 지시: {extra_instructions}
+
+[CONFLICT RESOLUTION]
+만약 여러 제약이 충돌한다면:
+→ Priority 0 > Priority 10 > Priority 20 > Priority 30
+
+[REASONING BEFORE RESPONSE]
+응답하기 전에 다음을 확인하세요:
+1. 현재 qtype은 무엇인가? → 올바른 마크다운 규칙 확인 (Priority 0)
+2. 길이 제약은 몇 단어인가? → {max_length_text} 이내 유지 (Priority 10)
+3. 구조화 방식은? → formatting_text 규칙 적용 (Priority 20)
+4. 추가 요청사항은? → extra_instructions 추가 처리 (Priority 30)
+"""
+
+        answer_prompt = f"""{priority_hierarchy}
+
+{length_constraint}
 
 {formatting_text}
 
