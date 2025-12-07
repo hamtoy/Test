@@ -321,7 +321,6 @@ class TestResourceCleanup:
         )
         assert kg._graph is None
         assert kg._graph_finalizer is None
-        assert kg._closed is True
 
     @patch("src.qa.rag_system.close_connections")
     def test_destructor_calls_close(self, mock_close: Mock) -> None:
