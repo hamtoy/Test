@@ -140,6 +140,32 @@ async def _error_logging_middleware(
         )
 
 
+async def _performance_logging_middleware(
+    request: Request, call_next: RequestResponseEndpoint
+) -> Response:
+    """요청 처리 시간 로깅 (디버깅용)."""
+    from time import perf_counter
+
+    start = perf_counter()
+    response = await call_next(request)
+    duration_ms = (perf_counter() - start) * 1000
+
+    # 느린 요청만 로깅 (>100ms)
+    if duration_ms > 100:
+        logger.warning(
+            "Slow request",
+            extra={
+                "path": request.url.path,
+                "method": request.method,
+                "duration_ms": duration_ms,
+                "request_id": _get_request_id(request),
+            },
+        )
+
+    response.headers["X-Response-Time"] = f"{duration_ms:.2f}ms"
+    return response
+
+
 # 정적 파일 & 템플릿 경로
 REPO_ROOT = Path(__file__).resolve().parents[2]
 # Alias for backward compatibility with tests
@@ -313,6 +339,7 @@ app.add_middleware(
 app.add_middleware(BaseHTTPMiddleware, dispatch=session_middleware(session_manager))
 app.add_middleware(BaseHTTPMiddleware, dispatch=_request_id_middleware)
 app.add_middleware(BaseHTTPMiddleware, dispatch=_error_logging_middleware)
+app.add_middleware(BaseHTTPMiddleware, dispatch=_performance_logging_middleware)
 
 # 정적 파일 & 템플릿
 app.mount("/static", StaticFiles(directory=str(REPO_ROOT / "static")), name="static")
