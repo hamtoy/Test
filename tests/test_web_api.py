@@ -71,8 +71,8 @@ class TestOCREndpoint:
         with patch("src.web.api.config") as mock_config:
             mock_config.input_dir = mock_input_dir
             response = client.get("/api/ocr")
-            assert response.status_code == 200
-            assert response.json() == {"ocr": "", "error": "OCR 파일이 없습니다."}
+            assert response.status_code == 404
+            assert response.json() == {"detail": "OCR 파일이 없습니다."}
 
 
 class TestQAGeneration:
