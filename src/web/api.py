@@ -30,6 +30,7 @@ from src.infra.health import (
     check_neo4j_with_params,
     check_redis_with_url,
 )
+from src.infra.logging import setup_logging
 from src.infra.structured_logging import setup_structured_logging
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
@@ -63,6 +64,7 @@ agent: Optional[GeminiAgent] = None
 kg: Optional[QAKnowledgeGraph] = None
 pipeline: Optional[IntegratedQAPipeline] = None
 session_manager = SessionManager()
+_log_listener: Optional[Any] = None  # QueueListener for file logging
 REQUEST_ID_HEADER = "X-Request-Id"
 ENABLE_MULTIMODAL = os.getenv("ENABLE_MULTIMODAL", "true").lower() == "true"
 ENABLE_METRICS = os.getenv("ENABLE_METRICS", "true").lower() == "true"
@@ -320,9 +322,25 @@ async def init_resources() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """서버 시작/종료 시 리소스 관리."""
+    global _log_listener
+
+    # Setup file-based logging (app.log, error.log)
+    # Only if not using structured logging to stdout
+    if os.getenv("ENABLE_STRUCT_LOGGING", "").lower() != "true":
+        try:
+            _, _log_listener = setup_logging(log_level=os.getenv("LOG_LEVEL"))
+            logger.info("File-based logging initialized (app.log, error.log)")
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Failed to setup file logging: %s", exc)
+
     await init_resources()
     await _init_health_checks()
     yield
+
+    # Cleanup: Stop log listener on shutdown
+    if _log_listener is not None:
+        _log_listener.stop()
+        logger.info("Log listener stopped")
 
 
 # FastAPI 앱
