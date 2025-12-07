@@ -386,6 +386,25 @@ async def generate_single_qa(
             formatting_text = "\n[서식 규칙 - 필수 준수]\n" + "\n".join(
                 f"- {r}" for r in formatting_rules
             )
+        
+        # Add markdown usage policy based on qtype (Phase 1: IMPROVEMENTS.md)
+        if normalized_qtype == "target":
+            formatting_text += "\n\n[마크다운 사용]\n" \
+                               "평문으로만 작성하세요. " \
+                               "마크다운(**bold**, *italic*, - 등)은 사용하지 마세요. " \
+                               "(→ 후처리에서 모두 제거됩니다)"
+        elif normalized_qtype in {"explanation", "reasoning"}:
+            formatting_text += "\n\n[마크다운 사용]\n" \
+                               "다음 마크다운만 사용하세요:\n" \
+                               "✓ 소제목: **텍스트** (제목은 bold)\n" \
+                               "✓ 목록: - 항목 (불릿 포인트)\n" \
+                               "✗ 본문: 평문만 (마크다운 제거)\n" \
+                               "\n예시:\n" \
+                               "**주요 포인트**\n" \
+                               "- 첫 번째: 설명\n" \
+                               "- 두 번째: 설명\n" \
+                               "추가 내용은 평문으로 작성합니다."
+        
         constraints_text = ""
         if answer_constraints:
 
