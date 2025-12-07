@@ -22,6 +22,7 @@ from src.config.constants import (
 from src.config.exceptions import SafetyFilterError
 from src.qa.rule_loader import RuleLoader
 from src.qa.validator import UnifiedValidator, validate_constraints
+from src.web.cache import answer_cache
 from src.web.models import GenerateQARequest
 from src.web.response import APIMetadata, build_response
 from src.web.utils import QTYPE_MAP, load_ocr_text, postprocess_answer
@@ -38,6 +39,43 @@ from .qa_common import (
 )
 
 router = APIRouter(prefix="/api", tags=["qa-generation"])
+
+
+@router.get("/qa/cache/stats")
+async def get_cache_stats() -> Dict[str, Any]:
+    """Get cache statistics (PHASE 2B: Performance monitoring).
+    
+    Returns:
+        Cache metrics including hit rate, size, and performance impact
+    """
+    stats = answer_cache.get_stats()
+    # Add estimated time saved
+    time_saved_seconds = stats["hits"] * 9  # Average 6-12s, use 9s as estimate
+    stats["estimated_time_saved_seconds"] = time_saved_seconds
+    stats["estimated_time_saved_minutes"] = round(time_saved_seconds / 60, 2)
+    
+    return {
+        "success": True,
+        "data": stats,
+        "message": f"Cache hit rate: {stats['hit_rate_percent']:.1f}%",
+    }
+
+
+@router.post("/qa/cache/clear")
+async def clear_cache() -> Dict[str, Any]:
+    """Clear all cached answers (PHASE 2B: Cache management).
+    
+    Returns:
+        Success message with number of entries cleared
+    """
+    size_before = answer_cache.get_stats()["cache_size"]
+    answer_cache.clear()
+    
+    return {
+        "success": True,
+        "data": {"entries_cleared": size_before},
+        "message": f"Cleared {size_before} cache entries",
+    }
 
 
 @router.post("/qa/generate")
@@ -178,6 +216,20 @@ async def generate_single_qa(
     current_kg = _get_kg()
     current_pipeline = _get_pipeline()
     normalized_qtype = QTYPE_MAP.get(qtype, "explanation")
+    
+    # PHASE 2-1: Map globalexplanation to explanation for better rule coverage
+    if qtype == "globalexplanation":
+        normalized_qtype = "explanation"  # Use explanation rules for better quality
+        logger.info(
+            "Query type 'globalexplanation' normalized to 'explanation' for rule loading (quality improvement)"
+        )
+    else:
+        logger.info(
+            "Query type '%s' normalized to '%s' for rule loading",
+            qtype,
+            normalized_qtype,
+        )
+    
     query_intent = None
 
     if qtype == "target_short":
@@ -367,6 +419,9 @@ async def generate_single_qa(
 """
             rules_list = rules_list[:5]
 
+    # PHASE 2B: Check cache before generation to save ~6-12s
+    cache_key_inputs = (ocr_text[:1000], qtype)  # Use truncated OCR for cache key
+    
     try:
         queries = await agent.generate_query(
             ocr_text,
@@ -379,6 +434,15 @@ async def generate_single_qa(
             raise ValueError("질의 생성 실패")
 
         query = queries[0]
+
+        # PHASE 2B: Check cache after query generation (query is part of cache key)
+        cached_result = answer_cache.get(query, cache_key_inputs[0], cache_key_inputs[1])
+        if cached_result is not None:
+            logger.info(
+                "Returning cached answer for query_type=%s (saved ~6-12s generation time)",
+                qtype,
+            )
+            return cached_result
 
         truncated_ocr = ocr_text[:QA_GENERATION_OCR_TRUNCATE_LENGTH]
         rules_in_answer = "\n".join(f"- {r}" for r in rules_list)
@@ -635,7 +699,12 @@ Priority 30 (LOW):
 
         final_answer = postprocess_answer(draft_answer, qtype)
 
-        return {"type": qtype, "query": query, "answer": final_answer}
+        # PHASE 2B: Store result in cache for future requests
+        result = {"type": qtype, "query": query, "answer": final_answer}
+        answer_cache.set(query, cache_key_inputs[0], cache_key_inputs[1], result)
+        logger.debug("Cached answer for query_type=%s", qtype)
+
+        return result
     except Exception as e:
         logger.error("QA 생성 실패: %s", e)
         raise

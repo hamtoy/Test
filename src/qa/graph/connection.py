@@ -58,6 +58,10 @@ def initialize_connection(
                 graph_db_factory=GraphDatabase.driver,
             )
             finalizer = weakref.finalize(graph, graph.close)
+            # PHASE 1: Log connection pool initialization
+            logger.info(
+                "Neo4j connection pool initialized (max_pool_size=50, max_lifetime=3600s)"
+            )
         except Neo4jError as e:
             raise RuntimeError(f"Neo4j 연결 실패: {e}")
     else:
@@ -71,6 +75,10 @@ def initialize_connection(
                 graph_db_factory=GraphDatabase.driver,
             )
             finalizer = weakref.finalize(graph, graph.close)
+            # PHASE 1: Log connection pool initialization
+            logger.info(
+                "Neo4j connection pool initialized via provider (max_pool_size=50, max_lifetime=3600s)"
+            )
 
     return graph, finalizer
 
