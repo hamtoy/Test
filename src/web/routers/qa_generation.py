@@ -419,7 +419,49 @@ async def generate_single_qa(
             )
         difficulty_text = _difficulty_hint(ocr_text)
         evidence_clause = "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거가 되는 문장을 1개 포함하세요."
-        answer_prompt = f"""{length_constraint}
+        
+        # Phase 2: Add explicit priority hierarchy and conflict resolution (IMPROVEMENTS.md)
+        markdown_rule = "평문만 (마크다운 제거)" if normalized_qtype == "target" else "구조만 마크다운(제목/목록), 내용은 평문"
+        max_length_text = ""
+        if "최대 50단어" in length_constraint:
+            max_length_text = "50단어"
+        elif "최대 100단어" in length_constraint:
+            max_length_text = "100단어"
+        elif "200단어" in length_constraint:
+            max_length_text = "200단어"
+        else:
+            max_length_text = "[MAX_LENGTH]단어"
+        
+        priority_hierarchy = f"""
+[PRIORITY HIERARCHY]
+Priority 0 (CRITICAL):
+- {normalized_qtype} 타입: {markdown_rule}
+
+Priority 10 (HIGH):
+- 최대 길이: {max_length_text} 이내
+- 길이 제약 위반은 불가능
+
+Priority 20 (MEDIUM):
+- 구조화 형식: {formatting_text if formatting_text else '기본 서식'}
+
+Priority 30 (LOW):
+- 추가 지시: {extra_instructions}
+
+[CONFLICT RESOLUTION]
+만약 여러 제약이 충돌한다면:
+→ Priority 0 > Priority 10 > Priority 20 > Priority 30
+
+[REASONING BEFORE RESPONSE]
+응답하기 전에 다음을 확인하세요:
+1. 현재 qtype은 무엇인가? → 올바른 마크다운 규칙 확인 (Priority 0)
+2. 길이 제약은 몇 단어인가? → {max_length_text} 이내 유지 (Priority 10)
+3. 구조화 방식은? → formatting_text 규칙 적용 (Priority 20)
+4. 추가 요청사항은? → extra_instructions 추가 처리 (Priority 30)
+"""
+        
+        answer_prompt = f"""{priority_hierarchy}
+
+{length_constraint}
 
 {formatting_text}
 
