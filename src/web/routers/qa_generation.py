@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 from datetime import datetime
 from typing import Any, Dict, Optional, cast
 
@@ -431,20 +432,21 @@ async def generate_single_qa(
                 max_length_val = 300
             
             # Check for paragraph constraints in answer_constraints
+            # Note: This is a heuristic parser for constraint descriptions.
+            # Expected format: "X문단, 각 Y단어 이상" or similar
             min_per_para: Optional[int] = None
             num_paras: Optional[int] = None
             for constraint in answer_constraints:
                 desc = constraint.get("description", "").lower()
                 if "문단" in desc and "단어" in desc:
                     # Try to extract numbers from constraint description
-                    import re
                     numbers = re.findall(r'\d+', desc)
                     if len(numbers) >= 2:
                         # Heuristic: first number might be paragraph count, second might be words
                         try:
                             if "각" in desc or "당" in desc:
-                                num_paras = int(numbers[0]) if numbers else None
-                                min_per_para = int(numbers[1]) if len(numbers) > 1 else None
+                                num_paras = int(numbers[0])
+                                min_per_para = int(numbers[1])
                         except (ValueError, IndexError):
                             pass
             
