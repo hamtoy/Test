@@ -203,7 +203,7 @@ class TestGenerateSingleQA:
             assert "query" in result
             assert result["query"] == "생성된 질의"
             assert "answer" in result
-            # postprocess_answer가 적용되어 문장 끝에 마침표가 추가됨
+            # postprocess_answer가 적용되어 reasoning 타입은 문장 끝에 마침표가 추가됨
             assert result["answer"] == "생성된 초안 답변."
 
     @pytest.mark.asyncio
@@ -249,7 +249,7 @@ class TestGenerateSingleQA:
             )
 
             assert result["type"] == "global_explanation"
-            # postprocess_answer가 적용되어 문장 끝에 마침표가 추가됨
+            # postprocess_answer가 적용되어 global_explanation 타입은 문장 끝에 마침표가 추가됨
             assert result["answer"] == "생성된 초안 답변."
 
 
