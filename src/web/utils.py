@@ -118,7 +118,7 @@ def fix_broken_numbers(text: str) -> str:
         "873\n- 3만 건" -> "873.3만 건"
     """
     # 패턴 1: 숫자 + 줄바꿈 + 불릿 + 숫자 → 소수점으로 병합
-    text = re.sub(r"(\\d)\\s*[\\r\\n]+-\\s*(\\d)", r"\\1.\\2", text)
+    text = re.sub(r"(\d)\s*[\r\n]+-\s*(\d)", r"\1.\2", text)
 
     # 패턴 2: 연속된 불릿 라인 중 숫자로 시작하는 경우 이전 줄과 병합
     lines = text.splitlines()
@@ -164,6 +164,63 @@ def detect_workflow(
     return "edit_answer" if has_edit else "query_generation"
 
 
+def apply_answer_limits(answer: str, qtype: str) -> str:
+    """질의 타입별로 답변 길이 제한 적용.
+    
+    Args:
+        answer: 처리할 답변 텍스트
+        qtype: 질의 타입 (reasoning, explanation, global_explanation, target)
+    
+    Returns:
+        길이가 제한된 답변
+    """
+    def _limit_words(text: str, max_words: int) -> str:
+        words = text.split()
+        if len(words) > max_words:
+            text = " ".join(words[:max_words])
+        return text
+    
+    # 질의 타입별 설정
+    config = {
+        "reasoning": {"max_words": 100, "max_sentences": 4},
+        "explanation": {"max_words": 200, "max_sentences": 6},
+        "global_explanation": {"max_words": 250, "max_sentences": 8},
+    }
+    
+    if qtype in config:
+        limits = config[qtype]
+        
+        # 1단계: 문장 수 제한
+        sentences = [s.strip() for s in answer.split(".") if s.strip()]
+        if sentences:
+            sentences = sentences[: limits["max_sentences"]]
+            answer = ". ".join(sentences)
+            if answer and not answer.endswith("."):
+                answer += "."
+        
+        # 2단계: 단어 수 제한 (최종 조정)
+        answer = _limit_words(answer, limits["max_words"])
+    
+    elif qtype == "target":
+        # 타겟 질의: 단답형 vs 서술형 자동 판단
+        word_count = len(answer.split())
+        
+        if word_count < 15:
+            # 단답형: 매우 간결
+            answer = _limit_words(answer, 50)
+        else:
+            # 서술형: 더 상세히
+            sentences = [s.strip() for s in answer.split(".") if s.strip()]
+            if sentences:
+                sentences = sentences[:5]
+                answer = ". ".join(sentences)
+                if answer and not answer.endswith("."):
+                    answer += "."
+            answer = _limit_words(answer, 180)
+    
+    return answer
+
+
 def postprocess_answer(answer: str, qtype: str) -> str:
     """답변 후처리 - 서식 규칙 위반 자동 수정."""
 
@@ -172,12 +229,6 @@ def postprocess_answer(answer: str, qtype: str) -> str:
         text = re.sub(r"`([^`]+)`", r"\1", text)
         text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
         text = re.sub(r"^\|.*\|\s*$", " ", text, flags=re.MULTILINE)  # table rows
-        return text
-
-    def _limit_words(text: str, max_words: int) -> str:
-        words = text.split()
-        if len(words) > max_words:
-            text = " ".join(words[:max_words])
         return text
 
     # 1. 태그 제거
@@ -231,7 +282,6 @@ def postprocess_answer(answer: str, qtype: str) -> str:
 
         if qtype == "target_short" and answer.endswith("."):
             answer = answer[:-1].strip()
-        answer = _limit_words(answer, 40)
 
     elif qtype in {"global_explanation", "explanation", "reasoning"}:
         # 서술문 앞의 불릿(-, •) 제거 및 문단 정리
@@ -261,23 +311,15 @@ def postprocess_answer(answer: str, qtype: str) -> str:
                 )
             paragraphs.append(paragraph)
         answer = "\n\n".join(paragraphs)
-        if qtype == "reasoning":
-            answer = _limit_words(answer, 80)
-        else:
-            sentences = [
-                s.strip()
-                for s in re.split(r"(?<!\d)\.(?!\d)", answer.replace("\n", ". "))
-                if s.strip()
-            ]
-            if sentences:
-                answer = ". ".join(sentences[:5]).strip()
-            answer = _limit_words(answer, 150)
 
     # 5. 공통 정리: 남은 불릿 및 과도한 개행 제거 (마크다운은 보존)
     answer = answer.replace("*", "")  # 남은 별표(강조 아님) 제거
     answer = re.sub(r"^[-•]\s*", "", answer, flags=re.MULTILINE)
     answer = re.sub(r"^#+\s*", "", answer, flags=re.MULTILINE)
     answer = re.sub(r"\n{3,}", "\n\n", answer)
+
+    # 6. 길이 제한 적용
+    answer = apply_answer_limits(answer, qtype)
 
     return answer.strip()
 
@@ -292,4 +334,5 @@ __all__ = [
     "postprocess_answer",
     "save_ocr_text",
     "strip_output_tags",
+    "apply_answer_limits",
 ]
