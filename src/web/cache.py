@@ -46,10 +46,10 @@ class AnswerCache:
             query_type: Type of query (e.g., 'explanation', 'reasoning')
             
         Returns:
-            MD5 hash as cache key
+            SHA-256 hash as cache key (secure and collision-resistant)
         """
         combined = f"{query}|{ocr_text}|{query_type}"
-        return hashlib.md5(combined.encode()).hexdigest()
+        return hashlib.sha256(combined.encode()).hexdigest()
 
     def get(self, query: str, ocr_text: str, query_type: str) -> Optional[Any]:
         """Retrieve cached answer if available and not expired.

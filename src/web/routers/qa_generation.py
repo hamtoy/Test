@@ -17,6 +17,7 @@ from src.config.constants import (
     DEFAULT_ANSWER_RULES,
     QA_BATCH_TYPES,
     QA_BATCH_TYPES_THREE,
+    QA_CACHE_OCR_TRUNCATE_LENGTH,
     QA_GENERATION_OCR_TRUNCATE_LENGTH,
 )
 from src.config.exceptions import SafetyFilterError
@@ -215,20 +216,14 @@ async def generate_single_qa(
     """단일 QA 생성 - 규칙 적용 보장 + 호출 최소화."""
     current_kg = _get_kg()
     current_pipeline = _get_pipeline()
-    normalized_qtype = QTYPE_MAP.get(qtype, "explanation")
     
-    # PHASE 2-1: Map globalexplanation to explanation for better rule coverage
-    if qtype == "globalexplanation":
-        normalized_qtype = "explanation"  # Use explanation rules for better quality
-        logger.info(
-            "Query type 'globalexplanation' normalized to 'explanation' for rule loading (quality improvement)"
-        )
-    else:
-        logger.info(
-            "Query type '%s' normalized to '%s' for rule loading",
-            qtype,
-            normalized_qtype,
-        )
+    # Phase 2-1: Normalize query type using QTYPE_MAP (includes globalexplanation → explanation)
+    normalized_qtype = QTYPE_MAP.get(qtype, "explanation")
+    logger.info(
+        "Query type '%s' normalized to '%s' for rule loading",
+        qtype,
+        normalized_qtype,
+    )
     
     query_intent = None
 
@@ -419,10 +414,16 @@ async def generate_single_qa(
 """
             rules_list = rules_list[:5]
 
-    # PHASE 2B: Check cache before generation to save ~6-12s
-    cache_key_inputs = (ocr_text[:1000], qtype)  # Use truncated OCR for cache key
+    # PHASE 2B: Check cache before expensive operations to save ~6-12s
+    # Use truncated OCR for cache key (QA_CACHE_OCR_TRUNCATE_LENGTH)
+    cache_ocr_key = ocr_text[:QA_CACHE_OCR_TRUNCATE_LENGTH]
+    
+    # For cache lookup, we need a preliminary query (or use a placeholder)
+    # Since query is not generated yet, we'll use qtype as part of the key
+    # After query generation, we'll do a more specific cache check
     
     try:
+        # First, try to generate the query
         queries = await agent.generate_query(
             ocr_text,
             user_intent=query_intent,
@@ -435,11 +436,11 @@ async def generate_single_qa(
 
         query = queries[0]
 
-        # PHASE 2B: Check cache after query generation (query is part of cache key)
-        cached_result = answer_cache.get(query, cache_key_inputs[0], cache_key_inputs[1])
+        # PHASE 2B: Check cache after query generation (query is now available for cache key)
+        cached_result = answer_cache.get(query, cache_ocr_key, qtype)
         if cached_result is not None:
             logger.info(
-                "Returning cached answer for query_type=%s (saved ~6-12s generation time)",
+                "Cache HIT: Returning cached answer for query_type=%s (saved ~6-12s)",
                 qtype,
             )
             return cached_result
@@ -701,7 +702,7 @@ Priority 30 (LOW):
 
         # PHASE 2B: Store result in cache for future requests
         result = {"type": qtype, "query": query, "answer": final_answer}
-        answer_cache.set(query, cache_key_inputs[0], cache_key_inputs[1], result)
+        answer_cache.set(query, cache_ocr_key, qtype, result)
         logger.debug("Cached answer for query_type=%s", qtype)
 
         return result

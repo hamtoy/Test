@@ -54,6 +54,8 @@ ALLOWED_BOLD_CONTEXTS: Final[List[str]] = [
 
 # Max characters for OCR text truncation in QA generation
 QA_GENERATION_OCR_TRUNCATE_LENGTH: Final[int] = 500
+# Phase 2B: Cache key OCR truncation length (shorter for faster hashing)
+QA_CACHE_OCR_TRUNCATE_LENGTH: Final[int] = 1000
 
 # QA generation timeout settings (seconds)
 QA_SINGLE_GENERATION_TIMEOUT: Final[int] = 60
