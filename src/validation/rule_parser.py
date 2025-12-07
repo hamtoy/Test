@@ -244,7 +244,7 @@ class RuleManager:
         assert isinstance(guide_rules, dict)
         sentence_rules = guide_rules.get("sentence_rules", {})
         assert isinstance(sentence_rules, dict)
-        return sentence_rules  # type: ignore[no-any-return]
+        return sentence_rules
 
     def get_question_checklist(self) -> List[Dict[str, str]]:
         """질의 체크리스트 조회."""
@@ -255,7 +255,7 @@ class RuleManager:
         assert isinstance(qna_checklist, dict)
         question_checklist = qna_checklist.get("question_checklist", [])
         assert isinstance(question_checklist, list)
-        return question_checklist  # type: ignore[no-any-return]
+        return question_checklist
 
     def get_answer_checklist(self) -> List[Dict[str, str]]:
         """답변 체크리스트 조회."""
@@ -266,4 +266,4 @@ class RuleManager:
         assert isinstance(qna_checklist, dict)
         answer_checklist = qna_checklist.get("answer_checklist", [])
         assert isinstance(answer_checklist, list)
-        return answer_checklist  # type: ignore[no-any-return]
+        return answer_checklist
