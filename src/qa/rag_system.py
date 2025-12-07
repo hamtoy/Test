@@ -376,10 +376,12 @@ class QAKnowledgeGraph:
 
     def close(self) -> None:
         """Close database connections and clean up resources."""
-        close_connections(self._graph, self._graph_finalizer, self._graph_provider)
-        self._graph = None
-        self._graph_finalizer = None
-        self._graph_provider = None
+        # Make close() idempotent - only close if not already closed
+        if self._graph is not None or self._graph_provider is not None:
+            close_connections(self._graph, self._graph_finalizer, self._graph_provider)
+            self._graph = None
+            self._graph_finalizer = None
+            self._graph_provider = None
 
     @contextmanager
     def graph_session(self) -> Generator[Any, None, None]:

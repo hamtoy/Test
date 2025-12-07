@@ -71,8 +71,32 @@ class GeminiClient:
             )
 
             finish_reason = result.finish_reason
+            response_length = len(result.content) if result.content else 0
+
+            # 🔍 Enhanced logging for debugging truncated responses
+            self.agent.logger.info(
+                "🔍 API Response (LLM Provider) - Finish Reason: %s, Length: %d chars, "
+                "Last 100 chars: ...%s",
+                finish_reason,
+                response_length,
+                result.content[-100:] if response_length > 100 else result.content,
+            )
+
+            # Log warning if response might be truncated
+            if finish_reason and finish_reason.upper() == "MAX_TOKENS":
+                self.agent.logger.warning(
+                    "⚠️ Response truncated due to MAX_TOKENS limit. "
+                    "Response length: %d chars. Consider increasing max_output_tokens.",
+                    response_length,
+                )
+
             if finish_reason and finish_reason.upper() not in {"STOP", "MAX_TOKENS"}:
                 safety_info = result.safety_ratings or ""
+                self.agent.logger.error(
+                    "❌ API Response incomplete! Finish Reason: %s, Safety: %s",
+                    finish_reason,
+                    safety_info,
+                )
                 raise SafetyFilterError(
                     "Blocked by safety filter or other reason: %s.%s"
                     % (finish_reason, safety_info)
@@ -81,16 +105,29 @@ class GeminiClient:
 
         protos = self.agent._protos()  # noqa: SLF001
         self.agent.logger.debug(
-            "API Call - Model: %s, Prompt Length: %s",
+            "API Call - Model: %s, Prompt Length: %s, Timeout: %ss",
             self.agent.config.model_name,
             len(prompt_text),
+            self.agent.config.timeout,
         )
         start = time.perf_counter()
         response = await model.generate_content_async(
             prompt_text, request_options={"timeout": self.agent.config.timeout}
         )
         latency_ms = (time.perf_counter() - start) * 1000
-        self.agent.logger.info("API latency: %.2f ms", latency_ms)
+        latency_s = latency_ms / 1000
+
+        self.agent.logger.info("API latency: %.2f ms (%.1f s)", latency_ms, latency_s)
+
+        # Warn if request is taking close to timeout
+        timeout_threshold = self.agent.config.timeout * 0.8  # 80% of timeout
+        if latency_s > timeout_threshold:
+            self.agent.logger.warning(
+                "⚠️ API request took %.1f s, approaching timeout of %d s. "
+                "Consider increasing GEMINI_TIMEOUT.",
+                latency_s,
+                self.agent.config.timeout,
+            )
 
         if hasattr(response, "usage_metadata") and response.usage_metadata:
             usage = response.usage_metadata
@@ -118,7 +155,40 @@ class GeminiClient:
         if response.candidates:
             candidate = response.candidates[0]
             finish_reason = candidate.finish_reason
-            self.agent.logger.debug("API Response - Finish Reason: %s", finish_reason)
+
+            # Get response text early for logging (may raise ValueError/AttributeError)
+            # These exceptions are caught because response.text property can fail when:
+            # - Safety filters block the response
+            # - Response has no text content
+            # - Response is still being processed
+            # Note: We don't use hasattr() here because it calls the property getter,
+            # and if the property raises ValueError (not AttributeError), hasattr() will
+            # propagate the exception instead of returning False.
+            response_text = ""
+            try:
+                response_text = str(response.text)
+            except (ValueError, AttributeError):
+                # Text unavailable - will be handled below in the main return logic
+                response_text = ""
+
+            response_length = len(response_text)
+
+            # 🔍 Enhanced logging for debugging truncated responses
+            self.agent.logger.info(
+                "🔍 API Response (Gemini Native) - Finish Reason: %s, Length: %d chars, "
+                "Last 100 chars: ...%s",
+                finish_reason,
+                response_length,
+                response_text[-100:] if response_length > 100 else response_text,
+            )
+
+            # Log warning if response might be truncated
+            if finish_reason == protos.Candidate.FinishReason.MAX_TOKENS:
+                self.agent.logger.warning(
+                    "⚠️ Response truncated due to MAX_TOKENS limit. "
+                    "Response length: %d chars. Consider increasing max_output_tokens.",
+                    response_length,
+                )
 
             if finish_reason not in [
                 protos.Candidate.FinishReason.STOP,
@@ -128,8 +198,8 @@ class GeminiClient:
                 if hasattr(response, "prompt_feedback") and response.prompt_feedback:
                     safety_info = " Safety Ratings: %s" % response.prompt_feedback
 
-                self.agent.logger.warning(
-                    "⚠️ Generation stopped unexpectedly. Finish Reason: %s.%s",
+                self.agent.logger.error(
+                    "❌ API Response incomplete! Finish Reason: %s, Safety: %s",
                     finish_reason,
                     safety_info,
                 )
