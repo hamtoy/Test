@@ -308,12 +308,12 @@ class TestResourceCleanup:
         """Test close method cleans up resources."""
         kg = _make_kg_minimal()
         kg._graph_finalizer = MagicMock()
-        
+
         # Reset mock to ignore any calls from fixture setup or GC of previous tests
         mock_close.reset_mock()
 
         kg.close()
-        
+
         # Verify close() called close_connections exactly once
         mock_close.assert_called_once()
         assert kg._graph is None
@@ -324,12 +324,12 @@ class TestResourceCleanup:
         """Test __del__ attempts to close connections."""
         kg = _make_kg_minimal()
         kg._graph_finalizer = MagicMock()
-        
+
         # Reset mock to ignore any calls from fixture setup or GC of previous tests
         mock_close.reset_mock()
 
         kg.__del__()
-        
+
         # Verify __del__() called close_connections exactly once
         mock_close.assert_called_once()
 

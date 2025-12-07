@@ -381,13 +381,13 @@ class QAKnowledgeGraph:
         # hasattr check needed for test instances created via object.__new__()
         if hasattr(self, "_closed") and self._closed:
             return
-        
+
         if self._graph is not None or self._graph_provider is not None:
             close_connections(self._graph, self._graph_finalizer, self._graph_provider)
             self._graph = None
             self._graph_finalizer = None
             self._graph_provider = None
-        
+
         self._closed = True
 
     @contextmanager
