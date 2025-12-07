@@ -93,7 +93,7 @@ class QueryExecutor:
         """
         params = params or {}
 
-        def default_transform(records: List[Any]) -> List[Dict[str, Any]]:
+        def default_transform(records: List[Any]) -> T | List[Dict[str, Any]]:
             return [dict(r) for r in records]
 
         transform_fn: Callable[[List[Any]], T | List[Dict[str, Any]]] = (
