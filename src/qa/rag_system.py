@@ -378,6 +378,7 @@ class QAKnowledgeGraph:
     def close(self) -> None:
         """Close database connections and clean up resources."""
         # Make close() idempotent - only close if not already closed
+        # hasattr check needed for test instances created via object.__new__()
         if hasattr(self, "_closed") and self._closed:
             return
         
