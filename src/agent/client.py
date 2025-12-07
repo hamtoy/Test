@@ -161,13 +161,15 @@ class GeminiClient:
             # - Safety filters block the response
             # - Response has no text content
             # - Response is still being processed
+            # Note: We don't use hasattr() here because it calls the property getter,
+            # and if the property raises ValueError (not AttributeError), hasattr() will
+            # propagate the exception instead of returning False.
             response_text = ""
-            if hasattr(response, "text"):
-                try:
-                    response_text = str(response.text)
-                except (ValueError, AttributeError):
-                    # Text unavailable - will be handled below in the main return logic
-                    response_text = ""
+            try:
+                response_text = str(response.text)
+            except (ValueError, AttributeError):
+                # Text unavailable - will be handled below in the main return logic
+                response_text = ""
 
             response_length = len(response_text)
 
