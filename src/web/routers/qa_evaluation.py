@@ -1,5 +1,12 @@
 # mypy: allow-untyped-decorators
-"""QA 평가 엔드포인트."""
+"""QA 평가 엔드포인트.
+
+웹앱 사용 여부: ✅ 활성 사용 중
+- 웹 페이지: /eval (templates/web/eval.html)
+- 프론트엔드: static/dist/chunks/eval.js
+- 엔드포인트: POST /api/eval/external
+- 용도: 외부 답변 3개 평가 및 최적 답변 선택
+"""
 
 from __future__ import annotations
 

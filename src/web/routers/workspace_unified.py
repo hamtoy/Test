@@ -1,4 +1,12 @@
-"""워크스페이스 통합 워크플로우 엔드포인트."""
+"""워크스페이스 통합 워크플로우 엔드포인트.
+
+웹앱 사용 여부: ✅ 활성 사용 중 (메인)
+- 웹 페이지: /workspace (templates/web/workspace.html)
+- 프론트엔드: static/dist/chunks/workspace.js
+- 엔드포인트: POST /api/workspace/unified
+- 용도: 통합 워크스페이스 - WorkspaceExecutor 기반으로 질의/답변 생성, 수정, 검수 등 모든 워크플로우 처리
+- 아키텍처: WorkflowType(full_generation, query_generation, answer_generation, rewrite, edit_query, edit_answer, edit_both) 자동 감지 및 실행
+"""
 # mypy: ignore-errors
 
 from __future__ import annotations
