@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -137,6 +138,32 @@ async def _error_logging_middleware(
                 "request_id": _get_request_id(request),
             },
         )
+
+
+async def _performance_logging_middleware(
+    request: Request, call_next: RequestResponseEndpoint
+) -> Response:
+    """요청 처리 시간 로깅 (디버깅용)."""
+    from time import perf_counter
+
+    start = perf_counter()
+    response = await call_next(request)
+    duration_ms = (perf_counter() - start) * 1000
+
+    # 느린 요청만 로깅 (>100ms)
+    if duration_ms > 100:
+        logger.warning(
+            "Slow request",
+            extra={
+                "path": request.url.path,
+                "method": request.method,
+                "duration_ms": duration_ms,
+                "request_id": _get_request_id(request),
+            },
+        )
+
+    response.headers["X-Response-Time"] = f"{duration_ms:.2f}ms"
+    return response
 
 
 # 정적 파일 & 템플릿 경로
@@ -312,6 +339,7 @@ app.add_middleware(
 app.add_middleware(BaseHTTPMiddleware, dispatch=session_middleware(session_manager))
 app.add_middleware(BaseHTTPMiddleware, dispatch=_request_id_middleware)
 app.add_middleware(BaseHTTPMiddleware, dispatch=_error_logging_middleware)
+app.add_middleware(BaseHTTPMiddleware, dispatch=_performance_logging_middleware)
 
 # 정적 파일 & 템플릿
 app.mount("/static", StaticFiles(directory=str(REPO_ROOT / "static")), name="static")
@@ -409,15 +437,43 @@ async def api_get_ocr(request: Request) -> Dict[str, str]:
 
 @app.post("/api/ocr")
 async def api_save_ocr(request: Request, payload: OCRTextInput) -> Dict[str, str]:
-    """OCR 텍스트 저장 (사용자 직접 입력)."""
+    """OCR 텍스트 저장 (비동기 파일 I/O)."""
     try:
-        save_ocr_text(payload.text)
+        # 동기 작업을 스레드 풀에서 실행
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, save_ocr_text, payload.text)
+
+        logger.info(
+            "OCR text saved successfully",
+            extra={
+                "request_id": _get_request_id(request),
+                "text_length": len(payload.text),
+            },
+        )
         return {"status": "success", "message": "OCR 텍스트가 저장되었습니다."}
     except Exception as exc:  # noqa: BLE001
         _log_api_error(
             "Failed to save OCR text", request=request, exc=exc, logger_obj=logger
         )
         raise HTTPException(status_code=500, detail="OCR 텍스트 저장 실패") from exc
+
+
+@app.get("/api/metrics/performance")
+async def get_performance_metrics(
+    operation: str | None = None,
+) -> Dict[str, Dict[str, float]]:
+    """실시간 성능 메트릭 조회.
+
+    Args:
+        operation: 특정 작업 필터 (None이면 전체)
+
+    Returns:
+        작업별 성능 통계
+    """
+    from src.infra.performance_tracker import get_tracker
+
+    tracker = get_tracker()
+    return tracker.get_stats(operation=operation)
 
 
 # ============================================================================

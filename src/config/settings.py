@@ -50,6 +50,7 @@ class AppConfig(BaseSettings):
     )
     max_output_tokens: int = Field(8192, alias="GEMINI_MAX_OUTPUT_TOKENS")
     timeout: int = Field(120, alias="GEMINI_TIMEOUT")
+    timeout_max: int = Field(3600, alias="GEMINI_TIMEOUT_MAX")
     max_concurrency: int = Field(10, alias="GEMINI_MAX_CONCURRENCY")
     cache_size: int = Field(50, alias="GEMINI_CACHE_SIZE")
     temperature: float = Field(0.2, alias="GEMINI_TEMPERATURE")
@@ -112,6 +113,15 @@ class AppConfig(BaseSettings):
         super().__init__(**data)
 
     @model_validator(mode="after")
+    def check_timeout_consistency(self) -> "AppConfig":
+        """Timeout <= timeout_max 확인."""
+        if self.timeout > self.timeout_max:
+            raise ValueError(
+                f"timeout ({self.timeout}s) must be <= timeout_max ({self.timeout_max}s)"
+            )
+        return self
+
+    @model_validator(mode="after")
     def check_rag_dependencies(self) -> "AppConfig":
         """RAG 기능 활성화 시 Neo4j 설정 확인.
 
@@ -150,7 +160,7 @@ class AppConfig(BaseSettings):
     @field_validator("api_key")
     @classmethod
     def validate_api_key(cls, v: str) -> str:
-        """Validate Gemini API key format and structure.
+        """Validate Gemini API key format with detailed error messages.
 
         Args:
             v (str): API 키 문자열.
@@ -166,22 +176,45 @@ class AppConfig(BaseSettings):
             >>> AppConfig.validate_api_key("AIzaSyABC123...")
             'AIzaSyABC123...'
         """
-        if not v or v == "your_api_key_here":
-            raise ValueError(ERROR_MESSAGES["api_key_missing"])
-
-        if not v.startswith("AIza"):
-            raise ValueError(ERROR_MESSAGES["api_key_prefix"])
-
-        if len(v) != GEMINI_API_KEY_LENGTH:
+        # 1️⃣ 필수 확인
+        if not v:
             raise ValueError(
-                ERROR_MESSAGES["api_key_length"].format(
-                    got=len(v), length=GEMINI_API_KEY_LENGTH
-                )
+                "❌ GEMINI_API_KEY is required.\n"
+                "   Get one at: https://aistudio.google.com/app/apikey\n"
+                "   Set in .env: GEMINI_API_KEY=AIza..."
             )
 
+        if v == "your_api_key_here":
+            raise ValueError(
+                "❌ GEMINI_API_KEY is a placeholder. "
+                "Replace with actual key from https://aistudio.google.com"
+            )
+
+        # 2️⃣ 길이 확인
+        if len(v) != GEMINI_API_KEY_LENGTH:
+            raise ValueError(
+                f"❌ API key length is {len(v)}, expected {GEMINI_API_KEY_LENGTH}.\n"
+                f"   Your key: {v[:10]}...{v[-4:]}\n"
+                f"   Check if copied correctly from https://aistudio.google.com/app/apikey"
+            )
+
+        # 3️⃣ 형식 확인
+        if not v.startswith("AIza"):
+            raise ValueError(
+                f"❌ API key must start with 'AIza', got '{v[:10]}...'\n"
+                f"   Make sure you copied the full key"
+            )
+
+        # 4️⃣ 정규식 확인
         # Google API 키 형식: AIza + 35개의 안전 문자 (총 GEMINI_API_KEY_LENGTH자)
         if not re.match(r"^AIza[0-9A-Za-z_\-]{35}$", v):
-            raise ValueError(ERROR_MESSAGES["api_key_format"])
+            raise ValueError(
+                f"❌ API key format invalid. Key contains invalid characters.\n"
+                f"   Valid chars: A-Z, a-z, 0-9, _, -\n"
+                f"   Your key: {v[:10]}...{v[-4:]}"
+            )
+
+        logger.debug("API key validated successfully")
         return v
 
     @field_validator("model_name")
@@ -203,13 +236,22 @@ class AppConfig(BaseSettings):
             v (int): 동시성 제한 값.
 
         Returns:
-            int: 검증된 동시성 값 (1-20 범위).
+            int: 검증된 동시성 값 (1-100 범위).
 
         Raises:
-            ValueError: 값이 1-20 범위를 벗어난 경우.
+            ValueError: 값이 1-100 범위를 벗어난 경우.
         """
-        if not 1 <= v <= 20:
-            raise ValueError(ERROR_MESSAGES["concurrency_range"])
+        if not 1 <= v <= 100:
+            raise ValueError(f"Concurrency must be between 1 and 100, got {v}")
+
+        # 경고: 높은 동시성은 Rate Limit 위험
+        if v > 20:
+            logger.warning(
+                "High concurrency (%d) may trigger rate limiting. "
+                "Consider increasing GEMINI_MAX_CONCURRENCY or reducing batch size.",
+                v,
+            )
+
         return v
 
     @field_validator("timeout")
@@ -221,13 +263,31 @@ class AppConfig(BaseSettings):
             v (int): 타임아웃 값 (초).
 
         Returns:
-            int: 검증된 타임아웃 값 (30-600초 범위).
+            int: 검증된 타임아웃 값 (30-3600초 범위).
 
         Raises:
-            ValueError: 값이 30-600초 범위를 벗어난 경우.
+            ValueError: 값이 30-3600초 범위를 벗어난 경우.
         """
-        if not 30 <= v <= 600:
-            raise ValueError(ERROR_MESSAGES["timeout_range"])
+        if not 30 <= v <= 3600:
+            raise ValueError(f"Timeout must be between 30 and 3600 seconds, got {v}")
+        return v
+
+    @field_validator("timeout_max")
+    @classmethod
+    def validate_timeout_max(cls, v: int) -> int:
+        """Validate timeout_max is at least 30 seconds.
+
+        Args:
+            v (int): 최대 타임아웃 값 (초).
+
+        Returns:
+            int: 검증된 최대 타임아웃 값.
+
+        Raises:
+            ValueError: 값이 30초 미만인 경우.
+        """
+        if v < 30:
+            raise ValueError("Timeout max must be at least 30 seconds")
         return v
 
     @field_validator("temperature")
@@ -241,9 +301,29 @@ class AppConfig(BaseSettings):
     @field_validator("cache_ttl_minutes")
     @classmethod
     def validate_cache_ttl(cls, v: int) -> int:
-        """Validate cache TTL is within allowed range."""
-        if not 1 <= v <= 1440:
-            raise ValueError(ERROR_MESSAGES["cache_ttl_range"])
+        """Validate cache TTL is within allowed range.
+
+        Args:
+            v (int): 캐시 TTL (분).
+
+        Returns:
+            int: 검증된 캐시 TTL (1-10080분 범위).
+
+        Raises:
+            ValueError: 값이 1-10080분 범위를 벗어난 경우.
+        """
+        if not 1 <= v <= 10080:  # 1분 ~ 7일 (10080 = 7 * 24 * 60)
+            raise ValueError(
+                f"Cache TTL must be between 1 and 10080 minutes (7 days), got {v}"
+            )
+
+        # 경고: 7일 이상은 실용적이지 않음
+        if v > 7200:  # 5일 이상
+            logger.warning(
+                "Very long cache TTL (%d minutes) may not be practical for learning projects.",
+                v,
+            )
+
         return v
 
     @field_validator("log_level")

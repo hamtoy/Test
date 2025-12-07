@@ -122,7 +122,7 @@ class GeminiAgent:
         self.config = config
 
         # LLM Provider 설정
-        self.llm_provider: Optional["LLMProvider"]
+        self.llm_provider: Optional["LLMProvider"] = None  # 명시적 초기화
         if llm_provider is not None:
             self.llm_provider = llm_provider
         else:
@@ -131,7 +131,22 @@ class GeminiAgent:
                     from src.core.factory import get_llm_provider
 
                     self.llm_provider = get_llm_provider(config)
-                except AttributeError:
+                    self.logger.info(
+                        "LLM provider initialized: %s",
+                        self.llm_provider.__class__.__name__,
+                    )
+                except (AttributeError, ImportError, ValueError) as e:
+                    self.logger.warning(
+                        "Failed to initialize LLM provider: %s. Falling back to None.",
+                        e,
+                    )
+                    self.llm_provider = None
+                except Exception as e:
+                    self.logger.error(
+                        "Unexpected error initializing LLM provider: %s",
+                        e,
+                        exc_info=True,
+                    )
                     self.llm_provider = None
             else:
                 self.llm_provider = None
