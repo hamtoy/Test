@@ -92,7 +92,6 @@ class TestHelperFunctions:
 
     def test_save_ocr_text_invalidates_cache(self, tmp_path: Path) -> None:
         """Test save_ocr_text invalidates cache to ensure fresh data on next load."""
-        import src.web.utils as utils_module
 
         inputs_dir = tmp_path / "inputs"
         inputs_dir.mkdir()
