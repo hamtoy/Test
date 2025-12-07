@@ -77,6 +77,7 @@ class _CachedKG:
                 "Invalid constraints data type from KG: expected list, got %s",
                 type(data).__name__,
             )
+            self._constraints[query_type] = []
             return []
         self._constraints[query_type] = data
         return data
@@ -100,6 +101,7 @@ class _CachedKG:
                 "Invalid formatting rules data type from KG: expected list, got %s",
                 type(rules).__name__,
             )
+            self._formatting_rules[query_type] = []
             return []
         self._formatting_rules[query_type] = rules
         return rules
