@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from threading import Lock
 from typing import Literal, Optional, Tuple
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,7 +18,10 @@ logger = logging.getLogger(__name__)
 
 # 프로젝트 루트 경로 (templates, data 등 상대 경로 계산에 사용)
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# Thread-safe OCR cache
 _OCR_CACHE: Optional[Tuple[Path, float, str]] = None
+_OCR_CACHE_LOCK = Lock()
 
 # 질의 유형 매핑 (QA/워크스페이스 공용)
 QTYPE_MAP = {
@@ -34,26 +38,34 @@ QTYPE_MAP = {
 
 
 def load_ocr_text(config: AppConfig) -> str:
-    """data/inputs/input_ocr.txt 로드 (mtime 기반 간단 캐시 포함)."""
+    """data/inputs/input_ocr.txt 로드 (mtime 기반 thread-safe 캐시 포함)."""
     global _OCR_CACHE
     ocr_path: Path = config.input_dir / "input_ocr.txt"
     if not ocr_path.exists():
         raise HTTPException(status_code=404, detail="OCR 파일이 없습니다.")
 
     mtime = ocr_path.stat().st_mtime
-    if _OCR_CACHE and _OCR_CACHE[0] == ocr_path and _OCR_CACHE[1] == mtime:
-        return _OCR_CACHE[2]
+    
+    # Thread-safe cache check and update
+    with _OCR_CACHE_LOCK:
+        if _OCR_CACHE and _OCR_CACHE[0] == ocr_path and _OCR_CACHE[1] == mtime:
+            return _OCR_CACHE[2]
 
-    text = ocr_path.read_text(encoding="utf-8").strip()
-    _OCR_CACHE = (ocr_path, mtime, text)
-    return text
+        text = ocr_path.read_text(encoding="utf-8").strip()
+        _OCR_CACHE = (ocr_path, mtime, text)
+        return text
 
 
 def save_ocr_text(config: AppConfig, text: str) -> None:
-    """OCR 텍스트 저장 (이미지 분석 후)."""
+    """OCR 텍스트 저장 (이미지 분석 후) - 캐시 무효화 포함."""
+    global _OCR_CACHE
     ocr_path = config.input_dir / "input_ocr.txt"
     ocr_path.parent.mkdir(parents=True, exist_ok=True)
     ocr_path.write_text(text, encoding="utf-8")
+    
+    # Invalidate cache to ensure next read gets fresh data
+    with _OCR_CACHE_LOCK:
+        _OCR_CACHE = None
 
 
 def log_review_session(

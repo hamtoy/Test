@@ -357,15 +357,15 @@ class TestOCREndpoints:
     def test_api_get_ocr_http_exception(
         self, mock_load: Mock, client: TestClient
     ) -> None:
-        """Test /api/ocr GET with HTTPException."""
+        """Test /api/ocr GET with HTTPException - should re-raise with proper status."""
         mock_load.side_effect = HTTPException(status_code=404, detail="File not found")
 
         response = client.get("/api/ocr")
 
-        assert response.status_code == 200
+        # HTTPException should be re-raised, not caught and returned as 200
+        assert response.status_code == 404
         data = response.json()
-        assert data["ocr"] == ""
-        assert "error" in data
+        assert data["detail"] == "File not found"
 
     @patch("src.web.api.load_ocr_text")
     def test_api_get_ocr_generic_exception(

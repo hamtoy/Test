@@ -424,8 +424,9 @@ async def api_get_ocr(request: Request) -> Dict[str, str]:
     try:
         ocr_text = load_ocr_text()
         return {"ocr": ocr_text}
-    except HTTPException as e:
-        return {"ocr": "", "error": e.detail}
+    except HTTPException:
+        # Re-raise HTTPException to return proper status code (e.g., 404)
+        raise
     except Exception as exc:  # noqa: BLE001
         _log_api_error(
             "Failed to load OCR text", request=request, exc=exc, logger_obj=logger
