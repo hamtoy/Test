@@ -47,6 +47,7 @@ def _make_kg_minimal() -> QAKnowledgeGraph:
     kg._graph_provider = None
     kg._graph_finalizer = None
     kg._vector_store = None
+    kg._closed = False  # Initialize closed flag
     kg.neo4j_uri = "bolt://localhost:7687"
     kg.neo4j_user = "neo4j"
     kg.neo4j_password = "password"
@@ -308,9 +309,16 @@ class TestResourceCleanup:
         kg = _make_kg_minimal()
         kg._graph_finalizer = MagicMock()
 
+        # Record call count before calling close() to handle GC timing issues
+        call_count_before = mock_close.call_count
+
         kg.close()
 
-        mock_close.assert_called_once()
+        # Verify close() incremented call count by exactly 1
+        assert mock_close.call_count == call_count_before + 1, (
+            f"Expected close() to call close_connections once, "
+            f"but call count went from {call_count_before} to {mock_close.call_count}"
+        )
         assert kg._graph is None
         assert kg._graph_finalizer is None
 
@@ -320,9 +328,16 @@ class TestResourceCleanup:
         kg = _make_kg_minimal()
         kg._graph_finalizer = MagicMock()
 
+        # Record call count before calling __del__() to handle GC timing issues
+        call_count_before = mock_close.call_count
+
         kg.__del__()
 
-        mock_close.assert_called_once()
+        # Verify __del__() incremented call count by exactly 1
+        assert mock_close.call_count == call_count_before + 1, (
+            f"Expected __del__() to call close_connections once, "
+            f"but call count went from {call_count_before} to {mock_close.call_count}"
+        )
 
 
 class TestBatchOperations:
