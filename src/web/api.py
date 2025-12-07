@@ -431,6 +431,24 @@ async def api_save_ocr(request: Request, payload: OCRTextInput) -> Dict[str, str
         raise HTTPException(status_code=500, detail="OCR 텍스트 저장 실패") from exc
 
 
+@app.get("/api/metrics/performance")
+async def get_performance_metrics(
+    operation: str | None = None,
+) -> Dict[str, Dict[str, float]]:
+    """실시간 성능 메트릭 조회.
+
+    Args:
+        operation: 특정 작업 필터 (None이면 전체)
+
+    Returns:
+        작업별 성능 통계
+    """
+    from src.infra.performance_tracker import get_tracker
+
+    tracker = get_tracker()
+    return tracker.get_stats(operation=operation)
+
+
 # ============================================================================
 # 멀티모달 엔드포인트 (기능 비활성)
 # ============================================================================
