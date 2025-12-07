@@ -160,7 +160,7 @@ class AppConfig(BaseSettings):
     @field_validator("api_key")
     @classmethod
     def validate_api_key(cls, v: str) -> str:
-        """Validate Gemini API key format and structure.
+        """Validate Gemini API key format with detailed error messages.
 
         Args:
             v (str): API 키 문자열.
@@ -176,22 +176,45 @@ class AppConfig(BaseSettings):
             >>> AppConfig.validate_api_key("AIzaSyABC123...")
             'AIzaSyABC123...'
         """
-        if not v or v == "your_api_key_here":
-            raise ValueError(ERROR_MESSAGES["api_key_missing"])
-
-        if not v.startswith("AIza"):
-            raise ValueError(ERROR_MESSAGES["api_key_prefix"])
-
-        if len(v) != GEMINI_API_KEY_LENGTH:
+        # 1️⃣ 필수 확인
+        if not v:
             raise ValueError(
-                ERROR_MESSAGES["api_key_length"].format(
-                    got=len(v), length=GEMINI_API_KEY_LENGTH
-                )
+                "❌ GEMINI_API_KEY is required.\n"
+                "   Get one at: https://aistudio.google.com/app/apikey\n"
+                "   Set in .env: GEMINI_API_KEY=AIza..."
             )
 
+        if v == "your_api_key_here":
+            raise ValueError(
+                "❌ GEMINI_API_KEY is a placeholder. "
+                "Replace with actual key from https://aistudio.google.com"
+            )
+
+        # 2️⃣ 길이 확인
+        if len(v) != GEMINI_API_KEY_LENGTH:
+            raise ValueError(
+                f"❌ API key length is {len(v)}, expected {GEMINI_API_KEY_LENGTH}.\n"
+                f"   Your key: {v[:10]}...{v[-4:]}\n"
+                f"   Check if copied correctly from https://aistudio.google.com/app/apikey"
+            )
+
+        # 3️⃣ 형식 확인
+        if not v.startswith("AIza"):
+            raise ValueError(
+                f"❌ API key must start with 'AIza', got '{v[:10]}...'\n"
+                f"   Make sure you copied the full key"
+            )
+
+        # 4️⃣ 정규식 확인
         # Google API 키 형식: AIza + 35개의 안전 문자 (총 GEMINI_API_KEY_LENGTH자)
         if not re.match(r"^AIza[0-9A-Za-z_\-]{35}$", v):
-            raise ValueError(ERROR_MESSAGES["api_key_format"])
+            raise ValueError(
+                f"❌ API key format invalid. Key contains invalid characters.\n"
+                f"   Valid chars: A-Z, a-z, 0-9, _, -\n"
+                f"   Your key: {v[:10]}...{v[-4:]}"
+            )
+
+        logger.info("✅ API key validated")
         return v
 
     @field_validator("model_name")
