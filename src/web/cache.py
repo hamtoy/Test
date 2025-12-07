@@ -20,7 +20,7 @@ class AnswerCache:
     Expected improvement: ~6-12s reduction on cache hits.
     
     Features:
-    - MD5-based cache keys from (query, ocr_text, query_type)
+    - SHA-256-based cache keys from (query, ocr_text, query_type) - secure and collision-resistant
     - TTL-based expiration (default 1 hour)
     - Cache hit/miss metrics logging
     """

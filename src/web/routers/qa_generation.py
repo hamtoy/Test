@@ -15,6 +15,7 @@ from checks.detect_forbidden_patterns import find_formatting_violations, find_vi
 from src.agent import GeminiAgent
 from src.config.constants import (
     DEFAULT_ANSWER_RULES,
+    ESTIMATED_CACHE_HIT_TIME_SAVINGS,
     QA_BATCH_TYPES,
     QA_BATCH_TYPES_THREE,
     QA_CACHE_OCR_TRUNCATE_LENGTH,
@@ -50,8 +51,8 @@ async def get_cache_stats() -> Dict[str, Any]:
         Cache metrics including hit rate, size, and performance impact
     """
     stats = answer_cache.get_stats()
-    # Add estimated time saved
-    time_saved_seconds = stats["hits"] * 9  # Average 6-12s, use 9s as estimate
+    # Add estimated time saved (use ESTIMATED_CACHE_HIT_TIME_SAVINGS constant)
+    time_saved_seconds = stats["hits"] * ESTIMATED_CACHE_HIT_TIME_SAVINGS
     stats["estimated_time_saved_seconds"] = time_saved_seconds
     stats["estimated_time_saved_minutes"] = round(time_saved_seconds / 60, 2)
     
