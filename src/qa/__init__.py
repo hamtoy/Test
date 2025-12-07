@@ -12,6 +12,7 @@ __all__ = [
     "ExperimentResult",
     "ExperimentConfig",
     "PromptExperimentManager",
+    "validate_constraints",
 ]
 
 
@@ -53,4 +54,8 @@ def __getattr__(name: str) -> Any:
             "ExperimentConfig": ExperimentConfig,
             "PromptExperimentManager": PromptExperimentManager,
         }[name]
+    elif name == "validate_constraints":
+        from src.qa.validator import validate_constraints
+
+        return validate_constraints
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

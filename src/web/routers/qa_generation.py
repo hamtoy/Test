@@ -20,7 +20,7 @@ from src.config.constants import (
 )
 from src.config.exceptions import SafetyFilterError
 from src.qa.rule_loader import RuleLoader
-from src.qa.validator import UnifiedValidator
+from src.qa.validator import UnifiedValidator, validate_constraints
 from src.web.models import GenerateQARequest
 from src.web.response import APIMetadata, build_response
 from src.web.utils import QTYPE_MAP, load_ocr_text, postprocess_answer
@@ -417,6 +417,51 @@ async def generate_single_qa(
                 f"[우선순위 {c.get('priority', 0)}] {c.get('description', '')}"
                 for c in answer_constraints
             )
+            
+            # Phase 3: Validate constraint conflicts (IMPROVEMENTS.md)
+            # Extract max_length from length_constraint if present
+            max_length_val: Optional[int] = None
+            if "50단어" in length_constraint:
+                max_length_val = 50
+            elif "100단어" in length_constraint:
+                max_length_val = 100
+            elif "200단어" in length_constraint:
+                max_length_val = 200
+            elif "300단어" in length_constraint:
+                max_length_val = 300
+            
+            # Check for paragraph constraints in answer_constraints
+            min_per_para: Optional[int] = None
+            num_paras: Optional[int] = None
+            for constraint in answer_constraints:
+                desc = constraint.get("description", "").lower()
+                if "문단" in desc and "단어" in desc:
+                    # Try to extract numbers from constraint description
+                    import re
+                    numbers = re.findall(r'\d+', desc)
+                    if len(numbers) >= 2:
+                        # Heuristic: first number might be paragraph count, second might be words
+                        try:
+                            if "각" in desc or "당" in desc:
+                                num_paras = int(numbers[0]) if numbers else None
+                                min_per_para = int(numbers[1]) if len(numbers) > 1 else None
+                        except (ValueError, IndexError):
+                            pass
+            
+            if max_length_val:
+                is_valid, validation_msg = validate_constraints(
+                    qtype=normalized_qtype,
+                    max_length=max_length_val,
+                    min_per_paragraph=min_per_para,
+                    num_paragraphs=num_paras,
+                )
+                if not is_valid:
+                    logger.warning(
+                        "⚠️ 제약 충돌 감지: %s (qtype=%s)",
+                        validation_msg,
+                        normalized_qtype,
+                    )
+        
         difficulty_text = _difficulty_hint(ocr_text)
         evidence_clause = "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거가 되는 문장을 1개 포함하세요."
         

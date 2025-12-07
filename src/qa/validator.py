@@ -250,3 +250,36 @@ class UnifiedValidator:
                 warnings.append(f"규칙 검증 오류: {exc}")
 
         return ValidationResult(violations=violations, warnings=warnings, score=score)
+
+
+def validate_constraints(
+    qtype: str,
+    max_length: Optional[int] = None,
+    min_per_paragraph: Optional[int] = None,
+    num_paragraphs: Optional[int] = None,
+) -> tuple[bool, str]:
+    """제약 충돌 감지 (EMNLP 2025 기법).
+    
+    Phase 3: IMPROVEMENTS.md - Length constraint conflict detection
+    
+    Args:
+        qtype: Query type (target, reasoning, explanation, etc.)
+        max_length: Maximum word count constraint
+        min_per_paragraph: Minimum words per paragraph
+        num_paragraphs: Number of paragraphs required
+    
+    Returns:
+        Tuple of (is_valid, message)
+        - (True, "제약 일관성 확인됨") if no conflicts
+        - (False, error_message) if conflicts detected
+    """
+    if min_per_paragraph and num_paragraphs and max_length:
+        total_needed = min_per_paragraph * num_paragraphs
+        if total_needed > max_length:
+            return (
+                False,
+                f"충돌: {total_needed}단어 필요하나 {max_length}단어 제한",
+            )
+    
+    return (True, "제약 일관성 확인됨")
+
