@@ -93,7 +93,7 @@ class TestHelperFunctions:
     def test_save_ocr_text_invalidates_cache(self, tmp_path: Path) -> None:
         """Test save_ocr_text invalidates cache to ensure fresh data on next load."""
         import src.web.utils as utils_module
-        
+
         inputs_dir = tmp_path / "inputs"
         inputs_dir.mkdir()
         ocr_file = inputs_dir / "input_ocr.txt"
@@ -101,18 +101,18 @@ class TestHelperFunctions:
 
         with patch("src.web.api.config") as mock_config:
             mock_config.input_dir = inputs_dir
-            
+
             # First load - populates cache
             result1 = load_ocr_text()
             assert result1 == "초기 내용"
-            
+
             # Save new content - should invalidate cache
             save_ocr_text("업데이트된 내용")
-            
+
             # Second load - should read fresh data, not cached
             result2 = load_ocr_text()
             assert result2 == "업데이트된 내용"
-            
+
             # Verify cache was invalidated (set to None)
             # Note: This is an implementation detail test
             # In production, just verify behavior (result2 is correct)

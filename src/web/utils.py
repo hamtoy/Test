@@ -45,7 +45,7 @@ def load_ocr_text(config: AppConfig) -> str:
         raise HTTPException(status_code=404, detail="OCR 파일이 없습니다.")
 
     mtime = ocr_path.stat().st_mtime
-    
+
     # Thread-safe cache check and update
     with _OCR_CACHE_LOCK:
         if _OCR_CACHE and _OCR_CACHE[0] == ocr_path and _OCR_CACHE[1] == mtime:
@@ -62,7 +62,7 @@ def save_ocr_text(config: AppConfig, text: str) -> None:
     ocr_path = config.input_dir / "input_ocr.txt"
     ocr_path.parent.mkdir(parents=True, exist_ok=True)
     ocr_path.write_text(text, encoding="utf-8")
-    
+
     # Invalidate cache to ensure next read gets fresh data
     with _OCR_CACHE_LOCK:
         _OCR_CACHE = None
