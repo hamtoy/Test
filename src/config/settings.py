@@ -214,7 +214,7 @@ class AppConfig(BaseSettings):
                 f"   Your key: {v[:10]}...{v[-4:]}"
             )
 
-        logger.info("✅ API key validated")
+        logger.debug("API key validated successfully")
         return v
 
     @field_validator("model_name")

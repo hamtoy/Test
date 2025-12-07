@@ -29,9 +29,8 @@ def test_api_key_validation_invalid_prefix() -> None:
     with pytest.raises(ValidationError) as excinfo:
         AppConfig(GEMINI_API_KEY="WRONG" + "A" * 35)
     # This will fail on length check first (40 chars instead of 39)
-    assert "length" in str(excinfo.value).lower() or "start" in str(
-        excinfo.value
-    ).lower()
+    error_msg = str(excinfo.value).lower()
+    assert "length" in error_msg or "start" in error_msg
 
 
 def test_api_key_validation_invalid_length() -> None:

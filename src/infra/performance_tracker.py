@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from typing import Dict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 @dataclass
@@ -13,7 +13,7 @@ class PerformanceMetric:
     duration_ms: float  # 소요 시간 (밀리초)
     tokens_used: int  # 토큰 사용량
     cache_hit: bool  # 캐시 히트 여부
-    timestamp: datetime  # 타임스탬프
+    timestamp: datetime  # 타임스탬프 (UTC)
     status: str  # "success", "retry", "timeout"
 
 
@@ -112,7 +112,7 @@ class PerformanceTracker:
 
     def _cleanup_old(self) -> None:
         """윈도우 범위 밖 메트릭 제거."""
-        cutoff = datetime.now() - self.window
+        cutoff = datetime.now(timezone.utc) - self.window
         self.metrics = [m for m in self.metrics if m.timestamp > cutoff]
 
 
