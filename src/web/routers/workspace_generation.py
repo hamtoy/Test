@@ -1,6 +1,7 @@
 """워크스페이스 질의/답변 생성 엔드포인트.
 
 웹앱 사용 여부: ❌ 웹 프론트엔드 미사용 (API 전용)
+
 - 엔드포인트:
   - POST /api/workspace/generate-answer (질문 기반 답변 생성)
   - POST /api/workspace/generate-query (답변 기반 질문 생성)

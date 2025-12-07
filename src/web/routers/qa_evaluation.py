@@ -2,6 +2,7 @@
 """QA 평가 엔드포인트.
 
 웹앱 사용 여부: ✅ 활성 사용 중
+
 - 웹 페이지: /eval (templates/web/eval.html)
 - 프론트엔드: static/dist/chunks/eval.js
 - 엔드포인트: POST /api/eval/external

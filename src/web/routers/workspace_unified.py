@@ -1,6 +1,7 @@
 """워크스페이스 통합 워크플로우 엔드포인트.
 
 웹앱 사용 여부: ✅ 활성 사용 중 (메인)
+
 - 웹 페이지: /workspace (templates/web/workspace.html)
 - 프론트엔드: static/dist/chunks/workspace.js
 - 엔드포인트: POST /api/workspace/unified
