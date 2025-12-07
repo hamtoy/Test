@@ -109,6 +109,7 @@ class QAKnowledgeGraph:
         )
         self._graph_provider: Optional[GraphProvider] = provider
         self._cache_metrics = CacheMetrics(namespace="qa_kg")
+        self._closed = False  # Track whether close() has been called
 
         # Store credentials for later use
         self.neo4j_uri = neo4j_uri or os.getenv("NEO4J_URI")
@@ -377,11 +378,16 @@ class QAKnowledgeGraph:
     def close(self) -> None:
         """Close database connections and clean up resources."""
         # Make close() idempotent - only close if not already closed
+        if hasattr(self, "_closed") and self._closed:
+            return
+        
         if self._graph is not None or self._graph_provider is not None:
             close_connections(self._graph, self._graph_finalizer, self._graph_provider)
             self._graph = None
             self._graph_finalizer = None
             self._graph_provider = None
+        
+        self._closed = True
 
     @contextmanager
     def graph_session(self) -> Generator[Any, None, None]:
