@@ -163,7 +163,7 @@ class QAKnowledgeGraph:
         return self._query_executor
 
     def _init_vector_store(self) -> None:
-        """GEMINI_API_KEY로 임베딩을 생성합니다. 키가 없거나 인덱스가 없으면 건너뜀."""
+        """GEMINI_API_KEY로 임베딩을 생성합니다. 실패 시 graceful fallback."""
         if not os.getenv("GEMINI_API_KEY"):
             # 환경변수 없으면 현재 값을 유지하고 조용히 반환
             logger.debug(
@@ -171,13 +171,25 @@ class QAKnowledgeGraph:
             )
             return
 
-        new_store = init_vector_store(
-            neo4j_uri=self.neo4j_uri,
-            neo4j_user=self.neo4j_user,
-            neo4j_password=self.neo4j_password,
-            logger=logger,
-        )
-        self._vector_store = new_store
+        try:
+            new_store = init_vector_store(
+                neo4j_uri=self.neo4j_uri,
+                neo4j_user=self.neo4j_user,
+                neo4j_password=self.neo4j_password,
+                logger=logger,
+            )
+            self._vector_store = new_store
+            logger.info("Vector store initialized successfully")
+        except (ValueError, RuntimeError, ImportError) as e:
+            logger.warning(
+                "Failed to initialize vector store: %s. Continuing without RAG.", e
+            )
+            self._vector_store = None  # 명시적으로 None 설정
+        except Exception as e:
+            logger.error(
+                "Unexpected error initializing vector store: %s", e, exc_info=True
+            )
+            self._vector_store = None
 
     @measure_latency(
         "vector_search",

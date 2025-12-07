@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -409,9 +410,19 @@ async def api_get_ocr(request: Request) -> Dict[str, str]:
 
 @app.post("/api/ocr")
 async def api_save_ocr(request: Request, payload: OCRTextInput) -> Dict[str, str]:
-    """OCR 텍스트 저장 (사용자 직접 입력)."""
+    """OCR 텍스트 저장 (비동기 파일 I/O)."""
     try:
-        save_ocr_text(payload.text)
+        # 동기 작업을 스레드 풀에서 실행
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, save_ocr_text, payload.text)
+
+        logger.info(
+            "OCR text saved successfully",
+            extra={
+                "request_id": _get_request_id(request),
+                "text_length": len(payload.text),
+            },
+        )
         return {"status": "success", "message": "OCR 텍스트가 저장되었습니다."}
     except Exception as exc:  # noqa: BLE001
         _log_api_error(
