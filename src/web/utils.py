@@ -166,19 +166,20 @@ def detect_workflow(
 
 def apply_answer_limits(answer: str, qtype: str) -> str:
     """질의 타입별로 답변 길이 제한 적용.
-    
+
     4가지 실제 질질 타입:
     1. global_explanation: 질질 1 (전체 마모뇌)
     2. reasoning: 질질 2 (추론)
     3. target (short): 질질 3 (숫자/명칭) - 단답형 자동 탐지
     4. target (long): 질질 4 (강조) - 서술형 자동 탐지
     """
+
     def _limit_words(text: str, max_words: int) -> str:
         words = text.split()
         if len(words) > max_words:
             text = " ".join(words[:max_words])
         return text
-    
+
     # 실제 사용되는 4가지 질질 타입별 설정
     config = {
         # 1. 전체 마모뇌 설명: 200단어, 최대 6문장
@@ -186,10 +187,10 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
         # 2. 추론: 100단어, 최대 4문장
         "reasoning": {"max_words": 100, "max_sentences": 4},
     }
-    
+
     if qtype in config:
         limits = config[qtype]
-        
+
         # 1단계: 문장 제한
         sentences = [s.strip() for s in answer.split(".") if s.strip()]
         if sentences:
@@ -197,14 +198,14 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
             answer = ". ".join(sentences)
             if answer and not answer.endswith("."):
                 answer += "."
-        
+
         # 2단계: 단어 수 제한 (최종 조정)
         answer = _limit_words(answer, limits["max_words"])
-    
+
     elif qtype == "target":
         # 타겟 질질: 단답형 vs 서술형 자동 판단
         word_count = len(answer.split())
-        
+
         if word_count < 15:
             # 3. target short: 매우 간결
             answer = _limit_words(answer, 50)
@@ -217,7 +218,7 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
                 if answer and not answer.endswith("."):
                     answer += "."
             answer = _limit_words(answer, 180)
-    
+
     return answer
 
 
