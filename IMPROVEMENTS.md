@@ -9,6 +9,27 @@
 - 코드에 명시적 선언 부재 → Agent가 규칙 무시 가능
 - guide.csv와 프롬프트의 규칙 불일치
 
+### 실제 규칙 (guide.csv 기반)
+
+**Target 타입**: 평문만
+```
+❌ **굵게**, *기울임*, - 불릿 모두 제거
+✅ 순수 텍스트만 사용
+```
+
+**Explanation/Reasoning 타입**: 구조만 마크다운, 내용은 평문
+```
+✓ 소제목: **제목** (bold 유지)
+✓ 목록: - 항목 (불릿 유지)
+✗ 본문 내용: 마크다운 제거 (평문만)
+
+예시:
+**핵심 포인트**
+- 첫 번째: 설명 (마크다운 없음)
+- 두 번째: 설명 (마크다운 없음)
+기타 내용은 평문으로 작성합니다.
+```
+
 ### 해결책
 
 **1단계: 코드 명시성 강화 (5분)**
@@ -20,6 +41,11 @@ if qtype == "target":
     answer = re.sub(r"\*\*(.*?)\*\*", r"\1", answer, flags=re.DOTALL)  # bold 제거
     answer = re.sub(r"\*(.*?)\*", r"\1", answer)                       # italic 제거
     answer = re.sub(r"[_]{1,2}(.*?)[_]{1,2}", r"\1", answer)            # underline 제거
+
+elif qtype in {"explanation", "reasoning"}:
+    # guide.csv 규칙: 구조만 마크다운(제목/목록), 내용은 평문
+    # 제거: 본문의 **bold**, *italic* (제목/목록은 유지)
+    # 이는 프롬프트 레벨에서 처리되어야 함 (후처리는 complex)
 ```
 
 **2단계: 테스트 케이스 추가 (10분)**
@@ -33,12 +59,9 @@ import pytest
     ("target", "- **항목1**: 내용", "- 항목1: 내용"),
     ("target", "1. *방법*: 설명", "1. 방법: 설명"),
     
-    # global_explanation: 마크다운 유지 (guide.csv 규칙)
-    ("global_explanation", "**주요 포인트**\n내용", "**주요 포인트**\n내용"),
-    ("global_explanation", "1. **항목1**: 설명", "1. **항목1**: 설명"),
-    
-    # reasoning: 마크다운 유지 (guide.csv 규칙)
-    ("reasoning", "**결론**: A이다", "**결론**: A이다"),
+    # explanation/reasoning: 제목/목록만 유지 (본문은 평문)
+    ("explanation", "**주요 포인트**\n첫 번째 설명", "**주요 포인트**\n첫 번째 설명"),
+    ("reasoning", "- **항목1**: 설명\n- 항목2: 설명", "- 항목1: 설명\n- 항목2: 설명"),
 ])
 def test_markdown_consistency(qtype, input_text, expected):
     """guide.csv 규칙에 따른 마크다운 처리 검증"""
@@ -52,15 +75,20 @@ def test_markdown_consistency(qtype, input_text, expected):
 if qtype == "target":
     formatting_text += "\n\n[마크다운 사용]\n" \
                        "평문으로만 작성하세요. " \
-                       "마크다운(**bold**, *italic* 등)은 사용하지 마세요. " \
+                       "마크다운(**bold**, *italic*, - 등)은 사용하지 마세요. " \
                        "(→ 후처리에서 모두 제거됩니다)"
 
 elif qtype in {"explanation", "reasoning"}:
     formatting_text += "\n\n[마크다운 사용]\n" \
-                       "다음 마크다운은 적극 권장합니다:\n" \
-                       "- **제목/강조**: **텍스트**\n" \
-                       "- 1. 숫자 리스트\n" \
-                       "- 불릿 포인트"
+                       "다음 마크다운만 사용하세요:\n" \
+                       "✓ 소제목: **텍스트** (제목은 bold)\n" \
+                       "✓ 목록: - 항목 (불릿 포인트)\n" \
+                       "✗ 본문: 평문만 (마크다운 제거)\n" \
+                       "\n예시:\n" \
+                       "**주요 포인트**\n" \
+                       "- 첫 번째: 설명\n" \
+                       "- 두 번째: 설명\n" \
+                       "추가 내용은 평문으로 작성합니다."
 ```
 
 ### 기대 효과
@@ -83,7 +111,7 @@ elif qtype in {"explanation", "reasoning"}:
 [PRIORITY HIERARCHY]
 Priority 0 (CRITICAL):
 - target 타입: 평문만 (마크다운 제거)
-- explanation/reasoning: 마크다운 유지
+- explanation/reasoning: 구조만 마크다운(제목/목록), 내용은 평문
 
 Priority 10 (HIGH):
 - 최대 길이: [MAX_LENGTH] 단어 이내
