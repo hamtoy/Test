@@ -14,7 +14,11 @@ from typing import Any, Dict, List
 
 import google.generativeai as genai
 from google.api_core import exceptions as google_exceptions
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
+from google.generativeai.types import (
+    HarmCategory,
+    HarmBlockThreshold,
+)
+from google.generativeai.types.safety_types import LooseSafetySettingDict
 from dotenv import load_dotenv
 
 from src.config.constants import DEFAULT_MAX_OUTPUT_TOKENS
@@ -42,7 +46,7 @@ class GeminiModelClient:
             self.logger = logging.getLogger("GeminiModelClient")
 
         # 안전 필터 설정 (BLOCK_NONE으로 모든 안전 필터 비활성화)
-        self.safety_settings = [
+        self.safety_settings: list[LooseSafetySettingDict] = [
             {
                 "category": HarmCategory.HARM_CATEGORY_HARASSMENT,
                 "threshold": HarmBlockThreshold.BLOCK_NONE,
