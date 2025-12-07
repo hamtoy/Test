@@ -25,12 +25,15 @@ export async function loadOCR(targetId: string = "ocr-input"): Promise<void> {
             if (!value) input.style.color = "#999";
         }
     } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "OCR 로드 실패";
         if (input.tagName === "TEXTAREA") {
             (input as HTMLTextAreaElement).value = "";
-            (input as HTMLTextAreaElement).placeholder = "OCR 로드 실패";
+            (input as HTMLTextAreaElement).placeholder = errorMessage;
         } else {
-            input.textContent = "OCR 로드 실패";
+            input.textContent = errorMessage;
         }
+        // Show toast notification for better user feedback
+        showToast(`OCR 로드 실패: ${errorMessage}`, "error");
     }
 }
 

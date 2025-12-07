@@ -105,11 +105,10 @@ class TestOCRApi:
             mock_config.input_dir = inputs_dir
             response = client.get("/api/ocr")
             # When file doesn't exist, load_ocr_text raises HTTPException 404
-            # but api_get_ocr catches it and returns {"ocr": "", "error": ...}
-            assert response.status_code == 200
+            # and api_get_ocr re-raises it (proper HTTP semantics)
+            assert response.status_code == 404
             data = response.json()
-            assert data["ocr"] == ""
-            assert "error" in data
+            assert data["detail"] == "OCR 파일이 없습니다."
 
     def test_post_ocr_save(self, client: Any, tmp_path: Path) -> None:
         """Test saving OCR text via POST."""
