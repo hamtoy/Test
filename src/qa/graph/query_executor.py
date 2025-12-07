@@ -7,7 +7,7 @@ async/sync handling and error management.
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Dict, List, Optional, TypeVar
+from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
 
 from neo4j.exceptions import Neo4jError, ServiceUnavailable
 
@@ -96,9 +96,13 @@ class QueryExecutor:
         def default_transform(records: List[Any]) -> List[Dict[str, Any]]:
             return [dict(r) for r in records]
 
-        transform_fn: Callable[[List[Any]], T | List[Dict[str, Any]]] = (
-            transform if transform is not None else default_transform
-        )
+        transform_fn: Callable[[List[Any]], T | List[Dict[str, Any]]]
+        if transform is not None:
+            transform_fn = transform
+        else:
+            transform_fn = cast(
+                Callable[[List[Any]], T | List[Dict[str, Any]]], default_transform
+            )
 
         # Try sync driver first
         if self._graph is not None:
