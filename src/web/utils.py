@@ -170,8 +170,8 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
     """질의 타입별로 답변 길이 제한 적용.
 
     4가지 실제 질질 타입:
-    1. global_explanation: 질질 1 (전체 마모뇌)
-    2. reasoning: 질질 2 (추론)
+    1. global_explanation: 질질 1 (전체 마모뇌) - 프롬프트로 제어 (1000-1500자)
+    2. reasoning: 질질 2 (추론) - 100단어, 4문장
     3. target (short): 질질 3 (숫자/명칭) - 단답형 자동 탐지
     4. target (long): 질질 4 (강조) - 서술형 자동 탐지
     """
@@ -184,8 +184,9 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
 
     # 실제 사용되는 4가지 질질 타입별 설정
     config = {
-        # 1. 전체 마모뇌 설명: 200단어, 최대 6문장
-        "global_explanation": {"max_words": 200, "max_sentences": 6},
+        # 1. 전체 마모뇌 설명: No word limit (length controlled by prompt: 1000-1500 chars)
+        # Removed max_words limit to allow full explanation as per prompt requirements
+        # "global_explanation": {"max_words": 200, "max_sentences": 6},
         # 2. 추론: 100단어, 최대 4문장
         "reasoning": {"max_words": 100, "max_sentences": 4},
     }
