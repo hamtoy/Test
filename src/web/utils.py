@@ -205,6 +205,11 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
         # 2단계: 단어 수 제한 (최종 조정)
         answer = _limit_words(answer, limits["max_words"])
 
+    elif qtype == "global_explanation":
+        # global_explanation: No word/sentence limits, but ensure period at end
+        if answer and not answer.endswith("."):
+            answer += "."
+
     elif qtype == "target":
         # 타겟 질질: 단답형 vs 서술형 자동 판단
         word_count = len(answer.split())
