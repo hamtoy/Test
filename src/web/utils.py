@@ -190,6 +190,15 @@ def apply_answer_limits(
             text = " ".join(words[:max_words])
         return text
 
+    def _normalize_ending_punctuation(text: str) -> str:
+        """Replace ellipsis with period, or add period if missing."""
+        if text:
+            if text.endswith("..."):
+                return text[:-3] + "."
+            elif not text.endswith("."):
+                return text + "."
+        return text
+
     # 실제 사용되는 4가지 질질 타입별 설정
     config: dict[str, dict[str, int]] = {
         # 1. 전체 마모뇌 설명: No word limit (length controlled by prompt: 1000-1500 chars)
@@ -226,21 +235,11 @@ def apply_answer_limits(
             if answer and not answer.endswith("."):
                 answer += "."
         answer = _limit_words_reasoning(answer, 200)
-        # Replace ellipsis with period, or add period if missing
-        if answer:
-            if answer.endswith("..."):
-                answer = answer[:-3] + "."
-            elif not answer.endswith("."):
-                answer += "."
+        answer = _normalize_ending_punctuation(answer)
 
     elif normalized_qtype == "explanation":
         # global_explanation: No word/sentence limits, but ensure period at end
-        # Replace ellipsis with period, or add period if missing
-        if answer:
-            if answer.endswith("..."):
-                answer = answer[:-3] + "."
-            elif not answer.endswith("."):
-                answer += "."
+        answer = _normalize_ending_punctuation(answer)
 
         # Dynamic max length enforcement (if provided)
         if max_length and len(answer) > max_length:
@@ -280,12 +279,7 @@ def apply_answer_limits(
                     answer += "."
             answer = _limit_words(answer, 200)
 
-        # Replace ellipsis with period, or add period if missing
-        if answer:
-            if answer.endswith("..."):
-                answer = answer[:-3] + "."
-            elif not answer.endswith("."):
-                answer += "."
+        answer = _normalize_ending_punctuation(answer)
 
     return answer
 
