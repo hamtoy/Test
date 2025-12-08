@@ -70,6 +70,7 @@ function formatAnswer(text: string): string {
 
 function getTypeBadge(type: string): string {
     const badges: Record<string, string> = {
+        explanation: "🌍 전반 설명",
         global_explanation: "🌍 전반 설명",
         reasoning: "🧠 추론",
         target_short: "🎯 타겟 단답",
@@ -118,7 +119,7 @@ function displayResults(raw: unknown): void {
 
     const selectedMode = (document.querySelector("input[name=\"mode\"]:checked") as HTMLInputElement)?.value;
     if (selectedMode === "batch_three") {
-        const allowed = new Set(["global_explanation", "reasoning", "target_long"]);
+        const allowed = new Set(["explanation", "global_explanation", "reasoning", "target_long"]);
         pairs = pairs.filter((p) => allowed.has(p.type));
     }
     if (!pairs.length) {
@@ -191,7 +192,7 @@ async function generateQA(mode: GenerateMode, qtype: string | null): Promise<voi
                 ? {
                       mode: "single",
                       ocr_text: ocrText,
-                      qtype: qtype || "global_explanation",
+                      qtype: qtype || "explanation",
                   }
                 : {
                       mode: "batch",
@@ -200,7 +201,7 @@ async function generateQA(mode: GenerateMode, qtype: string | null): Promise<voi
 
         if (mode === "batch_three") {
             payload.batch_types = [
-                "global_explanation",
+                "explanation",
                 "reasoning",
                 "target_long",
             ];
