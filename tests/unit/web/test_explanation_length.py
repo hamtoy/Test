@@ -34,7 +34,9 @@ class TestExplanationAnswerLength:
 
         mock_agent = MagicMock()
         mock_agent.generate_query = AsyncMock(return_value=["테스트 설명 질의"])
-        mock_agent.rewrite_best_answer = AsyncMock(return_value=SAMPLE_COMPREHENSIVE_ANSWER)
+        mock_agent.rewrite_best_answer = AsyncMock(
+            return_value=SAMPLE_COMPREHENSIVE_ANSWER
+        )
 
         with (
             patch("src.web.routers.qa_generation.get_cached_kg", return_value=None),
@@ -42,7 +44,10 @@ class TestExplanationAnswerLength:
             patch("src.web.routers.qa_generation._get_pipeline", return_value=None),
             patch("src.web.routers.qa_generation.answer_cache.get", return_value=None),
             patch("src.web.routers.qa_generation.answer_cache.set"),
-            patch("src.web.routers.qa_generation.postprocess_answer", return_value=SAMPLE_COMPREHENSIVE_ANSWER),
+            patch(
+                "src.web.routers.qa_generation.postprocess_answer",
+                return_value=SAMPLE_COMPREHENSIVE_ANSWER,
+            ),
         ):
             await generate_single_qa(
                 mock_agent,
@@ -52,10 +57,10 @@ class TestExplanationAnswerLength:
 
             # Verify rewrite_best_answer was called
             assert mock_agent.rewrite_best_answer.called
-            
+
             # Get the call arguments
             call_args = mock_agent.rewrite_best_answer.call_args
-            
+
             # Check that length_constraint parameter was passed
             if call_args.kwargs:
                 length_constraint = call_args.kwargs.get("length_constraint", "")
@@ -69,10 +74,10 @@ class TestExplanationAnswerLength:
 
         mock_agent = MagicMock()
         mock_agent.generate_query = AsyncMock(return_value=["테스트 질의"])
-        
+
         # Short answer (should trigger warning)
         short_answer = "전일 한국 증시는 FOMC 회의를 앞두고 하락했습니다."
-        
+
         mock_agent.rewrite_best_answer = AsyncMock(return_value=short_answer)
 
         with (
@@ -81,7 +86,10 @@ class TestExplanationAnswerLength:
             patch("src.web.routers.qa_generation._get_pipeline", return_value=None),
             patch("src.web.routers.qa_generation.answer_cache.get", return_value=None),
             patch("src.web.routers.qa_generation.answer_cache.set"),
-            patch("src.web.routers.qa_generation.postprocess_answer", return_value=short_answer),
+            patch(
+                "src.web.routers.qa_generation.postprocess_answer",
+                return_value=short_answer,
+            ),
             patch("src.web.routers.qa_generation.logger") as mock_logger,
         ):
             await generate_single_qa(
@@ -103,10 +111,10 @@ class TestExplanationAnswerLength:
 
         mock_agent = MagicMock()
         mock_agent.generate_query = AsyncMock(return_value=["테스트 질의"])
-        
+
         # Short answer (expected for target_short)
         short_answer = "네, KOSPI 지수는 1.14% 하락했습니다."
-        
+
         mock_agent.rewrite_best_answer = AsyncMock(return_value=short_answer)
 
         with (
@@ -115,7 +123,10 @@ class TestExplanationAnswerLength:
             patch("src.web.routers.qa_generation._get_pipeline", return_value=None),
             patch("src.web.routers.qa_generation.answer_cache.get", return_value=None),
             patch("src.web.routers.qa_generation.answer_cache.set"),
-            patch("src.web.routers.qa_generation.postprocess_answer", return_value=short_answer),
+            patch(
+                "src.web.routers.qa_generation.postprocess_answer",
+                return_value=short_answer,
+            ),
             patch("src.web.routers.qa_generation.logger") as mock_logger,
         ):
             result = await generate_single_qa(
@@ -131,10 +142,11 @@ class TestExplanationAnswerLength:
                 ]
                 # Filter out unrelated warnings
                 length_warnings = [
-                    msg for msg in warning_messages
-                    if "Answer too short" in msg
+                    msg for msg in warning_messages if "Answer too short" in msg
                 ]
-                assert not length_warnings, "Should not warn about length for target_short"
+                assert not length_warnings, (
+                    "Should not warn about length for target_short"
+                )
 
             # Verify the answer is returned
             assert result["answer"] == short_answer
