@@ -15,13 +15,16 @@ from checks.detect_forbidden_patterns import find_formatting_violations, find_vi
 from src.agent import GeminiAgent
 from src.config.constants import (
     DEFAULT_ANSWER_RULES,
+    ESTIMATED_CACHE_HIT_TIME_SAVINGS,
     QA_BATCH_TYPES,
     QA_BATCH_TYPES_THREE,
+    QA_CACHE_OCR_TRUNCATE_LENGTH,
     QA_GENERATION_OCR_TRUNCATE_LENGTH,
 )
 from src.config.exceptions import SafetyFilterError
 from src.qa.rule_loader import RuleLoader
 from src.qa.validator import UnifiedValidator, validate_constraints
+from src.web.cache import answer_cache
 from src.web.models import GenerateQARequest
 from src.web.response import APIMetadata, build_response
 from src.web.utils import QTYPE_MAP, load_ocr_text, postprocess_answer
@@ -38,6 +41,43 @@ from .qa_common import (
 )
 
 router = APIRouter(prefix="/api", tags=["qa-generation"])
+
+
+@router.get("/qa/cache/stats")
+async def get_cache_stats() -> Dict[str, Any]:
+    """Get cache statistics (PHASE 2B: Performance monitoring).
+
+    Returns:
+        Cache metrics including hit rate, size, and performance impact
+    """
+    stats = answer_cache.get_stats()
+    # Add estimated time saved (use ESTIMATED_CACHE_HIT_TIME_SAVINGS constant)
+    time_saved_seconds = stats["hits"] * ESTIMATED_CACHE_HIT_TIME_SAVINGS
+    stats["estimated_time_saved_seconds"] = time_saved_seconds
+    stats["estimated_time_saved_minutes"] = round(time_saved_seconds / 60, 2)
+
+    return {
+        "success": True,
+        "data": stats,
+        "message": f"Cache hit rate: {stats['hit_rate_percent']:.1f}%",
+    }
+
+
+@router.post("/qa/cache/clear")
+async def clear_cache() -> Dict[str, Any]:
+    """Clear all cached answers (PHASE 2B: Cache management).
+
+    Returns:
+        Success message with number of entries cleared
+    """
+    size_before = answer_cache.get_stats()["cache_size"]
+    answer_cache.clear()
+
+    return {
+        "success": True,
+        "data": {"entries_cleared": size_before},
+        "message": f"Cleared {size_before} cache entries",
+    }
 
 
 @router.post("/qa/generate")
@@ -177,7 +217,15 @@ async def generate_single_qa(
     """단일 QA 생성 - 규칙 적용 보장 + 호출 최소화."""
     current_kg = _get_kg()
     current_pipeline = _get_pipeline()
+
+    # Phase 2-1: Normalize query type using QTYPE_MAP
     normalized_qtype = QTYPE_MAP.get(qtype, "explanation")
+    logger.info(
+        "Query type '%s' normalized to '%s' for rule loading",
+        qtype,
+        normalized_qtype,
+    )
+
     query_intent = None
 
     if qtype == "target_short":
@@ -367,7 +415,16 @@ async def generate_single_qa(
 """
             rules_list = rules_list[:5]
 
+    # PHASE 2B: Check cache before expensive operations to save ~6-12s
+    # Use truncated OCR for cache key (QA_CACHE_OCR_TRUNCATE_LENGTH)
+    cache_ocr_key = ocr_text[:QA_CACHE_OCR_TRUNCATE_LENGTH]
+
+    # For cache lookup, we need a preliminary query (or use a placeholder)
+    # Since query is not generated yet, we'll use qtype as part of the key
+    # After query generation, we'll do a more specific cache check
+
     try:
+        # First, try to generate the query
         queries = await agent.generate_query(
             ocr_text,
             user_intent=query_intent,
@@ -379,6 +436,15 @@ async def generate_single_qa(
             raise ValueError("질의 생성 실패")
 
         query = queries[0]
+
+        # PHASE 2B: Check cache after query generation
+        cached_result = answer_cache.get(query, cache_ocr_key, qtype)
+        if cached_result is not None:
+            logger.info(
+                "Cache HIT: Returning cached answer for query_type=%s (saved ~6-12s)",
+                qtype,
+            )
+            return cast(Dict[str, Any], cached_result)
 
         truncated_ocr = ocr_text[:QA_GENERATION_OCR_TRUNCATE_LENGTH]
         rules_in_answer = "\n".join(f"- {r}" for r in rules_list)
@@ -635,7 +701,12 @@ Priority 30 (LOW):
 
         final_answer = postprocess_answer(draft_answer, qtype)
 
-        return {"type": qtype, "query": query, "answer": final_answer}
+        # PHASE 2B: Store result in cache for future requests
+        result = {"type": qtype, "query": query, "answer": final_answer}
+        answer_cache.set(query, cache_ocr_key, qtype, result)
+        logger.debug("Cached answer for query_type=%s", qtype)
+
+        return result
     except Exception as e:
         logger.error("QA 생성 실패: %s", e)
         raise

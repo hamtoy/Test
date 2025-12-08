@@ -85,9 +85,22 @@ def create_sync_driver(
     register_atexit: bool = False,
     graph_db_factory: Optional[Callable[..., Driver]] = None,
 ) -> SafeDriver:
-    """Create a Neo4j sync driver wrapped with SafeDriver to enforce close()."""
+    """Create a Neo4j sync driver wrapped with SafeDriver to enforce close().
+
+    PHASE 1: Connection pool optimization for performance improvement.
+    - max_connection_pool_size: 50 (handle concurrent requests)
+    - connection_acquisition_timeout: 30.0s (prevent hanging)
+    - max_connection_lifetime: 3600s (1 hour, refresh connections)
+    """
     factory = graph_db_factory or GraphDatabase.driver
-    driver = factory(uri, auth=(user, password))
+    # PHASE 1: Add connection pool configuration for performance
+    driver = factory(
+        uri,
+        auth=(user, password),
+        max_connection_pool_size=50,
+        connection_acquisition_timeout=30.0,
+        max_connection_lifetime=3600,
+    )
     return SafeDriver(driver, register_atexit=register_atexit)
 
 
@@ -148,10 +161,18 @@ class Neo4jGraphProvider(GraphProvider):
         self._driver: Optional[AsyncDriver] = None
 
     async def _get_driver(self) -> AsyncDriver:
-        """Lazily initialize and return the async driver."""
+        """Lazily initialize and return the async driver.
+
+        PHASE 1: Connection pool optimization for async operations.
+        """
         if self._driver is None:
+            # PHASE 1: Add connection pool configuration for performance
             self._driver = AsyncGraphDatabase.driver(
-                self._uri, auth=(self._user, self._password)
+                self._uri,
+                auth=(self._user, self._password),
+                max_connection_pool_size=50,
+                connection_acquisition_timeout=30.0,
+                max_connection_lifetime=3600,
             )
         return self._driver
 

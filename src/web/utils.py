@@ -24,16 +24,18 @@ _OCR_CACHE: Optional[Tuple[Path, float, str]] = None
 _OCR_CACHE_LOCK = Lock()
 
 # 질의 유형 매핑 (QA/워크스페이스 공용)
+# Phase 2-1: Map globalexplanation to explanation for better rule coverage
 QTYPE_MAP = {
-    "global_explanation": "global_explanation",
-    "explanation": "global_explanation",
+    "global_explanation": "explanation",  # Phase 2-1: Use explanation rules
+    "globalexplanation": "explanation",  # Phase 2-1: Use explanation rules
+    "explanation": "explanation",
     "reasoning": "reasoning",
     "target_short": "target",
     "target_long": "target",
     "target": "target",
     "summary": "summary",
     "factual": "target",
-    "general": "global_explanation",
+    "general": "explanation",  # Phase 2-1: Use explanation rules
 }
 
 

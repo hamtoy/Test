@@ -83,6 +83,7 @@ class TestGenerateSingleQAWithRules:
         with (
             patch("src.web.api.kg", None),
             patch("src.web.api.agent") as mock_agent,
+            patch("src.web.routers.qa_generation.answer_cache.get", return_value=None),
         ):
             mock_agent.generate_query = AsyncMock(return_value=["테스트 질의"])
             mock_agent.rewrite_best_answer = AsyncMock(
@@ -105,6 +106,7 @@ class TestGenerateSingleQAWithRules:
         with (
             patch("src.web.api.kg", None),
             patch("src.web.api.agent") as mock_agent,
+            patch("src.web.routers.qa_generation.answer_cache.get", return_value=None),
         ):
             # First call returns answer with violation, second call returns clean answer
             mock_agent.generate_query = AsyncMock(return_value=["테스트 질의"])
@@ -155,6 +157,7 @@ class TestGenerateSingleQAWithRules:
                 "src.web.routers.qa_generation._get_validator_class",
                 return_value=mock_validator_class,
             ),
+            patch("src.web.routers.qa_generation.answer_cache.get", return_value=None),
         ):
             mock_agent.generate_query = AsyncMock(return_value=["테스트 질의"])
             mock_agent.rewrite_best_answer = AsyncMock(
