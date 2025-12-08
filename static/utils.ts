@@ -31,6 +31,7 @@ export interface ApiErrorData {
 export class ApiError extends Error {
     status: number;
     canRetry: boolean;
+    errorData: ApiErrorData;
 
     constructor(status: number, errorData: ApiErrorData = {}) {
         const messages: Record<number, string> = {
@@ -38,6 +39,7 @@ export class ApiError extends Error {
             401: "인증이 필요합니다",
             403: "접근 권한이 없습니다",
             404: "요청한 리소스를 찾을 수 없습니다",
+            422: "요청 데이터 검증 실패",
             429: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요",
             500: "서버 오류가 발생했습니다",
             502: "게이트웨이 오류입니다",
@@ -53,13 +55,30 @@ export class ApiError extends Error {
         super(detail);
         this.status = status;
         this.canRetry = [429, 500, 502, 503, 504].includes(status);
+        this.errorData = errorData;
     }
 }
 
 function handleApiError(error: unknown): void {
     console.error("API Error:", error);
-    if (error instanceof ApiError && error.canRetry) {
-        showToast(`${error.message} [다시 시도 가능]`, "warning");
+    if (error instanceof ApiError) {
+        // Special handling for 422 validation errors
+        if (error.status === 422) {
+            // Import parse422Error dynamically to avoid circular dependency
+            import("./validation.js").then(({ parse422Error }) => {
+                const detailedMessage = parse422Error(error.errorData);
+                showToast(detailedMessage, "error");
+            }).catch(() => {
+                showToast(error.message, "error");
+            });
+            return;
+        }
+        
+        if (error.canRetry) {
+            showToast(`${error.message} [다시 시도 가능]`, "warning");
+        } else {
+            showToast(error.message, "error");
+        }
     } else if (error instanceof Error) {
         showToast(error.message, "error");
     } else {
