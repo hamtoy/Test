@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.agent.core import GeminiAgent
 from src.qa.rag_system import QAKnowledgeGraph
@@ -17,8 +17,8 @@ async def edit_content(
     ocr_text: str,
     query: str,
     edit_request: str,
-    kg: Optional[QAKnowledgeGraph] = None,
-    cache: Optional[Any] = None,
+    kg: QAKnowledgeGraph | None = None,
+    cache: Any | None = None,
 ) -> str:
     """사용자의 간결한 요청(edit_request)을 반영하여 answer 내용을 수정한다.
 
@@ -41,14 +41,14 @@ async def edit_content(
     rules_summary = ""
     if kg:
         try:
-            rules: List[Dict[str, Any]] = kg.get_constraints_for_query_type("general")
+            rules: list[dict[str, Any]] = kg.get_constraints_for_query_type("general")
             if rules:
                 rules_summary = "\n".join(
                     [
                         f"- {r.get('description', '')}"
                         for r in rules
                         if r.get("description")
-                    ]
+                    ],
                 )
         except Exception as e:
             logger.warning("Failed to load rules from knowledge graph: %s", e)

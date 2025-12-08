@@ -21,8 +21,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Awaitable, Callable, Generic, TypeVar
+from typing import Generic, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -358,7 +359,7 @@ class AdaptiveChunkProcessor(ChunkProcessor[T, R]):
         if avg_time > 2.0 and self.current_chunk_size > self.min_chunk_size:
             old_size = self.current_chunk_size
             self.current_chunk_size = max(
-                self.min_chunk_size, self.current_chunk_size - 2
+                self.min_chunk_size, self.current_chunk_size - 2,
             )
             logger.info(
                 "Chunk size decreased: %d -> %d (avg_time=%.2fs)",
@@ -371,7 +372,7 @@ class AdaptiveChunkProcessor(ChunkProcessor[T, R]):
         elif avg_time < 0.5 and self.current_chunk_size < self.max_chunk_size:
             old_size = self.current_chunk_size
             self.current_chunk_size = min(
-                self.max_chunk_size, self.current_chunk_size + 2
+                self.max_chunk_size, self.current_chunk_size + 2,
             )
             logger.info(
                 "Chunk size increased: %d -> %d (avg_time=%.2fs)",

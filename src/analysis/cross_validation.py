@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib
 import logging
 import re
-from typing import Any, Dict, List
+from typing import Any
 
 from neo4j.exceptions import Neo4jError
 
@@ -23,8 +23,8 @@ class CrossValidationSystem:
         self.logger = logging.getLogger(__name__)
 
     def cross_validate_qa_pair(
-        self, question: str, answer: str, query_type: str, image_meta: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, question: str, answer: str, query_type: str, image_meta: dict[str, Any],
+    ) -> dict[str, Any]:
         """질문과 답변의 일관성/근거/규칙/참신성을 통합 검증합니다."""
         validation_results = {
             "consistency": self._check_qa_consistency(question, answer),
@@ -39,12 +39,12 @@ class CrossValidationSystem:
                 validation_results["groundedness"]["score"] * 0.3,
                 validation_results["rule_compliance"]["score"] * 0.3,
                 validation_results["novelty"]["score"] * 0.1,
-            ]
+            ],
         )
 
         return validation_results
 
-    def _check_qa_consistency(self, question: str, answer: str) -> Dict[str, Any]:
+    def _check_qa_consistency(self, question: str, answer: str) -> dict[str, Any]:
         """질문과 답변이 일치하는지 간단히 확인합니다."""
         # 간이 키워드 기반 점수: 질문의 토큰 일부가 답변에 포함되는 비율
         q_tokens = [t for t in re.split(r"\W+", question.lower()) if t]
@@ -61,14 +61,14 @@ class CrossValidationSystem:
         }
 
     def _check_image_grounding(
-        self, answer: str, image_meta: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, answer: str, image_meta: dict[str, Any],
+    ) -> dict[str, Any]:
         """답변이 이미지(그래프)에 근거했는지 확인합니다."""
         page_id = image_meta.get("page_id")
         if not page_id:
             return {"score": 0.5, "grounded": False, "note": "page_id 없음"}
 
-        contents: List[str] = []
+        contents: list[str] = []
         try:
             graph_session = getattr(self.kg, "graph_session", None)
             if graph_session is None:
@@ -117,7 +117,7 @@ class CrossValidationSystem:
 
         return {"score": min(score, 1.0), "grounded": score > 0.6}
 
-    def _check_temporal_expressions(self, answer: str) -> List[str]:
+    def _check_temporal_expressions(self, answer: str) -> list[str]:
         """시의성 표현 검증 (temporal_expression_check)."""
         violations = []
         # 패턴: (최근|현재|올해|전일|전월|지난달)
@@ -125,17 +125,17 @@ class CrossValidationSystem:
             "(이미지 기준)" not in answer and "(보고서 기준)" not in answer
         ):
             violations.append(
-                "시의성 표현 사용 시 '(이미지 기준)' 또는 '(보고서 기준)' 표기 필수"
+                "시의성 표현 사용 시 '(이미지 기준)' 또는 '(보고서 기준)' 표기 필수",
             )
         return violations
 
-    def _check_repetition(self, answer: str, max_repeat: int = 2) -> List[str]:
+    def _check_repetition(self, answer: str, max_repeat: int = 2) -> list[str]:
         """반복 표현 검증 (repetition_check) - 형태소 분석 기반."""
         violations = []
 
         try:
             kiwipiepy: Any = importlib.import_module("kiwipiepy")
-            Kiwi = getattr(kiwipiepy, "Kiwi")
+            Kiwi = kiwipiepy.Kiwi
 
             # Kiwi 인스턴스 생성 (첫 호출 시 모델 로딩)
             kiwi = Kiwi()
@@ -167,7 +167,7 @@ class CrossValidationSystem:
             }
 
             # 빈도 계산
-            morph_counts: Dict[str, int] = {}
+            morph_counts: dict[str, int] = {}
             for morph in morphs:
                 if morph not in stopwords and len(morph) > 1 and not morph.isdigit():
                     morph_counts[morph] = morph_counts.get(morph, 0) + 1
@@ -179,7 +179,7 @@ class CrossValidationSystem:
             for morph, count in top_morphs:
                 if count > max_repeat:
                     violations.append(
-                        f"'{morph}' 과도한 반복 ({count}회, 최대 {max_repeat}회)"
+                        f"'{morph}' 과도한 반복 ({count}회, 최대 {max_repeat}회)",
                     )
 
         except ImportError:
@@ -201,7 +201,7 @@ class CrossValidationSystem:
             }
 
             words = re.findall(r"\b\w{2,}\b", answer)
-            word_counts: Dict[str, int] = {}
+            word_counts: dict[str, int] = {}
             for word in words:
                 if word not in stopwords and not word.isdigit():
                     word_counts[word] = word_counts.get(word, 0) + 1
@@ -212,12 +212,12 @@ class CrossValidationSystem:
             for word, count in top_words:
                 if count > max_repeat:
                     violations.append(
-                        f"'{word}' 과도한 반복 ({count}회, 최대 {max_repeat}회)"
+                        f"'{word}' 과도한 반복 ({count}회, 최대 {max_repeat}회)",
                     )
 
         return violations
 
-    def _check_formatting_rules(self, answer: str) -> List[str]:
+    def _check_formatting_rules(self, answer: str) -> list[str]:
         """형식 규칙 검증 (formatting_rules)."""
         violations = []
 
@@ -228,16 +228,16 @@ class CrossValidationSystem:
         if has_numbered_bullets or has_symbol_bullets:
             # 1. 목록형 답변에서 문단 구분 검사 (불릿 사이에 빈 줄)
             if has_numbered_bullets and re.search(
-                r"(^\d+\.\s.+\n\s*\n+\d+\.\s)", answer, re.MULTILINE
+                r"(^\d+\.\s.+\n\s*\n+\d+\.\s)", answer, re.MULTILINE,
             ):
                 violations.append(
-                    "목록형 답변은 문단 구분하지 않음 (불릿 사이 빈 줄 제거 필요)"
+                    "목록형 답변은 문단 구분하지 않음 (불릿 사이 빈 줄 제거 필요)",
                 )
             if has_symbol_bullets and re.search(
-                r"(^[-*•]\s.+\n\s*\n+[-*•]\s)", answer, re.MULTILINE
+                r"(^[-*•]\s.+\n\s*\n+[-*•]\s)", answer, re.MULTILINE,
             ):
                 violations.append(
-                    "목록형 답변은 문단 구분하지 않음 (불릿 사이 빈 줄 제거 필요)"
+                    "목록형 답변은 문단 구분하지 않음 (불릿 사이 빈 줄 제거 필요)",
                 )
 
             # 2. 불릿 간격 일관성 (- vs * 혼용)
@@ -249,9 +249,9 @@ class CrossValidationSystem:
 
         return violations
 
-    def _check_rule_compliance(self, answer: str, query_type: str) -> Dict[str, Any]:
+    def _check_rule_compliance(self, answer: str, query_type: str) -> dict[str, Any]:
         """패턴 기반 규칙 준수 여부를 확인합니다."""
-        violations: List[str] = []
+        violations: list[str] = []
 
         # 제약 패턴 검사
         constraints = self.kg.get_constraints_for_query_type(query_type)
@@ -298,7 +298,7 @@ class CrossValidationSystem:
                     """
                     MATCH (e:ErrorPattern)
                     RETURN e.pattern AS pattern, e.description AS description
-                    """
+                    """,
                 )
                 for ep in eps:
                     pat = ep.get("pattern")
@@ -312,7 +312,7 @@ class CrossValidationSystem:
         score = max(0.0, 1.0 - 0.2 * len(violations))
         return {"score": score, "violations": violations}
 
-    def _check_novelty(self, question: str) -> Dict[str, Any]:
+    def _check_novelty(self, question: str) -> dict[str, Any]:
         """질문의 참신함(중복 방지)을 간단히 평가합니다."""
         store = getattr(self.kg, "_vector_store", None)
         if not store:

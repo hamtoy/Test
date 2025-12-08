@@ -10,16 +10,16 @@ from __future__ import annotations
 
 import os
 import time
-from typing import Any, Dict, List
+from typing import Any
 
 import google.generativeai as genai
+from dotenv import load_dotenv
 from google.api_core import exceptions as google_exceptions
 from google.generativeai.types import (
-    HarmCategory,
     HarmBlockThreshold,
+    HarmCategory,
 )
 from google.generativeai.types.safety_types import LooseSafetySettingDict
-from dotenv import load_dotenv
 
 from src.config.constants import DEFAULT_MAX_OUTPUT_TOKENS
 from src.config.utils import require_env
@@ -66,7 +66,7 @@ class GeminiModelClient:
         ]
 
     def generate(
-        self, prompt: str, temperature: float = 0.2, role: str | None = None
+        self, prompt: str, temperature: float = 0.2, role: str | None = None,
     ) -> str:
         """Generate text for a given prompt.
 
@@ -102,10 +102,10 @@ class GeminiModelClient:
         except Exception as e:  # noqa: BLE001
             return f"[생성 실패(알 수 없음): {e}]"
 
-    def evaluate(self, question: str, answers: List[str]) -> Dict[str, Any]:
+    def evaluate(self, question: str, answers: list[str]) -> dict[str, Any]:
         """Evaluate answers; parse 점수/최고 형식, otherwise length fallback."""
 
-        def _length_fallback(notes: str = "길이 기반 임시 평가") -> Dict[str, Any]:
+        def _length_fallback(notes: str = "길이 기반 임시 평가") -> dict[str, Any]:
             scores = [len(a) for a in answers]
             best_idx = scores.index(max(scores)) if scores else None
             return {
@@ -121,7 +121,7 @@ class GeminiModelClient:
         start = time.perf_counter()
         try:
             raw = self.generate(
-                f"질문: {question}\n답변 수: {len(answers)}", role="evaluator"
+                f"질문: {question}\n답변 수: {len(answers)}", role="evaluator",
             )
         except google_exceptions.GoogleAPIError:
             return _length_fallback("API 오류로 길이 기반 평가 수행")
@@ -129,7 +129,7 @@ class GeminiModelClient:
             return _length_fallback("예상치 못한 오류로 길이 기반 평가 수행")
         latency_ms = (time.perf_counter() - start) * 1000
 
-        scores: List[int] = []
+        scores: list[int] = []
         best_idx: int | None = None
         for line in raw.splitlines():
             line = line.strip()

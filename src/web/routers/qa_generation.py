@@ -6,7 +6,7 @@ from __future__ import annotations
 import asyncio
 import re
 from datetime import datetime
-from typing import Any, Dict, Optional, cast
+from typing import Any, cast
 
 from fastapi import APIRouter, HTTPException
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -44,7 +44,7 @@ router = APIRouter(prefix="/api", tags=["qa-generation"])
 
 
 @router.get("/qa/cache/stats")
-async def get_cache_stats() -> Dict[str, Any]:
+async def get_cache_stats() -> dict[str, Any]:
     """Get cache statistics (PHASE 2B: Performance monitoring).
 
     Returns:
@@ -64,7 +64,7 @@ async def get_cache_stats() -> Dict[str, Any]:
 
 
 @router.post("/qa/cache/clear")
-async def clear_cache() -> Dict[str, Any]:
+async def clear_cache() -> dict[str, Any]:
     """Clear all cached answers (PHASE 2B: Cache management).
 
     Returns:
@@ -81,7 +81,7 @@ async def clear_cache() -> Dict[str, Any]:
 
 
 @router.post("/qa/generate")
-async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
+async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
     """QA 생성 (배치: 전체 설명 선행 후 병렬, 단일: 타입별 생성)."""
     current_agent = _get_agent()
     if current_agent is None:
@@ -92,14 +92,14 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
     try:
         start = datetime.now()
         if body.mode in {"batch", "batch_three"}:
-            results: list[Dict[str, Any]] = []
+            results: list[dict[str, Any]] = []
 
             batch_types = body.batch_types or QA_BATCH_TYPES
             if body.mode == "batch_three" and body.batch_types is None:
                 batch_types = QA_BATCH_TYPES_THREE
             if not batch_types:
                 raise HTTPException(
-                    status_code=400, detail="batch_types이 비어 있습니다."
+                    status_code=400, detail="batch_types이 비어 있습니다.",
                 )
 
             first_type = batch_types[0]
@@ -120,7 +120,7 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
                         "type": first_type,
                         "query": "생성 실패",
                         "answer": f"일시적 오류: {str(exc)[:100]}",
-                    }
+                    },
                 )
 
             # 2단계: 나머지 타입 병렬 생성 (중복 방지용 previous_queries 전달)
@@ -149,15 +149,15 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
                             "type": remaining_types[i],
                             "query": "생성 실패",
                             "answer": f"일시적 오류: {str(pair)[:100]}",
-                        }
+                        },
                     )
                 else:
-                    results.append(cast(Dict[str, Any], pair))
+                    results.append(cast("dict[str, Any]", pair))
 
             duration = (datetime.now() - start).total_seconds()
             meta = APIMetadata(duration=duration)
             return cast(
-                Dict[str, Any],
+                "dict[str, Any]",
                 build_response(
                     {"mode": "batch", "pairs": results},
                     metadata=meta,
@@ -174,7 +174,7 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
         duration = (datetime.now() - start).total_seconds()
         meta = APIMetadata(duration=duration)
         return cast(
-            Dict[str, Any],
+            "dict[str, Any]",
             build_response(
                 {"mode": "single", "pair": pair},
                 metadata=meta,
@@ -190,7 +190,7 @@ async def api_generate_qa(body: GenerateQARequest) -> Dict[str, Any]:
         raise HTTPException(status_code=504, detail=timeout_msg)
     except Exception as e:
         logger.error("QA 생성 실패: %s", e)
-        raise HTTPException(status_code=500, detail=f"생성 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"생성 실패: {e!s}")
 
 
 @retry(
@@ -202,8 +202,8 @@ async def generate_single_qa_with_retry(
     agent: GeminiAgent,
     ocr_text: str,
     qtype: str,
-    previous_queries: Optional[list[str]] = None,
-) -> Dict[str, Any]:
+    previous_queries: list[str] | None = None,
+) -> dict[str, Any]:
     """재시도 로직이 있는 QA 생성 래퍼."""
     return await generate_single_qa(agent, ocr_text, qtype, previous_queries)
 
@@ -212,8 +212,8 @@ async def generate_single_qa(
     agent: GeminiAgent,
     ocr_text: str,
     qtype: str,
-    previous_queries: Optional[list[str]] = None,
-) -> Dict[str, Any]:
+    previous_queries: list[str] | None = None,
+) -> dict[str, Any]:
     """단일 QA 생성 - 규칙 적용 보장 + 호출 최소화."""
     current_kg = _get_kg()
     current_pipeline = _get_pipeline()
@@ -267,11 +267,11 @@ async def generate_single_qa(
 
     rule_loader = RuleLoader(current_kg)
     rules_list = rule_loader.get_rules_for_type(normalized_qtype, DEFAULT_ANSWER_RULES)
-    query_constraints: list[Dict[str, Any]] = []
-    answer_constraints: list[Dict[str, Any]] = []
+    query_constraints: list[dict[str, Any]] = []
+    answer_constraints: list[dict[str, Any]] = []
     formatting_rules: list[str] = []
     unified_validator = UnifiedValidator(current_kg, current_pipeline)
-    kg_wrapper: Optional[Any] = get_cached_kg()
+    kg_wrapper: Any | None = get_cached_kg()
 
     if kg_wrapper is not None:
         try:
@@ -295,7 +295,7 @@ async def generate_single_qa(
                     valid_constraints.append(c)
                 else:
                     invalid_items.append(
-                        {"type": type(c).__name__, "value": repr(c)[:50]}
+                        {"type": type(c).__name__, "value": repr(c)[:50]},
                     )
 
             if invalid_items:
@@ -323,7 +323,7 @@ async def generate_single_qa(
             # [Fix] Step 4: Enhanced formatting rules validation
             try:
                 fmt_rules = kg_wrapper.get_formatting_rules_for_query_type(
-                    normalized_qtype
+                    normalized_qtype,
                 )
 
                 # Type validation with detailed logging
@@ -367,7 +367,7 @@ async def generate_single_qa(
             "description": "단일 과업만 묻기: '와/과/및/또는'으로 병렬 질문(두 가지 이상 요구) 금지",
             "priority": 100,
             "category": "query",
-        }
+        },
     )
 
     if not rules_list:
@@ -457,7 +457,7 @@ async def generate_single_qa(
                 "Cache HIT: Returning cached answer for query_type=%s (saved ~6-12s)",
                 qtype,
             )
-            return cast(Dict[str, Any], cached_result)
+            return cast("dict[str, Any]", cached_result)
 
         truncated_ocr = ocr_text[:QA_GENERATION_OCR_TRUNCATE_LENGTH]
         rules_in_answer = "\n".join(f"- {r}" for r in rules_list)
@@ -492,7 +492,7 @@ async def generate_single_qa(
         constraints_text = ""
         if answer_constraints:
 
-            def _priority_value(item: Dict[str, Any]) -> float:
+            def _priority_value(item: dict[str, Any]) -> float:
                 val = item.get("priority")
                 return float(val) if isinstance(val, (int, float)) else 0.0
 
@@ -504,7 +504,7 @@ async def generate_single_qa(
 
             # Phase 3: Validate constraint conflicts (IMPROVEMENTS.md)
             # Extract max_length from length_constraint if present
-            max_length_val: Optional[int] = None
+            max_length_val: int | None = None
             if "50단어" in length_constraint:
                 max_length_val = 50
             elif "100단어" in length_constraint:
@@ -517,8 +517,8 @@ async def generate_single_qa(
             # Check for paragraph constraints in answer_constraints
             # Note: This is a heuristic parser for constraint descriptions.
             # Expected format: "X문단, 각 Y단어 이상" or similar
-            min_per_para: Optional[int] = None
-            num_paras: Optional[int] = None
+            min_per_para: int | None = None
+            num_paras: int | None = None
             for constraint in answer_constraints:
                 desc = constraint.get("description", "").lower()
                 if "문단" in desc and "단어" in desc:
@@ -634,7 +634,7 @@ Priority 30 (LOW):
 
         # 통합 검증으로 수집할 위반/경고 (질의 포함하여 금지 패턴 검증 강화)
         val_result = unified_validator.validate_all(
-            draft_answer, normalized_qtype, query
+            draft_answer, normalized_qtype, query,
         )
         all_issues: list[str] = []
 
@@ -662,7 +662,7 @@ Priority 30 (LOW):
                 validator_cls = _get_validator_class()
                 validator = validator_cls(kg_wrapper)
                 rule_check = validator._check_rule_compliance(
-                    draft_answer, normalized_qtype
+                    draft_answer, normalized_qtype,
                 )
                 score = rule_check.get("score")
                 score_val = score if isinstance(score, (int, float)) else 1.0
@@ -685,12 +685,12 @@ Priority 30 (LOW):
             if fv.get("severity") == "error":
                 all_violations.append(fv["type"])
                 logger.warning(
-                    "서식 위반 감지: %s - '%s'", fv.get("description", ""), fv["match"]
+                    "서식 위반 감지: %s - '%s'", fv.get("description", ""), fv["match"],
                 )
 
         if current_pipeline is not None:
             validation = current_pipeline.validate_output(
-                normalized_qtype, draft_answer
+                normalized_qtype, draft_answer,
             )
             if not validation.get("valid", True):
                 all_violations.extend(validation.get("violations", []))
@@ -700,7 +700,7 @@ Priority 30 (LOW):
 
         if val_result.has_errors():
             all_violations.extend(
-                [v.get("type", "rule") for v in val_result.violations]
+                [v.get("type", "rule") for v in val_result.violations],
             )
         if val_result.warnings:
             all_issues.extend(val_result.warnings)

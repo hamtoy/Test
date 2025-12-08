@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from checks.detect_forbidden_patterns import (
     find_formatting_violations,
@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 class ValidationResult:
     """Aggregated validation output."""
 
-    violations: List[Dict[str, Any]]
-    warnings: List[str]
+    violations: list[dict[str, Any]]
+    warnings: list[str]
     score: float = 1.0
 
     def has_errors(self) -> bool:
@@ -49,8 +49,8 @@ class UnifiedValidator:
 
     def __init__(
         self,
-        kg: Optional[Any] = None,
-        pipeline: Optional[Any] = None,
+        kg: Any | None = None,
+        pipeline: Any | None = None,
         config_path: str = "data/neo4j",
     ) -> None:
         """Initialize UnifiedValidator.
@@ -74,8 +74,8 @@ class UnifiedValidator:
 
     @staticmethod
     def _normalize_violations(
-        violations: List[Any],
-    ) -> List[Dict[str, Any]]:
+        violations: list[Any],
+    ) -> list[dict[str, Any]]:
         """violations를 dict 형식으로 정규화 (str → dict 변환).
 
         String violations are converted to {"type": str_value, "description": str_value}.
@@ -92,7 +92,7 @@ class UnifiedValidator:
                 normalized.append({"type": "unknown", "description": str(v)})
         return normalized
 
-    def validate_sentence_count(self, answer: str) -> List[Dict[str, Any]]:
+    def validate_sentence_count(self, answer: str) -> list[dict[str, Any]]:
         """동적 규칙을 사용한 문장 수 검증."""
         sentence_rule = self.rule_manager.get_sentence_rules()
 
@@ -105,7 +105,7 @@ class UnifiedValidator:
         min_val = sentence_rule.get("min", 3)
         max_val = sentence_rule.get("max", 4)
 
-        violations: List[Dict[str, Any]] = []
+        violations: list[dict[str, Any]] = []
         if count < min_val or count > max_val:
             violations.append(
                 {
@@ -115,15 +115,15 @@ class UnifiedValidator:
                     "count": count,
                     "min": min_val,
                     "max": max_val,
-                }
+                },
             )
 
         return violations
 
-    def validate_temporal_expressions(self, text: str) -> List[Dict[str, Any]]:
+    def validate_temporal_expressions(self, text: str) -> list[dict[str, Any]]:
         """동적 규칙을 사용한 시의성 표현 검증."""
         temporal_rules = self.rule_manager.get_temporal_rules()
-        violations: List[Dict[str, Any]] = [
+        violations: list[dict[str, Any]] = [
             {
                 "type": "temporal_expression_found",
                 "expression": expression,
@@ -136,16 +136,16 @@ class UnifiedValidator:
 
         return violations
 
-    def validate_forbidden_patterns(self, text: str) -> List[Dict[str, Any]]:
+    def validate_forbidden_patterns(self, text: str) -> list[dict[str, Any]]:
         """기존 패턴 검증."""
         return find_violations(text)
 
-    def validate_formatting(self, text: str) -> List[Dict[str, Any]]:
+    def validate_formatting(self, text: str) -> list[dict[str, Any]]:
         """기존 포맷팅 검증."""
         return find_formatting_violations(text)
 
     def validate_all(
-        self, answer: str, query_type: str, question: str = ""
+        self, answer: str, query_type: str, question: str = "",
     ) -> ValidationResult:
         """모든 검증 규칙 적용.
 
@@ -155,8 +155,8 @@ class UnifiedValidator:
         3. 파이프라인 검증
         4. Neo4j 규칙 검증 (CSV 규칙과 중복 제거)
         """
-        violations: List[Dict[str, Any]] = []
-        warnings: List[str] = []
+        violations: list[dict[str, Any]] = []
+        warnings: list[str] = []
         score = 1.0
 
         # 1) 동적 CSV 규칙 검증 (우선순위: 높음)
@@ -209,7 +209,7 @@ class UnifiedValidator:
 
                 validator = CrossValidationSystem(self.kg)
                 rule_check = validator._check_rule_compliance(  # noqa: SLF001
-                    answer, query_type
+                    answer, query_type,
                 )
                 rule_score = rule_check.get("score", 1.0)
                 if rule_score < 1.0:
@@ -225,7 +225,7 @@ class UnifiedValidator:
                 # Rule violations need special handling: add "rule" type for strings
                 neo4j_added = 0
                 for v in rule_violations:
-                    normalized_v: Dict[str, Any]
+                    normalized_v: dict[str, Any]
                     if isinstance(v, dict):
                         normalized_v = v
                     elif isinstance(v, str):
@@ -254,9 +254,9 @@ class UnifiedValidator:
 
 def validate_constraints(
     qtype: str,
-    max_length: Optional[int] = None,
-    min_per_paragraph: Optional[int] = None,
-    num_paragraphs: Optional[int] = None,
+    max_length: int | None = None,
+    min_per_paragraph: int | None = None,
+    num_paragraphs: int | None = None,
 ) -> tuple[bool, str]:
     """제약 충돌 감지 (EMNLP 2025 기법).
 

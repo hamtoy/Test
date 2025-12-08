@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Rate limiting and concurrency control module.
 
 Provides the new ``RateLimiter`` class and a backwards‑compatible ``RateLimitManager``
@@ -9,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from src.config.constants import DEFAULT_RPM_LIMIT, DEFAULT_RPM_WINDOW_SECONDS
 
@@ -32,7 +31,7 @@ class RateLimiter:
         """
         self.logger = logging.getLogger("GeminiWorkflow")
         self._semaphore = asyncio.Semaphore(max_concurrency)
-        self._rate_limiter: Optional["AsyncLimiter"] = None
+        self._rate_limiter: AsyncLimiter | None = None
         self._init_rate_limiter()
 
     def _init_rate_limiter(self) -> None:
@@ -40,7 +39,7 @@ class RateLimiter:
             from aiolimiter import AsyncLimiter
 
             self._rate_limiter = AsyncLimiter(
-                max_rate=DEFAULT_RPM_LIMIT, time_period=DEFAULT_RPM_WINDOW_SECONDS
+                max_rate=DEFAULT_RPM_LIMIT, time_period=DEFAULT_RPM_WINDOW_SECONDS,
             )
             self.logger.info(
                 "Rate limiter enabled: %s requests/%s seconds",
@@ -62,12 +61,12 @@ class RateLimiter:
         self._semaphore = value
 
     @property
-    def limiter(self) -> Optional["AsyncLimiter"]:
+    def limiter(self) -> AsyncLimiter | None:
         """The optional ``AsyncLimiter`` instance (may be ``None``)."""
         return self._rate_limiter
 
     @limiter.setter
-    def limiter(self, value: Optional["AsyncLimiter"]) -> None:
+    def limiter(self, value: AsyncLimiter | None) -> None:
         """Set the optional AsyncLimiter instance."""
         self._rate_limiter = value
 

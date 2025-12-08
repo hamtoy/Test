@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import sys
-from typing import Any, Dict, List
+from typing import Any
 
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
@@ -48,25 +48,25 @@ class QAGraphBuilder:
         """고유 제약 추가 (존재 시 무시)."""
         with self.driver.session() as session:
             session.run(
-                "CREATE CONSTRAINT rule_id_unique IF NOT EXISTS FOR (r:Rule) REQUIRE r.id IS UNIQUE"
+                "CREATE CONSTRAINT rule_id_unique IF NOT EXISTS FOR (r:Rule) REQUIRE r.id IS UNIQUE",
             )
             session.run(
-                "CREATE CONSTRAINT constraint_id_unique IF NOT EXISTS FOR (c:Constraint) REQUIRE c.id IS UNIQUE"
+                "CREATE CONSTRAINT constraint_id_unique IF NOT EXISTS FOR (c:Constraint) REQUIRE c.id IS UNIQUE",
             )
             session.run(
-                "CREATE CONSTRAINT example_id_unique IF NOT EXISTS FOR (e:Example) REQUIRE e.id IS UNIQUE"
+                "CREATE CONSTRAINT example_id_unique IF NOT EXISTS FOR (e:Example) REQUIRE e.id IS UNIQUE",
             )
             session.run(
-                "CREATE CONSTRAINT qtype_name_unique IF NOT EXISTS FOR (q:QueryType) REQUIRE q.name IS UNIQUE"
+                "CREATE CONSTRAINT qtype_name_unique IF NOT EXISTS FOR (q:QueryType) REQUIRE q.name IS UNIQUE",
             )
             session.run(
-                "CREATE CONSTRAINT template_id_unique IF NOT EXISTS FOR (t:Template) REQUIRE t.id IS UNIQUE"
+                "CREATE CONSTRAINT template_id_unique IF NOT EXISTS FOR (t:Template) REQUIRE t.id IS UNIQUE",
             )
             session.run(
-                "CREATE CONSTRAINT errorpattern_id_unique IF NOT EXISTS FOR (e:ErrorPattern) REQUIRE e.id IS UNIQUE"
+                "CREATE CONSTRAINT errorpattern_id_unique IF NOT EXISTS FOR (e:ErrorPattern) REQUIRE e.id IS UNIQUE",
             )
             session.run(
-                "CREATE CONSTRAINT bestpractice_id_unique IF NOT EXISTS FOR (b:BestPractice) REQUIRE b.id IS UNIQUE"
+                "CREATE CONSTRAINT bestpractice_id_unique IF NOT EXISTS FOR (b:BestPractice) REQUIRE b.id IS UNIQUE",
             )
         self.logger.info("스키마 고유 제약 생성/확인 완료")
 
@@ -79,7 +79,7 @@ class QAGraphBuilder:
                 MATCH (p:Page)-[:HAS_BLOCK]->(h:Block)
                 WHERE h.type = 'heading_1' AND h.content CONTAINS '자주 틀리는'
                 RETURN p.id as page_id, h.order as start_order, h.content as section
-                """
+                """,
             ).data()
 
             created = 0
@@ -117,7 +117,7 @@ class QAGraphBuilder:
                             """,
                             id=sib["id"],
                         )
-                        desc_list: List[Dict[str, Any]] = [dict(d) for d in descendants]
+                        desc_list: list[dict[str, Any]] = [dict(d) for d in descendants]
                         current_rules.extend(
                             d.get("content", "") for d in desc_list if d.get("content")
                         )
@@ -168,7 +168,7 @@ class QAGraphBuilder:
         어떤 query_type에서 사용되는지 자동으로 매핑합니다.
         """
         # 1. Constraint를 사용하는 Template 매핑 생성
-        constraint_to_query_types: Dict[str, List[str]] = {}
+        constraint_to_query_types: dict[str, list[str]] = {}
 
         for template in TEMPLATES:
             # template['name']에서 query_type 추출
@@ -215,7 +215,7 @@ class QAGraphBuilder:
                 # 로깅
                 qt_display = query_type or "전역"
                 self.logger.debug(
-                    f"Constraint '{constraint_id}' -> query_type: {qt_display}"
+                    f"Constraint '{constraint_id}' -> query_type: {qt_display}",
                 )
 
         print(f"✅ 제약 조건 {len(CONSTRAINTS)}개 생성/병합 (query_type 자동 설정)")
@@ -228,7 +228,7 @@ class QAGraphBuilder:
                 MATCH (r:Rule), (c:Constraint)
                 WHERE (r.text CONTAINS c.description) OR (r.text CONTAINS c.id)
                 MERGE (r)-[:ENFORCES]->(c)
-                """
+                """,
             )
             # 키워드 기반 추가 연결
             for cid, keywords in CONSTRAINT_KEYWORDS.items():
@@ -242,7 +242,7 @@ class QAGraphBuilder:
                     keywords=keywords,
                 )
             result = session.run(
-                "MATCH (r:Rule)-[:ENFORCES]->(c:Constraint) RETURN count(*) AS links"
+                "MATCH (r:Rule)-[:ENFORCES]->(c:Constraint) RETURN count(*) AS links",
             ).single()
             if result is None:
                 raise RuntimeError("Failed to count rule-constraint links")
@@ -262,7 +262,7 @@ class QAGraphBuilder:
                            WHEN b.content CONTAINS '❌' THEN 'negative'
                            ELSE 'positive'
                        END AS type
-                """
+                """,
             )
 
             examples = []
@@ -300,7 +300,7 @@ class QAGraphBuilder:
                 MATCH (e:Example {type: 'positive'}), (r:Rule)
                 WHERE e.text CONTAINS r.text OR r.text CONTAINS e.text
                 MERGE (e)-[:DEMONSTRATES]->(r)
-                """
+                """,
             )
             # 부정 예시: VIOLATES
             session.run(
@@ -308,7 +308,7 @@ class QAGraphBuilder:
                 MATCH (e:Example {type: 'negative'}), (r:Rule)
                 WHERE e.text CONTAINS r.text OR r.text CONTAINS e.text
                 MERGE (e)-[:VIOLATES]->(r)
-                """
+                """,
             )
 
             # 수동 매핑 테이블 (접두사 포함된 example_id → rule_id 매핑)
@@ -326,7 +326,7 @@ class QAGraphBuilder:
                 """
                 MATCH (e:Example)-[rel]->(r:Rule)
                 RETURN count(rel) AS links
-                """
+                """,
             ).single()
             if result is None:
                 raise RuntimeError("Failed to count example-rule links")

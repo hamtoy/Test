@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
-from src.features.difficulty import AdaptiveDifficultyAdjuster
-from src.processing.context_augmentation import AdvancedContextAugmentation
 from src.analysis.cross_validation import CrossValidationSystem
-from src.processing.example_selector import DynamicExampleSelector
+from src.features.difficulty import AdaptiveDifficultyAdjuster
 from src.features.multimodal import MultimodalUnderstanding
-from src.qa.rag_system import QAKnowledgeGraph
 from src.infra.constraints import RealTimeConstraintEnforcer
 from src.llm.gemini import GeminiModelClient
+from src.processing.context_augmentation import AdvancedContextAugmentation
+from src.processing.example_selector import DynamicExampleSelector
+from src.qa.rag_system import QAKnowledgeGraph
 
 
 class IntegratedQualitySystem:
@@ -20,7 +20,7 @@ class IntegratedQualitySystem:
         neo4j_uri: str,
         user: str,
         password: str,
-        gemini_key: Optional[str] = None,
+        gemini_key: str | None = None,
     ):
         """Initialize the integrated quality system.
 
@@ -32,7 +32,7 @@ class IntegratedQualitySystem:
         """
         self.kg = QAKnowledgeGraph(neo4j_uri, user, password)
         self.augmenter = AdvancedContextAugmentation(
-            neo4j_uri, user, password, gemini_key
+            neo4j_uri, user, password, gemini_key,
         )
         self.enforcer = RealTimeConstraintEnforcer(self.kg)
         self.adjuster = AdaptiveDifficultyAdjuster(self.kg)
@@ -42,8 +42,8 @@ class IntegratedQualitySystem:
         self.llm = GeminiModelClient()
 
     def generate_qa_with_all_enhancements(
-        self, image_path: str, query_type: str
-    ) -> Dict[str, Any]:
+        self, image_path: str, query_type: str,
+    ) -> dict[str, Any]:
         """모든 품질 보강 기능을 적용한 QA 생성 플로우.
 
         GeminiModelClient를 통해 실제 LLM을 호출하여 답변을 생성합니다.
@@ -70,7 +70,7 @@ class IntegratedQualitySystem:
 
         # 3. 최적 예시 선택
         examples = self.example_selector.select_best_examples(
-            query_type, image_meta, k=3
+            query_type, image_meta, k=3,
         )
 
         # 4. 컨텍스트 증강
@@ -107,13 +107,13 @@ class IntegratedQualitySystem:
 
 
 __all__ = [
-    "QAKnowledgeGraph",
-    "AdvancedContextAugmentation",
-    "RealTimeConstraintEnforcer",
     "AdaptiveDifficultyAdjuster",
+    "AdvancedContextAugmentation",
     "CrossValidationSystem",
     "DynamicExampleSelector",
-    "MultimodalUnderstanding",
     "GeminiModelClient",
     "IntegratedQualitySystem",
+    "MultimodalUnderstanding",
+    "QAKnowledgeGraph",
+    "RealTimeConstraintEnforcer",
 ]

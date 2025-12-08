@@ -7,7 +7,8 @@ from __future__ import annotations
 import functools
 import logging
 import os
-from typing import Any, Callable, Optional, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from typing_extensions import ParamSpec
 
@@ -44,7 +45,7 @@ _meter = None
 
 
 def init_telemetry(
-    service_name: str = "gemini-qa-system", otlp_endpoint: Optional[str] = None
+    service_name: str = "gemini-qa-system", otlp_endpoint: str | None = None,
 ) -> None:
     """Initialize OpenTelemetry tracer and meter if available."""
     global _tracer, _meter
@@ -61,7 +62,7 @@ def init_telemetry(
 
     trace_provider = TracerProvider(resource=resource)
     trace_provider.add_span_processor(
-        BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint))
+        BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint)),
     )
     trace.set_tracer_provider(trace_provider)
     _tracer = trace.get_tracer(__name__)
@@ -78,10 +79,10 @@ def get_tracer():
     if trace is None:
 
         class _NoopSpan:
-            def __enter__(self) -> "_NoopSpan":
+            def __enter__(self) -> _NoopSpan:
                 return self
 
-            def __exit__(self, *args: Any) -> None:
+            def __exit__(self, *args: object) -> None:
                 return None
 
             def set_attribute(self, *args: Any, **kwargs: Any) -> None:
@@ -117,7 +118,7 @@ def get_meter():
     return _meter or metrics.get_meter(__name__)
 
 
-def _build_status(name: str, description: Optional[str] = None) -> Optional[Any]:
+def _build_status(name: str, description: str | None = None) -> Any | None:
     """Safely construct a span status object if OpenTelemetry is available."""
     if trace is None:
         return None
@@ -140,7 +141,7 @@ def _build_status(name: str, description: Optional[str] = None) -> Optional[Any]
 
 
 def traced(
-    operation: str, attributes: Optional[dict[str, Any]] = None
+    operation: str, attributes: dict[str, Any] | None = None,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Decorator to trace sync functions."""
 
@@ -161,7 +162,7 @@ def traced(
                     if ok_status and hasattr(span, "set_status"):
                         span.set_status(ok_status)
                     return result
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     try:
                         span.record_exception(exc)  # type: ignore[attr-defined]
                     finally:
@@ -176,7 +177,7 @@ def traced(
 
 
 def traced_async(
-    operation: str, attributes: Optional[dict[str, Any]] = None
+    operation: str, attributes: dict[str, Any] | None = None,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Decorator to trace async functions."""
 
@@ -197,7 +198,7 @@ def traced_async(
                     if ok_status and hasattr(span, "set_status"):
                         span.set_status(ok_status)
                     return result
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     try:
                         span.record_exception(exc)  # type: ignore[attr-defined]
                     finally:
@@ -211,4 +212,4 @@ def traced_async(
     return decorator
 
 
-__all__ = ["init_telemetry", "get_tracer", "get_meter", "traced", "traced_async"]
+__all__ = ["get_meter", "get_tracer", "init_telemetry", "traced", "traced_async"]

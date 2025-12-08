@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from rich.console import Console
 from rich.panel import Panel
@@ -56,7 +56,7 @@ def render_budget_panel(agent: GeminiAgent) -> Panel:
     return Panel(content, title=PANEL_TITLE_BUDGET, border_style="red")
 
 
-def display_queries(queries: List[str]) -> None:
+def display_queries(queries: list[str]) -> None:
     """생성된 질의 리스트를 Rich Panel로 콘솔에 출력합니다.
 
     Args:
@@ -67,5 +67,5 @@ def display_queries(queries: List[str]) -> None:
             "\n".join([f"{i + 1}. {q}" for i, q in enumerate(queries)]),
             title=PANEL_TITLE_QUERIES,
             border_style="green",
-        )
+        ),
     )

@@ -10,8 +10,9 @@ import asyncio
 import logging
 import os
 import weakref
+from collections.abc import Generator
 from contextlib import suppress
-from typing import Any, Generator, Optional
+from typing import Any
 
 from neo4j import GraphDatabase
 from neo4j.exceptions import Neo4jError, ServiceUnavailable
@@ -24,11 +25,11 @@ logger = logging.getLogger(__name__)
 
 
 def initialize_connection(
-    neo4j_uri: Optional[str],
-    neo4j_user: Optional[str],
-    neo4j_password: Optional[str],
-    provider: Optional[GraphProvider],
-) -> tuple[Optional[SafeDriver], Optional[Any]]:
+    neo4j_uri: str | None,
+    neo4j_user: str | None,
+    neo4j_password: str | None,
+    provider: GraphProvider | None,
+) -> tuple[SafeDriver | None, Any | None]:
     """Initialize Neo4j connection with provider support.
 
     Args:
@@ -40,8 +41,8 @@ def initialize_connection(
     Returns:
         Tuple of (driver, finalizer)
     """
-    graph: Optional[SafeDriver] = None
-    finalizer: Optional[Any] = None
+    graph: SafeDriver | None = None
+    finalizer: Any | None = None
 
     if provider is None:
         # No provider - create direct connection
@@ -60,33 +61,32 @@ def initialize_connection(
             finalizer = weakref.finalize(graph, graph.close)
             # PHASE 1: Log connection pool initialization
             logger.info(
-                "Neo4j connection pool initialized (max_pool_size=50, max_lifetime=3600s)"
+                "Neo4j connection pool initialized (max_pool_size=50, max_lifetime=3600s)",
             )
         except Neo4jError as e:
             raise RuntimeError(f"Neo4j 연결 실패: {e}")
-    else:
-        # Provider available - use it, but also setup direct connection if credentials exist
-        if neo4j_uri and neo4j_user and neo4j_password:
-            graph = create_sync_driver(
-                neo4j_uri,
-                neo4j_user,
-                neo4j_password,
-                register_atexit=True,
-                graph_db_factory=GraphDatabase.driver,
-            )
-            finalizer = weakref.finalize(graph, graph.close)
-            # PHASE 1: Log connection pool initialization
-            logger.info(
-                "Neo4j connection pool initialized via provider (max_pool_size=50, max_lifetime=3600s)"
-            )
+    # Provider available - use it, but also setup direct connection if credentials exist
+    elif neo4j_uri and neo4j_user and neo4j_password:
+        graph = create_sync_driver(
+            neo4j_uri,
+            neo4j_user,
+            neo4j_password,
+            register_atexit=True,
+            graph_db_factory=GraphDatabase.driver,
+        )
+        finalizer = weakref.finalize(graph, graph.close)
+        # PHASE 1: Log connection pool initialization
+        logger.info(
+            "Neo4j connection pool initialized via provider (max_pool_size=50, max_lifetime=3600s)",
+        )
 
     return graph, finalizer
 
 
 def close_connections(
-    graph: Optional[SafeDriver],
-    graph_finalizer: Optional[Any],
-    graph_provider: Optional[GraphProvider],
+    graph: SafeDriver | None,
+    graph_finalizer: Any | None,
+    graph_provider: GraphProvider | None,
 ) -> None:
     """Close database connections and clean up resources.
 
@@ -126,8 +126,8 @@ def close_connections(
 
 
 def create_graph_session(
-    graph: Optional[SafeDriver],
-    graph_provider: Optional[GraphProvider],
+    graph: SafeDriver | None,
+    graph_provider: GraphProvider | None,
 ) -> Generator[Any, None, None]:
     """Create a synchronous Neo4j session.
 
@@ -187,9 +187,9 @@ class Neo4jConnectionManager:
 
     def __init__(
         self,
-        uri: Optional[str] = None,
-        user: Optional[str] = None,
-        password: Optional[str] = None,
+        uri: str | None = None,
+        user: str | None = None,
+        password: str | None = None,
     ) -> None:
         """Initialize Neo4j connection manager."""
         self.uri = uri or os.getenv("NEO4J_URI")
@@ -243,7 +243,7 @@ class Neo4jConnectionManager:
         return self._driver
 
     def execute_query(
-        self, query: str, parameters: Optional[dict[str, Any]] = None
+        self, query: str, parameters: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
         """Execute a Cypher query and return results.
 

@@ -5,7 +5,7 @@ guide.csv와 qna.csv의 내용을 QueryType별로 필터링하여 반환.
 """
 
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @lru_cache(maxsize=128)
@@ -14,7 +14,7 @@ def get_rules_for_query_type(
     neo4j_uri: str,
     neo4j_user: str,
     neo4j_password: str,
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     """Neo4j에서 특정 QueryType에 연결된 Guide Item 규칙 가져오기.
 
     Args:
@@ -72,7 +72,7 @@ def get_rules_from_neo4j(
     neo4j_uri: str,
     neo4j_user: str,
     neo4j_password: str,
-) -> List[Dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Neo4j Rule 노드 조회 (APPLIES_TO 관계 또는 query_type 속성)."""
     from neo4j import GraphDatabase
 
@@ -110,11 +110,11 @@ def get_rules_from_neo4j(
 
 @lru_cache(maxsize=128)
 def get_common_mistakes(
-    category: Optional[str],
+    category: str | None,
     neo4j_uri: str,
     neo4j_user: str,
     neo4j_password: str,
-) -> List[Dict[str, str]]:
+) -> list[dict[str, str]]:
     """Neo4j에서 자주 틀리는 부분 (QATopic) 가져오기.
 
     Args:
@@ -164,7 +164,7 @@ def get_common_mistakes(
                            substring(t.content, 0, 150) as preview
                     ORDER BY t.subcategoryName, t.name
                     LIMIT 15
-                    """
+                    """,
                 )
 
             return [
@@ -184,7 +184,7 @@ def get_best_practices(
     neo4j_uri: str,
     neo4j_user: str,
     neo4j_password: str,
-) -> List[str]:
+) -> list[str]:
     """Neo4j에서 Best Practice 관련 Item 가져오기.
 
     Args:
@@ -212,7 +212,7 @@ def get_best_practices(
                        substring(i.content, 0, 200) as preview
                 ORDER BY i.categoryName, i.subcategoryName, i.name
                 LIMIT 10
-                """
+                """,
             )
 
             return [f"{record['title']}: {record['preview']}..." for record in result]
@@ -222,11 +222,11 @@ def get_best_practices(
 
 @lru_cache(maxsize=128)
 def get_constraint_details(
-    query_type: Optional[str],
+    query_type: str | None,
     neo4j_uri: str,
     neo4j_user: str,
     neo4j_password: str,
-) -> List[str]:
+) -> list[str]:
     """Neo4j에서 제약조건 관련 Item 가져오기.
 
     Args:
@@ -257,7 +257,7 @@ def get_constraint_details(
                        substring(i.content, 0, 200) as preview
                 ORDER BY i.categoryName, i.subcategoryName, i.name
                 LIMIT 15
-                """
+                """,
             )
 
             return [f"{record['title']}: {record['preview']}..." for record in result]
@@ -274,7 +274,7 @@ def get_all_template_context(
     include_best_practices: bool = False,
     include_constraints: bool = False,
     context_stage: str = "answer",  # "answer" or "query"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """템플릿에 필요한 모든 컨텍스트를 한 번에 가져오기.
 
     Args:
@@ -290,9 +290,9 @@ def get_all_template_context(
     Returns:
         템플릿 컨텍스트 딕셔너리
     """
-    context: Dict[str, Any] = {
+    context: dict[str, Any] = {
         "guide_rules": get_rules_for_query_type(
-            query_type, neo4j_uri, neo4j_user, neo4j_password
+            query_type, neo4j_uri, neo4j_user, neo4j_password,
         ),
     }
 
@@ -312,23 +312,23 @@ def get_all_template_context(
             category = mistake_category_map.get(query_type, "답변")
 
         context["common_mistakes"] = get_common_mistakes(
-            category, neo4j_uri, neo4j_user, neo4j_password
+            category, neo4j_uri, neo4j_user, neo4j_password,
         )
 
     if include_best_practices:
         context["best_practices"] = get_best_practices(
-            neo4j_uri, neo4j_user, neo4j_password
+            neo4j_uri, neo4j_user, neo4j_password,
         )
 
     if include_constraints:
         context["constraint_details"] = get_constraint_details(
-            query_type, neo4j_uri, neo4j_user, neo4j_password
+            query_type, neo4j_uri, neo4j_user, neo4j_password,
         )
 
     # Rule 노드도 함께 주입 (필수 아님)
     try:
         context["rules"] = get_rules_from_neo4j(
-            query_type, neo4j_uri, neo4j_user, neo4j_password
+            query_type, neo4j_uri, neo4j_user, neo4j_password,
         )
     except Exception:
         context["rules"] = []
@@ -337,7 +337,7 @@ def get_all_template_context(
 
 
 # 환경변수에서 Neo4j 설정 가져오기
-def get_neo4j_config() -> Dict[str, str]:
+def get_neo4j_config() -> dict[str, str]:
     """환경변수에서 Neo4j 연결 정보 가져오기."""
     import os
 

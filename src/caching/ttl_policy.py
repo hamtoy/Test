@@ -87,10 +87,9 @@ def calculate_ttl_by_token_count(token_count: int) -> int:
     """
     if token_count < 5000:
         return 5 * 60  # 5분
-    elif token_count < 10000:
+    if token_count < 10000:
         return 10 * 60  # 10분
-    else:
-        return 30 * 60  # 30분
+    return 30 * 60  # 30분
 
 
 __all__ = ["CacheTTL", "CacheTTLPolicy", "calculate_ttl_by_token_count"]

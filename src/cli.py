@@ -7,7 +7,6 @@ import argparse
 import json
 import os
 from dataclasses import dataclass
-from typing import List, Optional
 
 import neo4j
 
@@ -23,7 +22,7 @@ class CLIArgs:
     non_interactive: bool = False
     ocr_file: str = "input_ocr.txt"
     cand_file: str = "input_candidates.json"
-    intent: Optional[str] = None
+    intent: str | None = None
     checkpoint_file: str = "checkpoint.jsonl"
     keep_progress: bool = False
     no_cost_panel: bool = False
@@ -35,13 +34,13 @@ class CLIArgs:
     pipeline_meta: str = "examples/session_input.json"
     optimize_neo4j: bool = False
     drop_existing_indexes: bool = False
-    output: Optional[str] = None
+    output: str | None = None
     output_format: str = "text"
     verbose: bool = False
     quiet: bool = False
 
 
-def parse_args(args: Optional[List[str]] = None) -> CLIArgs:
+def parse_args(args: list[str] | None = None) -> CLIArgs:
     """Parse command-line arguments.
 
     Args:
@@ -230,21 +229,20 @@ def format_output(result: dict[str, object], output_format: str = "text") -> str
     """
     if output_format == "json":
         return json.dumps(result, ensure_ascii=False, indent=2, default=str)
-    else:
-        # Text format with proper handling of nested structures
-        lines: list[str] = []
-        for key, value in result.items():
-            if isinstance(value, dict):
-                lines.append(f"{key}:")
-                lines.extend(
-                    f"  {sub_key}: {sub_value}" for sub_key, sub_value in value.items()
-                )
-            elif isinstance(value, list):
-                lines.append(f"{key}:")
-                lines.extend(f"  - {item}" for item in value)
-            else:
-                lines.append(f"{key}: {value}")
-        return "\n".join(lines)
+    # Text format with proper handling of nested structures
+    lines: list[str] = []
+    for key, value in result.items():
+        if isinstance(value, dict):
+            lines.append(f"{key}:")
+            lines.extend(
+                f"  {sub_key}: {sub_value}" for sub_key, sub_value in value.items()
+            )
+        elif isinstance(value, list):
+            lines.append(f"{key}:")
+            lines.extend(f"  - {item}" for item in value)
+        else:
+            lines.append(f"{key}: {value}")
+    return "\n".join(lines)
 
 
 async def run_neo4j_optimization(drop_existing: bool = False) -> None:
@@ -260,8 +258,8 @@ async def run_neo4j_optimization(drop_existing: bool = False) -> None:
     required_vars = ["NEO4J_URI", "NEO4J_USER", "NEO4J_PASSWORD"]
     for var in required_vars:
         if not os.getenv(var):
-            raise EnvironmentError(
-                f"{var} environment variable is required for Neo4j optimization"
+            raise OSError(
+                f"{var} environment variable is required for Neo4j optimization",
             )
 
     neo4j_uri = os.getenv("NEO4J_URI")

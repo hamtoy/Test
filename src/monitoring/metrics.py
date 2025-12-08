@@ -5,11 +5,9 @@
 
 from __future__ import annotations
 
-from typing import Dict
-
 # prometheus_client가 없을 경우 스텁 구현 사용
 try:
-    from prometheus_client import Counter, Histogram, Gauge, generate_latest
+    from prometheus_client import Counter, Gauge, Histogram, generate_latest
 
     PROMETHEUS_AVAILABLE = True
 except ImportError:
@@ -22,9 +20,9 @@ except ImportError:
         def __init__(self, name: str, doc: str, _labelnames: list[str] | None = None):
             """Initialize the stub counter."""
             self._name = name
-            self._values: Dict[tuple[str, ...], float] = {}
+            self._values: dict[tuple[str, ...], float] = {}
 
-        def labels(self, *args: str) -> "Counter":
+        def labels(self, *args: str) -> Counter:
             """Return self for method chaining."""
             return self
 
@@ -38,7 +36,7 @@ except ImportError:
             """Initialize the stub histogram."""
             self._name = name
 
-        def labels(self, *args: str) -> "Histogram":
+        def labels(self, *args: str) -> Histogram:
             """Return self for method chaining."""
             return self
 
@@ -226,21 +224,21 @@ def record_workflow_completion(status: str, duration_seconds: float) -> None:
 
 
 __all__ = [
+    "PROMETHEUS_AVAILABLE",
+    "api_calls_total",
+    "api_errors",
+    "api_latency",
+    "cache_hits",
+    "cache_misses",
+    "cache_size",
+    "cost_usd",
     "get_metrics",
     "record_api_call",
     "record_api_error",
     "record_cache_access",
     "record_token_usage",
     "record_workflow_completion",
-    "api_calls_total",
-    "api_latency",
-    "api_errors",
-    "cache_hits",
-    "cache_misses",
-    "cache_size",
     "token_usage",
-    "cost_usd",
     "workflow_duration",
     "workflow_status",
-    "PROMETHEUS_AVAILABLE",
 ]

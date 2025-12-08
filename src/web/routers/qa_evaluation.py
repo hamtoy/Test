@@ -11,7 +11,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 from fastapi import APIRouter, HTTPException
 
@@ -29,7 +29,7 @@ router = APIRouter(prefix="/api", tags=["qa-evaluation"])
 
 
 @router.post("/eval/external")
-async def api_eval_external(body: EvalExternalRequest) -> Dict[str, Any]:
+async def api_eval_external(body: EvalExternalRequest) -> dict[str, Any]:
     """외부 답변 3개 평가."""
     current_agent = _get_agent()
     if current_agent is None:
@@ -51,7 +51,7 @@ async def api_eval_external(body: EvalExternalRequest) -> Dict[str, Any]:
         best = max(results, key=lambda x: x.get("score", 0))
         meta = APIMetadata(duration=0.0)
         return cast(
-            Dict[str, Any],
+            "dict[str, Any]",
             build_response(
                 {"results": results, "best": best.get("candidate_id", "A")},
                 metadata=meta,
@@ -61,7 +61,7 @@ async def api_eval_external(body: EvalExternalRequest) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error("평가 실패: %s", e)
-        raise HTTPException(status_code=500, detail=f"평가 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"평가 실패: {e!s}")
 
 
 __all__ = [

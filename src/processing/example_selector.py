@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 from src.qa.rag_system import QAKnowledgeGraph
 
@@ -20,17 +20,17 @@ class DynamicExampleSelector:
         self.kg = kg
 
     def select_best_examples(
-        self, query_type: str, context: Dict[str, Any], k: int = 3
-    ) -> List[Dict[str, Any]]:
+        self, query_type: str, context: dict[str, Any], k: int = 3,
+    ) -> list[dict[str, Any]]:
         """컨텍스트에 맞는 최적 예시 선택."""
-        examples: List[Dict[str, Any]] = []
+        examples: list[dict[str, Any]] = []
         try:
             graph_session = getattr(self.kg, "graph_session", None)
             if graph_session is None:
                 graph = getattr(self.kg, "_graph", None)
                 if graph is None:
                     logger.debug(
-                        "DynamicExampleSelector: no graph_session/_graph; returning []"
+                        "DynamicExampleSelector: no graph_session/_graph; returning []",
                     )
                     return []
                 session_ctx = graph.session
@@ -40,11 +40,11 @@ class DynamicExampleSelector:
             with session_ctx() as session:
                 if session is None:
                     logger.debug(
-                        "DynamicExampleSelector: graph unavailable, returning []"
+                        "DynamicExampleSelector: graph unavailable, returning []",
                     )
                     return []
                 conditions = []
-                params: Dict[str, Any] = {"query_type": query_type, "k": k}
+                params: dict[str, Any] = {"query_type": query_type, "k": k}
 
                 if context.get("has_table_chart"):
                     conditions.append("e.context_has_table = true")

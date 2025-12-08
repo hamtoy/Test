@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from functools import lru_cache
-from typing import List, Optional, TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.qa.rag_system import QAKnowledgeGraph
@@ -12,10 +12,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # 전역 KG 참조 (프로세스 단위)
-_GLOBAL_KG: Optional["QAKnowledgeGraph"] = None
+_GLOBAL_KG: QAKnowledgeGraph | None = None
 
 
-def set_global_kg(kg: Optional["QAKnowledgeGraph"]) -> None:
+def set_global_kg(kg: QAKnowledgeGraph | None) -> None:
     """전역 KG 설정 (앱 초기화 시 1회 호출)."""
     global _GLOBAL_KG
     _GLOBAL_KG = kg
@@ -51,7 +51,7 @@ def clear_global_rule_cache() -> None:
     logger.info("Global rule cache cleared")
 
 
-def get_global_cache_info() -> Dict[str, float | int | None]:
+def get_global_cache_info() -> dict[str, float | int | None]:
     """전역 캐시 통계 반환."""
     info = _load_rules_from_global_kg.cache_info()
     return {
@@ -70,14 +70,14 @@ def get_global_cache_info() -> Dict[str, float | int | None]:
 class RuleLoader:
     """전역 캐싱을 사용하는 규칙 로더."""
 
-    def __init__(self, kg: Optional["QAKnowledgeGraph"]) -> None:
+    def __init__(self, kg: QAKnowledgeGraph | None) -> None:
         """기존 인터페이스 호환을 위해 KG를 받아 초기화."""
         # kg 파라미터는 기존 코드와의 호환성을 위해 유지
         self.kg = kg
 
     def get_rules_for_type(
-        self, query_type: str, default_rules: List[str]
-    ) -> List[str]:
+        self, query_type: str, default_rules: list[str],
+    ) -> list[str]:
         """지정된 질의 유형의 규칙을 반환 (전역 캐시 사용)."""
         cached_rules = _load_rules_from_global_kg(query_type)
         if cached_rules:
@@ -88,6 +88,6 @@ class RuleLoader:
         """전역 캐시 초기화 래퍼."""
         clear_global_rule_cache()
 
-    def get_cache_info(self) -> Dict[str, float | int | None]:
+    def get_cache_info(self) -> dict[str, float | int | None]:
         """전역 캐시 통계 래퍼."""
         return get_global_cache_info()

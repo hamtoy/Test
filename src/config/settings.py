@@ -46,7 +46,7 @@ class AppConfig(BaseSettings):
 
     api_key: str = Field(..., alias="GEMINI_API_KEY")
     model_name: Literal["gemini-flash-latest"] = Field(
-        "gemini-flash-latest", alias="GEMINI_MODEL_NAME"
+        "gemini-flash-latest", alias="GEMINI_MODEL_NAME",
     )
     max_output_tokens: int = Field(8192, alias="GEMINI_MAX_OUTPUT_TOKENS")
     timeout: int = Field(120, alias="GEMINI_TIMEOUT")
@@ -65,14 +65,14 @@ class AppConfig(BaseSettings):
     enable_standard_response: bool = Field(False, alias="ENABLE_STANDARD_RESPONSE")
     # Timeout overrides (environment can override; defaults keep backward compatibility)
     qa_single_timeout: int = Field(
-        QA_SINGLE_GENERATION_TIMEOUT, alias="QA_SINGLE_TIMEOUT"
+        QA_SINGLE_GENERATION_TIMEOUT, alias="QA_SINGLE_TIMEOUT",
     )
     qa_batch_timeout: int = Field(QA_BATCH_GENERATION_TIMEOUT, alias="QA_BATCH_TIMEOUT")
     workspace_timeout: int = Field(
-        WORKSPACE_GENERATION_TIMEOUT, alias="WORKSPACE_TIMEOUT"
+        WORKSPACE_GENERATION_TIMEOUT, alias="WORKSPACE_TIMEOUT",
     )
     workspace_unified_timeout: int = Field(
-        WORKSPACE_UNIFIED_TIMEOUT, alias="WORKSPACE_UNIFIED_TIMEOUT"
+        WORKSPACE_UNIFIED_TIMEOUT, alias="WORKSPACE_UNIFIED_TIMEOUT",
     )
 
     # RAG Configuration
@@ -80,10 +80,10 @@ class AppConfig(BaseSettings):
 
     # Provider Configuration
     llm_provider_type: str = Field(
-        "gemini", description="LLM provider type (gemini, etc.)"
+        "gemini", description="LLM provider type (gemini, etc.)",
     )
     graph_provider_type: str = Field(
-        "neo4j", description="Graph provider type (neo4j, etc.)"
+        "neo4j", description="Graph provider type (neo4j, etc.)",
     )
     neo4j_uri: str | None = Field(None, alias="NEO4J_URI")
     neo4j_user: str | None = Field(None, alias="NEO4J_USER")
@@ -117,7 +117,7 @@ class AppConfig(BaseSettings):
         """Timeout <= timeout_max 확인."""
         if self.timeout > self.timeout_max:
             raise ValueError(
-                f"timeout ({self.timeout}s) must be <= timeout_max ({self.timeout_max}s)"
+                f"timeout ({self.timeout}s) must be <= timeout_max ({self.timeout_max}s)",
             )
         return self
 
@@ -140,8 +140,8 @@ class AppConfig(BaseSettings):
                     "NEO4J_URI 설정 시 필수: {fields}\n"
                     "ENABLE_RAG=True 설정 시 필수: {fields}\n"
                     "또는 ENABLE_RAG=false로 설정하세요".format(
-                        fields=", ".join(missing)
-                    )
+                        fields=", ".join(missing),
+                    ),
                 )
 
         # Case 2: neo4j_uri is set (without enable_rag=True) - still require other Neo4j fields
@@ -152,7 +152,7 @@ class AppConfig(BaseSettings):
             if missing:
                 raise ValueError(
                     f"NEO4J_URI 설정 시 필수: {', '.join(missing)}\n"
-                    f"또는 .env에서 NEO4J_URI를 제거하세요"
+                    f"또는 .env에서 NEO4J_URI를 제거하세요",
                 )
 
         return self
@@ -181,13 +181,13 @@ class AppConfig(BaseSettings):
             raise ValueError(
                 "❌ GEMINI_API_KEY is required.\n"
                 "   Get one at: https://aistudio.google.com/app/apikey\n"
-                "   Set in .env: GEMINI_API_KEY=AIza..."
+                "   Set in .env: GEMINI_API_KEY=AIza...",
             )
 
         if v == "your_api_key_here":
             raise ValueError(
                 "❌ GEMINI_API_KEY is a placeholder. "
-                "Replace with actual key from https://aistudio.google.com"
+                "Replace with actual key from https://aistudio.google.com",
             )
 
         # 2️⃣ 길이 확인
@@ -195,14 +195,14 @@ class AppConfig(BaseSettings):
             raise ValueError(
                 f"❌ API key length is {len(v)}, expected {GEMINI_API_KEY_LENGTH}.\n"
                 f"   Your key: {v[:10]}...{v[-4:]}\n"
-                f"   Check if copied correctly from https://aistudio.google.com/app/apikey"
+                f"   Check if copied correctly from https://aistudio.google.com/app/apikey",
             )
 
         # 3️⃣ 형식 확인
         if not v.startswith("AIza"):
             raise ValueError(
                 f"❌ API key must start with 'AIza', got '{v[:10]}...'\n"
-                f"   Make sure you copied the full key"
+                f"   Make sure you copied the full key",
             )
 
         # 4️⃣ 정규식 확인
@@ -211,7 +211,7 @@ class AppConfig(BaseSettings):
             raise ValueError(
                 f"❌ API key format invalid. Key contains invalid characters.\n"
                 f"   Valid chars: A-Z, a-z, 0-9, _, -\n"
-                f"   Your key: {v[:10]}...{v[-4:]}"
+                f"   Your key: {v[:10]}...{v[-4:]}",
             )
 
         logger.debug("API key validated successfully")
@@ -223,7 +223,7 @@ class AppConfig(BaseSettings):
         """Enforce use of the supported Gemini model only."""
         if v != "gemini-flash-latest":
             raise ValueError(
-                "Unsupported model. This system only allows 'gemini-flash-latest'."
+                "Unsupported model. This system only allows 'gemini-flash-latest'.",
             )
         return v
 
@@ -314,7 +314,7 @@ class AppConfig(BaseSettings):
         """
         if not 1 <= v <= 10080:  # 1분 ~ 7일 (10080 = 7 * 24 * 60)
             raise ValueError(
-                f"Cache TTL must be between 1 and 10080 minutes (7 days), got {v}"
+                f"Cache TTL must be between 1 and 10080 minutes (7 days), got {v}",
             )
 
         # 경고: 7일 이상은 실용적이지 않음
@@ -334,7 +334,7 @@ class AppConfig(BaseSettings):
         upper = v.upper()
         if upper not in allowed:
             raise ValueError(
-                ERROR_MESSAGES["log_level_invalid"].format(allowed=allowed)
+                ERROR_MESSAGES["log_level_invalid"].format(allowed=allowed),
             )
         return upper
 

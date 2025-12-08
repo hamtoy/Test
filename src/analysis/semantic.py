@@ -12,14 +12,15 @@
 
 from __future__ import annotations
 
-import sys
 import logging
 import re
+import sys
 from collections import Counter
-from typing import Any, Dict, Iterable, List, Tuple
+from collections.abc import Iterable
+from typing import Any
 
 from dotenv import load_dotenv
-from neo4j import GraphDatabase, Driver
+from neo4j import Driver, GraphDatabase
 from neo4j.exceptions import Neo4jError
 
 from src.config.utils import require_env
@@ -100,7 +101,7 @@ logger = logging.getLogger(__name__)
 # --------------------
 
 
-def tokenize(text: str) -> List[str]:
+def tokenize(text: str) -> list[str]:
     """간단한 토큰화: 소문자화, 구두점 제거, 불용어/길이 필터."""
     tokens = []
     for raw in TOKEN_PATTERN.findall(text.lower()):
@@ -131,7 +132,7 @@ def count_keywords(contents: Iterable[str]) -> Counter[str]:
     return counter
 
 
-def create_topics(driver: Driver, keywords: List[Tuple[str, int]]) -> None:
+def create_topics(driver: Driver, keywords: list[tuple[str, int]]) -> None:
     """Create Topic nodes in Neo4j from keyword frequencies.
 
     Args:
@@ -139,7 +140,7 @@ def create_topics(driver: Driver, keywords: List[Tuple[str, int]]) -> None:
         keywords: List of (keyword, frequency) tuples.
     """
 
-    def _tx(tx: Any, items: List[Tuple[str, int]]) -> None:
+    def _tx(tx: Any, items: list[tuple[str, int]]) -> None:
         tx.run(
             """
             UNWIND $topics AS t
@@ -159,7 +160,7 @@ def create_topics(driver: Driver, keywords: List[Tuple[str, int]]) -> None:
 
 
 def link_blocks_to_topics(
-    driver: Driver, blocks: List[Dict[str, Any]], topics: List[Tuple[str, int]]
+    driver: Driver, blocks: list[dict[str, Any]], topics: list[tuple[str, int]],
 ) -> None:
     """Create TAGGED_WITH relationships between blocks and topics.
 
@@ -169,9 +170,9 @@ def link_blocks_to_topics(
         topics: List of (keyword, frequency) tuples.
     """
     topic_set = {w for w, _ in topics}
-    links: List[Dict[str, str]] = []
+    links: list[dict[str, str]] = []
 
-    def flush(batch: List[Dict[str, str]]) -> None:
+    def flush(batch: list[dict[str, str]]) -> None:
         """Flush a batch of block-topic relationships to the database."""
         if not batch:
             return
@@ -205,7 +206,7 @@ def link_blocks_to_topics(
     logger.info("Block-Topic 관계 생성 완료")
 
 
-def fetch_blocks(driver: Driver) -> List[Dict[str, Any]]:
+def fetch_blocks(driver: Driver) -> list[dict[str, Any]]:
     """Fetch blocks with content from Neo4j.
 
     Args:
@@ -220,7 +221,7 @@ def fetch_blocks(driver: Driver) -> List[Dict[str, Any]]:
             MATCH (b:Block)
             WHERE coalesce(b.content, '') <> '' AND size(b.content) > 10
             RETURN b.id AS id, b.content AS content
-            """
+            """,
         )
         return [dict(record) for record in result]
 
@@ -240,13 +241,13 @@ def main() -> None:
             "user": require_env("NEO4J_USER"),
             "password": require_env("NEO4J_PASSWORD"),
         }
-    except EnvironmentError as e:
+    except OSError as e:
         logger.error(str(e))
         sys.exit(1)
 
     try:
         driver = GraphDatabase.driver(
-            config["uri"], auth=(config["user"], config["password"])
+            config["uri"], auth=(config["user"], config["password"]),
         )
     except Neo4jError as e:
         logger.error("Neo4j 연결 실패: %s", e)

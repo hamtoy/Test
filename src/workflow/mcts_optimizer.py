@@ -1,8 +1,8 @@
+import logging
 import math
 import random
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
-import logging
+from typing import Any, Optional
 
 from src.agent.core import GeminiAgent
 
@@ -15,10 +15,10 @@ class MCTSNode:
 
     state: str  # Template name or action
     parent: Optional["MCTSNode"] = None
-    children: List["MCTSNode"] = field(default_factory=list)
+    children: list["MCTSNode"] = field(default_factory=list)
     visits: int = 0
     total_reward: float = 0.0
-    untried_actions: List[str] = field(default_factory=list)
+    untried_actions: list[str] = field(default_factory=list)
 
     @property
     def avg_reward(self) -> float:
@@ -39,7 +39,7 @@ class MCTSNode:
         if self.parent is None:
             return float("inf")
         return self.avg_reward + exploration_weight * math.sqrt(
-            math.log(self.parent.visits) / self.visits
+            math.log(self.parent.visits) / self.visits,
         )
 
 
@@ -47,7 +47,7 @@ class MCTSWorkflowOptimizer:
     """MCTS implementation for fast template/parameter selection."""
 
     def __init__(
-        self, agent: GeminiAgent, available_templates: List[str], iterations: int = 20
+        self, agent: GeminiAgent, available_templates: list[str], iterations: int = 20,
     ):
         """Initialize the MCTS workflow optimizer.
 
@@ -60,7 +60,7 @@ class MCTSWorkflowOptimizer:
         self.templates = available_templates
         self.iterations = iterations
 
-    async def optimize_workflow(self, query: str) -> Dict[str, Any]:
+    async def optimize_workflow(self, query: str) -> dict[str, Any]:
         """Run MCTS to find the best template for the query."""
         root = MCTSNode(state="ROOT", untried_actions=self.templates.copy())
 
@@ -109,7 +109,7 @@ class MCTSWorkflowOptimizer:
             return 0.0
 
     def _backpropagate(self, node: MCTSNode, reward: float) -> None:
-        current: Optional[MCTSNode] = node
+        current: MCTSNode | None = node
         while current:
             current.visits += 1
             current.total_reward += reward

@@ -4,16 +4,16 @@ import json
 import re
 from contextlib import suppress
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from dotenv import load_dotenv
 
-from src.qa.rag_system import QAKnowledgeGraph
-from src.processing.template_generator import DynamicTemplateGenerator
-from src.config.utils import require_env
-from scripts.build_session import SessionContext, build_session
-from checks.validate_session import validate_turns
 from checks.detect_forbidden_patterns import find_violations
+from checks.validate_session import validate_turns
+from scripts.build_session import SessionContext, build_session
+from src.config.utils import require_env
+from src.processing.template_generator import DynamicTemplateGenerator
+from src.qa.rag_system import QAKnowledgeGraph
 
 load_dotenv()
 
@@ -34,7 +34,7 @@ class IntegratedQAPipeline:
             self.neo4j_password,
         )
 
-    def create_session(self, image_meta: Dict[str, Any]) -> Dict[str, Any]:
+    def create_session(self, image_meta: dict[str, Any]) -> dict[str, Any]:
         """그래프 기반 컨텍스트로 세션을 생성하고 검증합니다.
 
         Args:
@@ -51,13 +51,13 @@ class IntegratedQAPipeline:
 
         # 세션 빌드 (calc/포커스/금지 패턴 포함)
         turns = build_session(ctx, validate=True)
-        turns_list: List[Dict[str, Any]] = [t.__dict__ for t in turns]
-        session: Dict[str, Any] = {"turns": turns_list, "context": ctx_data}
+        turns_list: list[dict[str, Any]] = [t.__dict__ for t in turns]
+        session: dict[str, Any] = {"turns": turns_list, "context": ctx_data}
 
         # 추가: 각 턴에 렌더된 프롬프트를 template generator로 재구성 (Rule/Constraint 주입)
         for turn in turns_list:
             turn["prompt"] = self.template_gen.generate_prompt_for_query_type(
-                turn["type"], ctx_data
+                turn["type"], ctx_data,
             )
 
         # 렌더링 후 금지 패턴 재검사
@@ -76,7 +76,7 @@ class IntegratedQAPipeline:
 
         return session
 
-    def _build_session_context(self, image_meta: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_session_context(self, image_meta: dict[str, Any]) -> dict[str, Any]:
         """SessionContext 스키마에 맞게 메타데이터를 변환하고 기본값을 채웁니다.
 
         Args:
@@ -98,21 +98,21 @@ class IntegratedQAPipeline:
             "has_table_chart": bool(image_meta.get("has_table_chart", False)),
             "session_turns": int(image_meta.get("session_turns", 4)),
             "must_include_reasoning": bool(
-                image_meta.get("must_include_reasoning", True)
+                image_meta.get("must_include_reasoning", True),
             ),
             "used_calc_query_count": int(image_meta.get("used_calc_query_count", 0)),
             "prior_focus_summary": image_meta.get(
-                "prior_focus_summary", "N/A (first turn)"
+                "prior_focus_summary", "N/A (first turn)",
             ),
             "candidate_focus": image_meta.get(
-                "candidate_focus", "전체 본문을 골고루 커버"
+                "candidate_focus", "전체 본문을 골고루 커버",
             ),
             "focus_history": image_meta.get("focus_history", []),
         }
 
-    def validate_output(self, query_type: str, output: str) -> Dict[str, Any]:
+    def validate_output(self, query_type: str, output: str) -> dict[str, Any]:
         """출력 검증: 금지 패턴, 에러 패턴, 관련 규칙 기반 검사."""
-        violations: List[str] = [
+        violations: list[str] = [
             f"forbidden_pattern:{v['type']}" for v in find_violations(output)
         ]
 
@@ -154,7 +154,7 @@ class IntegratedQAPipeline:
             self.template_gen.close()
 
 
-def run_integrated_pipeline(meta_path: Path) -> Dict[str, Any]:
+def run_integrated_pipeline(meta_path: Path) -> dict[str, Any]:
     """파일에서 메타데이터를 읽어 통합 파이프라인을 실행합니다.
 
     Args:

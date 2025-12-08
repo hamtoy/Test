@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional
+import logging
+from collections.abc import Callable
+from typing import Any
 
 from neo4j.exceptions import Neo4jError
-
-import logging
 
 from src.llm.gemini import GeminiModelClient
 from src.qa.rag_system import QAKnowledgeGraph
@@ -17,8 +17,8 @@ class GraphEnhancedRouter:
 
     def __init__(
         self,
-        kg: Optional[QAKnowledgeGraph] = None,
-        llm: Optional[GeminiModelClient] = None,
+        kg: QAKnowledgeGraph | None = None,
+        llm: GeminiModelClient | None = None,
     ):
         """Initialize the graph-enhanced router.
 
@@ -30,8 +30,8 @@ class GraphEnhancedRouter:
         self.llm = llm or GeminiModelClient()
 
     def route_and_generate(
-        self, user_input: str, handlers: Dict[str, Callable[[str], Any]]
-    ) -> Dict[str, Any]:
+        self, user_input: str, handlers: dict[str, Callable[[str], Any]],
+    ) -> dict[str, Any]:
         """사용자의 입력을 분석해 타입을 선택하고 해당 핸들러를 실행합니다.
 
         handlers: {"explanation": func, "summary": func, ...}
@@ -41,7 +41,7 @@ class GraphEnhancedRouter:
         choice = self.llm.generate(prompt, role="router").strip().lower()
 
         # 선택 결과 정규화
-        chosen: Optional[str] = None
+        chosen: str | None = None
         for qt in qtypes:
             if qt["name"].lower() in choice:
                 chosen = qt["name"]
@@ -63,19 +63,19 @@ class GraphEnhancedRouter:
 
         return {"choice": chosen, "output": output}
 
-    def _fetch_query_types(self) -> List[Dict[str, Any]]:
+    def _fetch_query_types(self) -> list[dict[str, Any]]:
         try:
             graph = getattr(self.kg, "_graph", None)
             if graph is None:
                 return []
-            with graph.session() as session:  # noqa: SLF001
+            with graph.session() as session:
                 rows = session.run(
                     """
                     MATCH (qt:QueryType)
                     RETURN qt.name AS name,
                            qt.korean AS korean,
                            qt.session_limit AS limit
-                    """
+                    """,
                 )
                 return [dict(r) for r in rows]
         except Neo4jError as exc:
@@ -86,7 +86,7 @@ class GraphEnhancedRouter:
             return []
 
     def _build_router_prompt(
-        self, user_input: str, qtypes: List[Dict[str, Any]]
+        self, user_input: str, qtypes: list[dict[str, Any]],
     ) -> str:
         desc_lines = []
         for qt in qtypes:
@@ -111,7 +111,7 @@ class GraphEnhancedRouter:
             graph = getattr(self.kg, "_graph", None)
             if graph is None:
                 return
-            with graph.session() as session:  # noqa: SLF001
+            with graph.session() as session:
                 session.run(
                     """
                     CREATE (r:RoutingLog {

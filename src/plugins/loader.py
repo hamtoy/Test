@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def load_plugin(file_path: Path) -> list[type["Plugin"]]:
+def load_plugin(file_path: Path) -> list[type[Plugin]]:
     """단일 플러그인 파일에서 Plugin 클래스들을 로드.
 
     Args:
@@ -57,7 +57,7 @@ def load_plugin(file_path: Path) -> list[type["Plugin"]]:
     return plugins
 
 
-def discover_plugins(plugin_dir: Path | None = None) -> list["Plugin"]:
+def discover_plugins(plugin_dir: Path | None = None) -> list[Plugin]:
     """플러그인 자동 발견 및 로드.
 
     지정된 디렉토리에서 모든 플러그인을 찾아 인스턴스화합니다.

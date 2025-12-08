@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-
 import os
-from langchain_core.prompts import PromptTemplate
+from typing import Any
+
 from langchain_community.graphs import Neo4jGraph
 from langchain_community.vectorstores import Neo4jVector
+from langchain_core.prompts import PromptTemplate
+
 from src.qa.rag_system import CustomGeminiEmbeddings
 
 
@@ -20,7 +21,7 @@ class AdvancedContextAugmentation:
         neo4j_uri: str,
         user: str,
         password: str,
-        gemini_key: Optional[str] = None,
+        gemini_key: str | None = None,
     ):
         """Initialize the context augmentation system.
 
@@ -32,7 +33,7 @@ class AdvancedContextAugmentation:
         """
         self.graph = Neo4jGraph(url=neo4j_uri, username=user, password=password)
 
-        self.vector_index: Optional[Neo4jVector] = None
+        self.vector_index: Neo4jVector | None = None
         self.llm = None
 
         # GEMINI_API_KEY를 우선 사용
@@ -53,8 +54,8 @@ class AdvancedContextAugmentation:
             )
 
     def augment_prompt_with_similar_cases(
-        self, user_query: str, query_type: str
-    ) -> Dict[str, Any]:
+        self, user_query: str, query_type: str,
+    ) -> dict[str, Any]:
         """유사 사례/규칙을 찾아 프롬프트 컨텍스트를 증강합니다.
 
         벡터 인덱스가 있으면 임베딩 기반으로 Block을 검색하고, 없으면 QueryType
@@ -81,8 +82,8 @@ class AdvancedContextAugmentation:
             >>> result["relevant_rules"][0]["priority"]
             1
         """
-        similar_blocks: List[Any] = []
-        enriched_rules: List[Dict[str, Any]] = []
+        similar_blocks: list[Any] = []
+        enriched_rules: list[dict[str, Any]] = []
 
         if self.vector_index:
             similar_blocks = self.vector_index.similarity_search(user_query, k=5)
@@ -138,7 +139,7 @@ class AdvancedContextAugmentation:
                 import logging
 
                 logging.getLogger(__name__).warning(
-                    "Fallback graph search failed: %s", exc
+                    "Fallback graph search failed: %s", exc,
                 )
 
         return {
@@ -146,7 +147,7 @@ class AdvancedContextAugmentation:
                 str(
                     getattr(b, "page_content", "")
                     or (b.get("content") if hasattr(b, "get") else "")
-                    or (b.get("text") if hasattr(b, "get") else "")
+                    or (b.get("text") if hasattr(b, "get") else ""),
                 )
                 for b in similar_blocks
                 if getattr(b, "page_content", None)
@@ -157,7 +158,7 @@ class AdvancedContextAugmentation:
         }
 
     def generate_with_augmentation(
-        self, user_query: str, query_type: str, base_context: Dict[str, Any]
+        self, user_query: str, query_type: str, base_context: dict[str, Any],
     ) -> str:
         """증강된 컨텍스트로 최종 프롬프트 생성 (LLM 호출 없이 포맷만 반환)."""
         aug_ctx = self.augment_prompt_with_similar_cases(user_query, query_type)
@@ -198,18 +199,18 @@ Generate output that follows ALL rules and learns from successful cases.
         formatted = prompt.format(
             query_type=query_type,
             similar_cases="\n".join(
-                [f"- {c[:100]}..." for c in aug_ctx["similar_cases"]]
+                [f"- {c[:100]}..." for c in aug_ctx["similar_cases"]],
             )
             or "(none)",
             rules="\n".join(
                 [
                     f"[P{r.get('priority', '?')}] {r.get('rule', '')}"
                     for r in aug_ctx["relevant_rules"]
-                ]
+                ],
             )
             or "(none)",
             examples="\n".join(
-                [ex for r in aug_ctx["relevant_rules"] for ex in r.get("examples", [])]
+                [ex for r in aug_ctx["relevant_rules"] for ex in r.get("examples", [])],
             )
             or "(none)",
             user_query=user_query,

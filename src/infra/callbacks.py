@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
-from typing import Any, Dict, List, Optional
 from contextlib import suppress
+from datetime import datetime
+from typing import Any
 
-from neo4j import GraphDatabase
 from langchain.callbacks.base import BaseCallbackHandler
+from neo4j import GraphDatabase
 
 from src.config.utils import require_env
-from src.infra.neo4j import create_sync_driver, SafeDriver
+from src.infra.neo4j import SafeDriver, create_sync_driver
 
 
 class Neo4jLoggingCallback(BaseCallbackHandler):
@@ -17,10 +17,10 @@ class Neo4jLoggingCallback(BaseCallbackHandler):
 
     def __init__(
         self,
-        neo4j_uri: Optional[str] = None,
-        user: Optional[str] = None,
-        password: Optional[str] = None,
-        session_id: Optional[str] = None,
+        neo4j_uri: str | None = None,
+        user: str | None = None,
+        password: str | None = None,
+        session_id: str | None = None,
     ):
         """Initialize the Neo4j logging callback.
 
@@ -42,7 +42,7 @@ class Neo4jLoggingCallback(BaseCallbackHandler):
         )
 
     def on_llm_start(
-        self, serialized: Dict[str, Any], prompts: List[str], **kwargs: Any
+        self, serialized: dict[str, Any], prompts: list[str], **kwargs: Any,
     ) -> None:
         """LLM 호출 시작."""
         try:
@@ -105,7 +105,7 @@ class Neo4jLoggingCallback(BaseCallbackHandler):
         if self.driver:
             self.driver.close()
 
-    def __enter__(self) -> "Neo4jLoggingCallback":
+    def __enter__(self) -> Neo4jLoggingCallback:
         """Enter context manager."""
         return self
 

@@ -1,8 +1,8 @@
 from __future__ import annotations
-# mypy: ignore-errors
 
+# mypy: ignore-errors
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
@@ -23,8 +23,8 @@ class LCELOptimizedChain:
 
     def __init__(
         self,
-        kg: Optional[QAKnowledgeGraph] = None,
-        llm: Optional[GeminiModelClient] = None,
+        kg: QAKnowledgeGraph | None = None,
+        llm: GeminiModelClient | None = None,
     ):
         """Initialize the LCEL optimized chain.
 
@@ -54,7 +54,7 @@ class LCELOptimizedChain:
                     "examples": RunnableLambda(self._get_examples),
                     "constraints": RunnableLambda(self._get_constraints),
                     "context": RunnablePassthrough(),
-                }
+                },
             )
             | RunnableLambda(self._merge_context)
             | RunnableLambda(self._format_prompt)
@@ -62,14 +62,14 @@ class LCELOptimizedChain:
             | StrOutputParser()
         )
 
-    def _get_rules(self, input_dict: Dict[str, Any]) -> List[str]:
+    def _get_rules(self, input_dict: dict[str, Any]) -> list[str]:
         """QueryType별 Rule 텍스트 조회."""
         qt = input_dict.get("query_type", "explanation")
         try:
             graph = getattr(self.kg, "_graph", None)
             if graph is None:
                 return []
-            with graph.session() as session:  # noqa: SLF001
+            with graph.session() as session:
                 res = session.run(
                     """
                     MATCH (r:Rule)-[:APPLIES_TO]->(q:QueryType {name: $qt})
@@ -82,7 +82,7 @@ class LCELOptimizedChain:
             logger.warning("Rule fetch failed: %s", exc)
             return []
 
-    def _get_examples(self, input_dict: Dict[str, Any]) -> List[str]:
+    def _get_examples(self, input_dict: dict[str, Any]) -> list[str]:
         """예시 샘플 조회."""
         try:
             rows = self.kg.get_examples(limit=3)
@@ -91,7 +91,7 @@ class LCELOptimizedChain:
             logger.warning("Example fetch failed: %s", exc)
             return []
 
-    def _get_constraints(self, input_dict: Dict[str, Any]) -> List[str]:
+    def _get_constraints(self, input_dict: dict[str, Any]) -> list[str]:
         """제약 조건 텍스트 조회."""
         qt = input_dict.get("query_type", "explanation")
         try:
@@ -101,7 +101,7 @@ class LCELOptimizedChain:
             logger.warning("Constraint fetch failed: %s", exc)
             return []
 
-    def _merge_context(self, parallel_output: Dict[str, Any]) -> Dict[str, Any]:
+    def _merge_context(self, parallel_output: dict[str, Any]) -> dict[str, Any]:
         """병렬 결과 병합."""
         return {
             "rules": parallel_output.get("rules", []),
@@ -110,7 +110,7 @@ class LCELOptimizedChain:
             "original_context": parallel_output.get("context", {}),
         }
 
-    def _format_prompt(self, merged: Dict[str, Any]) -> str:
+    def _format_prompt(self, merged: dict[str, Any]) -> str:
         return self.prompt_template.format(
             rules="\n".join(f"- {r}" for r in merged["rules"]) or "(규칙 없음)",
             examples="\n".join(f"- {e}" for e in merged["examples"]) or "(예시 없음)",
@@ -122,6 +122,6 @@ class LCELOptimizedChain:
     def _call_llm(self, prompt: str) -> str:
         return self.llm.generate(prompt, role="lcel")
 
-    def invoke(self, input_dict: Dict[str, Any]) -> str:
+    def invoke(self, input_dict: dict[str, Any]) -> str:
         """체인을 실행해 최종 답변을 반환."""
         return self.chain.invoke(input_dict)

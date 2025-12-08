@@ -35,7 +35,7 @@ if sys.version_info < (3, 10):
     raise RuntimeError(
         "shining-quasar v3.0+ requires Python 3.10 or higher.\n"
         "For Python 3.9 support, use v2.5.x:\n"
-        "  pip install shining-quasar~=2.5.0"
+        "  pip install shining-quasar~=2.5.0",
     )
 
 if TYPE_CHECKING:

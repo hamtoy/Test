@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import Dict, Optional
 
+from src.features.self_correcting import SelfCorrectingQAChain
 from src.llm.gemini import GeminiModelClient
-from src.routing.graph_router import GraphEnhancedRouter
 from src.llm.lcel_chain import LCELOptimizedChain
 from src.qa.memory_augmented import MemoryAugmentedQASystem
 from src.qa.multi_agent import MultiAgentQASystem
 from src.qa.rag_system import QAKnowledgeGraph
-from src.features.self_correcting import SelfCorrectingQAChain
+from src.routing.graph_router import GraphEnhancedRouter
 
 
 class QASystemFactory:
@@ -27,9 +26,9 @@ class QASystemFactory:
 
     def __init__(
         self,
-        neo4j_uri: Optional[str] = None,
-        neo4j_user: Optional[str] = None,
-        neo4j_password: Optional[str] = None,
+        neo4j_uri: str | None = None,
+        neo4j_user: str | None = None,
+        neo4j_password: str | None = None,
     ):
         """Initialize the factory with optional Neo4j credentials.
 
@@ -43,8 +42,8 @@ class QASystemFactory:
         self.neo4j_password = neo4j_password
 
         # Shared dependencies
-        self._kg: Optional[QAKnowledgeGraph] = None
-        self._model_client: Optional[GeminiModelClient] = None
+        self._kg: QAKnowledgeGraph | None = None
+        self._model_client: GeminiModelClient | None = None
 
     def get_knowledge_graph(self) -> QAKnowledgeGraph:
         """Get or create the shared QAKnowledgeGraph instance.
@@ -119,7 +118,7 @@ class QASystemFactory:
             self.get_model_client(),
         )
 
-    def create_all_components(self) -> Dict[str, object]:
+    def create_all_components(self) -> dict[str, object]:
         """Create all QA system components at once.
 
         Returns:
@@ -154,15 +153,15 @@ class QASystemFactory:
                     close_client()
             self._model_client = None
 
-    def __enter__(self) -> "QASystemFactory":
+    def __enter__(self) -> QASystemFactory:
         """컨텍스트 매니저 진입 시 팩토리 인스턴스 반환."""
         return self
 
     def __exit__(
         self,
-        exc_type: Optional[type],
-        _exc_val: Optional[BaseException],
-        _exc_tb: Optional[object],
+        exc_type: type | None,
+        _exc_val: BaseException | None,
+        _exc_tb: object | None,
     ) -> None:
         """컨텍스트 종료 시 리소스 정리."""
         self.close()

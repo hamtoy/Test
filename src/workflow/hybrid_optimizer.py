@@ -1,10 +1,11 @@
 import logging
-from typing import Dict, Any, Literal, Optional, cast
+from typing import Any, Literal, cast
+
+from src.agent.core import GeminiAgent
 
 # 기존 features 패키지의 LATS 재사용
 from src.features.lats import LATSSearcher, SearchState
 from src.workflow.mcts_optimizer import MCTSWorkflowOptimizer
-from src.agent.core import GeminiAgent
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +32,9 @@ class HybridWorkflowOptimizer:
         self,
         query: str,
         mode: Literal["auto", "lats", "mcts"] = "auto",
-        ocr_text: Optional[str] = None,
-        current_answer: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        ocr_text: str | None = None,
+        current_answer: str | None = None,
+    ) -> dict[str, Any]:
         """Execute optimization based on mode.
 
         Args:
@@ -46,7 +47,7 @@ class HybridWorkflowOptimizer:
         if mode == "auto":
             detected = self._detect_complexity(query)
             if detected in ["lats", "mcts"]:
-                selected_mode = cast(Literal["lats", "mcts"], detected)
+                selected_mode = cast("Literal['lats', 'mcts']", detected)
             else:
                 selected_mode = "mcts"
 
@@ -68,15 +69,14 @@ class HybridWorkflowOptimizer:
                 "result": result_node,  # SearchNode 객체
                 "strategy": "Reasoning Tree",
             }
-        else:
-            # MCTS: Fast template selection
-            result = await self.mcts.optimize_workflow(query)
-            return {
-                "optimizer": "MCTS",
-                "best_template": result["best_template"],
-                "score": result["score"],
-                "strategy": "Template Selection",
-            }
+        # MCTS: Fast template selection
+        result = await self.mcts.optimize_workflow(query)
+        return {
+            "optimizer": "MCTS",
+            "best_template": result["best_template"],
+            "score": result["score"],
+            "strategy": "Template Selection",
+        }
 
     def _detect_complexity(self, query: str) -> str:
         """Heuristic for complexity detection."""

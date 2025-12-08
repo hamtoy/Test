@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any
 
 import google.generativeai as genai
 from google.api_core import exceptions as google_exceptions
@@ -41,10 +42,10 @@ class GeminiProvider(LLMProvider):
     async def generate_content_async(
         self,
         prompt: str,
-        system_instruction: Optional[str] = None,
-        temperature: Optional[float] = None,
-        max_output_tokens: Optional[int] = None,
-        response_schema: Optional[Any] = None,
+        system_instruction: str | None = None,
+        temperature: float | None = None,
+        max_output_tokens: int | None = None,
+        response_schema: Any | None = None,
         **kwargs: Any,
     ) -> GenerationResult:
         """Generate content asynchronously using Gemini.
@@ -81,12 +82,12 @@ class GeminiProvider(LLMProvider):
         model = self._model
         if system_instruction:
             model = genai.GenerativeModel(
-                self.model_name, system_instruction=system_instruction
+                self.model_name, system_instruction=system_instruction,
             )
 
         try:
             response = await model.generate_content_async(
-                prompt, generation_config=generation_config, **kwargs
+                prompt, generation_config=generation_config, **kwargs,
             )
 
             # Extract usage metadata
@@ -109,7 +110,7 @@ class GeminiProvider(LLMProvider):
                 }:
                     safety_info = getattr(response, "prompt_feedback", None)
                     raise SafetyBlockedError(
-                        f"Generation blocked: {finish_reason} ({safety_info})"
+                        f"Generation blocked: {finish_reason} ({safety_info})",
                     )
 
             return GenerationResult(
@@ -126,14 +127,14 @@ class GeminiProvider(LLMProvider):
         except google_exceptions.InvalidArgument as e:
             if "token" in str(e).lower():
                 raise ContextWindowExceededError(
-                    "Context window exceeded", original_error=e
+                    "Context window exceeded", original_error=e,
                 ) from e
             raise ProviderError(f"Invalid argument: {e}", original_error=e) from e
         except google_exceptions.DeadlineExceeded as e:
             raise TimeoutError("Gemini request timed out", original_error=e) from e
         except Exception as e:
             raise ProviderError(
-                f"Gemini generation failed: {e}", original_error=e
+                f"Gemini generation failed: {e}", original_error=e,
             ) from e
 
     async def count_tokens(self, text: str) -> int:
@@ -193,15 +194,15 @@ class Neo4jProvider(GraphProvider):
             await self._driver.verify_connectivity()
         except Exception as e:
             raise ProviderError(
-                f"Neo4j connectivity check failed: {e}", original_error=e
+                f"Neo4j connectivity check failed: {e}", original_error=e,
             ) from e
 
     async def create_nodes(
         self,
-        nodes: List[Dict[str, Any]],
+        nodes: list[dict[str, Any]],
         label: str,
         merge_on: str = "id",
-        merge_keys: Optional[List[str]] = None,
+        merge_keys: list[str] | None = None,
     ) -> int:
         """Batch create or merge nodes using UNWIND for efficiency.
 
@@ -252,7 +253,7 @@ class Neo4jProvider(GraphProvider):
 
     async def create_relationships(
         self,
-        rels: List[Dict[str, Any]],
+        rels: list[dict[str, Any]],
         rel_type: str,
         from_label: str,
         to_label: str,

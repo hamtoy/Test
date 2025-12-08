@@ -5,10 +5,10 @@ from __future__ import annotations
 import json
 import logging
 import re
-from threading import Lock
-from typing import Literal, Optional, Tuple
 from datetime import datetime, timezone
 from pathlib import Path
+from threading import Lock
+from typing import Literal
 
 from fastapi import HTTPException
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # Thread-safe OCR cache
-_OCR_CACHE: Optional[Tuple[Path, float, str]] = None
+_OCR_CACHE: tuple[Path, float, str] | None = None
 _OCR_CACHE_LOCK = Lock()
 
 # 질의 유형 매핑 (QA/워크스페이스 공용)
@@ -78,7 +78,7 @@ def log_review_session(
     edit_request_used: str,
     inspector_comment: str,
     *,
-    base_dir: Optional[Path] = None,
+    base_dir: Path | None = None,
 ) -> None:
     """검수/수정 세션 로그를 JSONL 파일에 기록."""
     try:
@@ -138,7 +138,7 @@ def fix_broken_numbers(text: str) -> str:
 
 
 def detect_workflow(
-    query: Optional[str], answer: Optional[str], edit_request: Optional[str]
+    query: str | None, answer: str | None, edit_request: str | None,
 ) -> Literal[
     "full_generation",
     "edit_both",
@@ -333,6 +333,7 @@ def postprocess_answer(answer: str, qtype: str) -> str:
 __all__ = [
     "QTYPE_MAP",
     "REPO_ROOT",
+    "apply_answer_limits",
     "detect_workflow",
     "fix_broken_numbers",
     "load_ocr_text",
@@ -340,5 +341,4 @@ __all__ = [
     "postprocess_answer",
     "save_ocr_text",
     "strip_output_tags",
-    "apply_answer_limits",
 ]

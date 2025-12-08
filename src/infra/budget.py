@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-
+from typing import Any
 
 # Gemini Flash pricing (USD per 1M tokens)
 # Source: Google AI Studio pricing page (<=200K tokens tier)
@@ -26,8 +25,8 @@ class UsageRecord:
     cached_input_tokens: int = 0
     total_tokens: int = 0
     cost_usd: float = 0.0
-    timestamp: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    timestamp: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class BudgetTracker:
@@ -40,7 +39,7 @@ class BudgetTracker:
             budget_limit_usd: Maximum budget in USD.
         """
         self.budget_limit_usd = budget_limit_usd
-        self.records: List[UsageRecord] = []
+        self.records: list[UsageRecord] = []
         self.total_input_tokens = 0
         self.total_output_tokens = 0
         self.total_cached_tokens = 0
@@ -48,14 +47,14 @@ class BudgetTracker:
 
     def record_usage(
         self,
-        usage: Optional[Dict[str, int]] = None,
-        timestamp: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        usage: dict[str, int] | None = None,
+        timestamp: str | None = None,
+        metadata: dict[str, Any] | None = None,
         *,
-        input_tokens: Optional[int] = None,
-        output_tokens: Optional[int] = None,
-        cached_input_tokens: Optional[int] = None,
-        total_tokens: Optional[int] = None,
+        input_tokens: int | None = None,
+        output_tokens: int | None = None,
+        cached_input_tokens: int | None = None,
+        total_tokens: int | None = None,
     ) -> UsageRecord:
         """LLM 사용량 기록 및 비용 계산.
 
@@ -74,13 +73,13 @@ class BudgetTracker:
         # 레거시 키 호환
         input_tokens_val = usage.get("prompt_tokens", usage.get("input_tokens", 0))
         output_tokens_val = usage.get(
-            "completion_tokens", usage.get("output_tokens", 0)
+            "completion_tokens", usage.get("output_tokens", 0),
         )
         cached_tokens_val = usage.get(
-            "cached_input_tokens", usage.get("cached_tokens", 0)
+            "cached_input_tokens", usage.get("cached_tokens", 0),
         )
         total_tokens_val = usage.get(
-            "total_tokens", input_tokens_val + output_tokens_val
+            "total_tokens", input_tokens_val + output_tokens_val,
         )
 
         cost_input = (input_tokens_val / 1_000_000) * GEMINI_FLASH_PRICING["input"]
@@ -129,7 +128,7 @@ class BudgetTracker:
         """
         return self.get_budget_usage_percent() >= (threshold * 100)
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get usage statistics as a dictionary."""
         return {
             "total_calls": len(self.records),

@@ -1,7 +1,6 @@
 """성능 메트릭 자동 수집."""
 
 from dataclasses import dataclass, field
-from typing import Dict
 from datetime import datetime, timedelta, timezone
 
 
@@ -48,7 +47,7 @@ class PerformanceTracker:
         self.metrics.append(metric)
         self._cleanup_old()
 
-    def get_stats(self, operation: str | None = None) -> Dict[str, Dict[str, float]]:
+    def get_stats(self, operation: str | None = None) -> dict[str, dict[str, float]]:
         """작업별 통계 반환.
 
         Args:
@@ -73,7 +72,7 @@ class PerformanceTracker:
         if not filtered:
             return {}
 
-        result: Dict[str, _StatsData] = {}
+        result: dict[str, _StatsData] = {}
 
         for metric in filtered:
             op = metric.operation
@@ -87,7 +86,7 @@ class PerformanceTracker:
                 result[op].successes += 1
 
         # 통계 계산
-        stats: Dict[str, Dict[str, float]] = {}
+        stats: dict[str, dict[str, float]] = {}
         for op, data in result.items():
             durations = data.durations
             if durations:

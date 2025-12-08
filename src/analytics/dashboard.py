@@ -54,7 +54,7 @@ class UsageDashboard:
                         if ts_str:
                             try:
                                 ts = datetime.fromisoformat(
-                                    ts_str.replace("Z", "+00:00")
+                                    ts_str.replace("Z", "+00:00"),
                                 )
                                 if ts.replace(tzinfo=None) >= cutoff:
                                     entries.append(entry)
@@ -206,7 +206,7 @@ class UsageDashboard:
         Returns:
             Dictionary mapping hour (0-23) to usage count
         """
-        distribution: dict[int, int] = {h: 0 for h in range(24)}
+        distribution: dict[int, int] = dict.fromkeys(range(24), 0)
 
         for e in entries:
             ts_str = e.get("timestamp", "")

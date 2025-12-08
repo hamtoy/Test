@@ -4,18 +4,19 @@ from __future__ import annotations
 
 import atexit
 import os
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager, suppress
-from typing import Any, AsyncIterator, Callable, Dict, List, Optional
+from typing import Any
 
-from neo4j import AsyncGraphDatabase, AsyncDriver, GraphDatabase, Driver
+from neo4j import AsyncDriver, AsyncGraphDatabase, Driver, GraphDatabase
 
 from src.core.interfaces import GraphProvider
 
 __all__ = [
+    "Neo4jGraphProvider",
     "SafeDriver",
     "create_sync_driver",
     "get_neo4j_driver_from_env",
-    "Neo4jGraphProvider",
 ]
 
 
@@ -32,7 +33,7 @@ class SafeDriver:
             driver: The Neo4j Driver instance to wrap.
             register_atexit: Whether to register cleanup on program exit.
         """
-        self._driver: Optional[Driver] = driver
+        self._driver: Driver | None = driver
         self._register_atexit = register_atexit
         if register_atexit:
             atexit.register(self.close)
@@ -58,7 +59,7 @@ class SafeDriver:
             self._driver.close()
         self._driver = None
 
-    def __enter__(self) -> "SafeDriver":
+    def __enter__(self) -> SafeDriver:
         """Enter context manager."""
         return self
 
@@ -83,7 +84,7 @@ def create_sync_driver(
     password: str,
     *,
     register_atexit: bool = False,
-    graph_db_factory: Optional[Callable[..., Driver]] = None,
+    graph_db_factory: Callable[..., Driver] | None = None,
 ) -> SafeDriver:
     """Create a Neo4j sync driver wrapped with SafeDriver to enforce close().
 
@@ -123,9 +124,9 @@ def get_neo4j_driver_from_env(*, register_atexit: bool = False) -> SafeDriver:
     password = os.getenv("NEO4J_PASSWORD")
 
     if uri is None or user is None or password is None:
-        raise EnvironmentError(
+        raise OSError(
             "Missing required Neo4j environment variables: "
-            "NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD"
+            "NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD",
         )
 
     return create_sync_driver(uri, user, password, register_atexit=register_atexit)
@@ -158,7 +159,7 @@ class Neo4jGraphProvider(GraphProvider):
         self._user = user
         self._password = password
         self._batch_size = batch_size
-        self._driver: Optional[AsyncDriver] = None
+        self._driver: AsyncDriver | None = None
 
     async def _get_driver(self) -> AsyncDriver:
         """Lazily initialize and return the async driver.
@@ -205,10 +206,10 @@ class Neo4jGraphProvider(GraphProvider):
 
     async def create_nodes(
         self,
-        nodes: List[Dict[str, Any]],
+        nodes: list[dict[str, Any]],
         label: str,
         merge_on: str = "id",
-        merge_keys: Optional[List[str]] = None,
+        merge_keys: list[str] | None = None,
     ) -> int:
         """Batch create or merge nodes using UNWIND for efficiency.
 
@@ -259,7 +260,7 @@ class Neo4jGraphProvider(GraphProvider):
 
     async def create_relationships(
         self,
-        rels: List[Dict[str, Any]],
+        rels: list[dict[str, Any]],
         rel_type: str,
         from_label: str,
         to_label: str,

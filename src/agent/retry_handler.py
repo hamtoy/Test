@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, cast
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING, Any, cast
 
 from tenacity import (
     retry,
@@ -21,7 +22,7 @@ if TYPE_CHECKING:
 class RetryHandler:
     """Isolated retry/backoff logic extracted from `GeminiAgent`."""
 
-    def __init__(self, agent: "GeminiAgent") -> None:
+    def __init__(self, agent: GeminiAgent) -> None:
         """Initialize the retry handler."""
         self.agent = agent
 
@@ -40,7 +41,7 @@ class RetryHandler:
             self.agent.api_retries += 1
             delay = min(10, 2 * attempt)
             self.agent.logger.warning(
-                "Retrying API call (attempt=%s, delay=%ss)", attempt, delay
+                "Retrying API call (attempt=%s, delay=%ss)", attempt, delay,
             )
             await asyncio.sleep(delay)
 
@@ -48,7 +49,7 @@ class RetryHandler:
             def _get_retry_attempt() -> int:
                 """Extract attempt number from tenacity retry statistics."""
                 retry_obj = getattr(_execute_with_retry_raw, "retry", None)
-                stats_dict: Dict[str, Any] = {}
+                stats_dict: dict[str, Any] = {}
                 if retry_obj is not None and hasattr(retry_obj, "statistics"):
                     stats_dict = retry_obj.statistics
                 return stats_dict.get("attempt_number", 1) or 1
@@ -72,7 +73,7 @@ class RetryHandler:
                     raise
 
         _execute_with_retry = cast(
-            Callable[[], Awaitable[str]],
+            "Callable[[], Awaitable[str]]",
             retry(
                 stop=stop_after_attempt(3),
                 wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -84,7 +85,7 @@ class RetryHandler:
         try:
             result: str = await _execute_with_retry()
             return result
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             self.agent.api_failures += 1
             self.agent.logger.error(
                 "API call failed after retries",
@@ -97,6 +98,6 @@ class RetryHandler:
             )
             if self.agent._is_rate_limit_error(exc):  # noqa: SLF001
                 raise APIRateLimitError(
-                    "Rate limit exceeded during API call: %s" % exc
+                    "Rate limit exceeded during API call: %s" % exc,
                 ) from exc
             raise

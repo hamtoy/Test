@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """비용 추적 모듈.
 
 API 호출 비용 계산 및 예산 관리 기능 제공.
@@ -8,7 +7,7 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import TYPE_CHECKING, Any, Tuple, List
+from typing import TYPE_CHECKING, Any
 
 from src.config import constants as _constants
 from src.config.exceptions import BudgetExceededError
@@ -25,11 +24,11 @@ def _get_pricing_tiers() -> Any:
     return _constants.PRICING_TIERS
 
 
-def _get_budget_warning_thresholds() -> List[Tuple[int, str]]:
+def _get_budget_warning_thresholds() -> list[tuple[int, str]]:
     """BUDGET_WARNING_THRESHOLDS를 동적으로 가져옴 (테스트 패칭 지원)."""
     agent_mod = sys.modules.get("src.agent")
     if agent_mod and hasattr(agent_mod, "BUDGET_WARNING_THRESHOLDS"):
-        result: List[Tuple[int, str]] = agent_mod.BUDGET_WARNING_THRESHOLDS
+        result: list[tuple[int, str]] = agent_mod.BUDGET_WARNING_THRESHOLDS
         return result
     return _constants.BUDGET_WARNING_THRESHOLDS
 
@@ -40,7 +39,7 @@ class CostTracker:
     토큰 사용량에 기반한 비용 계산과 예산 초과 감지를 담당합니다.
     """
 
-    def __init__(self, config: "AppConfig") -> None:
+    def __init__(self, config: AppConfig) -> None:
         """CostTracker 초기화.
 
         Args:
@@ -106,7 +105,7 @@ class CostTracker:
         if input_rate is None or output_rate is None:
             raise ValueError(
                 f"No pricing tier matched for model '{model_name}' "
-                f"and tokens {self.total_input_tokens}"
+                f"and tokens {self.total_input_tokens}",
             )
 
         input_cost = (self.total_input_tokens / 1_000_000) * input_rate
@@ -152,5 +151,5 @@ class CostTracker:
         if total > self.config.budget_limit_usd:
             raise BudgetExceededError(
                 f"Session cost ${total:.4f} exceeded budget "
-                f"${self.config.budget_limit_usd:.2f}"
+                f"${self.config.budget_limit_usd:.2f}",
             )

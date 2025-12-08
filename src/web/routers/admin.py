@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Dict, ParamSpec, TypeVar, cast
+from collections.abc import Callable
+from typing import Any, ParamSpec, TypeVar, cast
 
 from fastapi import APIRouter, HTTPException
 
@@ -21,16 +22,16 @@ R = TypeVar("R")
 
 def admin_get(path: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Typed wrapper for router.get."""
-    return cast(Callable[[Callable[P, R]], Callable[P, R]], router.get(path))
+    return cast("Callable[[Callable[P, R]], Callable[P, R]]", router.get(path))
 
 
 def admin_post(path: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Typed wrapper for router.post."""
-    return cast(Callable[[Callable[P, R]], Callable[P, R]], router.post(path))
+    return cast("Callable[[Callable[P, R]], Callable[P, R]]", router.post(path))
 
 
 @admin_get("/cache/stats")
-async def get_cache_stats() -> Dict[str, Any]:
+async def get_cache_stats() -> dict[str, Any]:
     """전역 RuleLoader 캐시 통계 조회."""
     try:
         cache_info = get_global_cache_info()
@@ -46,7 +47,7 @@ async def get_cache_stats() -> Dict[str, Any]:
 
 
 @admin_post("/cache/clear")
-async def clear_cache() -> Dict[str, Any]:
+async def clear_cache() -> dict[str, Any]:
     """전역 RuleLoader 캐시 초기화."""
     try:
         clear_global_rule_cache()
@@ -58,7 +59,7 @@ async def clear_cache() -> Dict[str, Any]:
 
 
 @admin_get("/cache/health")
-async def cache_health() -> Dict[str, Any]:
+async def cache_health() -> dict[str, Any]:
     """캐시 히트율 기반 헬스체크."""
     cache_info = get_global_cache_info()
     hit_rate = float(cache_info.get("hit_rate") or 0.0)

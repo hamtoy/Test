@@ -21,8 +21,8 @@ def __getattr__(name: str) -> Any:
 
 __all__ = [
     "console",
-    "render_cost_panel",
-    "render_budget_panel",
     "display_queries",
     "interactive_main",
+    "render_budget_panel",
+    "render_cost_panel",
 ]

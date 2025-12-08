@@ -24,5 +24,5 @@ def require_env(var: str) -> str:
     """
     val = os.getenv(var)
     if not val:
-        raise EnvironmentError(f"환경 변수 {var}가 설정되지 않았습니다 (.env 확인).")
+        raise OSError(f"환경 변수 {var}가 설정되지 않았습니다 (.env 확인).")
     return val

@@ -19,11 +19,11 @@ def __getattr__(name: str) -> Any:
         from src.analytics.dashboard import UsageDashboard
 
         return UsageDashboard
-    elif name == "RealtimeDashboard":
+    if name == "RealtimeDashboard":
         from src.analytics.realtime_dashboard import RealtimeDashboard
 
         return RealtimeDashboard
-    elif name == "get_dashboard":
+    if name == "get_dashboard":
         from src.analytics.realtime_dashboard import get_dashboard
 
         return get_dashboard
@@ -31,7 +31,7 @@ def __getattr__(name: str) -> Any:
 
 
 __all__ = [
-    "UsageDashboard",
     "RealtimeDashboard",
+    "UsageDashboard",
     "get_dashboard",
 ]

@@ -17,7 +17,7 @@ import asyncio
 import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any, Dict, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class RealtimeDashboard:
             retention_minutes: How long to keep metrics in memory
         """
         self.retention_minutes = retention_minutes
-        self._metrics: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        self._metrics: dict[str, list[dict[str, Any]]] = defaultdict(list)
         self._lock = asyncio.Lock()
 
     async def record_request(
@@ -85,7 +85,7 @@ class RealtimeDashboard:
             if not self._metrics[endpoint]:
                 del self._metrics[endpoint]
 
-    async def get_summary(self) -> Dict[str, Any]:
+    async def get_summary(self) -> dict[str, Any]:
         """Get current metrics summary.
 
         Returns:
@@ -95,7 +95,7 @@ class RealtimeDashboard:
             if not self._metrics:
                 return {"endpoints": {}, "total_requests": 0}
 
-            summary: Dict[str, Any] = {
+            summary: dict[str, Any] = {
                 "total_requests": sum(len(m) for m in self._metrics.values()),
                 "endpoints": {},
                 "generated_at": datetime.now().isoformat(),
@@ -132,7 +132,7 @@ class RealtimeDashboard:
             return summary
 
     @staticmethod
-    def _percentile(values: List[float], percentile: int) -> float:
+    def _percentile(values: list[float], percentile: int) -> float:
         """Calculate percentile of values.
 
         Args:

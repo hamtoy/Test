@@ -1,19 +1,19 @@
 """Shared constants for pricing, validation, and operational defaults."""
 
-from typing import Final, List, Optional, TypedDict
+from typing import Final, TypedDict
 
 
 class PricingTier(TypedDict):
     """Pricing tier configuration for token-based billing."""
 
-    max_input_tokens: Optional[int]
+    max_input_tokens: int | None
     input_rate: float
     output_rate: float
 
 
 # Pricing per 1M tokens (USD) for Gemini models.
 # Ordered tiers: first match wins.
-PRICING_TIERS: Final[dict[str, List[PricingTier]]] = {
+PRICING_TIERS: Final[dict[str, list[PricingTier]]] = {
     # Default model
     "gemini-flash-latest": [
         # Pricing per 1M tokens, all context lengths (see latest Gemini pricing)
@@ -43,7 +43,7 @@ LATS_EXPANSION_MAX_OUTPUT_TOKENS: Final[int] = 50
 
 # 서식 규칙: 줄글 볼드 패턴 및 허용 컨텍스트
 PROSE_BOLD_PATTERN: Final[str] = r"(?<!^)(?<!- )(?<!\d\. )\*\*[^*]+\*\*"
-ALLOWED_BOLD_CONTEXTS: Final[List[str]] = [
+ALLOWED_BOLD_CONTEXTS: Final[list[str]] = [
     r"^-\s+\*\*",  # 목록 항목 시작
     r"^\d+\.\s+\*\*",  # 숫자 목록 항목 시작
     r"^\*\*[^*]+\*\*$",  # 소제목 (줄 전체 볼드)
@@ -64,14 +64,14 @@ ESTIMATED_CACHE_HIT_TIME_SAVINGS: Final[int] = 9  # Average of 6-12s range
 QA_SINGLE_GENERATION_TIMEOUT: Final[int] = 60
 QA_BATCH_GENERATION_TIMEOUT: Final[int] = 120
 # QA batch generation order (first sequential, rest parallel)
-QA_BATCH_TYPES: Final[List[str]] = [
+QA_BATCH_TYPES: Final[list[str]] = [
     "global_explanation",
     "reasoning",
     "target_short",
     "target_long",
 ]
 # Optional 3-type batch (global_explanation, reasoning, target_short)
-QA_BATCH_TYPES_THREE: Final[List[str]] = [
+QA_BATCH_TYPES_THREE: Final[list[str]] = [
     "global_explanation",
     "reasoning",
     "target_short",
@@ -192,7 +192,7 @@ SENSITIVE_PATTERN: Final[str] = r"AIza[0-9A-Za-z_-]{35}"
 # ===== Default Answer Rules =====
 
 # Default rules applied when Neo4j is unavailable
-DEFAULT_ANSWER_RULES: Final[List[str]] = [
+DEFAULT_ANSWER_RULES: Final[list[str]] = [
     "표나 그래프를 직접 언급하지 마세요",
     "고유명사와 숫자는 원문 그대로 유지하세요",
     "추측성 표현(~인 것 같다, ~로 보인다)을 피하세요",
@@ -200,7 +200,7 @@ DEFAULT_ANSWER_RULES: Final[List[str]] = [
 ]
 
 # Default forbidden patterns for answer validation
-DEFAULT_FORBIDDEN_PATTERNS: Final[List[str]] = [
+DEFAULT_FORBIDDEN_PATTERNS: Final[list[str]] = [
     r"표\s*\d+",
     r"그래프|차트|도표",
     r"위\s*그림|아래\s*표",

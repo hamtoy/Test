@@ -14,7 +14,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 from fastapi import APIRouter, HTTPException
 
@@ -32,7 +32,7 @@ router = APIRouter(prefix="/api", tags=["workspace-review"])
 
 
 @router.post("/workspace")
-async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
+async def api_workspace(body: WorkspaceRequest) -> dict[str, Any]:
     """검수 또는 자유 수정."""
     current_agent = _get_agent()
     current_kg = _get_kg()
@@ -43,7 +43,7 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
     ocr_text = load_ocr_text(config)
     meta_start = datetime.now()
 
-    async def _run_workspace() -> Dict[str, Any]:
+    async def _run_workspace() -> dict[str, Any]:
         if body.mode == "inspect":
             fixed = await inspect_answer(
                 agent=current_agent,
@@ -107,12 +107,12 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
 
     try:
         result = await asyncio.wait_for(
-            _run_workspace(), timeout=config.workspace_timeout
+            _run_workspace(), timeout=config.workspace_timeout,
         )
         duration = (datetime.now() - meta_start).total_seconds()
         meta = APIMetadata(duration=duration)
         return cast(
-            Dict[str, Any], build_response(result, metadata=meta, config=config)
+            "dict[str, Any]", build_response(result, metadata=meta, config=config),
         )
     except asyncio.TimeoutError:
         raise HTTPException(
@@ -121,4 +121,4 @@ async def api_workspace(body: WorkspaceRequest) -> Dict[str, Any]:
         )
     except Exception as e:
         logger.error("워크스페이스 작업 실패: %s", e)
-        raise HTTPException(status_code=500, detail=f"작업 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"작업 실패: {e!s}")

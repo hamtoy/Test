@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from difflib import SequenceMatcher
-from typing import Dict, Iterable, List
 
 from src.qa.rag_system import QAKnowledgeGraph
 
@@ -19,8 +19,8 @@ class RealTimeConstraintEnforcer:
         self.kg = kg
 
     def stream_with_validation(
-        self, generator: Iterable[str], query_type: str
-    ) -> Iterable[Dict[str, object]]:
+        self, generator: Iterable[str], query_type: str,
+    ) -> Iterable[dict[str, object]]:
         """LLM 출력을 스트리밍하면서 실시간 검증.
 
         chunk 단위로 content/violation 이벤트를 생성합니다.
@@ -51,10 +51,10 @@ class RealTimeConstraintEnforcer:
         yield {"type": "final_validation", "result": final_check}
 
     def validate_complete_output(
-        self, output: str, query_type: str
-    ) -> Dict[str, object]:
+        self, output: str, query_type: str,
+    ) -> dict[str, object]:
         """완성된 출력의 종합 검증."""
-        issues: List[str] = []
+        issues: list[str] = []
 
         # 1. 마크다운 규칙 체크
         if query_type in ["explanation", "summary"]:
@@ -63,23 +63,23 @@ class RealTimeConstraintEnforcer:
 
             if re.search(r"\d{4}\s*-\s*\d{4}", output):
                 issues.append(
-                    "기간 표기에 공백이 있습니다. 하이픈만 사용하세요: 2023-2024"
+                    "기간 표기에 공백이 있습니다. 하이픈만 사용하세요: 2023-2024",
                 )
 
         # 2. 문장 재구성 체크 (간이)
         if query_type in ["explanation", "summary"]:
             for block in self._get_original_blocks():
                 similarity = self._calculate_similarity(
-                    output, block.get("content", "")
+                    output, block.get("content", ""),
                 )
                 if similarity > 0.9:  # 너무 유사
                     issues.append(
-                        f"원문과 너무 유사: '{block.get('content', '')[:50]}...'"
+                        f"원문과 너무 유사: '{block.get('content', '')[:50]}...'",
                     )
 
         return {"valid": len(issues) == 0, "issues": issues}
 
-    def _get_original_blocks(self) -> List[Dict[str, str]]:
+    def _get_original_blocks(self) -> list[dict[str, str]]:
         """원문 블록을 일부 조회하여 유사도 검증에 사용.
 
         Neo4j 연결에 실패하면 빈 리스트를 반환합니다.
@@ -90,7 +90,7 @@ class RealTimeConstraintEnforcer:
                     import logging
 
                     logging.getLogger(__name__).debug(
-                        "Original blocks fetch skipped: graph unavailable"
+                        "Original blocks fetch skipped: graph unavailable",
                     )
                     return []
                 result = session.run(
@@ -98,7 +98,7 @@ class RealTimeConstraintEnforcer:
                     MATCH (b:Block)
                     RETURN b.content AS content
                     LIMIT 20
-                    """
+                    """,
                 )
                 return [dict(r) for r in result]
         except Exception as exc:  # noqa: BLE001

@@ -6,8 +6,8 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 # Import functions that tests expect
-from src.workflow.edit import edit_content  # noqa: F401
-from src.workflow.inspection import inspect_answer  # noqa: F401
+from src.workflow.edit import edit_content
+from src.workflow.inspection import inspect_answer
 
 # Import sub-routers
 from . import (
@@ -18,7 +18,7 @@ from . import (
 )
 
 # Import LATS functions that may be needed
-from .workspace_generation import (  # noqa: F401
+from .workspace_generation import (
     _evaluate_answer_quality,
     _generate_lats_answer,
     _lats_evaluate_answer,
@@ -51,19 +51,19 @@ from .workspace_common import (  # noqa: F401, E402
 
 # Export all routers and key functions for backward compatibility
 __all__ = [
+    "DEFAULT_LATS_WEIGHTS",
+    "LATS_WEIGHTS_PRESETS",
+    "MAX_REWRITE_ATTEMPTS",
+    "AnswerQualityWeights",
+    "_evaluate_answer_quality",
+    "_generate_lats_answer",
+    "_lats_evaluate_answer",
+    "edit_content",
+    "inspect_answer",
     "router",
     "set_dependencies",
     "workspace_common",
     "workspace_generation",
     "workspace_review",
     "workspace_unified",
-    "edit_content",
-    "inspect_answer",
-    "_evaluate_answer_quality",
-    "_generate_lats_answer",
-    "_lats_evaluate_answer",
-    "DEFAULT_LATS_WEIGHTS",
-    "LATS_WEIGHTS_PRESETS",
-    "MAX_REWRITE_ATTEMPTS",
-    "AnswerQualityWeights",
 ]

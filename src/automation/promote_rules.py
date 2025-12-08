@@ -334,7 +334,7 @@ def run_promote_rules(days: int = 7) -> list[PromotedRule]:
     # 3. LLM 호출
     try:
         client = GeminiModelClient()
-    except EnvironmentError as e:
+    except OSError as e:
         print(f"LLM 클라이언트 초기화 실패: {e}")
         raise
 
@@ -418,7 +418,7 @@ def main() -> None:
         else:
             sys.exit(1)
 
-    except EnvironmentError as e:
+    except OSError as e:
         print(f"\n오류: {e}")
         sys.exit(1)
     except KeyboardInterrupt:

@@ -90,7 +90,7 @@ class FeatureFlags:
 
         # 2. 환경 제한
         allowed_envs = flag.get(
-            "environments", ["development", "staging", "production"]
+            "environments", ["development", "staging", "production"],
         )
         current_env = os.getenv("ENVIRONMENT", "development")
         if current_env not in allowed_envs:
@@ -122,7 +122,7 @@ class FeatureFlags:
         return True
 
     def _check_rules(
-        self, rules: list[dict[str, Any]], context: dict[str, Any]
+        self, rules: list[dict[str, Any]], context: dict[str, Any],
     ) -> bool:
         """컨텍스트 기반 규칙 확인.
 
@@ -260,6 +260,6 @@ class FeatureFlags:
                     "description": config.get("description", ""),
                     "rollout_percent": config.get("rollout_percent", 100),
                     "environments": config.get("environments", []),
-                }
+                },
             )
         return result

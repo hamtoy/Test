@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.agent.core import GeminiAgent
 from src.caching.redis_cache import RedisEvalCache
@@ -15,7 +15,7 @@ from src.qa.rag_system import QAKnowledgeGraph
 logger = logging.getLogger(__name__)
 
 
-def _should_enable_lats(agent: GeminiAgent, lats: Optional[LATSSearcher]) -> bool:
+def _should_enable_lats(agent: GeminiAgent, lats: LATSSearcher | None) -> bool:
     """Check whether LATS should be activated based on env/config."""
     if lats is not None:
         return True
@@ -28,11 +28,11 @@ async def inspect_query(
     agent: GeminiAgent,
     query: str,
     ocr_text: str = "",
-    context: Optional[Dict[str, Any]] = None,
-    kg: Optional[QAKnowledgeGraph] = None,
-    lats: Optional[LATSSearcher] = None,
-    difficulty: Optional[AdaptiveDifficultyAdjuster] = None,
-    cache: Optional[RedisEvalCache] = None,
+    context: dict[str, Any] | None = None,
+    kg: QAKnowledgeGraph | None = None,
+    lats: LATSSearcher | None = None,
+    difficulty: AdaptiveDifficultyAdjuster | None = None,
+    cache: RedisEvalCache | None = None,
 ) -> str:
     """질의 종합 검수 (Zero-Rejection 목표).
 
@@ -80,7 +80,7 @@ async def inspect_query(
     # 3. Neo4j 규칙 로드 및 컨텍스트 구성
     context_prompt = ""
     if kg:
-        rules: List[Dict[str, str]] = kg.get_constraints_for_query_type(query_type)
+        rules: list[dict[str, str]] = kg.get_constraints_for_query_type(query_type)
         if rules:
             rule_lines = [
                 r.get("description", "") for r in rules if r.get("description")
@@ -121,11 +121,11 @@ async def inspect_answer(
     answer: str,
     query: str,
     ocr_text: str,
-    context: Optional[Dict[str, Any]] = None,
-    kg: Optional[QAKnowledgeGraph] = None,
-    lats: Optional[LATSSearcher] = None,
-    validator: Optional[Any] = None,
-    cache: Optional[RedisEvalCache] = None,
+    context: dict[str, Any] | None = None,
+    kg: QAKnowledgeGraph | None = None,
+    lats: LATSSearcher | None = None,
+    validator: Any | None = None,
+    cache: RedisEvalCache | None = None,
 ) -> str:
     """답변 종합 검수 - 규칙 주입 + 자기 교정 최소화 버전."""
     if context is None:
@@ -175,7 +175,7 @@ async def inspect_answer(
     if kg:
         corrector = SelfCorrectingQAChain(kg)
         result = corrector.generate_with_self_correction(
-            query_type, context_with_answer
+            query_type, context_with_answer,
         )
         final_answer = str(result.get("output", answer))
     else:
@@ -209,7 +209,7 @@ async def inspect_answer(
 
     if query and validator:
         val_result = validator.cross_validate_qa_pair(
-            query, final_answer, query_type, context.get("image_meta", {})
+            query, final_answer, query_type, context.get("image_meta", {}),
         )
         if val_result.get("overall_score", 0) < 0.7:
             logger.warning(f"Validation failed: {val_result}")

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from src.config.constants import DEFAULT_CACHE_TTL_SECONDS
 
@@ -15,7 +15,7 @@ class RedisEvalCache:
     """
 
     def __init__(
-        self, redis_client: Optional[Any] = None, ttl: int = DEFAULT_CACHE_TTL_SECONDS
+        self, redis_client: Any | None = None, ttl: int = DEFAULT_CACHE_TTL_SECONDS,
     ):
         """Initialize Redis cache with fallback.
 
@@ -28,15 +28,15 @@ class RedisEvalCache:
         self.ttl = ttl
 
         # Fallback to in-memory dict if Redis unavailable
-        self.memory_cache: Dict[str, float] = {}
+        self.memory_cache: dict[str, float] = {}
         self.use_redis = redis_client is not None
 
         if not self.use_redis:
             logger.warning(
-                "Redis not available, using in-memory eval cache (no persistence)"
+                "Redis not available, using in-memory eval cache (no persistence)",
             )
 
-    async def get(self, key: str) -> Optional[float]:
+    async def get(self, key: str) -> float | None:
         """Retrieve cached evaluation score.
 
         Args:
@@ -82,7 +82,7 @@ class RedisEvalCache:
                 cursor = 0
                 while True:
                     cursor, keys = await self.redis.scan(
-                        cursor, match=f"{self.prefix}*", count=100
+                        cursor, match=f"{self.prefix}*", count=100,
                     )
                     if keys:
                         await self.redis.delete(*keys)
@@ -93,7 +93,7 @@ class RedisEvalCache:
 
         self.memory_cache.clear()
 
-    def get_stats(self) -> Dict[str, int]:
+    def get_stats(self) -> dict[str, int]:
         """Get cache statistics."""
         return {
             "memory_entries": len(self.memory_cache),

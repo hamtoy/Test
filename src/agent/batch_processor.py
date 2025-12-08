@@ -15,6 +15,7 @@ import json
 import logging
 import tempfile
 import uuid
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
@@ -22,12 +23,7 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Awaitable,
-    Callable,
-    Dict,
     Generic,
-    List,
-    Optional,
     TypeVar,
     cast,
 )
@@ -67,15 +63,15 @@ class BatchRequest:
     custom_id: str
     text: str
     model_name: str = "gemini-flash-latest"
-    system_instruction: Optional[str] = None
+    system_instruction: str | None = None
     temperature: float = 0.2
     max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS
 
-    def to_jsonl_dict(self) -> Dict[str, Any]:
+    def to_jsonl_dict(self) -> dict[str, Any]:
         """Convert to JSONL format for batch submission."""
         contents = [{"parts": [{"text": self.text}]}]
 
-        body: Dict[str, Any] = {
+        body: dict[str, Any] = {
             "contents": contents,
             "generationConfig": {
                 "temperature": self.temperature,
@@ -100,9 +96,9 @@ class BatchJobResult:
 
     custom_id: str
     status: str
-    content: Optional[str] = None
-    error: Optional[str] = None
-    usage: Optional[Dict[str, int]] = None
+    content: str | None = None
+    error: str | None = None
+    usage: dict[str, int] | None = None
 
 
 @dataclass
@@ -111,15 +107,15 @@ class BatchJob:
 
     job_id: str
     status: BatchJobStatus = BatchJobStatus.PENDING
-    requests: List[BatchRequest] = field(default_factory=list)
-    results: List[BatchJobResult] = field(default_factory=list)
-    input_file_path: Optional[Path] = None
-    output_file_path: Optional[Path] = None
+    requests: list[BatchRequest] = field(default_factory=list)
+    results: list[BatchJobResult] = field(default_factory=list)
+    input_file_path: Path | None = None
+    output_file_path: Path | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    completed_at: Optional[datetime] = None
-    error_message: Optional[str] = None
+    completed_at: datetime | None = None
+    error_message: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize the batch job to a dictionary."""
         return {
             "job_id": self.job_id,
@@ -151,8 +147,8 @@ class BatchProcessor:
 
     def __init__(
         self,
-        config: Optional["AppConfig"] = None,
-        output_dir: Optional[Path] = None,
+        config: AppConfig | None = None,
+        output_dir: Path | None = None,
     ) -> None:
         """Initialize the BatchProcessor.
 
@@ -171,7 +167,7 @@ class BatchProcessor:
             self.output_dir.mkdir(parents=True, exist_ok=True)
 
         # Track active jobs
-        self._active_jobs: Dict[str, BatchJob] = {}
+        self._active_jobs: dict[str, BatchJob] = {}
 
         # Model name from config or default
         self.model_name = (
@@ -181,10 +177,10 @@ class BatchProcessor:
     def create_batch_request(
         self,
         text: str,
-        custom_id: Optional[str] = None,
-        system_instruction: Optional[str] = None,
-        temperature: Optional[float] = None,
-        max_output_tokens: Optional[int] = None,
+        custom_id: str | None = None,
+        system_instruction: str | None = None,
+        temperature: float | None = None,
+        max_output_tokens: int | None = None,
     ) -> BatchRequest:
         """Create a single batch request.
 
@@ -222,7 +218,7 @@ class BatchProcessor:
             max_output_tokens=max_tokens,
         )
 
-    def build_jsonl(self, requests: List[BatchRequest]) -> Path:
+    def build_jsonl(self, requests: list[BatchRequest]) -> Path:
         """Build a JSONL file from batch requests.
 
         Args:
@@ -241,11 +237,11 @@ class BatchProcessor:
                 f.write(line + "\n")
 
         self.logger.info(
-            "Created JSONL file: %s with %d requests", file_path, len(requests)
+            "Created JSONL file: %s with %d requests", file_path, len(requests),
         )
         return file_path
 
-    def create_batch_job(self, requests: List[BatchRequest]) -> BatchJob:
+    def create_batch_job(self, requests: list[BatchRequest]) -> BatchJob:
         """Create a new batch job from requests.
 
         Args:
@@ -266,14 +262,14 @@ class BatchProcessor:
 
         self._active_jobs[job_id] = job
         self.logger.info(
-            "Created batch job: %s with %d requests", job_id, len(requests)
+            "Created batch job: %s with %d requests", job_id, len(requests),
         )
         return job
 
     async def submit_batch_job(
         self,
         job: BatchJob,
-        on_complete: Optional[Callable[[BatchJob], None]] = None,
+        on_complete: Callable[[BatchJob], None] | None = None,
     ) -> BatchJob:
         """Submit a batch job to the Gemini Batch API.
 
@@ -364,7 +360,7 @@ class BatchProcessor:
 
         return job
 
-    def get_job(self, job_id: str) -> Optional[BatchJob]:
+    def get_job(self, job_id: str) -> BatchJob | None:
         """Retrieve a batch job by ID.
 
         Args:
@@ -377,8 +373,8 @@ class BatchProcessor:
 
     def list_jobs(
         self,
-        status: Optional[BatchJobStatus] = None,
-    ) -> List[BatchJob]:
+        status: BatchJobStatus | None = None,
+    ) -> list[BatchJob]:
         """List all batch jobs, optionally filtered by status.
 
         Args:
@@ -449,8 +445,8 @@ class BatchProcessor:
 class BatchResult(Generic[T, R]):
     """결과 집계용 배치 처리 결과."""
 
-    successful: List[R]
-    failed: List[tuple[T, Exception]]
+    successful: list[R]
+    failed: list[tuple[T, Exception]]
     total: int
 
     @property
@@ -491,7 +487,7 @@ class SmartBatchProcessor(Generic[T, R]):
         requests_per_minute: int = 60,
         max_retries: int = 3,
         retry_delay: float = 1.0,
-        on_progress: Optional[Callable[[int, int], None]] = None,
+        on_progress: Callable[[int, int], None] | None = None,
     ):
         """Initialize the smart batch processor."""
         self.semaphore = asyncio.Semaphore(max(1, max_concurrent))
@@ -503,14 +499,14 @@ class SmartBatchProcessor(Generic[T, R]):
 
     async def process_batch(
         self,
-        items: List[T],
+        items: list[T],
         processor: Callable[[T], Awaitable[R]],
     ) -> BatchResult[T, R]:
         """배치 항목들을 처리."""
-        failed: List[tuple[T, Exception]] = []
+        failed: list[tuple[T, Exception]] = []
         completed = 0
 
-        async def process_with_limits(index: int, item: T) -> Optional[R]:
+        async def process_with_limits(index: int, item: T) -> R | None:
             nonlocal completed
             async with self.semaphore:
                 await self.rate_limiter.acquire()
@@ -548,8 +544,8 @@ class SmartBatchProcessor(Generic[T, R]):
             return_exceptions=True,
         )
 
-        successful: List[R] = [
-            cast(R, result)
+        successful: list[R] = [
+            cast("R", result)
             for result in results
             if result is not None and not isinstance(result, Exception)
         ]

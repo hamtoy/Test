@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -10,17 +10,17 @@ class GenerationResult:
     """Standardized result from LLM generation."""
 
     content: str
-    usage: Dict[str, int] = field(default_factory=dict)
+    usage: dict[str, int] = field(default_factory=dict)
     # Expected keys in usage: "prompt_tokens", "completion_tokens", "total_tokens"
-    finish_reason: Optional[str] = None
-    safety_ratings: Optional[Dict[str, Any]] = None
-    raw_response: Optional[Any] = None  # For debugging purposes
+    finish_reason: str | None = None
+    safety_ratings: dict[str, Any] | None = None
+    raw_response: Any | None = None  # For debugging purposes
 
 
 class ProviderError(Exception):
     """Base exception for all provider errors."""
 
-    def __init__(self, message: str, original_error: Optional[Exception] = None):
+    def __init__(self, message: str, original_error: Exception | None = None):
         """Initialize the provider error.
 
         Args:
@@ -54,10 +54,10 @@ class LLMProvider(ABC):
     async def generate_content_async(
         self,
         prompt: str,
-        system_instruction: Optional[str] = None,
-        temperature: Optional[float] = None,
-        max_output_tokens: Optional[int] = None,
-        response_schema: Optional[Any] = None,
+        system_instruction: str | None = None,
+        temperature: float | None = None,
+        max_output_tokens: int | None = None,
+        response_schema: Any | None = None,
         **kwargs: Any,
     ) -> GenerationResult:
         """Generates content asynchronously.
@@ -109,10 +109,10 @@ class GraphProvider(ABC):
     @abstractmethod
     async def create_nodes(
         self,
-        nodes: List[Dict[str, Any]],
+        nodes: list[dict[str, Any]],
         label: str,
         merge_on: str = "id",
-        merge_keys: Optional[List[str]] = None,
+        merge_keys: list[str] | None = None,
     ) -> int:
         """Batch create or merge nodes.
 
@@ -129,7 +129,7 @@ class GraphProvider(ABC):
     @abstractmethod
     async def create_relationships(
         self,
-        rels: List[Dict[str, Any]],
+        rels: list[dict[str, Any]],
         rel_type: str,
         from_label: str,
         to_label: str,

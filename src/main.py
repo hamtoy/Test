@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # mypy: disable-error-code=attr-defined
 """Main entry point for Gemini Workflow System - Interactive Menu Mode."""
 
@@ -7,12 +6,14 @@ import logging
 import os
 import sys
 
-from dotenv import load_dotenv
 import google.generativeai as genai
+from dotenv import load_dotenv
 
 from src.agent import GeminiAgent
-from src.caching.analytics import analyze_cache_stats  # noqa: F401 - Used by tests
-from src.caching.analytics import print_cache_report  # noqa: F401 - Used by tests
+from src.caching.analytics import (
+    analyze_cache_stats,  # noqa: F401 - Used by tests
+    print_cache_report,  # noqa: F401 - Used by tests
+)
 from src.cli import parse_args  # noqa: F401 - Used by tests
 from src.config import AppConfig
 from src.config.constants import USER_INTERRUPT_MESSAGE
@@ -42,10 +43,10 @@ async def main() -> None:
 
         if not config.template_dir.exists():
             raise FileNotFoundError(
-                f"Templates directory missing: {config.template_dir}"
+                f"Templates directory missing: {config.template_dir}",
             )
         jinja_env = Environment(
-            loader=FileSystemLoader(config.template_dir), autoescape=True
+            loader=FileSystemLoader(config.template_dir), autoescape=True,
         )
 
         # Create agent
@@ -79,6 +80,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         console.print(USER_INTERRUPT_MESSAGE)
         sys.exit(130)
-    except Exception as e:  # noqa: BLE001 - Top-level handler must catch all exceptions
+    except Exception as e:
         logging.critical("Critical error: %s", e, exc_info=True)
         sys.exit(1)

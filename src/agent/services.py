@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from pydantic import ValidationError
 
@@ -12,7 +12,7 @@ from src.core.models import EvaluationResultSchema, QueryResult
 from src.infra.utils import clean_markdown_code_block, safe_json_parse
 
 if TYPE_CHECKING:
-    import google.generativeai.caching as caching
+    from google.generativeai import caching
 
     from src.agent import GeminiAgent
     from src.qa.rag_system import QAKnowledgeGraph
@@ -28,13 +28,13 @@ class QueryGeneratorService:
     async def generate_query(
         self,
         ocr_text: str,
-        user_intent: Optional[str],
-        cached_content: Optional["caching.CachedContent"],
-        template_name: Optional[str],
+        user_intent: str | None,
+        cached_content: caching.CachedContent | None,
+        template_name: str | None,
         query_type: str,
-        kg: Optional["QAKnowledgeGraph"],
-        constraints: Optional[List[Dict[str, Any]]],
-    ) -> List[str]:
+        kg: QAKnowledgeGraph | None,
+        constraints: list[dict[str, Any]] | None,
+    ) -> list[str]:
         """Generate candidate queries from OCR text and intent."""
         agent = self.agent
         agent._api_call_counter.add(1, {"operation": "generate_query"})  # noqa: SLF001
@@ -43,7 +43,7 @@ class QueryGeneratorService:
         user_prompt = user_template.render(ocr_text=ocr_text, user_intent=user_intent)
 
         schema_json = json.dumps(
-            QueryResult.model_json_schema(), indent=2, ensure_ascii=False
+            QueryResult.model_json_schema(), indent=2, ensure_ascii=False,
         )
 
         constraint_list = constraints if constraints is not None else []
@@ -70,7 +70,7 @@ class QueryGeneratorService:
                 reverse=True,
             )
 
-        rules: List[str] = []
+        rules: list[str] = []
         try:
             if kg_obj is not None:
                 rules = kg_obj.find_relevant_rules(ocr_text[:500], k=10)
@@ -84,8 +84,8 @@ class QueryGeneratorService:
         except Exception as e:  # noqa: BLE001
             agent.logger.debug("Formatting rules 조회 실패: %s", e)
 
-        guide_rules: List[Dict[str, str]] = []
-        common_mistakes: List[Dict[str, str]] = []
+        guide_rules: list[dict[str, str]] = []
+        common_mistakes: list[dict[str, str]] = []
         try:
             from src.qa.template_rules import (
                 get_all_template_context,
@@ -127,7 +127,7 @@ class QueryGeneratorService:
             )
 
         model = agent._create_generative_model(  # noqa: SLF001
-            system_prompt, response_schema=QueryResult, cached_content=cached_content
+            system_prompt, response_schema=QueryResult, cached_content=cached_content,
         )
 
         agent.context_manager.track_cache_usage(cached_content is not None)
@@ -137,7 +137,7 @@ class QueryGeneratorService:
         except Exception as e:
             if agent._is_rate_limit_error(e):  # noqa: SLF001
                 raise APIRateLimitError(
-                    "Rate limit exceeded during query generation: %s" % e
+                    "Rate limit exceeded during query generation: %s" % e,
                 ) from e
             raise
 
@@ -179,11 +179,11 @@ class ResponseEvaluatorService:
         self,
         ocr_text: str,
         query: str,
-        candidates: Dict[str, str],
-        cached_content: Optional["caching.CachedContent"],
+        candidates: dict[str, str],
+        cached_content: caching.CachedContent | None,
         query_type: str,
-        kg: Optional["QAKnowledgeGraph"],
-    ) -> Optional["EvaluationResultSchema"]:
+        kg: QAKnowledgeGraph | None,
+    ) -> EvaluationResultSchema | None:
         """Evaluate candidate answers and return the best choice metadata."""
         if not query:
             return None
@@ -196,8 +196,8 @@ class ResponseEvaluatorService:
             "candidates": candidates,
         }
 
-        rules: List[str] = []
-        constraints: List[str] = []
+        rules: list[str] = []
+        constraints: list[str] = []
         kg_obj = kg
         try:
             if kg_obj is None:
@@ -241,12 +241,12 @@ class ResponseEvaluatorService:
 
         try:
             response_text = await agent.retry_handler.call(
-                model, json.dumps(input_data, ensure_ascii=False)
+                model, json.dumps(input_data, ensure_ascii=False),
             )
         except Exception as e:
             if agent._is_rate_limit_error(e):  # noqa: SLF001
                 raise APIRateLimitError(
-                    "Rate limit exceeded during evaluation: %s" % e
+                    "Rate limit exceeded during evaluation: %s" % e,
                 ) from e
             raise
 
@@ -284,16 +284,16 @@ class RewriterService:
         self,
         user_query: str,
         selected_answer: str,
-        edit_request: Optional[str],
-        formatting_rules: Optional[str],
-        cached_content: Optional["caching.CachedContent"],
+        edit_request: str | None,
+        formatting_rules: str | None,
+        cached_content: caching.CachedContent | None,
         query_type: str,
     ) -> str:
         """Rewrite a selected answer using constraints and formatting rules."""
         agent = self.agent
-        constraint_list: List[Dict[str, Any]] = []
-        rules: List[str] = []
-        kg_obj: Optional["QAKnowledgeGraph"] = None
+        constraint_list: list[dict[str, Any]] = []
+        rules: list[str] = []
+        kg_obj: QAKnowledgeGraph | None = None
 
         try:
             from src.qa.rag_system import QAKnowledgeGraph
@@ -320,8 +320,8 @@ class RewriterService:
             # Sort by priority (safe now as we ensured it's int/float)
             constraint_list.sort(key=lambda x: x["priority"], reverse=True)
 
-        guide_rules: List[Dict[str, str]] = []
-        common_mistakes: List[Dict[str, str]] = []
+        guide_rules: list[dict[str, str]] = []
+        common_mistakes: list[dict[str, str]] = []
         try:
             from src.qa.template_rules import (
                 get_all_template_context,
@@ -380,7 +380,7 @@ class RewriterService:
             )
 
         model = agent._create_generative_model(  # noqa: SLF001
-            system_prompt, cached_content=cached_content
+            system_prompt, cached_content=cached_content,
         )
 
         agent.context_manager.track_cache_usage(cached_content is not None)
@@ -390,7 +390,7 @@ class RewriterService:
         except Exception as e:
             if agent._is_rate_limit_error(e):  # noqa: SLF001
                 raise APIRateLimitError(
-                    "Rate limit exceeded during rewrite: %s" % e
+                    "Rate limit exceeded during rewrite: %s" % e,
                 ) from e
             raise
 

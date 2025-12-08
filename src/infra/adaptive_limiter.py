@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Adaptive Rate Limiter implementing a TCP Vegas-like algorithm.
 
 Dynamically adjusts concurrency based on response latency and errors
@@ -11,9 +10,9 @@ import asyncio
 import contextlib
 import logging
 import time
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import AsyncIterator
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +99,7 @@ class AdaptiveRateLimiter:
             # Error occurred: Multiplicative Decrease (halve the limit)
             self._current_limit = max(self._min_limit, self._current_limit * 0.5)
             logger.warning(
-                "Throttling: Error detected. Limit reduced to %d", self.current_limit
+                "Throttling: Error detected. Limit reduced to %d", self.current_limit,
             )
 
         elif avg_latency < self._target_latency:
@@ -136,7 +135,7 @@ class AdaptiveRateLimiter:
                 # Use wait_for with timeout to periodically re-check the dynamic limit
                 with contextlib.suppress(TimeoutError):
                     await asyncio.wait_for(
-                        self._condition.wait(), timeout=_POLL_INTERVAL
+                        self._condition.wait(), timeout=_POLL_INTERVAL,
                     )
             self._active_count += 1
 

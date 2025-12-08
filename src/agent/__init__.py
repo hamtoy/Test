@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Gemini Agent package.
 
 Provides the main GeminiAgent class and re-exports common exceptions,
@@ -6,9 +5,6 @@ constants, and utility functions for backward compatibility.
 """
 
 from typing import Any
-
-# Core agent class
-from src.agent.core import GeminiAgent
 
 # Batch processing (Phase 2: GOpt Integration)
 from src.agent.batch_processor import (
@@ -22,6 +18,16 @@ from src.agent.batch_processor import (
     SmartBatchProcessor,
 )
 
+# Core agent class
+from src.agent.core import GeminiAgent
+
+# Constants
+from src.config.constants import (
+    DEFAULT_RPM_LIMIT,
+    DEFAULT_RPM_WINDOW_SECONDS,
+    PRICING_TIERS,
+)
+
 # Exceptions (re-export for legacy imports)
 from src.config.exceptions import (
     APIRateLimitError,
@@ -29,13 +35,6 @@ from src.config.exceptions import (
     CacheCreationError,
     SafetyFilterError,
     ValidationFailedError,
-)
-
-# Constants
-from src.config.constants import (
-    DEFAULT_RPM_LIMIT,
-    DEFAULT_RPM_WINDOW_SECONDS,
-    PRICING_TIERS,
 )
 
 # Logging utility

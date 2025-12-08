@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from jinja2 import Environment, FileSystemLoader
 from pydantic import ValidationError
@@ -49,9 +49,9 @@ class Data2NeoExtractor:
     def __init__(
         self,
         config: AppConfig,
-        agent: "GeminiAgent",
-        graph_provider: Optional["GraphProvider"] = None,
-        jinja_env: Optional[Environment] = None,
+        agent: GeminiAgent,
+        graph_provider: GraphProvider | None = None,
+        jinja_env: Environment | None = None,
     ) -> None:
         """Initialize the Data2NeoExtractor.
 
@@ -82,8 +82,8 @@ class Data2NeoExtractor:
     async def extract_entities(
         self,
         ocr_text: str,
-        document_path: Optional[str] = None,
-        focus_entities: Optional[List[str]] = None,
+        document_path: str | None = None,
+        focus_entities: list[str] | None = None,
     ) -> ExtractionResult:
         """Extract entities from OCR text using LLM.
 
@@ -108,7 +108,7 @@ class Data2NeoExtractor:
 
         # Create model and call API
         model = self.agent._create_generative_model(
-            system_prompt, response_schema=ExtractionResult
+            system_prompt, response_schema=ExtractionResult,
         )
 
         try:
@@ -139,7 +139,7 @@ class Data2NeoExtractor:
     def _render_system_prompt(self) -> str:
         """Render the system prompt for entity extraction."""
         schema_json = json.dumps(
-            ExtractionResult.model_json_schema(), indent=2, ensure_ascii=False
+            ExtractionResult.model_json_schema(), indent=2, ensure_ascii=False,
         )
         template = self.jinja_env.get_template("system/entity_extraction.j2")
         return str(template.render(response_schema=schema_json))
@@ -147,8 +147,8 @@ class Data2NeoExtractor:
     def _render_user_prompt(
         self,
         ocr_text: str,
-        document_path: Optional[str] = None,
-        focus_entities: Optional[List[str]] = None,
+        document_path: str | None = None,
+        focus_entities: list[str] | None = None,
     ) -> str:
         """Render the user prompt for entity extraction."""
         template = self.jinja_env.get_template("user/entity_extraction.j2")
@@ -157,7 +157,7 @@ class Data2NeoExtractor:
                 ocr_text=ocr_text,
                 document_path=document_path,
                 focus_entities=focus_entities,
-            )
+            ),
         )
 
     def _parse_extraction_response(self, response_text: str) -> ExtractionResult:
@@ -190,7 +190,7 @@ class Data2NeoExtractor:
                 self.logger.error("Failed to parse extraction response as JSON")
                 raise
 
-    def _parse_partial_result(self, data: Dict[str, Any]) -> ExtractionResult:
+    def _parse_partial_result(self, data: dict[str, Any]) -> ExtractionResult:
         """Attempt to parse partial results from malformed response.
 
         Args:
@@ -237,8 +237,8 @@ class Data2NeoExtractor:
     async def write_to_graph(
         self,
         result: ExtractionResult,
-        document_id: Optional[str] = None,
-    ) -> Dict[str, int]:
+        document_id: str | None = None,
+    ) -> dict[str, int]:
         """Write extracted entities to Neo4j graph.
 
         Args:
@@ -254,7 +254,7 @@ class Data2NeoExtractor:
         if self.graph_provider is None:
             raise RuntimeError("GraphProvider not configured")
 
-        counts: Dict[str, int] = {
+        counts: dict[str, int] = {
             "persons": 0,
             "organizations": 0,
             "dates": 0,
@@ -270,7 +270,7 @@ class Data2NeoExtractor:
             for node in person_nodes:
                 node["id"] = self._generate_entity_id("person", node["name"])
             counts["persons"] = await self.graph_provider.create_nodes(
-                person_nodes[:batch_size], "Person", merge_on="id"
+                person_nodes[:batch_size], "Person", merge_on="id",
             )
 
         # Write Organization nodes
@@ -279,7 +279,7 @@ class Data2NeoExtractor:
             for node in org_nodes:
                 node["id"] = self._generate_entity_id("org", node["name"])
             counts["organizations"] = await self.graph_provider.create_nodes(
-                org_nodes[:batch_size], "Organization", merge_on="id"
+                org_nodes[:batch_size], "Organization", merge_on="id",
             )
 
         # Write Date nodes
@@ -288,7 +288,7 @@ class Data2NeoExtractor:
             for node in date_nodes:
                 node["id"] = self._generate_entity_id("date", node["name"])
             counts["dates"] = await self.graph_provider.create_nodes(
-                date_nodes[:batch_size], "Date", merge_on="id"
+                date_nodes[:batch_size], "Date", merge_on="id",
             )
 
         # Write DocumentRule nodes
@@ -297,7 +297,7 @@ class Data2NeoExtractor:
             for node in rule_nodes:
                 node["id"] = self._generate_entity_id("docrule", node["text"])
             counts["document_rules"] = await self.graph_provider.create_nodes(
-                rule_nodes[:batch_size], "DocumentRule", merge_on="id"
+                rule_nodes[:batch_size], "DocumentRule", merge_on="id",
             )
 
         # Write relationships
@@ -311,13 +311,13 @@ class Data2NeoExtractor:
                     [
                         {
                             "from_id": self._generate_entity_id(
-                                from_label.lower(), rel.from_entity
+                                from_label.lower(), rel.from_entity,
                             ),
                             "to_id": self._generate_entity_id(
-                                to_label.lower(), rel.to_entity
+                                to_label.lower(), rel.to_entity,
                             ),
                             **rel.properties,
-                        }
+                        },
                     ],
                     rel.rel_type,
                     from_label,
@@ -369,7 +369,7 @@ class Data2NeoExtractor:
         }
         return rel_mappings.get(rel_type, ("Entity", "Entity"))
 
-    def get_statistics(self) -> Dict[str, int]:
+    def get_statistics(self) -> dict[str, int]:
         """Get extraction statistics.
 
         Returns:

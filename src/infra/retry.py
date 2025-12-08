@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
 
 from tenacity import (
     AsyncRetrying,
@@ -90,9 +91,9 @@ async def retry_with_backoff(
     delay = initial_delay
 
     for attempt in range(1, max_attempts + 1):
-        try:  # noqa: PERF203
+        try:
             logger.debug(
-                "Executing %s (attempt %d/%d)", func.__name__, attempt, max_attempts
+                "Executing %s (attempt %d/%d)", func.__name__, attempt, max_attempts,
             )
             return await func(*args, **kwargs)
         except Exception as e:  # noqa: PERF203

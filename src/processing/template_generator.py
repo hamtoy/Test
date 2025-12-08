@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from contextlib import suppress
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from dotenv import load_dotenv
 from jinja2 import (
@@ -61,7 +61,7 @@ class DynamicTemplateGenerator:
         if self.driver:
             self.driver.close()
 
-    def _run(self, cypher: str, params: Optional[Dict[str, Any]] = None) -> List[Any]:
+    def _run(self, cypher: str, params: dict[str, Any] | None = None) -> list[Any]:
         """Cypher 쿼리를 실행하고 레코드 리스트 반환.
 
         Args:
@@ -76,7 +76,7 @@ class DynamicTemplateGenerator:
             return list(session.run(cypher, **params))
 
     def generate_prompt_for_query_type(
-        self, query_type: str, context: Dict[str, Any]
+        self, query_type: str, context: dict[str, Any],
     ) -> str:
         """질의 유형에 맞는 시스템 템플릿을 그래프 지식과 합쳐 렌더링.
 
@@ -151,7 +151,7 @@ class DynamicTemplateGenerator:
             template: Template = self.jinja_env.get_template(template_name)
         except TemplateNotFound as exc:
             self.logger.warning(
-                "Template %s not found (%s), using fallback", template_name, exc
+                "Template %s not found (%s), using fallback", template_name, exc,
             )
             template = self.jinja_env.get_template(fallback)
 
@@ -165,14 +165,14 @@ class DynamicTemplateGenerator:
             "guide_rules": guide_rules,
             "common_mistakes": common_mistakes,
             "calc_allowed": context.get(
-                "calc_allowed", context.get("used_calc_query_count", 0) < 1
+                "calc_allowed", context.get("used_calc_query_count", 0) < 1,
             ),
         }
         return str(template.render(**full_context))
 
     def generate_validation_checklist(
-        self, session: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+        self, session: dict[str, Any],
+    ) -> list[dict[str, Any]]:
         """세션에 포함된 QueryType에 대해 그래프에서 제약을 수집해 체크리스트 생성.
 
         Args:
@@ -193,7 +193,7 @@ class DynamicTemplateGenerator:
             True
         """
         query_types = {t.get("type") for t in session.get("turns", []) if t.get("type")}
-        checklist: List[Dict[str, Any]] = []
+        checklist: list[dict[str, Any]] = []
         cypher = """
         MATCH (qt:QueryType {name: $qt})
         OPTIONAL MATCH (r:Rule)-[:APPLIES_TO]->(qt)
@@ -216,7 +216,7 @@ class DynamicTemplateGenerator:
 
 
 if __name__ == "__main__":
-    generator: Optional[DynamicTemplateGenerator] = None
+    generator: DynamicTemplateGenerator | None = None
     try:
         generator = DynamicTemplateGenerator(
             neo4j_uri=require_env("NEO4J_URI"),
@@ -242,7 +242,7 @@ if __name__ == "__main__":
                 {"type": "reasoning"},
                 {"type": "target"},
                 {"type": "target"},
-            ]
+            ],
         }
         checklist = generator.generate_validation_checklist(test_session)
         print("📝 검증 체크리스트:")

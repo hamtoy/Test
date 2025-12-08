@@ -4,7 +4,7 @@ All string fields have explicit length limits to prevent
 memory exhaustion attacks and ensure API stability.
 """
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -27,20 +27,16 @@ class GenerateQARequest(BaseModel):
         default="batch",
         description="Generation mode: 'batch' for 4 types, 'batch_three' for 3 types, 'single' for one type",
     )
-    ocr_text: Optional[str] = Field(
+    ocr_text: str | None = Field(
         default=None,
         max_length=MAX_OCR_TEXT_LENGTH,
         description="Optional OCR text override; if absent, server loads from file",
     )
-    qtype: Optional[
-        Literal["global_explanation", "reasoning", "target_short", "target_long"]
-    ] = Field(
+    qtype: Literal["global_explanation", "reasoning", "target_short", "target_long"] | None = Field(
         default=None,
         description="Question type for single mode",
     )
-    batch_types: Optional[
-        List[Literal["global_explanation", "reasoning", "target_short", "target_long"]]
-    ] = Field(
+    batch_types: list[Literal["global_explanation", "reasoning", "target_short", "target_long"]] | None = Field(
         default=None,
         description="Optional custom batch types (first type runs first). "
         "When omitted: batch→4종, batch_three→3종(explanation/reasoning/target_short).",
@@ -59,8 +55,8 @@ class GenerateQAResponse(BaseModel):
     """QA generation response model."""
 
     mode: Literal["batch", "single"]
-    pairs: Optional[List[QAPair]] = None  # batch
-    pair: Optional[QAPair] = None  # single
+    pairs: list[QAPair] | None = None  # batch
+    pair: QAPair | None = None  # single
 
 
 class EvalExternalRequest(BaseModel):
@@ -71,7 +67,7 @@ class EvalExternalRequest(BaseModel):
         max_length=MAX_QUERY_LENGTH,
         description="The question to evaluate answers for",
     )
-    answers: List[str] = Field(
+    answers: list[str] = Field(
         ...,
         min_length=3,
         max_length=3,
@@ -80,12 +76,12 @@ class EvalExternalRequest(BaseModel):
 
     @field_validator("answers")
     @classmethod
-    def validate_answer_lengths(cls, v: List[str]) -> List[str]:
+    def validate_answer_lengths(cls, v: list[str]) -> list[str]:
         """Validate each answer in the list does not exceed max length."""
         for i, answer in enumerate(v):
             if len(answer) > MAX_ANSWER_LENGTH:
                 raise ValueError(
-                    f"Answer {i + 1} exceeds maximum length of {MAX_ANSWER_LENGTH}"
+                    f"Answer {i + 1} exceeds maximum length of {MAX_ANSWER_LENGTH}",
                 )
         return v
 
@@ -101,7 +97,7 @@ class EvalResult(BaseModel):
 class EvalExternalResponse(BaseModel):
     """External answer evaluation response model."""
 
-    results: List[EvalResult]
+    results: list[EvalResult]
     best: str = Field(..., max_length=10)
 
 
@@ -112,7 +108,7 @@ class WorkspaceRequest(BaseModel):
         default="inspect",
         description="Operation mode",
     )
-    query: Optional[str] = Field(
+    query: str | None = Field(
         default="",
         max_length=MAX_QUERY_LENGTH,
         description="Associated query (optional)",
@@ -122,12 +118,12 @@ class WorkspaceRequest(BaseModel):
         max_length=MAX_ANSWER_LENGTH,
         description="Answer content to process",
     )
-    edit_request: Optional[str] = Field(
+    edit_request: str | None = Field(
         default="",
         max_length=MAX_EDIT_REQUEST_LENGTH,
         description="Edit instructions for 'edit' mode",
     )
-    inspector_comment: Optional[str] = Field(
+    inspector_comment: str | None = Field(
         default="",
         max_length=MAX_COMMENT_LENGTH,
         description="Inspector's comment for logging",
@@ -138,22 +134,22 @@ class WorkspaceResponse(BaseModel):
     """Workspace operation response model."""
 
     mode: Literal["inspect", "edit"]
-    result: Dict[str, Any]
+    result: dict[str, Any]
 
 
 class MultimodalResponse(BaseModel):
     """Image analysis response model."""
 
     filename: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class HealthResponse(BaseModel):
     """Response model for health check endpoints."""
 
     status: Literal["healthy", "degraded", "unhealthy"]
-    services: Dict[str, bool] = Field(default_factory=dict)
-    version: Optional[str] = None
+    services: dict[str, bool] = Field(default_factory=dict)
+    version: str | None = None
 
 
 class OCRTextInput(BaseModel):
@@ -169,33 +165,31 @@ class OCRTextInput(BaseModel):
 class UnifiedWorkspaceRequest(BaseModel):
     """Request model for unified workspace with automatic workflow detection."""
 
-    query: Optional[str] = Field(
+    query: str | None = Field(
         default="",
         max_length=MAX_QUERY_LENGTH,
         description="Query text (optional based on workflow)",
     )
-    answer: Optional[str] = Field(
+    answer: str | None = Field(
         default="",
         max_length=MAX_ANSWER_LENGTH,
         description="Answer text (optional based on workflow)",
     )
-    edit_request: Optional[str] = Field(
+    edit_request: str | None = Field(
         default="",
         max_length=MAX_EDIT_REQUEST_LENGTH,
         description="Edit instructions for edit workflows",
     )
-    ocr_text: Optional[str] = Field(
+    ocr_text: str | None = Field(
         default=None,
         max_length=MAX_OCR_TEXT_LENGTH,
         description="OCR text (optional, will load from file if not provided)",
     )
-    query_type: Optional[
-        Literal["global_explanation", "reasoning", "target_short", "target_long"]
-    ] = Field(
+    query_type: Literal["global_explanation", "reasoning", "target_short", "target_long"] | None = Field(
         default=None,
         description="Query/answer type for generation style",
     )
-    global_explanation_ref: Optional[str] = Field(
+    global_explanation_ref: str | None = Field(
         default=None,
         max_length=MAX_ANSWER_LENGTH,
         description="Reference global explanation text to avoid duplication",
@@ -214,7 +208,7 @@ class StreamGenerateRequest(BaseModel):
         max_length=MAX_PROMPT_LENGTH,
         description="Raw prompt to stream-generate from",
     )
-    system_instruction: Optional[str] = Field(
+    system_instruction: str | None = Field(
         default=None,
         max_length=MAX_PROMPT_LENGTH,
         description="Optional system instruction",
@@ -222,17 +216,17 @@ class StreamGenerateRequest(BaseModel):
 
 
 __all__ = [
-    "GenerateQARequest",
-    "StreamGenerateRequest",
+    "MAX_ANSWER_LENGTH",
+    "MAX_COMMENT_LENGTH",
+    "MAX_EDIT_REQUEST_LENGTH",
+    "MAX_OCR_TEXT_LENGTH",
+    "MAX_QUERY_LENGTH",
+    "MAX_UPLOAD_SIZE_BYTES",
     "EvalExternalRequest",
-    "WorkspaceRequest",
-    "UnifiedWorkspaceRequest",
+    "GenerateQARequest",
     "HealthResponse",
     "OCRTextInput",
-    "MAX_QUERY_LENGTH",
-    "MAX_ANSWER_LENGTH",
-    "MAX_OCR_TEXT_LENGTH",
-    "MAX_EDIT_REQUEST_LENGTH",
-    "MAX_COMMENT_LENGTH",
-    "MAX_UPLOAD_SIZE_BYTES",
+    "StreamGenerateRequest",
+    "UnifiedWorkspaceRequest",
+    "WorkspaceRequest",
 ]

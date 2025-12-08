@@ -10,7 +10,7 @@ import sys
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 
 try:
     import psutil
@@ -395,9 +395,9 @@ class HealthStatus(str, Enum):
 class ComponentHealth:
     name: str
     status: HealthStatus
-    latency_ms: Optional[float] = None
-    message: Optional[str] = None
-    details: Optional[Dict[str, Any]] = None
+    latency_ms: float | None = None
+    message: str | None = None
+    details: dict[str, Any] | None = None
 
 
 @dataclass
@@ -405,9 +405,9 @@ class SystemHealth:
     status: HealthStatus
     timestamp: str
     version: str
-    components: Dict[str, ComponentHealth]
+    components: dict[str, ComponentHealth]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "status": self.status.value,
             "timestamp": self.timestamp,
@@ -429,7 +429,7 @@ class HealthChecker:
 
     def __init__(self, version: str = "unknown"):
         self.version = version
-        self._checks: Dict[str, Any] = {}
+        self._checks: dict[str, Any] = {}
 
     def register_check(self, name: str, check_fn: Any) -> None:
         """헬스 체크 함수 등록."""
@@ -437,7 +437,7 @@ class HealthChecker:
 
     async def check_all(self) -> SystemHealth:
         """모든 컴포넌트 헬스 체크."""
-        components: Dict[str, ComponentHealth] = {}
+        components: dict[str, ComponentHealth] = {}
         overall_status = HealthStatus.HEALTHY
 
         for name, check_fn in self._checks.items():
@@ -477,7 +477,7 @@ class HealthChecker:
         )
 
 
-async def check_neo4j_with_params(uri: str, user: str, password: str) -> Dict[str, Any]:
+async def check_neo4j_with_params(uri: str, user: str, password: str) -> dict[str, Any]:
     """Parameterized Neo4j check using existing helper."""
     os.environ["NEO4J_URI"] = uri
     os.environ["NEO4J_USER"] = user
@@ -485,7 +485,7 @@ async def check_neo4j_with_params(uri: str, user: str, password: str) -> Dict[st
     return await check_neo4j()
 
 
-async def check_redis_with_url(url: str) -> Dict[str, Any]:
+async def check_redis_with_url(url: str) -> dict[str, Any]:
     """Parameterized Redis check."""
     os.environ["REDIS_URL"] = url
     return await check_redis()

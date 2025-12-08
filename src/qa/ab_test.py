@@ -11,7 +11,7 @@ import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from src.agent.core import GeminiAgent
@@ -36,7 +36,7 @@ class ExperimentResult:
     token_count: int
     cost: float
     success: bool
-    error_msg: Optional[str] = None
+    error_msg: str | None = None
 
 
 @dataclass
@@ -53,20 +53,20 @@ class ExperimentConfig:
 class PromptExperimentManager:
     """Manager for running A/B test experiments comparing prompt variants."""
 
-    def __init__(self, agent: "GeminiAgent"):
+    def __init__(self, agent: GeminiAgent):
         """Initialize the experiment manager.
 
         Args:
             agent: GeminiAgent instance for generating responses
         """
         self.agent = agent
-        self.results: List[ExperimentResult] = []
+        self.results: list[ExperimentResult] = []
 
     async def run_experiment(
         self,
         config: ExperimentConfig,
-        test_dataset: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        test_dataset: list[dict[str, Any]],
+    ) -> dict[str, Any]:
         """Run A/B test comparing Control vs Treatment prompts.
 
         Args:
@@ -108,8 +108,8 @@ class PromptExperimentManager:
         self,
         variant: str,
         template_name: str,
-        samples: List[Dict[str, Any]],
-    ) -> List[ExperimentResult]:
+        samples: list[dict[str, Any]],
+    ) -> list[ExperimentResult]:
         """Run a batch of experiments for a variant.
 
         Args:
@@ -150,7 +150,7 @@ class PromptExperimentManager:
                         token_count=int(input_tokens + output_tokens),
                         cost=cost,
                         success=True,
-                    )
+                    ),
                 )
 
             except Exception as e:
@@ -165,7 +165,7 @@ class PromptExperimentManager:
                         cost=0.0,
                         success=False,
                         error_msg=str(e),
-                    )
+                    ),
                 )
 
         return results
@@ -173,9 +173,9 @@ class PromptExperimentManager:
     def _generate_report(
         self,
         exp_name: str,
-        control: List[ExperimentResult],
-        treatment: List[ExperimentResult],
-    ) -> Dict[str, Any]:
+        control: list[ExperimentResult],
+        treatment: list[ExperimentResult],
+    ) -> dict[str, Any]:
         """Generate experiment report comparing control and treatment groups.
 
         Args:
@@ -187,7 +187,7 @@ class PromptExperimentManager:
             Report dictionary with metrics and comparison
         """
 
-        def avg(items: List[ExperimentResult], key: str) -> float:
+        def avg(items: list[ExperimentResult], key: str) -> float:
             """Calculate average value for a given attribute."""
             valid = [float(getattr(i, key)) for i in items if i.success]
             return (sum(valid) / len(valid)) if len(valid) > 0 else 0.0
@@ -195,7 +195,7 @@ class PromptExperimentManager:
         control_success = [i for i in control if i.success]
         treatment_success = [i for i in treatment if i.success]
 
-        report: Dict[str, Any] = {
+        report: dict[str, Any] = {
             "experiment": exp_name,
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
             "control": {
@@ -238,7 +238,7 @@ class PromptExperimentManager:
     def _save_results(
         self,
         config: ExperimentConfig,
-        report: Dict[str, Any],
+        report: dict[str, Any],
     ) -> None:
         """Save experiment results to a JSON file.
 

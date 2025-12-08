@@ -30,7 +30,7 @@ class SelfImprovingSystem:
         """
         self.history_file = history_file or Path("data/performance_history.jsonl")
         self.suggestions_file = suggestions_file or Path(
-            "reports/improvement_suggestions.json"
+            "reports/improvement_suggestions.json",
         )
 
     def _load_history(self, days: int = 30) -> list[dict[str, Any]]:
@@ -60,7 +60,7 @@ class SelfImprovingSystem:
                         if ts_str:
                             try:
                                 ts = datetime.fromisoformat(
-                                    ts_str.replace("Z", "+00:00")
+                                    ts_str.replace("Z", "+00:00"),
                                 )
                                 if ts.replace(tzinfo=None) >= cutoff:
                                     entries.append(entry)
@@ -108,7 +108,7 @@ class SelfImprovingSystem:
                         "예시 데이터 업데이트",
                     ],
                     "auto_fix_available": False,
-                }
+                },
             )
 
         # 비용 증가
@@ -125,7 +125,7 @@ class SelfImprovingSystem:
                     ],
                     "auto_fix_available": True,
                     "auto_fix_action": "adjust_cache_ttl",
-                }
+                },
             )
 
         # 레이턴시 증가
@@ -141,7 +141,7 @@ class SelfImprovingSystem:
                         "동시성 제한 재조정",
                     ],
                     "auto_fix_available": False,
-                }
+                },
             )
 
         # 4. 리포트 생성
@@ -156,7 +156,7 @@ class SelfImprovingSystem:
         # 저장
         self.suggestions_file.parent.mkdir(parents=True, exist_ok=True)
         self.suggestions_file.write_text(
-            json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
+            json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8",
         )
 
         # 5. 자동 수정 실행 (승인된 경우만)

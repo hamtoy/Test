@@ -5,7 +5,6 @@ Using type aliases improves readability and consistency across the codebase.
 
 from typing import Any, Protocol, runtime_checkable
 
-
 # JSON-like structures
 JsonDict = dict[str, Any]
 JsonList = list[Any]

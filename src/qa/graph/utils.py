@@ -5,11 +5,9 @@ from __future__ import annotations
 import logging
 import os
 from collections.abc import Sized
-from typing import Any, Dict, List, Optional
-
+from typing import Any, cast
 
 import google.generativeai as genai
-from typing import cast
 from langchain_core.exceptions import LangChainException
 from neo4j.exceptions import Neo4jError, ServiceUnavailable
 
@@ -31,28 +29,28 @@ class CustomGeminiEmbeddings:
 
     def __init__(self, api_key: str, model: str = "models/text-embedding-004") -> None:
         """Initialize the Gemini embeddings wrapper."""
-        genai_any = cast(Any, genai)
+        genai_any = cast("Any", genai)
         genai_any.configure(api_key=api_key)
         self.model = model
 
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
         """Embed a list of documents."""
         return [self.embed_query(text) for text in texts]
 
-    def embed_query(self, text: str) -> List[float]:
+    def embed_query(self, text: str) -> list[float]:
         """Embed a single query text."""
-        genai_any = cast(Any, genai)
+        genai_any = cast("Any", genai)
         result = genai_any.embed_content(
-            model=self.model, content=text, task_type="retrieval_query"
+            model=self.model, content=text, task_type="retrieval_query",
         )
         return list(result["embedding"])
 
 
 def init_vector_store(
     *,
-    neo4j_uri: Optional[str],
-    neo4j_user: Optional[str],
-    neo4j_password: Optional[str],
+    neo4j_uri: str | None,
+    neo4j_user: str | None,
+    neo4j_password: str | None,
     logger: logging.Logger,
 ) -> Any:
     """Initialize Neo4j vector store if embedding key is available."""
@@ -86,8 +84,8 @@ def init_vector_store(
 
 def ensure_formatting_rule_schema(
     *,
-    driver: Optional[SafeDriver],
-    provider: Optional[GraphProvider],
+    driver: SafeDriver | None,
+    provider: GraphProvider | None,
     logger: logging.Logger,
 ) -> None:
     """Ensure FormattingRule schema and default node exist."""
@@ -140,7 +138,7 @@ def record_vector_metrics(
     result_count: int,
     success: bool,
     duration_ms: float,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Record vector search metrics and build structured extras."""
     status = "hit" if success else "error"
     cache_metrics.record_query(
@@ -158,7 +156,7 @@ def record_vector_metrics(
     }
 
 
-def format_rules(rules_data: List[Dict[str, Any]]) -> str:
+def format_rules(rules_data: list[dict[str, Any]]) -> str:
     """Format rules data into markdown structure."""
     if not rules_data:
         return ""

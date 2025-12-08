@@ -7,7 +7,7 @@ best practices, and examples to Neo4j.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.core.interfaces import GraphProvider
 from src.infra.neo4j import SafeDriver
@@ -27,8 +27,8 @@ class RuleUpsertManager:
 
     def __init__(
         self,
-        graph: Optional[SafeDriver] = None,
-        graph_provider: Optional[GraphProvider] = None,
+        graph: SafeDriver | None = None,
+        graph_provider: GraphProvider | None = None,
     ) -> None:
         """Initialize the RuleUpsertManager."""
         self._graph = graph
@@ -36,9 +36,9 @@ class RuleUpsertManager:
 
     def upsert_auto_generated_rules(
         self,
-        patterns: List[Dict[str, Any]],
-        batch_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        patterns: list[dict[str, Any]],
+        batch_id: str | None = None,
+    ) -> dict[str, Any]:
         """LLM에서 생성된 규칙/제약/베스트 프랙티스/예시를 Neo4j에 업서트.
 
         Args:
@@ -63,7 +63,7 @@ class RuleUpsertManager:
         if batch_id is None:
             batch_id = f"batch_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "success": True,
             "batch_id": batch_id,
             "created": {
@@ -158,7 +158,7 @@ class RuleUpsertManager:
 
             except Exception as exc:  # noqa: BLE001
                 result["errors"].append(
-                    f"패턴 처리 중 오류 ({pattern.get('id', 'unknown')}): {exc}"
+                    f"패턴 처리 중 오류 ({pattern.get('id', 'unknown')}): {exc}",
                 )
                 result["success"] = False
 
@@ -171,7 +171,7 @@ class RuleUpsertManager:
         type_hint: str,
         batch_id: str,
         timestamp: str,
-    ) -> Dict[str, bool]:
+    ) -> dict[str, bool]:
         """Rule 노드 업서트."""
         check_cypher = "MATCH (r:Rule {id: $id}) RETURN r.batch_id as existing_batch_id"
 
@@ -196,7 +196,7 @@ class RuleUpsertManager:
         if provider is None:
             if self._graph is None:
                 raise ValueError(
-                    "Graph driver must be initialized when provider is None"
+                    "Graph driver must be initialized when provider is None",
                 )
             with self._graph.session() as session:
                 existing = list(session.run(check_cypher, id=rule_id))
@@ -213,7 +213,7 @@ class RuleUpsertManager:
 
         prov = provider
 
-        async def _run() -> Dict[str, bool]:
+        async def _run() -> dict[str, bool]:
             async with prov.session() as session:
                 existing = await session.run(check_cypher, id=rule_id)
                 existing_list = (
@@ -242,7 +242,7 @@ class RuleUpsertManager:
         rule_id: str,
         batch_id: str,
         timestamp: str,
-    ) -> Dict[str, bool]:
+    ) -> dict[str, bool]:
         """Constraint 노드 업서트 및 Rule과 연결."""
         check_cypher = "MATCH (c:Constraint {id: $id}) RETURN c.batch_id"
 
@@ -267,7 +267,7 @@ class RuleUpsertManager:
         if provider is None:
             if self._graph is None:
                 raise ValueError(
-                    "Graph driver must be initialized when provider is None"
+                    "Graph driver must be initialized when provider is None",
                 )
             with self._graph.session() as session:
                 existing = list(session.run(check_cypher, id=constraint_id))
@@ -284,7 +284,7 @@ class RuleUpsertManager:
 
         prov = provider
 
-        async def _run() -> Dict[str, bool]:
+        async def _run() -> dict[str, bool]:
             async with prov.session() as session:
                 existing = await session.run(check_cypher, id=constraint_id)
                 existing_list = (
@@ -312,7 +312,7 @@ class RuleUpsertManager:
         rule_id: str,
         batch_id: str,
         timestamp: str,
-    ) -> Dict[str, bool]:
+    ) -> dict[str, bool]:
         """BestPractice 노드 업서트 및 Rule과 연결."""
         check_cypher = "MATCH (b:BestPractice {id: $id}) RETURN b.batch_id"
 
@@ -337,7 +337,7 @@ class RuleUpsertManager:
         if provider is None:
             if self._graph is None:
                 raise ValueError(
-                    "Graph driver must be initialized when provider is None"
+                    "Graph driver must be initialized when provider is None",
                 )
             with self._graph.session() as session:
                 existing = list(session.run(check_cypher, id=bp_id))
@@ -354,7 +354,7 @@ class RuleUpsertManager:
 
         prov = provider
 
-        async def _run() -> Dict[str, bool]:
+        async def _run() -> dict[str, bool]:
             async with prov.session() as session:
                 existing = await session.run(check_cypher, id=bp_id)
                 existing_list = (
@@ -383,7 +383,7 @@ class RuleUpsertManager:
         rule_id: str,
         batch_id: str,
         timestamp: str,
-    ) -> Dict[str, bool]:
+    ) -> dict[str, bool]:
         """Example 노드 업서트 및 Rule과 연결."""
         check_cypher = "MATCH (e:Example {id: $id}) RETURN e.batch_id"
 
@@ -410,7 +410,7 @@ class RuleUpsertManager:
         if provider is None:
             if self._graph is None:
                 raise ValueError(
-                    "Graph driver must be initialized when provider is None"
+                    "Graph driver must be initialized when provider is None",
                 )
             with self._graph.session() as session:
                 existing = list(session.run(check_cypher, id=example_id))
@@ -428,7 +428,7 @@ class RuleUpsertManager:
 
         prov = provider
 
-        async def _run() -> Dict[str, bool]:
+        async def _run() -> dict[str, bool]:
             async with prov.session() as session:
                 existing = await session.run(check_cypher, id=example_id)
                 existing_list = (
@@ -450,7 +450,7 @@ class RuleUpsertManager:
 
         return run_async_safely(_run())
 
-    def get_rules_by_batch_id(self, batch_id: str) -> List[Dict[str, Any]]:
+    def get_rules_by_batch_id(self, batch_id: str) -> list[dict[str, Any]]:
         """특정 batch_id로 생성된 모든 노드 조회 (롤백 전 확인용).
 
         Args:
@@ -470,7 +470,7 @@ class RuleUpsertManager:
         if provider is None:
             if self._graph is None:
                 raise ValueError(
-                    "Graph driver must be initialized when provider is None"
+                    "Graph driver must be initialized when provider is None",
                 )
             with self._graph.session() as session:
                 records = session.run(cypher, batch_id=batch_id)
@@ -478,14 +478,14 @@ class RuleUpsertManager:
 
         prov = provider
 
-        async def _run() -> List[Dict[str, Any]]:
+        async def _run() -> list[dict[str, Any]]:
             async with prov.session() as session:
                 records = await session.run(cypher, batch_id=batch_id)
                 return [dict(r) for r in records]
 
         return run_async_safely(_run())
 
-    def rollback_batch(self, batch_id: str) -> Dict[str, Any]:
+    def rollback_batch(self, batch_id: str) -> dict[str, Any]:
         """특정 batch_id로 생성된 모든 노드 삭제 (롤백).
 
         Args:
@@ -504,7 +504,7 @@ class RuleUpsertManager:
         if provider is None:
             if self._graph is None:
                 raise ValueError(
-                    "Graph driver must be initialized when provider is None"
+                    "Graph driver must be initialized when provider is None",
                 )
             with self._graph.session() as session:
                 count_result = list(session.run(count_cypher, batch_id=batch_id))
@@ -514,7 +514,7 @@ class RuleUpsertManager:
 
         prov = provider
 
-        async def _run() -> Dict[str, Any]:
+        async def _run() -> dict[str, Any]:
             async with prov.session() as session:
                 count_result = await session.run(count_cypher, batch_id=batch_id)
                 count_list = (

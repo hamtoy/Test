@@ -4,9 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-if TYPE_CHECKING:
-    pass
-
 
 def __getattr__(name: str) -> Any:
     """Lazy-load modules to avoid circular imports."""

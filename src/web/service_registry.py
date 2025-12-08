@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import threading
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from src.agent import GeminiAgent
@@ -22,11 +22,11 @@ class ServiceRegistry:
 
     def __init__(self) -> None:
         """빈 레지스트리를 초기화."""
-        self._config: Optional[AppConfig] = None
-        self._agent: Optional[GeminiAgent] = None
-        self._kg: Optional[QAKnowledgeGraph] = None
-        self._pipeline: Optional[IntegratedQAPipeline] = None
-        self._validator: Optional[CrossValidationSystem] = None
+        self._config: AppConfig | None = None
+        self._agent: GeminiAgent | None = None
+        self._kg: QAKnowledgeGraph | None = None
+        self._pipeline: IntegratedQAPipeline | None = None
+        self._validator: CrossValidationSystem | None = None
         self._lock = threading.Lock()
         self._worker_id = os.getpid()
 
@@ -53,19 +53,19 @@ class ServiceRegistry:
             self._agent = agent
             logger.debug("Agent registered")
 
-    def register_kg(self, kg: Optional[QAKnowledgeGraph]) -> None:
+    def register_kg(self, kg: QAKnowledgeGraph | None) -> None:
         """KG 등록."""
         with self._lock:
             self._kg = kg
             logger.debug("KG registered: %s", kg is not None)
 
-    def register_pipeline(self, pipeline: Optional[IntegratedQAPipeline]) -> None:
+    def register_pipeline(self, pipeline: IntegratedQAPipeline | None) -> None:
         """Pipeline 등록."""
         with self._lock:
             self._pipeline = pipeline
             logger.debug("Pipeline registered: %s", pipeline is not None)
 
-    def register_validator(self, validator: Optional[CrossValidationSystem]) -> None:
+    def register_validator(self, validator: CrossValidationSystem | None) -> None:
         """Validator 등록."""
         with self._lock:
             self._validator = validator
@@ -88,19 +88,19 @@ class ServiceRegistry:
         return self._agent
 
     @property
-    def kg(self) -> Optional[QAKnowledgeGraph]:
+    def kg(self) -> QAKnowledgeGraph | None:
         """KG 가져오기."""
         self._check_worker()
         return self._kg
 
     @property
-    def pipeline(self) -> Optional[IntegratedQAPipeline]:
+    def pipeline(self) -> IntegratedQAPipeline | None:
         """Pipeline 가져오기."""
         self._check_worker()
         return self._pipeline
 
     @property
-    def validator(self) -> Optional[CrossValidationSystem]:
+    def validator(self) -> CrossValidationSystem | None:
         """Validator 가져오기."""
         self._check_worker()
         return self._validator

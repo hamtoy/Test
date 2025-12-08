@@ -12,8 +12,9 @@ import logging
 import os
 import re
 import sys
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Any, Iterable, List, Sequence
+from typing import Any
 
 from openai import OpenAI
 
@@ -89,7 +90,7 @@ class QAGenerator:
         )
         return response.choices[0].message.content or ""
 
-    def generate_questions(self, ocr_text: str, query_count: int = 4) -> List[str]:
+    def generate_questions(self, ocr_text: str, query_count: int = 4) -> list[str]:
         """OCR 텍스트로부터 다채로운 질의 목록 생성."""
         if query_count not in {3, 4}:
             raise ValueError("query_count must be 3 or 4")
@@ -122,10 +123,10 @@ class QAGenerator:
         return self._parse_questions(raw_questions)
 
     def generate_answers(
-        self, ocr_text: str, questions: Sequence[str]
-    ) -> List[dict[str, Any]]:
+        self, ocr_text: str, questions: Sequence[str],
+    ) -> list[dict[str, Any]]:
         """질의 목록에 대한 답변 생성."""
-        results: List[dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
         for idx, question in enumerate(questions, start=1):
             answer_prompt = (
                 "<input_text>\n"
@@ -139,7 +140,7 @@ class QAGenerator:
             results.append({"id": idx, "question": question, "answer": answer})
         return results
 
-    def generate_qa(self, ocr_text: str, query_count: int = 4) -> List[dict[str, Any]]:
+    def generate_qa(self, ocr_text: str, query_count: int = 4) -> list[dict[str, Any]]:
         """질의/답변 쌍을 생성 후 리스트로 반환."""
         questions = self.generate_questions(ocr_text, query_count=query_count)
         return self.generate_answers(ocr_text, questions)
@@ -161,7 +162,7 @@ class QAGenerator:
         if markdown_path:
             md_file = Path(markdown_path)
             md_file.parent.mkdir(parents=True, exist_ok=True)
-            lines: List[str] = []
+            lines: list[str] = []
             lines.append(f"# QA Results ({len(pairs_list)} pairs)\n")
             for item in pairs_list:
                 lines.append(f"## Q{item.get('id')}. {item.get('question')}\n")
@@ -171,9 +172,9 @@ class QAGenerator:
                 f_md.write("\n".join(lines))
 
     @staticmethod
-    def _parse_questions(raw: str) -> List[str]:
+    def _parse_questions(raw: str) -> list[str]:
         """생성된 텍스트에서 질문만 추출."""
-        questions: List[str] = []
+        questions: list[str] = []
         for line in raw.strip().splitlines():
             line = line.strip()
             if (

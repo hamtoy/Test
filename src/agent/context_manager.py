@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from src.config.constants import MIN_CACHE_TOKENS
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class AgentContextManager:
     """Wrapper around GeminiAgent cache/budget helpers."""
 
-    def __init__(self, agent: "GeminiAgent") -> None:
+    def __init__(self, agent: GeminiAgent) -> None:
         """Initialize the context manager wrapper."""
         self.agent = agent
 
@@ -23,7 +23,7 @@ class AgentContextManager:
         """Proxy cache usage tracking."""
         self.agent._cache_manager.track_cache_usage(hit)  # noqa: SLF001
 
-    def get_cached_content(self, cache_key: str) -> Optional[str]:
+    def get_cached_content(self, cache_key: str) -> str | None:
         """Proxy cache fetch."""
         return (
             self.agent._cache.get(cache_key) if hasattr(self.agent, "_cache") else None
@@ -34,19 +34,19 @@ class AgentContextManager:
         self.agent._cache_manager.cleanup_expired_cache(ttl_minutes)  # noqa: SLF001
 
     def load_local_cache(
-        self, fingerprint: str, ttl_minutes: int, caching_module: Any
+        self, fingerprint: str, ttl_minutes: int, caching_module: Any,
     ) -> Any:
         """Load cached content manifest if available."""
         return self.agent._cache_manager.load_local_cache(  # noqa: SLF001
-            fingerprint, ttl_minutes, caching_module
+            fingerprint, ttl_minutes, caching_module,
         )
 
     def store_local_cache(
-        self, fingerprint: str, cache_name: str, ttl_minutes: int
+        self, fingerprint: str, cache_name: str, ttl_minutes: int,
     ) -> None:
         """Persist cache manifest locally."""
         self.agent._cache_manager.store_local_cache(  # noqa: SLF001
-            fingerprint, cache_name, ttl_minutes
+            fingerprint, cache_name, ttl_minutes,
         )
 
     async def create_context_cache(self, ocr_text: str) -> Any:
@@ -54,11 +54,11 @@ class AgentContextManager:
         system_prompt = self.agent.jinja_env.get_template("system/eval.j2").render()
         combined_content = system_prompt + "\n\n" + ocr_text
         fingerprint = self.agent._cache_manager.compute_fingerprint(  # noqa: SLF001
-            combined_content
+            combined_content,
         )
         ttl_minutes = self.agent.config.cache_ttl_minutes
         token_threshold = getattr(
-            self.agent.config, "cache_min_tokens", MIN_CACHE_TOKENS
+            self.agent.config, "cache_min_tokens", MIN_CACHE_TOKENS,
         )
 
         local_cached = self.load_local_cache(
@@ -68,7 +68,7 @@ class AgentContextManager:
         )
         if local_cached:
             self.agent.logger.info(
-                "Reusing context cache from disk: %s", local_cached.name
+                "Reusing context cache from disk: %s", local_cached.name,
             )
             return local_cached
 
@@ -76,7 +76,7 @@ class AgentContextManager:
 
         def _count_tokens() -> int:
             model = self.agent._genai.GenerativeModel(  # noqa: SLF001
-                self.agent.config.model_name
+                self.agent.config.model_name,
             )
             result: int = model.count_tokens(combined_content).total_tokens
             return result
@@ -86,7 +86,7 @@ class AgentContextManager:
 
         if token_count < token_threshold:
             self.agent.logger.info(
-                "Skipping cache creation (Tokens < %s)", token_threshold
+                "Skipping cache creation (Tokens < %s)", token_threshold,
             )
             return None
 
@@ -103,7 +103,7 @@ class AgentContextManager:
 
             cache = await loop.run_in_executor(None, _create_cache)
             self.agent.logger.info(
-                "Context Cache Created: %s (Expires in %sm)", cache.name, ttl_minutes
+                "Context Cache Created: %s (Expires in %sm)", cache.name, ttl_minutes,
             )
             try:
                 self.store_local_cache(fingerprint, cache.name, ttl_minutes)

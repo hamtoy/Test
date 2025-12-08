@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.config import AppConfig
 
@@ -14,16 +14,16 @@ class APIMetadata:
 
     duration: float = 0.0
     cache_hit: bool = False
-    token_usage: Optional[Dict[str, int]] = None
+    token_usage: dict[str, int] | None = None
 
 
 def build_response(
     data: Any,
     *,
     success: bool = True,
-    errors: Optional[List[str]] = None,
-    metadata: Optional[APIMetadata] = None,
-    config: Optional[AppConfig] = None,
+    errors: list[str] | None = None,
+    metadata: APIMetadata | None = None,
+    config: AppConfig | None = None,
 ) -> Any:
     """Wrap response if standard response is enabled; otherwise pass through."""
     if config and getattr(config, "enable_standard_response", False):

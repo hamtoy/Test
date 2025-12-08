@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import sys
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
@@ -19,7 +19,7 @@ from neo4j.exceptions import Neo4jError
 from src.config.utils import require_env
 
 
-def compare_structure(driver: Any) -> List[Dict[str, Any]]:
+def compare_structure(driver: Any) -> list[dict[str, Any]]:
     """페이지별 블록 구조 요약."""
     query = """
     MATCH (p:Page)
@@ -42,7 +42,7 @@ def compare_structure(driver: Any) -> List[Dict[str, Any]]:
         ]
 
 
-def find_common_content(driver: Any, limit: int = 10) -> List[Tuple[str, List[str]]]:
+def find_common_content(driver: Any, limit: int = 10) -> list[tuple[str, list[str]]]:
     """여러 페이지에서 동일하게 등장하는 블록 콘텐츠 찾기.
 
     content별로 그룹화하여 카티전 곱을 피함.
@@ -68,7 +68,7 @@ def main() -> None:
         uri = require_env("NEO4J_URI")
         user = require_env("NEO4J_USER")
         password = require_env("NEO4J_PASSWORD")
-    except EnvironmentError as e:
+    except OSError as e:
         print(str(e))
         sys.exit(1)
 

@@ -6,22 +6,23 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, Literal, Optional
+from typing import Any, Literal
 from uuid import uuid4
 
-from checks.detect_forbidden_patterns import find_violations
-from fastapi import File, FastAPI, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from fastapi.responses import HTMLResponse, RedirectResponse, Response, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 
-from src.analysis.cross_validation import CrossValidationSystem
+from checks.detect_forbidden_patterns import find_violations
 from src.agent import GeminiAgent
+from src.analysis.cross_validation import CrossValidationSystem
 from src.config import AppConfig
 from src.config.constants import DEFAULT_ANSWER_RULES
 from src.infra.health import (
@@ -35,22 +36,28 @@ from src.infra.structured_logging import setup_structured_logging
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
 from src.qa.rule_loader import set_global_kg
-from src.web.session import SessionManager, session_middleware
 from src.web.models import OCRTextInput
-from src.web.routers import health_router, qa_router, stream_router, workspace_router
 from src.web.routers import admin as admin_router
 from src.web.routers import health as health_router_module
+from src.web.routers import health_router, qa_router, stream_router, workspace_router
 from src.web.routers import qa as qa_router_module
 from src.web.routers import stream as stream_router_module
 from src.web.routers import workspace as workspace_router_module
 from src.web.service_registry import get_registry
+from src.web.session import SessionManager, session_middleware
 from src.web.utils import (
     detect_workflow,
-    load_ocr_text as _load_ocr_text,
-    log_review_session as _log_review_session,
     postprocess_answer,
-    save_ocr_text as _save_ocr_text,
     strip_output_tags,
+)
+from src.web.utils import (
+    load_ocr_text as _load_ocr_text,
+)
+from src.web.utils import (
+    log_review_session as _log_review_session,
+)
+from src.web.utils import (
+    save_ocr_text as _save_ocr_text,
 )
 from src.workflow.edit import edit_content
 from src.workflow.inspection import inspect_answer
@@ -59,12 +66,12 @@ logger = logging.getLogger(__name__)
 
 # 전역 인스턴스 (서버 시작 시 한 번만 초기화)
 # Note: Kept for backward compatibility with existing code
-_config: Optional[AppConfig] = None
-agent: Optional[GeminiAgent] = None
-kg: Optional[QAKnowledgeGraph] = None
-pipeline: Optional[IntegratedQAPipeline] = None
+_config: AppConfig | None = None
+agent: GeminiAgent | None = None
+kg: QAKnowledgeGraph | None = None
+pipeline: IntegratedQAPipeline | None = None
 session_manager = SessionManager()
-_log_listener: Optional[Any] = None  # QueueListener for file logging
+_log_listener: Any | None = None  # QueueListener for file logging
 REQUEST_ID_HEADER = "X-Request-Id"
 ENABLE_MULTIMODAL = os.getenv("ENABLE_MULTIMODAL", "true").lower() == "true"
 ENABLE_METRICS = os.getenv("ENABLE_METRICS", "true").lower() == "true"
@@ -82,7 +89,7 @@ def _get_request_id(request: Request) -> str:
 
 
 async def _request_id_middleware(
-    request: Request, call_next: RequestResponseEndpoint
+    request: Request, call_next: RequestResponseEndpoint,
 ) -> Response:
     """Attach request_id to request.state and response headers."""
     req_id = request.headers.get(REQUEST_ID_HEADER) or uuid4().hex
@@ -93,7 +100,7 @@ async def _request_id_middleware(
 
 
 def _log_api_error(
-    message: str, *, request: Request, exc: Exception, logger_obj: logging.Logger
+    message: str, *, request: Request, exc: Exception, logger_obj: logging.Logger,
 ) -> None:
     """Log structured error with request context."""
     logger_obj.error(
@@ -111,7 +118,7 @@ def _log_api_error(
 
 
 async def _error_logging_middleware(
-    request: Request, call_next: RequestResponseEndpoint
+    request: Request, call_next: RequestResponseEndpoint,
 ) -> Response:
     """Capture unhandled exceptions with request context."""
     try:
@@ -131,7 +138,7 @@ async def _error_logging_middleware(
         raise
     except Exception as exc:  # noqa: BLE001
         _log_api_error(
-            "Unhandled API error", request=request, exc=exc, logger_obj=logger
+            "Unhandled API error", request=request, exc=exc, logger_obj=logger,
         )
         return JSONResponse(
             status_code=500,
@@ -143,7 +150,7 @@ async def _error_logging_middleware(
 
 
 async def _performance_logging_middleware(
-    request: Request, call_next: RequestResponseEndpoint
+    request: Request, call_next: RequestResponseEndpoint,
 ) -> Response:
     """요청 처리 시간 로깅 (디버깅용)."""
     from time import perf_counter
@@ -213,7 +220,7 @@ def log_review_session(
     edit_request_used: str,
     inspector_comment: str,
     *,
-    base_dir: Optional[Path] = None,
+    base_dir: Path | None = None,
 ) -> None:
     """Append a log review session entry to storage."""
     _log_review_session(
@@ -313,7 +320,7 @@ async def init_resources() -> None:
     workspace_router_module.set_dependencies(app_config, agent, kg, pipeline)
     stream_router_module.set_dependencies(app_config, agent)
     health_router_module.set_dependencies(
-        health_checker, agent=agent, kg=kg, pipeline=pipeline
+        health_checker, agent=agent, kg=kg, pipeline=pipeline,
     )
     # 전역 KG 설정 (이미 초기화된 경우에도 동기화)
     set_global_kg(kg)
@@ -413,7 +420,7 @@ if ENABLE_MULTIMODAL:
 
 
 @app.get("/api/session")
-async def get_session(request: Request) -> Dict[str, Any]:
+async def get_session(request: Request) -> dict[str, Any]:
     """현재 세션 정보를 조회합니다."""
     session = getattr(request.state, "session", None)
     if session is None:
@@ -422,7 +429,7 @@ async def get_session(request: Request) -> Dict[str, Any]:
 
 
 @app.delete("/api/session")
-async def delete_session(request: Request) -> Dict[str, Any]:
+async def delete_session(request: Request) -> dict[str, Any]:
     """현재 세션을 종료합니다."""
     session = getattr(request.state, "session", None)
     if session is None:
@@ -437,7 +444,7 @@ async def delete_session(request: Request) -> Dict[str, Any]:
 
 
 @app.get("/api/ocr")
-async def api_get_ocr(request: Request) -> Dict[str, str]:
+async def api_get_ocr(request: Request) -> dict[str, str]:
     """OCR 텍스트 조회."""
     try:
         ocr_text = load_ocr_text()
@@ -445,17 +452,17 @@ async def api_get_ocr(request: Request) -> Dict[str, str]:
     except HTTPException:
         # Re-raise HTTPException to return proper status code (e.g., 404)
         raise
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         _log_api_error(
-            "Failed to load OCR text", request=request, exc=exc, logger_obj=logger
+            "Failed to load OCR text", request=request, exc=exc, logger_obj=logger,
         )
         raise HTTPException(
-            status_code=500, detail="OCR 텍스트 조회 중 오류가 발생했습니다."
+            status_code=500, detail="OCR 텍스트 조회 중 오류가 발생했습니다.",
         ) from exc
 
 
 @app.post("/api/ocr")
-async def api_save_ocr(request: Request, payload: OCRTextInput) -> Dict[str, str]:
+async def api_save_ocr(request: Request, payload: OCRTextInput) -> dict[str, str]:
     """OCR 텍스트 저장 (비동기 파일 I/O)."""
     try:
         # 동기 작업을 스레드 풀에서 실행
@@ -470,9 +477,9 @@ async def api_save_ocr(request: Request, payload: OCRTextInput) -> Dict[str, str
             },
         )
         return {"status": "success", "message": "OCR 텍스트가 저장되었습니다."}
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         _log_api_error(
-            "Failed to save OCR text", request=request, exc=exc, logger_obj=logger
+            "Failed to save OCR text", request=request, exc=exc, logger_obj=logger,
         )
         raise HTTPException(status_code=500, detail="OCR 텍스트 저장 실패") from exc
 
@@ -480,7 +487,7 @@ async def api_save_ocr(request: Request, payload: OCRTextInput) -> Dict[str, str
 @app.get("/api/metrics/performance")
 async def get_performance_metrics(
     operation: str | None = None,
-) -> Dict[str, Dict[str, float]]:
+) -> dict[str, dict[str, float]]:
     """실시간 성능 메트릭 조회.
 
     Args:
@@ -505,7 +512,7 @@ if ENABLE_MULTIMODAL:
     @app.post("/api/multimodal/analyze")
     async def api_analyze_image_disabled(
         file: UploadFile = File(...),
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """이미지 분석 엔드포인트 (멀티모달 기능 미사용 시 500 반환)."""
         _ = file  # FastAPI 형태를 유지하면서 사용하지 않음
         raise HTTPException(
@@ -529,7 +536,7 @@ if ENABLE_METRICS:
         return Response(content=get_metrics(), media_type="text/plain")
 
     @app.get("/api/analytics/current")
-    async def current_metrics() -> Dict[str, Any]:
+    async def current_metrics() -> dict[str, Any]:
         """실시간 메트릭 조회."""
         from src.analytics.dashboard import UsageDashboard
 
@@ -549,7 +556,7 @@ if ENABLE_METRICS:
         }
 
     @app.post("/admin/log-level")
-    async def set_log_level_endpoint(level: str) -> Dict[str, str]:
+    async def set_log_level_endpoint(level: str) -> dict[str, str]:
         """런타임에 로그 레벨 변경 (관리자용)."""
         from src.infra.logging import set_log_level
 
@@ -563,10 +570,13 @@ if ENABLE_METRICS:
 
 
 __all__ = [
+    "DEFAULT_ANSWER_RULES",
+    "CrossValidationSystem",
     "app",
     "config",
     "detect_workflow",
     "edit_content",
+    "find_violations",
     "generate_single_qa",
     "generate_single_qa_with_retry",
     "init_resources",
@@ -576,7 +586,4 @@ __all__ = [
     "postprocess_answer",
     "save_ocr_text",
     "strip_output_tags",
-    "CrossValidationSystem",
-    "DEFAULT_ANSWER_RULES",
-    "find_violations",
 ]

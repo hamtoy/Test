@@ -15,7 +15,7 @@ Metrics exported:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from prometheus_client import Counter, Histogram
@@ -34,12 +34,12 @@ class MetricsExporter:
     def __init__(self) -> None:
         """Initialize metrics exporter."""
         self._initialized = False
-        self._request_latency: Optional["Histogram"] = None
-        self._requests_total: Optional["Counter"] = None
-        self._tokens_total: Optional["Counter"] = None
-        self._cost_total: Optional["Counter"] = None
-        self._cache_hits: Optional["Counter"] = None
-        self._cache_misses: Optional["Counter"] = None
+        self._request_latency: Histogram | None = None
+        self._requests_total: Counter | None = None
+        self._tokens_total: Counter | None = None
+        self._cost_total: Counter | None = None
+        self._cache_hits: Counter | None = None
+        self._cache_misses: Counter | None = None
 
     def _init_metrics(self) -> bool:
         """Initialize Prometheus metrics lazily.
@@ -118,12 +118,12 @@ class MetricsExporter:
 
         if self._request_latency:
             self._request_latency.labels(endpoint=endpoint, method=method).observe(
-                latency_seconds
+                latency_seconds,
             )
 
         if self._requests_total:
             self._requests_total.labels(
-                endpoint=endpoint, method=method, status=str(status_code)
+                endpoint=endpoint, method=method, status=str(status_code),
             ).inc()
 
     def record_tokens(

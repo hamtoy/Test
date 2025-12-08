@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from rich.panel import Panel
 
@@ -68,13 +68,13 @@ async def _evaluate_and_rewrite_turn(
     ctx: WorkflowContext,
     query: str,
     turn_id: int,
-) -> Optional[WorkflowResult]:
+) -> WorkflowResult | None:
     """평가 및 재작성 실행."""
     ctx.logger.info("Turn %s/%s: '%s' 실행 중...", turn_id, ctx.total_turns, query)
 
     ctx.logger.info("후보 평가 중...")
     evaluation = await ctx.agent.evaluate_responses(
-        ctx.ocr_text, query, ctx.candidates, cached_content=ctx.cache
+        ctx.ocr_text, query, ctx.candidates, cached_content=ctx.cache,
     )
     if evaluation is None:
         ctx.logger.warning("Turn %s: 평가 실패", turn_id)
@@ -89,7 +89,7 @@ async def _evaluate_and_rewrite_turn(
 
     ctx.logger.info("답변 재작성 중...")
     rewritten_answer = await ctx.agent.rewrite_best_answer(
-        ctx.ocr_text, best_answer, cached_content=None
+        ctx.ocr_text, best_answer, cached_content=None,
     )
     ctx.logger.info("답변 재작성 완료")
 
@@ -108,8 +108,8 @@ async def process_single_query(
     ctx: WorkflowContext,
     query: str,
     turn_id: int,
-    task_id: Optional[Any] = None,
-) -> Optional[WorkflowResult]:
+    task_id: Any | None = None,
+) -> WorkflowResult | None:
     """단일 질의 처리 (평가 → 재작성)."""
     try:
         # Update progress description
@@ -138,7 +138,7 @@ async def process_single_query(
                     ),
                     title=PANEL_TURN_TITLE_TEMPLATE.format(turn_id=turn_id),
                     border_style="blue",
-                )
+                ),
             )
 
             # Mark task as completed

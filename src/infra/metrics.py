@@ -5,7 +5,8 @@ from __future__ import annotations
 import functools
 import logging
 import time
-from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import Any, TypeVar
 
 from typing_extensions import ParamSpec
 
@@ -16,17 +17,13 @@ R = TypeVar("R")
 
 
 def _safe_extra(
-    get_extra: Optional[
-        Callable[
-            [Tuple[Any, ...], Dict[str, Any], Optional[R], bool, float], Dict[str, Any]
-        ]
-    ],
-    args: Tuple[Any, ...],
-    kwargs: Dict[str, Any],
-    result: Optional[R],
+    get_extra: Callable[[tuple[Any, ...], dict[str, Any], R | None, bool, float], dict[str, Any]] | None,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+    result: R | None,
     success: bool,
     elapsed_ms: float,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Safely compute extra log fields, swallowing any errors."""
     if get_extra is None:
         return {}
@@ -40,11 +37,7 @@ def _safe_extra(
 def measure_latency(
     operation: str,
     *,
-    get_extra: Optional[
-        Callable[
-            [Tuple[Any, ...], Dict[str, Any], Optional[R], bool, float], Dict[str, Any]
-        ]
-    ] = None,
+    get_extra: Callable[[tuple[Any, ...], dict[str, Any], R | None, bool, float], dict[str, Any]] | None = None,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Measure and log latency for synchronous callables."""
 
@@ -53,7 +46,7 @@ def measure_latency(
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             start = time.perf_counter()
             success = False
-            result: Optional[R] = None
+            result: R | None = None
             try:
                 result = func(*args, **kwargs)
                 success = True
@@ -61,7 +54,7 @@ def measure_latency(
             finally:
                 elapsed_ms = max((time.perf_counter() - start) * 1000, 0.001)
                 extra_fields = _safe_extra(
-                    get_extra, args, kwargs, result, success, elapsed_ms
+                    get_extra, args, kwargs, result, success, elapsed_ms,
                 )
                 logger.info(
                     "Operation completed",
@@ -82,11 +75,7 @@ def measure_latency(
 def measure_latency_async(
     operation: str,
     *,
-    get_extra: Optional[
-        Callable[
-            [Tuple[Any, ...], Dict[str, Any], Optional[R], bool, float], Dict[str, Any]
-        ]
-    ] = None,
+    get_extra: Callable[[tuple[Any, ...], dict[str, Any], R | None, bool, float], dict[str, Any]] | None = None,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     """Measure and log latency for async callables."""
 
@@ -95,7 +84,7 @@ def measure_latency_async(
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             start = time.perf_counter()
             success = False
-            result: Optional[R] = None
+            result: R | None = None
             try:
                 awaitable = func(*args, **kwargs)
                 result = await awaitable
@@ -104,7 +93,7 @@ def measure_latency_async(
             finally:
                 elapsed_ms = max((time.perf_counter() - start) * 1000, 0.001)
                 extra_fields = _safe_extra(
-                    get_extra, args, kwargs, result, success, elapsed_ms
+                    get_extra, args, kwargs, result, success, elapsed_ms,
                 )
                 logger.info(
                     "Operation completed",
