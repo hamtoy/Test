@@ -199,6 +199,12 @@ def apply_answer_limits(
                 return text + "."
         return text
 
+    def _ensure_period_preserve_ellipsis(text: str) -> str:
+        """Add period if missing, but preserve existing ellipsis."""
+        if text and not text.endswith(".") and not text.endswith("..."):
+            return text + "."
+        return text
+
     # 실제 사용되는 4가지 질질 타입별 설정
     config: dict[str, dict[str, int]] = {
         # 1. 전체 마모뇌 설명: No word limit (length controlled by prompt: 1000-1500 chars)
@@ -240,9 +246,8 @@ def apply_answer_limits(
 
     elif normalized_qtype == "explanation":
         # global_explanation: No word/sentence limits, but ensure period at end
-        # For explanation: only add period if missing, but keep ellipsis
-        if answer and not answer.endswith(".") and not answer.endswith("..."):
-            answer += "."
+        # Preserve ellipsis if present, only add period when both period and ellipsis are missing
+        answer = _ensure_period_preserve_ellipsis(answer)
 
         # Dynamic max length enforcement (if provided)
         if max_length and len(answer) > max_length:
@@ -270,8 +275,7 @@ def apply_answer_limits(
         word_count = len(answer.split())
 
         if word_count < 15:
-            # 3. target short: 매우 간결 (1-2문장)
-            # No period added for short target answers
+            # Short target answers preserved as-is without automatic punctuation
             answer = _limit_words(answer, 50)
         else:
             # 4. target long: 200단어, 최대 6문장
