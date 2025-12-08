@@ -40,7 +40,7 @@ class TestFeedbackConstraints:
         answer_with_repetition = (
             "시장 상황을 보면 시장이 어렵습니다. 노동 시장도 노동력 부족이 문제입니다."
         )
-        result = validator._check_repetition(answer_with_repetition, max_repeat=2)
+        result = validator._check_repetition(answer_with_repetition)
         assert len(result) == 0  # 검증 비활성화
 
     def test_formatting_rules(self, mock_kg):

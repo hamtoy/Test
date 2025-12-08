@@ -133,7 +133,7 @@ class CrossValidationSystem:
         #       인간 검토자가 필요시 추가하면 됨
         return []  # ← 검증 스킵
 
-    def _check_repetition(self, answer: str, max_repeat: int = 2) -> list[str]:
+    def _check_repetition(self, answer: str) -> list[str]:
         """반복 표현 검증 (repetition_check).
 
         Phase 4 Complete: 명사 반복은 Gemini의 자연스러운 표현이므로 검증 스킵.
@@ -277,8 +277,7 @@ class CrossValidationSystem:
                 violations.extend(self._check_temporal_expressions(answer))
 
             elif constraint_id == "repetition_check":
-                max_rep = c.get("max_repetition", 2)
-                violations.extend(self._check_repetition(answer, max_rep))
+                violations.extend(self._check_repetition(answer))
 
             elif constraint_id == "formatting_rules":
                 violations.extend(self._check_formatting_rules(answer))
