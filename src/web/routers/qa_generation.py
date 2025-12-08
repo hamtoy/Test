@@ -391,8 +391,21 @@ async def generate_single_qa(
 """
     elif normalized_qtype == "explanation":
         extra_instructions = """설명형 답변입니다.
+- 질의와 관련된 모든 주요 요인을 포괄적으로 설명
+- 각 요인의 인과관계와 배경을 상세히 서술
+- 구체적 수치, 데이터, 사례 포함
+- 시간순 또는 논리적 흐름으로 구조화
 - 소제목을 쓸 때는 자연스러운 서론-본론-결론 흐름 유지 (헤더에 '서론/본론/결론' 직접 표기 금지)
 - 불필요한 반복, 장황한 수식어 금지"""
+        length_constraint = """
+[CRITICAL - 길이 제약]
+**절대 규칙**: 이 응답은 최소 1000-1500자 분량의 상세한 설명이어야 합니다.
+- 최소 5-8개 문단으로 구성
+- 각 문단은 3-4문장 이상
+- 단순 요약이 아닌 전체적이고 깊이 있는 분석 제공
+- 모든 핵심 포인트를 빠짐없이 다룰 것
+- 답변의 모든 섹션을 완성하고 마지막까지 끝낼 것
+"""
     elif normalized_qtype == "target":
         if qtype == "target_short":
             length_constraint = """
@@ -700,6 +713,18 @@ Priority 30 (LOW):
             )
 
         final_answer = postprocess_answer(draft_answer, qtype)
+
+        # Validate answer length for explanation type
+        if normalized_qtype == "explanation":
+            answer_length = len(final_answer)
+            if answer_length < 800:
+                logger.warning(
+                    "⚠️ Answer too short for explanation type: "
+                    "%d chars (expected 1000+). "
+                    "Query: %s",
+                    answer_length,
+                    query[:50],
+                )
 
         # PHASE 2B: Store result in cache for future requests
         result = {"type": qtype, "query": query, "answer": final_answer}

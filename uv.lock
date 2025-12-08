@@ -3385,7 +3385,12 @@ worker = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "mypy" },
     { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
 ]
 
 [package.metadata]
@@ -3457,7 +3462,14 @@ requires-dist = [
 provides-extras = ["rag", "web", "worker", "multimodal", "observability", "all", "dev"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pre-commit", specifier = ">=4.4.0" }]
+dev = [
+    { name = "mypy", specifier = ">=1.18.2" },
+    { name = "pre-commit", specifier = ">=4.4.0" },
+    { name = "pytest", specifier = ">=9.0.1" },
+    { name = "pytest-asyncio", specifier = ">=1.3.0" },
+    { name = "pytest-cov", specifier = ">=7.0.0" },
+    { name = "ruff", specifier = ">=0.14.6" },
+]
 
 [[package]]
 name = "sniffio"
