@@ -7,9 +7,15 @@ from neo4j import GraphDatabase
 
 load_dotenv()
 
-driver = GraphDatabase.driver(
-    os.getenv("NEO4J_URI"), auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD"))
-)
+# Get environment variables with defaults
+neo4j_uri = os.getenv("NEO4J_URI")
+neo4j_user = os.getenv("NEO4J_USER")
+neo4j_password = os.getenv("NEO4J_PASSWORD")
+
+if not neo4j_uri or not neo4j_user or not neo4j_password:
+    raise ValueError("NEO4J_URI, NEO4J_USER, and NEO4J_PASSWORD must be set")
+
+driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
 
 with driver.session() as session:
     print("=== 볼드체 금지 전용 Constraint 추가 ===")
@@ -28,7 +34,8 @@ with driver.session() as session:
             c.example_good = '구인배율은 1.34를 기록했습니다.'
         RETURN c.id AS id
     """)
-    constraint_id = result.single()["id"]
+    record = result.single()
+    constraint_id = record["id"] if record else None
     print(f"생성된 Constraint: {constraint_id}")
 
     # 2. 모든 QueryType에 연결
@@ -37,7 +44,8 @@ with driver.session() as session:
         MERGE (qt)-[:HAS_CONSTRAINT]->(c)
         RETURN count(*) AS created
     """)
-    created = result.single()["created"]
+    record = result.single()
+    created = record["created"] if record else 0
     print(f"HAS_CONSTRAINT 관계 생성: {created}개")
 
     print()

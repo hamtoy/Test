@@ -7,9 +7,15 @@ from neo4j import GraphDatabase
 
 load_dotenv()
 
-driver = GraphDatabase.driver(
-    os.getenv("NEO4J_URI"), auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD"))
-)
+# Get environment variables with defaults
+neo4j_uri = os.getenv("NEO4J_URI")
+neo4j_user = os.getenv("NEO4J_USER")
+neo4j_password = os.getenv("NEO4J_PASSWORD")
+
+if not neo4j_uri or not neo4j_user or not neo4j_password:
+    raise ValueError("NEO4J_URI, NEO4J_USER, and NEO4J_PASSWORD must be set")
+
+driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
 
 with driver.session() as session:
     print("=== target_short, target_long 삭제 전 확인 ===")
@@ -43,7 +49,8 @@ with driver.session() as session:
         DETACH DELETE qt
         RETURN count(qt) AS deleted
     """)
-    deleted = result.single()["deleted"]
+    record = result.single()
+    deleted = record["deleted"] if record else 0
     print(f"삭제된 QueryType 노드: {deleted}개")
 
     print()
