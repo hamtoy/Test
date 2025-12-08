@@ -762,7 +762,7 @@ Priority 30 (LOW):
                 all_violations.extend(validation.get("violations", []))
             missing_rules = validation.get("missing_rules_hint", [])
             if missing_rules:
-                logger.info("누락 가능성 있는 규칙: %s", missing_rules)
+                logger.debug("누락 가능성 있는 규칙: %s", missing_rules)
 
         if val_result.has_errors():
             all_violations.extend(
