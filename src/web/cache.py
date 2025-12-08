@@ -10,6 +10,8 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from src.config.constants import DEFAULT_CACHE_TTL_SECONDS
+
 logger = logging.getLogger(__name__)
 
 
@@ -25,11 +27,11 @@ class AnswerCache:
     - Cache hit/miss metrics logging
     """
 
-    def __init__(self, ttl_seconds: int = 3600) -> None:
+    def __init__(self, ttl_seconds: int = DEFAULT_CACHE_TTL_SECONDS) -> None:
         """Initialize the answer cache.
 
         Args:
-            ttl_seconds: Time-to-live for cache entries (default: 3600 = 1 hour)
+            ttl_seconds: Time-to-live for cache entries (default: from constants.DEFAULT_CACHE_TTL_SECONDS)
         """
         self.cache: dict[str, tuple[Any, float]] = {}
         self.ttl = ttl_seconds
@@ -144,4 +146,5 @@ class AnswerCache:
 
 
 # Global cache instance (singleton pattern)
-answer_cache = AnswerCache(ttl_seconds=3600)
+# Uses DEFAULT_CACHE_TTL_SECONDS from constants (14400s = 4 hours)
+answer_cache = AnswerCache()

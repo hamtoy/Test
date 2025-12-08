@@ -84,8 +84,8 @@ WORKSPACE_UNIFIED_TIMEOUT: Final[int] = 90
 
 # ===== Cache TTL Configuration (seconds) =====
 
-# Default TTL for cache entries (1 hour)
-DEFAULT_CACHE_TTL_SECONDS: Final[int] = 3600
+# Default TTL for cache entries (4 hours - optimized for better hit rate)
+DEFAULT_CACHE_TTL_SECONDS: Final[int] = 14400
 
 # TTL for system prompts (1 hour - rarely changes)
 SYSTEM_PROMPT_TTL_SECONDS: Final[int] = 3600

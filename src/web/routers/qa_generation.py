@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 import re
 from datetime import datetime
@@ -434,10 +435,6 @@ async def generate_single_qa(
     # Use truncated OCR for cache key (QA_CACHE_OCR_TRUNCATE_LENGTH)
     cache_ocr_key = ocr_text[:QA_CACHE_OCR_TRUNCATE_LENGTH]
 
-    # For cache lookup, we need a preliminary query (or use a placeholder)
-    # Since query is not generated yet, we'll use qtype as part of the key
-    # After query generation, we'll do a more specific cache check
-
     try:
         # First, try to generate the query
         queries = await agent.generate_query(
@@ -452,14 +449,46 @@ async def generate_single_qa(
 
         query = queries[0]
 
+        # PHASE 2B: Enhanced cache logging for debugging
+        cache_key_hash = hashlib.sha256(
+            f"{query}|{cache_ocr_key}|{qtype}".encode(),
+        ).hexdigest()[:16]
+        logger.info(
+            "Cache Key Generated - "
+            "Query length: %d | "
+            "OCR: %d | "
+            "Type: %s | "
+            "Key hash: %s",
+            len(query),
+            len(cache_ocr_key),
+            qtype,
+            cache_key_hash,
+        )
+
         # PHASE 2B: Check cache after query generation
         cached_result = answer_cache.get(query, cache_ocr_key, qtype)
         if cached_result is not None:
+            cache_stats = answer_cache.get_stats()
             logger.info(
-                "Cache HIT: Returning cached answer for query_type=%s (saved ~6-12s)",
-                qtype,
+                "✅ CACHE HIT! Saved ~%d seconds. "
+                "Query: %s... | "
+                "Current cache size: %d | "
+                "Hit rate: %.1f%%",
+                ESTIMATED_CACHE_HIT_TIME_SAVINGS,
+                query[:50],
+                cache_stats["cache_size"],
+                cache_stats["hit_rate_percent"],
             )
             return cast("dict[str, Any]", cached_result)
+
+        cache_stats = answer_cache.get_stats()
+        logger.info(
+            "❌ CACHE MISS - Will generate new answer. "
+            "Current cache size: %d | "
+            "Hit rate: %.1f%%",
+            cache_stats["cache_size"],
+            cache_stats["hit_rate_percent"],
+        )
 
         truncated_ocr = ocr_text[:QA_GENERATION_OCR_TRUNCATE_LENGTH]
         rules_in_answer = "\n".join(f"- {r}" for r in rules_list)
