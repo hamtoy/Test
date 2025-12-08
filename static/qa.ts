@@ -120,7 +120,7 @@ function displayResults(raw: unknown): void {
 
     const selectedMode = (document.querySelector("input[name=\"mode\"]:checked") as HTMLInputElement)?.value;
     if (selectedMode === "batch_three") {
-        const allowed = new Set(["explanation", "global_explanation", "reasoning", "target_long"]);
+        const allowed = new Set(["global_explanation", "reasoning", "target_long"]);
         pairs = pairs.filter((p) => allowed.has(p.type));
     }
     if (!pairs.length) {
@@ -193,7 +193,7 @@ async function generateQA(mode: GenerateMode, qtype: string | null): Promise<voi
                 ? {
                       mode: "single",
                       ocr_text: ocrText,
-                      qtype: qtype || "explanation",
+                      qtype: qtype || "global_explanation",
                   }
                 : {
                       mode: "batch",
@@ -202,7 +202,7 @@ async function generateQA(mode: GenerateMode, qtype: string | null): Promise<voi
 
         if (mode === "batch_three") {
             payload.batch_types = [
-                "explanation",
+                "global_explanation",
                 "reasoning",
                 "target_long",
             ];
