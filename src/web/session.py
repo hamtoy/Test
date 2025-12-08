@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Optional
+from typing import Any
 
 from fastapi import Request, Response
 from starlette.middleware.base import RequestResponseEndpoint
@@ -18,7 +19,7 @@ class SessionData:
     session_id: str
     created_at: float
     last_access: float
-    data: Dict[str, Any] = field(default_factory=dict)
+    data: dict[str, Any] = field(default_factory=dict)
 
     def touch(self) -> None:
         """Update last access time."""
@@ -31,7 +32,7 @@ class SessionManager:
     def __init__(self, ttl_seconds: int = 3600) -> None:
         """Initialize the session manager."""
         self.ttl_seconds = ttl_seconds
-        self._store: Dict[str, SessionData] = {}
+        self._store: dict[str, SessionData] = {}
 
     def _is_expired(self, sess: SessionData) -> bool:
         """Check if a session is expired."""
@@ -43,7 +44,7 @@ class SessionManager:
         for sid in expired:
             self.destroy(sid)
 
-    def get(self, session_id: str) -> Optional[SessionData]:
+    def get(self, session_id: str) -> SessionData | None:
         """Fetch a session by id, returning None if missing or expired."""
         self._cleanup_expired()
         session = self._store.get(session_id)
@@ -62,7 +63,7 @@ class SessionManager:
         self._store[session_id] = session
         return session
 
-    def get_or_create(self, session_id: Optional[str]) -> SessionData:
+    def get_or_create(self, session_id: str | None) -> SessionData:
         """Return existing session or create a new one if missing/expired."""
         self._cleanup_expired()
         if session_id:
@@ -75,7 +76,7 @@ class SessionManager:
         """Remove a session if it exists."""
         self._store.pop(session_id, None)
 
-    def serialize(self, session: SessionData) -> Dict[str, Any]:
+    def serialize(self, session: SessionData) -> dict[str, Any]:
         """Serialize session data for API responses."""
         return {
             "session_id": session.session_id,
@@ -92,10 +93,11 @@ def session_middleware(
     """Factory to build middleware that attaches session to request.state."""
 
     async def _middleware(
-        request: Request, call_next: RequestResponseEndpoint
+        request: Request,
+        call_next: RequestResponseEndpoint,
     ) -> Response:
         session_id = request.cookies.get("session_id") or request.headers.get(
-            "X-Session-Id"
+            "X-Session-Id",
         )
         session = manager.get_or_create(session_id)
         request.state.session = session

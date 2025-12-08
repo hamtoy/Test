@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import re
-from typing import Any, Dict, List
-
 import logging
+import re
+from typing import Any
 
 from checks.detect_forbidden_patterns import find_violations
 from src.qa.rag_system import QAKnowledgeGraph
@@ -27,8 +26,9 @@ class SmartAutocomplete:
         self.kg = kg
 
     def suggest_next_query_type(
-        self, current_session: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self,
+        current_session: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         """현재 세션의 사용 타입/회수 기반으로 다음 질의 유형을 추천.
 
         session_limit를 초과한 유형은 제외, 사용되지 않은 유형 우선.
@@ -76,14 +76,16 @@ class SmartAutocomplete:
         return suggestions[:3]
 
     def suggest_constraint_compliance(
-        self, draft_output: str, query_type: str
-    ) -> Dict[str, List[str]]:
+        self,
+        draft_output: str,
+        query_type: str,
+    ) -> dict[str, list[str]]:
         """출력 초안에 대해 제약 위반을 찾아 개선 제안을 반환.
 
         - 금지 패턴(그래프 + 로컬) 검사
         """
-        violations: List[str] = []
-        suggestions: List[str] = []
+        violations: list[str] = []
+        suggestions: list[str] = []
 
         # 로컬 금지 패턴 검사
         for v in find_violations(draft_output):
@@ -105,11 +107,11 @@ class SmartAutocomplete:
         with session_ctx() as session:
             if session is None:
                 logger.debug(
-                    "SmartAutocomplete: graph unavailable, skip constraint checks"
+                    "SmartAutocomplete: graph unavailable, skip constraint checks",
                 )
                 return {"violations": violations, "suggestions": suggestions}
             ep_records = session.run(
-                "MATCH (ep:ErrorPattern) RETURN ep.pattern AS pattern, ep.description AS desc"
+                "MATCH (ep:ErrorPattern) RETURN ep.pattern AS pattern, ep.description AS desc",
             )
             for rec in ep_records:
                 pat = rec["pattern"]

@@ -5,10 +5,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from src.processing.context_augmentation import AdvancedContextAugmentation
+    from src.processing.example_selector import DynamicExampleSelector
     from src.processing.loader import load_input_data, reload_data_if_needed
     from src.processing.template_generator import DynamicTemplateGenerator
-    from src.processing.example_selector import DynamicExampleSelector
-    from src.processing.context_augmentation import AdvancedContextAugmentation
 
 
 def __getattr__(name: str) -> Any:
@@ -37,9 +37,9 @@ def __getattr__(name: str) -> Any:
 
 
 __all__ = [
+    "AdvancedContextAugmentation",
+    "DynamicExampleSelector",
+    "DynamicTemplateGenerator",
     "load_input_data",
     "reload_data_if_needed",
-    "DynamicTemplateGenerator",
-    "DynamicExampleSelector",
-    "AdvancedContextAugmentation",
 ]

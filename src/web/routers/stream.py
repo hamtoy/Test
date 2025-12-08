@@ -5,7 +5,8 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import AsyncIterator, Optional, cast
+from collections.abc import AsyncIterator
+from typing import cast
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -19,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["stream"])
 
-_config: Optional[AppConfig] = None
-agent: Optional[GeminiAgent] = None
+_config: AppConfig | None = None
+agent: GeminiAgent | None = None
 
 
 def set_dependencies(config: AppConfig, gemini_agent: GeminiAgent) -> None:
@@ -41,7 +42,7 @@ def _get_agent() -> GeminiAgent:
     current_agent = getattr(api_module, "agent", None)
     if current_agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
-    return cast(GeminiAgent, current_agent)
+    return cast("GeminiAgent", current_agent)
 
 
 @router.post("/qa/generate/stream")

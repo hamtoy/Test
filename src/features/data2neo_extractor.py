@@ -13,7 +13,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -41,11 +41,15 @@ class Entity(BaseModel):
 
     id: str = Field(..., description="Unique identifier")
     type: EntityType = Field(..., description="Entity type")
-    properties: Dict[str, Any] = Field(
-        default_factory=dict, description="Entity properties"
+    properties: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Entity properties",
     )
     confidence: float = Field(
-        default=1.0, ge=0.0, le=1.0, description="Extraction confidence score"
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="Extraction confidence score",
     )
 
 
@@ -55,41 +59,50 @@ class Relationship(BaseModel):
     from_id: str = Field(..., description="Source entity ID")
     to_id: str = Field(..., description="Target entity ID")
     type: str = Field(..., description="Relationship type")
-    properties: Dict[str, Any] = Field(
-        default_factory=dict, description="Relationship properties"
+    properties: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Relationship properties",
     )
 
 
 class ExtractionResult(BaseModel):
     """Result from entity extraction."""
 
-    entities: List[Entity] = Field(default_factory=list)
-    relationships: List[Relationship] = Field(default_factory=list)
-    document_id: Optional[str] = None
+    entities: list[Entity] = Field(default_factory=list)
+    relationships: list[Relationship] = Field(default_factory=list)
+    document_id: str | None = None
     chunk_count: int = 0
 
 
 class ExtractedEntitiesSchema(BaseModel):
     """Schema for LLM extraction response."""
 
-    persons: List[Dict[str, Any]] = Field(
-        default_factory=list, description="Extracted persons"
+    persons: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="Extracted persons",
     )
-    organizations: List[Dict[str, Any]] = Field(
-        default_factory=list, description="Extracted organizations"
+    organizations: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="Extracted organizations",
     )
-    rules: List[Dict[str, Any]] = Field(
-        default_factory=list, description="Extracted document rules"
+    rules: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="Extracted document rules",
     )
-    relationships: List[Dict[str, Any]] = Field(
-        default_factory=list, description="Extracted relationships"
+    relationships: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="Extracted relationships",
     )
 
     @field_validator(
-        "persons", "organizations", "rules", "relationships", mode="before"
+        "persons",
+        "organizations",
+        "rules",
+        "relationships",
+        mode="before",
     )
     @classmethod
-    def ensure_list(cls, v: Any) -> List[Any]:
+    def ensure_list(cls, v: Any) -> list[Any]:
         """Ensure the value is a list.
 
         Args:
@@ -125,9 +138,9 @@ class Data2NeoExtractor:
         >>> print(f"Imported {len(result.entities)} entities")
     """
 
-    config: "AppConfig"
-    llm_provider: Optional["LLMProvider"] = None
-    graph_provider: Optional["GraphProvider"] = None
+    config: AppConfig
+    llm_provider: LLMProvider | None = None
+    graph_provider: GraphProvider | None = None
     confidence_threshold: float = 0.7
     batch_size: int = 100
     extraction_temperature: float = 0.1
@@ -182,7 +195,7 @@ Respond ONLY with a valid JSON object in this exact format:
 OCR Text to analyze:
 """
 
-    def _chunk_text(self, text: str, chunk_size: int = 4000) -> List[str]:
+    def _chunk_text(self, text: str, chunk_size: int = 4000) -> list[str]:
         """Split text into chunks for processing.
 
         Args:
@@ -281,7 +294,9 @@ OCR Text to analyze:
         return ExtractedEntitiesSchema()
 
     def _convert_to_entities(
-        self, schema: ExtractedEntitiesSchema, document_id: str
+        self,
+        schema: ExtractedEntitiesSchema,
+        document_id: str,
     ) -> ExtractionResult:
         """Convert parsed schema to Entity objects.
 
@@ -292,8 +307,8 @@ OCR Text to analyze:
         Returns:
             ExtractionResult with entities and relationships
         """
-        entities: List[Entity] = []
-        relationships: List[Relationship] = []
+        entities: list[Entity] = []
+        relationships: list[Relationship] = []
 
         # Process persons
         for person in schema.persons:
@@ -307,7 +322,7 @@ OCR Text to analyze:
                     type=EntityType.PERSON,
                     properties={"name": name, "role": person.get("role", "")},
                     confidence=float(person.get("confidence", 0.8)),
-                )
+                ),
             )
 
         # Process organizations
@@ -322,7 +337,7 @@ OCR Text to analyze:
                     type=EntityType.ORGANIZATION,
                     properties={"name": name, "type": org.get("type", "")},
                     confidence=float(org.get("confidence", 0.8)),
-                )
+                ),
             )
 
         # Process rules
@@ -340,7 +355,7 @@ OCR Text to analyze:
                         "priority": rule.get("priority", "medium"),
                     },
                     confidence=float(rule.get("confidence", 0.7)),
-                )
+                ),
             )
 
         # Process relationships
@@ -355,7 +370,7 @@ OCR Text to analyze:
                         to_id=to_id,
                         type=rel_type,
                         properties=rel.get("properties", {}),
-                    )
+                    ),
                 )
 
         # Filter by confidence threshold
@@ -369,7 +384,9 @@ OCR Text to analyze:
         )
 
     async def extract_entities(
-        self, ocr_text: str, document_id: str
+        self,
+        ocr_text: str,
+        document_id: str,
     ) -> ExtractionResult:
         """Extract entities from OCR text using LLM.
 
@@ -386,8 +403,8 @@ OCR Text to analyze:
 
         # Chunk text if too long
         chunks = self._chunk_text(ocr_text)
-        all_entities: List[Entity] = []
-        all_relationships: List[Relationship] = []
+        all_entities: list[Entity] = []
+        all_relationships: list[Relationship] = []
 
         for i, chunk in enumerate(chunks):
             prompt = self._extraction_prompt + chunk
@@ -423,7 +440,7 @@ OCR Text to analyze:
             chunk_count=len(chunks),
         )
 
-    async def import_to_graph(self, result: ExtractionResult) -> Dict[str, int]:
+    async def import_to_graph(self, result: ExtractionResult) -> dict[str, int]:
         """Import extraction result to Neo4j graph.
 
         Args:
@@ -439,7 +456,7 @@ OCR Text to analyze:
         counts = {"nodes": 0, "relationships": 0}
 
         # Group entities by type
-        entities_by_type: Dict[EntityType, List[Dict[str, Any]]] = {}
+        entities_by_type: dict[EntityType, list[dict[str, Any]]] = {}
         for entity in result.entities:
             if entity.type not in entities_by_type:
                 entities_by_type[entity.type] = []
@@ -467,7 +484,7 @@ OCR Text to analyze:
             entity_labels = {e.id: e.type.value for e in result.entities}
 
             # Group relationships by type
-            rels_by_type: Dict[str, List[Dict[str, Any]]] = {}
+            rels_by_type: dict[str, list[dict[str, Any]]] = {}
             for rel in result.relationships:
                 if rel.type not in rels_by_type:
                     rels_by_type[rel.type] = []
@@ -485,10 +502,12 @@ OCR Text to analyze:
                         # Determine labels from entity mapping, fallback to defaults
                         first_rel = batch[0] if batch else {}
                         from_label = entity_labels.get(
-                            first_rel.get("from_id", ""), "Person"
+                            first_rel.get("from_id", ""),
+                            "Person",
                         )
                         to_label = entity_labels.get(
-                            first_rel.get("to_id", ""), "Organization"
+                            first_rel.get("to_id", ""),
+                            "Organization",
                         )
 
                         count = await self.graph_provider.create_relationships(
@@ -502,7 +521,9 @@ OCR Text to analyze:
                         counts["relationships"] += count
                     except Exception as e:  # noqa: BLE001
                         logger.error(
-                            "Failed to create %s relationships: %s", rel_type, e
+                            "Failed to create %s relationships: %s",
+                            rel_type,
+                            e,
                         )
 
         logger.info(
@@ -513,7 +534,9 @@ OCR Text to analyze:
         return counts
 
     async def extract_and_import(
-        self, ocr_text: str, document_path: str
+        self,
+        ocr_text: str,
+        document_path: str,
     ) -> ExtractionResult:
         """Extract entities from OCR text and import to graph.
 
@@ -549,9 +572,9 @@ OCR Text to analyze:
 
 
 async def create_data2neo_extractor(
-    config: "AppConfig",
-    llm_provider: Optional["LLMProvider"] = None,
-    graph_provider: Optional["GraphProvider"] = None,
+    config: AppConfig,
+    llm_provider: LLMProvider | None = None,
+    graph_provider: GraphProvider | None = None,
 ) -> Data2NeoExtractor:
     """Factory function to create Data2NeoExtractor.
 

@@ -7,7 +7,8 @@ async/sync handling and error management.
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Dict, List, Optional, TypeVar, cast
+from collections.abc import Callable
+from typing import Any, TypeVar, cast
 
 from neo4j.exceptions import Neo4jError, ServiceUnavailable
 
@@ -31,8 +32,8 @@ class QueryExecutor:
 
     def __init__(
         self,
-        graph_driver: Optional[Any] = None,
-        graph_provider: Optional[Any] = None,
+        graph_driver: Any | None = None,
+        graph_provider: Any | None = None,
     ) -> None:
         """Initialize the query executor."""
         self._graph = graph_driver
@@ -41,8 +42,8 @@ class QueryExecutor:
     def execute(
         self,
         cypher: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        params: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """Execute a Cypher query and return results.
 
         Args:
@@ -63,7 +64,7 @@ class QueryExecutor:
 
         prov = self._graph_provider
 
-        async def _run() -> List[Dict[str, Any]]:
+        async def _run() -> list[dict[str, Any]]:
             async with prov.session() as session:
                 records = await session.run(cypher, **params)
                 return [dict(r) for r in records]
@@ -73,10 +74,10 @@ class QueryExecutor:
     def execute_with_fallback(
         self,
         cypher: str,
-        params: Optional[Dict[str, Any]] = None,
-        default: Optional[T] = None,
-        transform: Optional[Callable[[List[Any]], T]] = None,
-    ) -> T | List[Dict[str, Any]]:
+        params: dict[str, Any] | None = None,
+        default: T | None = None,
+        transform: Callable[[list[Any]], T] | None = None,
+    ) -> T | list[dict[str, Any]]:
         """Execute query with sync-first, async-fallback pattern.
 
         Tries sync driver first, falls back to async provider if sync fails.
@@ -93,15 +94,16 @@ class QueryExecutor:
         """
         params = params or {}
 
-        def default_transform(records: List[Any]) -> List[Dict[str, Any]]:
+        def default_transform(records: list[Any]) -> list[dict[str, Any]]:
             return [dict(r) for r in records]
 
-        transform_fn: Callable[[List[Any]], T | List[Dict[str, Any]]]
+        transform_fn: Callable[[list[Any]], T | list[dict[str, Any]]]
         if transform is not None:
             transform_fn = transform
         else:
             transform_fn = cast(
-                Callable[[List[Any]], T | List[Dict[str, Any]]], default_transform
+                "Callable[[list[Any]], T | list[dict[str, Any]]]",
+                default_transform,
             )
 
         # Try sync driver first
@@ -122,7 +124,7 @@ class QueryExecutor:
 
         prov = self._graph_provider
 
-        async def _run() -> T | List[Dict[str, Any]]:
+        async def _run() -> T | list[dict[str, Any]]:
             try:
                 async with prov.session() as session:
                     result = await session.run(cypher, **params)
@@ -142,8 +144,8 @@ class QueryExecutor:
     def execute_write(
         self,
         cypher: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Execute a write query and return summary.
 
         Args:
@@ -170,7 +172,7 @@ class QueryExecutor:
 
         prov = self._graph_provider
 
-        async def _run() -> Dict[str, Any]:
+        async def _run() -> dict[str, Any]:
             async with prov.session() as session:
                 await session.run(cypher, **params)
                 # Async providers may have different summary handling

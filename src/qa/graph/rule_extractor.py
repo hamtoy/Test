@@ -29,8 +29,8 @@ class RuleExtractor:
 
     def __init__(
         self,
-        connection_manager: "Neo4jConnectionManager",
-        vector_engine: "VectorSearchEngine",
+        connection_manager: Neo4jConnectionManager,
+        vector_engine: VectorSearchEngine,
     ) -> None:
         """Initialize rule extractor."""
         self.connection = connection_manager

@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 from src.agent import GeminiAgent
 from src.analysis.cross_validation import CrossValidationSystem
@@ -46,13 +46,13 @@ logger = logging.getLogger(__name__)
 
 # Router defined in sub-modules
 
-_config: Optional[AppConfig] = None
-agent: Optional[GeminiAgent] = None
-kg: Optional[QAKnowledgeGraph] = None
-pipeline: Optional[IntegratedQAPipeline] = None
+_config: AppConfig | None = None
+agent: GeminiAgent | None = None
+kg: QAKnowledgeGraph | None = None
+pipeline: IntegratedQAPipeline | None = None
 
-_kg_cache: Optional["_CachedKG"] = None
-_kg_cache_timestamp: Optional[datetime] = None
+_kg_cache: _CachedKG | None = None
+_kg_cache_timestamp: datetime | None = None
 _CACHE_TTL = timedelta(minutes=5)
 
 
@@ -61,12 +61,12 @@ class _CachedKG:
 
     def __init__(self, base: QAKnowledgeGraph) -> None:
         self._base = base
-        self._constraints: dict[str, list[Dict[str, Any]]] = {}
+        self._constraints: dict[str, list[dict[str, Any]]] = {}
         self._formatting_text: dict[str, str] = {}
-        self._formatting_rules: dict[str, List[Dict[str, Any]]] = {}
+        self._formatting_rules: dict[str, list[dict[str, Any]]] = {}
         self._rules: dict[tuple[str, int], list[str]] = {}
 
-    def get_constraints_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
+    def get_constraints_for_query_type(self, query_type: str) -> list[dict[str, Any]]:
         if query_type in self._constraints:
             return self._constraints[query_type]
         data: Any = self._base.get_constraints_for_query_type(query_type)
@@ -89,8 +89,9 @@ class _CachedKG:
         return text
 
     def get_formatting_rules_for_query_type(
-        self, query_type: str
-    ) -> List[Dict[str, Any]]:
+        self,
+        query_type: str,
+    ) -> list[dict[str, Any]]:
         if query_type in self._formatting_rules:
             return self._formatting_rules[query_type]
         rules: Any = self._base.get_formatting_rules_for_query_type(query_type)
@@ -105,7 +106,7 @@ class _CachedKG:
         self._formatting_rules[query_type] = rules
         return rules
 
-    def find_relevant_rules(self, query: str, k: int = 10) -> List[str]:
+    def find_relevant_rules(self, query: str, k: int = 10) -> list[str]:
         key = (query[:500], k)
         if key in self._rules:
             return self._rules[key]
@@ -120,8 +121,8 @@ class _CachedKG:
 def set_dependencies(
     config: AppConfig,
     gemini_agent: GeminiAgent,
-    qa_pipeline: Optional[IntegratedQAPipeline],
-    kg_ref: Optional[QAKnowledgeGraph],
+    qa_pipeline: IntegratedQAPipeline | None,
+    kg_ref: QAKnowledgeGraph | None,
 ) -> None:
     """주요 의존성 주입."""
     global _config, agent, pipeline, kg
@@ -131,7 +132,7 @@ def set_dependencies(
     kg = kg_ref
 
 
-def _get_agent() -> Optional[GeminiAgent]:
+def _get_agent() -> GeminiAgent | None:
     try:
         from src.web import api as api_module
 
@@ -142,7 +143,7 @@ def _get_agent() -> Optional[GeminiAgent]:
     return agent
 
 
-def _get_pipeline() -> Optional[IntegratedQAPipeline]:
+def _get_pipeline() -> IntegratedQAPipeline | None:
     try:
         from src.web import api as api_module
 
@@ -153,7 +154,7 @@ def _get_pipeline() -> Optional[IntegratedQAPipeline]:
     return pipeline
 
 
-def _get_kg() -> Optional[QAKnowledgeGraph]:
+def _get_kg() -> QAKnowledgeGraph | None:
     try:
         from src.web import api as api_module
 
@@ -170,7 +171,7 @@ def _get_config() -> AppConfig:
 
         cfg_raw = getattr(api_module, "config", None) or _config
         if cfg_raw is not None:
-            cfg = cast(AppConfig, cfg_raw)
+            cfg = cast("AppConfig", cfg_raw)
             # Ensure numeric timeouts even when patched with MagicMock
             for name, default in [
                 ("qa_single_timeout", QA_SINGLE_GENERATION_TIMEOUT),
@@ -185,7 +186,7 @@ def _get_config() -> AppConfig:
                 setattr(cfg, name, value)
             try:
                 cfg.enable_standard_response = bool(
-                    getattr(cfg, "enable_standard_response", False)
+                    getattr(cfg, "enable_standard_response", False),
                 )
                 cfg.enable_lats = bool(getattr(cfg, "enable_lats", False))
             except Exception:
@@ -222,7 +223,7 @@ def _difficulty_hint(ocr_text: str) -> str:
     return "필요 이상의 부연 없이 핵심 숫자·근거 1문장을 포함해 간결히 답하세요."
 
 
-def get_cached_kg() -> Optional["_CachedKG"]:
+def get_cached_kg() -> _CachedKG | None:
     """Return a cached KG wrapper valid for 5 minutes."""
     global _kg_cache, _kg_cache_timestamp
     current_kg = _get_kg()

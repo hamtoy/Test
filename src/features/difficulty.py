@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Dict
+from typing import Any
 
 from src.qa.rag_system import QAKnowledgeGraph
 
@@ -18,7 +18,7 @@ class AdaptiveDifficultyAdjuster:
         """
         self.kg = kg
 
-    def analyze_text_complexity(self, text: str) -> Dict[str, Any]:
+    def analyze_text_complexity(self, text: str) -> dict[str, Any]:
         """OCR 텍스트를 분석하여 복잡도를 추정합니다.
 
         Args:
@@ -70,7 +70,7 @@ class AdaptiveDifficultyAdjuster:
             recommended_turns = 4
             reasoning_possible = True
 
-        complexity: Dict[str, Any] = {
+        complexity: dict[str, Any] = {
             "text_density": text_density,
             "has_structure": has_table_pattern or has_bullet,
             "has_numbers": has_numbers,
@@ -83,7 +83,7 @@ class AdaptiveDifficultyAdjuster:
 
         return complexity
 
-    def analyze_image_complexity(self, image_meta: Dict[str, Any]) -> Dict[str, Any]:
+    def analyze_image_complexity(self, image_meta: dict[str, Any]) -> dict[str, Any]:
         """이미지 메타 정보를 기반으로 복잡도를 추정합니다.
 
         Args:
@@ -92,7 +92,7 @@ class AdaptiveDifficultyAdjuster:
         Returns:
             complexity dict: text_density, has_structure, estimated_blocks, level 등.
         """
-        complexity: Dict[str, Any] = {
+        complexity: dict[str, Any] = {
             "text_density": float(image_meta.get("text_density", 0.5)),
             "has_structure": bool(image_meta.get("has_table_chart", False)),
             "estimated_blocks": 0.0,
@@ -104,7 +104,7 @@ class AdaptiveDifficultyAdjuster:
             graph = getattr(self.kg, "_graph", None)
             if graph is None:
                 raise RuntimeError("graph not available")
-            with graph.session() as session:  # noqa: SLF001
+            with graph.session() as session:
                 result = session.run(
                     """
                     MATCH (p:Page)
@@ -124,9 +124,10 @@ class AdaptiveDifficultyAdjuster:
                         complexity["estimated_blocks"] = float(avg_blocks)
         except Exception as exc:  # noqa: BLE001
             logging.getLogger(__name__).warning(
-                "Failed to estimate blocks from graph: %s", exc
+                "Failed to estimate blocks from graph: %s",
+                exc,
             )
-            pass  # 그래프 접근 실패 시 기본값 유지
+            # 그래프 접근 실패 시 기본값 유지
 
         # 복잡도 레벨 결정
         if complexity["text_density"] < 0.4:
@@ -143,8 +144,10 @@ class AdaptiveDifficultyAdjuster:
         return complexity
 
     def adjust_query_requirements(
-        self, complexity: Dict[str, Any], query_type: str
-    ) -> Dict[str, Any]:
+        self,
+        complexity: dict[str, Any],
+        query_type: str,
+    ) -> dict[str, Any]:
         """복잡도에 따라 질의 요구사항을 조정합니다.
 
         Args:
@@ -154,16 +157,16 @@ class AdaptiveDifficultyAdjuster:
         Returns:
             dict: 길이/깊이/증거 요구사항 등 조정값.
         """
-        adjustments: Dict[str, Any] = {}
+        adjustments: dict[str, Any] = {}
 
         if query_type == "explanation":
             if complexity.get("level") == "simple":
                 adjustments.update(
-                    {"min_length": 100, "max_length": 300, "depth": "shallow"}
+                    {"min_length": 100, "max_length": 300, "depth": "shallow"},
                 )
             elif complexity.get("level") == "complex":
                 adjustments.update(
-                    {"min_length": 300, "max_length": 800, "depth": "deep"}
+                    {"min_length": 300, "max_length": 800, "depth": "deep"},
                 )
 
         elif query_type == "reasoning":

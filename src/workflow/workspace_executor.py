@@ -4,15 +4,12 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
-    Awaitable,
-    Callable,
-    List,
-    Optional,
 )
 
 from jinja2 import Environment, FileSystemLoader
@@ -68,7 +65,7 @@ class WorkflowResult:
     workflow: str
     query: str
     answer: str
-    changes: List[str]
+    changes: list[str]
     query_type: str
 
 
@@ -81,10 +78,10 @@ class WorkspaceExecutor:
     def __init__(
         self,
         agent: GeminiAgent,
-        kg: Optional[QAKnowledgeGraph],
-        pipeline: Optional[IntegratedQAPipeline],
+        kg: QAKnowledgeGraph | None,
+        pipeline: IntegratedQAPipeline | None,
         config: AppConfig,
-        edit_fn: Optional[Callable[..., Awaitable[str]]] = None,
+        edit_fn: Callable[..., Awaitable[str]] | None = None,
     ):
         """핵심 의존성을 주입해 실행기를 초기화."""
         self.agent = agent
@@ -132,11 +129,12 @@ class WorkspaceExecutor:
 
     async def _handle_full_generation(self, ctx: WorkflowContext) -> WorkflowResult:
         """전체 생성 워크플로우."""
-        changes: List[str] = ["OCR에서 전체 생성"]
+        changes: list[str] = ["OCR에서 전체 생성"]
 
         # 1. 질의 생성
         query_intent = self._get_query_intent(
-            ctx.query_type, ctx.global_explanation_ref
+            ctx.query_type,
+            ctx.global_explanation_ref,
         )
         queries = await self.agent.generate_query(
             ctx.ocr_text,
@@ -166,10 +164,11 @@ class WorkspaceExecutor:
 
     async def _handle_query_generation(self, ctx: WorkflowContext) -> WorkflowResult:
         """질의 생성 워크플로우."""
-        changes: List[str] = ["기존 답변 기반 질의 생성"]
+        changes: list[str] = ["기존 답변 기반 질의 생성"]
 
         query_intent = self._get_query_intent(
-            ctx.query_type, ctx.global_explanation_ref
+            ctx.query_type,
+            ctx.global_explanation_ref,
         )
         queries = await self.agent.generate_query(
             ctx.ocr_text,
@@ -195,7 +194,7 @@ class WorkspaceExecutor:
 
     async def _handle_answer_generation(self, ctx: WorkflowContext) -> WorkflowResult:
         """답변 생성 워크플로우."""
-        changes: List[str] = ["기존 질의 기반 답변 생성"]
+        changes: list[str] = ["기존 질의 기반 답변 생성"]
 
         answer = await self._generate_answer(ctx, ctx.query)
         changes.append("답변 생성 완료")
@@ -210,7 +209,7 @@ class WorkspaceExecutor:
 
     async def _handle_rewrite(self, ctx: WorkflowContext) -> WorkflowResult:
         """재작성 워크플로우."""
-        changes: List[str] = ["답변 재작성"]
+        changes: list[str] = ["답변 재작성"]
 
         # 재작성 요청으로 답변 개선 (edit_fn 활용)
         answer = await self._apply_edit(
@@ -230,7 +229,7 @@ class WorkspaceExecutor:
 
     async def _handle_edit_query(self, ctx: WorkflowContext) -> WorkflowResult:
         """질의 편집 워크플로우."""
-        changes: List[str] = ["질의 수정 요청 반영"]
+        changes: list[str] = ["질의 수정 요청 반영"]
 
         # edit_content를 사용해 질의 수정
         edited_query = await self._apply_edit(
@@ -256,7 +255,7 @@ class WorkspaceExecutor:
 
     async def _handle_edit_answer(self, ctx: WorkflowContext) -> WorkflowResult:
         """답변 편집 워크플로우."""
-        changes: List[str] = ["답변 수정 요청 반영"]
+        changes: list[str] = ["답변 수정 요청 반영"]
 
         answer = await self._apply_edit(
             target_text=ctx.answer,
@@ -275,7 +274,7 @@ class WorkspaceExecutor:
 
     async def _handle_edit_both(self, ctx: WorkflowContext) -> WorkflowResult:
         """질의와 답변 모두 편집 워크플로우."""
-        changes: List[str] = ["질의와 답변 수정 요청 반영"]
+        changes: list[str] = ["질의와 답변 수정 요청 반영"]
 
         # 1. 답변 편집 (edit_fn 활용)
         answer = await self._apply_edit(
@@ -348,7 +347,7 @@ class WorkspaceExecutor:
             template.render(
                 query_type=query_type,
                 global_explanation_ref=global_ref,
-            )
+            ),
         )
 
     def _shorten_query(self, text: str) -> str:
@@ -371,7 +370,8 @@ class WorkspaceExecutor:
         if self.kg is not None:
             rule_loader = RuleLoader(self.kg)
             rules_list = rule_loader.get_rules_for_type(
-                normalized_qtype, DEFAULT_ANSWER_RULES
+                normalized_qtype,
+                DEFAULT_ANSWER_RULES,
             )
 
             # Get additional rules from KG
@@ -409,7 +409,7 @@ class WorkspaceExecutor:
 
         # Render prompt using Jinja2 template
         template = self.jinja_env.get_template(
-            "prompts/workspace/answer_generation.jinja2"
+            "prompts/workspace/answer_generation.jinja2",
         )
         prompt = template.render(
             query=query,
@@ -437,7 +437,10 @@ class WorkspaceExecutor:
 
         # Validate answer and optionally rewrite if validation fails
         answer = await self._validate_and_fix_answer(
-            answer, ctx, normalized_qtype, length_constraint
+            answer,
+            ctx,
+            normalized_qtype,
+            length_constraint,
         )
 
         return answer
@@ -456,7 +459,7 @@ class WorkspaceExecutor:
 
         # If there are errors or warnings, attempt to rewrite
         if val_result.has_errors() or val_result.warnings:
-            edit_request_parts: List[str] = []
+            edit_request_parts: list[str] = []
 
             if val_result.has_errors():
                 edit_request_parts.append(val_result.get_error_summary())
@@ -465,7 +468,7 @@ class WorkspaceExecutor:
                 edit_request_parts.extend(val_result.warnings[:2])
 
             edit_request = "; ".join(
-                [p for p in edit_request_parts if p] or ["형식/규칙 위반 수정"]
+                [p for p in edit_request_parts if p] or ["형식/규칙 위반 수정"],
             )
 
             try:

@@ -18,11 +18,10 @@ Usage:
 # mypy: disable-error-code=attr-defined
 from __future__ import annotations
 
-from typing import Any, Optional
-
-from typing_extensions import TypedDict
+from typing import Any
 
 import google.generativeai as genai
+from typing_extensions import TypedDict
 
 
 class GenerationConfig(TypedDict, total=False):
@@ -71,8 +70,8 @@ def configure_genai(api_key: str) -> None:
 
 def create_generative_model(
     model_name: str,
-    generation_config: Optional[GenerationConfig] = None,
-    safety_settings: Optional[list[SafetySettings]] = None,
+    generation_config: GenerationConfig | None = None,
+    safety_settings: list[SafetySettings] | None = None,
 ) -> Any:
     """Create a GenerativeModel instance.
 
@@ -133,11 +132,11 @@ def embed_content(
 
 
 __all__ = [
+    "GenerateContentResponse",
     "GenerationConfig",
     "SafetySettings",
-    "GenerateContentResponse",
     "configure_genai",
     "create_generative_model",
-    "list_available_models",
     "embed_content",
+    "list_available_models",
 ]

@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 import logging
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class AnswerCache:
         combined = f"{query}|{ocr_text}|{query_type}"
         return hashlib.sha256(combined.encode()).hexdigest()
 
-    def get(self, query: str, ocr_text: str, query_type: str) -> Optional[Any]:
+    def get(self, query: str, ocr_text: str, query_type: str) -> Any | None:
         """Retrieve cached answer if available and not expired.
 
         Args:

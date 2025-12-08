@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any
 
 from src.llm.gemini import GeminiModelClient
 from src.qa.rag_system import QAKnowledgeGraph
@@ -23,13 +23,15 @@ class SelfCorrectingQAChain:
         self.llm = llm or GeminiModelClient()
 
     def generate_with_self_correction(
-        self, query_type: str, context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self,
+        query_type: str,
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
         """규칙을 가져와 자기 교정 프로세스를 실행합니다."""
         rules = self._get_rules_text(query_type)
         attempts = 0
         max_retries = 3
-        last_result: Dict[str, str] = {}
+        last_result: dict[str, str] = {}
 
         while attempts < max_retries:
             draft = self._draft(query_type, context, rules)
@@ -55,14 +57,14 @@ class SelfCorrectingQAChain:
         }
 
     def _get_rules_text(self, query_type: str) -> str:
-        rules: List[Dict[str, str]] = self.kg.get_constraints_for_query_type(query_type)
+        rules: list[dict[str, str]] = self.kg.get_constraints_for_query_type(query_type)
         rule_lines = []
         for r in rules:
             desc = r.get("description") or r.get("id") or ""
             rule_lines.append(f"- {desc}")
         return "\n".join(rule_lines) or "(규칙 없음)"
 
-    def _draft(self, query_type: str, context: Dict[str, Any], rules: str) -> str:
+    def _draft(self, query_type: str, context: dict[str, Any], rules: str) -> str:
         prompt = f"""다음 규칙을 준수하여 한국어로 답변을 생성하세요.
 
 [질의 유형]: {query_type}

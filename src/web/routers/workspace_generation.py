@@ -18,7 +18,7 @@ import contextlib
 import logging
 import re
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from fastapi import APIRouter, HTTPException
 
@@ -47,7 +47,7 @@ router = APIRouter(prefix="/api", tags=["workspace-generation"])
 
 
 @router.post("/workspace/generate-answer")
-async def api_generate_answer_from_query(body: Dict[str, Any]) -> Dict[str, Any]:
+async def api_generate_answer_from_query(body: dict[str, Any]) -> dict[str, Any]:
     """질문 기반 답변 생성 - Neo4j 규칙 동적 주입."""
     current_agent = _get_agent()
     current_kg = _get_kg()
@@ -129,9 +129,11 @@ OCR에 없는 정보는 추가하지 마세요.
         duration = (datetime.now() - meta_start).total_seconds()
         meta = APIMetadata(duration=duration)
         return cast(
-            Dict[str, Any],
+            "dict[str, Any]",
             build_response(
-                {"query": query, "answer": answer}, metadata=meta, config=config
+                {"query": query, "answer": answer},
+                metadata=meta,
+                config=config,
             ),
         )
     except asyncio.TimeoutError:
@@ -144,7 +146,7 @@ OCR에 없는 정보는 추가하지 마세요.
 
 
 @router.post("/workspace/generate-query")
-async def api_generate_query_from_answer(body: Dict[str, Any]) -> Dict[str, Any]:
+async def api_generate_query_from_answer(body: dict[str, Any]) -> dict[str, Any]:
     """답변 기반 질문 생성."""
     current_agent = _get_agent()
     if current_agent is None:
@@ -176,9 +178,11 @@ async def api_generate_query_from_answer(body: Dict[str, Any]) -> Dict[str, Any]
         duration = (datetime.now() - meta_start).total_seconds()
         meta = APIMetadata(duration=duration)
         return cast(
-            Dict[str, Any],
+            "dict[str, Any]",
             build_response(
-                {"query": query, "answer": answer}, metadata=meta, config=config
+                {"query": query, "answer": answer},
+                metadata=meta,
+                config=config,
             ),
         )
     except asyncio.TimeoutError:
@@ -245,7 +249,10 @@ async def _generate_lats_answer(
             if answer and len(answer) > weights.min_length:
                 # 답변 평가
                 score = await _evaluate_answer_quality(
-                    answer, ocr_text, query_type, weights
+                    answer,
+                    ocr_text,
+                    query_type,
+                    weights,
                 )
 
                 if score >= 0.6:  # 품질 임계값 (실전 기준)
@@ -254,7 +261,7 @@ async def _generate_lats_answer(
                             "strategy": strategy["name"],
                             "answer": answer,
                             "score": score,
-                        }
+                        },
                     )
                     logger.info("✅ LATS 후보: %s (%.2f)", strategy["name"], score)
         except Exception as e:
@@ -340,14 +347,14 @@ async def _evaluate_answer_quality(
             "저품질 LATS 답변 (%.2f): %s, 실패: %s",
             final_score,
             query_type,
-            ", ".join(cast(list[str], score_details["failures"])),
+            ", ".join(cast("list[str]", score_details["failures"])),
         )
 
     logger.debug("LATS 점수: %.2f (%s)", final_score, score_details)
     return final_score
 
 
-async def _lats_evaluate_answer(node: "SearchNode") -> float:
+async def _lats_evaluate_answer(node: SearchNode) -> float:
     """LATS 평가: 생성된 답변의 품질을 0.0-1.0로 점수화."""
     # SearchState에서 필요한 정보 추출
     state = node.state

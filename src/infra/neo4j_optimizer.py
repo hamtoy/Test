@@ -4,9 +4,9 @@
 Optimizes query performance through dual-layer indexing.
 """
 
-import re
-from typing import Any, Dict, List, Optional
 import logging
+import re
+from typing import Any
 
 from neo4j import AsyncDriver
 
@@ -140,13 +140,13 @@ class TwoTierIndexManager:
 
     # ============ Index Management ============
 
-    async def list_all_indexes(self) -> List[Dict[str, Any]]:
+    async def list_all_indexes(self) -> list[dict[str, Any]]:
         """List all existing indexes."""
         query = "SHOW INDEXES"
         records = await self._execute_query(query)
         return [dict(record) for record in records]
 
-    async def analyze_index_usage(self) -> Dict[str, Any]:
+    async def analyze_index_usage(self) -> dict[str, Any]:
         """Analyze index usage statistics and return metrics."""
         query = """
         CALL db.stats.retrieve('QUERIES')
@@ -185,11 +185,11 @@ class TwoTierIndexManager:
         match = _INDEX_NAME_PATTERN.search(query)
         return match.group(1) if match else "unknown"
 
-    async def _execute_query(self, query: str) -> List[Dict[str, Any]]:
+    async def _execute_query(self, query: str) -> list[dict[str, Any]]:
         """Execute Cypher query and return results."""
         async with self.driver.session() as session:
             result = await session.run(query)
-            data: List[Dict[str, Any]] = await result.data()
+            data: list[dict[str, Any]] = await result.data()
             return data
 
 
@@ -200,7 +200,7 @@ class OptimizedQueries:
     """Example queries that benefit from 2-Tier indexing."""
 
     @staticmethod
-    def find_rules_by_document(_document_id: Optional[str] = None) -> str:
+    def find_rules_by_document(_document_id: str | None = None) -> str:
         """Find all rules associated with a document.
 
         Uses: rule_id_idx + triad_document_rule_idx
@@ -218,7 +218,7 @@ class OptimizedQueries:
         """
 
     @staticmethod
-    def find_related_rules(_rule_id: Optional[str] = None, max_depth: int = 2) -> str:
+    def find_related_rules(_rule_id: str | None = None, max_depth: int = 2) -> str:
         """Find rules related to a given rule (transitive closure).
 
         Uses: triad_relates_to_idx
@@ -239,7 +239,8 @@ class OptimizedQueries:
 
     @staticmethod
     def semantic_search_with_graph(
-        _embedding: Optional[List[float]] = None, _k: int = 10
+        _embedding: list[float] | None = None,
+        _k: int = 10,
     ) -> str:
         """Hybrid search: Vector similarity + Graph traversal.
 

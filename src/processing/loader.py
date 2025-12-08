@@ -3,7 +3,6 @@
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Set
 
 from src.config import AppConfig
 from src.config.exceptions import ValidationFailedError
@@ -12,16 +11,16 @@ from src.infra.utils import load_file_async, parse_raw_candidates
 logger = logging.getLogger("GeminiWorkflow")
 
 
-def validate_candidates(candidates: Dict[str, str]) -> None:
+def validate_candidates(candidates: dict[str, str]) -> None:
     """후보 답변 구조와 내용을 검증합니다."""
-    required_keys: Set[str] = {"A", "B", "C"}
+    required_keys: set[str] = {"A", "B", "C"}
     actual_keys = set(candidates.keys())
 
     if not required_keys.issubset(actual_keys):
         missing = required_keys - actual_keys
         raise ValidationFailedError(
             f"Candidates missing required keys: {missing}. "
-            f"Expected at least {required_keys}, got {actual_keys or 'none'}"
+            f"Expected at least {required_keys}, got {actual_keys or 'none'}",
         )
 
     for key, value in candidates.items():
@@ -30,8 +29,10 @@ def validate_candidates(candidates: Dict[str, str]) -> None:
 
 
 async def load_input_data(
-    base_dir: Path, ocr_filename: str, cand_filename: str
-) -> tuple[str, Dict[str, str]]:
+    base_dir: Path,
+    ocr_filename: str,
+    cand_filename: str,
+) -> tuple[str, dict[str, str]]:
     """확장자나 형식을 가리지 않고 최선을 다해 데이터를 로드합니다 (Smart Loader).
 
     1. JSON 파싱 시도 -> 성공 시 반환
@@ -69,7 +70,7 @@ async def load_input_data(
     if not cand_text or not cand_text.strip():
         raise ValueError(f"Candidate file is empty: {cand_path}")
 
-    candidates: Dict[str, str] = {}
+    candidates: dict[str, str] = {}
 
     # [Strategy 1] JSON으로 간주하고 파싱 시도 (안전한 파싱)
     try:
@@ -78,18 +79,18 @@ async def load_input_data(
             candidates = data
             logger.info(
                 f"Format Detection: Valid JSON in '{cand_filename}' "
-                f"({len(candidates)} candidates)"
+                f"({len(candidates)} candidates)",
             )
         else:
             logger.warning(
                 f"Format Detection: JSON parsed but empty/invalid type "
-                f"in '{cand_filename}'"
+                f"in '{cand_filename}'",
             )
     except json.JSONDecodeError as e:
         logger.warning(
             f"Format Detection: JSON parse failed in '{cand_filename}' "
             f"at line {e.lineno}, column {e.colno}: {e.msg}. "
-            f"Trying Raw Text format..."
+            f"Trying Raw Text format...",
         )
     except (TypeError, ValueError) as e:
         logger.warning(f"Format Detection: Invalid JSON structure ({e}).")
@@ -106,7 +107,7 @@ async def load_input_data(
         raise ValueError(
             f"데이터 파싱 실패: '{cand_filename}'의 형식을 인식할 수 없습니다.\n"
             f'1. 올바른 JSON 형식을 사용하거나 ({{ "A": "..." }})\n'
-            f"2. 텍스트 형식(A: 답변...)을 사용하세요."
+            f"2. 텍스트 형식(A: 답변...)을 사용하세요.",
         )
 
     # Validate structure and content
@@ -116,7 +117,10 @@ async def load_input_data(
 
 
 async def reload_data_if_needed(
-    config: AppConfig, ocr_filename: str, cand_filename: str, interactive: bool = False
-) -> tuple[str, Dict[str, str]]:
+    config: AppConfig,
+    ocr_filename: str,
+    cand_filename: str,
+    interactive: bool = False,
+) -> tuple[str, dict[str, str]]:
     """OCR/후보 데이터를 재로드하는 래퍼 함수. interactive 플래그는 향후 프롬프트를 위해 예약됨."""
     return await load_input_data(config.input_dir, ocr_filename, cand_filename)

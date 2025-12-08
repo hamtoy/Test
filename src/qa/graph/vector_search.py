@@ -7,7 +7,7 @@ using LangChain and Neo4j vector indexes.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from src.qa.graph.connection import Neo4jConnectionManager
@@ -28,7 +28,7 @@ class VectorSearchEngine:
 
     def __init__(
         self,
-        connection_manager: "Neo4jConnectionManager",
+        connection_manager: Neo4jConnectionManager,
         embedding_model: str = "text-embedding-ada-002",
     ) -> None:
         """Initialize vector search engine."""
@@ -99,7 +99,7 @@ class VectorSearchEngine:
             logger.warning("Vector search failed: %s", e)
             return []
 
-    def embed_text(self, text: str) -> Optional[list[float]]:
+    def embed_text(self, text: str) -> list[float] | None:
         """Generate embedding for text.
 
         Args:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 from src.agent.core import GeminiAgent
 
@@ -14,8 +14,8 @@ async def evaluate_external_answers(
     agent: GeminiAgent,
     ocr_text: str,
     query: str,
-    answers: List[str],
-) -> List[Dict[str, Any]]:
+    answers: list[str],
+) -> list[dict[str, Any]]:
     """외부에서 제공된 3개의 답변을 비교 평가한다 - 1~6점 척도, 동점 금지.
 
     Args:
@@ -86,8 +86,8 @@ C피드백: [한 줄 평가]"""
         response = await agent._call_api_with_retry(model, user_prompt)
         response = response.strip()
 
-        scores: Dict[str, int] = {"A": 3, "B": 3, "C": 3}
-        feedbacks: Dict[str, str] = {"A": "", "B": "", "C": ""}
+        scores: dict[str, int] = {"A": 3, "B": 3, "C": 3}
+        feedbacks: dict[str, str] = {"A": "", "B": "", "C": ""}
 
         for raw_line in response.split("\n"):
             line = raw_line.strip()
@@ -102,10 +102,12 @@ C피드백: [한 줄 평가]"""
                     feedbacks[cid] = line.split(":", 1)[1].strip()
 
         # 동점 해소: 높은 점수부터 사용, 중복이면 -1씩 조정
-        adjusted_scores: Dict[str, int] = {}
+        adjusted_scores: dict[str, int] = {}
         used_scores: set[int] = set()
         for cid, score in sorted(
-            scores.items(), key=lambda item: item[1], reverse=True
+            scores.items(),
+            key=lambda item: item[1],
+            reverse=True,
         ):
             while score in used_scores and score > 1:
                 score -= 1
@@ -120,7 +122,7 @@ C피드백: [한 줄 평가]"""
             }
             for cid in ("A", "B", "C")
         ]
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.error(
             "비교 평가 실패",
             extra={

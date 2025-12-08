@@ -29,6 +29,6 @@ def __getattr__(name: str) -> Any:
 
 __all__ = [
     "GeminiModelClient",
-    "UltimateLangChainQASystem",
     "LCELOptimizedChain",
+    "UltimateLangChainQASystem",
 ]

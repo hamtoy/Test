@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["health"])
 
-_health_checker: Optional[HealthChecker] = None
+_health_checker: HealthChecker | None = None
 
 
 def set_dependencies(health_checker: HealthChecker, **_: Any) -> None:
@@ -47,7 +47,7 @@ async def api_health() -> JSONResponse:
 
 
 @router.get("/health/live")
-async def api_liveness() -> Dict[str, str]:
+async def api_liveness() -> dict[str, str]:
     """Liveness probe."""
     return {"status": "alive"}
 

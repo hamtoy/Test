@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.analysis.cross_validation import CrossValidationSystem
-from src.processing.example_selector import DynamicExampleSelector
 from src.llm.gemini import GeminiModelClient
+from src.processing.example_selector import DynamicExampleSelector
 from src.qa.rag_system import QAKnowledgeGraph
 
 
@@ -17,7 +17,7 @@ class MultiAgentQASystem:
     - 사후 검증
     """
 
-    def __init__(self, kg: Optional[QAKnowledgeGraph] = None):
+    def __init__(self, kg: QAKnowledgeGraph | None = None):
         """Initialize the multi-agent QA system.
 
         Args:
@@ -29,8 +29,10 @@ class MultiAgentQASystem:
         self.validator = CrossValidationSystem(self.kg)
 
     def collaborative_generate(
-        self, query_type: str, context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self,
+        query_type: str,
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
         """규칙/예시를 모아 Gemini로 생성하고 검증까지 수행합니다."""
         rules = self._collect_rules(query_type)
         constraints = self.kg.get_constraints_for_query_type(query_type)
@@ -56,14 +58,14 @@ class MultiAgentQASystem:
             },
         }
 
-    def _collect_rules(self, query_type: str) -> List[Dict[str, Any]]:
+    def _collect_rules(self, query_type: str) -> list[dict[str, Any]]:
         """QueryType 관련 Rule/Constraint 텍스트를 수집."""
-        rules: List[Dict[str, Any]] = []
+        rules: list[dict[str, Any]] = []
         try:
             graph = getattr(self.kg, "_graph", None)
             if graph is None:
                 return rules
-            with graph.session() as session:  # noqa: SLF001
+            with graph.session() as session:
                 result = session.run(
                     """
                     MATCH (r:Rule)-[:APPLIES_TO]->(q:QueryType {name: $qt})
@@ -79,10 +81,10 @@ class MultiAgentQASystem:
     def _build_prompt(
         self,
         query_type: str,
-        context: Dict[str, Any],
-        rules: List[Dict[str, Any]],
-        constraints: List[Dict[str, Any]],
-        examples: List[Dict[str, Any]],
+        context: dict[str, Any],
+        rules: list[dict[str, Any]],
+        constraints: list[dict[str, Any]],
+        examples: list[dict[str, Any]],
     ) -> str:
         """Gemini에 전달할 통합 프롬프트 생성."""
         rules_text = "\n".join([f"- {r['text']}" for r in rules]) or "(규칙 없음)"

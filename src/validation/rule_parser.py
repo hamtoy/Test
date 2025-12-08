@@ -10,7 +10,7 @@ from __future__ import annotations
 import csv
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import yaml
 
@@ -36,9 +36,9 @@ class RuleCSVParser:
         self.guide_path = Path(guide_path) if guide_path else None
         self.qna_path = Path(qna_path) if qna_path else None
         self.patterns_path = Path(patterns_path) if patterns_path else None
-        self._cache: Dict[str, Any] = {}
+        self._cache: dict[str, Any] = {}
 
-    def parse_guide_csv(self) -> Dict[str, Any]:
+    def parse_guide_csv(self) -> dict[str, Any]:
         """guide.csv 파싱 → 기본 검증 규칙 추출.
 
         Returns:
@@ -51,7 +51,7 @@ class RuleCSVParser:
         if "guide" in self._cache:
             return self._cache["guide"]  # type: ignore[no-any-return]
 
-        rules: Dict[str, Any] = {
+        rules: dict[str, Any] = {
             "temporal_expressions": [],
             "sentence_rules": {},
             "formatting_rules": [],
@@ -88,13 +88,13 @@ class RuleCSVParser:
                     # 포맷팅 규칙
                     if "볼드체" in content or "강조" in content:
                         rules["formatting_rules"].append(
-                            {"type": "bold_usage", "rule": content}
+                            {"type": "bold_usage", "rule": content},
                         )
 
                     # 구조 규칙
                     if "소제목" in content or "목록형" in content:
                         rules["structure_rules"].append(
-                            {"type": "structure", "rule": content}
+                            {"type": "structure", "rule": content},
                         )
 
             logger.info("Successfully parsed guide.csv with %d rule types", len(rules))
@@ -105,7 +105,7 @@ class RuleCSVParser:
         self._cache["guide"] = rules
         return rules
 
-    def parse_qna_csv(self) -> Dict[str, List[Dict[str, str]]]:
+    def parse_qna_csv(self) -> dict[str, list[dict[str, str]]]:
         """qna.csv 파싱 → 검증 체크리스트 추출.
 
         Returns:
@@ -120,7 +120,7 @@ class RuleCSVParser:
         if "qna" in self._cache:
             return self._cache["qna"]  # type: ignore[no-any-return]
 
-        checklist: Dict[str, List[Dict[str, str]]] = {
+        checklist: dict[str, list[dict[str, str]]] = {
             "question_checklist": [],
             "answer_checklist": [],
             "work_checklist": [],
@@ -162,7 +162,7 @@ class RuleCSVParser:
         self._cache["qna"] = checklist
         return checklist
 
-    def parse_patterns_yaml(self) -> Dict[str, Dict[str, Any]]:
+    def parse_patterns_yaml(self) -> dict[str, dict[str, Any]]:
         """patterns.yaml 파싱 → 패턴 기반 검증 규칙.
 
         Returns:
@@ -174,7 +174,7 @@ class RuleCSVParser:
         if "patterns" in self._cache:
             return self._cache["patterns"]  # type: ignore[no-any-return]
 
-        patterns: Dict[str, Dict[str, Any]] = {
+        patterns: dict[str, dict[str, Any]] = {
             "forbidden_patterns": {},
             "formatting_patterns": {},
         }
@@ -197,7 +197,7 @@ class RuleCSVParser:
         self._cache["patterns"] = patterns
         return patterns
 
-    def get_all_rules(self) -> Dict[str, Any]:
+    def get_all_rules(self) -> dict[str, Any]:
         """모든 규칙 통합 반환."""
         return {
             "guide_rules": self.parse_guide_csv(),
@@ -216,15 +216,15 @@ class RuleManager:
             parser: RuleCSVParser instance
         """
         self.parser = parser
-        self.rules: Dict[str, Any] | None = None
+        self.rules: dict[str, Any] | None = None
 
-    def load_rules(self) -> Dict[str, Any]:
+    def load_rules(self) -> dict[str, Any]:
         """규칙 로드 (초기 로드 또는 리로드)."""
         self.rules = self.parser.get_all_rules()
         logger.info("Rules loaded successfully")
         return self.rules
 
-    def get_temporal_rules(self) -> List[str]:
+    def get_temporal_rules(self) -> list[str]:
         """시의성 표현 규칙 조회."""
         if not self.rules:
             self.load_rules()
@@ -235,7 +235,7 @@ class RuleManager:
         assert isinstance(temporal, list)
         return temporal
 
-    def get_sentence_rules(self) -> Dict[str, int]:
+    def get_sentence_rules(self) -> dict[str, int]:
         """문장 수 규칙 조회."""
         if not self.rules:
             self.load_rules()
@@ -246,7 +246,7 @@ class RuleManager:
         assert isinstance(sentence_rules, dict)
         return sentence_rules
 
-    def get_question_checklist(self) -> List[Dict[str, str]]:
+    def get_question_checklist(self) -> list[dict[str, str]]:
         """질의 체크리스트 조회."""
         if not self.rules:
             self.load_rules()
@@ -257,7 +257,7 @@ class RuleManager:
         assert isinstance(question_checklist, list)
         return question_checklist
 
-    def get_answer_checklist(self) -> List[Dict[str, str]]:
+    def get_answer_checklist(self) -> list[dict[str, str]]:
         """답변 체크리스트 조회."""
         if not self.rules:
             self.load_rules()

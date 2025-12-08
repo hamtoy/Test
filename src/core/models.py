@@ -1,5 +1,5 @@
 import logging
-from typing import List, Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -22,10 +22,10 @@ class EvaluationResultSchema(BaseModel):
     """Schema for structured evaluation results from the LLM."""
 
     best_candidate: CandidateID = Field(
-        description="The key of the best candidate (e.g., 'A', 'B', 'C')."
+        description="The key of the best candidate (e.g., 'A', 'B', 'C').",
     )
-    evaluations: List[EvaluationItem] = Field(
-        description="List of evaluations for each candidate."
+    evaluations: list[EvaluationItem] = Field(
+        description="List of evaluations for each candidate.",
     )
 
     @model_validator(mode="after")
@@ -43,7 +43,7 @@ class EvaluationResultSchema(BaseModel):
                 logger.warning(
                     f"⚠️ LLM Hallucination Detected: "
                     f"Claimed '{self.best_candidate}' but scores show '{actual_best.candidate_id}' "
-                    f"(score: {actual_best.score}). Auto-correcting..."
+                    f"(score: {actual_best.score}). Auto-correcting...",
                 )
                 self.best_candidate = actual_best.candidate_id
 
@@ -64,8 +64,8 @@ class EvaluationResultSchema(BaseModel):
 class QueryResult(BaseModel):
     """LLM이 생성한 질의 리스트를 구조화하여 받기 위한 모델."""
 
-    queries: List[str] = Field(
-        description="Generated list of strategic search queries based on the user intent and OCR text."
+    queries: list[str] = Field(
+        description="Generated list of strategic search queries based on the user intent and OCR text.",
     )
 
 
@@ -74,10 +74,10 @@ class WorkflowResult(BaseModel):
 
     turn_id: int = Field(description="Iteration turn number")
     query: str
-    evaluation: Optional[EvaluationResultSchema]
+    evaluation: EvaluationResultSchema | None
     best_answer: str
     rewritten_answer: str
     cost: float = 0.0
-    final_output: Optional[str] = None
+    final_output: str | None = None
     success: bool = False
-    error_message: Optional[str] = None
+    error_message: str | None = None

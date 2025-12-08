@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING, Any, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
+
 from src.config.exceptions import SafetyFilterError
 from src.infra.utils import safe_json_parse
-
 
 if TYPE_CHECKING:
     from src.agent import GeminiAgent
@@ -22,7 +23,9 @@ class GeminiClient:
     """
 
     def __init__(
-        self, agent: "GeminiAgent", log_metrics_fn: Callable[..., None]
+        self,
+        agent: GeminiAgent,
+        log_metrics_fn: Callable[..., None],
     ) -> None:
         """Initialize the Gemini client wrapper."""
         self.agent = agent
@@ -99,7 +102,7 @@ class GeminiClient:
                 )
                 raise SafetyFilterError(
                     "Blocked by safety filter or other reason: %s.%s"
-                    % (finish_reason, safety_info)
+                    % (finish_reason, safety_info),
                 )
             return result.content
 
@@ -112,7 +115,8 @@ class GeminiClient:
         )
         start = time.perf_counter()
         response = await model.generate_content_async(
-            prompt_text, request_options={"timeout": self.agent.config.timeout}
+            prompt_text,
+            request_options={"timeout": self.agent.config.timeout},
         )
         latency_ms = (time.perf_counter() - start) * 1000
         latency_s = latency_ms / 1000
@@ -132,7 +136,8 @@ class GeminiClient:
         if hasattr(response, "usage_metadata") and response.usage_metadata:
             usage = response.usage_metadata
             self.agent._cost_tracker.add_tokens(  # noqa: SLF001
-                usage.prompt_token_count, usage.candidates_token_count
+                usage.prompt_token_count,
+                usage.candidates_token_count,
             )
 
             self.agent.logger.info(
@@ -205,7 +210,7 @@ class GeminiClient:
                 )
                 raise SafetyFilterError(
                     "Blocked by safety filter or other reason: %s.%s"
-                    % (finish_reason, safety_info)
+                    % (finish_reason, safety_info),
                 )
 
         try:

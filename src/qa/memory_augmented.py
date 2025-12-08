@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
-from src.qa.rag_system import CustomGeminiEmbeddings
+
 from src.config.utils import require_env
-from src.infra.neo4j import create_sync_driver, SafeDriver
+from src.infra.neo4j import SafeDriver, create_sync_driver
 from src.llm.gemini import GeminiModelClient
+from src.qa.rag_system import CustomGeminiEmbeddings
 
 load_dotenv()
 
@@ -18,9 +19,9 @@ class MemoryAugmentedQASystem:
 
     def __init__(
         self,
-        neo4j_uri: Optional[str] = None,
-        user: Optional[str] = None,
-        password: Optional[str] = None,
+        neo4j_uri: str | None = None,
+        user: str | None = None,
+        password: str | None = None,
         session_id: str = "qa_session_001",
     ):
         """Initialize the memory augmented QA system.
@@ -48,7 +49,7 @@ class MemoryAugmentedQASystem:
         from langchain_neo4j import Neo4jVector
 
         self.vectorstore = Neo4jVector.from_existing_graph(
-            cast(Any, CustomGeminiEmbeddings(api_key=require_env("GEMINI_API_KEY"))),
+            cast("Any", CustomGeminiEmbeddings(api_key=require_env("GEMINI_API_KEY"))),
             url=self.neo4j_uri,
             username=self.neo4j_user,
             password=self.neo4j_password,
@@ -59,7 +60,7 @@ class MemoryAugmentedQASystem:
         )
 
         self.llm = GeminiModelClient()
-        self.history: List[Dict[str, str]] = []
+        self.history: list[dict[str, str]] = []
 
     def ask_with_memory(self, question: str) -> str:
         """이전 대화와 벡터 검색 결과를 포함해 Gemini로 답변합니다."""
@@ -69,7 +70,7 @@ class MemoryAugmentedQASystem:
 
         # 간단한 히스토리 직렬화
         history_text = "\n".join(
-            [f"Q: {h['q']}\nA: {h['a']}" for h in self.history[-5:]]
+            [f"Q: {h['q']}\nA: {h['a']}" for h in self.history[-5:]],
         )
 
         prompt = f"""다음은 이전 대화와 검색된 문맥입니다.
@@ -122,7 +123,7 @@ class MemoryAugmentedQASystem:
         if hasattr(self, "_driver") and self._driver:
             self._driver.close()
 
-    def __enter__(self) -> "MemoryAugmentedQASystem":
+    def __enter__(self) -> MemoryAugmentedQASystem:
         """Enter context manager."""
         return self
 

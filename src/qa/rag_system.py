@@ -32,12 +32,15 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Generator
 from contextlib import contextmanager, suppress
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any
 
 import google.generativeai as genai  # noqa: F401
 from dotenv import load_dotenv
-from neo4j import GraphDatabase  # noqa: F401 - Imported for backward compatibility with test mocking
+from neo4j import (
+    GraphDatabase,  # noqa: F401 - Imported for backward compatibility with test mocking
+)
 
 from src.caching.analytics import CacheMetrics
 from src.config import AppConfig
@@ -67,7 +70,7 @@ from src.qa.graph.validators import (  # noqa: F401
 )
 
 logger = logging.getLogger(__name__)
-__all__ = ["QAKnowledgeGraph", "CustomGeminiEmbeddings"]
+__all__ = ["CustomGeminiEmbeddings", "QAKnowledgeGraph"]
 
 
 load_dotenv()
@@ -88,11 +91,11 @@ class QAKnowledgeGraph:
 
     def __init__(
         self,
-        neo4j_uri: Optional[str] = None,
-        neo4j_user: Optional[str] = None,
-        neo4j_password: Optional[str] = None,
-        graph_provider: Optional[GraphProvider] = None,
-        config: Optional[AppConfig] = None,
+        neo4j_uri: str | None = None,
+        neo4j_user: str | None = None,
+        neo4j_password: str | None = None,
+        graph_provider: GraphProvider | None = None,
+        config: AppConfig | None = None,
     ) -> None:
         """Initialize the QA Knowledge Graph.
 
@@ -107,7 +110,7 @@ class QAKnowledgeGraph:
         provider = (
             graph_provider if graph_provider is not None else get_graph_provider(cfg)
         )
-        self._graph_provider: Optional[GraphProvider] = provider
+        self._graph_provider: GraphProvider | None = provider
         self._cache_metrics = CacheMetrics(namespace="qa_kg")
         self._closed = False  # Track whether close() has been called
 
@@ -118,7 +121,10 @@ class QAKnowledgeGraph:
 
         # Initialize connection using helper function
         self._graph, self._graph_finalizer = initialize_connection(
-            self.neo4j_uri, self.neo4j_user, self.neo4j_password, provider
+            self.neo4j_uri,
+            self.neo4j_user,
+            self.neo4j_password,
+            provider,
         )
 
         # Initialize query executor for consistent query execution
@@ -142,7 +148,9 @@ class QAKnowledgeGraph:
 
         # Ensure required formatting rule schema is present
         ensure_formatting_rule_schema(
-            driver=self._graph, provider=self._graph_provider, logger=logger
+            driver=self._graph,
+            provider=self._graph_provider,
+            logger=logger,
         )
 
     @property
@@ -168,7 +176,7 @@ class QAKnowledgeGraph:
         if not os.getenv("GEMINI_API_KEY"):
             # 환경변수 없으면 현재 값을 유지하고 조용히 반환
             logger.debug(
-                "GEMINI_API_KEY not set; skipping vector store initialization."
+                "GEMINI_API_KEY not set; skipping vector store initialization.",
             )
             return
 
@@ -183,12 +191,15 @@ class QAKnowledgeGraph:
             logger.info("Vector store initialized successfully")
         except (ValueError, RuntimeError, ImportError) as e:
             logger.warning(
-                "Failed to initialize vector store: %s. Continuing without RAG.", e
+                "Failed to initialize vector store: %s. Continuing without RAG.",
+                e,
             )
             self._vector_store = None  # 명시적으로 None 설정
         except Exception as e:
             logger.error(
-                "Unexpected error initializing vector store: %s", e, exc_info=True
+                "Unexpected error initializing vector store: %s",
+                e,
+                exc_info=True,
             )
             self._vector_store = None
 
@@ -207,7 +218,7 @@ class QAKnowledgeGraph:
             duration_ms=elapsed_ms,
         ),
     )
-    def find_relevant_rules(self, query: str, k: int = 5) -> List[str]:
+    def find_relevant_rules(self, query: str, k: int = 5) -> list[str]:
         """Return vector-search-based rules when available."""
         if not self._vector_store:
             self.cache_metrics.record_skip("vector_store_unavailable")
@@ -224,7 +235,7 @@ class QAKnowledgeGraph:
             "result_count": len_if_sized(result),
         },
     )
-    def get_constraints_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
+    def get_constraints_for_query_type(self, query_type: str) -> list[dict[str, Any]]:
         """QueryType과 연결된 제약 조건 조회.
 
         - QueryType-[:HAS_CONSTRAINT]->Constraint 관계 사용
@@ -242,7 +253,7 @@ class QAKnowledgeGraph:
             "result_count": len_if_sized(result),
         },
     )
-    def get_rules_for_query_type(self, query_type: str) -> List[Dict[str, Any]]:
+    def get_rules_for_query_type(self, query_type: str) -> list[dict[str, Any]]:
         """Rule 노드 조회 (APPLIES_TO 관계 또는 applies_to 속성 기반)."""
         return self.query_executor.execute_with_fallback(
             CypherQueries.GET_RULES_FOR_QUERY_TYPE,
@@ -257,7 +268,7 @@ class QAKnowledgeGraph:
             "result_count": len_if_sized(result),
         },
     )
-    def get_best_practices(self, query_type: str) -> List[Dict[str, str]]:
+    def get_best_practices(self, query_type: str) -> list[dict[str, str]]:
         """Get best practices for a given query type.
 
         Args:
@@ -279,7 +290,7 @@ class QAKnowledgeGraph:
             "result_count": len_if_sized(result),
         },
     )
-    def get_examples(self, limit: int = 5) -> List[Dict[str, str]]:
+    def get_examples(self, limit: int = 5) -> list[dict[str, str]]:
         """Example 노드 조회 (현재 Rule과 직접 연결되지 않았으므로 전체에서 샘플링)."""
         return self.query_executor.execute_with_fallback(
             CypherQueries.GET_EXAMPLES,
@@ -294,7 +305,7 @@ class QAKnowledgeGraph:
             "success": success,
         },
     )
-    def validate_session(self, session: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_session(self, session: dict[str, Any]) -> dict[str, Any]:
         """checks/validate_session 로직을 활용해 세션 구조 검증."""
         return validate_session_structure(session)
 
@@ -308,16 +319,16 @@ class QAKnowledgeGraph:
     )
     def upsert_auto_generated_rules(
         self,
-        patterns: List[Dict[str, Any]],
-        batch_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        patterns: list[dict[str, Any]],
+        batch_id: str | None = None,
+    ) -> dict[str, Any]:
         """LLM에서 생성된 규칙/제약/베스트 프랙티스/예시를 Neo4j에 업서트.
 
         Delegates to RuleUpsertManager.
         """
         return self._rule_upsert_manager.upsert_auto_generated_rules(patterns, batch_id)
 
-    def get_rules_by_batch_id(self, batch_id: str) -> List[Dict[str, Any]]:
+    def get_rules_by_batch_id(self, batch_id: str) -> list[dict[str, Any]]:
         """Batch ID로 업서트된 Rule 노드 조회."""
         return self._rule_upsert_manager.get_rules_by_batch_id(batch_id)
 
@@ -329,8 +340,9 @@ class QAKnowledgeGraph:
         },
     )
     def get_formatting_rules_for_query_type(
-        self, query_type: str = "all"
-    ) -> List[Dict[str, Any]]:
+        self,
+        query_type: str = "all",
+    ) -> list[dict[str, Any]]:
         """Return formatting rules for a given query type (or all)."""
         return self.query_executor.execute_with_fallback(
             CypherQueries.GET_FORMATTING_RULES_FOR_QUERY_TYPE,
@@ -355,7 +367,7 @@ class QAKnowledgeGraph:
             Formatted markdown string containing all rules grouped by category.
         """
 
-        def transform_to_formatted(records: List[Any]) -> str:
+        def transform_to_formatted(records: list[Any]) -> str:
             rules_data = [dict(r) for r in records]
             return format_rules(rules_data)
 
@@ -368,7 +380,7 @@ class QAKnowledgeGraph:
         # When transform is provided that returns str, result will be str
         return str(result) if not isinstance(result, str) else result
 
-    def rollback_batch(self, batch_id: str) -> Dict[str, Any]:
+    def rollback_batch(self, batch_id: str) -> dict[str, Any]:
         """특정 batch_id로 생성된 모든 노드 삭제 (롤백).
 
         Delegates to RuleUpsertManager.

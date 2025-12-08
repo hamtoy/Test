@@ -33,14 +33,10 @@ from __future__ import annotations
 import json
 import logging
 import sys
+from collections.abc import AsyncGenerator, Callable
 from typing import (
     TYPE_CHECKING,
     Any,
-    AsyncGenerator,
-    Callable,
-    Dict,
-    List,
-    Optional,
     cast,
 )
 
@@ -75,7 +71,7 @@ from .services import (
 )
 
 if TYPE_CHECKING:
-    import google.generativeai.caching as caching
+    from google.generativeai import caching
 
     from src.core.interfaces import LLMProvider
     from src.qa.rag_system import QAKnowledgeGraph
@@ -85,7 +81,7 @@ def _get_log_metrics() -> Callable[..., None]:
     """log_metrics를 동적으로 가져옴 (테스트 패칭 지원)."""
     agent_mod = sys.modules.get("src.agent")
     if agent_mod and hasattr(agent_mod, "log_metrics"):
-        return cast(Callable[..., None], agent_mod.log_metrics)
+        return cast("Callable[..., None]", agent_mod.log_metrics)
     return _log_metrics
 
 
@@ -105,8 +101,8 @@ class GeminiAgent:
     def __init__(
         self,
         config: AppConfig,
-        jinja_env: Optional[Environment] = None,
-        llm_provider: Optional["LLMProvider"] = None,
+        jinja_env: Environment | None = None,
+        llm_provider: LLMProvider | None = None,
     ):
         """Gemini API 에이전트 초기화.
 
@@ -122,34 +118,33 @@ class GeminiAgent:
         self.config = config
 
         # LLM Provider 설정
-        self.llm_provider: Optional["LLMProvider"] = None  # 명시적 초기화
+        self.llm_provider: LLMProvider | None = None  # 명시적 초기화
         if llm_provider is not None:
             self.llm_provider = llm_provider
-        else:
-            if getattr(config, "llm_provider_enabled", False):
-                try:
-                    from src.core.factory import get_llm_provider
+        elif getattr(config, "llm_provider_enabled", False):
+            try:
+                from src.core.factory import get_llm_provider
 
-                    self.llm_provider = get_llm_provider(config)
-                    self.logger.info(
-                        "LLM provider initialized: %s",
-                        self.llm_provider.__class__.__name__,
-                    )
-                except (AttributeError, ImportError, ValueError) as e:
-                    self.logger.warning(
-                        "Failed to initialize LLM provider: %s. Falling back to None.",
-                        e,
-                    )
-                    self.llm_provider = None
-                except Exception as e:
-                    self.logger.error(
-                        "Unexpected error initializing LLM provider: %s",
-                        e,
-                        exc_info=True,
-                    )
-                    self.llm_provider = None
-            else:
+                self.llm_provider = get_llm_provider(config)
+                self.logger.info(
+                    "LLM provider initialized: %s",
+                    self.llm_provider.__class__.__name__,
+                )
+            except (AttributeError, ImportError, ValueError) as e:
+                self.logger.warning(
+                    "Failed to initialize LLM provider: %s. Falling back to None.",
+                    e,
+                )
                 self.llm_provider = None
+            except Exception as e:
+                self.logger.error(
+                    "Unexpected error initializing LLM provider: %s",
+                    e,
+                    exc_info=True,
+                )
+                self.llm_provider = None
+        else:
+            self.llm_provider = None
 
         # 서브모듈 초기화
         self._rate_limiter_module = RateLimiter(config.max_concurrency)
@@ -157,10 +152,12 @@ class GeminiAgent:
         self._cache_manager = CacheManager(config)
         meter = get_meter()  # type: ignore[no-untyped-call]
         self._api_call_counter = meter.create_counter(
-            "gemini.api.calls", description="Number of Gemini API calls"
+            "gemini.api.calls",
+            description="Number of Gemini API calls",
         )
         self._token_counter = meter.create_counter(
-            "gemini.tokens.total", description="Total tokens used"
+            "gemini.tokens.total",
+            description="Total tokens used",
         )
         self._log_metrics = _get_log_metrics()
         self.client = GeminiClient(self, self._log_metrics)
@@ -195,7 +192,7 @@ class GeminiAgent:
                 if not template_path.exists():
                     raise FileNotFoundError(
                         f"Required template not found: {template_path}\n"
-                        f"Please ensure all .j2 files are in the templates/ directory."
+                        f"Please ensure all .j2 files are in the templates/ directory.",
                     )
 
             self.jinja_env = Environment(
@@ -263,7 +260,7 @@ class GeminiAgent:
         cached = globals().get("caching")
         if cached is not None:
             return cached
-        import google.generativeai.caching as caching
+        from google.generativeai import caching
 
         globals()["caching"] = caching
         return caching
@@ -296,17 +293,17 @@ class GeminiAgent:
 
         return HarmBlockThreshold, HarmCategory
 
-    def _get_safety_settings(self) -> Dict[Any, Any]:
+    def _get_safety_settings(self) -> dict[Any, Any]:
         harm_block_threshold, harm_category = self._harm_types()
-        return {
-            category: harm_block_threshold.BLOCK_NONE
-            for category in [
+        return dict.fromkeys(
+            [
                 harm_category.HARM_CATEGORY_HARASSMENT,
                 harm_category.HARM_CATEGORY_HATE_SPEECH,
                 harm_category.HARM_CATEGORY_SEXUALLY_EXPLICIT,
                 harm_category.HARM_CATEGORY_DANGEROUS_CONTENT,
-            ]
-        }
+            ],
+            harm_block_threshold.BLOCK_NONE,
+        )
 
     # ==================== 캐시 관련 메서드 ====================
 
@@ -329,11 +326,16 @@ class GeminiAgent:
     def _load_local_cache(self, fingerprint: str, ttl_minutes: int) -> Any:
         """로컬 캐시 로드."""
         return self.context_manager.load_local_cache(
-            fingerprint, ttl_minutes, self._caching
+            fingerprint,
+            ttl_minutes,
+            self._caching,
         )
 
     def _store_local_cache(
-        self, fingerprint: str, cache_name: str, ttl_minutes: int
+        self,
+        fingerprint: str,
+        cache_name: str,
+        ttl_minutes: int,
     ) -> None:
         """로컬 캐시 저장.
 
@@ -350,7 +352,7 @@ class GeminiAgent:
         self,
         system_prompt: str,
         response_schema: type[BaseModel] | None = None,
-        cached_content: Optional["caching.CachedContent"] = None,
+        cached_content: caching.CachedContent | None = None,
     ) -> Any:
         """GenerativeModel 인스턴스를 생성하는 팩토리 메서드.
 
@@ -363,7 +365,7 @@ class GeminiAgent:
         Returns:
             Any: 설정된 GenerativeModel 인스턴스.
         """
-        generation_config: Dict[str, object] = {
+        generation_config: dict[str, object] = {
             "temperature": self.config.temperature,
             "max_output_tokens": self.config.max_output_tokens,
         }
@@ -372,7 +374,7 @@ class GeminiAgent:
             generation_config["response_mime_type"] = "application/json"
             generation_config["response_schema"] = response_schema
 
-        gen_config_param = cast(Any, generation_config)
+        gen_config_param = cast("Any", generation_config)
 
         if cached_content:
             model = self._genai.GenerativeModel.from_cached_content(
@@ -388,8 +390,8 @@ class GeminiAgent:
                 safety_settings=self.safety_settings,
             )
         try:
-            setattr(model, "_agent_system_instruction", system_prompt)
-            setattr(model, "_agent_response_schema", response_schema)
+            model._agent_system_instruction = system_prompt
+            model._agent_response_schema = response_schema
         except (TypeError, AttributeError):
             pass
         return model
@@ -402,7 +404,7 @@ class GeminiAgent:
             return await self.context_manager.create_context_cache(ocr_text)
         except self._google_exceptions().ResourceExhausted as e:
             raise CacheCreationError(
-                "Rate limit exceeded during cache creation: %s" % e
+                "Rate limit exceeded during cache creation: %s" % e,
             ) from e
         except (ValueError, RuntimeError, OSError) as e:
             raise CacheCreationError("Failed to create cache: %s" % e) from e
@@ -423,13 +425,13 @@ class GeminiAgent:
     async def generate_query(
         self,
         ocr_text: str,
-        user_intent: Optional[str] = None,
-        cached_content: Optional["caching.CachedContent"] = None,
-        template_name: Optional[str] = None,
+        user_intent: str | None = None,
+        cached_content: caching.CachedContent | None = None,
+        template_name: str | None = None,
         query_type: str = "explanation",
-        kg: Optional["QAKnowledgeGraph"] = None,
-        constraints: Optional[List[Dict[str, Any]]] = None,
-    ) -> List[str]:
+        kg: QAKnowledgeGraph | None = None,
+        constraints: list[dict[str, Any]] | None = None,
+    ) -> list[str]:
         """OCR 텍스트와 사용자 의도에 기반한 전략적 쿼리 생성.
 
         이 메서드는 Neo4j에서 query_type별 규칙과 제약사항을 가져와
@@ -478,7 +480,7 @@ class GeminiAgent:
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
         retry=retry_if_exception_type(
-            (ValidationFailedError, ValidationError, json.JSONDecodeError)
+            (ValidationFailedError, ValidationError, json.JSONDecodeError),
         ),
         reraise=True,
     )
@@ -487,11 +489,11 @@ class GeminiAgent:
         self,
         ocr_text: str,
         query: str,
-        candidates: Dict[str, str],
-        cached_content: Optional["caching.CachedContent"] = None,
+        candidates: dict[str, str],
+        cached_content: caching.CachedContent | None = None,
         query_type: str = "explanation",
-        kg: Optional["QAKnowledgeGraph"] = None,
-    ) -> Optional[EvaluationResultSchema]:
+        kg: QAKnowledgeGraph | None = None,
+    ) -> EvaluationResultSchema | None:
         """후보 답변을 평가하고 점수를 부여.
 
         여러 후보 답변 중 최적의 답변을 선택하기 위해 각 답변을 평가합니다.
@@ -537,11 +539,11 @@ class GeminiAgent:
         self,
         ocr_text: str,
         best_answer: str,
-        edit_request: Optional[str] = None,
-        cached_content: Optional["caching.CachedContent"] = None,
+        edit_request: str | None = None,
+        cached_content: caching.CachedContent | None = None,
         query_type: str = "explanation",
-        kg: Optional["QAKnowledgeGraph"] = None,
-        constraints: Optional[List[Dict[str, Any]]] = None,
+        kg: QAKnowledgeGraph | None = None,
+        constraints: list[dict[str, Any]] | None = None,
         length_constraint: str = "",
     ) -> str:
         """선택된 최고 답변을 가독성 및 안전성 측면에서 개선.
@@ -602,9 +604,9 @@ class GeminiAgent:
         self,
         prompt: str,
         *,
-        system_instruction: Optional[str] = None,
-        temperature: Optional[float] = None,
-        max_output_tokens: Optional[int] = None,
+        system_instruction: str | None = None,
+        temperature: float | None = None,
+        max_output_tokens: int | None = None,
         **kwargs: Any,
     ) -> AsyncGenerator[str, None]:
         """스트리밍 방식으로 응답을 생성합니다.
@@ -619,11 +621,11 @@ class GeminiAgent:
         Yields:
             생성된 텍스트 청크.
         """
-        generation_config: Dict[str, object] = {
+        generation_config: dict[str, object] = {
             "temperature": temperature or self.config.temperature,
             "max_output_tokens": max_output_tokens or self.config.max_output_tokens,
         }
-        gen_config_param = cast(Any, generation_config)
+        gen_config_param = cast("Any", generation_config)
         model = self._genai.GenerativeModel(
             model_name=self.config.model_name,
             system_instruction=system_instruction,
@@ -640,7 +642,7 @@ class GeminiAgent:
                 if candidate_text:
                     yield candidate_text
             elif text:
-                yield cast(str, text)
+                yield cast("str", text)
 
 
 def __getattr__(name: str) -> Any:

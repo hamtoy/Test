@@ -6,7 +6,7 @@ including Person, Organization, Date, and DocumentRule.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -16,22 +16,27 @@ class ExtractedEntity(BaseModel):
 
     name: str = Field(..., description="Entity name or identifier")
     confidence: float = Field(
-        ..., ge=0.0, le=1.0, description="Confidence score (0.0-1.0)"
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="Confidence score (0.0-1.0)",
     )
-    source_text: Optional[str] = Field(
-        None, description="Original text span where entity was found"
+    source_text: str | None = Field(
+        None,
+        description="Original text span where entity was found",
     )
 
 
 class Person(ExtractedEntity):
     """Person entity extracted from document."""
 
-    role: Optional[str] = Field(None, description="Role or title of the person")
-    organization: Optional[str] = Field(
-        None, description="Associated organization name"
+    role: str | None = Field(None, description="Role or title of the person")
+    organization: str | None = Field(
+        None,
+        description="Associated organization name",
     )
 
-    def to_node_dict(self) -> Dict[str, Any]:
+    def to_node_dict(self) -> dict[str, Any]:
         """Convert to Neo4j node properties dictionary."""
         return {
             "name": self.name,
@@ -43,12 +48,13 @@ class Person(ExtractedEntity):
 class Organization(ExtractedEntity):
     """Organization entity extracted from document."""
 
-    org_type: Optional[str] = Field(
-        None, description="Type of organization (company, government, NGO, etc.)"
+    org_type: str | None = Field(
+        None,
+        description="Type of organization (company, government, NGO, etc.)",
     )
-    location: Optional[str] = Field(None, description="Location or headquarters")
+    location: str | None = Field(None, description="Location or headquarters")
 
-    def to_node_dict(self) -> Dict[str, Any]:
+    def to_node_dict(self) -> dict[str, Any]:
         """Convert to Neo4j node properties dictionary."""
         return {
             "name": self.name,
@@ -61,15 +67,16 @@ class Organization(ExtractedEntity):
 class DateEntity(ExtractedEntity):
     """Date entity extracted from document."""
 
-    date_type: Optional[str] = Field(
+    date_type: str | None = Field(
         None,
         description="Type of date (event, deadline, publication, etc.)",
     )
-    normalized: Optional[str] = Field(
-        None, description="Normalized date format (YYYY-MM-DD)"
+    normalized: str | None = Field(
+        None,
+        description="Normalized date format (YYYY-MM-DD)",
     )
 
-    def to_node_dict(self) -> Dict[str, Any]:
+    def to_node_dict(self) -> dict[str, Any]:
         """Convert to Neo4j node properties dictionary."""
         return {
             "name": self.name,
@@ -87,9 +94,9 @@ class DocumentRule(ExtractedEntity):
     """
 
     priority: str = Field("normal", description="Priority level (high, normal, low)")
-    category: Optional[str] = Field(None, description="Rule category or section")
+    category: str | None = Field(None, description="Rule category or section")
 
-    def to_node_dict(self) -> Dict[str, Any]:
+    def to_node_dict(self) -> dict[str, Any]:
         """Convert to Neo4j node properties dictionary."""
         return {
             "text": self.name,
@@ -105,19 +112,20 @@ class Relationship(BaseModel):
     from_entity: str = Field(..., description="Source entity name")
     to_entity: str = Field(..., description="Target entity name")
     rel_type: str = Field(..., description="Relationship type (e.g., WORKS_AT)")
-    properties: Dict[str, Any] = Field(
-        default_factory=dict, description="Additional relationship properties"
+    properties: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional relationship properties",
     )
 
 
 class ExtractionResult(BaseModel):
     """Result of entity extraction from a document."""
 
-    persons: List[Person] = Field(default_factory=list)
-    organizations: List[Organization] = Field(default_factory=list)
-    dates: List[DateEntity] = Field(default_factory=list)
-    document_rules: List[DocumentRule] = Field(default_factory=list)
-    relationships: List[Relationship] = Field(default_factory=list)
+    persons: list[Person] = Field(default_factory=list)
+    organizations: list[Organization] = Field(default_factory=list)
+    dates: list[DateEntity] = Field(default_factory=list)
+    document_rules: list[DocumentRule] = Field(default_factory=list)
+    relationships: list[Relationship] = Field(default_factory=list)
 
     @property
     def total_entities(self) -> int:
@@ -129,7 +137,7 @@ class ExtractionResult(BaseModel):
             + len(self.document_rules)
         )
 
-    def filter_by_confidence(self, threshold: float) -> "ExtractionResult":
+    def filter_by_confidence(self, threshold: float) -> ExtractionResult:
         """Filter entities by confidence threshold.
 
         Args:

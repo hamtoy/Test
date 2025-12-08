@@ -74,7 +74,10 @@ class RuleManager:
                 logger.warning("add_rule skipped: graph unavailable")
                 return rule_id
             result = session.run(
-                cypher, query_type=query_type, rule_id=rule_id, rule_text=rule_text
+                cypher,
+                query_type=query_type,
+                rule_id=rule_id,
+                rule_text=rule_text,
             )
             record = result.single() if result else None
             created_id = record.get("id") if record else rule_id

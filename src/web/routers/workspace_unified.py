@@ -15,7 +15,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 from fastapi import APIRouter, HTTPException
 
@@ -32,7 +32,7 @@ router = APIRouter(prefix="/api", tags=["workspace-unified"])
 
 
 @router.post("/workspace/unified")
-async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]:
+async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> dict[str, Any]:
     """통합 워크스페이스 - WorkspaceExecutor 기반 구현."""
     from src.workflow.workspace_executor import (
         WorkflowContext,
@@ -55,14 +55,17 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
 
     # Detect workflow
     workflow_str = detect_workflow(
-        body.query or "", body.answer or "", body.edit_request or ""
+        body.query or "",
+        body.answer or "",
+        body.edit_request or "",
     )
 
     try:
         workflow_type = WorkflowType(workflow_str)
     except ValueError:
         raise HTTPException(
-            status_code=400, detail=f"알 수 없는 워크플로우: {workflow_str}"
+            status_code=400,
+            detail=f"알 수 없는 워크플로우: {workflow_str}",
         )
 
     # Build context
@@ -104,7 +107,8 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
         }
 
         return cast(
-            Dict[str, Any], build_response(result_dict, metadata=meta, config=config)
+            "dict[str, Any]",
+            build_response(result_dict, metadata=meta, config=config),
         )
 
     except asyncio.TimeoutError:
@@ -116,4 +120,4 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> Dict[str, Any]
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error("워크플로우 실행 실패: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=f"실행 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"실행 실패: {e!s}")

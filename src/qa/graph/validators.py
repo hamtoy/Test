@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from checks.validate_session import validate_turns
 
 logger = logging.getLogger(__name__)
 
 
-def validate_session_structure(session: Dict[str, Any]) -> Dict[str, Any]:
+def validate_session_structure(session: dict[str, Any]) -> dict[str, Any]:
     """Validate session structure using shared validation logic."""
     from scripts.build_session import SessionContext
 
@@ -21,7 +21,7 @@ def validate_session_structure(session: Dict[str, Any]) -> Dict[str, Any]:
     ctx_kwargs = session.get("context", {})
     try:
         ctx = SessionContext(**ctx_kwargs)
-        res: Dict[str, Any] = validate_turns([type("T", (), t) for t in turns], ctx)
+        res: dict[str, Any] = validate_turns([type("T", (), t) for t in turns], ctx)
         return res
     except (TypeError, ValueError) as exc:
         return {"ok": False, "issues": [f"컨텍스트 생성 실패: {exc}"]}

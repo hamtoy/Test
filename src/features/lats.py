@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import math
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -14,18 +15,18 @@ from src.core.interfaces import GenerationResult, LLMProvider
 class SearchState(BaseModel):
     """Tree 탐색용 상태 객체. 직렬화/예산 추적을 지원합니다."""
 
-    turns: List[dict[str, Any]] = Field(default_factory=list)
+    turns: list[dict[str, Any]] = Field(default_factory=list)
     cumulative_tokens: int = 0
     cumulative_cost: float = 0.0
-    last_failure_reason: Optional[str] = None
-    focus_history: List[str] = Field(default_factory=list)
+    last_failure_reason: str | None = None
+    focus_history: list[str] = Field(default_factory=list)
 
     # LATS 상태 주입을 위한 필드
-    query: Optional[str] = None
-    ocr_text: Optional[str] = None
-    current_answer: Optional[str] = None
+    query: str | None = None
+    ocr_text: str | None = None
+    current_answer: str | None = None
 
-    def add_turn(self, action: str) -> "SearchState":
+    def add_turn(self, action: str) -> SearchState:
         """Add a new turn to the search state.
 
         Args:
@@ -39,7 +40,7 @@ class SearchState(BaseModel):
         new_state.focus_history.append(action)
         return new_state
 
-    def update_budget(self, tokens: int = 0, cost: float = 0.0) -> "SearchState":
+    def update_budget(self, tokens: int = 0, cost: float = 0.0) -> SearchState:
         """Update the cumulative budget tracking.
 
         Args:
@@ -57,7 +58,7 @@ class SearchState(BaseModel):
     def hash_key(self) -> str:
         """간단한 캐시 키."""
         return str(
-            hash((tuple(self.focus_history), len(self.turns), self.cumulative_tokens))
+            hash((tuple(self.focus_history), len(self.turns), self.cumulative_tokens)),
         )
 
 
@@ -66,7 +67,7 @@ class ValidationResult:
     """Result of validating an action against graph constraints."""
 
     allowed: bool
-    reason: Optional[str] = None
+    reason: str | None = None
     penalty: float = 0.0
 
 
@@ -75,13 +76,13 @@ class SearchNode:
     """Node in the LATS search tree."""
 
     state: SearchState
-    action: Optional[str] = None
+    action: str | None = None
     reward: float = 0.0
     visits: int = 0
-    parent: Optional["SearchNode"] = None
-    reflection: Optional[str] = None
-    children: List["SearchNode"] = field(default_factory=list)
-    result: Optional[dict[str, Any]] = None
+    parent: SearchNode | None = None
+    reflection: str | None = None
+    children: list[SearchNode] = field(default_factory=list)
+    result: dict[str, Any] | None = None
 
     @property
     def depth(self) -> int:
@@ -95,7 +96,7 @@ class SearchNode:
 
 
 GraphValidator = Callable[[SearchState, str], Awaitable[ValidationResult]]
-ActionProposer = Callable[[SearchNode], Awaitable[List[str]]]
+ActionProposer = Callable[[SearchNode], Awaitable[list[str]]]
 ActionEvaluator = Callable[[SearchNode], Awaitable[float]]
 
 
@@ -104,11 +105,11 @@ class LATSSearcher:
 
     def __init__(
         self,
-        llm_provider: Optional[LLMProvider],
-        graph_validator: Optional[GraphValidator] = None,
-        propose_actions: Optional[ActionProposer] = None,
-        evaluate_action: Optional[ActionEvaluator] = None,
-        budget_tracker: Optional[Any] = None,  # BudgetTracker instance
+        llm_provider: LLMProvider | None,
+        graph_validator: GraphValidator | None = None,
+        propose_actions: ActionProposer | None = None,
+        evaluate_action: ActionEvaluator | None = None,
+        budget_tracker: Any | None = None,  # BudgetTracker instance
         max_visits: int = 10,
         max_depth: int = 3,
         exploration_constant: float = math.sqrt(2),
@@ -150,7 +151,7 @@ class LATSSearcher:
             or node.state.cumulative_cost >= self.cost_budget
         )
 
-    async def run(self, initial_state: Optional[SearchState] = None) -> SearchNode:
+    async def run(self, initial_state: SearchState | None = None) -> SearchNode:
         """Run the LATS search algorithm.
 
         Args:
@@ -187,8 +188,8 @@ class LATSSearcher:
             )
         return current
 
-    async def _expand(self, node: SearchNode) -> List[SearchNode]:
-        actions: List[str] = []
+    async def _expand(self, node: SearchNode) -> list[SearchNode]:
+        actions: list[str] = []
         if self.propose_actions:
             actions = await self.propose_actions(node)
         elif self.llm_provider:
@@ -199,7 +200,7 @@ class LATSSearcher:
         if not actions:
             return []
 
-        valid_action_validation_pairs: List[tuple[str, ValidationResult]] = []
+        valid_action_validation_pairs: list[tuple[str, ValidationResult]] = []
 
         # Parallel validation for performance (only if multiple actions and validator exists)
         if self.graph_validator and len(actions) > 1:
@@ -229,7 +230,7 @@ class LATSSearcher:
             ]
 
         # Create child nodes for valid actions
-        new_children: List[SearchNode] = []
+        new_children: list[SearchNode] = []
         for action, validation in valid_action_validation_pairs:
             child_state = node.state.add_turn(action)
             child = SearchNode(
@@ -274,7 +275,7 @@ class LATSSearcher:
         return effective
 
     def _backpropagate(self, node: SearchNode, reward: float) -> None:
-        cur: Optional[SearchNode] = node
+        cur: SearchNode | None = node
         while cur:
             cur.visits += 1
             cur.reward = max(cur.reward, reward)
@@ -285,7 +286,7 @@ class LATSSearcher:
             return math.inf
         exploitation = node.reward / node.visits
         exploration = self.exploration_constant * math.sqrt(
-            math.log(total_parent_visits + 1) / node.visits
+            math.log(total_parent_visits + 1) / node.visits,
         )
         return exploitation + exploration
 

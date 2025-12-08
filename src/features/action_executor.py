@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 class ActionExecutor:
@@ -10,17 +10,22 @@ class ActionExecutor:
     offline execution we keep deterministic fallbacks.
     """
 
-    def __init__(self, llm_provider: Optional[Any] = None):
+    def __init__(self, llm_provider: Any | None = None):
         """Initialize the action executor.
 
         Args:
             llm_provider: Optional LLM provider for generating responses.
         """
         self.llm_provider = llm_provider
-        self.last_llm_usage: Optional[Dict[str, Any]] = None
+        self.last_llm_usage: dict[str, Any] | None = None
 
     async def execute_action(
-        self, *, action: str, text: str, max_length: int = 120, use_llm: bool = False
+        self,
+        *,
+        action: str,
+        text: str,
+        max_length: int = 120,
+        use_llm: bool = False,
     ) -> Any:
         """Run a simple action. When an LLM provider is available and requested, try.
 

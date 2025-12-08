@@ -7,7 +7,7 @@ import contextlib
 import logging
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Final, Optional
+from typing import TYPE_CHECKING, Final
 
 from src.agent import GeminiAgent
 from src.analysis.cross_validation import CrossValidationSystem
@@ -28,10 +28,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Backward compatibility: keep global variables for modules that import them
-_config: Optional[AppConfig] = None
-agent: Optional[GeminiAgent] = None
-kg: Optional[QAKnowledgeGraph] = None
-pipeline: Optional[IntegratedQAPipeline] = None
+_config: AppConfig | None = None
+agent: GeminiAgent | None = None
+kg: QAKnowledgeGraph | None = None
+pipeline: IntegratedQAPipeline | None = None
 
 # 검증 재시도 최대 횟수
 MAX_REWRITE_ATTEMPTS = 3
@@ -97,8 +97,8 @@ _difficulty_levels = {
 def set_dependencies(
     config: AppConfig,
     gemini_agent: GeminiAgent,
-    kg_ref: Optional[QAKnowledgeGraph],
-    qa_pipeline: Optional[IntegratedQAPipeline] = None,
+    kg_ref: QAKnowledgeGraph | None,
+    qa_pipeline: IntegratedQAPipeline | None = None,
 ) -> None:
     """주요 의존성 주입."""
     global _config, agent, kg, pipeline
@@ -111,7 +111,7 @@ def set_dependencies(
         get_registry().register_validator(None)
 
 
-def _get_agent() -> Optional[GeminiAgent]:
+def _get_agent() -> GeminiAgent | None:
     """Registry에서 agent 가져오기. 실패 시 api 모듈 fallback."""
     try:
         return get_registry().agent
@@ -130,7 +130,7 @@ def _get_agent() -> Optional[GeminiAgent]:
         return None
 
 
-def _get_kg() -> Optional[QAKnowledgeGraph]:
+def _get_kg() -> QAKnowledgeGraph | None:
     """Registry에서 KG 가져오기. 실패 시 api 모듈 fallback."""
     try:
         return get_registry().kg
@@ -145,7 +145,7 @@ def _get_kg() -> Optional[QAKnowledgeGraph]:
         return kg
 
 
-def _get_pipeline() -> Optional[IntegratedQAPipeline]:
+def _get_pipeline() -> IntegratedQAPipeline | None:
     """Registry에서 pipeline 가져오기. 실패 시 api 모듈 fallback."""
     try:
         return get_registry().pipeline
@@ -198,7 +198,7 @@ def _get_config() -> AppConfig:
     return cfg
 
 
-def _get_validator() -> Optional[CrossValidationSystem]:
+def _get_validator() -> CrossValidationSystem | None:
     """Registry에서 validator 가져오기. 없으면 생성."""
     try:
         registry = get_registry()
@@ -271,7 +271,7 @@ async def _evaluate_answer_quality(
     return min(score, 1.0)
 
 
-async def _lats_evaluate_answer(node: "SearchNode") -> float:
+async def _lats_evaluate_answer(node: SearchNode) -> float:
     """LATS 노드의 답변 품질 평가."""
     # This is a placeholder - actual implementation would use the node's context
     return 0.5

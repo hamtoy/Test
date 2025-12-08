@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from src.config import AppConfig
 from src.core.adapters import GeminiProvider, Neo4jProvider
 from src.core.interfaces import GraphProvider, LLMProvider
@@ -29,7 +27,7 @@ def get_llm_provider(config: AppConfig) -> LLMProvider:
     raise ValueError(f"Unsupported LLM provider type: {provider_type}")
 
 
-def get_graph_provider(config: AppConfig) -> Optional[GraphProvider]:
+def get_graph_provider(config: AppConfig) -> GraphProvider | None:
     """Factory to create a Graph provider based on configuration.
 
     Defaults to Neo4jProvider if not specified or if 'neo4j' is selected.

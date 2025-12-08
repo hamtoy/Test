@@ -11,10 +11,10 @@ from __future__ import annotations
 import json
 import logging
 import time
-from datetime import datetime
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from rich.console import Console
 from rich.table import Table
@@ -24,10 +24,10 @@ from src.config.constants import PRICING_TIERS
 logger = logging.getLogger(__name__)
 
 # Prometheus metrics (lazy initialization to avoid import errors)
-_CACHE_HIT_COUNTER: Optional[Any] = None
-_CACHE_MISS_COUNTER: Optional[Any] = None
-_CACHE_LATENCY_HISTOGRAM: Optional[Any] = None
-_CACHE_REGISTRY: Dict[str, "CacheMetrics"] = {}
+_CACHE_HIT_COUNTER: Any | None = None
+_CACHE_MISS_COUNTER: Any | None = None
+_CACHE_LATENCY_HISTOGRAM: Any | None = None
+_CACHE_REGISTRY: dict[str, CacheMetrics] = {}
 
 
 def _init_prometheus_metrics() -> None:
@@ -100,7 +100,7 @@ def record_cache_latency(
         ).observe(latency_seconds)
 
 
-def _register_namespace(metrics: "CacheMetrics") -> None:
+def _register_namespace(metrics: CacheMetrics) -> None:
     """Register a CacheMetrics instance for unified reporting."""
     _CACHE_REGISTRY[metrics.namespace] = metrics
 
@@ -119,7 +119,7 @@ class CacheMetrics:
     ttl_efficiency: float = 0.0  # Percentage of entries used before expiration
     queries: int = 0
     skips: int = 0
-    last_operation: Optional[str] = None
+    last_operation: str | None = None
     last_duration_ms: float = 0.0
     last_result_count: int = 0
     last_status: str = "unknown"
@@ -160,7 +160,9 @@ class CacheMetrics:
             self.misses += 1
 
         record_cache_latency(
-            duration_ms / 1000.0, operation=operation, cache_type=self.namespace
+            duration_ms / 1000.0,
+            operation=operation,
+            cache_type=self.namespace,
         )
 
     def record_skip(self, reason: str) -> None:
@@ -169,7 +171,7 @@ class CacheMetrics:
         self.last_status = f"skip:{reason}"
         self.last_operation = None
 
-    def to_summary(self) -> Dict[str, Any]:
+    def to_summary(self) -> dict[str, Any]:
         """Return a lightweight serializable summary."""
         return {
             "hits": self.hits,
@@ -194,9 +196,9 @@ class RealTimeTracker:
     """Real-time cache hit rate tracker with sliding window."""
 
     window_size: int = 100  # Number of recent requests to track
-    _requests: List[bool] = field(default_factory=list)  # True=hit, False=miss
-    _timestamps: List[float] = field(default_factory=list)
-    _ttl_usage: List[float] = field(default_factory=list)  # TTL usage ratios
+    _requests: list[bool] = field(default_factory=list)  # True=hit, False=miss
+    _timestamps: list[float] = field(default_factory=list)
+    _ttl_usage: list[float] = field(default_factory=list)  # TTL usage ratios
 
     def record_hit(self) -> None:
         """Record a cache hit."""
@@ -251,14 +253,13 @@ class MemoryMonitor:
 
     max_memory_bytes: int = 0
     current_memory_bytes: int = 0
-    _samples: List[int] = field(default_factory=list)
-    _sample_timestamps: List[float] = field(default_factory=list)
+    _samples: list[int] = field(default_factory=list)
+    _sample_timestamps: list[float] = field(default_factory=list)
 
     def record_usage(self, bytes_used: int) -> None:
         """Record current memory usage."""
         self.current_memory_bytes = bytes_used
-        if bytes_used > self.max_memory_bytes:
-            self.max_memory_bytes = bytes_used
+        self.max_memory_bytes = max(self.max_memory_bytes, bytes_used)
         self._samples.append(bytes_used)
         self._sample_timestamps.append(time.time())
         # Keep last 1000 samples
@@ -280,7 +281,7 @@ class MemoryMonitor:
         older = sum(self._samples[:5]) / 5
         if recent > older * 1.1:
             return "increasing"
-        elif recent < older * 0.9:
+        if recent < older * 0.9:
             return "decreasing"
         return "stable"
 
@@ -299,7 +300,7 @@ class CacheAnalytics:
         self.metrics = CacheMetrics()
         self._start_time = time.time()
 
-    def record_hit(self, ttl_usage_ratio: Optional[float] = None) -> None:
+    def record_hit(self, ttl_usage_ratio: float | None = None) -> None:
         """Record a cache hit.
 
         Args:
@@ -332,7 +333,7 @@ class CacheAnalytics:
         self.memory_monitor.record_usage(bytes_used)
         self.metrics.memory_bytes = bytes_used
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get comprehensive analytics summary."""
         uptime = time.time() - self._start_time
         return {
@@ -365,7 +366,9 @@ class CacheAnalytics:
 
 
 def calculate_savings(
-    record: Dict[str, Any], cached_portion: float = 0.7, discount: float = 0.9
+    record: dict[str, Any],
+    cached_portion: float = 0.7,
+    discount: float = 0.9,
 ) -> float:
     """Estimate savings (USD) for a single record given cache hits.
 
@@ -390,13 +393,13 @@ def calculate_savings(
     return savings_usd * hits
 
 
-def analyze_cache_stats(path: Path) -> Dict[str, Any]:
+def analyze_cache_stats(path: Path) -> dict[str, Any]:
     """Read cache stats JSONL and return summary metrics."""
     if not path.exists():
         raise FileNotFoundError(f"Cache stats file not found: {path}")
 
     records = []
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -425,7 +428,7 @@ def analyze_cache_stats(path: Path) -> Dict[str, Any]:
     }
 
 
-def print_cache_report(summary: Dict[str, Any]) -> None:
+def print_cache_report(summary: dict[str, Any]) -> None:
     """Pretty-print cache analytics summary."""
     table = Table(title="Cache Analytics Summary")
     table.add_column("Metric", style="cyan")
@@ -471,9 +474,9 @@ def print_realtime_report(analytics: CacheAnalytics) -> None:
     Console().print(table)
 
 
-def get_unified_cache_report() -> Dict[str, Any]:
+def get_unified_cache_report() -> dict[str, Any]:
     """Return a unified cache report across registered namespaces."""
-    namespaces: Dict[str, Any] = {}
+    namespaces: dict[str, Any] = {}
     for name, metrics in _CACHE_REGISTRY.items():
         namespaces[name] = metrics.to_summary()
 

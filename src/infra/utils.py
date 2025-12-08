@@ -2,8 +2,9 @@ import asyncio
 import concurrent.futures
 import json
 import re
+from collections.abc import Coroutine
 from pathlib import Path
-from typing import Any, Coroutine, Dict, Optional, TypeVar
+from typing import Any, TypeVar
 
 import aiofiles
 
@@ -59,7 +60,7 @@ async def load_file_async(file_path: Path) -> str:
     """
     try:
         # Use utf-8-sig to automatically handle UTF-8 BOM (common on Windows)
-        async with aiofiles.open(file_path, mode="r", encoding="utf-8-sig") as f:
+        async with aiofiles.open(file_path, encoding="utf-8-sig") as f:
             content = await f.read()
             if not content.strip():
                 raise ValueError(f"File is empty: {file_path}")
@@ -68,7 +69,7 @@ async def load_file_async(file_path: Path) -> str:
         raise FileNotFoundError(f"Critical file missing: {file_path}")
 
 
-def parse_raw_candidates(text: str) -> Dict[str, str]:
+def parse_raw_candidates(text: str) -> dict[str, str]:
     """A:, B: 패턴을 사용하여 후보 답변 파싱 (Raw Text Parsing)."""
     candidates = {}
     # 패턴: 대문자 알파벳 + 콜론으로 시작하는 블록
@@ -101,7 +102,7 @@ def parse_raw_candidates(text: str) -> Dict[str, str]:
         if split_candidates:
             return split_candidates
         logging.warning(
-            "No structured candidates found. Treating entire text as Candidate A."
+            "No structured candidates found. Treating entire text as Candidate A.",
         )
         return {"A": text.strip()}
 
@@ -130,7 +131,7 @@ def clean_markdown_code_block(text: str) -> str:
     return text.strip()
 
 
-def _find_in_nested(obj: Any, target_key: str) -> Optional[Any]:
+def _find_in_nested(obj: Any, target_key: str) -> Any | None:
     """Recursively search dict/list structures for a key."""
     if isinstance(obj, dict):
         if target_key in obj:
@@ -148,8 +149,10 @@ def _find_in_nested(obj: Any, target_key: str) -> Optional[Any]:
 
 
 def safe_json_parse(
-    text: str, target_key: Optional[str] = None, raise_on_error: bool = False
-) -> Optional[Any]:
+    text: str,
+    target_key: str | None = None,
+    raise_on_error: bool = False,
+) -> Any | None:
     """안전한 JSON 파싱 헬퍼 함수.
 
     Best Practice: try-except, specific error handling, clean error reporting.
@@ -217,7 +220,7 @@ def safe_json_parse(
             raise
         logger.error(message)
         return None
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         message = f"safe_json_parse: Unexpected error - {e}"
         if raise_on_error:
             raise
@@ -225,14 +228,14 @@ def safe_json_parse(
         return None
 
 
-def write_cache_stats(path: Path, max_entries: int, entry: Dict[str, Any]) -> None:
+def write_cache_stats(path: Path, max_entries: int, entry: dict[str, Any]) -> None:
     """Append cache/tokens stats to a JSONL file, trimming to max_entries."""
     max_entries = max(1, min(max_entries, 1000))
     path.parent.mkdir(parents=True, exist_ok=True)
 
     existing = []
     if path.exists():
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line:
@@ -249,13 +252,13 @@ def write_cache_stats(path: Path, max_entries: int, entry: Dict[str, Any]) -> No
         f.writelines(json.dumps(item, ensure_ascii=False) + "\n" for item in trimmed)
 
 
-async def load_checkpoint(path: Path) -> Dict[str, WorkflowResult]:
+async def load_checkpoint(path: Path) -> dict[str, WorkflowResult]:
     """Load checkpoint entries indexed by query string (async, best-effort)."""
     if not path.exists():
         return {}
-    records: Dict[str, WorkflowResult] = {}
+    records: dict[str, WorkflowResult] = {}
     try:
-        async with aiofiles.open(path, "r", encoding="utf-8") as f:
+        async with aiofiles.open(path, encoding="utf-8") as f:
             async for line in f:
                 if not line.strip():
                     continue
@@ -281,13 +284,13 @@ async def append_checkpoint(path: Path, result: WorkflowResult) -> None:
 
 
 __all__ = [
-    "run_async_safely",
+    "_find_in_nested",
+    "append_checkpoint",
+    "clean_markdown_code_block",
+    "load_checkpoint",
     "load_file_async",
     "parse_raw_candidates",
-    "clean_markdown_code_block",
+    "run_async_safely",
     "safe_json_parse",
     "write_cache_stats",
-    "load_checkpoint",
-    "append_checkpoint",
-    "_find_in_nested",
 ]

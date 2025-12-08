@@ -4,7 +4,7 @@ import os
 import queue
 import re
 from datetime import datetime
-from typing import Any, Tuple
+from typing import Any
 
 from pythonjsonlogger.json import JsonFormatter
 from rich.logging import RichHandler
@@ -36,7 +36,7 @@ class SensitiveDataFilter(logging.Filter):
                 for arg in record.args:
                     if isinstance(arg, str):
                         new_args.append(
-                            self.sensitive_regex.sub("[FILTERED_API_KEY]", arg)
+                            self.sensitive_regex.sub("[FILTERED_API_KEY]", arg),
                         )
                     else:
                         new_args.append(arg)
@@ -64,7 +64,8 @@ def _build_file_handler(
         formatter = JsonFormatter("%(asctime)s %(levelname)s %(name)s %(message)s")
     else:
         formatter = logging.Formatter(
-            "[%(asctime)s] %(levelname)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+            "[%(asctime)s] %(levelname)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
     file_handler.setFormatter(formatter)
     file_handler.addFilter(sensitive_filter)
@@ -72,7 +73,8 @@ def _build_file_handler(
 
 
 def _build_console_handler(
-    log_level: int, sensitive_filter: logging.Filter
+    log_level: int,
+    sensitive_filter: logging.Filter,
 ) -> logging.Handler:
     """Create Rich console handler."""
     console_handler: logging.Handler = RichHandler(
@@ -86,8 +88,9 @@ def _build_console_handler(
 
 
 def setup_logging(
-    env: str | None = None, log_level: str | None = None
-) -> Tuple[logging.Logger, logging.handlers.QueueListener]:
+    env: str | None = None,
+    log_level: str | None = None,
+) -> tuple[logging.Logger, logging.handlers.QueueListener]:
     """[Non-Blocking Logging] QueueHandler 패턴 + 환경별 포맷/출력 제어.
 
     - production: JSON 포맷, 파일만(회전)
@@ -369,14 +372,14 @@ class StructuredLogger:
 
 
 __all__ = [
-    "setup_logging",
-    "log_metrics",
     "SensitiveDataFilter",
-    "_resolve_log_level",
-    "_build_file_handler",
-    "_build_console_handler",
-    "get_log_level",
-    "set_log_level",
-    "get_current_log_level",
     "StructuredLogger",
+    "_build_console_handler",
+    "_build_file_handler",
+    "_resolve_log_level",
+    "get_current_log_level",
+    "get_log_level",
+    "log_metrics",
+    "set_log_level",
+    "setup_logging",
 ]

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from google.generativeai import caching
@@ -23,8 +23,8 @@ class WorkflowContext:
     config: AppConfig
     logger: logging.Logger
     ocr_text: str
-    candidates: Dict[str, str]
-    cache: Optional[caching.CachedContent]
+    candidates: dict[str, str]
+    cache: caching.CachedContent | None
     total_turns: int
-    checkpoint_path: Optional[Path]
-    progress: Optional[Progress] = None
+    checkpoint_path: Path | None
+    progress: Progress | None = None

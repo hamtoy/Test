@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Optional, Protocol, Sequence, cast
+from collections.abc import Sequence
+from typing import Any, Protocol, cast
 
 from src.config.constants import RULES_CACHE_TTL_SECONDS
 from src.qa.rag_system import QAKnowledgeGraph
@@ -10,7 +11,7 @@ redis_module: Any | None = None
 try:
     import redis as _redis
 
-    redis_module = cast(Any | None, _redis)
+    redis_module = cast("Any | None", _redis)
 except ImportError:  # redis가 없을 때도 동작하도록
     redis_module = None
 
@@ -45,7 +46,9 @@ class CachingLayer:
     """
 
     def __init__(
-        self, kg: QAKnowledgeGraph, redis_client: Optional[_RedisClientProto] = None
+        self,
+        kg: QAKnowledgeGraph,
+        redis_client: _RedisClientProto | None = None,
     ):
         """Initialize the caching layer.
 
@@ -56,7 +59,7 @@ class CachingLayer:
         self.kg = kg
         self.redis = redis_client if redis_client and redis_client_module else None
 
-    def _fetch_rules_from_graph(self, query_type: str) -> List[Dict[str, str]]:
+    def _fetch_rules_from_graph(self, query_type: str) -> list[dict[str, str]]:
         cypher = """
         MATCH (r:Rule)-[:APPLIES_TO]->(qt:QueryType {name: $qt})
         RETURN r.id AS id, r.text AS text, r.section AS section
@@ -66,11 +69,11 @@ class CachingLayer:
             return []
         with graph.session() as session:
             return cast(
-                List[Dict[str, str]],
+                "list[dict[str, str]]",
                 [dict(rec) for rec in session.run(cypher, qt=query_type)],
             )
 
-    def get_rules_cached(self, query_type: str) -> List[Dict[str, str]]:
+    def get_rules_cached(self, query_type: str) -> list[dict[str, str]]:
         """규칙 조회 + Redis 캐시 (1시간 TTL)."""
         cache_key = f"rules:{query_type}"
 
@@ -79,7 +82,8 @@ class CachingLayer:
             if cached:
                 try:
                     return cast(
-                        List[Dict[str, str]], json.loads(cast(str | bytes, cached))
+                        "list[dict[str, str]]",
+                        json.loads(cast("str | bytes", cached)),
                     )
                 except json.JSONDecodeError:
                     pass

@@ -5,7 +5,6 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
 
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -75,7 +74,9 @@ def show_main_menu() -> int:
 
 
 async def run_workflow_interactive(
-    agent: GeminiAgent, config: AppConfig, logger: logging.Logger
+    agent: GeminiAgent,
+    config: AppConfig,
+    logger: logging.Logger,
 ) -> None:
     """질의 생성 및 평가 - 에러 핸들링 강화."""
     # 1. API 키 검증
@@ -112,7 +113,8 @@ async def run_workflow_interactive(
             template = {"a": "첫 번째 답변", "b": "두 번째 답변", "c": "세 번째 답변"}
             cand_path.parent.mkdir(parents=True, exist_ok=True)
             cand_path.write_text(
-                json.dumps(template, ensure_ascii=False, indent=2), encoding="utf-8"
+                json.dumps(template, ensure_ascii=False, indent=2),
+                encoding="utf-8",
             )
             console.print("[green]✓ 템플릿 생성됨 - IDE에서 답변을 입력하세요[/green]")
         else:
@@ -121,7 +123,9 @@ async def run_workflow_interactive(
     # 3. 데이터 로드
     try:
         ocr_text, candidates = await load_input_data(
-            config.input_dir, ocr_file, cand_file
+            config.input_dir,
+            ocr_file,
+            cand_file,
         )
     except FileNotFoundError as e:
         show_error_with_guide(
@@ -185,7 +189,7 @@ async def run_workflow_interactive(
     # 6. 질의 처리 (결과 추적)
     console.print(f"\n[bold]⚙️  {len(queries)}개 질의 처리 시작[/bold]\n")
 
-    results: List[Optional[WorkflowResult]] = []
+    results: list[WorkflowResult | None] = []
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     with Progress(
@@ -265,7 +269,7 @@ async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> Non
     kg = QAKnowledgeGraph() if config.neo4j_uri else None
     lats = LATSSearcher(agent.llm_provider) if config.enable_lats else None
     difficulty = AdaptiveDifficultyAdjuster(kg) if kg else None
-    cache: Optional[RedisEvalCache] = None
+    cache: RedisEvalCache | None = None
     if os.getenv("REDIS_URL"):
         cache = RedisEvalCache()
 
@@ -282,7 +286,14 @@ async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> Non
             context = {"type": "general"}
 
             fixed_query = await inspect_query(
-                agent, query_input, ocr_text, context, kg, lats, difficulty, cache
+                agent,
+                query_input,
+                ocr_text,
+                context,
+                kg,
+                lats,
+                difficulty,
+                cache,
             )
 
             progress.update(task, completed=100, description="[green]✓ 완료[/green]")
@@ -339,7 +350,7 @@ async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> No
                 ocr_text = ocr_path.read_text(encoding="utf-8")
             else:
                 console.print(
-                    f"[yellow]OCR 파일을 찾을 수 없습니다: {ocr_path}[/yellow]"
+                    f"[yellow]OCR 파일을 찾을 수 없습니다: {ocr_path}[/yellow]",
                 )
 
     # [3] 질의 여부 (선택)
@@ -351,7 +362,7 @@ async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> No
     kg = QAKnowledgeGraph() if config.neo4j_uri else None
     lats = LATSSearcher(agent.llm_provider) if config.enable_lats else None
     validator = CrossValidationSystem(kg) if kg else None
-    cache: Optional[RedisEvalCache] = None
+    cache: RedisEvalCache | None = None
     if os.getenv("REDIS_URL"):
         cache = RedisEvalCache()
 
@@ -371,7 +382,15 @@ async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> No
             context = {"type": "general", "image_meta": {}}
 
             fixed_answer = await inspect_answer(
-                agent, answer, query, ocr_text, context, kg, lats, validator, cache
+                agent,
+                answer,
+                query,
+                ocr_text,
+                context,
+                kg,
+                lats,
+                validator,
+                cache,
             )
 
             # 결과 저장
@@ -430,7 +449,7 @@ async def _handle_edit_menu(agent: GeminiAgent, config: AppConfig) -> None:
                 ocr_text = ocr_path.read_text(encoding="utf-8")
             else:
                 console.print(
-                    f"[yellow]OCR 파일을 찾을 수 없습니다: {ocr_path}[/yellow]"
+                    f"[yellow]OCR 파일을 찾을 수 없습니다: {ocr_path}[/yellow]",
                 )
         if not ocr_text:
             console.print("[dim]⚠ OCR 텍스트 없음 (컨텍스트 없이 수정합니다)[/dim]")
@@ -439,7 +458,9 @@ async def _handle_edit_menu(agent: GeminiAgent, config: AppConfig) -> None:
     query = ""
     if (
         Prompt.ask(
-            "❓ 질의를 문맥에 포함할까요?", choices=["y", "n"], default="n"
+            "❓ 질의를 문맥에 포함할까요?",
+            choices=["y", "n"],
+            default="n",
         ).lower()
         == "y"
     ):
@@ -504,8 +525,8 @@ def show_cache_statistics(config: AppConfig) -> None:
 
 
 def _display_workflow_summary(
-    queries: List[str],
-    results: List[Optional[WorkflowResult]],
+    queries: list[str],
+    results: list[WorkflowResult | None],
     agent: GeminiAgent,
     config: AppConfig,
     timestamp: str,
@@ -546,7 +567,9 @@ def _display_workflow_summary(
 
 
 async def interactive_main(
-    agent: GeminiAgent, config: AppConfig, logger: logging.Logger
+    agent: GeminiAgent,
+    config: AppConfig,
+    logger: logging.Logger,
 ) -> None:
     """대화형 메인 루프."""
     while True:
@@ -560,7 +583,9 @@ async def interactive_main(
                 # The menu has "2. 검수 (질의/답변)"
                 # Let's ask which one.
                 sub_choice = Prompt.ask(
-                    "검수 유형 선택 (1: 질의, 2: 답변)", choices=["1", "2"], default="1"
+                    "검수 유형 선택 (1: 질의, 2: 답변)",
+                    choices=["1", "2"],
+                    default="1",
                 )
                 if sub_choice == "1":
                     await _handle_query_inspection(agent, config)
@@ -578,9 +603,8 @@ async def interactive_main(
             if Confirm.ask("메인 메뉴로 돌아가기", default=True):
                 console.print("[dim]→ 메인 메뉴로 이동합니다[/dim]\n")
                 continue  # 메인 메뉴로 돌아가기
-            else:
-                console.print("[bold]시스템을 종료합니다. 안녕히 가세요! 👋[/bold]")
-                sys.exit(0)
+            console.print("[bold]시스템을 종료합니다. 안녕히 가세요! 👋[/bold]")
+            sys.exit(0)
         except Exception as e:
             console.print(f"[red]예기치 않은 오류 발생: {e}[/red]")
             logger.exception("Interactive menu error")

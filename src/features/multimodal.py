@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any
 
 from PIL import Image
 
@@ -18,7 +18,7 @@ class MultimodalUnderstanding:
         """
         self.kg = kg
 
-    def analyze_image_deep(self, image_path: str) -> Dict[str, Any]:
+    def analyze_image_deep(self, image_path: str) -> dict[str, Any]:
         """이미지 심층 분석: 구조 분석, 텍스트 밀도/토픽 추출 후 그래프 저장.
 
         Note: OCR 텍스트는 사용자가 직접 입력합니다 (자동 추출 비활성화됨).
@@ -38,7 +38,7 @@ class MultimodalUnderstanding:
             text_density = 0.0  # OCR 없이는 계산 불가, 기본값 사용
 
         # 3. 주제 추출 (OCR 없이는 빈 리스트 반환)
-        topics: List[str] = []
+        topics: list[str] = []
 
         metadata = {
             "path": image_path,

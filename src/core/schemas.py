@@ -84,7 +84,7 @@ class QAGenerationRequest(BaseModel):
     ) = None
 
     @model_validator(mode="after")
-    def check_qtype_for_single(self) -> "QAGenerationRequest":
+    def check_qtype_for_single(self) -> QAGenerationRequest:
         """Single 모드에서는 qtype이 필수입니다."""
         if self.mode == "single" and self.qtype is None:
             raise ValueError("single 모드에서는 qtype 필수")
@@ -92,8 +92,8 @@ class QAGenerationRequest(BaseModel):
 
 
 __all__ = [
-    "OCRInput",
     "CandidateAnswer",
     "EvaluationRequest",
+    "OCRInput",
     "QAGenerationRequest",
 ]

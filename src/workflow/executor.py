@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Awaitable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Awaitable, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from rich.panel import Panel
 from rich.progress import (
@@ -57,8 +58,10 @@ def _warn_budget_thresholds(agent: GeminiAgent, logger: logging.Logger) -> None:
 
 
 async def _load_checkpoint_records(
-    checkpoint_path: Path, resume: bool, logger: logging.Logger
-) -> Dict[str, WorkflowResult]:
+    checkpoint_path: Path,
+    resume: bool,
+    logger: logging.Logger,
+) -> dict[str, WorkflowResult]:
     """재개 모드가 활성화된 경우 기존 체크포인트 기록을 로드합니다.
 
     Args:
@@ -74,7 +77,7 @@ async def _load_checkpoint_records(
     records = await load_checkpoint(checkpoint_path)
     if records:
         logger.info(
-            f"Resume enabled: {len(records)} completed turn(s) preloaded from {checkpoint_path}"
+            f"Resume enabled: {len(records)} completed turn(s) preloaded from {checkpoint_path}",
         )
     return records
 
@@ -85,7 +88,7 @@ async def _load_candidates(
     cand_filename: str,
     is_interactive: bool,
     logger: logging.Logger,
-) -> Optional[Dict[str, str]]:
+) -> dict[str, str] | None:
     """후보 답변을 로드하며, 대화형 모드에서는 선택적으로 재로드를 프롬프트합니다.
 
     Args:
@@ -102,7 +105,9 @@ async def _load_candidates(
         logger.info("사용자 요청으로 데이터 재로딩 중...")
         try:
             _, candidates = await reload_data_if_needed(
-                config, ocr_filename, cand_filename
+                config,
+                ocr_filename,
+                cand_filename,
             )
             logger.info("데이터 재로딩 완료")
             return candidates
@@ -120,7 +125,9 @@ async def _load_candidates(
 
 
 async def _create_context_cache(
-    agent: GeminiAgent, ocr_text: str, logger: logging.Logger
+    agent: GeminiAgent,
+    ocr_text: str,
+    logger: logging.Logger,
 ) -> Any:
     """OCR 텍스트에 대한 컨텍스트 캐시 생성을 시도합니다.
 
@@ -141,18 +148,18 @@ async def _create_context_cache(
 
 
 def _schedule_turns(
-    queries: List[str],
+    queries: list[str],
     agent: GeminiAgent,
     config: AppConfig,
     logger: logging.Logger,
     ocr_text: str,
-    candidates: Dict[str, str],
-    cache: Optional[caching.CachedContent],
-    checkpoint_records: Dict[str, WorkflowResult],
+    candidates: dict[str, str],
+    cache: caching.CachedContent | None,
+    checkpoint_records: dict[str, WorkflowResult],
     checkpoint_path: Path,
     progress: Progress,
     resume: bool,
-) -> tuple[List[WorkflowResult], List[Awaitable[Optional[WorkflowResult]]]]:
+) -> tuple[list[WorkflowResult], list[Awaitable[WorkflowResult | None]]]:
     """턴 작업을 준비하며, 예산 확인, 체크포인트, 진행 표시줄을 처리합니다.
 
     Args:
@@ -171,8 +178,8 @@ def _schedule_turns(
     Returns:
         복원된 결과 리스트와 대기 가능한 작업 리스트를 포함하는 Tuple
     """
-    results: List[WorkflowResult] = []
-    tasks: List[Awaitable[Optional[WorkflowResult]]] = []
+    results: list[WorkflowResult] = []
+    tasks: list[Awaitable[WorkflowResult | None]] = []
 
     for i, query in enumerate(queries):
         # Budget check before scheduling turn
@@ -187,7 +194,8 @@ def _schedule_turns(
 
         turn_id = i + 1
         task_id = progress.add_task(
-            PROGRESS_WAITING_TEMPLATE.format(turn_id=turn_id), total=1
+            PROGRESS_WAITING_TEMPLATE.format(turn_id=turn_id),
+            total=1,
         )
 
         if resume and query in checkpoint_records:
@@ -217,16 +225,16 @@ def _schedule_turns(
                 query=query,
                 turn_id=turn_id,
                 task_id=task_id,
-            )
+            ),
         )
 
     return results, tasks
 
 
 async def _gather_results(
-    tasks: List[Awaitable[Optional[WorkflowResult]]],
+    tasks: list[Awaitable[WorkflowResult | None]],
     logger: logging.Logger,
-) -> List[WorkflowResult]:
+) -> list[WorkflowResult]:
     """Execute scheduled tasks and collect successful results.
 
     Args:
@@ -239,8 +247,8 @@ async def _gather_results(
     if not tasks:
         return []
 
-    filtered: List[WorkflowResult] = []
-    first_error: Optional[Exception] = None
+    filtered: list[WorkflowResult] = []
+    first_error: Exception | None = None
     processed_results = await asyncio.gather(*tasks, return_exceptions=True)
     for item in processed_results:
         if isinstance(item, BudgetExceededError):
@@ -252,14 +260,15 @@ async def _gather_results(
             continue
         if item is None:
             continue
-        filtered.append(cast(WorkflowResult, item))
+        filtered.append(cast("WorkflowResult", item))
     if first_error:
         raise first_error
     return filtered
 
 
 def _resolve_checkpoint_path(
-    config: AppConfig, checkpoint_path: Optional[Path]
+    config: AppConfig,
+    checkpoint_path: Path | None,
 ) -> Path:
     """체크포인트 파일의 절대 경로를 결정합니다.
 
@@ -279,16 +288,16 @@ def _resolve_checkpoint_path(
 async def execute_workflow(
     agent: GeminiAgent,
     ocr_text: str,
-    user_intent: Optional[str],
+    user_intent: str | None,
     logger: logging.Logger,
     ocr_filename: str,
     cand_filename: str,
-    config: Optional[AppConfig] = None,
+    config: AppConfig | None = None,
     is_interactive: bool = True,
     resume: bool = False,
-    checkpoint_path: Optional[Path] = None,
+    checkpoint_path: Path | None = None,
     keep_progress: bool = False,
-) -> List[WorkflowResult]:
+) -> list[WorkflowResult]:
     """전체 워크플로우 실행 (질의 생성 → 평가 → 재작성).
 
     단계:
@@ -328,7 +337,7 @@ async def execute_workflow(
 
     # AUTO 모드에서는 프롬프트 건너뛰기
     config = config or AppConfig()
-    candidates: Optional[Dict[str, str]] = None
+    candidates: dict[str, str] | None = None
     checkpoint_path = _resolve_checkpoint_path(config, checkpoint_path)
     checkpoint_records = await _load_checkpoint_records(checkpoint_path, resume, logger)
 
@@ -348,7 +357,7 @@ async def execute_workflow(
     # 병렬 실행 (Parallel Processing) with Progress Bar
     logger.info("총 %s개의 질의를 병렬로 처리합니다...", len(queries))
 
-    results: List[WorkflowResult] = []
+    results: list[WorkflowResult] = []
 
     # Rich Progress Bar Context
     with Progress(
@@ -394,12 +403,12 @@ async def execute_workflow(
 async def execute_workflow_simple(
     agent: GeminiAgent,
     ocr_text: str,
-    candidates: Dict[str, str],
+    candidates: dict[str, str],
     config: AppConfig,
     logger: logging.Logger,
     query: str,
     turn_id: int,
-) -> Optional[WorkflowResult]:
+) -> WorkflowResult | None:
     """대화형 메뉴 전용 간소화 버전.
 
     - 체크포인트 제거

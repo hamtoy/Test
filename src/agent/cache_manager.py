@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Cache management module.
 
 Provides local context cache handling with optional TTL and backward compatible
@@ -12,7 +11,7 @@ import hashlib
 import json
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from src.config import AppConfig
 from src.config.constants import CacheConfig
@@ -26,7 +25,7 @@ class CacheManager:
     Compatibility wrappers are provided for legacy signatures.
     """
 
-    def __init__(self, config: AppConfig, *, min_tokens: Optional[int] = None) -> None:
+    def __init__(self, config: AppConfig, *, min_tokens: int | None = None) -> None:
         """Initialize the cache manager.
 
         Args:
@@ -76,10 +75,9 @@ class CacheManager:
         """대략적인 비용 절감률 추정."""
         if tokens < 5000:
             return 50
-        elif tokens < 20000:
+        if tokens < 20000:
             return 70
-        else:
-            return 85
+        return 85
 
     # ---------------------------------------------------------------------
     # Compatibility layer for older code that used ``track_cache_usage``
@@ -119,7 +117,7 @@ class CacheManager:
         if not manifest_path.exists():
             return
         try:
-            with open(manifest_path, "r", encoding="utf-8") as f:
+            with open(manifest_path, encoding="utf-8") as f:
                 data = json.load(f)
         except (OSError, json.JSONDecodeError) as e:
             self.logger.debug("Cache cleanup skipped (read error): %s", e)
@@ -153,7 +151,7 @@ class CacheManager:
         fingerprint: str,
         ttl_minutes: int,
         caching_module: CachingModuleProtocol,
-    ) -> Optional[CachedContentProtocol]:
+    ) -> CachedContentProtocol | None:
         """Load a cached entry if it exists and is not expired.
 
         Args:
@@ -169,7 +167,7 @@ class CacheManager:
             return None
         self.cleanup_expired_cache(ttl_minutes)
         try:
-            with open(manifest_path, "r", encoding="utf-8") as f:
+            with open(manifest_path, encoding="utf-8") as f:
                 data = json.load(f)
         except (OSError, json.JSONDecodeError) as e:
             self.logger.debug("Local cache load skipped: %s", e)
@@ -183,7 +181,10 @@ class CacheManager:
         return None
 
     def store_local_cache(
-        self, fingerprint: str, cache_name: str, ttl_minutes: int
+        self,
+        fingerprint: str,
+        cache_name: str,
+        ttl_minutes: int,
     ) -> None:
         """Persist a cache entry to the manifest.
 
@@ -197,7 +198,7 @@ class CacheManager:
         data: dict[str, Any] = {}
         if manifest_path.exists():
             try:
-                with open(manifest_path, "r", encoding="utf-8") as f:
+                with open(manifest_path, encoding="utf-8") as f:
                     data = json.load(f)
             except (OSError, json.JSONDecodeError):
                 data = {}
@@ -215,13 +216,15 @@ class CacheManager:
     # ---------------------------------------------------------------------
     # Backward‑compatible wrappers (old method names)
     # ---------------------------------------------------------------------
-    def cleanup_expired(self, ttl_minutes: Optional[int] = None) -> None:
+    def cleanup_expired(self, ttl_minutes: int | None = None) -> None:
         """Legacy wrapper that forwards to :meth:`cleanup_expired_cache`."""
         self.cleanup_expired_cache(ttl_minutes or self.config.cache_ttl_minutes)
 
     def load_cached(
-        self, fingerprint: str, caching_module: CachingModuleProtocol
-    ) -> Optional[CachedContentProtocol]:
+        self,
+        fingerprint: str,
+        caching_module: CachingModuleProtocol,
+    ) -> CachedContentProtocol | None:
         """Legacy wrapper for loading cache without explicit TTL.
 
         Args:
@@ -232,7 +235,9 @@ class CacheManager:
             The cached content if found, None otherwise.
         """
         return self.load_local_cache(
-            fingerprint, self.config.cache_ttl_minutes, caching_module
+            fingerprint,
+            self.config.cache_ttl_minutes,
+            caching_module,
         )
 
     def store_cache(self, fingerprint: str, cache_name: str, ttl_minutes: int) -> None:
