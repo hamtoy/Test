@@ -112,7 +112,7 @@ jobs:
             --html deprecation_report.html
 
       - name: Upload Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: deprecation-report
           path: deprecation_report.html
