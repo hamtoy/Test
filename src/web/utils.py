@@ -231,11 +231,16 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
 
 
 def postprocess_answer(answer: str, qtype: str) -> str:
-    """답변 후처리 - 마크다운 형식 유지하면서 기본 정리 수행.
+    """답변 후처리 - CSV 규칙에 맞게 마크다운 정리.
 
-    CSV 규칙 (guide.csv, qna.csv)에서는 마크다운 형식으로
-    답변을 생성하도록 명시되어 있습니다.
-    따라서 마크다운을 유지하고 기본 정리만 수행합니다.
+    CSV 규칙 (guide.csv, qna.csv)에서 허용하는 마크다운:
+    - ✅ **bold**: 핵심 키워드 강조
+    - ✅ 1. 2. 3.: 순서가 있는 목록
+    - ✅ - 항목: 순서가 없는 불릿 목록
+
+    허용되지 않은 마크다운 (제거 대상):
+    - ❌ *italic*: 가독성 저하
+    - ❌ ### 제목: 불필요한 헤더
     """
 
     def _strip_code_and_links(text: str) -> str:
@@ -245,6 +250,36 @@ def postprocess_answer(answer: str, qtype: str) -> str:
         text = re.sub(r"^\|.*\|\s*$", " ", text, flags=re.MULTILINE)  # table rows
         return text
 
+    def _remove_unauthorized_markdown(text: str) -> str:
+        """허용되지 않은 마크다운만 선별적으로 제거.
+
+        전략:
+        1. ### 헤더 제거 (샵 기호만 제거하여 평문으로 변환)
+        2. *italic* 제거하되 **bold**는 보호
+           - **bold**를 임시 토큰으로 변환
+           - 홑별표(*) 제거
+           - 임시 토큰을 **bold**로 복원
+        """
+        # 1. ### 헤더 제거 (### 뒤의 공백까지 제거)
+        # 예: "### 제목" → "제목"
+        text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
+
+        # 2. *italic* 제거하되 **bold**는 보호
+        # 2-1. **bold**를 임시 토큰으로 보호
+        text = text.replace("**", "##BOLD_TOKEN##")
+
+        # 2-2. 홑별표 제거 (italic 제거)
+        # 패턴: *텍스트* → 텍스트
+        text = re.sub(r"\*([^*]+?)\*", r"\1", text)
+
+        # 남은 홑별표도 제거 (짝이 맞지 않는 경우)
+        text = text.replace("*", "")
+
+        # 2-3. 임시 토큰을 **bold**로 복원
+        text = text.replace("##BOLD_TOKEN##", "**")
+
+        return text
+
     # 1. 태그 제거
     answer = strip_output_tags(answer)
     answer = _strip_code_and_links(answer)
@@ -252,10 +287,13 @@ def postprocess_answer(answer: str, qtype: str) -> str:
     # 2. 숫자 포맷 깨짐 복원
     answer = fix_broken_numbers(answer)
 
-    # 3. 마크다운 유지 - 기본 정리만 수행
+    # 3. 허용되지 않은 마크다운 제거 (CSV 규칙 준수)
+    answer = _remove_unauthorized_markdown(answer)
+
+    # 4. 기본 정리
     answer = answer.strip()
 
-    # 4. 불필요한 줄바꿈 정리 (마크다운 유지하면서)
+    # 5. 불필요한 줄바꿈 정리 (마크다운 유지하면서)
     # 연속된 빈 줄은 최대 2개까지만 유지 (= 최대 3개의 \n 문자)
     # 예: "텍스트\n\n\n\n줄바꿈" (4개 \n) → "텍스트\n\n\n줄바꿈" (3개 \n)
     lines = answer.split("\n")
@@ -273,7 +311,7 @@ def postprocess_answer(answer: str, qtype: str) -> str:
 
     answer = "\n".join(cleaned_lines)
 
-    # 5. 길이 제한 적용
+    # 6. 길이 제한 적용
     answer = apply_answer_limits(answer, qtype)
 
     return answer.strip()
