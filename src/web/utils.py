@@ -235,11 +235,14 @@ def apply_answer_limits(
             if answer and not answer.endswith("."):
                 answer += "."
         answer = _limit_words_reasoning(answer, 200)
+        # For reasoning: replace ellipsis with period
         answer = _normalize_ending_punctuation(answer)
 
     elif normalized_qtype == "explanation":
         # global_explanation: No word/sentence limits, but ensure period at end
-        answer = _normalize_ending_punctuation(answer)
+        # For explanation: only add period if missing, but keep ellipsis
+        if answer and not answer.endswith(".") and not answer.endswith("..."):
+            answer += "."
 
         # Dynamic max length enforcement (if provided)
         if max_length and len(answer) > max_length:
@@ -268,6 +271,7 @@ def apply_answer_limits(
 
         if word_count < 15:
             # 3. target short: 매우 간결 (1-2문장)
+            # No period added for short target answers
             answer = _limit_words(answer, 50)
         else:
             # 4. target long: 200단어, 최대 6문장
@@ -278,8 +282,6 @@ def apply_answer_limits(
                 if answer and not answer.endswith("."):
                     answer += "."
             answer = _limit_words(answer, 200)
-
-        answer = _normalize_ending_punctuation(answer)
 
     return answer
 
