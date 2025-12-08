@@ -133,7 +133,8 @@ class WorkspaceExecutor:
 
         # 1. 질의 생성
         query_intent = self._get_query_intent(
-            ctx.query_type, ctx.global_explanation_ref,
+            ctx.query_type,
+            ctx.global_explanation_ref,
         )
         queries = await self.agent.generate_query(
             ctx.ocr_text,
@@ -166,7 +167,8 @@ class WorkspaceExecutor:
         changes: list[str] = ["기존 답변 기반 질의 생성"]
 
         query_intent = self._get_query_intent(
-            ctx.query_type, ctx.global_explanation_ref,
+            ctx.query_type,
+            ctx.global_explanation_ref,
         )
         queries = await self.agent.generate_query(
             ctx.ocr_text,
@@ -368,7 +370,8 @@ class WorkspaceExecutor:
         if self.kg is not None:
             rule_loader = RuleLoader(self.kg)
             rules_list = rule_loader.get_rules_for_type(
-                normalized_qtype, DEFAULT_ANSWER_RULES,
+                normalized_qtype,
+                DEFAULT_ANSWER_RULES,
             )
 
             # Get additional rules from KG
@@ -434,7 +437,10 @@ class WorkspaceExecutor:
 
         # Validate answer and optionally rewrite if validation fails
         answer = await self._validate_and_fix_answer(
-            answer, ctx, normalized_qtype, length_constraint,
+            answer,
+            ctx,
+            normalized_qtype,
+            length_constraint,
         )
 
         return answer

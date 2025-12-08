@@ -32,7 +32,10 @@ class IntegratedQualitySystem:
         """
         self.kg = QAKnowledgeGraph(neo4j_uri, user, password)
         self.augmenter = AdvancedContextAugmentation(
-            neo4j_uri, user, password, gemini_key,
+            neo4j_uri,
+            user,
+            password,
+            gemini_key,
         )
         self.enforcer = RealTimeConstraintEnforcer(self.kg)
         self.adjuster = AdaptiveDifficultyAdjuster(self.kg)
@@ -42,7 +45,9 @@ class IntegratedQualitySystem:
         self.llm = GeminiModelClient()
 
     def generate_qa_with_all_enhancements(
-        self, image_path: str, query_type: str,
+        self,
+        image_path: str,
+        query_type: str,
     ) -> dict[str, Any]:
         """모든 품질 보강 기능을 적용한 QA 생성 플로우.
 
@@ -70,7 +75,9 @@ class IntegratedQualitySystem:
 
         # 3. 최적 예시 선택
         examples = self.example_selector.select_best_examples(
-            query_type, image_meta, k=3,
+            query_type,
+            image_meta,
+            k=3,
         )
 
         # 4. 컨텍스트 증강

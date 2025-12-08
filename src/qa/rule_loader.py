@@ -76,7 +76,9 @@ class RuleLoader:
         self.kg = kg
 
     def get_rules_for_type(
-        self, query_type: str, default_rules: list[str],
+        self,
+        query_type: str,
+        default_rules: list[str],
     ) -> list[str]:
         """지정된 질의 유형의 규칙을 반환 (전역 캐시 사용)."""
         cached_rules = _load_rules_from_global_kg(query_type)

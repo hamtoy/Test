@@ -15,7 +15,9 @@ class RedisEvalCache:
     """
 
     def __init__(
-        self, redis_client: Any | None = None, ttl: int = DEFAULT_CACHE_TTL_SECONDS,
+        self,
+        redis_client: Any | None = None,
+        ttl: int = DEFAULT_CACHE_TTL_SECONDS,
     ):
         """Initialize Redis cache with fallback.
 
@@ -82,7 +84,9 @@ class RedisEvalCache:
                 cursor = 0
                 while True:
                     cursor, keys = await self.redis.scan(
-                        cursor, match=f"{self.prefix}*", count=100,
+                        cursor,
+                        match=f"{self.prefix}*",
+                        count=100,
                     )
                     if keys:
                         await self.redis.delete(*keys)

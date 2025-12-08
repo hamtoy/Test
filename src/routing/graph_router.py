@@ -30,7 +30,9 @@ class GraphEnhancedRouter:
         self.llm = llm or GeminiModelClient()
 
     def route_and_generate(
-        self, user_input: str, handlers: dict[str, Callable[[str], Any]],
+        self,
+        user_input: str,
+        handlers: dict[str, Callable[[str], Any]],
     ) -> dict[str, Any]:
         """사용자의 입력을 분석해 타입을 선택하고 해당 핸들러를 실행합니다.
 
@@ -86,7 +88,9 @@ class GraphEnhancedRouter:
             return []
 
     def _build_router_prompt(
-        self, user_input: str, qtypes: list[dict[str, Any]],
+        self,
+        user_input: str,
+        qtypes: list[dict[str, Any]],
     ) -> str:
         desc_lines = []
         for qt in qtypes:

@@ -102,7 +102,8 @@ class QueryExecutor:
             transform_fn = transform
         else:
             transform_fn = cast(
-                "Callable[[list[Any]], T | list[dict[str, Any]]]", default_transform,
+                "Callable[[list[Any]], T | list[dict[str, Any]]]",
+                default_transform,
             )
 
         # Try sync driver first

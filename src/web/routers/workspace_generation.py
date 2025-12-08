@@ -131,7 +131,9 @@ OCR에 없는 정보는 추가하지 마세요.
         return cast(
             "dict[str, Any]",
             build_response(
-                {"query": query, "answer": answer}, metadata=meta, config=config,
+                {"query": query, "answer": answer},
+                metadata=meta,
+                config=config,
             ),
         )
     except asyncio.TimeoutError:
@@ -178,7 +180,9 @@ async def api_generate_query_from_answer(body: dict[str, Any]) -> dict[str, Any]
         return cast(
             "dict[str, Any]",
             build_response(
-                {"query": query, "answer": answer}, metadata=meta, config=config,
+                {"query": query, "answer": answer},
+                metadata=meta,
+                config=config,
             ),
         )
     except asyncio.TimeoutError:
@@ -245,7 +249,10 @@ async def _generate_lats_answer(
             if answer and len(answer) > weights.min_length:
                 # 답변 평가
                 score = await _evaluate_answer_quality(
-                    answer, ocr_text, query_type, weights,
+                    answer,
+                    ocr_text,
+                    query_type,
+                    weights,
                 )
 
                 if score >= 0.6:  # 품질 임계값 (실전 기준)

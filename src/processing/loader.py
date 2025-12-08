@@ -29,7 +29,9 @@ def validate_candidates(candidates: dict[str, str]) -> None:
 
 
 async def load_input_data(
-    base_dir: Path, ocr_filename: str, cand_filename: str,
+    base_dir: Path,
+    ocr_filename: str,
+    cand_filename: str,
 ) -> tuple[str, dict[str, str]]:
     """확장자나 형식을 가리지 않고 최선을 다해 데이터를 로드합니다 (Smart Loader).
 
@@ -115,7 +117,10 @@ async def load_input_data(
 
 
 async def reload_data_if_needed(
-    config: AppConfig, ocr_filename: str, cand_filename: str, interactive: bool = False,
+    config: AppConfig,
+    ocr_filename: str,
+    cand_filename: str,
+    interactive: bool = False,
 ) -> tuple[str, dict[str, str]]:
     """OCR/후보 데이터를 재로드하는 래퍼 함수. interactive 플래그는 향후 프롬프트를 위해 예약됨."""
     return await load_input_data(config.input_dir, ocr_filename, cand_filename)

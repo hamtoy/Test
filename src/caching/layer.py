@@ -46,7 +46,9 @@ class CachingLayer:
     """
 
     def __init__(
-        self, kg: QAKnowledgeGraph, redis_client: _RedisClientProto | None = None,
+        self,
+        kg: QAKnowledgeGraph,
+        redis_client: _RedisClientProto | None = None,
     ):
         """Initialize the caching layer.
 
@@ -80,7 +82,8 @@ class CachingLayer:
             if cached:
                 try:
                     return cast(
-                        "list[dict[str, str]]", json.loads(cast("str | bytes", cached)),
+                        "list[dict[str, str]]",
+                        json.loads(cast("str | bytes", cached)),
                     )
                 except json.JSONDecodeError:
                     pass

@@ -41,7 +41,9 @@ class RetryHandler:
             self.agent.api_retries += 1
             delay = min(10, 2 * attempt)
             self.agent.logger.warning(
-                "Retrying API call (attempt=%s, delay=%ss)", attempt, delay,
+                "Retrying API call (attempt=%s, delay=%ss)",
+                attempt,
+                delay,
             )
             await asyncio.sleep(delay)
 

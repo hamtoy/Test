@@ -54,7 +54,9 @@ class AdvancedContextAugmentation:
             )
 
     def augment_prompt_with_similar_cases(
-        self, user_query: str, query_type: str,
+        self,
+        user_query: str,
+        query_type: str,
     ) -> dict[str, Any]:
         """유사 사례/규칙을 찾아 프롬프트 컨텍스트를 증강합니다.
 
@@ -139,7 +141,8 @@ class AdvancedContextAugmentation:
                 import logging
 
                 logging.getLogger(__name__).warning(
-                    "Fallback graph search failed: %s", exc,
+                    "Fallback graph search failed: %s",
+                    exc,
                 )
 
         return {
@@ -158,7 +161,10 @@ class AdvancedContextAugmentation:
         }
 
     def generate_with_augmentation(
-        self, user_query: str, query_type: str, base_context: dict[str, Any],
+        self,
+        user_query: str,
+        query_type: str,
+        base_context: dict[str, Any],
     ) -> str:
         """증강된 컨텍스트로 최종 프롬프트 생성 (LLM 호출 없이 포맷만 반환)."""
         aug_ctx = self.augment_prompt_with_similar_cases(user_query, query_type)

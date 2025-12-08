@@ -76,7 +76,9 @@ class DynamicTemplateGenerator:
             return list(session.run(cypher, **params))
 
     def generate_prompt_for_query_type(
-        self, query_type: str, context: dict[str, Any],
+        self,
+        query_type: str,
+        context: dict[str, Any],
     ) -> str:
         """질의 유형에 맞는 시스템 템플릿을 그래프 지식과 합쳐 렌더링.
 
@@ -151,7 +153,9 @@ class DynamicTemplateGenerator:
             template: Template = self.jinja_env.get_template(template_name)
         except TemplateNotFound as exc:
             self.logger.warning(
-                "Template %s not found (%s), using fallback", template_name, exc,
+                "Template %s not found (%s), using fallback",
+                template_name,
+                exc,
             )
             template = self.jinja_env.get_template(fallback)
 
@@ -165,13 +169,15 @@ class DynamicTemplateGenerator:
             "guide_rules": guide_rules,
             "common_mistakes": common_mistakes,
             "calc_allowed": context.get(
-                "calc_allowed", context.get("used_calc_query_count", 0) < 1,
+                "calc_allowed",
+                context.get("used_calc_query_count", 0) < 1,
             ),
         }
         return str(template.render(**full_context))
 
     def generate_validation_checklist(
-        self, session: dict[str, Any],
+        self,
+        session: dict[str, Any],
     ) -> list[dict[str, Any]]:
         """세션에 포함된 QueryType에 대해 그래프에서 제약을 수집해 체크리스트 생성.
 

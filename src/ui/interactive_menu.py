@@ -74,7 +74,9 @@ def show_main_menu() -> int:
 
 
 async def run_workflow_interactive(
-    agent: GeminiAgent, config: AppConfig, logger: logging.Logger,
+    agent: GeminiAgent,
+    config: AppConfig,
+    logger: logging.Logger,
 ) -> None:
     """질의 생성 및 평가 - 에러 핸들링 강화."""
     # 1. API 키 검증
@@ -111,7 +113,8 @@ async def run_workflow_interactive(
             template = {"a": "첫 번째 답변", "b": "두 번째 답변", "c": "세 번째 답변"}
             cand_path.parent.mkdir(parents=True, exist_ok=True)
             cand_path.write_text(
-                json.dumps(template, ensure_ascii=False, indent=2), encoding="utf-8",
+                json.dumps(template, ensure_ascii=False, indent=2),
+                encoding="utf-8",
             )
             console.print("[green]✓ 템플릿 생성됨 - IDE에서 답변을 입력하세요[/green]")
         else:
@@ -120,7 +123,9 @@ async def run_workflow_interactive(
     # 3. 데이터 로드
     try:
         ocr_text, candidates = await load_input_data(
-            config.input_dir, ocr_file, cand_file,
+            config.input_dir,
+            ocr_file,
+            cand_file,
         )
     except FileNotFoundError as e:
         show_error_with_guide(
@@ -281,7 +286,14 @@ async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> Non
             context = {"type": "general"}
 
             fixed_query = await inspect_query(
-                agent, query_input, ocr_text, context, kg, lats, difficulty, cache,
+                agent,
+                query_input,
+                ocr_text,
+                context,
+                kg,
+                lats,
+                difficulty,
+                cache,
             )
 
             progress.update(task, completed=100, description="[green]✓ 완료[/green]")
@@ -370,7 +382,15 @@ async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> No
             context = {"type": "general", "image_meta": {}}
 
             fixed_answer = await inspect_answer(
-                agent, answer, query, ocr_text, context, kg, lats, validator, cache,
+                agent,
+                answer,
+                query,
+                ocr_text,
+                context,
+                kg,
+                lats,
+                validator,
+                cache,
             )
 
             # 결과 저장
@@ -438,7 +458,9 @@ async def _handle_edit_menu(agent: GeminiAgent, config: AppConfig) -> None:
     query = ""
     if (
         Prompt.ask(
-            "❓ 질의를 문맥에 포함할까요?", choices=["y", "n"], default="n",
+            "❓ 질의를 문맥에 포함할까요?",
+            choices=["y", "n"],
+            default="n",
         ).lower()
         == "y"
     ):
@@ -545,7 +567,9 @@ def _display_workflow_summary(
 
 
 async def interactive_main(
-    agent: GeminiAgent, config: AppConfig, logger: logging.Logger,
+    agent: GeminiAgent,
+    config: AppConfig,
+    logger: logging.Logger,
 ) -> None:
     """대화형 메인 루프."""
     while True:
@@ -559,7 +583,9 @@ async def interactive_main(
                 # The menu has "2. 검수 (질의/답변)"
                 # Let's ask which one.
                 sub_choice = Prompt.ask(
-                    "검수 유형 선택 (1: 질의, 2: 답변)", choices=["1", "2"], default="1",
+                    "검수 유형 선택 (1: 질의, 2: 답변)",
+                    choices=["1", "2"],
+                    default="1",
                 )
                 if sub_choice == "1":
                     await _handle_query_inspection(agent, config)

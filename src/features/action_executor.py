@@ -20,7 +20,12 @@ class ActionExecutor:
         self.last_llm_usage: dict[str, Any] | None = None
 
     async def execute_action(
-        self, *, action: str, text: str, max_length: int = 120, use_llm: bool = False,
+        self,
+        *,
+        action: str,
+        text: str,
+        max_length: int = 120,
+        use_llm: bool = False,
     ) -> Any:
         """Run a simple action. When an LLM provider is available and requested, try.
 

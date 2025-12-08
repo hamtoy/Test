@@ -124,7 +124,8 @@ class AdaptiveDifficultyAdjuster:
                         complexity["estimated_blocks"] = float(avg_blocks)
         except Exception as exc:  # noqa: BLE001
             logging.getLogger(__name__).warning(
-                "Failed to estimate blocks from graph: %s", exc,
+                "Failed to estimate blocks from graph: %s",
+                exc,
             )
             # 그래프 접근 실패 시 기본값 유지
 
@@ -143,7 +144,9 @@ class AdaptiveDifficultyAdjuster:
         return complexity
 
     def adjust_query_requirements(
-        self, complexity: dict[str, Any], query_type: str,
+        self,
+        complexity: dict[str, Any],
+        query_type: str,
     ) -> dict[str, Any]:
         """복잡도에 따라 질의 요구사항을 조정합니다.
 

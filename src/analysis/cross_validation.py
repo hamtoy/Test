@@ -23,7 +23,11 @@ class CrossValidationSystem:
         self.logger = logging.getLogger(__name__)
 
     def cross_validate_qa_pair(
-        self, question: str, answer: str, query_type: str, image_meta: dict[str, Any],
+        self,
+        question: str,
+        answer: str,
+        query_type: str,
+        image_meta: dict[str, Any],
     ) -> dict[str, Any]:
         """질문과 답변의 일관성/근거/규칙/참신성을 통합 검증합니다."""
         validation_results = {
@@ -61,7 +65,9 @@ class CrossValidationSystem:
         }
 
     def _check_image_grounding(
-        self, answer: str, image_meta: dict[str, Any],
+        self,
+        answer: str,
+        image_meta: dict[str, Any],
     ) -> dict[str, Any]:
         """답변이 이미지(그래프)에 근거했는지 확인합니다."""
         page_id = image_meta.get("page_id")
@@ -228,13 +234,17 @@ class CrossValidationSystem:
         if has_numbered_bullets or has_symbol_bullets:
             # 1. 목록형 답변에서 문단 구분 검사 (불릿 사이에 빈 줄)
             if has_numbered_bullets and re.search(
-                r"(^\d+\.\s.+\n\s*\n+\d+\.\s)", answer, re.MULTILINE,
+                r"(^\d+\.\s.+\n\s*\n+\d+\.\s)",
+                answer,
+                re.MULTILINE,
             ):
                 violations.append(
                     "목록형 답변은 문단 구분하지 않음 (불릿 사이 빈 줄 제거 필요)",
                 )
             if has_symbol_bullets and re.search(
-                r"(^[-*•]\s.+\n\s*\n+[-*•]\s)", answer, re.MULTILINE,
+                r"(^[-*•]\s.+\n\s*\n+[-*•]\s)",
+                answer,
+                re.MULTILINE,
             ):
                 violations.append(
                     "목록형 답변은 문단 구분하지 않음 (불릿 사이 빈 줄 제거 필요)",

@@ -74,7 +74,10 @@ async def _evaluate_and_rewrite_turn(
 
     ctx.logger.info("후보 평가 중...")
     evaluation = await ctx.agent.evaluate_responses(
-        ctx.ocr_text, query, ctx.candidates, cached_content=ctx.cache,
+        ctx.ocr_text,
+        query,
+        ctx.candidates,
+        cached_content=ctx.cache,
     )
     if evaluation is None:
         ctx.logger.warning("Turn %s: 평가 실패", turn_id)
@@ -89,7 +92,9 @@ async def _evaluate_and_rewrite_turn(
 
     ctx.logger.info("답변 재작성 중...")
     rewritten_answer = await ctx.agent.rewrite_best_answer(
-        ctx.ocr_text, best_answer, cached_content=None,
+        ctx.ocr_text,
+        best_answer,
+        cached_content=None,
     )
     ctx.logger.info("답변 재작성 완료")
 

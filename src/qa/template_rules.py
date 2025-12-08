@@ -292,7 +292,10 @@ def get_all_template_context(
     """
     context: dict[str, Any] = {
         "guide_rules": get_rules_for_query_type(
-            query_type, neo4j_uri, neo4j_user, neo4j_password,
+            query_type,
+            neo4j_uri,
+            neo4j_user,
+            neo4j_password,
         ),
     }
 
@@ -312,23 +315,34 @@ def get_all_template_context(
             category = mistake_category_map.get(query_type, "답변")
 
         context["common_mistakes"] = get_common_mistakes(
-            category, neo4j_uri, neo4j_user, neo4j_password,
+            category,
+            neo4j_uri,
+            neo4j_user,
+            neo4j_password,
         )
 
     if include_best_practices:
         context["best_practices"] = get_best_practices(
-            neo4j_uri, neo4j_user, neo4j_password,
+            neo4j_uri,
+            neo4j_user,
+            neo4j_password,
         )
 
     if include_constraints:
         context["constraint_details"] = get_constraint_details(
-            query_type, neo4j_uri, neo4j_user, neo4j_password,
+            query_type,
+            neo4j_uri,
+            neo4j_user,
+            neo4j_password,
         )
 
     # Rule 노드도 함께 주입 (필수 아님)
     try:
         context["rules"] = get_rules_from_neo4j(
-            query_type, neo4j_uri, neo4j_user, neo4j_password,
+            query_type,
+            neo4j_uri,
+            neo4j_user,
+            neo4j_password,
         )
     except Exception:
         context["rules"] = []

@@ -175,7 +175,8 @@ async def inspect_answer(
     if kg:
         corrector = SelfCorrectingQAChain(kg)
         result = corrector.generate_with_self_correction(
-            query_type, context_with_answer,
+            query_type,
+            context_with_answer,
         )
         final_answer = str(result.get("output", answer))
     else:
@@ -209,7 +210,10 @@ async def inspect_answer(
 
     if query and validator:
         val_result = validator.cross_validate_qa_pair(
-            query, final_answer, query_type, context.get("image_meta", {}),
+            query,
+            final_answer,
+            query_type,
+            context.get("image_meta", {}),
         )
         if val_result.get("overall_score", 0) < 0.7:
             logger.warning(f"Validation failed: {val_result}")

@@ -32,11 +32,16 @@ class GenerateQARequest(BaseModel):
         max_length=MAX_OCR_TEXT_LENGTH,
         description="Optional OCR text override; if absent, server loads from file",
     )
-    qtype: Literal["global_explanation", "reasoning", "target_short", "target_long"] | None = Field(
+    qtype: (
+        Literal["global_explanation", "reasoning", "target_short", "target_long"] | None
+    ) = Field(
         default=None,
         description="Question type for single mode",
     )
-    batch_types: list[Literal["global_explanation", "reasoning", "target_short", "target_long"]] | None = Field(
+    batch_types: (
+        list[Literal["global_explanation", "reasoning", "target_short", "target_long"]]
+        | None
+    ) = Field(
         default=None,
         description="Optional custom batch types (first type runs first). "
         "When omitted: batch→4종, batch_three→3종(explanation/reasoning/target_short).",
@@ -185,7 +190,9 @@ class UnifiedWorkspaceRequest(BaseModel):
         max_length=MAX_OCR_TEXT_LENGTH,
         description="OCR text (optional, will load from file if not provided)",
     )
-    query_type: Literal["global_explanation", "reasoning", "target_short", "target_long"] | None = Field(
+    query_type: (
+        Literal["global_explanation", "reasoning", "target_short", "target_long"] | None
+    ) = Field(
         default=None,
         description="Query/answer type for generation style",
     )

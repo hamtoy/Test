@@ -66,7 +66,10 @@ class GeminiModelClient:
         ]
 
     def generate(
-        self, prompt: str, temperature: float = 0.2, role: str | None = None,
+        self,
+        prompt: str,
+        temperature: float = 0.2,
+        role: str | None = None,
     ) -> str:
         """Generate text for a given prompt.
 
@@ -121,7 +124,8 @@ class GeminiModelClient:
         start = time.perf_counter()
         try:
             raw = self.generate(
-                f"질문: {question}\n답변 수: {len(answers)}", role="evaluator",
+                f"질문: {question}\n답변 수: {len(answers)}",
+                role="evaluator",
             )
         except google_exceptions.GoogleAPIError:
             return _length_fallback("API 오류로 길이 기반 평가 수행")

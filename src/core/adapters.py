@@ -82,12 +82,15 @@ class GeminiProvider(LLMProvider):
         model = self._model
         if system_instruction:
             model = genai.GenerativeModel(
-                self.model_name, system_instruction=system_instruction,
+                self.model_name,
+                system_instruction=system_instruction,
             )
 
         try:
             response = await model.generate_content_async(
-                prompt, generation_config=generation_config, **kwargs,
+                prompt,
+                generation_config=generation_config,
+                **kwargs,
             )
 
             # Extract usage metadata
@@ -127,14 +130,16 @@ class GeminiProvider(LLMProvider):
         except google_exceptions.InvalidArgument as e:
             if "token" in str(e).lower():
                 raise ContextWindowExceededError(
-                    "Context window exceeded", original_error=e,
+                    "Context window exceeded",
+                    original_error=e,
                 ) from e
             raise ProviderError(f"Invalid argument: {e}", original_error=e) from e
         except google_exceptions.DeadlineExceeded as e:
             raise TimeoutError("Gemini request timed out", original_error=e) from e
         except Exception as e:
             raise ProviderError(
-                f"Gemini generation failed: {e}", original_error=e,
+                f"Gemini generation failed: {e}",
+                original_error=e,
             ) from e
 
     async def count_tokens(self, text: str) -> int:
@@ -194,7 +199,8 @@ class Neo4jProvider(GraphProvider):
             await self._driver.verify_connectivity()
         except Exception as e:
             raise ProviderError(
-                f"Neo4j connectivity check failed: {e}", original_error=e,
+                f"Neo4j connectivity check failed: {e}",
+                original_error=e,
             ) from e
 
     async def create_nodes(

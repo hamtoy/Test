@@ -93,7 +93,8 @@ def session_middleware(
     """Factory to build middleware that attaches session to request.state."""
 
     async def _middleware(
-        request: Request, call_next: RequestResponseEndpoint,
+        request: Request,
+        call_next: RequestResponseEndpoint,
     ) -> Response:
         session_id = request.cookies.get("session_id") or request.headers.get(
             "X-Session-Id",

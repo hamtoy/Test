@@ -26,7 +26,8 @@ class SmartAutocomplete:
         self.kg = kg
 
     def suggest_next_query_type(
-        self, current_session: list[dict[str, Any]],
+        self,
+        current_session: list[dict[str, Any]],
     ) -> list[dict[str, Any]]:
         """현재 세션의 사용 타입/회수 기반으로 다음 질의 유형을 추천.
 
@@ -75,7 +76,9 @@ class SmartAutocomplete:
         return suggestions[:3]
 
     def suggest_constraint_compliance(
-        self, draft_output: str, query_type: str,
+        self,
+        draft_output: str,
+        query_type: str,
     ) -> dict[str, list[str]]:
         """출력 초안에 대해 제약 위반을 찾아 개선 제안을 반환.
 

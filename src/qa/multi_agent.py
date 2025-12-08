@@ -29,7 +29,9 @@ class MultiAgentQASystem:
         self.validator = CrossValidationSystem(self.kg)
 
     def collaborative_generate(
-        self, query_type: str, context: dict[str, Any],
+        self,
+        query_type: str,
+        context: dict[str, Any],
     ) -> dict[str, Any]:
         """규칙/예시를 모아 Gemini로 생성하고 검증까지 수행합니다."""
         rules = self._collect_rules(query_type)

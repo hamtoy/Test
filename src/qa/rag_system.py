@@ -121,7 +121,10 @@ class QAKnowledgeGraph:
 
         # Initialize connection using helper function
         self._graph, self._graph_finalizer = initialize_connection(
-            self.neo4j_uri, self.neo4j_user, self.neo4j_password, provider,
+            self.neo4j_uri,
+            self.neo4j_user,
+            self.neo4j_password,
+            provider,
         )
 
         # Initialize query executor for consistent query execution
@@ -145,7 +148,9 @@ class QAKnowledgeGraph:
 
         # Ensure required formatting rule schema is present
         ensure_formatting_rule_schema(
-            driver=self._graph, provider=self._graph_provider, logger=logger,
+            driver=self._graph,
+            provider=self._graph_provider,
+            logger=logger,
         )
 
     @property
@@ -186,12 +191,15 @@ class QAKnowledgeGraph:
             logger.info("Vector store initialized successfully")
         except (ValueError, RuntimeError, ImportError) as e:
             logger.warning(
-                "Failed to initialize vector store: %s. Continuing without RAG.", e,
+                "Failed to initialize vector store: %s. Continuing without RAG.",
+                e,
             )
             self._vector_store = None  # 명시적으로 None 설정
         except Exception as e:
             logger.error(
-                "Unexpected error initializing vector store: %s", e, exc_info=True,
+                "Unexpected error initializing vector store: %s",
+                e,
+                exc_info=True,
             )
             self._vector_store = None
 
@@ -332,7 +340,8 @@ class QAKnowledgeGraph:
         },
     )
     def get_formatting_rules_for_query_type(
-        self, query_type: str = "all",
+        self,
+        query_type: str = "all",
     ) -> list[dict[str, Any]]:
         """Return formatting rules for a given query type (or all)."""
         return self.query_executor.execute_with_fallback(

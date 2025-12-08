@@ -23,7 +23,9 @@ class GeminiClient:
     """
 
     def __init__(
-        self, agent: GeminiAgent, log_metrics_fn: Callable[..., None],
+        self,
+        agent: GeminiAgent,
+        log_metrics_fn: Callable[..., None],
     ) -> None:
         """Initialize the Gemini client wrapper."""
         self.agent = agent
@@ -113,7 +115,8 @@ class GeminiClient:
         )
         start = time.perf_counter()
         response = await model.generate_content_async(
-            prompt_text, request_options={"timeout": self.agent.config.timeout},
+            prompt_text,
+            request_options={"timeout": self.agent.config.timeout},
         )
         latency_ms = (time.perf_counter() - start) * 1000
         latency_s = latency_ms / 1000
@@ -133,7 +136,8 @@ class GeminiClient:
         if hasattr(response, "usage_metadata") and response.usage_metadata:
             usage = response.usage_metadata
             self.agent._cost_tracker.add_tokens(  # noqa: SLF001
-                usage.prompt_token_count, usage.candidates_token_count,
+                usage.prompt_token_count,
+                usage.candidates_token_count,
             )
 
             self.agent.logger.info(

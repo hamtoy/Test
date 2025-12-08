@@ -89,7 +89,8 @@ def _get_request_id(request: Request) -> str:
 
 
 async def _request_id_middleware(
-    request: Request, call_next: RequestResponseEndpoint,
+    request: Request,
+    call_next: RequestResponseEndpoint,
 ) -> Response:
     """Attach request_id to request.state and response headers."""
     req_id = request.headers.get(REQUEST_ID_HEADER) or uuid4().hex
@@ -100,7 +101,11 @@ async def _request_id_middleware(
 
 
 def _log_api_error(
-    message: str, *, request: Request, exc: Exception, logger_obj: logging.Logger,
+    message: str,
+    *,
+    request: Request,
+    exc: Exception,
+    logger_obj: logging.Logger,
 ) -> None:
     """Log structured error with request context."""
     logger_obj.error(
@@ -118,7 +123,8 @@ def _log_api_error(
 
 
 async def _error_logging_middleware(
-    request: Request, call_next: RequestResponseEndpoint,
+    request: Request,
+    call_next: RequestResponseEndpoint,
 ) -> Response:
     """Capture unhandled exceptions with request context."""
     try:
@@ -138,7 +144,10 @@ async def _error_logging_middleware(
         raise
     except Exception as exc:  # noqa: BLE001
         _log_api_error(
-            "Unhandled API error", request=request, exc=exc, logger_obj=logger,
+            "Unhandled API error",
+            request=request,
+            exc=exc,
+            logger_obj=logger,
         )
         return JSONResponse(
             status_code=500,
@@ -150,7 +159,8 @@ async def _error_logging_middleware(
 
 
 async def _performance_logging_middleware(
-    request: Request, call_next: RequestResponseEndpoint,
+    request: Request,
+    call_next: RequestResponseEndpoint,
 ) -> Response:
     """요청 처리 시간 로깅 (디버깅용)."""
     from time import perf_counter
@@ -320,7 +330,10 @@ async def init_resources() -> None:
     workspace_router_module.set_dependencies(app_config, agent, kg, pipeline)
     stream_router_module.set_dependencies(app_config, agent)
     health_router_module.set_dependencies(
-        health_checker, agent=agent, kg=kg, pipeline=pipeline,
+        health_checker,
+        agent=agent,
+        kg=kg,
+        pipeline=pipeline,
     )
     # 전역 KG 설정 (이미 초기화된 경우에도 동기화)
     set_global_kg(kg)
@@ -454,10 +467,14 @@ async def api_get_ocr(request: Request) -> dict[str, str]:
         raise
     except Exception as exc:
         _log_api_error(
-            "Failed to load OCR text", request=request, exc=exc, logger_obj=logger,
+            "Failed to load OCR text",
+            request=request,
+            exc=exc,
+            logger_obj=logger,
         )
         raise HTTPException(
-            status_code=500, detail="OCR 텍스트 조회 중 오류가 발생했습니다.",
+            status_code=500,
+            detail="OCR 텍스트 조회 중 오류가 발생했습니다.",
         ) from exc
 
 
@@ -479,7 +496,10 @@ async def api_save_ocr(request: Request, payload: OCRTextInput) -> dict[str, str
         return {"status": "success", "message": "OCR 텍스트가 저장되었습니다."}
     except Exception as exc:
         _log_api_error(
-            "Failed to save OCR text", request=request, exc=exc, logger_obj=logger,
+            "Failed to save OCR text",
+            request=request,
+            exc=exc,
+            logger_obj=logger,
         )
         raise HTTPException(status_code=500, detail="OCR 텍스트 저장 실패") from exc
 

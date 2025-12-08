@@ -105,7 +105,9 @@ C피드백: [한 줄 평가]"""
         adjusted_scores: dict[str, int] = {}
         used_scores: set[int] = set()
         for cid, score in sorted(
-            scores.items(), key=lambda item: item[1], reverse=True,
+            scores.items(),
+            key=lambda item: item[1],
+            reverse=True,
         ):
             while score in used_scores and score > 1:
                 score -= 1

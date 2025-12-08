@@ -181,7 +181,10 @@ class CacheManager:
         return None
 
     def store_local_cache(
-        self, fingerprint: str, cache_name: str, ttl_minutes: int,
+        self,
+        fingerprint: str,
+        cache_name: str,
+        ttl_minutes: int,
     ) -> None:
         """Persist a cache entry to the manifest.
 
@@ -218,7 +221,9 @@ class CacheManager:
         self.cleanup_expired_cache(ttl_minutes or self.config.cache_ttl_minutes)
 
     def load_cached(
-        self, fingerprint: str, caching_module: CachingModuleProtocol,
+        self,
+        fingerprint: str,
+        caching_module: CachingModuleProtocol,
     ) -> CachedContentProtocol | None:
         """Legacy wrapper for loading cache without explicit TTL.
 
@@ -230,7 +235,9 @@ class CacheManager:
             The cached content if found, None otherwise.
         """
         return self.load_local_cache(
-            fingerprint, self.config.cache_ttl_minutes, caching_module,
+            fingerprint,
+            self.config.cache_ttl_minutes,
+            caching_module,
         )
 
     def store_cache(self, fingerprint: str, cache_name: str, ttl_minutes: int) -> None:

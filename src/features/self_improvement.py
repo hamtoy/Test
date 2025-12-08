@@ -156,7 +156,8 @@ class SelfImprovingSystem:
         # 저장
         self.suggestions_file.parent.mkdir(parents=True, exist_ok=True)
         self.suggestions_file.write_text(
-            json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8",
+            json.dumps(report, indent=2, ensure_ascii=False),
+            encoding="utf-8",
         )
 
         # 5. 자동 수정 실행 (승인된 경우만)

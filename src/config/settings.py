@@ -46,7 +46,8 @@ class AppConfig(BaseSettings):
 
     api_key: str = Field(..., alias="GEMINI_API_KEY")
     model_name: Literal["gemini-flash-latest"] = Field(
-        "gemini-flash-latest", alias="GEMINI_MODEL_NAME",
+        "gemini-flash-latest",
+        alias="GEMINI_MODEL_NAME",
     )
     max_output_tokens: int = Field(8192, alias="GEMINI_MAX_OUTPUT_TOKENS")
     timeout: int = Field(120, alias="GEMINI_TIMEOUT")
@@ -65,14 +66,17 @@ class AppConfig(BaseSettings):
     enable_standard_response: bool = Field(False, alias="ENABLE_STANDARD_RESPONSE")
     # Timeout overrides (environment can override; defaults keep backward compatibility)
     qa_single_timeout: int = Field(
-        QA_SINGLE_GENERATION_TIMEOUT, alias="QA_SINGLE_TIMEOUT",
+        QA_SINGLE_GENERATION_TIMEOUT,
+        alias="QA_SINGLE_TIMEOUT",
     )
     qa_batch_timeout: int = Field(QA_BATCH_GENERATION_TIMEOUT, alias="QA_BATCH_TIMEOUT")
     workspace_timeout: int = Field(
-        WORKSPACE_GENERATION_TIMEOUT, alias="WORKSPACE_TIMEOUT",
+        WORKSPACE_GENERATION_TIMEOUT,
+        alias="WORKSPACE_TIMEOUT",
     )
     workspace_unified_timeout: int = Field(
-        WORKSPACE_UNIFIED_TIMEOUT, alias="WORKSPACE_UNIFIED_TIMEOUT",
+        WORKSPACE_UNIFIED_TIMEOUT,
+        alias="WORKSPACE_UNIFIED_TIMEOUT",
     )
 
     # RAG Configuration
@@ -80,10 +84,12 @@ class AppConfig(BaseSettings):
 
     # Provider Configuration
     llm_provider_type: str = Field(
-        "gemini", description="LLM provider type (gemini, etc.)",
+        "gemini",
+        description="LLM provider type (gemini, etc.)",
     )
     graph_provider_type: str = Field(
-        "neo4j", description="Graph provider type (neo4j, etc.)",
+        "neo4j",
+        description="Graph provider type (neo4j, etc.)",
     )
     neo4j_uri: str | None = Field(None, alias="NEO4J_URI")
     neo4j_user: str | None = Field(None, alias="NEO4J_USER")

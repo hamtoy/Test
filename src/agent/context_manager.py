@@ -34,19 +34,29 @@ class AgentContextManager:
         self.agent._cache_manager.cleanup_expired_cache(ttl_minutes)  # noqa: SLF001
 
     def load_local_cache(
-        self, fingerprint: str, ttl_minutes: int, caching_module: Any,
+        self,
+        fingerprint: str,
+        ttl_minutes: int,
+        caching_module: Any,
     ) -> Any:
         """Load cached content manifest if available."""
         return self.agent._cache_manager.load_local_cache(  # noqa: SLF001
-            fingerprint, ttl_minutes, caching_module,
+            fingerprint,
+            ttl_minutes,
+            caching_module,
         )
 
     def store_local_cache(
-        self, fingerprint: str, cache_name: str, ttl_minutes: int,
+        self,
+        fingerprint: str,
+        cache_name: str,
+        ttl_minutes: int,
     ) -> None:
         """Persist cache manifest locally."""
         self.agent._cache_manager.store_local_cache(  # noqa: SLF001
-            fingerprint, cache_name, ttl_minutes,
+            fingerprint,
+            cache_name,
+            ttl_minutes,
         )
 
     async def create_context_cache(self, ocr_text: str) -> Any:
@@ -58,7 +68,9 @@ class AgentContextManager:
         )
         ttl_minutes = self.agent.config.cache_ttl_minutes
         token_threshold = getattr(
-            self.agent.config, "cache_min_tokens", MIN_CACHE_TOKENS,
+            self.agent.config,
+            "cache_min_tokens",
+            MIN_CACHE_TOKENS,
         )
 
         local_cached = self.load_local_cache(
@@ -68,7 +80,8 @@ class AgentContextManager:
         )
         if local_cached:
             self.agent.logger.info(
-                "Reusing context cache from disk: %s", local_cached.name,
+                "Reusing context cache from disk: %s",
+                local_cached.name,
             )
             return local_cached
 
@@ -86,7 +99,8 @@ class AgentContextManager:
 
         if token_count < token_threshold:
             self.agent.logger.info(
-                "Skipping cache creation (Tokens < %s)", token_threshold,
+                "Skipping cache creation (Tokens < %s)",
+                token_threshold,
             )
             return None
 
@@ -103,7 +117,9 @@ class AgentContextManager:
 
             cache = await loop.run_in_executor(None, _create_cache)
             self.agent.logger.info(
-                "Context Cache Created: %s (Expires in %sm)", cache.name, ttl_minutes,
+                "Context Cache Created: %s (Expires in %sm)",
+                cache.name,
+                ttl_minutes,
             )
             try:
                 self.store_local_cache(fingerprint, cache.name, ttl_minutes)

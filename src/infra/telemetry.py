@@ -45,7 +45,8 @@ _meter = None
 
 
 def init_telemetry(
-    service_name: str = "gemini-qa-system", otlp_endpoint: str | None = None,
+    service_name: str = "gemini-qa-system",
+    otlp_endpoint: str | None = None,
 ) -> None:
     """Initialize OpenTelemetry tracer and meter if available."""
     global _tracer, _meter
@@ -141,7 +142,8 @@ def _build_status(name: str, description: str | None = None) -> Any | None:
 
 
 def traced(
-    operation: str, attributes: dict[str, Any] | None = None,
+    operation: str,
+    attributes: dict[str, Any] | None = None,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Decorator to trace sync functions."""
 
@@ -177,7 +179,8 @@ def traced(
 
 
 def traced_async(
-    operation: str, attributes: dict[str, Any] | None = None,
+    operation: str,
+    attributes: dict[str, Any] | None = None,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Decorator to trace async functions."""
 

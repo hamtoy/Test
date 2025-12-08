@@ -145,7 +145,10 @@ class UnifiedValidator:
         return find_formatting_violations(text)
 
     def validate_all(
-        self, answer: str, query_type: str, question: str = "",
+        self,
+        answer: str,
+        query_type: str,
+        question: str = "",
     ) -> ValidationResult:
         """모든 검증 규칙 적용.
 
@@ -209,7 +212,8 @@ class UnifiedValidator:
 
                 validator = CrossValidationSystem(self.kg)
                 rule_check = validator._check_rule_compliance(  # noqa: SLF001
-                    answer, query_type,
+                    answer,
+                    query_type,
                 )
                 rule_score = rule_check.get("score", 1.0)
                 if rule_score < 1.0:

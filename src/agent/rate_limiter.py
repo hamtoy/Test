@@ -39,7 +39,8 @@ class RateLimiter:
             from aiolimiter import AsyncLimiter
 
             self._rate_limiter = AsyncLimiter(
-                max_rate=DEFAULT_RPM_LIMIT, time_period=DEFAULT_RPM_WINDOW_SECONDS,
+                max_rate=DEFAULT_RPM_LIMIT,
+                time_period=DEFAULT_RPM_WINDOW_SECONDS,
             )
             self.logger.info(
                 "Rate limiter enabled: %s requests/%s seconds",

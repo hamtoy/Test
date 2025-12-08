@@ -149,7 +149,9 @@ def _find_in_nested(obj: Any, target_key: str) -> Any | None:
 
 
 def safe_json_parse(
-    text: str, target_key: str | None = None, raise_on_error: bool = False,
+    text: str,
+    target_key: str | None = None,
+    raise_on_error: bool = False,
 ) -> Any | None:
     """안전한 JSON 파싱 헬퍼 함수.
 

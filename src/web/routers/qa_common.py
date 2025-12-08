@@ -89,7 +89,8 @@ class _CachedKG:
         return text
 
     def get_formatting_rules_for_query_type(
-        self, query_type: str,
+        self,
+        query_type: str,
     ) -> list[dict[str, Any]]:
         if query_type in self._formatting_rules:
             return self._formatting_rules[query_type]

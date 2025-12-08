@@ -123,7 +123,9 @@ class MetricsExporter:
 
         if self._requests_total:
             self._requests_total.labels(
-                endpoint=endpoint, method=method, status=str(status_code),
+                endpoint=endpoint,
+                method=method,
+                status=str(status_code),
             ).inc()
 
     def record_tokens(

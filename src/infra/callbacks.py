@@ -42,7 +42,10 @@ class Neo4jLoggingCallback(BaseCallbackHandler):
         )
 
     def on_llm_start(
-        self, serialized: dict[str, Any], prompts: list[str], **kwargs: Any,
+        self,
+        serialized: dict[str, Any],
+        prompts: list[str],
+        **kwargs: Any,
     ) -> None:
         """LLM 호출 시작."""
         try:

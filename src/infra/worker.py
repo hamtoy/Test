@@ -316,7 +316,8 @@ async def _run_task_with_lats(task: OCRTask) -> dict[str, Any]:
 
     # Initialize Redis-backed cache with fallback
     eval_cache = RedisEvalCache(
-        redis_client=redis_client, ttl=DEFAULT_CACHE_TTL_SECONDS,
+        redis_client=redis_client,
+        ttl=DEFAULT_CACHE_TTL_SECONDS,
     )
     budget_tracker = BudgetTracker(
         budget_limit_usd=getattr(config, "budget_limit_usd", 1.0),
@@ -333,7 +334,9 @@ async def _run_task_with_lats(task: OCRTask) -> dict[str, Any]:
         repeats = sum(1 for a in state.focus_history if a.startswith(action_prefix))
         if repeats >= 3:
             return ValidationResult(
-                allowed=False, reason="too many repeats", penalty=1.0,
+                allowed=False,
+                reason="too many repeats",
+                penalty=1.0,
             )
         if repeats == 2:
             penalty += 0.5
@@ -362,7 +365,9 @@ async def _run_task_with_lats(task: OCRTask) -> dict[str, Any]:
                     )
                     if blocked:
                         return ValidationResult(
-                            allowed=False, reason="blocked keyword", penalty=1.0,
+                            allowed=False,
+                            reason="blocked keyword",
+                            penalty=1.0,
                         )
                     result = await session.run(
                         """
@@ -376,7 +381,9 @@ async def _run_task_with_lats(task: OCRTask) -> dict[str, Any]:
                     data = await result.single()
                     if data and (data.get("bad_pattern") or data.get("bad_prefix")):
                         return ValidationResult(
-                            allowed=False, reason="graph constraint", penalty=1.0,
+                            allowed=False,
+                            reason="graph constraint",
+                            penalty=1.0,
                         )
                     allowed_types = {
                         "clean",
@@ -388,7 +395,9 @@ async def _run_task_with_lats(task: OCRTask) -> dict[str, Any]:
                     prefix = action.split(":", 1)[0].lower()
                     if prefix and prefix not in allowed_types:
                         return ValidationResult(
-                            allowed=True, reason="unrecognized action", penalty=0.5,
+                            allowed=True,
+                            reason="unrecognized action",
+                            penalty=0.5,
                         )
             except Exception as exc:  # noqa: BLE001
                 return ValidationResult(allowed=False, reason=str(exc))
@@ -401,7 +410,8 @@ async def _run_task_with_lats(task: OCRTask) -> dict[str, Any]:
         if lats_agent:
             try:
                 ocr_text = Path(task.image_path).read_text(
-                    encoding="utf-8", errors="ignore",
+                    encoding="utf-8",
+                    errors="ignore",
                 )
             except OSError:
                 ocr_text = ""
@@ -517,17 +527,20 @@ async def _run_task_with_lats(task: OCRTask) -> dict[str, Any]:
             if token_total is None:
                 if "prompt_tokens" in usage or "completion_tokens" in usage:
                     token_total = usage.get("prompt_tokens", 0) + usage.get(
-                        "completion_tokens", 0,
+                        "completion_tokens",
+                        0,
                     )
                 elif "input_tokens" in usage or "output_tokens" in usage:
                     token_total = usage.get("input_tokens", 0) + usage.get(
-                        "output_tokens", 0,
+                        "output_tokens",
+                        0,
                     )
                 else:
                     token_total = tokens
 
             node.state = node.state.update_budget(
-                tokens=token_total or tokens, cost=record.cost_usd,
+                tokens=token_total or tokens,
+                cost=record.cost_usd,
             )
         else:
             # Fallback: 추정치 사용

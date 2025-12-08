@@ -23,7 +23,9 @@ class SelfCorrectingQAChain:
         self.llm = llm or GeminiModelClient()
 
     def generate_with_self_correction(
-        self, query_type: str, context: dict[str, Any],
+        self,
+        query_type: str,
+        context: dict[str, Any],
     ) -> dict[str, Any]:
         """규칙을 가져와 자기 교정 프로세스를 실행합니다."""
         rules = self._get_rules_text(query_type)

@@ -243,7 +243,9 @@ class Neo4jConnectionManager:
         return self._driver
 
     def execute_query(
-        self, query: str, parameters: dict[str, Any] | None = None,
+        self,
+        query: str,
+        parameters: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
         """Execute a Cypher query and return results.
 

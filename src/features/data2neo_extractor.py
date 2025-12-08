@@ -42,10 +42,14 @@ class Entity(BaseModel):
     id: str = Field(..., description="Unique identifier")
     type: EntityType = Field(..., description="Entity type")
     properties: dict[str, Any] = Field(
-        default_factory=dict, description="Entity properties",
+        default_factory=dict,
+        description="Entity properties",
     )
     confidence: float = Field(
-        default=1.0, ge=0.0, le=1.0, description="Extraction confidence score",
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="Extraction confidence score",
     )
 
 
@@ -56,7 +60,8 @@ class Relationship(BaseModel):
     to_id: str = Field(..., description="Target entity ID")
     type: str = Field(..., description="Relationship type")
     properties: dict[str, Any] = Field(
-        default_factory=dict, description="Relationship properties",
+        default_factory=dict,
+        description="Relationship properties",
     )
 
 
@@ -73,20 +78,28 @@ class ExtractedEntitiesSchema(BaseModel):
     """Schema for LLM extraction response."""
 
     persons: list[dict[str, Any]] = Field(
-        default_factory=list, description="Extracted persons",
+        default_factory=list,
+        description="Extracted persons",
     )
     organizations: list[dict[str, Any]] = Field(
-        default_factory=list, description="Extracted organizations",
+        default_factory=list,
+        description="Extracted organizations",
     )
     rules: list[dict[str, Any]] = Field(
-        default_factory=list, description="Extracted document rules",
+        default_factory=list,
+        description="Extracted document rules",
     )
     relationships: list[dict[str, Any]] = Field(
-        default_factory=list, description="Extracted relationships",
+        default_factory=list,
+        description="Extracted relationships",
     )
 
     @field_validator(
-        "persons", "organizations", "rules", "relationships", mode="before",
+        "persons",
+        "organizations",
+        "rules",
+        "relationships",
+        mode="before",
     )
     @classmethod
     def ensure_list(cls, v: Any) -> list[Any]:
@@ -281,7 +294,9 @@ OCR Text to analyze:
         return ExtractedEntitiesSchema()
 
     def _convert_to_entities(
-        self, schema: ExtractedEntitiesSchema, document_id: str,
+        self,
+        schema: ExtractedEntitiesSchema,
+        document_id: str,
     ) -> ExtractionResult:
         """Convert parsed schema to Entity objects.
 
@@ -369,7 +384,9 @@ OCR Text to analyze:
         )
 
     async def extract_entities(
-        self, ocr_text: str, document_id: str,
+        self,
+        ocr_text: str,
+        document_id: str,
     ) -> ExtractionResult:
         """Extract entities from OCR text using LLM.
 
@@ -485,10 +502,12 @@ OCR Text to analyze:
                         # Determine labels from entity mapping, fallback to defaults
                         first_rel = batch[0] if batch else {}
                         from_label = entity_labels.get(
-                            first_rel.get("from_id", ""), "Person",
+                            first_rel.get("from_id", ""),
+                            "Person",
                         )
                         to_label = entity_labels.get(
-                            first_rel.get("to_id", ""), "Organization",
+                            first_rel.get("to_id", ""),
+                            "Organization",
                         )
 
                         count = await self.graph_provider.create_relationships(
@@ -502,7 +521,9 @@ OCR Text to analyze:
                         counts["relationships"] += count
                     except Exception as e:  # noqa: BLE001
                         logger.error(
-                            "Failed to create %s relationships: %s", rel_type, e,
+                            "Failed to create %s relationships: %s",
+                            rel_type,
+                            e,
                         )
 
         logger.info(
@@ -513,7 +534,9 @@ OCR Text to analyze:
         return counts
 
     async def extract_and_import(
-        self, ocr_text: str, document_path: str,
+        self,
+        ocr_text: str,
+        document_path: str,
     ) -> ExtractionResult:
         """Extract entities from OCR text and import to graph.
 

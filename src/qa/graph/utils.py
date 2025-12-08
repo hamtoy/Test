@@ -41,7 +41,9 @@ class CustomGeminiEmbeddings:
         """Embed a single query text."""
         genai_any = cast("Any", genai)
         result = genai_any.embed_content(
-            model=self.model, content=text, task_type="retrieval_query",
+            model=self.model,
+            content=text,
+            task_type="retrieval_query",
         )
         return list(result["embedding"])
 

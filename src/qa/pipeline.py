@@ -57,7 +57,8 @@ class IntegratedQAPipeline:
         # 추가: 각 턴에 렌더된 프롬프트를 template generator로 재구성 (Rule/Constraint 주입)
         for turn in turns_list:
             turn["prompt"] = self.template_gen.generate_prompt_for_query_type(
-                turn["type"], ctx_data,
+                turn["type"],
+                ctx_data,
             )
 
         # 렌더링 후 금지 패턴 재검사
@@ -102,10 +103,12 @@ class IntegratedQAPipeline:
             ),
             "used_calc_query_count": int(image_meta.get("used_calc_query_count", 0)),
             "prior_focus_summary": image_meta.get(
-                "prior_focus_summary", "N/A (first turn)",
+                "prior_focus_summary",
+                "N/A (first turn)",
             ),
             "candidate_focus": image_meta.get(
-                "candidate_focus", "전체 본문을 골고루 커버",
+                "candidate_focus",
+                "전체 본문을 골고루 커버",
             ),
             "focus_history": image_meta.get("focus_history", []),
         }

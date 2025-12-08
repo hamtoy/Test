@@ -46,7 +46,8 @@ async def main() -> None:
                 f"Templates directory missing: {config.template_dir}",
             )
         jinja_env = Environment(
-            loader=FileSystemLoader(config.template_dir), autoescape=True,
+            loader=FileSystemLoader(config.template_dir),
+            autoescape=True,
         )
 
         # Create agent

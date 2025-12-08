@@ -20,7 +20,10 @@ class DynamicExampleSelector:
         self.kg = kg
 
     def select_best_examples(
-        self, query_type: str, context: dict[str, Any], k: int = 3,
+        self,
+        query_type: str,
+        context: dict[str, Any],
+        k: int = 3,
     ) -> list[dict[str, Any]]:
         """컨텍스트에 맞는 최적 예시 선택."""
         examples: list[dict[str, Any]] = []

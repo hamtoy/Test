@@ -237,7 +237,9 @@ class BatchProcessor:
                 f.write(line + "\n")
 
         self.logger.info(
-            "Created JSONL file: %s with %d requests", file_path, len(requests),
+            "Created JSONL file: %s with %d requests",
+            file_path,
+            len(requests),
         )
         return file_path
 
@@ -262,7 +264,9 @@ class BatchProcessor:
 
         self._active_jobs[job_id] = job
         self.logger.info(
-            "Created batch job: %s with %d requests", job_id, len(requests),
+            "Created batch job: %s with %d requests",
+            job_id,
+            len(requests),
         )
         return job
 

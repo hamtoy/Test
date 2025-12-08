@@ -7,12 +7,14 @@ class WorkspaceError(Exception):
     """워크스페이스 기본 에러."""
 
 
-
 class WorkflowExecutionError(WorkspaceError):
     """워크플로우 실행 중 발생한 에러."""
 
     def __init__(
-        self, workflow: str, message: str, original_error: Exception | None = None,
+        self,
+        workflow: str,
+        message: str,
+        original_error: Exception | None = None,
     ):
         """워크플로우 실패 정보를 포함한 예외 생성."""
         self.workflow = workflow
@@ -22,7 +24,6 @@ class WorkflowExecutionError(WorkspaceError):
 
 class RetryableError(WorkspaceError):
     """재시도 가능한 에러."""
-
 
 
 class TimeoutError(WorkspaceError):

@@ -17,7 +17,10 @@ R = TypeVar("R")
 
 
 def _safe_extra(
-    get_extra: Callable[[tuple[Any, ...], dict[str, Any], R | None, bool, float], dict[str, Any]] | None,
+    get_extra: Callable[
+        [tuple[Any, ...], dict[str, Any], R | None, bool, float], dict[str, Any]
+    ]
+    | None,
     args: tuple[Any, ...],
     kwargs: dict[str, Any],
     result: R | None,
@@ -37,7 +40,10 @@ def _safe_extra(
 def measure_latency(
     operation: str,
     *,
-    get_extra: Callable[[tuple[Any, ...], dict[str, Any], R | None, bool, float], dict[str, Any]] | None = None,
+    get_extra: Callable[
+        [tuple[Any, ...], dict[str, Any], R | None, bool, float], dict[str, Any]
+    ]
+    | None = None,
 ) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """Measure and log latency for synchronous callables."""
 
@@ -54,7 +60,12 @@ def measure_latency(
             finally:
                 elapsed_ms = max((time.perf_counter() - start) * 1000, 0.001)
                 extra_fields = _safe_extra(
-                    get_extra, args, kwargs, result, success, elapsed_ms,
+                    get_extra,
+                    args,
+                    kwargs,
+                    result,
+                    success,
+                    elapsed_ms,
                 )
                 logger.info(
                     "Operation completed",
@@ -75,7 +86,10 @@ def measure_latency(
 def measure_latency_async(
     operation: str,
     *,
-    get_extra: Callable[[tuple[Any, ...], dict[str, Any], R | None, bool, float], dict[str, Any]] | None = None,
+    get_extra: Callable[
+        [tuple[Any, ...], dict[str, Any], R | None, bool, float], dict[str, Any]
+    ]
+    | None = None,
 ) -> Callable[[Callable[P, Awaitable[R]]], Callable[P, Awaitable[R]]]:
     """Measure and log latency for async callables."""
 
@@ -93,7 +107,12 @@ def measure_latency_async(
             finally:
                 elapsed_ms = max((time.perf_counter() - start) * 1000, 0.001)
                 extra_fields = _safe_extra(
-                    get_extra, args, kwargs, result, success, elapsed_ms,
+                    get_extra,
+                    args,
+                    kwargs,
+                    result,
+                    success,
+                    elapsed_ms,
                 )
                 logger.info(
                     "Operation completed",

@@ -152,10 +152,12 @@ class GeminiAgent:
         self._cache_manager = CacheManager(config)
         meter = get_meter()  # type: ignore[no-untyped-call]
         self._api_call_counter = meter.create_counter(
-            "gemini.api.calls", description="Number of Gemini API calls",
+            "gemini.api.calls",
+            description="Number of Gemini API calls",
         )
         self._token_counter = meter.create_counter(
-            "gemini.tokens.total", description="Total tokens used",
+            "gemini.tokens.total",
+            description="Total tokens used",
         )
         self._log_metrics = _get_log_metrics()
         self.client = GeminiClient(self, self._log_metrics)
@@ -293,7 +295,15 @@ class GeminiAgent:
 
     def _get_safety_settings(self) -> dict[Any, Any]:
         harm_block_threshold, harm_category = self._harm_types()
-        return dict.fromkeys([harm_category.HARM_CATEGORY_HARASSMENT, harm_category.HARM_CATEGORY_HATE_SPEECH, harm_category.HARM_CATEGORY_SEXUALLY_EXPLICIT, harm_category.HARM_CATEGORY_DANGEROUS_CONTENT], harm_block_threshold.BLOCK_NONE)
+        return dict.fromkeys(
+            [
+                harm_category.HARM_CATEGORY_HARASSMENT,
+                harm_category.HARM_CATEGORY_HATE_SPEECH,
+                harm_category.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                harm_category.HARM_CATEGORY_DANGEROUS_CONTENT,
+            ],
+            harm_block_threshold.BLOCK_NONE,
+        )
 
     # ==================== 캐시 관련 메서드 ====================
 
@@ -316,11 +326,16 @@ class GeminiAgent:
     def _load_local_cache(self, fingerprint: str, ttl_minutes: int) -> Any:
         """로컬 캐시 로드."""
         return self.context_manager.load_local_cache(
-            fingerprint, ttl_minutes, self._caching,
+            fingerprint,
+            ttl_minutes,
+            self._caching,
         )
 
     def _store_local_cache(
-        self, fingerprint: str, cache_name: str, ttl_minutes: int,
+        self,
+        fingerprint: str,
+        cache_name: str,
+        ttl_minutes: int,
     ) -> None:
         """로컬 캐시 저장.
 

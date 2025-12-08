@@ -60,7 +60,10 @@ class UltimateLangChainQASystem:
         self.kg = _construct(QAKnowledgeGraph, neo4j_uri, user, password)
         model_client = _construct(GeminiModelClient)
         self.memory_system = _construct(
-            MemoryAugmentedQASystem, neo4j_uri, user, password,
+            MemoryAugmentedQASystem,
+            neo4j_uri,
+            user,
+            password,
         )
         self.agent_system = _construct(MultiAgentQASystem, self.kg)
         self.correcting_chain = _construct(SelfCorrectingQAChain, self.kg, model_client)
@@ -68,7 +71,9 @@ class UltimateLangChainQASystem:
         self.lcel_chain = _construct(LCELOptimizedChain, self.kg, model_client)
 
     def generate_ultimate_qa(
-        self, image_path: str, user_query: str | None = None,
+        self,
+        image_path: str,
+        user_query: str | None = None,
     ) -> dict[str, Any]:
         """모든 기능을 활용한 최상급 생성."""
         # 1. 라우터로 질의 유형 자동 판단 (핸들러 기본값 제공해 빈 핸들러 오류 방지)
@@ -78,7 +83,8 @@ class UltimateLangChainQASystem:
             "explore": lambda text: None,
         }
         routed = self.router.route_and_generate(
-            user_query or "explanation", handlers=router_handlers,
+            user_query or "explanation",
+            handlers=router_handlers,
         )
         query_type = routed.get("choice", "explanation")
 
@@ -90,12 +96,14 @@ class UltimateLangChainQASystem:
 
         # 3. Self-Correction으로 생성 및 교정
         corrected = self.correcting_chain.generate_with_self_correction(
-            query_type, agent_result.get("metadata", {}),
+            query_type,
+            agent_result.get("metadata", {}),
         )
 
         # 4. Memory에 기록 (학습)
         self.memory_system._log_interaction(
-            user_query or f"Generate {query_type}", corrected["output"],
+            user_query or f"Generate {query_type}",
+            corrected["output"],
         )
 
         return {

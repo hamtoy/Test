@@ -107,12 +107,14 @@ async def api_workspace(body: WorkspaceRequest) -> dict[str, Any]:
 
     try:
         result = await asyncio.wait_for(
-            _run_workspace(), timeout=config.workspace_timeout,
+            _run_workspace(),
+            timeout=config.workspace_timeout,
         )
         duration = (datetime.now() - meta_start).total_seconds()
         meta = APIMetadata(duration=duration)
         return cast(
-            "dict[str, Any]", build_response(result, metadata=meta, config=config),
+            "dict[str, Any]",
+            build_response(result, metadata=meta, config=config),
         )
     except asyncio.TimeoutError:
         raise HTTPException(

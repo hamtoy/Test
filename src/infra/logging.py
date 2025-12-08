@@ -64,7 +64,8 @@ def _build_file_handler(
         formatter = JsonFormatter("%(asctime)s %(levelname)s %(name)s %(message)s")
     else:
         formatter = logging.Formatter(
-            "[%(asctime)s] %(levelname)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S",
+            "[%(asctime)s] %(levelname)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
     file_handler.setFormatter(formatter)
     file_handler.addFilter(sensitive_filter)
@@ -72,7 +73,8 @@ def _build_file_handler(
 
 
 def _build_console_handler(
-    log_level: int, sensitive_filter: logging.Filter,
+    log_level: int,
+    sensitive_filter: logging.Filter,
 ) -> logging.Handler:
     """Create Rich console handler."""
     console_handler: logging.Handler = RichHandler(
@@ -86,7 +88,8 @@ def _build_console_handler(
 
 
 def setup_logging(
-    env: str | None = None, log_level: str | None = None,
+    env: str | None = None,
+    log_level: str | None = None,
 ) -> tuple[logging.Logger, logging.handlers.QueueListener]:
     """[Non-Blocking Logging] QueueHandler 패턴 + 환경별 포맷/출력 제어.
 

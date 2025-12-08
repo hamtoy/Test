@@ -160,7 +160,9 @@ class CacheMetrics:
             self.misses += 1
 
         record_cache_latency(
-            duration_ms / 1000.0, operation=operation, cache_type=self.namespace,
+            duration_ms / 1000.0,
+            operation=operation,
+            cache_type=self.namespace,
         )
 
     def record_skip(self, reason: str) -> None:
@@ -364,7 +366,9 @@ class CacheAnalytics:
 
 
 def calculate_savings(
-    record: dict[str, Any], cached_portion: float = 0.7, discount: float = 0.9,
+    record: dict[str, Any],
+    cached_portion: float = 0.7,
+    discount: float = 0.9,
 ) -> float:
     """Estimate savings (USD) for a single record given cache hits.
 

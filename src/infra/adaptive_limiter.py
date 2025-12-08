@@ -99,7 +99,8 @@ class AdaptiveRateLimiter:
             # Error occurred: Multiplicative Decrease (halve the limit)
             self._current_limit = max(self._min_limit, self._current_limit * 0.5)
             logger.warning(
-                "Throttling: Error detected. Limit reduced to %d", self.current_limit,
+                "Throttling: Error detected. Limit reduced to %d",
+                self.current_limit,
             )
 
         elif avg_latency < self._target_latency:
@@ -135,7 +136,8 @@ class AdaptiveRateLimiter:
                 # Use wait_for with timeout to periodically re-check the dynamic limit
                 with contextlib.suppress(TimeoutError):
                     await asyncio.wait_for(
-                        self._condition.wait(), timeout=_POLL_INTERVAL,
+                        self._condition.wait(),
+                        timeout=_POLL_INTERVAL,
                     )
             self._active_count += 1
 

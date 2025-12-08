@@ -58,7 +58,9 @@ def _warn_budget_thresholds(agent: GeminiAgent, logger: logging.Logger) -> None:
 
 
 async def _load_checkpoint_records(
-    checkpoint_path: Path, resume: bool, logger: logging.Logger,
+    checkpoint_path: Path,
+    resume: bool,
+    logger: logging.Logger,
 ) -> dict[str, WorkflowResult]:
     """재개 모드가 활성화된 경우 기존 체크포인트 기록을 로드합니다.
 
@@ -103,7 +105,9 @@ async def _load_candidates(
         logger.info("사용자 요청으로 데이터 재로딩 중...")
         try:
             _, candidates = await reload_data_if_needed(
-                config, ocr_filename, cand_filename,
+                config,
+                ocr_filename,
+                cand_filename,
             )
             logger.info("데이터 재로딩 완료")
             return candidates
@@ -121,7 +125,9 @@ async def _load_candidates(
 
 
 async def _create_context_cache(
-    agent: GeminiAgent, ocr_text: str, logger: logging.Logger,
+    agent: GeminiAgent,
+    ocr_text: str,
+    logger: logging.Logger,
 ) -> Any:
     """OCR 텍스트에 대한 컨텍스트 캐시 생성을 시도합니다.
 
@@ -188,7 +194,8 @@ def _schedule_turns(
 
         turn_id = i + 1
         task_id = progress.add_task(
-            PROGRESS_WAITING_TEMPLATE.format(turn_id=turn_id), total=1,
+            PROGRESS_WAITING_TEMPLATE.format(turn_id=turn_id),
+            total=1,
         )
 
         if resume and query in checkpoint_records:
@@ -260,7 +267,8 @@ async def _gather_results(
 
 
 def _resolve_checkpoint_path(
-    config: AppConfig, checkpoint_path: Path | None,
+    config: AppConfig,
+    checkpoint_path: Path | None,
 ) -> Path:
     """체크포인트 파일의 절대 경로를 결정합니다.
 

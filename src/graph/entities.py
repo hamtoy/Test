@@ -16,10 +16,14 @@ class ExtractedEntity(BaseModel):
 
     name: str = Field(..., description="Entity name or identifier")
     confidence: float = Field(
-        ..., ge=0.0, le=1.0, description="Confidence score (0.0-1.0)",
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="Confidence score (0.0-1.0)",
     )
     source_text: str | None = Field(
-        None, description="Original text span where entity was found",
+        None,
+        description="Original text span where entity was found",
     )
 
 
@@ -28,7 +32,8 @@ class Person(ExtractedEntity):
 
     role: str | None = Field(None, description="Role or title of the person")
     organization: str | None = Field(
-        None, description="Associated organization name",
+        None,
+        description="Associated organization name",
     )
 
     def to_node_dict(self) -> dict[str, Any]:
@@ -44,7 +49,8 @@ class Organization(ExtractedEntity):
     """Organization entity extracted from document."""
 
     org_type: str | None = Field(
-        None, description="Type of organization (company, government, NGO, etc.)",
+        None,
+        description="Type of organization (company, government, NGO, etc.)",
     )
     location: str | None = Field(None, description="Location or headquarters")
 
@@ -66,7 +72,8 @@ class DateEntity(ExtractedEntity):
         description="Type of date (event, deadline, publication, etc.)",
     )
     normalized: str | None = Field(
-        None, description="Normalized date format (YYYY-MM-DD)",
+        None,
+        description="Normalized date format (YYYY-MM-DD)",
     )
 
     def to_node_dict(self) -> dict[str, Any]:
@@ -106,7 +113,8 @@ class Relationship(BaseModel):
     to_entity: str = Field(..., description="Target entity name")
     rel_type: str = Field(..., description="Relationship type (e.g., WORKS_AT)")
     properties: dict[str, Any] = Field(
-        default_factory=dict, description="Additional relationship properties",
+        default_factory=dict,
+        description="Additional relationship properties",
     )
 
 

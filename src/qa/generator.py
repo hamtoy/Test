@@ -123,7 +123,9 @@ class QAGenerator:
         return self._parse_questions(raw_questions)
 
     def generate_answers(
-        self, ocr_text: str, questions: Sequence[str],
+        self,
+        ocr_text: str,
+        questions: Sequence[str],
     ) -> list[dict[str, Any]]:
         """질의 목록에 대한 답변 생성."""
         results: list[dict[str, Any]] = []

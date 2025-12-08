@@ -73,13 +73,16 @@ class BudgetTracker:
         # 레거시 키 호환
         input_tokens_val = usage.get("prompt_tokens", usage.get("input_tokens", 0))
         output_tokens_val = usage.get(
-            "completion_tokens", usage.get("output_tokens", 0),
+            "completion_tokens",
+            usage.get("output_tokens", 0),
         )
         cached_tokens_val = usage.get(
-            "cached_input_tokens", usage.get("cached_tokens", 0),
+            "cached_input_tokens",
+            usage.get("cached_tokens", 0),
         )
         total_tokens_val = usage.get(
-            "total_tokens", input_tokens_val + output_tokens_val,
+            "total_tokens",
+            input_tokens_val + output_tokens_val,
         )
 
         cost_input = (input_tokens_val / 1_000_000) * GEMINI_FLASH_PRICING["input"]

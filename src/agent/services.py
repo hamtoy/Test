@@ -43,7 +43,9 @@ class QueryGeneratorService:
         user_prompt = user_template.render(ocr_text=ocr_text, user_intent=user_intent)
 
         schema_json = json.dumps(
-            QueryResult.model_json_schema(), indent=2, ensure_ascii=False,
+            QueryResult.model_json_schema(),
+            indent=2,
+            ensure_ascii=False,
         )
 
         constraint_list = constraints if constraints is not None else []
@@ -127,7 +129,9 @@ class QueryGeneratorService:
             )
 
         model = agent._create_generative_model(  # noqa: SLF001
-            system_prompt, response_schema=QueryResult, cached_content=cached_content,
+            system_prompt,
+            response_schema=QueryResult,
+            cached_content=cached_content,
         )
 
         agent.context_manager.track_cache_usage(cached_content is not None)
@@ -241,7 +245,8 @@ class ResponseEvaluatorService:
 
         try:
             response_text = await agent.retry_handler.call(
-                model, json.dumps(input_data, ensure_ascii=False),
+                model,
+                json.dumps(input_data, ensure_ascii=False),
             )
         except Exception as e:
             if agent._is_rate_limit_error(e):  # noqa: SLF001
@@ -380,7 +385,8 @@ class RewriterService:
             )
 
         model = agent._create_generative_model(  # noqa: SLF001
-            system_prompt, cached_content=cached_content,
+            system_prompt,
+            cached_content=cached_content,
         )
 
         agent.context_manager.track_cache_usage(cached_content is not None)

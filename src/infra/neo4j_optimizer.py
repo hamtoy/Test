@@ -239,7 +239,8 @@ class OptimizedQueries:
 
     @staticmethod
     def semantic_search_with_graph(
-        _embedding: list[float] | None = None, _k: int = 10,
+        _embedding: list[float] | None = None,
+        _k: int = 10,
     ) -> str:
         """Hybrid search: Vector similarity + Graph traversal.
 

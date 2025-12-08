@@ -160,7 +160,9 @@ def create_topics(driver: Driver, keywords: list[tuple[str, int]]) -> None:
 
 
 def link_blocks_to_topics(
-    driver: Driver, blocks: list[dict[str, Any]], topics: list[tuple[str, int]],
+    driver: Driver,
+    blocks: list[dict[str, Any]],
+    topics: list[tuple[str, int]],
 ) -> None:
     """Create TAGGED_WITH relationships between blocks and topics.
 
@@ -247,7 +249,8 @@ def main() -> None:
 
     try:
         driver = GraphDatabase.driver(
-            config["uri"], auth=(config["user"], config["password"]),
+            config["uri"],
+            auth=(config["user"], config["password"]),
         )
     except Neo4jError as e:
         logger.error("Neo4j 연결 실패: %s", e)

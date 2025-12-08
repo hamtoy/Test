@@ -47,7 +47,10 @@ class MCTSWorkflowOptimizer:
     """MCTS implementation for fast template/parameter selection."""
 
     def __init__(
-        self, agent: GeminiAgent, available_templates: list[str], iterations: int = 20,
+        self,
+        agent: GeminiAgent,
+        available_templates: list[str],
+        iterations: int = 20,
     ):
         """Initialize the MCTS workflow optimizer.
 

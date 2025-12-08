@@ -55,14 +55,17 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> dict[str, Any]
 
     # Detect workflow
     workflow_str = detect_workflow(
-        body.query or "", body.answer or "", body.edit_request or "",
+        body.query or "",
+        body.answer or "",
+        body.edit_request or "",
     )
 
     try:
         workflow_type = WorkflowType(workflow_str)
     except ValueError:
         raise HTTPException(
-            status_code=400, detail=f"알 수 없는 워크플로우: {workflow_str}",
+            status_code=400,
+            detail=f"알 수 없는 워크플로우: {workflow_str}",
         )
 
     # Build context
@@ -104,7 +107,8 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> dict[str, Any]
         }
 
         return cast(
-            "dict[str, Any]", build_response(result_dict, metadata=meta, config=config),
+            "dict[str, Any]",
+            build_response(result_dict, metadata=meta, config=config),
         )
 
     except asyncio.TimeoutError:

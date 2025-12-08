@@ -19,7 +19,9 @@ class RealTimeConstraintEnforcer:
         self.kg = kg
 
     def stream_with_validation(
-        self, generator: Iterable[str], query_type: str,
+        self,
+        generator: Iterable[str],
+        query_type: str,
     ) -> Iterable[dict[str, object]]:
         """LLM 출력을 스트리밍하면서 실시간 검증.
 
@@ -51,7 +53,9 @@ class RealTimeConstraintEnforcer:
         yield {"type": "final_validation", "result": final_check}
 
     def validate_complete_output(
-        self, output: str, query_type: str,
+        self,
+        output: str,
+        query_type: str,
     ) -> dict[str, object]:
         """완성된 출력의 종합 검증."""
         issues: list[str] = []
@@ -70,7 +74,8 @@ class RealTimeConstraintEnforcer:
         if query_type in ["explanation", "summary"]:
             for block in self._get_original_blocks():
                 similarity = self._calculate_similarity(
-                    output, block.get("content", ""),
+                    output,
+                    block.get("content", ""),
                 )
                 if similarity > 0.9:  # 너무 유사
                     issues.append(

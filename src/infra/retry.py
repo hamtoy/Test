@@ -93,7 +93,10 @@ async def retry_with_backoff(
     for attempt in range(1, max_attempts + 1):
         try:
             logger.debug(
-                "Executing %s (attempt %d/%d)", func.__name__, attempt, max_attempts,
+                "Executing %s (attempt %d/%d)",
+                func.__name__,
+                attempt,
+                max_attempts,
             )
             return await func(*args, **kwargs)
         except Exception as e:  # noqa: PERF203
