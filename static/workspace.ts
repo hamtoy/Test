@@ -1,5 +1,6 @@
 import { apiCallWithRetry, copyToClipboard, showToast } from "./utils.js";
 import { loadOCR, saveOCR } from "./ocr.js";
+import { validateRequest, ValidationError } from "./validation.js";
 
 const GLOBAL_EXPLANATION_KEY = "workspace_global_explanation";
 
@@ -306,6 +307,23 @@ async function executeWorkspace(
         body.query = null;
     } else if (mode === "answer-only" && !editRequest) {
         body.answer = null;
+    }
+
+    // Validate request payload before sending
+    try {
+        validateRequest(body, "/api/workspace/unified");
+    } catch (validationError) {
+        if (validationError instanceof ValidationError) {
+            resultsDiv.innerHTML = `
+                <div style="text-align: center; padding: 30px; background: #ffebee; border-radius: 8px; border: 1px solid #f44336; margin-top: 20px;">
+                    <h3 style="color: #f44336; margin-bottom: 10px;">⚠️ 요청 데이터 오류</h3>
+                    <p style="color: #666; margin: 0; white-space: pre-line;">${validationError.message}</p>
+                    <p style="color: #999; margin-top: 15px; font-size: 0.9em;">💡 필드명과 데이터 타입을 확인하세요</p>
+                </div>
+            `;
+            throw validationError;
+        }
+        throw validationError;
     }
 
     const result = await apiCallWithRetry<WorkspaceResult>({

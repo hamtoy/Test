@@ -132,3 +132,5 @@ grep -r "/api/eval" static/dist/chunks/eval.js
 - [ARCHITECTURE.md](ARCHITECTURE.md) - 시스템 아키텍처 전체 구조
 - [API.md](API.md) - Agent/Config API 레퍼런스
 - [BACKEND_REFACTORING.md](BACKEND_REFACTORING.md) - 백엔드 리팩토링 히스토리
+- [TROUBLESHOOTING_422_ERRORS.md](TROUBLESHOOTING_422_ERRORS.md) - 422 에러 해결 가이드
+- [VALIDATION_EXAMPLES.md](VALIDATION_EXAMPLES.md) - 프론트엔드 검증 예제

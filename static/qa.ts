@@ -1,5 +1,6 @@
 import { apiCall, showToast, showProgressWithEstimate, withRetry } from "./utils.js";
 import { loadOCR, saveOCR } from "./ocr.js";
+import { validateRequest, ValidationError } from "./validation.js";
 
 declare global {
     interface Window {
@@ -205,6 +206,25 @@ async function generateQA(mode: GenerateMode, qtype: string | null): Promise<voi
                 "reasoning",
                 "target_long",
             ];
+        }
+
+        // Validate request payload before sending
+        try {
+            validateRequest(payload, "/api/qa/generate");
+        } catch (validationError) {
+            if (validationError instanceof ValidationError) {
+                showToast(`요청 검증 실패: ${validationError.message}`, "error");
+                stopProgress();
+                resultsDiv.innerHTML = `
+                    <div style="text-align: center; padding: 30px; background: #ffebee; border-radius: 8px; border: 1px solid #f44336; margin-top: 20px;">
+                        <h3 style="color: #f44336; margin-bottom: 10px;">⚠️ 요청 데이터 오류</h3>
+                        <p style="color: #666; margin: 0; white-space: pre-line;">${validationError.message}</p>
+                        <p style="color: #999; margin-top: 15px; font-size: 0.9em;">💡 필드명과 데이터 타입을 확인하세요</p>
+                    </div>
+                `;
+                return;
+            }
+            throw validationError;
         }
 
         if (activeController) {
