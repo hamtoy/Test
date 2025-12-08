@@ -83,7 +83,6 @@ export function validateGenerateQARequest(data: unknown): asserts data is Genera
         // Accept both exact Pydantic values and common aliases that backend normalizes
         const validQTypes = [
             "global_explanation",
-            "explanation",  // Alias for global_explanation
             "globalexplanation",  // Alias for global_explanation
             "reasoning",
             "target_short",
@@ -93,7 +92,7 @@ export function validateGenerateQARequest(data: unknown): asserts data is Genera
         if (!validQTypes.includes(payload.qtype)) {
             throw new ValidationError(
                 "qtype",
-                `유효하지 않은 값: "${payload.qtype}". 가능한 값: ${validQTypes.slice(0, 6).join(", ")}`
+                `유효하지 않은 값: "${payload.qtype}". 가능한 값: ${validQTypes.slice(0, 5).join(", ")}`
             );
         }
     }
@@ -143,7 +142,6 @@ export function validateUnifiedWorkspaceRequest(data: unknown): asserts data is 
         // Accept both exact Pydantic values and common aliases
         const validQTypes = [
             "global_explanation",
-            "explanation",  // Alias
             "globalexplanation",  // Alias
             "reasoning",
             "target_short",
@@ -153,7 +151,7 @@ export function validateUnifiedWorkspaceRequest(data: unknown): asserts data is 
         if (!validQTypes.includes(payload.query_type)) {
             throw new ValidationError(
                 "query_type",
-                `유효하지 않은 값: "${payload.query_type}". 가능한 값: ${validQTypes.slice(0, 6).join(", ")}`
+                `유효하지 않은 값: "${payload.query_type}". 가능한 값: ${validQTypes.slice(0, 5).join(", ")}`
             );
         }
     }

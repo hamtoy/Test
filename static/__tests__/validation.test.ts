@@ -13,7 +13,7 @@ describe("validateGenerateQARequest", () => {
         const payload = {
             mode: "single",
             ocr_text: "sample OCR text",
-            qtype: "explanation",
+            qtype: "global_explanation",
         };
 
         expect(() => validateGenerateQARequest(payload)).not.toThrow();
@@ -32,7 +32,7 @@ describe("validateGenerateQARequest", () => {
         const payload = {
             mode: "batch_three",
             ocr_text: "sample OCR text",
-            batch_types: ["explanation", "reasoning", "target_long"],
+            batch_types: ["global_explanation", "reasoning", "target_long"],
         };
 
         expect(() => validateGenerateQARequest(payload)).not.toThrow();
@@ -82,7 +82,7 @@ describe("validateGenerateQARequest", () => {
         const payload = {
             mode: "single",
             ocr_text: 123, // should be string
-            qtype: "explanation",
+            qtype: "global_explanation",
         };
 
         expect(() => validateGenerateQARequest(payload)).toThrow(ValidationError);
@@ -104,7 +104,7 @@ describe("validateGenerateQARequest", () => {
         const payload = {
             mode: "batch",
             ocr_text: "sample OCR text",
-            batch_types: ["explanation", 123, "reasoning"],
+            batch_types: ["global_explanation", 123, "reasoning"],
         };
 
         expect(() => validateGenerateQARequest(payload)).toThrow(ValidationError);
@@ -138,7 +138,7 @@ describe("validateUnifiedWorkspaceRequest", () => {
             answer: "test answer",
             edit_request: "edit this",
             ocr_text: "sample OCR",
-            query_type: "explanation",
+            query_type: "global_explanation",
             global_explanation_ref: "reference text",
         };
 
@@ -197,7 +197,7 @@ describe("checkFieldNames", () => {
     it("detects camelCase field names", () => {
         const payload = {
             ocrText: "sample",
-            queryType: "explanation",
+            queryType: "global_explanation",
         };
 
         const warnings = checkFieldNames(payload);
@@ -211,7 +211,7 @@ describe("checkFieldNames", () => {
     it("returns empty array for correct field names", () => {
         const payload = {
             ocr_text: "sample",
-            query_type: "explanation",
+            query_type: "global_explanation",
         };
 
         const warnings = checkFieldNames(payload);
@@ -231,7 +231,7 @@ describe("checkFieldNames", () => {
 
     it("detects batchTypes field", () => {
         const payload = {
-            batchTypes: ["explanation"],
+            batchTypes: ["global_explanation"],
         };
 
         const warnings = checkFieldNames(payload);
@@ -264,7 +264,7 @@ describe("validateRequest", () => {
         const payload = {
             mode: "single",
             ocr_text: "sample",
-            qtype: "explanation",
+            qtype: "global_explanation",
         };
 
         expect(() => validateRequest(payload, "/api/qa/generate")).not.toThrow();
@@ -283,7 +283,7 @@ describe("validateRequest", () => {
         const payload = {
             mode: "single",
             ocrText: "sample", // camelCase
-            qtype: "explanation",
+            qtype: "global_explanation",
         };
 
         expect(() => validateRequest(payload, "/api/qa/generate")).toThrow(ValidationError);
