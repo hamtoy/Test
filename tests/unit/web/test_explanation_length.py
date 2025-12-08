@@ -45,7 +45,7 @@ KOSPI 지수는 전일 대비 1.14% 하락한 2,450포인트로 마감했으며,
             patch("src.web.routers.qa_generation.answer_cache.set"),
             patch("src.web.routers.qa_generation.postprocess_answer", return_value=detailed_answer),
         ):
-            result = await generate_single_qa(
+            await generate_single_qa(
                 mock_agent,
                 "OCR 텍스트 샘플",
                 "global_explanation",
@@ -85,7 +85,7 @@ KOSPI 지수는 전일 대비 1.14% 하락한 2,450포인트로 마감했으며,
             patch("src.web.routers.qa_generation.postprocess_answer", return_value=short_answer),
             patch("src.web.routers.qa_generation.logger") as mock_logger,
         ):
-            result = await generate_single_qa(
+            await generate_single_qa(
                 mock_agent,
                 "OCR 텍스트",
                 "global_explanation",
