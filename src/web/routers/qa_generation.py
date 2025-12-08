@@ -7,6 +7,7 @@ import asyncio
 import hashlib
 import logging
 import re
+import traceback
 from datetime import datetime
 from typing import Any, cast
 
@@ -73,7 +74,7 @@ async def clear_cache() -> dict[str, Any]:
         Success message with number of entries cleared
     """
     size_before = answer_cache.get_stats()["cache_size"]
-    answer_cache.clear()
+    await answer_cache.clear()
 
     return {
         "success": True,
@@ -146,7 +147,15 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
 
             for i, pair in enumerate(remaining_pairs):
                 if isinstance(pair, Exception):
-                    logger.error("%s 생성 실패: %s", remaining_types[i], pair)
+                    import sys
+
+                    tb_str = "".join(
+                        traceback.format_exception(type(pair), pair, pair.__traceback__)
+                    )
+                    sys.stderr.write(
+                        f"\n[ERROR TRACEBACK] {remaining_types[i]}:\n{tb_str}\n"
+                    )
+                    logger.error("%s 생성 실패:\n%s", remaining_types[i], tb_str)
                     results.append(
                         {
                             "type": remaining_types[i],
@@ -192,7 +201,7 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
         )
         raise HTTPException(status_code=504, detail=timeout_msg)
     except Exception as e:
-        logger.error("QA 생성 실패: %s", e)
+        logger.error("QA 생성 실패: %s\n%s", e, traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"생성 실패: {e!s}")
 
 
@@ -230,6 +239,7 @@ async def generate_single_qa(
     )
 
     query_intent = None
+    max_chars: int | None = None
 
     if qtype == "target_short":
         query_intent = "간단한 사실 확인 질문"
@@ -279,7 +289,8 @@ async def generate_single_qa(
     if kg_wrapper is not None:
         try:
             # [Fix] Step 1: Enhanced type validation with detailed logging
-            constraints = kg_wrapper.get_constraints_for_query_type(qtype)
+            # Use normalized_qtype to ensure subtypes (e.g., target_short) get constraints from parent (target)
+            constraints = kg_wrapper.get_constraints_for_query_type(normalized_qtype)
 
             if not isinstance(constraints, list):
                 logger.error(
@@ -408,9 +419,19 @@ async def generate_single_qa(
 - 시간순 또는 논리적 흐름으로 구조화
 - 소제목을 쓸 때는 자연스러운 서론-본론-결론 흐름 유지 (헤더에 '서론/본론/결론' 직접 표기 금지)
 - 불필요한 반복, 장황한 수식어 금지"""
-        length_constraint = """
+
+        # Dynamic length calculation (60-80% of OCR length)
+        ocr_len = len(ocr_text)
+        min_chars = int(ocr_len * 0.6)
+        max_chars = int(ocr_len * 0.8)
+
+        # 최소 1000자 보장 (OCR이 매우 짧을 경우 대비)
+        # 하지만 사용자가 "OCR에 비례"를 원했으므로 비율을 우선하되, 너무 짧으면 품질 문제 생길 수 있음
+        # 일단 사용자 요청대로 비례 적용 + 최소 문단 조건 유지
+
+        length_constraint = f"""
 [CRITICAL - 길이 제약]
-**절대 규칙**: 이 응답은 최소 1000-1500자 분량의 상세한 설명이어야 합니다.
+**절대 규칙**: 이 응답은 OCR 원문 길이({ocr_len}자)에 비례하여 **최소 {min_chars}자 ~ 최대 {max_chars}자** 분량의 상세한 설명이어야 합니다.
 - 최소 5-8개 문단으로 구성
 - 각 문단은 3-4문장 이상
 - 단순 요약이 아닌 전체적이고 깊이 있는 분석 제공
@@ -488,7 +509,7 @@ async def generate_single_qa(
         )
 
         # PHASE 2B: Check cache after query generation
-        cached_result = answer_cache.get(query, cache_ocr_key, qtype)
+        cached_result = await answer_cache.get(query, cache_ocr_key, qtype)
         if cached_result is not None:
             cache_stats = answer_cache.get_stats()
             logger.info(
@@ -786,7 +807,7 @@ Priority 30 (LOW):
                 length_constraint=length_constraint,
             )
 
-        final_answer = postprocess_answer(draft_answer, qtype)
+        final_answer = postprocess_answer(draft_answer, qtype, max_length=max_chars)
 
         # Enhanced logging: track length changes through post-processing (Fix #3)
         if normalized_qtype == "explanation":
@@ -812,7 +833,7 @@ Priority 30 (LOW):
 
         # PHASE 2B: Store result in cache for future requests
         result = {"type": qtype, "query": query, "answer": final_answer}
-        answer_cache.set(query, cache_ocr_key, qtype, result)
+        await answer_cache.set(query, cache_ocr_key, qtype, result)
         logger.debug("Cached answer for query_type=%s", qtype)
 
         return result

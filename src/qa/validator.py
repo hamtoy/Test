@@ -24,6 +24,7 @@ class ValidationResult:
     score: float = 1.0
 
     def has_errors(self) -> bool:
+        """Check if any violations exist."""
         return bool(self.violations)
 
     def get_error_summary(self) -> str:
@@ -102,8 +103,8 @@ class UnifiedValidator:
         sentences = answer.split(".")
         count = len([s for s in sentences if s.strip()])
 
-        min_val = sentence_rule.get("min", 3)
-        max_val = sentence_rule.get("max", 4)
+        min_val = sentence_rule.get("min") or 3
+        max_val = sentence_rule.get("max") or 4
 
         violations: list[dict[str, Any]] = []
         if count < min_val or count > max_val:

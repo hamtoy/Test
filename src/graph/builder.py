@@ -168,7 +168,7 @@ class QAGraphBuilder:
         어떤 query_type에서 사용되는지 자동으로 매핑합니다.
         """
         # 1. Constraint를 사용하는 Template 매핑 생성
-        constraint_to_query_types: dict[str, list[str]] = {}
+        constraint_to_query_types: dict[str, set[str]] = {}
 
         for template in TEMPLATES:
             # template['name']에서 query_type 추출
@@ -180,22 +180,21 @@ class QAGraphBuilder:
             # 이 템플릿이 enforce하는 모든 constraint에 query_type 매핑
             for constraint_id in template.get("enforces", []):
                 if constraint_id not in constraint_to_query_types:
-                    constraint_to_query_types[constraint_id] = []
-                if query_type not in constraint_to_query_types[constraint_id]:
-                    constraint_to_query_types[constraint_id].append(query_type)
+                    constraint_to_query_types[constraint_id] = set()
+                constraint_to_query_types[constraint_id].add(query_type)
 
-        # 2. Constraint 생성 시 query_type 설정
+        # 2. Constraint 생성 및 관계 설정
         with self.driver.session() as session:
             for c in CONSTRAINTS:
                 constraint_id = c["id"]
-                query_types = constraint_to_query_types.get(constraint_id, [])
+                linked_types = constraint_to_query_types.get(constraint_id, set())
 
-                # 여러 query_type에서 사용되면 첫 번째 것 사용
-                # 전역 제약사항(모든 타입에서 사용)이면 None
-                if not query_types or len(query_types) >= 3:
-                    query_type = None
+                # 주요 query_type 설정 (속성용 - 하나만 선택)
+                # 3개 이상이면 전역/공통으로 간주하여 None
+                if not linked_types or len(linked_types) >= 3:
+                    primary_query_type = None
                 else:
-                    query_type = query_types[0]  # 첫 번째 query_type 사용
+                    primary_query_type = list(linked_types)[0]
 
                 session.run(
                     """
@@ -208,17 +207,29 @@ class QAGraphBuilder:
                     id=constraint_id,
                     desc=c["description"],
                     type=c["type"],
-                    query_type=query_type,
+                    query_type=primary_query_type,
                     props=c,
                 )
 
+                # HAS_CONSTRAINT 관계 생성 (모든 연결된 타입에 대해)
+                for q_type in linked_types:
+                    session.run(
+                        """
+                        MATCH (qt:QueryType {name: $qt})
+                        MATCH (c:Constraint {id: $cid})
+                        MERGE (qt)-[:HAS_CONSTRAINT]->(c)
+                        """,
+                        qt=q_type,
+                        cid=constraint_id,
+                    )
+
                 # 로깅
-                qt_display = query_type or "전역"
+                qt_display = primary_query_type or f"전역({len(linked_types)}개)"
                 self.logger.debug(
-                    f"Constraint '{constraint_id}' -> query_type: {qt_display}",
+                    f"Constraint '{constraint_id}' -> query_type: {qt_display}, linked: {linked_types}",
                 )
 
-        print(f"✅ 제약 조건 {len(CONSTRAINTS)}개 생성/병합 (query_type 자동 설정)")
+        print(f"✅ 제약 조건 {len(CONSTRAINTS)}개 생성/병합 (HAS_CONSTRAINT 연결 완료)")
 
     def link_rules_to_constraints(self) -> None:
         """규칙과 제약 조건 연결(기본 포함 매칭 + 키워드 기반 보강)."""

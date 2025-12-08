@@ -93,7 +93,7 @@ class VectorSearchEngine:
                     "score": score,
                 }
                 for doc, score in results
-                if score >= score_threshold
+                if score is not None and score >= score_threshold
             ]
         except Exception as e:
             logger.warning("Vector search failed: %s", e)

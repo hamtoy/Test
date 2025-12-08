@@ -386,8 +386,10 @@ class WorkspaceExecutor:
         else:
             rules_list = DEFAULT_ANSWER_RULES
 
-        # Length constraint based on query type
-        length_constraint = self._get_length_constraint(ctx.query_type)
+        # Length constraint based on query type (with OCR length for explanation)
+        length_constraint = self._get_length_constraint(
+            ctx.query_type, len(ctx.ocr_text)
+        )
 
         # Deduplication section
         dedup_section = ""
@@ -488,13 +490,27 @@ class WorkspaceExecutor:
 
         return answer
 
-    def _get_length_constraint(self, query_type: str) -> str:
-        """Get length constraint based on query type."""
+    def _get_length_constraint(self, query_type: str, ocr_len: int = 0) -> str:
+        """Get length constraint based on query type.
+
+        Args:
+            query_type: 질의 유형
+            ocr_len: OCR 텍스트 길이 (explanation용 동적 계산)
+        """
         constraints = {
-            "target_short": "답변은 불릿·마크다운(볼드/기울임) 없이 한 문장으로, 최대 50단어 이내로 작성하세요.",
-            "target_long": "답변은 불릿·마크다운(볼드/기울임) 없이 3-4문장, 최대 100단어 이내로 작성하세요.",
-            "reasoning": "불릿·마크다운(볼드/기울임) 없이 한 단락으로 간결하게 추론을 제시하세요.",
+            "target_short": "답변은 불릿·마크다운(볼드/기울임) 없이 1-2문장, 최대 50단어 이내로 작성하세요.",
+            "target_long": "답변은 불릿·마크다운(볼드/기울임) 없이 5-6문장, 최대 150단어 이내로 작성하세요.",
+            "reasoning": "불릿·마크다운(볼드/기울임) 없이 3-4문장, 최대 200단어로 핵심 추론만 간결하게 제시하세요.",
         }
+
+        # explanation: OCR 60-80% 동적 계산
+        if query_type in ("explanation", "global_explanation"):
+            if ocr_len > 0:
+                min_chars = int(ocr_len * 0.6)
+                max_chars = int(ocr_len * 0.8)
+                return f"답변은 OCR 길이에 비례하여 {min_chars}-{max_chars}자 범위로 작성하세요. 불릿·마크다운 사용 가능."
+            return "답변은 OCR 길이의 60-80% 수준으로 작성하세요."
+
         return constraints.get(query_type, "")
 
     def _get_difficulty_hint(self, ocr_text: str) -> str:

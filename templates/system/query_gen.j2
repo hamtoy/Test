@@ -17,7 +17,7 @@
       <!-- Neo4j에서 정의한 타입별 제약사항 (priority 순) -->
       <neo4j_constraints>
         {% for constraint in constraints %}
-        <constraint priority="{{ constraint.priority | default(50) }}" name="{{ constraint.name | default('') }}">
+        <constraint priority="{{ constraint.priority if constraint.priority is not none else 50 }}" name="{{ constraint.name | default('') }}">
           {{ constraint.description }}
         </constraint>
         {% endfor %}
@@ -88,8 +88,8 @@
         <neo4j_guided_generation>
           Neo4j 제약사항에 따라 질의를 생성한다.
           {% for constraint in constraints %}
-          {% if constraint.priority | default(0) >= 90 %}
-          - [Priority {{ constraint.priority | default(0) }}] {{ constraint.description }}
+          {% if constraint.priority | default(0, true) >= 90 %}
+          - [Priority {{ constraint.priority | default(0, true) }}] {{ constraint.description }}
           {% endif %}
           {% endfor %}
         </neo4j_guided_generation>
@@ -151,7 +151,7 @@
         <checklist>
           {% if constraints %}
           {% for constraint in constraints %}
-          {% if constraint.priority | default(0) >= 90 %}
+          {% if constraint.priority | default(0, true) >= 90 %}
           <item>{{ constraint.name | default("") }}: {{ constraint.description[:120] }}...</item>
           {% endif %}
           {% endfor %}

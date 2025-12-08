@@ -3,21 +3,23 @@
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 
+import pytest
 
 # Add project root to path for direct imports
 project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
+
+# Import AnswerCache directly from the module file to avoid FastAPI dependency
+import importlib.util  # noqa: E402
 
 from src.config.constants import (  # noqa: E402
     DEFAULT_CACHE_TTL_SECONDS,
     QA_CACHE_OCR_TRUNCATE_LENGTH,
     QA_GENERATION_OCR_TRUNCATE_LENGTH,
 )
-
-# Import AnswerCache directly from the module file to avoid FastAPI dependency
-import importlib.util  # noqa: E402
 
 spec = importlib.util.spec_from_file_location(
     "cache_module",
@@ -65,6 +67,15 @@ class TestCacheConfiguration:
         default_cache = AnswerCache()
         assert default_cache.ttl == DEFAULT_CACHE_TTL_SECONDS
 
+    def test_cache_has_redis_support(self) -> None:
+        """Test that cache has Redis-related attributes."""
+        cache = AnswerCache()
+        assert hasattr(cache, "use_redis")
+        assert hasattr(cache, "redis")
+        assert hasattr(cache, "prefix")
+        assert cache.use_redis is False  # No Redis client provided
+        assert cache.prefix == "qa:answer:"
+
 
 class TestCacheKeyGeneration:
     """Tests for cache key generation and consistency."""
@@ -107,27 +118,30 @@ class TestCacheStats:
         assert stats["hit_rate_percent"] == 0.0
         assert stats["cache_size"] == 0
         assert stats["ttl_seconds"] == DEFAULT_CACHE_TTL_SECONDS
+        assert stats["using_redis"] is False
 
-    def test_cache_stats_after_miss(self) -> None:
+    @pytest.mark.asyncio
+    async def test_cache_stats_after_miss(self) -> None:
         """Test cache statistics after a cache miss."""
         cache = AnswerCache()
 
-        result = cache.get("test query", "test ocr", "explanation")
+        result = await cache.get("test query", "test ocr", "explanation")
         assert result is None
 
         stats = cache.get_stats()
         assert stats["misses"] == 1
         assert stats["total_requests"] == 1
 
-    def test_cache_stats_after_hit(self) -> None:
+    @pytest.mark.asyncio
+    async def test_cache_stats_after_hit(self) -> None:
         """Test cache statistics after a cache hit."""
         cache = AnswerCache()
 
         # Store a value
-        cache.set("test query", "test ocr", "explanation", {"answer": "test"})
+        await cache.set("test query", "test ocr", "explanation", {"answer": "test"})
 
         # Retrieve it
-        result = cache.get("test query", "test ocr", "explanation")
+        result = await cache.get("test query", "test ocr", "explanation")
         assert result is not None
 
         stats = cache.get_stats()
@@ -139,38 +153,50 @@ class TestCacheStats:
 class TestCacheTTLExpiration:
     """Tests for cache TTL expiration behavior."""
 
-    def test_cache_expiration_logic(self) -> None:
+    @pytest.mark.asyncio
+    async def test_cache_expiration_logic(self) -> None:
         """Test that expired entries are not returned."""
         # Use very short TTL for testing
         cache = AnswerCache(ttl_seconds=1)
 
-        cache.set("test query", "test ocr", "explanation", {"answer": "test"})
+        await cache.set("test query", "test ocr", "explanation", {"answer": "test"})
 
         # Immediate retrieval should work
-        result = cache.get("test query", "test ocr", "explanation")
+        result = await cache.get("test query", "test ocr", "explanation")
         assert result is not None
 
-        # Wait for expiration (simulate by directly checking the logic)
-        import time
-
+        # Wait for expiration
         time.sleep(1.1)
 
         # Should return None after expiration
-        result = cache.get("test query", "test ocr", "explanation")
+        result = await cache.get("test query", "test ocr", "explanation")
         assert result is None
 
-    def test_clear_expired_entries(self) -> None:
+    @pytest.mark.asyncio
+    async def test_clear_expired_entries(self) -> None:
         """Test manual clearing of expired entries."""
         cache = AnswerCache(ttl_seconds=1)
 
-        cache.set("query1", "ocr1", "explanation", {"answer": "test1"})
-        cache.set("query2", "ocr2", "reasoning", {"answer": "test2"})
-
-        import time
+        await cache.set("query1", "ocr1", "explanation", {"answer": "test1"})
+        await cache.set("query2", "ocr2", "reasoning", {"answer": "test2"})
 
         time.sleep(1.1)
 
         # Clear expired entries
         cleared = cache.clear_expired()
         assert cleared == 2
+        assert cache.get_stats()["cache_size"] == 0
+
+    @pytest.mark.asyncio
+    async def test_clear_all_entries(self) -> None:
+        """Test clearing all cache entries."""
+        cache = AnswerCache()
+
+        await cache.set("query1", "ocr1", "explanation", {"answer": "test1"})
+        await cache.set("query2", "ocr2", "reasoning", {"answer": "test2"})
+
+        assert cache.get_stats()["cache_size"] == 2
+
+        await cache.clear()
+
         assert cache.get_stats()["cache_size"] == 0

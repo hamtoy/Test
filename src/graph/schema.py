@@ -40,24 +40,28 @@ CONSTRAINTS: list[dict[str, Any]] = [
         "type": "count",
         "min": 3,
         "max": 4,
+        "category": "query",
     },
     {
         "id": "explanation_summary_limit",
         "description": "설명문/요약문 중 하나만 포함",
         "type": "exclusivity",
         "exception": "4턴 세션에서만 둘 다 허용",
+        "category": "query",
     },
     {
         "id": "calculation_limit",
         "description": "계산 요청 질의 1회 제한",
         "type": "count",
         "max": 1,
+        "category": "query",
     },
     {
         "id": "table_chart_prohibition",
         "description": "표/그래프 참조 금지",
         "type": "prohibition",
         "pattern": r"(표|그래프)(에 따르면|에서)",
+        "category": "answer",
     },
 ]
 

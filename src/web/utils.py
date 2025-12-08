@@ -168,7 +168,11 @@ def detect_workflow(
     return "edit_answer" if has_edit else "query_generation"
 
 
-def apply_answer_limits(answer: str, qtype: str) -> str:
+def apply_answer_limits(
+    answer: str,
+    qtype: str,
+    max_length: int | None = None,
+) -> str:
     """질의 타입별로 답변 길이 제한 적용.
 
     4가지 실제 질질 타입:
@@ -177,6 +181,8 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
     3. target (short): 질질 3 (숫자/명칭) - 단답형 자동 탐지
     4. target (long): 질질 4 (강조) - 서술형 자동 탐지
     """
+    # Normalize qtype locally
+    normalized_qtype = QTYPE_MAP.get(qtype, qtype)
 
     def _limit_words(text: str, max_words: int) -> str:
         words = text.split()
@@ -191,8 +197,8 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
         #    Gemini의 원래 생성 길이를 사용하여 답변 손실 방지 (28-50% 손실 문제 해결)
     }
 
-    if qtype in config:
-        limits = config[qtype]
+    if normalized_qtype in config:
+        limits = config[normalized_qtype]
 
         # 1단계: 문장 제한
         sentences = [s.strip() for s in answer.split(".") if s.strip()]
@@ -205,40 +211,75 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
         # 2단계: 단어 수 제한 (최종 조정)
         answer = _limit_words(answer, limits["max_words"])
 
-    elif qtype == "reasoning":
-        # reasoning: No word/sentence limits (prevent 28-50% content loss)
-        # Only ensure period at end for consistency
-        # Handle ellipsis and multiple trailing periods
-        answer = answer.rstrip()
-        answer = answer.rstrip(".")
-        answer += "."
+    elif normalized_qtype == "reasoning":
+        # reasoning: 3-4문장, 최대 200단어로 제한
+        def _limit_words_reasoning(text: str, max_words: int) -> str:
+            words = text.split()
+            if len(words) > max_words:
+                text = " ".join(words[:max_words])
+            return text
 
-    elif qtype == "global_explanation":
+        sentences = [s.strip() for s in answer.split(".") if s.strip()]
+        if sentences and len(sentences) > 5:
+            sentences = sentences[:5]
+            answer = ". ".join(sentences)
+            if answer and not answer.endswith("."):
+                answer += "."
+        answer = _limit_words_reasoning(answer, 200)
+        if answer and not answer.endswith("."):
+            answer += "."
+
+    elif normalized_qtype == "explanation":
         # global_explanation: No word/sentence limits, but ensure period at end
         if answer and not answer.endswith("."):
             answer += "."
+
+        # Dynamic max length enforcement (if provided)
+        if max_length and len(answer) > max_length:
+            # Cut at maximum length first
+            truncated = answer[:max_length]
+
+            # Try to find the last sentence ending within the limit
+            # (Check for period within the last 20% or last 100 chars to avoid cutting too much)
+            last_period = truncated.rfind(".")
+            if last_period > -1 and last_period > len(truncated) - 150:
+                answer = truncated[: last_period + 1]
+            else:
+                # If no suitable period found, we might be cutting a very long sentence.
+                # For now, just force cut and add ellipsis if strictly needed,
+                # but usually answer should have periods.
+                # Let's trust the cut or try to keep it slightly over if no period found?
+                # User wants STRICT max. So we force cut if no period.
+                if last_period > -1:
+                    answer = truncated[: last_period + 1]
+                else:
+                    answer = truncated + "."
 
     elif qtype == "target":
         # 타겟 질질: 단답형 vs 서술형 자동 판단
         word_count = len(answer.split())
 
         if word_count < 15:
-            # 3. target short: 매우 간결
+            # 3. target short: 매우 간결 (1-2문장)
             answer = _limit_words(answer, 50)
         else:
-            # 4. target long: 180단어, 최대 5문장
+            # 4. target long: 200단어, 최대 6문장
             sentences = [s.strip() for s in answer.split(".") if s.strip()]
             if sentences:
-                sentences = sentences[:5]
+                sentences = sentences[:6]
                 answer = ". ".join(sentences)
                 if answer and not answer.endswith("."):
                     answer += "."
-            answer = _limit_words(answer, 180)
+            answer = _limit_words(answer, 200)
 
     return answer
 
 
-def postprocess_answer(answer: str, qtype: str) -> str:
+def postprocess_answer(
+    answer: str,
+    qtype: str,
+    max_length: int | None = None,
+) -> str:
     """답변 후처리 - CSV 규칙에 맞게 마크다운 정리.
 
     CSV 규칙 (guide.csv, qna.csv)에서 허용하는 마크다운:
@@ -322,7 +363,7 @@ def postprocess_answer(answer: str, qtype: str) -> str:
     answer = "\n".join(cleaned_lines)
 
     # 6. 길이 제한 적용
-    answer = apply_answer_limits(answer, qtype)
+    answer = apply_answer_limits(answer, qtype, max_length=max_length)
 
     return answer.strip()
 
