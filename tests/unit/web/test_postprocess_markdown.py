@@ -1,8 +1,8 @@
-"""Tests for markdown handling consistency in postprocess_answer.
+"""Tests for markdown preservation in postprocess_answer.
 
 Based on guide.csv rules:
-- target: Plain text only (remove all markdown)
-- explanation/reasoning: Structural markdown only (headings/lists), content is plain text
+- CSV 규칙에서는 마크다운 형식으로 답변을 생성하도록 명시
+- postprocess_answer()는 마크다운을 유지하고 기본 정리만 수행
 """
 
 import pytest
@@ -13,24 +13,30 @@ from src.web.utils import postprocess_answer
 @pytest.mark.parametrize(
     "qtype,input_text,expected",
     [
-        # target: 마크다운 모두 제거 (guide.csv 규칙)
-        ("target", "**핵심**입니다", "핵심입니다"),
-        ("target", "- **항목1**: 내용", "항목1: 내용"),
-        ("target", "1. *방법*: 설명", "1. 방법: 설명"),
-        # explanation/reasoning: Bullets removed, paragraphs combined
-        # Note: Structural markdown (headings/lists) handling is done at prompt level
-        # Postprocessing focuses on cleaning and paragraph formatting
+        # 마크다운 유지 테스트 - reasoning/global_explanation는 period 추가
+        (
+            "reasoning",
+            "**핵심 포인트:**\n- 첫 번째 항목\n- 두 번째 항목",
+            "**핵심 포인트:**\n- 첫 번째 항목\n- 두 번째 항목.",
+        ),
         (
             "global_explanation",
-            "**주요 포인트**\n첫 번째 설명",
-            "주요 포인트 첫 번째 설명.",
+            "**주요 분석:**\n\n1. 항목 1\n2. 항목 2",
+            "**주요 분석:**\n\n1. 항목 1\n2. 항목 2.",
         ),
-        ("reasoning", "- 항목1: 설명\n- 항목2: 설명", "항목1: 설명 항목2: 설명."),
-        # Additional test: Verify bold removal works in target
-        ("target", "*강조* 텍스트", "강조 텍스트"),
+        # 기본 정리 테스트 - 연속된 빈 줄 정리
+        ("reasoning", "텍스트\n\n\n\n여러 줄바꿈", "텍스트\n\n\n여러 줄바꿈."),
+        # target 타입도 마크다운 유지 (period는 apply_answer_limits에서 처리)
+        ("target", "**핵심**입니다", "**핵심**입니다"),
+        ("target_short", "- **항목1**: 내용", "- **항목1**: 내용"),
+        ("target_long", "*강조* 텍스트", "*강조* 텍스트"),
+        # 코드 블록은 제거됨
+        ("reasoning", "```python\ncode```\n텍스트", "텍스트."),
+        # 링크는 텍스트만 남김
+        ("global_explanation", "[링크 텍스트](http://example.com)", "링크 텍스트."),
     ],
 )
-def test_markdown_consistency(qtype: str, input_text: str, expected: str) -> None:
-    """guide.csv 규칙에 따른 마크다운 처리 검증."""
+def test_markdown_preservation(qtype: str, input_text: str, expected: str) -> None:
+    """마크다운 유지 검증 - CSV 규칙과 일치."""
     result = postprocess_answer(input_text, qtype)
     assert result == expected
