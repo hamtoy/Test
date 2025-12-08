@@ -71,7 +71,7 @@ jobs:
     if: needs.generate-report.outputs.total_calls > 100
     steps:
       - name: Create Issue
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const totalCalls = ${{ needs.generate-report.outputs.total_calls }};
