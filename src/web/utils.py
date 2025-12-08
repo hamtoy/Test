@@ -231,7 +231,12 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
 
 
 def postprocess_answer(answer: str, qtype: str) -> str:
-    """답변 후처리 - 서식 규칙 위반 자동 수정."""
+    """답변 후처리 - 마크다운 형식 유지하면서 기본 정리 수행.
+
+    CSV 규칙 (guide.csv, qna.csv)에서는 마크다운 형식으로
+    답변을 생성하도록 명시되어 있습니다.
+    따라서 마크다운을 유지하고 기본 정리만 수행합니다.
+    """
 
     def _strip_code_and_links(text: str) -> str:
         text = re.sub(r"```.*?```", " ", text, flags=re.DOTALL)
@@ -243,93 +248,32 @@ def postprocess_answer(answer: str, qtype: str) -> str:
     # 1. 태그 제거
     answer = strip_output_tags(answer)
     answer = _strip_code_and_links(answer)
-    # 1.1 숫자 포맷 깨짐 복원
+
+    # 2. 숫자 포맷 깨짐 복원
     answer = fix_broken_numbers(answer)
-    # 1.2 볼드 마커 정규화: 짝이 짝된 **텍스트*나 *텍스트** 제거
-    answer = re.sub(r"\*\*([^*]+)\*\s*\n\s*\*", r"**\1**", answer)
-    answer = re.sub(r"\*\*([^*]+)\*(?!\*)", r"\1", answer)
-    answer = re.sub(r"\*([^*]+)\*\*", r"\1", answer)
-    answer = re.sub(r"\*\*(.*?)\*\*", r"**\1**", answer, flags=re.DOTALL)
-    answer = re.sub(r"(?<!\*)\*(?!\*)", "", answer)
 
-    # 2. ###/## 소제목 → **소제목** + 줄바꿈
-    answer = re.sub(r"\s*###\s+([^#\n]+)", r"\n\n**\1**\n\n", answer)
-    answer = re.sub(r"\s*##\s+([^#\n]+)", r"\n\n**\1**\n\n", answer)
+    # 3. 마크다운 유지 - 기본 정리만 수행
+    answer = answer.strip()
 
-    # 3. 별표 불릿(*) → 하이픈(-) + 줄바꿈 보장
-    answer = re.sub(r"\s*\*\s+\*\*([^*]+)\*\*:", r"\n- **\1**:", answer)
-    answer = re.sub(r"\s*\*\s+", r"\n- ", answer)
+    # 4. 불필요한 줄바꿈 정리 (마크다운 유지하면서)
+    # 연속된 빈 줄은 최대 2개까지만 유지 (= 최대 3개의 \n 문자)
+    # 예: "텍스트\n\n\n\n줄바꿈" (4개 \n) → "텍스트\n\n\n줄바꿈" (3개 \n)
+    lines = answer.split("\n")
+    cleaned_lines = []
+    empty_count = 0
 
-    # 4. 질의 유형별 후처리
-    if qtype == "target":
-        # target 질질 (3,4번): 불릿/개행 제거 후 즕습
-        lines = [
-            re.sub(r"^[\-\*\u2022]\s*", "", line).strip(" -•\t")
-            for line in answer.splitlines()
-            if line.strip()
-        ]
-        if lines:
-            answer = ". ".join(lines)
-
-        sentences = [
-            s.strip()
-            for s in re.split(r"(?<!\d)\.(?!\d)", answer.replace("\n", ". "))
-            if s.strip()
-        ]
-        if sentences:
-            word_cnt = len(answer.split())
-            max_sentences = 1 if word_cnt < 15 else 4
-            answer = ". ".join(sentences[:max_sentences]).strip()
+    for line in lines:
+        if line.strip() == "":
+            empty_count += 1
+            if empty_count <= 2:
+                cleaned_lines.append(line)
         else:
-            answer = answer.strip()
-        answer = re.sub(r"\s+", " ", answer).strip()
+            empty_count = 0
+            cleaned_lines.append(line)
 
-        # guide.csv 규칙: target은 평문만 사용
-        # 제거: **bold**, *italic*, __underline__
-        answer = re.sub(r"\*\*(.*?)\*\*", r"\1", answer, flags=re.DOTALL)  # bold 제거
-        answer = re.sub(r"\*(.*?)\*", r"\1", answer)  # italic 제거
-        answer = re.sub(r"[_]{1,2}(.*?)[_]{1,2}", r"\1", answer)  # underline 제거
+    answer = "\n".join(cleaned_lines)
 
-    elif qtype in {"global_explanation", "reasoning"}:
-        # guide.csv 규칙: 구조만 마크다운(제목/목록), 내용은 평문
-        # 제거: 본문의 **bold**, *italic* (제목/목록은 유지)
-        # 이는 프롬프트 레벨에서 처리되어야 함 (후처리는 complex)
-        # 서술문 (1,2번): 불릿(-) 제거 및 문단 정리
-        paragraph_lines: list[str] = []
-        for line in answer.splitlines():
-            stripped = line.strip()
-            if not stripped:
-                paragraph_lines.append("")
-                continue
-            cleaned = re.sub(r"^[-•]\s*", "", stripped)
-            paragraph_lines.append(cleaned)
-        # 빈 줄 기준으로 문단 분리 후, 단락 내 개행을 공백으로 치환
-        paragraphs: list[str] = []
-        for paragraph in "\n".join(paragraph_lines).split("\n\n"):
-            if not paragraph.strip():
-                continue
-            # 콜론 뒤 개행 제거
-            paragraph = re.sub(r"\n\s*:\s*", ": ", paragraph)
-            paragraph = re.sub(r"\s*\n\s*", " ", paragraph)
-            paragraph = re.sub(r"\s+", " ", paragraph).strip(" -•\t")
-            if qtype == "reasoning":
-                # reasoning: 남은 남이나 추론, 근거 등 제거
-                paragraph = re.sub(
-                    r"^(근거|추론|결론|배경|요약)\s*[:\-]\s*",
-                    "",
-                    paragraph,
-                    flags=re.IGNORECASE,
-                )
-            paragraphs.append(paragraph)
-        answer = "\n\n".join(paragraphs)
-
-    # 5. 공통 정리: 남은 불릿 및 과도한 개행 제거
-    answer = answer.replace("*", "")  # 남은 별표(강조 아님) 제거
-    answer = re.sub(r"^[-•]\s*", "", answer, flags=re.MULTILINE)
-    answer = re.sub(r"^#+\s*", "", answer, flags=re.MULTILINE)
-    answer = re.sub(r"\n{3,}", "\n\n", answer)
-
-    # 6. 길이 제한 적용
+    # 5. 길이 제한 적용
     answer = apply_answer_limits(answer, qtype)
 
     return answer.strip()
