@@ -256,7 +256,8 @@ def postprocess_answer(answer: str, qtype: str) -> str:
     answer = answer.strip()
 
     # 4. 불필요한 줄바꿈 정리 (마크다운 유지하면서)
-    # 연속된 빈 줄은 최대 2개까지만 유지
+    # 연속된 빈 줄은 최대 2개까지만 유지 (= 최대 3개의 \n 문자)
+    # 예: "텍스트\n\n\n\n줄바꿈" (4개 \n) → "텍스트\n\n\n줄바꿈" (3개 \n)
     lines = answer.split("\n")
     cleaned_lines = []
     empty_count = 0
