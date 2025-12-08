@@ -5,7 +5,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import pytest
 
 # Add project root to path for direct imports
 project_root = Path(__file__).parent.parent.parent.parent
@@ -42,7 +41,9 @@ class TestCacheConfiguration:
 
     def test_ocr_truncate_lengths_synced(self) -> None:
         """Test that QA_CACHE_OCR_TRUNCATE_LENGTH matches QA_GENERATION_OCR_TRUNCATE_LENGTH."""
-        assert QA_CACHE_OCR_TRUNCATE_LENGTH == QA_GENERATION_OCR_TRUNCATE_LENGTH == 3000, (
+        assert (
+            QA_CACHE_OCR_TRUNCATE_LENGTH == QA_GENERATION_OCR_TRUNCATE_LENGTH == 3000
+        ), (
             f"OCR truncate lengths must match at 3000. "
             f"Cache: {QA_CACHE_OCR_TRUNCATE_LENGTH}, Generation: {QA_GENERATION_OCR_TRUNCATE_LENGTH}"
         )
