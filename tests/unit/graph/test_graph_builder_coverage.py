@@ -109,14 +109,14 @@ class TestQAGraphBuilder:
                     if constraint_id not in constraint_to_query_types:
                         constraint_to_query_types[constraint_id] = set()
                     constraint_to_query_types[constraint_id].add(query_type)
-            
+
             expected_calls = 0
             for c in CONSTRAINTS:
                 constraint_id = c["id"]
                 linked_types = constraint_to_query_types.get(constraint_id, set())
                 # 1 call for MERGE + 1 call per linked query type
                 expected_calls += 1 + len(linked_types)
-            
+
             assert mock_session.run.call_count == expected_calls
 
     def test_link_rules_to_constraints(self) -> None:
