@@ -6,20 +6,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-
-@pytest.mark.asyncio
-class TestExplanationAnswerLength:
-    """Tests for explanation answer length constraint."""
-
-    async def test_explanation_type_has_length_constraint(self) -> None:
-        """Test that explanation type generates length constraint instructions."""
-        from src.web.routers.qa_generation import generate_single_qa
-
-        mock_agent = MagicMock()
-        mock_agent.generate_query = AsyncMock(return_value=["테스트 설명 질의"])
-        
-        # Create a detailed mock answer (simulating comprehensive response)
-        detailed_answer = """전일 한국 증시는 여러 복합적인 요인으로 하락 마감했습니다.
+# Sample comprehensive answer for testing (simulates expected output)
+SAMPLE_COMPREHENSIVE_ANSWER = """전일 한국 증시는 여러 복합적인 요인으로 하락 마감했습니다.
 
 **주요 하락 요인**
 
@@ -34,8 +22,19 @@ class TestExplanationAnswerLength:
 **결과적으로**
 
 KOSPI 지수는 전일 대비 1.14% 하락한 2,450포인트로 마감했으며, KOSDAQ은 2.35% 하락한 850포인트를 기록했습니다. 외국인과 기관 투자자 모두 순매도를 기록하며 시장 전반의 약세를 이끌었습니다."""
-        
-        mock_agent.rewrite_best_answer = AsyncMock(return_value=detailed_answer)
+
+
+@pytest.mark.asyncio
+class TestExplanationAnswerLength:
+    """Tests for explanation answer length constraint."""
+
+    async def test_explanation_type_has_length_constraint(self) -> None:
+        """Test that explanation type generates length constraint instructions."""
+        from src.web.routers.qa_generation import generate_single_qa
+
+        mock_agent = MagicMock()
+        mock_agent.generate_query = AsyncMock(return_value=["테스트 설명 질의"])
+        mock_agent.rewrite_best_answer = AsyncMock(return_value=SAMPLE_COMPREHENSIVE_ANSWER)
 
         with (
             patch("src.web.routers.qa_generation.get_cached_kg", return_value=None),
@@ -43,7 +42,7 @@ KOSPI 지수는 전일 대비 1.14% 하락한 2,450포인트로 마감했으며,
             patch("src.web.routers.qa_generation._get_pipeline", return_value=None),
             patch("src.web.routers.qa_generation.answer_cache.get", return_value=None),
             patch("src.web.routers.qa_generation.answer_cache.set"),
-            patch("src.web.routers.qa_generation.postprocess_answer", return_value=detailed_answer),
+            patch("src.web.routers.qa_generation.postprocess_answer", return_value=SAMPLE_COMPREHENSIVE_ANSWER),
         ):
             await generate_single_qa(
                 mock_agent,
