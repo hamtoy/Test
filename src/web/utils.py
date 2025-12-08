@@ -138,7 +138,9 @@ def fix_broken_numbers(text: str) -> str:
 
 
 def detect_workflow(
-    query: str | None, answer: str | None, edit_request: str | None,
+    query: str | None,
+    answer: str | None,
+    edit_request: str | None,
 ) -> Literal[
     "full_generation",
     "edit_both",
@@ -185,8 +187,6 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
     # 실제 사용되는 4가지 질질 타입별 설정
     config = {
         # 1. 전체 마모뇌 설명: No word limit (length controlled by prompt: 1000-1500 chars)
-        # Removed max_words limit to allow full explanation as per prompt requirements
-        # "global_explanation": {"max_words": 200, "max_sentences": 6},
         # 2. 추론: 100단어, 최대 4문장
         "reasoning": {"max_words": 100, "max_sentences": 4},
     }

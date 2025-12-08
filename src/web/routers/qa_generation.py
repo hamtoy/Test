@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 from datetime import datetime
 from typing import Any, cast
@@ -99,7 +100,8 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
                 batch_types = QA_BATCH_TYPES_THREE
             if not batch_types:
                 raise HTTPException(
-                    status_code=400, detail="batch_types이 비어 있습니다.",
+                    status_code=400,
+                    detail="batch_types이 비어 있습니다.",
                 )
 
             first_type = batch_types[0]
@@ -625,16 +627,19 @@ Priority 30 (LOW):
             raise SafetyFilterError("No text content in response.")
 
         # Enhanced logging for answer length debugging (Fix #3)
-        logger.debug(
-            "Answer length tracking - qtype=%s, OCR=%d chars, draft=%d chars",
-            qtype,
-            len(ocr_text),
-            len(draft_answer),
-        )
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Answer length tracking - qtype=%s, OCR=%d chars, draft=%d chars",
+                qtype,
+                len(ocr_text),
+                len(draft_answer),
+            )
 
         # 통합 검증으로 수집할 위반/경고 (질의 포함하여 금지 패턴 검증 강화)
         val_result = unified_validator.validate_all(
-            draft_answer, normalized_qtype, query,
+            draft_answer,
+            normalized_qtype,
+            query,
         )
         all_issues: list[str] = []
 
@@ -662,7 +667,8 @@ Priority 30 (LOW):
                 validator_cls = _get_validator_class()
                 validator = validator_cls(kg_wrapper)
                 rule_check = validator._check_rule_compliance(
-                    draft_answer, normalized_qtype,
+                    draft_answer,
+                    normalized_qtype,
                 )
                 score = rule_check.get("score")
                 score_val = score if isinstance(score, (int, float)) else 1.0
@@ -685,12 +691,15 @@ Priority 30 (LOW):
             if fv.get("severity") == "error":
                 all_violations.append(fv["type"])
                 logger.warning(
-                    "서식 위반 감지: %s - '%s'", fv.get("description", ""), fv["match"],
+                    "서식 위반 감지: %s - '%s'",
+                    fv.get("description", ""),
+                    fv["match"],
                 )
 
         if current_pipeline is not None:
             validation = current_pipeline.validate_output(
-                normalized_qtype, draft_answer,
+                normalized_qtype,
+                draft_answer,
             )
             if not validation.get("valid", True):
                 all_violations.extend(validation.get("violations", []))
