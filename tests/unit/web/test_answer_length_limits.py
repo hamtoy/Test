@@ -51,18 +51,24 @@ class TestAnswerLengthLimits:
             f"Original: {len(long_answer)}, Result: {len(result)}"
         )
 
-    def test_reasoning_has_word_limit(self) -> None:
-        """Test that reasoning type still has word limit applied."""
-        # Create a long answer with many words
+    def test_reasoning_no_word_limit(self) -> None:
+        """Test that reasoning type does NOT have word limit applied.
+
+        Fix for answer truncation issue: reasoning answers should use the full
+        response from Gemini without truncation to prevent 28-50% content loss.
+        """
+        # Create a long answer with many words (simulating Gemini's full response)
         long_answer = " ".join(["테스트"] * 150) + "."
+        original_word_count = len(long_answer.split())
 
         # Apply limits for reasoning
         result = apply_answer_limits(long_answer, "reasoning")
 
-        # Should be limited to ~100 words
-        word_count = len(result.split())
-        assert word_count <= 110, (
-            f"reasoning should be limited to ~100 words, got {word_count}"
+        # Should NOT be limited - should preserve original content
+        result_word_count = len(result.split())
+        assert result_word_count == original_word_count, (
+            f"reasoning should NOT truncate. "
+            f"Original: {original_word_count}, Result: {result_word_count}"
         )
 
     def test_target_short_maintains_limits(self) -> None:
