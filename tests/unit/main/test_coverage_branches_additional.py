@@ -143,17 +143,18 @@ def test_qa_rag_init_uses_env_and_driver(
     called: dict[str, Any] = {}
 
     class _Driver:
-        def __init__(self, uri: str, auth: tuple[str, str]) -> None:
+        def __init__(self, uri: str, auth: tuple[str, str], **kwargs: Any) -> None:
             called["uri"] = uri
             called["auth"] = auth
+            called["kwargs"] = kwargs
 
         def close(self) -> None:
             return None
 
     class _GraphDB:
         @staticmethod
-        def driver(uri: str, auth: tuple[str, str]) -> _Driver:
-            return _Driver(uri, auth)
+        def driver(uri: str, auth: tuple[str, str], **kwargs: Any) -> _Driver:
+            return _Driver(uri, auth, **kwargs)
 
     monkeypatch.setattr(qa_rag_system, "GraphDatabase", _GraphDB)
     monkeypatch.setattr(qa_connection, "GraphDatabase", _GraphDB)
