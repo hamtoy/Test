@@ -624,6 +624,14 @@ Priority 30 (LOW):
         if not draft_answer:
             raise SafetyFilterError("No text content in response.")
 
+        # Enhanced logging for answer length debugging (Fix #3)
+        logger.debug(
+            "Answer length tracking - qtype=%s, OCR=%d chars, draft=%d chars",
+            qtype,
+            len(ocr_text),
+            len(draft_answer),
+        )
+
         # 통합 검증으로 수집할 위반/경고 (질의 포함하여 금지 패턴 검증 강화)
         val_result = unified_validator.validate_all(
             draft_answer, normalized_qtype, query
@@ -713,6 +721,16 @@ Priority 30 (LOW):
             )
 
         final_answer = postprocess_answer(draft_answer, qtype)
+
+        # Enhanced logging: track length changes through post-processing (Fix #3)
+        if normalized_qtype == "explanation":
+            logger.info(
+                "Answer length - OCR: %d chars | Draft: %d chars | Final: %d chars | Query: %s",
+                len(ocr_text),
+                len(draft_answer),
+                len(final_answer),
+                query[:50],
+            )
 
         # Validate answer length for explanation type
         if normalized_qtype == "explanation":
