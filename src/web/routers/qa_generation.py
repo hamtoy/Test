@@ -46,7 +46,7 @@ router = APIRouter(prefix="/api", tags=["qa-generation"])
 @router.get("/qa/cache/stats")
 async def get_cache_stats() -> Dict[str, Any]:
     """Get cache statistics (PHASE 2B: Performance monitoring).
-    
+
     Returns:
         Cache metrics including hit rate, size, and performance impact
     """
@@ -55,7 +55,7 @@ async def get_cache_stats() -> Dict[str, Any]:
     time_saved_seconds = stats["hits"] * ESTIMATED_CACHE_HIT_TIME_SAVINGS
     stats["estimated_time_saved_seconds"] = time_saved_seconds
     stats["estimated_time_saved_minutes"] = round(time_saved_seconds / 60, 2)
-    
+
     return {
         "success": True,
         "data": stats,
@@ -66,13 +66,13 @@ async def get_cache_stats() -> Dict[str, Any]:
 @router.post("/qa/cache/clear")
 async def clear_cache() -> Dict[str, Any]:
     """Clear all cached answers (PHASE 2B: Cache management).
-    
+
     Returns:
         Success message with number of entries cleared
     """
     size_before = answer_cache.get_stats()["cache_size"]
     answer_cache.clear()
-    
+
     return {
         "success": True,
         "data": {"entries_cleared": size_before},
@@ -217,15 +217,15 @@ async def generate_single_qa(
     """단일 QA 생성 - 규칙 적용 보장 + 호출 최소화."""
     current_kg = _get_kg()
     current_pipeline = _get_pipeline()
-    
-    # Phase 2-1: Normalize query type using QTYPE_MAP (includes globalexplanation → explanation)
+
+    # Phase 2-1: Normalize query type using QTYPE_MAP
     normalized_qtype = QTYPE_MAP.get(qtype, "explanation")
     logger.info(
         "Query type '%s' normalized to '%s' for rule loading",
         qtype,
         normalized_qtype,
     )
-    
+
     query_intent = None
 
     if qtype == "target_short":
@@ -418,11 +418,11 @@ async def generate_single_qa(
     # PHASE 2B: Check cache before expensive operations to save ~6-12s
     # Use truncated OCR for cache key (QA_CACHE_OCR_TRUNCATE_LENGTH)
     cache_ocr_key = ocr_text[:QA_CACHE_OCR_TRUNCATE_LENGTH]
-    
+
     # For cache lookup, we need a preliminary query (or use a placeholder)
     # Since query is not generated yet, we'll use qtype as part of the key
     # After query generation, we'll do a more specific cache check
-    
+
     try:
         # First, try to generate the query
         queries = await agent.generate_query(
@@ -437,7 +437,7 @@ async def generate_single_qa(
 
         query = queries[0]
 
-        # PHASE 2B: Check cache after query generation (query is now available for cache key)
+        # PHASE 2B: Check cache after query generation
         cached_result = answer_cache.get(query, cache_ocr_key, qtype)
         if cached_result is not None:
             logger.info(

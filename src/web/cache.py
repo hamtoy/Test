@@ -15,19 +15,19 @@ logger = logging.getLogger(__name__)
 
 class AnswerCache:
     """Cache for generated QA answers.
-    
+
     PHASE 2B: In-memory cache to avoid regenerating identical answers.
     Expected improvement: ~6-12s reduction on cache hits.
-    
+
     Features:
-    - SHA-256-based cache keys from (query, ocr_text, query_type) - secure and collision-resistant
+    - SHA-256-based cache keys from (query, ocr_text, query_type)
     - TTL-based expiration (default 1 hour)
     - Cache hit/miss metrics logging
     """
 
     def __init__(self, ttl_seconds: int = 3600) -> None:
         """Initialize the answer cache.
-        
+
         Args:
             ttl_seconds: Time-to-live for cache entries (default: 3600 = 1 hour)
         """
@@ -39,12 +39,12 @@ class AnswerCache:
 
     def _make_key(self, query: str, ocr_text: str, query_type: str) -> str:
         """Generate cache key from inputs.
-        
+
         Args:
             query: The query string
             ocr_text: OCR text content
             query_type: Type of query (e.g., 'explanation', 'reasoning')
-            
+
         Returns:
             SHA-256 hash as cache key (secure and collision-resistant)
         """
@@ -53,12 +53,12 @@ class AnswerCache:
 
     def get(self, query: str, ocr_text: str, query_type: str) -> Optional[Any]:
         """Retrieve cached answer if available and not expired.
-        
+
         Args:
             query: The query string
             ocr_text: OCR text content
             query_type: Type of query
-            
+
         Returns:
             Cached result or None if not found/expired
         """
@@ -76,15 +76,19 @@ class AnswerCache:
                 return value
             # Expired - remove it
             del self.cache[key]
-            logger.debug("Cache entry expired: query_type=%s, age=%.1fs", query_type, age)
-        
+            logger.debug(
+                "Cache entry expired: query_type=%s, age=%.1fs",
+                query_type,
+                age,
+            )
+
         self._misses += 1
         logger.debug("Cache MISS: query_type=%s", query_type)
         return None
 
     def set(self, query: str, ocr_text: str, query_type: str, result: Any) -> None:
         """Store result in cache.
-        
+
         Args:
             query: The query string
             ocr_text: OCR text content
@@ -101,7 +105,7 @@ class AnswerCache:
 
     def clear_expired(self) -> int:
         """Remove expired entries from cache.
-        
+
         Returns:
             Number of entries removed
         """
@@ -109,20 +113,20 @@ class AnswerCache:
         expired = [k for k, (_, ts) in self.cache.items() if now - ts > self.ttl]
         for k in expired:
             del self.cache[k]
-        
+
         if expired:
             logger.info("Cleared %d expired cache entries", len(expired))
         return len(expired)
 
     def get_stats(self) -> dict[str, Any]:
         """Get cache statistics.
-        
+
         Returns:
             Dictionary with cache metrics
         """
         total = self._hits + self._misses
         hit_rate = (self._hits / total * 100) if total > 0 else 0.0
-        
+
         return {
             "hits": self._hits,
             "misses": self._misses,
