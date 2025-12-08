@@ -237,6 +237,9 @@ class TestGenerateSingleQA:
         monkeypatch.setenv("NEO4J_USER", "neo4j")
         monkeypatch.setenv("NEO4J_PASSWORD", "password")
 
+        # Use longer OCR text to avoid truncation (global_explanation limits to 60-80% of OCR length)
+        ocr_text = "OCR 텍스트 샘플입니다. 충분히 긴 텍스트를 사용하여 답변이 잘리지 않도록 합니다."
+
         with (
             patch("src.web.api.kg", mock_kg),
             patch(
@@ -245,7 +248,7 @@ class TestGenerateSingleQA:
             ),
         ):
             result = await generate_single_qa(
-                mock_agent, "OCR 텍스트", "global_explanation"
+                mock_agent, ocr_text, "global_explanation"
             )
 
             assert result["type"] == "global_explanation"

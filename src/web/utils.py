@@ -226,13 +226,21 @@ def apply_answer_limits(
             if answer and not answer.endswith("."):
                 answer += "."
         answer = _limit_words_reasoning(answer, 200)
-        if answer and not answer.endswith("."):
-            answer += "."
+        # Replace ellipsis with period, or add period if missing
+        if answer:
+            if answer.endswith("..."):
+                answer = answer[:-3] + "."
+            elif not answer.endswith("."):
+                answer += "."
 
     elif normalized_qtype == "explanation":
         # global_explanation: No word/sentence limits, but ensure period at end
-        if answer and not answer.endswith("."):
-            answer += "."
+        # Replace ellipsis with period, or add period if missing
+        if answer:
+            if answer.endswith("..."):
+                answer = answer[:-3] + "."
+            elif not answer.endswith("."):
+                answer += "."
 
         # Dynamic max length enforcement (if provided)
         if max_length and len(answer) > max_length:
@@ -271,6 +279,13 @@ def apply_answer_limits(
                 if answer and not answer.endswith("."):
                     answer += "."
             answer = _limit_words(answer, 200)
+
+        # Replace ellipsis with period, or add period if missing
+        if answer:
+            if answer.endswith("..."):
+                answer = answer[:-3] + "."
+            elif not answer.endswith("."):
+                answer += "."
 
     return answer
 
