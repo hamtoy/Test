@@ -187,9 +187,8 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
     # 실제 사용되는 4가지 질질 타입별 설정
     config: dict[str, dict[str, int]] = {
         # 1. 전체 마모뇌 설명: No word limit (length controlled by prompt: 1000-1500 chars)
-        # 2. 추론: 제약 제거 - 프롬프트 레벨에서 길이 제어 (더 정교함)
-        #    reasoning은 Gemini의 원래 생성 길이 사용하여 답변 손실 방지
-        # "reasoning": {"max_words": 100, "max_sentences": 4},  # 기존 제약 (28-50% 손실)
+        # 2. 추론 (reasoning): 제약 제거 - 프롬프트 레벨에서 길이 제어
+        #    Gemini의 원래 생성 길이를 사용하여 답변 손실 방지 (28-50% 손실 문제 해결)
     }
 
     if qtype in config:
@@ -209,12 +208,10 @@ def apply_answer_limits(answer: str, qtype: str) -> str:
     elif qtype == "reasoning":
         # reasoning: No word/sentence limits (prevent 28-50% content loss)
         # Only ensure period at end for consistency
-        # Replace "..." with "." for proper sentence ending
+        # Handle ellipsis and multiple trailing periods
         answer = answer.rstrip()
-        if answer.endswith("..."):
-            answer = answer[:-3] + "."
-        elif answer and not answer.endswith("."):
-            answer += "."
+        answer = answer.rstrip(".")
+        answer += "."
 
     elif qtype == "global_explanation":
         # global_explanation: No word/sentence limits, but ensure period at end
