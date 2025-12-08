@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib
 import logging
 import re
 from typing import Any
@@ -124,104 +123,26 @@ class CrossValidationSystem:
         return {"score": min(score, 1.0), "grounded": score > 0.6}
 
     def _check_temporal_expressions(self, answer: str) -> list[str]:
-        """시의성 표현 검증 (temporal_expression_check)."""
-        violations = []
-        # 패턴: (최근|현재|올해|전일|전월|지난달)
-        if re.search(r"(최근|현재|올해|전일|전월|지난달)", answer) and (
-            "(이미지 기준)" not in answer and "(보고서 기준)" not in answer
-        ):
-            violations.append(
-                "시의성 표현 사용 시 '(이미지 기준)' 또는 '(보고서 기준)' 표기 필수",
-            )
-        return violations
+        """시의성 표현 검증 (temporal_expression_check).
 
-    def _check_repetition(self, answer: str, max_repeat: int = 2) -> list[str]:
-        """반복 표현 검증 (repetition_check) - 형태소 분석 기반."""
-        violations = []
+        Phase 4 Complete: 시의성 표현은 Gemini 생성, 인간이 최종 판단.
+        (이미지 기준), (보고서 기준) 같은 기준 표기는 선택사항으로 제거.
+        """
+        # 시의성 표현 검증 비활성화
+        # 이유: "최근", "현재" 같은 자연스러운 표현을 강제로 제거하면 부자연스러움
+        #       인간 검토자가 필요시 추가하면 됨
+        return []  # ← 검증 스킵
 
-        try:
-            kiwipiepy: Any = importlib.import_module("kiwipiepy")
-            Kiwi = kiwipiepy.Kiwi
+    def _check_repetition(self, answer: str) -> list[str]:
+        """반복 표현 검증 (repetition_check).
 
-            # Kiwi 인스턴스 생성 (첫 호출 시 모델 로딩)
-            kiwi = Kiwi()
-
-            # 형태소 분석
-            result = kiwi.tokenize(answer)
-
-            # 명사(N*), 동사(V*) 어근만 추출
-            morphs = [
-                token.form
-                for token in result
-                if token.tag.startswith("N") or token.tag.startswith("V")
-            ]
-
-            # 한국어 stopwords
-            stopwords = {
-                "것",
-                "수",
-                "때",
-                "등",
-                "이",
-                "그",
-                "저",
-                "및",
-                "또는",
-                "중",
-                "안",
-                "밖",
-            }
-
-            # 빈도 계산
-            morph_counts: dict[str, int] = {}
-            for morph in morphs:
-                if morph not in stopwords and len(morph) > 1 and not morph.isdigit():
-                    morph_counts[morph] = morph_counts.get(morph, 0) + 1
-
-            # 반복 빈도가 높은 형태소만 보고 (상위 10개)
-            top_morphs = sorted(morph_counts.items(), key=lambda x: x[1], reverse=True)[
-                :10
-            ]
-            for morph, count in top_morphs:
-                if count > max_repeat:
-                    violations.append(
-                        f"'{morph}' 과도한 반복 ({count}회, 최대 {max_repeat}회)",
-                    )
-
-        except ImportError:
-            # kiwipiepy가 없으면 기존 방식으로 fallback
-            self.logger.warning("kiwipiepy not available, using simple word matching")
-            stopwords = {
-                "것",
-                "등",
-                "및",
-                "또는",
-                "이",
-                "그",
-                "저",
-                "수",
-                "때",
-                "중",
-                "안",
-                "밖",
-            }
-
-            words = re.findall(r"\b\w{2,}\b", answer)
-            word_counts: dict[str, int] = {}
-            for word in words:
-                if word not in stopwords and not word.isdigit():
-                    word_counts[word] = word_counts.get(word, 0) + 1
-
-            top_words = sorted(word_counts.items(), key=lambda x: x[1], reverse=True)[
-                :10
-            ]
-            for word, count in top_words:
-                if count > max_repeat:
-                    violations.append(
-                        f"'{word}' 과도한 반복 ({count}회, 최대 {max_repeat}회)",
-                    )
-
-        return violations
+        Phase 4 Complete: 명사 반복은 Gemini의 자연스러운 표현이므로 검증 스킵.
+        서술어 반복만 별도 검증 (_check_predicate_repetition).
+        """
+        # 명사/키워드 반복 검증 비활성화
+        # 이유: 경제/금융 텍스트에서 "시장", "노동" 등 반복은 자연스러움
+        #       Gemini의 표현을 신뢰하고 인간이 최종 판단
+        return []  # ← 검증 스킵
 
     def _check_formatting_rules(self, answer: str) -> list[str]:
         """형식 규칙 검증 (formatting_rules)."""
@@ -232,30 +153,104 @@ class CrossValidationSystem:
         has_symbol_bullets = bool(re.search(r"^[-*•]\s", answer, re.MULTILINE))
 
         if has_numbered_bullets or has_symbol_bullets:
-            # 1. 목록형 답변에서 문단 구분 검사 (불릿 사이에 빈 줄)
-            if has_numbered_bullets and re.search(
-                r"(^\d+\.\s.+\n\s*\n+\d+\.\s)",
-                answer,
-                re.MULTILINE,
-            ):
-                violations.append(
-                    "목록형 답변은 문단 구분하지 않음 (불릿 사이 빈 줄 제거 필요)",
-                )
-            if has_symbol_bullets and re.search(
-                r"(^[-*•]\s.+\n\s*\n+[-*•]\s)",
-                answer,
-                re.MULTILINE,
-            ):
-                violations.append(
-                    "목록형 답변은 문단 구분하지 않음 (불릿 사이 빈 줄 제거 필요)",
-                )
+            # Phase 4: 서술어 반복 검증 추가
+            violations.extend(self._check_predicate_repetition(answer))
 
-            # 2. 불릿 간격 일관성 (- vs * 혼용)
+            # 불릿 간격 일관성만 검사 (문단 구분은 선택)
             if has_symbol_bullets:
                 dash_bullets = re.findall(r"^-\s", answer, re.MULTILINE)
                 star_bullets = re.findall(r"^\*\s", answer, re.MULTILINE)
                 if dash_bullets and star_bullets:
                     violations.append("불릿 표시 일관성 필요 (- 또는 * 중 하나만 사용)")
+
+        return violations
+
+    def _check_predicate_repetition(self, answer: str) -> list[str]:
+        """CSV 규칙에 따른 서술어 반복 검증.
+
+        규칙:
+        - 목록 3개 이하: 동일 서술어 불가 (모두 달라야 함)
+        - 목록 4개 이상: 50% 미만에서만 동일 서술어 허용 (단, 2개 이상 반복 불가)
+
+        예시 (목록 5개):
+        ✅ A 서술어 2회, B/C/D 각 1회
+        ❌ A 서술어 2회, B 서술어 2회, C 각 1회
+        """
+        violations: list[str] = []
+
+        # 목록 아이템 추출
+        list_items = re.findall(
+            r"^(?:\d+\.|[-*•])\s+(.+?)(?=\n(?:\d+\.|[-*•])\s|$)",
+            answer,
+            re.MULTILINE | re.DOTALL,
+        )
+
+        if not list_items:
+            return violations
+
+        list_count = len(list_items)
+
+        # 각 아이템의 서술어(동사) 추출
+        predicates = []
+        for item in list_items:
+            # 첫 문장만 추출
+            first_sentence = item.split(".")[0].strip()
+
+            # 한국어 서술어 패턴: ~한다, ~된다, ~하며, ~습니다, ~되다, ~하는
+            # 동사/형용사의 마지막 단어가 서술어
+            predicate_match = re.search(
+                r"(.+?)(한다|된다|하며|합니다|습니다|되다|하는|되는)",
+                first_sentence,
+            )
+
+            if predicate_match:
+                # 동사 앞의 어근 추출
+                verb_base = predicate_match.group(1).strip()
+                # 마지막 단어만 추출
+                predicates.append(verb_base.split()[-1] if verb_base else "")
+            else:
+                # 서술어 미발견 시 빈 문자열
+                predicates.append("")
+
+        # 서술어 빈도 계산
+        predicate_counts: dict[str, int] = {}
+        for p in predicates:
+            if p:  # 빈 문자열 제외
+                predicate_counts[p] = predicate_counts.get(p, 0) + 1
+
+        # CSV 규칙 검증
+        if list_count <= 3:
+            # 규칙 1: 3개 이하는 모두 달라야 함
+            for pred, count in predicate_counts.items():
+                if count > 1:
+                    violations.append(
+                        f"목록 {list_count}개: '{pred}' 서술어 {count}회 반복 "
+                        f"(3개 이하는 동일 서술어 불가)",
+                    )
+
+        else:  # list_count >= 4
+            # 규칙 2: 4개 이상에서는 50% 미만만 허용
+            # 예: 4개 -> 최대 1회, 5개 -> 최대 2회, 6개 -> 최대 2회
+            max_allowed = (list_count - 1) // 2  # 50% 미만
+            repeated_predicates = []
+
+            for pred, count in predicate_counts.items():
+                if count > 1:
+                    if count > max_allowed:
+                        violations.append(
+                            f"목록 {list_count}개: '{pred}' 서술어 {count}회 반복 "
+                            f"(최대 {max_allowed}회)",
+                        )
+                    repeated_predicates.append((pred, count))
+
+            # 규칙 3: 2개 이상의 서술어가 동시에 반복 불가
+            repeat_count = sum(1 for _, count in repeated_predicates if count >= 2)
+            if repeat_count >= 2:
+                repeat_preds = [p for p, c in repeated_predicates if c >= 2]
+                violations.append(
+                    f"목록 {list_count}개: 2개 이상의 서술어 동시 반복 불가 "
+                    f"({', '.join(repeat_preds)})",
+                )
 
         return violations
 
@@ -282,8 +277,7 @@ class CrossValidationSystem:
                 violations.extend(self._check_temporal_expressions(answer))
 
             elif constraint_id == "repetition_check":
-                max_rep = c.get("max_repetition", 2)
-                violations.extend(self._check_repetition(answer, max_rep))
+                violations.extend(self._check_repetition(answer))
 
             elif constraint_id == "formatting_rules":
                 violations.extend(self._check_formatting_rules(answer))
