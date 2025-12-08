@@ -256,7 +256,7 @@ def postprocess_answer(answer: str, qtype: str) -> str:
         전략:
         1. ### 헤더 제거 (샵 기호만 제거하여 평문으로 변환)
         2. *italic* 제거하되 **bold**는 보호
-           - **bold**를 임시 토큰으로 변환
+           - **bold**를 고유한 임시 토큰으로 변환
            - 홑별표(*) 제거
            - 임시 토큰을 **bold**로 복원
         """
@@ -265,18 +265,20 @@ def postprocess_answer(answer: str, qtype: str) -> str:
         text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
 
         # 2. *italic* 제거하되 **bold**는 보호
-        # 2-1. **bold**를 임시 토큰으로 보호
-        text = text.replace("**", "##BOLD_TOKEN##")
+        # 2-1. **bold**를 고유한 임시 토큰으로 보호 (충돌 방지)
+        bold_placeholder = "##BOLD_PLACEHOLDER_8A3F2E1C##"
+        text = text.replace("**", bold_placeholder)
 
         # 2-2. 홑별표 제거 (italic 제거)
         # 패턴: *텍스트* → 텍스트
+        # [^*]+? : 별표가 아닌 문자들을 최소 매칭 (italic 내용만 추출)
         text = re.sub(r"\*([^*]+?)\*", r"\1", text)
 
         # 남은 홑별표도 제거 (짝이 맞지 않는 경우)
         text = text.replace("*", "")
 
         # 2-3. 임시 토큰을 **bold**로 복원
-        text = text.replace("##BOLD_TOKEN##", "**")
+        text = text.replace(bold_placeholder, "**")
 
         return text
 
