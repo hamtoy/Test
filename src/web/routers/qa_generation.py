@@ -444,7 +444,7 @@ async def generate_single_qa(
                 "Cache HIT: Returning cached answer for query_type=%s (saved ~6-12s)",
                 qtype,
             )
-            return cached_result
+            return cast(Dict[str, Any], cached_result)
 
         truncated_ocr = ocr_text[:QA_GENERATION_OCR_TRUNCATE_LENGTH]
         rules_in_answer = "\n".join(f"- {r}" for r in rules_list)
