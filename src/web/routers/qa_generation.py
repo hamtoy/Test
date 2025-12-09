@@ -25,6 +25,7 @@ from src.config.constants import (
     QA_GENERATION_OCR_TRUNCATE_LENGTH,
 )
 from src.config.exceptions import SafetyFilterError
+from src.processing.example_selector import DynamicExampleSelector
 from src.qa.rule_loader import RuleLoader
 from src.qa.validator import UnifiedValidator, validate_constraints
 from src.web.cache import answer_cache
@@ -444,19 +445,36 @@ async def generate_single_qa(
 - 최대 200단어 초과 금지
 """
     elif normalized_qtype == "explanation":
-        extra_instructions = """설명형 답변입니다.
-[필수 구조 - 질의답변예시.txt 형식]
+        # Few-Shot: Load examples from Neo4j for better length adherence
+        fewshot_text = ""
+        try:
+            fewshot_examples: list[dict[str, Any]] = []
+            if current_kg is not None:
+                example_selector = DynamicExampleSelector(current_kg)
+                fewshot_examples = example_selector.select_best_examples(
+                    "explanation", {}, k=1
+                )
+            if fewshot_examples:
+                ex = fewshot_examples[0]
+                ex_text = ex.get("example", "")[:1500]  # Truncate if too long
+                fewshot_text = f"""
+[좋은 답변 예시 - 이 길이와 구조를 참고하세요]
+{ex_text}
+---
+위 예시처럼 **충분한 길이와 구조**로 작성하세요.
+"""
+                logger.info("Few-Shot example loaded: %d chars", len(ex_text))
+        except Exception as e:
+            logger.debug("Few-shot loading failed: %s", e)
+
+        extra_instructions = f"""설명형 답변입니다.
+[필수 구조]
 1. 첫 줄: **굵은 제목** (핵심 내용을 한 문장으로)
 2. 도입: 1-2문장으로 전체 맥락 요약
-3. 본문: 불릿 포인트(-)로 주요 요인 나열
+3. 본문: 불릿 포인트(-)로 주요 요인 나열 (최소 5개)
 4. 결론: 마지막 문장으로 종합
 
-[예시 형식]
-**미-중 갈등 고조 및 투자 심리 위축**
-전일 한국 증시는 여러 요인이 복합적으로 작용했습니다.
-- 첫 번째 요인 설명
-- 두 번째 요인 설명
-결국 이러한 요인들이 복합적으로 작용하여 하락 마감했습니다.
+{fewshot_text}
 
 [금지 사항]
 - '서론', '본론', '결론' 등 라벨 금지
@@ -471,9 +489,10 @@ async def generate_single_qa(
 [CRITICAL - 길이 제약]
 **절대 규칙**: 이 응답은 OCR 원문 길이({ocr_len}자)에 비례하여 **최소 {min_chars}자 ~ 최대 {max_chars}자** 분량입니다.
 - 5-8개 문단으로 구성
-- 굵은 제목 1줄 + 도입 1-2문장 + 불릿 3-6개 + 결론
+- 굵은 제목 1줄 + 도입 1-2문장 + 불릿 5개 이상 + 결론
 - 각 불릿은 1-2문장
 - 핵심 포인트를 빠짐없이 다룰 것
+❌ {min_chars}자 미만 = 실패 (반드시 길이 준수)
 """
     elif normalized_qtype == "target":
         if qtype == "target_short":
@@ -877,12 +896,15 @@ Priority 30 (LOW):
         # Validate answer length for explanation type
         if normalized_qtype == "explanation":
             answer_length = len(final_answer)
-            if answer_length < 800:
+            # Use dynamic min_chars (60% of OCR length) instead of hardcoded value
+            if answer_length < min_chars:
                 logger.warning(
                     "⚠️ Answer too short for explanation type: "
-                    "%d chars (expected 1000+). "
+                    "%d chars (expected %d+, OCR %d chars). "
                     "Query: %s",
                     answer_length,
+                    min_chars,
+                    len(ocr_text),
                     query[:50],
                 )
 
