@@ -436,9 +436,8 @@ class WorkspaceExecutor:
             query_type=normalized_qtype,
         )
 
-        # 후처리 - workspace operations don't apply OCR-based length limits
-        # Just clean up markdown and ensure basic formatting
-        answer = postprocess_answer(answer, ctx.query_type, max_length=None)
+        # Workspace operations preserve AI-generated content without post-processing
+        # to avoid adding unwanted punctuation or formatting changes
 
         # Validate answer and optionally rewrite if validation fails
         answer = await self._validate_and_fix_answer(
