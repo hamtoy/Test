@@ -122,20 +122,13 @@ class UnifiedValidator:
         return violations
 
     def validate_temporal_expressions(self, text: str) -> list[dict[str, Any]]:
-        """동적 규칙을 사용한 시의성 표현 검증."""
-        temporal_rules = self.rule_manager.get_temporal_rules()
-        violations: list[dict[str, Any]] = [
-            {
-                "type": "temporal_expression_found",
-                "expression": expression,
-                "message": f'시의성 표현 발견: "{expression}"',
-                "severity": "info",
-            }
-            for expression in temporal_rules
-            if expression in text
-        ]
+        """동적 규칙을 사용한 시의성 표현 검증.
 
-        return violations
+        NOTE: 시의성 표현은 인간 작업자가 최종 수정하므로 비활성화됨.
+        Phase 4 Complete: Gemini 생성 후 인간이 기준 시점 명시.
+        """
+        # 시의성 검증 비활성화 - 인간 작업자가 수동 수정 예정
+        return []
 
     def validate_forbidden_patterns(self, text: str) -> list[dict[str, Any]]:
         """기존 패턴 검증."""

@@ -61,8 +61,12 @@ ESTIMATED_CACHE_HIT_TIME_SAVINGS: Final[int] = 9  # Average of 6-12s range
 
 
 # QA generation timeout settings (seconds)
-QA_SINGLE_GENERATION_TIMEOUT: Final[int] = 60
-QA_BATCH_GENERATION_TIMEOUT: Final[int] = 120
+QA_SINGLE_GENERATION_TIMEOUT: Final[int] = (
+    90  # Increased from 60 to handle validation+regeneration
+)
+QA_BATCH_GENERATION_TIMEOUT: Final[int] = (
+    180  # Increased from 120 for 2-at-a-time parallel
+)
 # QA batch generation order (first sequential, rest parallel)
 QA_BATCH_TYPES: Final[list[str]] = [
     "global_explanation",

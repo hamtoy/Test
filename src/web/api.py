@@ -338,6 +338,23 @@ async def init_resources() -> None:
     # 전역 KG 설정 (이미 초기화된 경우에도 동기화)
     set_global_kg(kg)
 
+    # Redis 캐시 연결 (QA 답변 캐싱용)
+    redis_url = os.getenv("REDIS_URL")
+    if redis_url:
+        try:
+            import redis.asyncio as aioredis
+
+            from src.web.cache import answer_cache
+
+            redis_client = aioredis.from_url(redis_url)
+            answer_cache.redis = redis_client
+            answer_cache.use_redis = True
+            logger.info("Redis connected to AnswerCache (TTL: %ds)", answer_cache.ttl)
+        except ImportError:
+            logger.warning("redis.asyncio not installed, using memory-only cache")
+        except Exception as e:
+            logger.warning("Redis connection failed: %s, using memory-only cache", e)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:

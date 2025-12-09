@@ -127,44 +127,62 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
                     },
                 )
 
-            # 2단계: 나머지 타입 병렬 생성 (중복 방지용 previous_queries 전달)
+            # 2단계: 나머지 타입 2개씩 병렬 생성 (Rate Limit 방지용 1초 딜레이)
             remaining_types = batch_types[1:]
-            remaining_pairs = await asyncio.wait_for(
-                asyncio.gather(
+            previous_queries = [first_query] if first_query else []
+
+            # 2개씩 묶어서 처리 (완전 병렬보다 안전, 완전 순차보다 빠름)
+            for i in range(0, len(remaining_types), 2):
+                batch = remaining_types[i : i + 2]
+
+                # 첫 번째 배치가 아니면 딜레이 추가 (Rate Limit 방지)
+                if i > 0:
+                    await asyncio.sleep(0.5)  # 1.0초 → 0.5초로 단축
+
+                logger.info("⏳ %s 타입 생성 시작", ", ".join(batch))
+
+                batch_results = await asyncio.gather(
                     *[
                         generate_single_qa_with_retry(
                             current_agent,
                             ocr_text,
                             qtype,
-                            previous_queries=[first_query] if first_query else None,
+                            previous_queries=previous_queries
+                            if previous_queries
+                            else None,
                         )
-                        for qtype in remaining_types
+                        for qtype in batch
                     ],
                     return_exceptions=True,
-                ),
-                timeout=_get_config().qa_batch_timeout,
-            )
+                )
 
-            for i, pair in enumerate(remaining_pairs):
-                if isinstance(pair, Exception):
-                    import sys
+                for j, pair in enumerate(batch_results):
+                    qtype = batch[j]
+                    if isinstance(pair, Exception):
+                        import sys
 
-                    tb_str = "".join(
-                        traceback.format_exception(type(pair), pair, pair.__traceback__)
-                    )
-                    sys.stderr.write(
-                        f"\n[ERROR TRACEBACK] {remaining_types[i]}:\n{tb_str}\n"
-                    )
-                    logger.error("%s 생성 실패:\n%s", remaining_types[i], tb_str)
-                    results.append(
-                        {
-                            "type": remaining_types[i],
-                            "query": "생성 실패",
-                            "answer": f"일시적 오류: {str(pair)[:100]}",
-                        },
-                    )
-                else:
-                    results.append(cast("dict[str, Any]", pair))
+                        tb_str = "".join(
+                            traceback.format_exception(
+                                type(pair), pair, pair.__traceback__
+                            )
+                        )
+                        sys.stderr.write(f"\n[ERROR TRACEBACK] {qtype}:\n{tb_str}\n")
+                        logger.error("%s 생성 실패:\n%s", qtype, tb_str)
+                        results.append(
+                            {
+                                "type": qtype,
+                                "query": "생성 실패",
+                                "answer": f"일시적 오류: {str(pair)[:100]}",
+                            },
+                        )
+                    else:
+                        results.append(cast("dict[str, Any]", pair))
+                        pair_dict = cast("dict[str, Any]", pair)
+                        if (
+                            pair_dict.get("query")
+                            and pair_dict.get("query") != "생성 실패"
+                        ):
+                            previous_queries.append(pair_dict.get("query", ""))
 
             duration = (datetime.now() - start).total_seconds()
             meta = APIMetadata(duration=duration)
@@ -392,31 +410,45 @@ async def generate_single_qa(
     length_constraint = ""
     if normalized_qtype == "reasoning":
         extra_instructions = """추론형 답변입니다.
-- 제시된 증거를 기반으로 한 논리적 추론 제시
-- 가정과 근거를 명확히 구분하여 서술
-- 가능한 시나리오와 예측 제시
-- 불확실성이 있는 경우 명시적으로 언급
-- 전문가 시각의 균형잡힌 분석
-- '근거', '추론 과정', '결론' 등 명시적 라벨/소제목 절대 금지
-- 소제목을 쓰면 자연스러운 서론-본론-결론 흐름만 유지(헤더로 '서론/본론/결론' 금지)
-- 두괄식으로 핵심 전망을 먼저 제시
-- '이러한 배경에는', '이를 통해', '따라서' 등 자연스러운 연결어 사용
-- '요약문', '정리하면' 등의 헤더 금지"""
+[필수 구조 - 질의답변예시.txt 형식]
+1. 첫 줄: **굵은 제목** (핵심 전망/결론을 한 문장으로)
+2. 본문: 불릿 포인트(-)로 근거와 추론 나열
+3. 마지막 문장: 종합적 결론
+
+[예시 형식]
+**고용 시장 전망 악화로 금리 인하 앞당겨질 가능성**
+- 첫 번째 근거 설명
+- 두 번째 근거 설명
+- 결론적으로 ~할 것으로 전망됩니다.
+
+[금지 사항]
+- '근거', '추론 과정', '결론' 등 명시적 라벨 금지
+- 불필요한 서론 금지 (바로 핵심으로)
+- 장황한 설명 금지"""
         length_constraint = """
 [CRITICAL - 길이 제약]
-**절대 규칙**: 이 응답은 최대 200단어, 3-4문장 이내의 간결한 추론이어야 합니다.
-- 정확히 3-4개 문장으로 구성
+**절대 규칙**: 이 응답은 최대 200단어, 3-5개 불릿 포인트의 간결한 추론이어야 합니다.
+- 굵은 제목 1줄 + 불릿 포인트 3-5개
+- 각 불릿은 1-2문장
 - 최대 200단어 초과 금지
-- 불필요한 서론/결론 배제하고 핵심 추론만 제시
-- "제시된 증거는..." 같은 반복적 문구 제외
 """
     elif normalized_qtype == "explanation":
         extra_instructions = """설명형 답변입니다.
-- 질의와 관련된 모든 주요 요인을 포괄적으로 설명
-- 각 요인의 인과관계와 배경을 상세히 서술
-- 구체적 수치, 데이터, 사례 포함
-- 시간순 또는 논리적 흐름으로 구조화
-- 소제목을 쓸 때는 자연스러운 서론-본론-결론 흐름 유지 (헤더에 '서론/본론/결론' 직접 표기 금지)
+[필수 구조 - 질의답변예시.txt 형식]
+1. 첫 줄: **굵은 제목** (핵심 내용을 한 문장으로)
+2. 도입: 1-2문장으로 전체 맥락 요약
+3. 본문: 불릿 포인트(-)로 주요 요인 나열
+4. 결론: 마지막 문장으로 종합
+
+[예시 형식]
+**미-중 갈등 고조 및 투자 심리 위축**
+전일 한국 증시는 여러 요인이 복합적으로 작용했습니다.
+- 첫 번째 요인 설명
+- 두 번째 요인 설명
+결국 이러한 요인들이 복합적으로 작용하여 하락 마감했습니다.
+
+[금지 사항]
+- '서론', '본론', '결론' 등 라벨 금지
 - 불필요한 반복, 장황한 수식어 금지"""
 
         # Dynamic length calculation (60-80% of OCR length)
@@ -424,18 +456,12 @@ async def generate_single_qa(
         min_chars = int(ocr_len * 0.6)
         max_chars = int(ocr_len * 0.8)
 
-        # 최소 1000자 보장 (OCR이 매우 짧을 경우 대비)
-        # 하지만 사용자가 "OCR에 비례"를 원했으므로 비율을 우선하되, 너무 짧으면 품질 문제 생길 수 있음
-        # 일단 사용자 요청대로 비례 적용 + 최소 문단 조건 유지
-
         length_constraint = f"""
 [CRITICAL - 길이 제약]
-**절대 규칙**: 이 응답은 OCR 원문 길이({ocr_len}자)에 비례하여 **최소 {min_chars}자 ~ 최대 {max_chars}자** 분량의 상세한 설명이어야 합니다.
-- 최소 5-8개 문단으로 구성
-- 각 문단은 3-4문장 이상
-- 단순 요약이 아닌 전체적이고 깊이 있는 분석 제공
-- 모든 핵심 포인트를 빠짐없이 다룰 것
-- 답변의 모든 섹션을 완성하고 마지막까지 끝낼 것
+**절대 규칙**: 이 응답은 OCR 원문 길이({ocr_len}자)에 비례하여 **최소 {min_chars}자 ~ 최대 {max_chars}자** 분량입니다.
+- 굵은 제목 1줄 + 도입 1-2문장 + 불릿 3-6개 + 결론
+- 각 불릿은 1-2문장
+- 핵심 포인트를 빠짐없이 다룰 것
 """
     elif normalized_qtype == "target":
         if qtype == "target_short":
@@ -457,19 +483,17 @@ async def generate_single_qa(
             rules_list = rules_list[:3]
         elif qtype == "target_long":
             extra_instructions = """
-- 주제에 대한 상세한 설명과 배경
-- 구체적 사례나 근거 포함
-- 맥락과 함께 답변 제시
-- 이해하기 쉬운 구조화된 서술
+- OCR 원문의 특정 내용에 집중하여 서술
+- 핵심 맥락과 함께 간결하게 답변
+- 불필요한 배경 설명 최소화
 """
             length_constraint = """
 [CRITICAL - 길이 제약]
-**절대 규칙**: 이 응답은 최소 300-600자 분량의 상세한 답변이어야 합니다.
-- 정확히 5-6개 문장으로 구성
-- 각 문장은 25-50자 정도의 적절한 길이
-- 관련 배경 정보와 예시 포함
-- 최소 300자 이상의 충분한 설명
-- 단순 나열이 아닌 논리적 흐름 유지
+**절대 규칙**: 이 응답은 200-400자, 3-4문장의 간결한 서술형 답변이어야 합니다.
+- 정확히 3-4개 문장으로 구성
+- 각 문장은 50-100자 정도
+- 핵심 내용만 포함, 장황한 설명 금지
+- 문단 구분 없이 하나의 문단으로 작성
 """
             rules_list = rules_list[:5]
 
@@ -726,11 +750,9 @@ Priority 30 (LOW):
             if s.strip()
         ]
         sentence_count = len(sentences)
-        if normalized_qtype == "target":
-            if qtype == "target_short" and sentence_count > 2:
-                all_issues.append(f"1-2문장으로 축소 필요 (현재 {sentence_count}문장)")
-            elif qtype == "target_long" and sentence_count > 4:
-                all_issues.append(f"3-4문장으로 축소 필요 (현재 {sentence_count}문장)")
+        # target_short만 문장 수 제한 (1-2문장), 나머지 타입은 검증 skip
+        if qtype == "target_short" and sentence_count > 2:
+            all_issues.append(f"1-2문장으로 축소 필요 (현재 {sentence_count}문장)")
 
         all_violations: list[str] = []
         if normalized_qtype == "reasoning" and (
@@ -759,8 +781,11 @@ Priority 30 (LOW):
         if violations:
             for v in violations:
                 v_type = v["type"]
+                # NOTE: 시의성 표현은 인간 작업자가 최종 수정 예정이므로 검증 제외
                 if v_type.startswith("error_pattern:시의성"):
                     continue
+                if "temporal" in v_type.lower():
+                    continue  # 시의성 관련 모든 패턴 제외
                 all_violations.append(v_type)
 
         formatting_violations = find_formatting_violations(draft_answer)
@@ -796,15 +821,24 @@ Priority 30 (LOW):
 
         if all_issues:
             combined_request = "; ".join(all_issues)
-            logger.warning("검증 실패, 재생성: %s", combined_request)
-            draft_answer = await agent.rewrite_best_answer(
-                ocr_text=ocr_text,
-                best_answer=draft_answer,
-                edit_request=f"다음 사항 수정: {combined_request}",
-                cached_content=None,
-                constraints=answer_constraints,
-                length_constraint=length_constraint,
-            )
+            logger.warning("검증 실패, 재생성 시도: %s", combined_request)
+            try:
+                rewritten = await agent.rewrite_best_answer(
+                    ocr_text=ocr_text,
+                    best_answer=draft_answer,
+                    edit_request=f"다음 사항 수정: {combined_request}",
+                    cached_content=None,
+                    constraints=answer_constraints,
+                    length_constraint=length_constraint,
+                )
+                # 빈 응답이면 원본 유지
+                if rewritten and rewritten.strip():
+                    draft_answer = rewritten
+                else:
+                    logger.warning("재생성 빈 응답, 원본 답변 사용")
+            except Exception as e:
+                # 재생성 실패 시 원본 답변 사용 (Gemini API 일시 오류 대응)
+                logger.warning("재생성 실패, 원본 답변 사용: %s", str(e)[:100])
 
         final_answer = postprocess_answer(draft_answer, qtype, max_length=max_chars)
 
