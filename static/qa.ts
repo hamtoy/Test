@@ -61,7 +61,10 @@ function escapeHtml(text: string): string {
 function formatAnswer(text: string): string {
     // 마크다운 렌더링 없이 raw 텍스트로 표시 (워크스페이스와 동일)
     const escaped = escapeHtml(text);
-    const formatted = escaped.replace(/\n/g, "<br>");  // 줄바꿈만 처리
+    const formatted = escaped
+        .replace(/\n\n/g, "<br><br>")  // 문단 구분
+        .replace(/\n/g, "<br>")         // 일반 줄바꿈
+        .replace(/ - /g, "<br><br>- "); // 불릿 포인트 앞에 줄바꿈 추가
     return window.DOMPurify ? window.DOMPurify.sanitize(formatted) : formatted;
 }
 
@@ -187,14 +190,14 @@ async function generateQA(mode: GenerateMode, qtype: string | null): Promise<voi
         const payload: GeneratePayload =
             mode === "single"
                 ? {
-                      mode: "single",
-                      ocr_text: ocrText,
-                      qtype: qtype || "global_explanation",
-                  }
+                    mode: "single",
+                    ocr_text: ocrText,
+                    qtype: qtype || "global_explanation",
+                }
                 : {
-                      mode: "batch",
-                      ocr_text: ocrText,
-                  };
+                    mode: "batch",
+                    ocr_text: ocrText,
+                };
 
         if (mode === "batch_three") {
             payload.batch_types = [
