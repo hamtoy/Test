@@ -7,6 +7,9 @@ from pathlib import Path
 
 import pytest
 
+# Get the project root dynamically
+REPO_ROOT = Path(__file__).parent.parent.parent
+
 
 class TestMainExecution:
     """Test main.py execution as a script."""
@@ -37,7 +40,7 @@ print("ALL_CHECKS_PASSED")
         # Run the test script
         result = subprocess.run(
             [sys.executable, str(test_script)],
-            cwd="/home/runner/work/Test/Test",
+            cwd=str(REPO_ROOT),
             capture_output=True,
             text=True,
             timeout=10,

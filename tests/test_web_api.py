@@ -1,6 +1,7 @@
 """Tests for the Web API module."""
 
-from unittest.mock import MagicMock, patch
+from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -45,34 +46,41 @@ class TestPageRoutes:
 class TestOCREndpoint:
     """Test OCR endpoint."""
 
-    def test_get_ocr_exists(self, client: TestClient) -> None:
+    def test_get_ocr_exists(self, client: TestClient, tmp_path: Path) -> None:
         """Test getting OCR text when file exists."""
-        mock_path = MagicMock()
-        mock_path.exists.return_value = True
-        mock_path.read_text.return_value = "Sample OCR Text"
 
-        mock_input_dir = MagicMock()
-        mock_input_dir.__truediv__.return_value = mock_path
+        from src.config import AppConfig
+        from src.web.routers import ocr as ocr_router_module
 
-        with patch("src.web.api.config") as mock_config:
-            mock_config.input_dir = mock_input_dir
-            response = client.get("/api/ocr")
-            assert response.status_code == 200
-            assert response.json() == {"ocr": "Sample OCR Text"}
+        # Create actual directory and file
+        inputs_dir = tmp_path / "data" / "inputs"
+        inputs_dir.mkdir(parents=True)
+        (inputs_dir / "input_ocr.txt").write_text("Sample OCR Text", encoding="utf-8")
 
-    def test_get_ocr_missing(self, client: TestClient) -> None:
+        mock_config = MagicMock(spec=AppConfig)
+        mock_config.input_dir = inputs_dir
+        ocr_router_module.set_dependencies(mock_config)
+
+        response = client.get("/api/ocr")
+        assert response.status_code == 200
+        assert response.json() == {"ocr": "Sample OCR Text"}
+
+    def test_get_ocr_missing(self, client: TestClient, tmp_path: Path) -> None:
         """Test getting OCR text when file is missing."""
-        mock_path = MagicMock()
-        mock_path.exists.return_value = False
+        from src.config import AppConfig
+        from src.web.routers import ocr as ocr_router_module
 
-        mock_input_dir = MagicMock()
-        mock_input_dir.__truediv__.return_value = mock_path
+        # Create directory but not the file
+        inputs_dir = tmp_path / "data" / "inputs"
+        inputs_dir.mkdir(parents=True)
 
-        with patch("src.web.api.config") as mock_config:
-            mock_config.input_dir = mock_input_dir
-            response = client.get("/api/ocr")
-            assert response.status_code == 404
-            assert response.json() == {"detail": "OCR 파일이 없습니다."}
+        mock_config = MagicMock(spec=AppConfig)
+        mock_config.input_dir = inputs_dir
+        ocr_router_module.set_dependencies(mock_config)
+
+        response = client.get("/api/ocr")
+        assert response.status_code == 404
+        assert response.json() == {"detail": "OCR 파일이 없습니다."}
 
 
 class TestQAGeneration:

@@ -1,7 +1,6 @@
 """Tests for the web API module."""
 
 import asyncio
-import io
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -87,13 +86,18 @@ class TestOCRApi:
         inputs_dir.mkdir(parents=True)
         (inputs_dir / "input_ocr.txt").write_text("테스트 OCR 텍스트", encoding="utf-8")
 
-        # Patch config.input_dir to use tmp_path based directory
-        with patch("src.web.api.config") as mock_config:
-            mock_config.input_dir = inputs_dir
-            response = client.get("/api/ocr")
-            assert response.status_code == 200
-            data = response.json()
-            assert data["ocr"] == "테스트 OCR 텍스트"
+        # Patch ocr router's config via set_dependencies
+        from src.config import AppConfig
+        from src.web.routers import ocr as ocr_router_module
+
+        mock_config = MagicMock(spec=AppConfig)
+        mock_config.input_dir = inputs_dir
+        ocr_router_module.set_dependencies(mock_config)
+
+        response = client.get("/api/ocr")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["ocr"] == "테스트 OCR 텍스트"
 
     def test_get_ocr_file_not_exists(self, client: Any, tmp_path: Path) -> None:
         """Test getting OCR text when file doesn't exist."""
@@ -101,44 +105,59 @@ class TestOCRApi:
         inputs_dir = tmp_path / "data" / "inputs"
         inputs_dir.mkdir(parents=True)
 
-        with patch("src.web.api.config") as mock_config:
-            mock_config.input_dir = inputs_dir
-            response = client.get("/api/ocr")
-            # When file doesn't exist, load_ocr_text raises HTTPException 404
-            # and api_get_ocr re-raises it (proper HTTP semantics)
-            assert response.status_code == 404
-            data = response.json()
-            assert data["detail"] == "OCR 파일이 없습니다."
+        from src.config import AppConfig
+        from src.web.routers import ocr as ocr_router_module
+
+        mock_config = MagicMock(spec=AppConfig)
+        mock_config.input_dir = inputs_dir
+        ocr_router_module.set_dependencies(mock_config)
+
+        response = client.get("/api/ocr")
+        # When file doesn't exist, load_ocr_text raises HTTPException 404
+        # and api_get_ocr re-raises it (proper HTTP semantics)
+        assert response.status_code == 404
+        data = response.json()
+        assert data["detail"] == "OCR 파일이 없습니다."
 
     def test_post_ocr_save(self, client: Any, tmp_path: Path) -> None:
         """Test saving OCR text via POST."""
         inputs_dir = tmp_path / "data" / "inputs"
         inputs_dir.mkdir(parents=True)
 
-        with patch("src.web.api.config") as mock_config:
-            mock_config.input_dir = inputs_dir
-            response = client.post("/api/ocr", json={"text": "사용자 입력 텍스트"})
-            assert response.status_code == 200
-            assert response.json()["status"] == "success"
+        from src.config import AppConfig
+        from src.web.routers import ocr as ocr_router_module
 
-            # 파일에 저장되었는지 확인
-            saved_text = (inputs_dir / "input_ocr.txt").read_text(encoding="utf-8")
-            assert saved_text == "사용자 입력 텍스트"
+        mock_config = MagicMock(spec=AppConfig)
+        mock_config.input_dir = inputs_dir
+        ocr_router_module.set_dependencies(mock_config)
+
+        response = client.post("/api/ocr", json={"text": "사용자 입력 텍스트"})
+        assert response.status_code == 200
+        assert response.json()["status"] == "success"
+
+        # 파일에 저장되었는지 확인
+        saved_text = (inputs_dir / "input_ocr.txt").read_text(encoding="utf-8")
+        assert saved_text == "사용자 입력 텍스트"
 
     def test_post_ocr_save_empty_text(self, client: Any, tmp_path: Path) -> None:
         """Test saving empty OCR text via POST."""
         inputs_dir = tmp_path / "data" / "inputs"
         inputs_dir.mkdir(parents=True)
 
-        with patch("src.web.api.config") as mock_config:
-            mock_config.input_dir = inputs_dir
-            response = client.post("/api/ocr", json={"text": ""})
-            assert response.status_code == 200
-            assert response.json()["status"] == "success"
+        from src.config import AppConfig
+        from src.web.routers import ocr as ocr_router_module
 
-            # 파일에 저장되었는지 확인
-            saved_text = (inputs_dir / "input_ocr.txt").read_text(encoding="utf-8")
-            assert saved_text == ""
+        mock_config = MagicMock(spec=AppConfig)
+        mock_config.input_dir = inputs_dir
+        ocr_router_module.set_dependencies(mock_config)
+
+        response = client.post("/api/ocr", json={"text": ""})
+        assert response.status_code == 200
+        assert response.json()["status"] == "success"
+
+        # 파일에 저장되었는지 확인
+        saved_text = (inputs_dir / "input_ocr.txt").read_text(encoding="utf-8")
+        assert saved_text == ""
 
     def test_post_ocr_save_overwrites_existing(
         self, client: Any, tmp_path: Path
@@ -148,14 +167,19 @@ class TestOCRApi:
         inputs_dir.mkdir(parents=True)
         (inputs_dir / "input_ocr.txt").write_text("기존 텍스트", encoding="utf-8")
 
-        with patch("src.web.api.config") as mock_config:
-            mock_config.input_dir = inputs_dir
-            response = client.post("/api/ocr", json={"text": "새로운 텍스트"})
-            assert response.status_code == 200
+        from src.config import AppConfig
+        from src.web.routers import ocr as ocr_router_module
 
-            # 파일이 덮어쓰기 되었는지 확인
-            saved_text = (inputs_dir / "input_ocr.txt").read_text(encoding="utf-8")
-            assert saved_text == "새로운 텍스트"
+        mock_config = MagicMock(spec=AppConfig)
+        mock_config.input_dir = inputs_dir
+        ocr_router_module.set_dependencies(mock_config)
+
+        response = client.post("/api/ocr", json={"text": "새로운 텍스트"})
+        assert response.status_code == 200
+
+        # 파일이 덮어쓰기 되었는지 확인
+        saved_text = (inputs_dir / "input_ocr.txt").read_text(encoding="utf-8")
+        assert saved_text == "새로운 텍스트"
 
 
 class TestQAGenerateApi:
@@ -401,54 +425,40 @@ class TestWorkspaceApi:
 class TestMultimodalApi:
     """Tests for multimodal/image analysis API endpoint."""
 
-    @pytest.mark.skip(reason="Requires mocked mm (MultimodalUnderstanding)")
+    @pytest.mark.skip(
+        reason="Multimodal analyze endpoint was removed in router cleanup"
+    )
     def test_analyze_image_valid(self, client: Any) -> None:
         """Test image analysis with valid image file."""
-        # Create a minimal valid image
-        image_content = b"\x89PNG\r\n\x1a\n" + b"\x00" * 100
-        files = {"file": ("test.png", io.BytesIO(image_content), "image/png")}
-        response = client.post("/api/multimodal/analyze", files=files)
-        assert response.status_code == 200
-        data = response.json()
-        assert data["filename"] == "test.png"
-        assert "metadata" in data
-        assert data["metadata"]["has_table_chart"] is True
-        assert "topics" in data["metadata"]
+        pass
 
-    @pytest.mark.skip(reason="Requires mocked mm (MultimodalUnderstanding)")
+    @pytest.mark.skip(
+        reason="Multimodal analyze endpoint was removed in router cleanup"
+    )
     def test_analyze_image_jpeg(self, client: Any) -> None:
         """Test image analysis with JPEG file."""
-        image_content = b"\xff\xd8\xff\xe0" + b"\x00" * 100
-        files = {"file": ("test.jpg", io.BytesIO(image_content), "image/jpeg")}
-        response = client.post("/api/multimodal/analyze", files=files)
-        assert response.status_code == 200
-        data = response.json()
-        assert data["filename"] == "test.jpg"
+        pass
 
+    @pytest.mark.skip(
+        reason="Multimodal analyze endpoint was removed in router cleanup"
+    )
     def test_analyze_non_image_file(self, client: Any) -> None:
         """Test image analysis with non-image file returns 500 when mm is None."""
-        files = {"file": ("test.txt", io.BytesIO(b"text content"), "text/plain")}
-        response = client.post("/api/multimodal/analyze", files=files)
-        # mm is None so returns 500 before content type validation
-        assert response.status_code == 500
+        pass
 
+    @pytest.mark.skip(
+        reason="Multimodal analyze endpoint was removed in router cleanup"
+    )
     def test_analyze_image_no_content_type(self, client: Any) -> None:
         """Test image analysis with file missing content type returns 500."""
-        files = {"file": ("test.bin", io.BytesIO(b"binary content"), None)}
-        response = client.post("/api/multimodal/analyze", files=files)
-        # mm is None so returns 500
-        assert response.status_code == 500
+        pass
 
-    @pytest.mark.skip(reason="Requires mocked mm (MultimodalUnderstanding)")
+    @pytest.mark.skip(
+        reason="Multimodal analyze endpoint was removed in router cleanup"
+    )
     def test_analyze_image_with_gif(self, client: Any) -> None:
         """Test image analysis with GIF file."""
-        files = {
-            "file": ("test.gif", io.BytesIO(b"GIF89a" + b"\x00" * 100), "image/gif")
-        }
-        response = client.post("/api/multimodal/analyze", files=files)
-        assert response.status_code == 200
-        data = response.json()
-        assert data["filename"] == "test.gif"
+        pass
 
 
 class TestLogReviewSession:

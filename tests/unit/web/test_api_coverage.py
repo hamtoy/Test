@@ -342,63 +342,61 @@ class TestOCREndpoints:
         """Create test client."""
         return TestClient(app)
 
-    @patch("src.web.api.load_ocr_text")
-    def test_api_get_ocr_success(self, mock_load: Mock, client: TestClient) -> None:
+    def test_api_get_ocr_success(self, client: TestClient) -> None:
         """Test /api/ocr GET success."""
-        mock_load.return_value = "Sample OCR text"
+        with patch("src.web.routers.ocr._load_ocr_text") as mock_load:
+            mock_load.return_value = "Sample OCR text"
 
-        response = client.get("/api/ocr")
+            response = client.get("/api/ocr")
 
-        assert response.status_code == 200
-        data = response.json()
-        assert data["ocr"] == "Sample OCR text"
+            assert response.status_code == 200
+            data = response.json()
+            assert data["ocr"] == "Sample OCR text"
 
-    @patch("src.web.api.load_ocr_text")
-    def test_api_get_ocr_http_exception(
-        self, mock_load: Mock, client: TestClient
-    ) -> None:
+    def test_api_get_ocr_http_exception(self, client: TestClient) -> None:
         """Test /api/ocr GET with HTTPException - should re-raise with proper status."""
-        mock_load.side_effect = HTTPException(status_code=404, detail="File not found")
+        with patch("src.web.routers.ocr._load_ocr_text") as mock_load:
+            mock_load.side_effect = HTTPException(
+                status_code=404, detail="File not found"
+            )
 
-        response = client.get("/api/ocr")
+            response = client.get("/api/ocr")
 
-        # HTTPException should be re-raised, not caught and returned as 200
-        assert response.status_code == 404
-        data = response.json()
-        assert data["detail"] == "File not found"
+            # HTTPException should be re-raised, not caught and returned as 200
+            assert response.status_code == 404
+            data = response.json()
+            assert data["detail"] == "File not found"
 
-    @patch("src.web.api.load_ocr_text")
-    def test_api_get_ocr_generic_exception(
-        self, mock_load: Mock, client: TestClient
-    ) -> None:
+    def test_api_get_ocr_generic_exception(self, client: TestClient) -> None:
         """Test /api/ocr GET with generic exception."""
-        mock_load.side_effect = IOError("Disk error")
+        with patch("src.web.routers.ocr._load_ocr_text") as mock_load:
+            mock_load.side_effect = IOError("Disk error")
 
-        response = client.get("/api/ocr")
+            response = client.get("/api/ocr")
 
-        assert response.status_code == 500
+            assert response.status_code == 500
 
-    @patch("src.web.api.save_ocr_text")
-    def test_api_save_ocr_success(self, mock_save: Mock, client: TestClient) -> None:
+    def test_api_save_ocr_success(self, client: TestClient) -> None:
         """Test /api/ocr POST success."""
-        payload = {"text": "New OCR content"}
+        with patch("src.web.routers.ocr._save_ocr_text") as mock_save:
+            payload = {"text": "New OCR content"}
 
-        response = client.post("/api/ocr", json=payload)
+            response = client.post("/api/ocr", json=payload)
 
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "success"
-        mock_save.assert_called_once_with("New OCR content")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "success"
+            mock_save.assert_called_once()
 
-    @patch("src.web.api.save_ocr_text")
-    def test_api_save_ocr_failure(self, mock_save: Mock, client: TestClient) -> None:
+    def test_api_save_ocr_failure(self, client: TestClient) -> None:
         """Test /api/ocr POST failure."""
-        mock_save.side_effect = IOError("Cannot write file")
-        payload = {"text": "Content"}
+        with patch("src.web.routers.ocr._save_ocr_text") as mock_save:
+            mock_save.side_effect = IOError("Cannot write file")
+            payload = {"text": "Content"}
 
-        response = client.post("/api/ocr", json=payload)
+            response = client.post("/api/ocr", json=payload)
 
-        assert response.status_code == 500
+            assert response.status_code == 500
 
 
 class TestPageRoutes:

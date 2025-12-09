@@ -7,9 +7,14 @@ from neo4j import GraphDatabase
 
 load_dotenv(override=True)
 
-d = GraphDatabase.driver(
-    os.getenv("NEO4J_URI"), auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD"))
-)
+uri = os.getenv("NEO4J_URI")
+user = os.getenv("NEO4J_USER")
+password = os.getenv("NEO4J_PASSWORD")
+
+if not uri or not user or not password:
+    raise RuntimeError("Missing NEO4J environment variables")
+
+d = GraphDatabase.driver(uri, auth=(user, password))
 
 with d.session() as session:
     result = session.run("""
@@ -17,6 +22,10 @@ with d.session() as session:
         SET e.type = "positive" 
         RETURN count(e) as updated
     """)
-    print("Updated:", result.single()["updated"], "examples to type=positive")
+    record = result.single()
+    if record:
+        print("Updated:", record["updated"], "examples to type=positive")
+    else:
+        print("No records found")
 
 d.close()

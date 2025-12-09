@@ -8,10 +8,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+# Get the project root dynamically
+REPO_ROOT = Path(__file__).parent.parent.parent
+MAIN_PY_PATH = REPO_ROOT / "src" / "main.py"
+
 
 class TestMainModule:
     """Test main module entry point and error handling."""
 
+    @pytest.mark.skipif(not MAIN_PY_PATH.exists(), reason="main.py not found")
     @patch("src.main.asyncio.run")
     @patch("src.main.load_dotenv")
     @patch("sys.exit")
@@ -26,7 +31,7 @@ class TestMainModule:
             patch("sys.argv", ["main.py"]),
             patch("src.main.__name__", "__main__"),
             contextlib.suppress(SystemExit),
-            Path("/home/runner/work/Test/Test/src/main.py").open() as f,
+            MAIN_PY_PATH.open() as f,
         ):
             exec(
                 compile(f.read(), "main.py", "exec"),
@@ -35,6 +40,7 @@ class TestMainModule:
 
         mock_exit.assert_called()
 
+    @pytest.mark.skipif(not MAIN_PY_PATH.exists(), reason="main.py not found")
     @patch("src.main.asyncio.run")
     @patch("src.main.load_dotenv")
     @patch("sys.exit")
@@ -48,7 +54,7 @@ class TestMainModule:
             patch("sys.argv", ["main.py"]),
             patch("src.main.__name__", "__main__"),
             contextlib.suppress(SystemExit),
-            Path("/home/runner/work/Test/Test/src/main.py").open() as f,
+            MAIN_PY_PATH.open() as f,
         ):
             exec(
                 compile(f.read(), "main.py", "exec"),
@@ -57,6 +63,7 @@ class TestMainModule:
 
         mock_exit.assert_called_with(1)
 
+    @pytest.mark.skipif(not MAIN_PY_PATH.exists(), reason="main.py not found")
     @patch("os.name", "nt")
     @patch("src.main.asyncio.run")
     @patch("src.main.load_dotenv")
@@ -73,13 +80,14 @@ class TestMainModule:
             patch("sys.argv", ["main.py"]),
             patch("src.main.__name__", "__main__"),
             contextlib.suppress(SystemExit),
-            Path("/home/runner/work/Test/Test/src/main.py").open() as f,
+            MAIN_PY_PATH.open() as f,
         ):
             exec(
                 compile(f.read(), "main.py", "exec"),
                 {"__name__": "__main__"},
             )
 
+    @pytest.mark.skipif(not MAIN_PY_PATH.exists(), reason="main.py not found")
     @pytest.mark.skipif(sys.platform != "win32", reason="Windows-specific test")
     @patch("os.name", "nt")
     @patch("src.main.asyncio.run")
@@ -93,7 +101,7 @@ class TestMainModule:
             patch("sys.argv", ["main.py"]),
             patch("src.main.__name__", "__main__"),
             contextlib.suppress(SystemExit, AttributeError),
-            Path("/home/runner/work/Test/Test/src/main.py").open() as f,
+            MAIN_PY_PATH.open() as f,
         ):
             exec(
                 compile(f.read(), "main.py", "exec"),

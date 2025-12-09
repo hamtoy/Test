@@ -117,7 +117,7 @@ class TestBatchJob:
         assert result["status"] == "completed"
         assert result["request_count"] == 2
         assert result["result_count"] == 1
-        assert result["input_file_path"] == "/tmp/input.jsonl"
+        assert result["input_file_path"] == str(Path("/tmp/input.jsonl"))
         assert result["created_at"] == created_time.isoformat()
 
     def test_batch_job_to_dict_with_none_paths(self):
