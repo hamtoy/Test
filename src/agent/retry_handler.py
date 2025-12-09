@@ -10,7 +10,7 @@ from tenacity import (
     retry,
     retry_if_exception_type,
     stop_after_attempt,
-    wait_exponential,
+    wait_random_exponential,  # Jitter 포함된 exponential backoff
 )
 
 from src.config.exceptions import APIRateLimitError
@@ -78,7 +78,7 @@ class RetryHandler:
             "Callable[[], Awaitable[str]]",
             retry(
                 stop=stop_after_attempt(3),
-                wait=wait_exponential(multiplier=1, min=2, max=10),
+                wait=wait_random_exponential(multiplier=1, max=10),  # Jitter 포함
                 retry=retry_if_exception_type(retry_exceptions),
                 reraise=True,
             )(_execute_with_retry_raw),
