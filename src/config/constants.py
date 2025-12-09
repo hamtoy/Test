@@ -53,7 +53,7 @@ ALLOWED_BOLD_CONTEXTS: Final[list[str]] = [
 # ===== API Pipeline Configuration =====
 
 # Max characters for OCR text truncation in QA generation
-QA_GENERATION_OCR_TRUNCATE_LENGTH: Final[int] = 3000
+QA_GENERATION_OCR_TRUNCATE_LENGTH: Final[int] = 2300
 # Phase 2B: Cache key OCR truncation length (same as generation for consistency)
 QA_CACHE_OCR_TRUNCATE_LENGTH: Final[int] = 3000
 # Phase 2B: Estimated time saved per cache hit (seconds) - used for metrics
