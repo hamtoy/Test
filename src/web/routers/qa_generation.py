@@ -95,104 +95,111 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
     try:
         start = datetime.now()
         if body.mode in {"batch", "batch_three"}:
-            results: list[dict[str, Any]] = []
+            # Wrap entire batch processing in timeout
+            async def _process_batch() -> dict[str, Any]:
+                results: list[dict[str, Any]] = []
 
-            batch_types = body.batch_types or QA_BATCH_TYPES
-            if body.mode == "batch_three" and body.batch_types is None:
-                batch_types = QA_BATCH_TYPES_THREE
-            if not batch_types:
-                raise HTTPException(
-                    status_code=400,
-                    detail="batch_types이 비어 있습니다.",
-                )
+                batch_types = body.batch_types or QA_BATCH_TYPES
+                if body.mode == "batch_three" and body.batch_types is None:
+                    batch_types = QA_BATCH_TYPES_THREE
+                if not batch_types:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="batch_types이 비어 있습니다.",
+                    )
 
-            first_type = batch_types[0]
-            first_query: str = ""
+                first_type = batch_types[0]
+                first_query: str = ""
 
-            # 1단계: global_explanation 순차 생성
-            try:
-                first_pair = await asyncio.wait_for(
-                    generate_single_qa_with_retry(current_agent, ocr_text, first_type),
-                    timeout=_get_config().qa_single_timeout,
-                )
-                results.append(first_pair)
-                first_query = first_pair.get("query", "")
-            except Exception as exc:  # noqa: BLE001
-                logger.error("%s 생성 실패: %s", first_type, exc)
-                results.append(
-                    {
-                        "type": first_type,
-                        "query": "생성 실패",
-                        "answer": f"일시적 오류: {str(exc)[:100]}",
-                    },
-                )
+                # 1단계: global_explanation 순차 생성
+                try:
+                    first_pair = await asyncio.wait_for(
+                        generate_single_qa_with_retry(current_agent, ocr_text, first_type),
+                        timeout=_get_config().qa_single_timeout,
+                    )
+                    results.append(first_pair)
+                    first_query = first_pair.get("query", "")
+                except Exception as exc:  # noqa: BLE001
+                    logger.error("%s 생성 실패: %s", first_type, exc)
+                    results.append(
+                        {
+                            "type": first_type,
+                            "query": "생성 실패",
+                            "answer": f"일시적 오류: {str(exc)[:100]}",
+                        },
+                    )
 
-            # 2단계: 나머지 타입 2개씩 병렬 생성 (Rate Limit 방지용 1초 딜레이)
-            remaining_types = batch_types[1:]
-            previous_queries = [first_query] if first_query else []
+                # 2단계: 나머지 타입 2개씩 병렬 생성 (Rate Limit 방지용 1초 딜레이)
+                remaining_types = batch_types[1:]
+                previous_queries = [first_query] if first_query else []
 
-            # 2개씩 묶어서 처리 (완전 병렬보다 안전, 완전 순차보다 빠름)
-            for i in range(0, len(remaining_types), 2):
-                batch = remaining_types[i : i + 2]
+                # 2개씩 묶어서 처리 (완전 병렬보다 안전, 완전 순차보다 빠름)
+                for i in range(0, len(remaining_types), 2):
+                    batch = remaining_types[i : i + 2]
 
-                # 첫 번째 배치가 아니면 딜레이 추가 (Rate Limit 방지)
-                if i > 0:
-                    await asyncio.sleep(0.5)  # 1.0초 → 0.5초로 단축
+                    # 첫 번째 배치가 아니면 딜레이 추가 (Rate Limit 방지)
+                    if i > 0:
+                        await asyncio.sleep(0.5)  # 1.0초 → 0.5초로 단축
 
-                logger.info("⏳ %s 타입 생성 시작", ", ".join(batch))
+                    logger.info("⏳ %s 타입 생성 시작", ", ".join(batch))
 
-                batch_results = await asyncio.gather(
-                    *[
-                        generate_single_qa_with_retry(
-                            current_agent,
-                            ocr_text,
-                            qtype,
-                            previous_queries=previous_queries
-                            if previous_queries
-                            else None,
-                        )
-                        for qtype in batch
-                    ],
-                    return_exceptions=True,
-                )
-
-                for j, pair in enumerate(batch_results):
-                    qtype = batch[j]
-                    if isinstance(pair, Exception):
-                        import sys
-
-                        tb_str = "".join(
-                            traceback.format_exception(
-                                type(pair), pair, pair.__traceback__
+                    batch_results = await asyncio.gather(
+                        *[
+                            generate_single_qa_with_retry(
+                                current_agent,
+                                ocr_text,
+                                qtype,
+                                previous_queries=previous_queries
+                                if previous_queries
+                                else None,
                             )
-                        )
-                        sys.stderr.write(f"\n[ERROR TRACEBACK] {qtype}:\n{tb_str}\n")
-                        logger.error("%s 생성 실패:\n%s", qtype, tb_str)
-                        results.append(
-                            {
-                                "type": qtype,
-                                "query": "생성 실패",
-                                "answer": f"일시적 오류: {str(pair)[:100]}",
-                            },
-                        )
-                    else:
-                        results.append(cast("dict[str, Any]", pair))
-                        pair_dict = cast("dict[str, Any]", pair)
-                        if (
-                            pair_dict.get("query")
-                            and pair_dict.get("query") != "생성 실패"
-                        ):
-                            previous_queries.append(pair_dict.get("query", ""))
+                            for qtype in batch
+                        ],
+                        return_exceptions=True,
+                    )
 
-            duration = (datetime.now() - start).total_seconds()
-            meta = APIMetadata(duration=duration)
-            return cast(
-                "dict[str, Any]",
-                build_response(
-                    {"mode": "batch", "pairs": results},
-                    metadata=meta,
-                    config=_get_config(),
-                ),
+                    for j, pair in enumerate(batch_results):
+                        qtype = batch[j]
+                        if isinstance(pair, Exception):
+                            import sys
+
+                            tb_str = "".join(
+                                traceback.format_exception(
+                                    type(pair), pair, pair.__traceback__
+                                )
+                            )
+                            sys.stderr.write(f"\n[ERROR TRACEBACK] {qtype}:\n{tb_str}\n")
+                            logger.error("%s 생성 실패:\n%s", qtype, tb_str)
+                            results.append(
+                                {
+                                    "type": qtype,
+                                    "query": "생성 실패",
+                                    "answer": f"일시적 오류: {str(pair)[:100]}",
+                                },
+                            )
+                        else:
+                            results.append(cast("dict[str, Any]", pair))
+                            pair_dict = cast("dict[str, Any]", pair)
+                            if (
+                                pair_dict.get("query")
+                                and pair_dict.get("query") != "생성 실패"
+                            ):
+                                previous_queries.append(pair_dict.get("query", ""))
+
+                duration = (datetime.now() - start).total_seconds()
+                meta = APIMetadata(duration=duration)
+                return cast(
+                    "dict[str, Any]",
+                    build_response(
+                        {"mode": "batch", "pairs": results},
+                        metadata=meta,
+                        config=_get_config(),
+                    ),
+                )
+
+            return await asyncio.wait_for(
+                _process_batch(),
+                timeout=_get_config().qa_batch_timeout,
             )
 
         if not body.qtype:
@@ -214,7 +221,7 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
 
     except asyncio.TimeoutError:
         timeout_msg = (
-            f"생성 시간 초과 ({_get_config().qa_batch_timeout if body.mode == 'batch' else _get_config().qa_single_timeout}초). "
+            f"생성 시간 초과 ({_get_config().qa_batch_timeout if body.mode in {'batch', 'batch_three'} else _get_config().qa_single_timeout}초). "
             "다시 시도해주세요."
         )
         raise HTTPException(status_code=504, detail=timeout_msg)
@@ -459,6 +466,7 @@ async def generate_single_qa(
         length_constraint = f"""
 [CRITICAL - 길이 제약]
 **절대 규칙**: 이 응답은 OCR 원문 길이({ocr_len}자)에 비례하여 **최소 {min_chars}자 ~ 최대 {max_chars}자** 분량입니다.
+- 5-8개 문단으로 구성
 - 굵은 제목 1줄 + 도입 1-2문장 + 불릿 3-6개 + 결론
 - 각 불릿은 1-2문장
 - 핵심 포인트를 빠짐없이 다룰 것
