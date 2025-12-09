@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 from collections.abc import AsyncIterator
@@ -12,9 +11,9 @@ from pathlib import Path
 from typing import Any, Literal
 from uuid import uuid4
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
@@ -36,11 +35,20 @@ from src.infra.structured_logging import setup_structured_logging
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
 from src.qa.rule_loader import set_global_kg
-from src.web.models import OCRTextInput
-from src.web.routers import admin as admin_router
 from src.web.routers import health as health_router_module
-from src.web.routers import health_router, qa_router, stream_router, workspace_router
+from src.web.routers import (
+    health_router,
+    metrics_router,
+    ocr_router,
+    pages_router,
+    qa_router,
+    session_router,
+    stream_router,
+    workspace_router,
+)
+from src.web.routers import ocr as ocr_router_module
 from src.web.routers import qa as qa_router_module
+from src.web.routers import session as session_router_module
 from src.web.routers import stream as stream_router_module
 from src.web.routers import workspace as workspace_router_module
 from src.web.service_registry import get_registry
@@ -335,6 +343,8 @@ async def init_resources() -> None:
         kg=kg,
         pipeline=pipeline,
     )
+    ocr_router_module.set_dependencies(app_config)
+    session_router_module.set_dependencies(session_manager)
     # 전역 KG 설정 (이미 초기화된 경우에도 동기화)
     set_global_kg(kg)
 
@@ -401,210 +411,14 @@ app.mount("/static", StaticFiles(directory=str(REPO_ROOT / "static")), name="sta
 templates = Jinja2Templates(directory=str(REPO_ROOT / "templates" / "web"))
 
 # 라우터 등록
+app.include_router(pages_router)
 app.include_router(health_router)
 app.include_router(qa_router)
 app.include_router(workspace_router)
 app.include_router(stream_router)
-# 관리자 엔드포인트: 로컬/테스트 전용 (ENABLE_ADMIN_API=true 시)
-if os.getenv("ENABLE_ADMIN_API", "false").lower() == "true":
-    app.include_router(admin_router.router)
-    logger.warning("Admin API enabled - do NOT expose publicly")
-
-
-# ============================================================================
-# 페이지 엔드포인트
-# ============================================================================
-
-
-@app.get("/", response_class=RedirectResponse)
-async def root() -> str:
-    """루트 경로 → /qa로 리다이렉트."""
-    return "/qa"
-
-
-@app.get("/qa", response_class=HTMLResponse)
-async def page_qa(request: Request) -> HTMLResponse:
-    """QA 생성 페이지."""
-    return templates.TemplateResponse(request, "qa.html")
-
-
-@app.get("/eval", response_class=HTMLResponse)
-async def page_eval(request: Request) -> HTMLResponse:
-    """외부 답변 평가 페이지."""
-    return templates.TemplateResponse(request, "eval.html")
-
-
-@app.get("/workspace", response_class=HTMLResponse)
-async def page_workspace(request: Request) -> HTMLResponse:
-    """워크스페이스 페이지."""
-    return templates.TemplateResponse(request, "workspace.html")
-
-
-if ENABLE_MULTIMODAL:
-
-    @app.get("/multimodal", response_class=HTMLResponse)
-    async def page_multimodal() -> HTMLResponse:
-        """멀티모달 페이지."""
-        html = "<html><body><h1>Multimodal feature is disabled.</h1></body></html>"
-        return HTMLResponse(content=html)
-
-
-@app.get("/api/session")
-async def get_session(request: Request) -> dict[str, Any]:
-    """현재 세션 정보를 조회합니다."""
-    session = getattr(request.state, "session", None)
-    if session is None:
-        raise HTTPException(status_code=500, detail="세션을 초기화할 수 없습니다.")
-    return session_manager.serialize(session)
-
-
-@app.delete("/api/session")
-async def delete_session(request: Request) -> dict[str, Any]:
-    """현재 세션을 종료합니다."""
-    session = getattr(request.state, "session", None)
-    if session is None:
-        raise HTTPException(status_code=500, detail="세션을 초기화할 수 없습니다.")
-    session_manager.destroy(session.session_id)
-    return {"cleared": True}
-
-
-# ============================================================================
-# OCR 엔드포인트
-# ============================================================================
-
-
-@app.get("/api/ocr")
-async def api_get_ocr(request: Request) -> dict[str, str]:
-    """OCR 텍스트 조회."""
-    try:
-        ocr_text = load_ocr_text()
-        return {"ocr": ocr_text}
-    except HTTPException:
-        # Re-raise HTTPException to return proper status code (e.g., 404)
-        raise
-    except Exception as exc:
-        _log_api_error(
-            "Failed to load OCR text",
-            request=request,
-            exc=exc,
-            logger_obj=logger,
-        )
-        raise HTTPException(
-            status_code=500,
-            detail="OCR 텍스트 조회 중 오류가 발생했습니다.",
-        ) from exc
-
-
-@app.post("/api/ocr")
-async def api_save_ocr(request: Request, payload: OCRTextInput) -> dict[str, str]:
-    """OCR 텍스트 저장 (비동기 파일 I/O)."""
-    try:
-        # 동기 작업을 스레드 풀에서 실행
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, save_ocr_text, payload.text)
-
-        logger.info(
-            "OCR text saved successfully",
-            extra={
-                "request_id": _get_request_id(request),
-                "text_length": len(payload.text),
-            },
-        )
-        return {"status": "success", "message": "OCR 텍스트가 저장되었습니다."}
-    except Exception as exc:
-        _log_api_error(
-            "Failed to save OCR text",
-            request=request,
-            exc=exc,
-            logger_obj=logger,
-        )
-        raise HTTPException(status_code=500, detail="OCR 텍스트 저장 실패") from exc
-
-
-@app.get("/api/metrics/performance")
-async def get_performance_metrics(
-    operation: str | None = None,
-) -> dict[str, dict[str, float]]:
-    """실시간 성능 메트릭 조회.
-
-    Args:
-        operation: 특정 작업 필터 (None이면 전체)
-
-    Returns:
-        작업별 성능 통계
-    """
-    from src.infra.performance_tracker import get_tracker
-
-    tracker = get_tracker()
-    return tracker.get_stats(operation=operation)
-
-
-# ============================================================================
-# 멀티모달 엔드포인트 (기능 비활성)
-# ============================================================================
-
-
-if ENABLE_MULTIMODAL:
-
-    @app.post("/api/multimodal/analyze")
-    async def api_analyze_image_disabled(
-        file: UploadFile = File(...),
-    ) -> dict[str, str]:
-        """이미지 분석 엔드포인트 (멀티모달 기능 미사용 시 500 반환)."""
-        _ = file  # FastAPI 형태를 유지하면서 사용하지 않음
-        raise HTTPException(
-            status_code=500,
-            detail="Multimodal analysis is disabled in this deployment.",
-        )
-
-
-# ============================================================================
-# 메트릭 / 분석 / 관리자 엔드포인트
-# ============================================================================
-
-
-if ENABLE_METRICS:
-
-    @app.get("/metrics")
-    async def metrics_endpoint() -> Response:
-        """Prometheus metrics endpoint."""
-        from src.monitoring.metrics import get_metrics
-
-        return Response(content=get_metrics(), media_type="text/plain")
-
-    @app.get("/api/analytics/current")
-    async def current_metrics() -> dict[str, Any]:
-        """실시간 메트릭 조회."""
-        from src.analytics.dashboard import UsageDashboard
-
-        dashboard = UsageDashboard()
-        today_stats = dashboard.get_today_stats()
-
-        return {
-            "today": {
-                "sessions": today_stats["sessions"],
-                "cost": today_stats["cost"],
-                "cache_hit_rate": today_stats["cache_hit_rate"],
-            },
-            "this_week": {
-                "total_cost": dashboard.get_week_total_cost(),
-                "avg_quality": dashboard.get_week_avg_quality(),
-            },
-        }
-
-    @app.post("/admin/log-level")
-    async def set_log_level_endpoint(level: str) -> dict[str, str]:
-        """런타임에 로그 레벨 변경 (관리자용)."""
-        from src.infra.logging import set_log_level
-
-        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-        if level.upper() not in valid_levels:
-            raise HTTPException(400, f"Invalid level. Use: {valid_levels}")
-
-        if set_log_level(level):
-            return {"message": f"Log level set to {level.upper()}"}
-        raise HTTPException(500, "Failed to set log level")
-
+app.include_router(ocr_router)
+app.include_router(session_router)
+app.include_router(metrics_router)
 
 __all__ = [
     "DEFAULT_ANSWER_RULES",

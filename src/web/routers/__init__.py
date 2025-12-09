@@ -1,8 +1,21 @@
 """Web API routers package."""
 
 from src.web.routers.health import router as health_router
+from src.web.routers.metrics import router as metrics_router
+from src.web.routers.ocr import router as ocr_router
+from src.web.routers.pages import router as pages_router
 from src.web.routers.qa import router as qa_router
+from src.web.routers.session import router as session_router
 from src.web.routers.stream import router as stream_router
 from src.web.routers.workspace import router as workspace_router
 
-__all__ = ["health_router", "qa_router", "stream_router", "workspace_router"]
+__all__ = [
+    "health_router",
+    "metrics_router",
+    "ocr_router",
+    "pages_router",
+    "qa_router",
+    "session_router",
+    "stream_router",
+    "workspace_router",
+]

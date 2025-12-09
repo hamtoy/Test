@@ -6,7 +6,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 # Import sub-routers
-from . import qa_common, qa_evaluation, qa_generation
+from . import qa_common, qa_evaluation, qa_generation, qa_tools
 
 # Main QA router that aggregates all sub-routers
 router = APIRouter()
@@ -14,6 +14,7 @@ router = APIRouter()
 # Include all sub-routers
 router.include_router(qa_generation.router)
 router.include_router(qa_evaluation.router)
+router.include_router(qa_tools.router)
 
 # Export set_dependencies for backward compatibility
 set_dependencies = qa_common.set_dependencies
