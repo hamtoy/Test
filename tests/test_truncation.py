@@ -63,18 +63,19 @@ def test_qtype_specific_punctuation(
     """Test qtype-specific punctuation handling."""
     result = apply_answer_limits(text, qtype)
     assert result.endswith(expected_ending)
-def test_truncation_extended():
-    # Extended text:
-    # 1. First sentence (contains decimal 3. 7%)
-    # 2. Second sentence (contains decimal 3. 9%, 27. 5) -> "혼재된 양상을 보였습니다."
-    # 3. Third sentence ("그러나 ... 16.")
-    # 4. Fourth sentence ("추가 문장 1")
-    # 5. Fifth sentence ("추가 문장 2")
-    # 6. Sixth sentence ("추가 문장 3") -> Should be kept (limit is 5? No, limit is 5 sentences).
-    # Wait, reasoning limit is 5.
-    # So sentences 1, 2, 3, 4, 5 kept.
-    # Sentence 6 dropped.
 
+
+def test_decimal_in_korean_text() -> None:
+    """Test truncation with Korean text containing decimals that shouldn't be treated as sentence boundaries.
+
+    Extended text:
+    1. First sentence (contains decimal 3. 7%)
+    2. Second sentence (contains decimal 3. 9%, 27. 5) -> "혼재된 양상을 보였습니다."
+    3. Third sentence ("그러나 ... 16.")
+    4. Fourth sentence ("추가 문장 1")
+    5. Fifth sentence ("추가 문장 2")
+    6. Sixth sentence ("추가 문장 3") -> Should be dropped (reasoning limit is 5 sentences).
+    """
     text = (
         "2월 고용보고서에서 실업률이 전월 3. 7%에서 3. 9%로 상승했으며, "
         "비농업취업자 수는 시장 예상인 20만명을 웃도는 27. 5만명을 기록하여 "
@@ -107,4 +108,4 @@ def test_truncation_extended():
 
 
 if __name__ == "__main__":
-    test_truncation_extended()
+    test_decimal_in_korean_text()
