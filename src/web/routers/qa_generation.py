@@ -114,7 +114,9 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
                 # 1단계: global_explanation 순차 생성
                 try:
                     first_pair = await asyncio.wait_for(
-                        generate_single_qa_with_retry(current_agent, ocr_text, first_type),
+                        generate_single_qa_with_retry(
+                            current_agent, ocr_text, first_type
+                        ),
                         timeout=_get_config().qa_single_timeout,
                     )
                     results.append(first_pair)
@@ -168,7 +170,9 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
                                     type(pair), pair, pair.__traceback__
                                 )
                             )
-                            sys.stderr.write(f"\n[ERROR TRACEBACK] {qtype}:\n{tb_str}\n")
+                            sys.stderr.write(
+                                f"\n[ERROR TRACEBACK] {qtype}:\n{tb_str}\n"
+                            )
                             logger.error("%s 생성 실패:\n%s", qtype, tb_str)
                             results.append(
                                 {
