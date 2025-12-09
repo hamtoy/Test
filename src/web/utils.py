@@ -162,7 +162,8 @@ def detect_workflow(
         return "edit_both" if has_edit else "rewrite"
 
     if has_query and not has_answer:
-        return "edit_query" if has_edit else "answer_generation"
+        # 질문은 있는데 답변이 없다면, 편집 요청이 있더라도 '답변 생성 지시'로 간주하여 답변 생성
+        return "answer_generation"
 
     # has_answer and not has_query: 질문만 생성, 편집 요청 시 답변 수정
     return "edit_answer" if has_edit else "query_generation"
@@ -212,11 +213,28 @@ def apply_answer_limits(
         #    Gemini의 원래 생성 길이를 사용하여 답변 손실 방지 (28-50% 손실 문제 해결)
     }
 
+    def _split_sentences(text: str) -> list[str]:
+        """Split sentences carefully, avoiding split on decimal points."""
+        # 1. Protect decimal patterns temporarily (e.g. 3.5, 3. 5)
+        protected = re.sub(r"(\d)\.(\d)", r"\1_DOT_\2", text)
+        protected = re.sub(r"(\d)\.\s+(\d)", r"\1_DOT_SPACE_\2", protected)
+
+        # 2. Split by "."
+        sentences = [s.strip() for s in protected.split(".") if s.strip()]
+
+        # 3. Restore patterns
+        final_sentences = []
+        for s in sentences:
+            restored = s.replace("_DOT_SPACE_", ". ").replace("_DOT_", ".")
+            final_sentences.append(restored)
+
+        return final_sentences
+
     if normalized_qtype in config:
         limits = config[normalized_qtype]
 
         # 1단계: 문장 제한
-        sentences = [s.strip() for s in answer.split(".") if s.strip()]
+        sentences = _split_sentences(answer)
         if sentences:
             sentences = sentences[: limits["max_sentences"]]
             answer = ". ".join(sentences)
@@ -234,7 +252,7 @@ def apply_answer_limits(
                 text = " ".join(words[:max_words])
             return text
 
-        sentences = [s.strip() for s in answer.split(".") if s.strip()]
+        sentences = _split_sentences(answer)
         if sentences and len(sentences) > 5:
             sentences = sentences[:5]
             answer = ". ".join(sentences)
@@ -279,7 +297,7 @@ def apply_answer_limits(
             answer = _limit_words(answer, 50)
         else:
             # 4. target long: 200단어, 최대 6문장
-            sentences = [s.strip() for s in answer.split(".") if s.strip()]
+            sentences = _split_sentences(answer)
             if sentences:
                 sentences = sentences[:6]
                 answer = ". ".join(sentences)

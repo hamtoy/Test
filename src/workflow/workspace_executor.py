@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 from src.config.constants import DEFAULT_ANSWER_RULES
 from src.qa.rule_loader import RuleLoader
 from src.qa.validator import UnifiedValidator
-from src.web.utils import QTYPE_MAP
+from src.web.utils import QTYPE_MAP, postprocess_answer
 from src.workflow.edit import edit_content
 
 logger = logging.getLogger(__name__)
@@ -338,7 +338,7 @@ class WorkspaceExecutor:
             else:
                 raise
 
-        return self._strip_output_tags(edited)
+        return postprocess_answer(edited, ctx.query_type)
 
     def _get_query_intent(self, query_type: str, global_ref: str) -> str:
         """쿼리 타입별 인텐트 생성 (Jinja2 템플릿 사용)."""
@@ -402,7 +402,9 @@ class WorkspaceExecutor:
 ---"""
 
         # Difficulty hint
-        difficulty_hint = self._get_difficulty_hint(ctx.ocr_text)
+        hint = self._get_difficulty_hint(ctx.ocr_text, ctx.query_type)
+        if ctx.edit_request:
+            hint += f"\n[사용자 추가 요청]\n{ctx.edit_request}"
 
         # Evidence clause
         evidence_clause = (
@@ -422,7 +424,7 @@ class WorkspaceExecutor:
             extra_rules=extra_rules[:5] if extra_rules else [],
             length_constraint=length_constraint,
             dedup_section=dedup_section,
-            difficulty_hint=difficulty_hint,
+            difficulty_hint=hint,
             evidence_clause=evidence_clause,
         )
 
@@ -433,9 +435,15 @@ class WorkspaceExecutor:
             query_type=normalized_qtype,
         )
 
-        # 후처리
-        answer = self._strip_output_tags(answer)
-        answer = self._postprocess_answer(answer, ctx.query_type)
+        # 후처리 (Shared Logic)
+        normalized_qtype = QTYPE_MAP.get(ctx.query_type, "explanation")
+        max_chars = (
+            int(len(ctx.ocr_text) * 0.8)
+            if len(ctx.ocr_text) > 0 and normalized_qtype == "explanation"
+            else None
+        )
+
+        answer = postprocess_answer(answer, ctx.query_type, max_length=max_chars)
 
         # Validate answer and optionally rewrite if validation fails
         answer = await self._validate_and_fix_answer(
@@ -482,8 +490,9 @@ class WorkspaceExecutor:
                     cached_content=None,
                     length_constraint=length_constraint,
                 )
-                answer = self._strip_output_tags(answer)
-                answer = self._postprocess_answer(answer, ctx.query_type)
+                answer = postprocess_answer(
+                    answer, ctx.query_type, max_length=None
+                )  # 재작성 시에는 max_length 강제 적용은 보류하거나 필요 시 추가
                 logger.info("검증 기반 재작성 완료")
             except Exception as exc:
                 logger.debug("재작성 실패, 기존 답변 유지: %s", exc)
@@ -498,9 +507,32 @@ class WorkspaceExecutor:
             ocr_len: OCR 텍스트 길이 (explanation용 동적 계산)
         """
         constraints = {
-            "target_short": "답변은 불릿·마크다운(볼드/기울임) 없이 1-2문장, 최대 50단어 이내로 작성하세요.",
-            "target_long": "답변은 불릿·마크다운(볼드/기울임) 없이 5-6문장, 최대 150단어 이내로 작성하세요.",
-            "reasoning": "불릿·마크다운(볼드/기울임) 없이 3-4문장, 최대 200단어로 핵심 추론만 간결하게 제시하세요.",
+            "target_short": """
+[CRITICAL - 길이 제약]
+**절대 규칙**: 이 응답은 정확히 1-2문장, 50-150자의 간결한 답변이어야 합니다.
+- 정확히 1-2문장으로 제한
+- 최대 150자 초과 금지
+- 단순 사실만 전달, 배경 설명 불필요
+- 명확하고 직접적인 표현만 사용
+- 불필요한 상세 설명은 배제
+""",
+            "target_long": """
+[CRITICAL - 길이 제약]
+**절대 규칙**: 이 응답은 최소 300-600자 분량의 상세한 답변이어야 합니다.
+- 정확히 5-6개 문장으로 구성
+- 각 문장은 25-50자 정도의 적절한 길이
+- 관련 배경 정보와 예시 포함
+- 최소 300자 이상의 충분한 설명
+- 단순 나열이 아닌 논리적 흐름 유지
+""",
+            "reasoning": """
+[CRITICAL - 길이 제약]
+**절대 규칙**: 이 응답은 최대 200단어, 3-4문장 이내의 간결한 추론이어야 합니다.
+- 정확히 3-4개 문장으로 구성
+- 최대 200단어 초과 금지
+- 불필요한 서론/결론 배제하고 핵심 추론만 제시
+- "제시된 증거는..." 같은 반복적 문구 제외
+""",
         }
 
         # explanation: OCR 60-80% 동적 계산
@@ -513,30 +545,13 @@ class WorkspaceExecutor:
 
         return constraints.get(query_type, "")
 
-    def _get_difficulty_hint(self, ocr_text: str) -> str:
-        """Get difficulty hint based on OCR text length."""
+    def _get_difficulty_hint(self, ocr_text: str, query_type: str) -> str:
+        """Get difficulty hint based on OCR text length and query type."""
+        # 상세 답변이 필요한 타입은 길이를 이유로 짧게 줄이지 않음
+        if query_type in ("target_long", "explanation", "global_explanation"):
+            return "관련 내용을 상세하고 충실하게 서술하세요."
+
         length = len(ocr_text)
         if length > 2000:
             return "본문이 길어 핵심 숫자·근거만 간결히 답하세요."
         return "불필요한 서론 없이 핵심을 짧게 서술하세요."
-
-    def _strip_output_tags(self, text: str) -> str:
-        """<output> 태그 제거."""
-        text = re.sub(r"<output>|</output>", "", text, flags=re.IGNORECASE)
-        return text.strip()
-
-    def _postprocess_answer(self, answer: str, query_type: str) -> str:
-        """답변 후처리."""
-        # Sanitize output
-        answer = self._sanitize_output(answer)
-        return answer.strip()
-
-    def _sanitize_output(self, text: str) -> str:
-        """불릿/마크다운/여분 공백을 제거해 일관된 문장만 남긴다."""
-        text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
-        text = re.sub(r"\*(.*?)\*", r"\1", text)
-        text = re.sub(r"[_]{1,2}(.*?)[_]{1,2}", r"\1", text)
-        text = text.replace("*", "")
-        text = re.sub(r"^[\-\u2022]\s*", "", text, flags=re.MULTILINE)
-        text = re.sub(r"\s+", " ", text).strip()
-        return text
