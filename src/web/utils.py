@@ -162,8 +162,7 @@ def detect_workflow(
         return "edit_both" if has_edit else "rewrite"
 
     if has_query and not has_answer:
-        # 질문은 있는데 답변이 없다면, 편집 요청이 있더라도 '답변 생성 지시'로 간주하여 답변 생성
-        return "answer_generation"
+        return "edit_query" if has_edit else "answer_generation"
 
     # has_answer and not has_query: 질문만 생성, 편집 요청 시 답변 수정
     return "edit_answer" if has_edit else "query_generation"
@@ -189,6 +188,21 @@ def apply_answer_limits(
         words = text.split()
         if len(words) > max_words:
             text = " ".join(words[:max_words])
+        return text
+
+    def _normalize_ending_punctuation(text: str) -> str:
+        """Replace ellipsis with period, or add period if missing."""
+        if text:
+            if text.endswith("..."):
+                return text[:-3] + "."
+            elif not text.endswith("."):
+                return text + "."
+        return text
+
+    def _ensure_period_preserve_ellipsis(text: str) -> str:
+        """Add period if missing, but preserve existing ellipsis."""
+        if text and not text.endswith(".") and not text.endswith("..."):
+            return text + "."
         return text
 
     # 실제 사용되는 4가지 질질 타입별 설정
@@ -244,13 +258,13 @@ def apply_answer_limits(
             if answer and not answer.endswith("."):
                 answer += "."
         answer = _limit_words_reasoning(answer, 200)
-        if answer and not answer.endswith("."):
-            answer += "."
+        # For reasoning: replace ellipsis with period
+        answer = _normalize_ending_punctuation(answer)
 
     elif normalized_qtype == "explanation":
         # global_explanation: No word/sentence limits, but ensure period at end
-        if answer and not answer.endswith("."):
-            answer += "."
+        # Preserve ellipsis if present, only add period when both period and ellipsis are missing
+        answer = _ensure_period_preserve_ellipsis(answer)
 
         # Dynamic max length enforcement (if provided)
         if max_length and len(answer) > max_length:
@@ -278,7 +292,7 @@ def apply_answer_limits(
         word_count = len(answer.split())
 
         if word_count < 15:
-            # 3. target short: 매우 간결 (1-2문장)
+            # Short target answers preserved as-is without automatic punctuation
             answer = _limit_words(answer, 50)
         else:
             # 4. target long: 200단어, 최대 6문장

@@ -7,9 +7,15 @@ from neo4j import GraphDatabase
 
 load_dotenv()
 
-driver = GraphDatabase.driver(
-    os.getenv("NEO4J_URI"), auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD"))
-)
+# Get environment variables with defaults
+neo4j_uri = os.getenv("NEO4J_URI")
+neo4j_user = os.getenv("NEO4J_USER")
+neo4j_password = os.getenv("NEO4J_PASSWORD")
+
+if not neo4j_uri or not neo4j_user or not neo4j_password:
+    raise ValueError("NEO4J_URI, NEO4J_USER, and NEO4J_PASSWORD must be set")
+
+driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
 
 # 코드에서 사용하는 QTYPE_MAP
 QTYPE_MAP = {
@@ -31,14 +37,16 @@ with driver.session() as session:
             "MATCH (qt:QueryType {name: $qtype})<-[:APPLIES_TO]-(r:Rule) RETURN count(r) AS rule_count",
             qtype=normalized,
         )
-        rule_count = result.single()["rule_count"]
+        record = result.single()
+        rule_count = record["rule_count"] if record else 0
 
         # Constraint 연결 확인 (HAS_CONSTRAINT 관계)
         result = session.run(
             "MATCH (qt:QueryType {name: $qtype})-[:HAS_CONSTRAINT]->(c:Constraint) RETURN count(c) AS constraint_count",
             qtype=normalized,
         )
-        constraint_count = result.single()["constraint_count"]
+        record = result.single()
+        constraint_count = record["constraint_count"] if record else 0
 
         print(f"  -> Rule: {rule_count}개, Constraint: {constraint_count}개")
         print()

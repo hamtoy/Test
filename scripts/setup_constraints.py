@@ -7,9 +7,15 @@ from neo4j import GraphDatabase
 
 load_dotenv()
 
-driver = GraphDatabase.driver(
-    os.getenv("NEO4J_URI"), auth=(os.getenv("NEO4J_USER"), os.getenv("NEO4J_PASSWORD"))
-)
+# Get environment variables with defaults
+neo4j_uri = os.getenv("NEO4J_URI")
+neo4j_user = os.getenv("NEO4J_USER")
+neo4j_password = os.getenv("NEO4J_PASSWORD")
+
+if not neo4j_uri or not neo4j_user or not neo4j_password:
+    raise ValueError("NEO4J_URI, NEO4J_USER, and NEO4J_PASSWORD must be set")
+
+driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
 
 with driver.session() as session:
     print("=== 1. 현재 Constraint 노드 확인 ===")
@@ -29,7 +35,8 @@ with driver.session() as session:
         SET c.category = 'answer'
         RETURN count(c) AS updated
     """)
-    updated = result.single()["updated"]
+    record = result.single()
+    updated = record["updated"] if record else 0
     print(f"  업데이트된 Constraint: {updated}개")
 
     print()
@@ -39,7 +46,8 @@ with driver.session() as session:
         MERGE (qt)-[:HAS_CONSTRAINT]->(c)
         RETURN count(*) AS created
     """)
-    created = result.single()["created"]
+    record = result.single()
+    created = record["created"] if record else 0
     print(f"  생성된 HAS_CONSTRAINT 관계: {created}개")
 
     print()

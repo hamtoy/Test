@@ -81,7 +81,7 @@ class TestQAGraphBuilder:
             assert mock_session.run.call_count == len(QUERY_TYPES)
 
     def test_extract_constraints(self) -> None:
-        """Test extract_constraints creates Constraint nodes."""
+        """Test extract_constraints creates Constraint nodes and relationships."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
@@ -91,14 +91,33 @@ class TestQAGraphBuilder:
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
-            from src.graph.builder import QAGraphBuilder, CONSTRAINTS  # type: ignore[attr-defined]
+            from src.graph.builder import QAGraphBuilder, CONSTRAINTS, TEMPLATES  # type: ignore[attr-defined]
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
             with patch("builtins.print"):
                 builder.extract_constraints()
 
-            assert mock_session.run.call_count == len(CONSTRAINTS)
+            # Calculate expected call count:
+            # For each constraint: 1 MERGE call + N HAS_CONSTRAINT calls (N = number of linked query types)
+            # Build the same mapping logic as extract_constraints
+            constraint_to_query_types: dict[str, set[str]] = {}
+            for template in TEMPLATES:
+                template_name = template["name"]
+                query_type = template_name.split("_")[0]
+                for constraint_id in template.get("enforces", []):
+                    if constraint_id not in constraint_to_query_types:
+                        constraint_to_query_types[constraint_id] = set()
+                    constraint_to_query_types[constraint_id].add(query_type)
+
+            expected_calls = 0
+            for c in CONSTRAINTS:
+                constraint_id = c["id"]
+                linked_types = constraint_to_query_types.get(constraint_id, set())
+                # 1 call for MERGE + 1 call per linked query type
+                expected_calls += 1 + len(linked_types)
+
+            assert mock_session.run.call_count == expected_calls
 
     def test_link_rules_to_constraints(self) -> None:
         """Test link_rules_to_constraints creates relationships."""
