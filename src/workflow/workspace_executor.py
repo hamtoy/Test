@@ -553,15 +553,17 @@ class WorkspaceExecutor:
 
     def _strip_output_tags(self, text: str) -> str:
         """Remove <output> tags from text.
-        
+
         Args:
             text: Text potentially containing <output> or <OUTPUT> tags
-            
+
         Returns:
             Text with output tags removed
         """
         # Remove <output>...</output> tags (case-insensitive)
-        result = re.sub(r'<output>(.*?)</output>', r'\1', text, flags=re.IGNORECASE | re.DOTALL)
+        result = re.sub(
+            r"<output>(.*?)</output>", r"\1", text, flags=re.IGNORECASE | re.DOTALL
+        )
         # Also handle self-closing or incomplete tags
-        result = re.sub(r'</?output>', '', result, flags=re.IGNORECASE)
+        result = re.sub(r"</?output>", "", result, flags=re.IGNORECASE)
         return result
