@@ -59,13 +59,9 @@ function escapeHtml(text: string): string {
 }
 
 function formatAnswer(text: string): string {
+    // 마크다운 렌더링 없이 raw 텍스트로 표시 (워크스페이스와 동일)
     const escaped = escapeHtml(text);
-    const formatted = escaped
-        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-        .replace(/\n\n/g, "<br><br>")
-        .replace(/\n/g, "<br>")
-        .replace(/^- /gm, "• ");
-    // DOMPurify is loaded globally
+    const formatted = escaped.replace(/\n/g, "<br>");  // 줄바꿈만 처리
     return window.DOMPurify ? window.DOMPurify.sanitize(formatted) : formatted;
 }
 

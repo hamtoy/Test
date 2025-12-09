@@ -828,6 +828,13 @@ Priority 30 (LOW):
         if val_result.warnings:
             all_issues.extend(val_result.warnings)
 
+        # 시의성 관련 위반 필터링 (인간 작업자가 최종 수정 예정)
+        all_violations = [
+            v
+            for v in all_violations
+            if "시의성" not in v and "temporal" not in v.lower()
+        ]
+
         if all_violations:
             all_issues.extend(all_violations[:3])
 
