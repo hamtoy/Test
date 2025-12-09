@@ -561,7 +561,6 @@ class WorkspaceExecutor:
             Text with output tags removed
         """
         # Remove <output>...</output> tags (case-insensitive)
-        import re
         result = re.sub(r'<output>(.*?)</output>', r'\1', text, flags=re.IGNORECASE | re.DOTALL)
         # Also handle self-closing or incomplete tags
         result = re.sub(r'</?output>', '', result, flags=re.IGNORECASE)
