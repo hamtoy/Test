@@ -162,8 +162,7 @@ def detect_workflow(
         return "edit_both" if has_edit else "rewrite"
 
     if has_query and not has_answer:
-        # 질문은 있는데 답변이 없다면, 편집 요청이 있더라도 '답변 생성 지시'로 간주하여 답변 생성
-        return "answer_generation"
+        return "edit_query" if has_edit else "answer_generation"
 
     # has_answer and not has_query: 질문만 생성, 편집 요청 시 답변 수정
     return "edit_answer" if has_edit else "query_generation"

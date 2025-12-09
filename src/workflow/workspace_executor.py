@@ -338,7 +338,8 @@ class WorkspaceExecutor:
             else:
                 raise
 
-        return postprocess_answer(edited, ctx.query_type)
+        # Return edited content without post-processing to preserve user's edits
+        return edited
 
     def _get_query_intent(self, query_type: str, global_ref: str) -> str:
         """쿼리 타입별 인텐트 생성 (Jinja2 템플릿 사용)."""
@@ -435,15 +436,9 @@ class WorkspaceExecutor:
             query_type=normalized_qtype,
         )
 
-        # 후처리 (Shared Logic)
-        normalized_qtype = QTYPE_MAP.get(ctx.query_type, "explanation")
-        max_chars = (
-            int(len(ctx.ocr_text) * 0.8)
-            if len(ctx.ocr_text) > 0 and normalized_qtype == "explanation"
-            else None
-        )
-
-        answer = postprocess_answer(answer, ctx.query_type, max_length=max_chars)
+        # 후처리 - workspace operations don't apply OCR-based length limits
+        # Just clean up markdown and ensure basic formatting
+        answer = postprocess_answer(answer, ctx.query_type, max_length=None)
 
         # Validate answer and optionally rewrite if validation fails
         answer = await self._validate_and_fix_answer(
@@ -555,3 +550,19 @@ class WorkspaceExecutor:
         if length > 2000:
             return "본문이 길어 핵심 숫자·근거만 간결히 답하세요."
         return "불필요한 서론 없이 핵심을 짧게 서술하세요."
+
+    def _strip_output_tags(self, text: str) -> str:
+        """Remove <output> tags from text.
+        
+        Args:
+            text: Text potentially containing <output> or <OUTPUT> tags
+            
+        Returns:
+            Text with output tags removed
+        """
+        # Remove <output>...</output> tags (case-insensitive)
+        import re
+        result = re.sub(r'<output>(.*?)</output>', r'\1', text, flags=re.IGNORECASE | re.DOTALL)
+        # Also handle self-closing or incomplete tags
+        result = re.sub(r'</?output>', '', result, flags=re.IGNORECASE)
+        return result
