@@ -42,7 +42,7 @@ repos:
         types: [python]
         args:
           - src/
-          - scripts/vulture_whitelist.py
+          - scripts/dev/vulture_whitelist.py
           - --min-confidence=80
         pass_filenames: false
 
@@ -62,7 +62,7 @@ repos:
       - id: check-deprecated-imports
         name: Deprecated Import Scanner
         description: Check for deprecated import patterns that should be migrated
-        entry: python scripts/check_deprecated_imports.py
+        entry: python scripts/validation/check_deprecated_imports.py
         language: system
         types: [python]
         pass_filenames: true
