@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 import re
 import sys
 from collections import Counter
@@ -85,12 +86,16 @@ STOPWORDS = {
 
 TOKEN_PATTERN = re.compile(r"[A-Za-z0-9가-힣']+")
 
+# Ensure log directory exists to avoid import-time failures in test/CI.
+LOG_PATH = Path("logs/semantic_analysis.log")
+LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler("logs/semantic_analysis.log", encoding="utf-8"),
+        logging.FileHandler(LOG_PATH, encoding="utf-8"),
     ],
 )
 logger = logging.getLogger(__name__)
