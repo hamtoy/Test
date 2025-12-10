@@ -52,7 +52,7 @@ secrets/
 
 # Logs
 *.log
-app.log
+logs/
 
 # OS
 .DS_Store
@@ -72,6 +72,7 @@ Redis-x64-5.0.14.1/
 .coverage
 htmlcov/
 coverage.xml
+coverage.json
 
 # Profiling
 profiling_results/
@@ -95,7 +96,6 @@ test_warnings_quick.py
 # IDE additional
 *.code-workspace
 
-
 # v3.0 shim backups
 backup_v3_*/
 strict_baseline.txt
@@ -103,4 +103,5 @@ strict_baseline.txt
 # Generated reports
 reports/
 
-node_modules
+# Node
+node_modules/
