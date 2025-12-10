@@ -361,7 +361,7 @@ function showErrorInCard(type: string, error: string): void {
     card.appendChild(text);
 }
 
-async function generateQAStreaming(mode: "batch" | "batch_three"): Promise<void> {
+export async function generateQAStreaming(mode: "batch" | "batch_three"): Promise<void> {
     const resultsDiv = document.getElementById("results");
     if (!resultsDiv) return;
     const ocrInput = document.getElementById("ocr-input") as HTMLTextAreaElement;
@@ -378,10 +378,7 @@ async function generateQAStreaming(mode: "batch" | "batch_three"): Promise<void>
             body: JSON.stringify({ mode, ocr_text: ocrText }),
             signal: activeController?.signal
         });
-        if (!response.ok) {
-            const detail = await response.text();
-            throw new Error(`HTTP ${response.status}: ${response.statusText}${detail ? " :: " + detail : ""}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         if (!response.body) throw new Error("No response body");
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
