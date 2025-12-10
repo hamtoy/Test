@@ -3,6 +3,10 @@
 
 이 모듈은 QA 생성 API 라우터를 제공합니다.
 핵심 생성 로직은 qa_gen_core 패키지에서 분리되어 있습니다.
+
+배치 생성 흐름:
+1. global_explanation 먼저 순차 생성
+2. 나머지 타입 (reasoning, target_short, target_long) 동시 병렬 생성
 """
 
 from __future__ import annotations
@@ -77,7 +81,7 @@ async def clear_cache() -> dict[str, Any]:
 
 @router.post("/qa/generate")
 async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
-    """QA 생성 (배치: 전체 설명 선행 후 병렬, 단일: 타입별 생성)."""
+    """QA 생성 (배치: explanation 먼저 → 나머지 3개 동시 병렬, 단일: 타입별 생성)."""
     current_agent = _get_agent()
     if current_agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
