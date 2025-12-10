@@ -6,7 +6,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from checks.detect_forbidden_patterns import (
+from scripts.validation.detect_forbidden_patterns import (
     find_formatting_violations,
     find_violations,
 )
@@ -132,11 +132,13 @@ class UnifiedValidator:
 
     def validate_forbidden_patterns(self, text: str) -> list[dict[str, Any]]:
         """기존 패턴 검증."""
-        return find_violations(text)
+        violations: list[dict[str, Any]] = find_violations(text)
+        return violations
 
     def validate_formatting(self, text: str) -> list[dict[str, Any]]:
         """기존 포맷팅 검증."""
-        return find_formatting_violations(text)
+        violations: list[dict[str, Any]] = find_formatting_violations(text)
+        return violations
 
     def validate_all(
         self,
