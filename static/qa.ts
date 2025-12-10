@@ -378,7 +378,10 @@ async function generateQAStreaming(mode: "batch" | "batch_three"): Promise<void>
             body: JSON.stringify({ mode, ocr_text: ocrText }),
             signal: activeController?.signal
         });
-        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (!response.ok) {
+            const detail = await response.text();
+            throw new Error(`HTTP ${response.status}: ${response.statusText}${detail ? " :: " + detail : ""}`);
+        }
         if (!response.body) throw new Error("No response body");
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
