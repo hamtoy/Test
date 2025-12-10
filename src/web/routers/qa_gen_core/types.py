@@ -64,12 +64,16 @@ def get_query_intent(
     elif qtype == "global_explanation":
         query_intent = "전체 내용 설명 질문"
 
-    # 중복/병렬 질문 방지 공통 지시
+    # 중복/병렬 질문 방지 및 서식 공통 지시
     single_focus_clause = """
 [단일 포커스 필수]
 - 한 가지 과업만 질문 (근거+전망처럼 두 항목을 동시에 묻지 말 것)
 - '와/과/및/또는'으로 서로 다른 질문을 병렬 연결 금지
 - 필요하면 한 항목만 묻도록 재작성
+
+[서식 금지]
+- 괄호() 사용 절대 금지 - 부연 설명이나 동의어 표기 불가
+- 정보가 중복되더라도 괄호 없이 자연스러운 문장으로 작성
 """
     if query_intent:
         query_intent += single_focus_clause

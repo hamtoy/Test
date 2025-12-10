@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 from typing import Any, cast
 
 from src.config.constants import (
@@ -42,6 +43,35 @@ from .prompts import (
 )
 from .types import get_query_intent, normalize_qtype
 from .validation import validate_and_regenerate, validate_answer_length
+
+
+def _remove_parentheses_from_query(query: str) -> str:
+    """질의에서 괄호와 괄호 안 내용을 제거.
+
+    Rule: 모든 질의 유형에서 괄호() 사용 금지.
+
+    Args:
+        query: 원본 질의
+
+    Returns:
+        괄호가 제거된 질의
+    """
+    # Remove content within parentheses (including nested)
+    # Pattern: 괄호와 그 안의 내용 제거
+    cleaned = re.sub(r"\([^)]*\)", "", query)
+
+    # Clean up extra spaces
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+
+    # Log if parentheses were removed
+    if cleaned != query:
+        logging.getLogger(__name__).info(
+            "질의 괄호 제거: '%s' -> '%s'",
+            query[:100],
+            cleaned[:100],
+        )
+
+    return cleaned
 
 
 async def generate_single_qa(
@@ -128,6 +158,10 @@ async def generate_single_qa(
             raise ValueError("질의 생성 실패")
 
         query = queries[0]
+
+        # Postprocess query: Remove parentheses and their content
+        # Rule: 모든 질의에서 괄호() 사용 금지
+        query = _remove_parentheses_from_query(query)
 
         # PHASE 2B: Cache key logging
         cache_key_hash = hashlib.sha256(
