@@ -280,6 +280,145 @@ async function generateQA(mode: GenerateMode, qtype: string | null): Promise<voi
     }
 }
 
+// Streaming helpers
+function createSkeletonCard(type: string): HTMLElement {
+    const card = document.createElement("div");
+    card.className = "qa-card";
+    card.id = `qa-card-${type}`;
+    card.setAttribute("aria-busy", "true");
+    const badge = document.createElement("div");
+    badge.className = "qa-type-badge";
+    badge.textContent = getTypeBadge(type);
+    card.appendChild(badge);
+    const skeletonQuery = document.createElement("div");
+    skeletonQuery.className = "skeleton skeleton-text";
+    skeletonQuery.style.cssText = "height: 1.5em; width: 80%; margin: 16px 0";
+    card.appendChild(skeletonQuery);
+    const skeletonAnswer = document.createElement("div");
+    skeletonAnswer.className = "skeleton skeleton-block";
+    skeletonAnswer.style.cssText = "height: 100px; margin: 16px 0";
+    card.appendChild(skeletonAnswer);
+    return card;
+}
+
+function updateCardWithData(type: string, data: QAPair): void {
+    const card = document.getElementById(`qa-card-${type}`);
+    if (!card) return;
+    card.removeAttribute("aria-busy");
+    card.innerHTML = "";
+    const badge = document.createElement("div");
+    badge.className = "qa-type-badge";
+    badge.textContent = getTypeBadge(type);
+    card.appendChild(badge);
+    const querySection = document.createElement("div");
+    querySection.className = "qa-section";
+    const queryLabel = document.createElement("strong");
+    queryLabel.textContent = "💬 질의";
+    const queryContent = document.createElement("div");
+    queryContent.className = "qa-content";
+    queryContent.textContent = data.query;
+    querySection.appendChild(queryLabel);
+    querySection.appendChild(queryContent);
+    card.appendChild(querySection);
+    const answerSection = document.createElement("div");
+    answerSection.className = "qa-section";
+    const answerLabel = document.createElement("strong");
+    answerLabel.textContent = "✨ 답변";
+    const answerContent = document.createElement("div");
+    answerContent.className = "qa-content";
+    answerContent.innerHTML = formatAnswer(data.answer);
+    answerSection.appendChild(answerLabel);
+    answerSection.appendChild(answerContent);
+    card.appendChild(answerSection);
+    const btnRow = document.createElement("div");
+    btnRow.className = "btn-row qa-btn-row";
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "btn-small qa-copy-btn";
+    copyBtn.textContent = "📝 워크스페이스로 복사";
+    copyBtn.addEventListener("click", () => copyToWorkspace(data.query, data.answer));
+    btnRow.appendChild(copyBtn);
+    card.appendChild(btnRow);
+}
+
+function showErrorInCard(type: string, error: string): void {
+    const card = document.getElementById(`qa-card-${type}`);
+    if (!card) return;
+    card.removeAttribute("aria-busy");
+    card.innerHTML = "";
+    card.className = "qa-card error-state";
+    card.setAttribute("role", "alert");
+    const icon = document.createElement("div");
+    icon.className = "error-state__icon";
+    icon.textContent = "⚠️";
+    card.appendChild(icon);
+    const heading = document.createElement("h3");
+    heading.style.cssText = "margin: 0 0 8px 0; color: var(--accent-danger);";
+    heading.textContent = `${getTypeBadge(type)} 생성 실패`;
+    card.appendChild(heading);
+    const text = document.createElement("p");
+    text.className = "error-state__text";
+    text.textContent = error;
+    card.appendChild(text);
+}
+
+async function generateQAStreaming(mode: "batch" | "batch_three"): Promise<void> {
+    const resultsDiv = document.getElementById("results");
+    if (!resultsDiv) return;
+    const ocrInput = document.getElementById("ocr-input") as HTMLTextAreaElement;
+    const ocrText = ocrInput.value;
+    if (!ocrText.trim()) {
+        showToast("OCR 텍스트를 먼저 입력하세요.", "error");
+        return;
+    }
+    resultsDiv.innerHTML = "";
+    try {
+        const response = await fetch("/api/qa/generate/batch/stream", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mode, ocr_text: ocrText }),
+            signal: activeController?.signal
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (!response.body) throw new Error("No response body");
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const events = buffer.split("\n\n");
+            buffer = events.pop() || "";
+            for (const event of events) {
+                if (!event.startsWith("data: ")) continue;
+                const payload = event.slice(6).trim();
+                try {
+                    const data = JSON.parse(payload);
+                    if (data.event === "started") {
+                        const batchTypes = mode === "batch_three" ? ["global_explanation", "reasoning", "target_long"] : ["global_explanation", "reasoning", "target_short", "target_long"];
+                        batchTypes.forEach(type => resultsDiv.appendChild(createSkeletonCard(type)));
+                    } else if (data.event === "progress") {
+                        updateCardWithData(data.type, data.data);
+                    } else if (data.event === "error") {
+                        if (data.type) showErrorInCard(data.type, data.error);
+                        else showToast(`오류: ${data.error}`, "error");
+                    } else if (data.event === "done") {
+                        const summary = data.success ? `✅ 완료: ${data.completed}/${data.total} 성공` : "⚠️ 일부 실패";
+                        showToast(summary, data.success ? "success" : "warning");
+                    }
+                } catch (parseError) {
+                    console.error("Failed to parse SSE event:", payload, parseError);
+                }
+            }
+        }
+    } catch (error) {
+        console.error("Streaming error:", error);
+        const message = error instanceof Error ? error.message : "알 수 없는 오류";
+        resultsDiv.innerHTML = `<div class="error-state"><div class="error-state__icon">⚠️</div><h3 style="margin: 0 0 8px 0; color: var(--accent-danger);">스트리밍 실패</h3><p class="error-state__text">${message}</p></div>`;
+        showToast(`스트리밍 오류: ${message}`, "error");
+    }
+}
+
 function setupModeKeyboardNavigation(): void {
     const radios = Array.from(document.querySelectorAll<HTMLInputElement>("input[name=\"mode\"]"));
     if (!radios.length) return;
@@ -331,7 +470,11 @@ export function initQA(): void {
         const mode = (modeInput?.value || "single") as GenerateMode;
         const qtypeInput = document.getElementById("qtype") as HTMLSelectElement;
         const qtype = mode === "single" ? qtypeInput.value : null;
-        await generateQA(mode, qtype);
+        if (mode === "batch" || mode === "batch_three") {
+            await generateQAStreaming(mode);
+        } else {
+            await generateQA(mode, qtype);
+        }
     });
 
     setupModeKeyboardNavigation();
