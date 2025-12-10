@@ -20,9 +20,11 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
 from src.config.constants import QA_BATCH_TYPES, QA_BATCH_TYPES_THREE
+from src.web.models import GenerateQARequest
 
 if TYPE_CHECKING:
-    from src.web.models import GenerateQARequest
+    # For static analysis only (already imported at runtime)
+    pass
 
 logger = logging.getLogger(__name__)
 
