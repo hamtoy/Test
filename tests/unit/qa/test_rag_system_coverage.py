@@ -308,14 +308,17 @@ class TestResourceCleanup:
         """Test close method cleans up resources."""
         kg = _make_kg_minimal()
         kg._graph_finalizer = MagicMock()
-
-        # Reset mock to ensure clean state (handles GC timing issues in Python 3.12)
-        mock_close.reset_mock()
+        original_graph = kg._graph  # Capture the specific graph instance
 
         kg.close()
 
-        # Verify close() called close_connections exactly once
-        mock_close.assert_called_once()
+        # Verify close() was called with OUR instance's graph
+        # (other tests may trigger GC of their KG instances)
+        call_args_list = [call.args for call in mock_close.call_args_list]
+        our_call_found = any(args[0] is original_graph for args in call_args_list)
+        assert our_call_found, (
+            "close_connections was not called with our graph instance"
+        )
         assert kg._graph is None
         assert kg._graph_finalizer is None
 
@@ -324,14 +327,16 @@ class TestResourceCleanup:
         """Test __del__ attempts to close connections."""
         kg = _make_kg_minimal()
         kg._graph_finalizer = MagicMock()
-
-        # Reset mock to ensure clean state (handles GC timing issues in Python 3.12)
-        mock_close.reset_mock()
+        original_graph = kg._graph  # Capture the specific graph instance
 
         kg.__del__()
 
-        # Verify __del__() called close_connections exactly once
-        mock_close.assert_called_once()
+        # Verify __del__() was called with OUR instance's graph
+        call_args_list = [call.args for call in mock_close.call_args_list]
+        our_call_found = any(args[0] is original_graph for args in call_args_list)
+        assert our_call_found, (
+            "close_connections was not called with our graph instance"
+        )
 
 
 class TestBatchOperations:
