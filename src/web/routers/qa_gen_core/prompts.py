@@ -51,7 +51,13 @@ def build_length_constraint(qtype: str, ocr_len: int) -> tuple[str, int | None]:
 ❌ 150자 초과 = 실패
 ❌ 배경 설명 = 실패
 ❌ 볼드체(**) 사용 = 실패
+❌ 설명문(global_explanation) 답변 내용 복사 = 실패
 ✅ 핵심 사실만 1-2문장으로, 마크다운 없이 답변
+
+[중요 규칙 - 설명문 정보 사용 금지]
+같은 세션에서 생성된 설명문(global_explanation)의 내용을 그대로 가져와
+단답형으로 요약하는 것은 금지됩니다.
+→ target_short는 설명문에 없는 새로운 관점/정보를 제공해야 합니다.
 """
     elif qtype == "target_long":
         length_constraint = """
@@ -147,7 +153,8 @@ def build_extra_instructions(
 - 불필요한 수식어 배제
 - 구체적 수치나 데이터 포함
 ❌ 볼드체(**) 사용 금지 - 줄글형 답변에는 **없이** 작성
-"""
+❌ 설명문(global_explanation)에서 이미 사용된 문장을 그대로 가져오지 말 것
+→ 같은 세션에서 생성된 설명문 내용과 중복되는 답변은 위반입니다."""
         elif qtype == "target_long":
             extra_instructions = """
 - OCR 원문의 특정 내용에 집중하여 서술
