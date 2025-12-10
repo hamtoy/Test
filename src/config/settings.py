@@ -49,7 +49,7 @@ class AppConfig(BaseSettings):
         "gemini-flash-latest",
         alias="GEMINI_MODEL_NAME",
     )
-    max_output_tokens: int = Field(8192, alias="GEMINI_MAX_OUTPUT_TOKENS")
+    max_output_tokens: int = Field(2048, alias="GEMINI_MAX_OUTPUT_TOKENS")
     timeout: int = Field(120, alias="GEMINI_TIMEOUT")
     timeout_max: int = Field(3600, alias="GEMINI_TIMEOUT_MAX")
     max_concurrency: int = Field(10, alias="GEMINI_MAX_CONCURRENCY")
