@@ -14,7 +14,7 @@ repos:
         name: pydocstyle (Google convention)
         args:
           - --convention=google
-          - --add-ignore=D100,D104 # Ignore module/package docstrings
+          - --add-ignore=D100 # Ignore module docstrings
         files: ^src/
         exclude: ^(tests/|scripts/|backup_)
 
