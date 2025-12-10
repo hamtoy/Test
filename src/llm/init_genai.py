@@ -6,7 +6,6 @@ genai.configure()는 프로세스당 1회만 호출되어야 합니다.
 """
 
 import os
-from functools import lru_cache
 
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -16,7 +15,6 @@ load_dotenv()
 _configured = False
 
 
-@lru_cache(maxsize=1)
 def configure_genai(api_key: str | None = None) -> bool:
     """Gemini API를 전역으로 1회 초기화.
 
