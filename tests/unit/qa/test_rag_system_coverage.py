@@ -309,18 +309,17 @@ class TestResourceCleanup:
         kg = _make_kg_minimal()
         kg._graph_finalizer = MagicMock()
 
-        # Record call count before calling close() to handle GC timing issues
-        call_count_before = mock_close.call_count
+        # Reset mock to ensure clean state (handles GC timing issues in Python 3.12)
+        mock_close.reset_mock()
 
         kg.close()
 
-        # Verify close() incremented call count by exactly 1
-        assert mock_close.call_count == call_count_before + 1, (
-            f"Expected close() to call close_connections once, "
-            f"but call count went from {call_count_before} to {mock_close.call_count}"
-        )
+        # Verify close() called close_connections exactly once
+        mock_close.assert_called_once()
         assert kg._graph is None
         assert kg._graph_finalizer is None
+        # Verify _closed is True so __del__ won't call close_connections again
+        assert kg._closed is True
 
     @patch("src.qa.rag_system.close_connections")
     def test_destructor_calls_close(self, mock_close: Mock) -> None:
@@ -328,16 +327,13 @@ class TestResourceCleanup:
         kg = _make_kg_minimal()
         kg._graph_finalizer = MagicMock()
 
-        # Record call count before calling __del__() to handle GC timing issues
-        call_count_before = mock_close.call_count
+        # Reset mock to ensure clean state (handles GC timing issues in Python 3.12)
+        mock_close.reset_mock()
 
         kg.__del__()
 
-        # Verify __del__() incremented call count by exactly 1
-        assert mock_close.call_count == call_count_before + 1, (
-            f"Expected __del__() to call close_connections once, "
-            f"but call count went from {call_count_before} to {mock_close.call_count}"
-        )
+        # Verify __del__() called close_connections exactly once
+        mock_close.assert_called_once()
 
 
 class TestBatchOperations:
