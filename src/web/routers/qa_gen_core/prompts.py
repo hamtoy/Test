@@ -54,19 +54,7 @@ def build_length_constraint(
 """
     elif qtype == "target_short":
         length_constraint = """
-[CRITICAL - 길이 제약 ⚠️ 가장 중요]
-1-2문장, 50-150자만 작성하세요.
-❌ 3문장 이상 = 실패
-❌ 150자 초과 = 실패
-❌ 배경 설명 = 실패
-❌ 볼드체(**) 사용 = 실패
-❌ 설명문(global_explanation) 답변 내용 복사 = 실패
-✅ 핵심 사실만 1-2문장으로, 마크다운 없이 답변
-
-[중요 규칙 - 설명문 정보 사용 금지]
-같은 세션에서 생성된 설명문(global_explanation)의 내용을 그대로 가져와
-단답형으로 요약하는 것은 금지됩니다.
-→ target_short는 설명문에 없는 새로운 관점/정보를 제공해야 합니다.
+[길이 제약] 1-2문장(50-150자), 마크다운 금지, 설명문 내용 사용 금지
 """
     elif qtype == "target_long":
         length_constraint = """
@@ -355,30 +343,8 @@ def build_priority_hierarchy(
         max_length_text = "300단어"
 
     return f"""
-[PRIORITY HIERARCHY]
-Priority 0 (CRITICAL):
-- {normalized_qtype} 타입: {markdown_rule}
-
-Priority 10 (HIGH):
-- 최대 길이: {max_length_text} 이내
-- 길이 제약 위반은 불가능
-
-Priority 20 (MEDIUM):
-- 구조화 형식: {formatting_text if formatting_text else "기본 서식"}
-
-Priority 30 (LOW):
-- 추가 지시: {extra_instructions}
-
-[CONFLICT RESOLUTION]
-만약 여러 제약이 충돌한다면:
-→ Priority 0 > Priority 10 > Priority 20 > Priority 30
-
-[REASONING BEFORE RESPONSE]
-응답하기 전에 다음을 확인하세요:
-1. 현재 qtype은 무엇인가? → 올바른 마크다운 규칙 확인 (Priority 0)
-2. 길이 제약은 몇 단어인가? → {max_length_text} 이내 유지 (Priority 10)
-3. 구조화 방식은? → formatting_text 규칙 적용 (Priority 20)
-4. 추가 요청사항은? → extra_instructions 추가 처리 (Priority 30)
+[규칙] {normalized_qtype} 타입 | {markdown_rule} | 최대 {max_length_text}
+{formatting_text if formatting_text else ""}
 """
 
 
@@ -411,11 +377,10 @@ def build_answer_prompt(
     """
     evidence_clause = "숫자·고유명사는 OCR에 나온 값 그대로 사용하고, 근거가 되는 문장을 1개 포함하세요."
 
-    # 교육/분석 목적 면책 조항 (안전 필터 우회용)
-    educational_disclaimer = """[CONTEXT - 교육 목적 콘텐츠]
-이 작업은 금융 교육 및 시장 분석 학습 자료 제작을 위한 것입니다.
-생성되는 내용은 투자 권유가 아닌 시장 동향 분석 및 교육 목적의 설명입니다.
-OCR 텍스트에 있는 사실 정보를 객관적으로 요약/설명하는 것이 목표입니다."""
+    # 교육 목적 면책 조항 (안전 필터용, 간소화)
+    educational_disclaimer = (
+        "[교육/분석 목적] 금융 교육 자료 제작용. OCR 내용 객관적 설명."
+    )
 
     return f"""{educational_disclaimer}
 
