@@ -14,6 +14,7 @@ from scripts.deprecation_stats import (
     get_trend_indicator,
     main,
     save_stats_json,
+    UsageStats,
 )
 
 
@@ -116,28 +117,28 @@ class TestGenerateSummaryText:
 
     def test_summary_with_data(self) -> None:
         """Test generating summary with usage data."""
-        stats = {
+        stats: UsageStats = {
             "total_calls": 10,
             "unique_callers": 5,
             "by_module": {"src.utils": 6, "src.constants": 4},
             "files_with_deprecations": ["file1.py", "file2.py"],
         }
 
-        summary = generate_summary_text(stats)  # type: ignore[arg-type]
+        summary = generate_summary_text(stats)
         assert "Total deprecated calls: 10" in summary
         assert "Unique callers: 5" in summary
         assert "src.utils: 6 call(s)" in summary
 
     def test_summary_empty(self) -> None:
         """Test generating summary with no data."""
-        stats = {
+        stats: UsageStats = {
             "total_calls": 0,
             "unique_callers": 0,
             "by_module": {},
             "files_with_deprecations": [],
         }
 
-        summary = generate_summary_text(stats)  # type: ignore[arg-type]
+        summary = generate_summary_text(stats)
         assert "Total deprecated calls: 0" in summary
 
 
@@ -146,14 +147,14 @@ class TestGenerateReport:
 
     def test_html_report_content(self) -> None:
         """Test that HTML report contains expected content."""
-        stats = {
+        stats: UsageStats = {
             "total_calls": 15,
             "unique_callers": 3,
             "by_module": {"src.utils": 10, "src.constants": 5},
             "files_with_deprecations": ["src/main.py", "src/helper.py"],
         }
 
-        html = generate_report(stats)  # type: ignore[arg-type]
+        html = generate_report(stats)
         assert "<!DOCTYPE html>" in html
         assert "15" in html  # total calls
         assert "3" in html  # unique callers
@@ -164,14 +165,14 @@ class TestGenerateReport:
         """Test that HTML report is written to file."""
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "report.html"
-            stats = {
+            stats: UsageStats = {
                 "total_calls": 5,
                 "unique_callers": 2,
                 "by_module": {"src.utils": 5},
                 "files_with_deprecations": ["file.py"],
             }
 
-            generate_report(stats, output_path)  # type: ignore[arg-type]
+            generate_report(stats, output_path)
 
             assert output_path.exists()
             content = output_path.read_text()
@@ -205,14 +206,14 @@ class TestSaveStatsJson:
         """Test that JSON output contains expected data."""
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "stats.json"
-            stats = {
+            stats: UsageStats = {
                 "total_calls": 10,
                 "unique_callers": 3,
                 "by_module": {"src.utils": 10},
                 "files_with_deprecations": ["file.py"],
             }
 
-            save_stats_json(stats, output_path)  # type: ignore[arg-type]
+            save_stats_json(stats, output_path)
 
             assert output_path.exists()
             data = json.loads(output_path.read_text())
