@@ -90,7 +90,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler("semantic_analysis.log", encoding="utf-8"),
+        logging.FileHandler("logs/semantic_analysis.log", encoding="utf-8"),
     ],
 )
 logger = logging.getLogger(__name__)
