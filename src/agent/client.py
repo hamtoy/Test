@@ -76,13 +76,11 @@ class GeminiClient:
             finish_reason = result.finish_reason
             response_length = len(result.content) if result.content else 0
 
-            # 🔍 Enhanced logging for debugging truncated responses
+            # 🔍 Logging (truncate for performance)
             self.agent.logger.info(
-                "🔍 API Response (LLM Provider) - Finish Reason: %s, Length: %d chars, "
-                "Last 100 chars: ...%s",
+                "API Response - Finish: %s, Len: %d",
                 finish_reason,
                 response_length,
-                result.content[-100:] if response_length > 100 else result.content,
             )
 
             # Log warning if response might be truncated
@@ -178,13 +176,11 @@ class GeminiClient:
 
             response_length = len(response_text)
 
-            # 🔍 Enhanced logging for debugging truncated responses
+            # 🔍 Logging (truncate for performance)
             self.agent.logger.info(
-                "🔍 API Response (Gemini Native) - Finish Reason: %s, Length: %d chars, "
-                "Last 100 chars: ...%s",
+                "API Response - Finish: %s, Len: %d",
                 finish_reason,
                 response_length,
-                response_text[-100:] if response_length > 100 else response_text,
             )
 
             # Log warning if response might be truncated

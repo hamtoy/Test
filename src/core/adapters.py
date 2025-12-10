@@ -35,7 +35,10 @@ class GeminiProvider(LLMProvider):
             api_key: The Google AI API key.
             model_name: The Gemini model name to use.
         """
-        genai.configure(api_key=api_key)
+        # 전역 초기화 모듈 사용 (중복 호출 방지)
+        from src.llm.init_genai import configure_genai
+
+        configure_genai(api_key)
         self.model_name = model_name
         self._model = genai.GenerativeModel(model_name)
 

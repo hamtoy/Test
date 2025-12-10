@@ -6,6 +6,8 @@ import sys
 import google.generativeai as genai
 from dotenv import load_dotenv
 
+from src.llm.init_genai import configure_genai  # noqa: E402
+
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -16,7 +18,7 @@ if not api_key:
     logger.error("No API key found in .env (GEMINI_API_KEY)")
     sys.exit(1)
 
-genai.configure(api_key=api_key)
+configure_genai(api_key)
 
 logger.info("Listing models for configured Gemini key...")
 try:

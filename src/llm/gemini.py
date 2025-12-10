@@ -34,7 +34,10 @@ class GeminiModelClient:
     def __init__(self) -> None:
         """Initialize the Gemini model client."""
         api_key = require_env("GEMINI_API_KEY")
-        genai.configure(api_key=api_key)
+        # 전역 초기화 모듈 사용 (중복 호출 방지)
+        from src.llm.init_genai import configure_genai
+
+        configure_genai(api_key)
         self.model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-flash-latest")
         self.model = genai.GenerativeModel(self.model_name)
         genai_logger = getattr(genai, "_logging", None)
