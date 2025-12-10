@@ -120,12 +120,17 @@ class TestGenerateSingleQAConstraintHandling:
 
         with (
             patch(
-                "src.web.routers.qa_generation.get_cached_kg", return_value=cached_kg
+                "src.web.routers.qa_gen_core.generator.get_cached_kg",
+                return_value=cached_kg,
             ),
-            patch("src.web.routers.qa_generation._get_kg", return_value=mock_kg),
-            patch("src.web.routers.qa_generation._get_pipeline", return_value=None),
             patch(
-                "src.web.routers.qa_generation._get_validator_class",
+                "src.web.routers.qa_gen_core.generator._get_kg", return_value=mock_kg
+            ),
+            patch(
+                "src.web.routers.qa_gen_core.generator._get_pipeline", return_value=None
+            ),
+            patch(
+                "src.web.routers.qa_gen_core.generator._get_validator_class",
                 return_value=MagicMock,
             ),
         ):
@@ -159,12 +164,17 @@ class TestGenerateSingleQAConstraintHandling:
 
         with (
             patch(
-                "src.web.routers.qa_generation.get_cached_kg", return_value=cached_kg
+                "src.web.routers.qa_gen_core.generator.get_cached_kg",
+                return_value=cached_kg,
             ),
-            patch("src.web.routers.qa_generation._get_kg", return_value=mock_kg),
-            patch("src.web.routers.qa_generation._get_pipeline", return_value=None),
             patch(
-                "src.web.routers.qa_generation._get_validator_class",
+                "src.web.routers.qa_gen_core.generator._get_kg", return_value=mock_kg
+            ),
+            patch(
+                "src.web.routers.qa_gen_core.generator._get_pipeline", return_value=None
+            ),
+            patch(
+                "src.web.routers.qa_gen_core.generator._get_validator_class",
                 return_value=MagicMock,
             ),
         ):
@@ -203,12 +213,17 @@ class TestGenerateSingleQAConstraintHandling:
 
         with (
             patch(
-                "src.web.routers.qa_generation.get_cached_kg", return_value=cached_kg
+                "src.web.routers.qa_gen_core.generator.get_cached_kg",
+                return_value=cached_kg,
             ),
-            patch("src.web.routers.qa_generation._get_kg", return_value=mock_kg),
-            patch("src.web.routers.qa_generation._get_pipeline", return_value=None),
             patch(
-                "src.web.routers.qa_generation._get_validator_class",
+                "src.web.routers.qa_gen_core.generator._get_kg", return_value=mock_kg
+            ),
+            patch(
+                "src.web.routers.qa_gen_core.generator._get_pipeline", return_value=None
+            ),
+            patch(
+                "src.web.routers.qa_gen_core.generator._get_validator_class",
                 return_value=MagicMock,
             ),
         ):

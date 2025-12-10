@@ -39,13 +39,20 @@ class TestExplanationAnswerLength:
         )
 
         with (
-            patch("src.web.routers.qa_generation.get_cached_kg", return_value=None),
-            patch("src.web.routers.qa_generation._get_kg", return_value=None),
-            patch("src.web.routers.qa_generation._get_pipeline", return_value=None),
-            patch("src.web.routers.qa_generation.answer_cache.get", return_value=None),
-            patch("src.web.routers.qa_generation.answer_cache.set"),
             patch(
-                "src.web.routers.qa_generation.postprocess_answer",
+                "src.web.routers.qa_gen_core.generator.get_cached_kg", return_value=None
+            ),
+            patch("src.web.routers.qa_gen_core.generator._get_kg", return_value=None),
+            patch(
+                "src.web.routers.qa_gen_core.generator._get_pipeline", return_value=None
+            ),
+            patch(
+                "src.web.routers.qa_gen_core.generator.answer_cache.get",
+                return_value=None,
+            ),
+            patch("src.web.routers.qa_gen_core.generator.answer_cache.set"),
+            patch(
+                "src.web.routers.qa_gen_core.generator.postprocess_answer",
                 return_value=SAMPLE_COMPREHENSIVE_ANSWER,
             ),
         ):
@@ -84,16 +91,23 @@ class TestExplanationAnswerLength:
         mock_agent.rewrite_best_answer = AsyncMock(return_value=short_answer)
 
         with (
-            patch("src.web.routers.qa_generation.get_cached_kg", return_value=None),
-            patch("src.web.routers.qa_generation._get_kg", return_value=None),
-            patch("src.web.routers.qa_generation._get_pipeline", return_value=None),
-            patch("src.web.routers.qa_generation.answer_cache.get", return_value=None),
-            patch("src.web.routers.qa_generation.answer_cache.set"),
             patch(
-                "src.web.routers.qa_generation.postprocess_answer",
+                "src.web.routers.qa_gen_core.generator.get_cached_kg", return_value=None
+            ),
+            patch("src.web.routers.qa_gen_core.generator._get_kg", return_value=None),
+            patch(
+                "src.web.routers.qa_gen_core.generator._get_pipeline", return_value=None
+            ),
+            patch(
+                "src.web.routers.qa_gen_core.generator.answer_cache.get",
+                return_value=None,
+            ),
+            patch("src.web.routers.qa_gen_core.generator.answer_cache.set"),
+            patch(
+                "src.web.routers.qa_gen_core.generator.postprocess_answer",
                 return_value=short_answer,
             ),
-            patch("src.web.routers.qa_generation.logger") as mock_logger,
+            patch("src.web.routers.qa_gen_core.generator.logger") as mock_logger,
         ):
             await generate_single_qa(
                 mock_agent,
@@ -121,16 +135,23 @@ class TestExplanationAnswerLength:
         mock_agent.rewrite_best_answer = AsyncMock(return_value=short_answer)
 
         with (
-            patch("src.web.routers.qa_generation.get_cached_kg", return_value=None),
-            patch("src.web.routers.qa_generation._get_kg", return_value=None),
-            patch("src.web.routers.qa_generation._get_pipeline", return_value=None),
-            patch("src.web.routers.qa_generation.answer_cache.get", return_value=None),
-            patch("src.web.routers.qa_generation.answer_cache.set"),
             patch(
-                "src.web.routers.qa_generation.postprocess_answer",
+                "src.web.routers.qa_gen_core.generator.get_cached_kg", return_value=None
+            ),
+            patch("src.web.routers.qa_gen_core.generator._get_kg", return_value=None),
+            patch(
+                "src.web.routers.qa_gen_core.generator._get_pipeline", return_value=None
+            ),
+            patch(
+                "src.web.routers.qa_gen_core.generator.answer_cache.get",
+                return_value=None,
+            ),
+            patch("src.web.routers.qa_gen_core.generator.answer_cache.set"),
+            patch(
+                "src.web.routers.qa_gen_core.generator.postprocess_answer",
                 return_value=short_answer,
             ),
-            patch("src.web.routers.qa_generation.logger") as mock_logger,
+            patch("src.web.routers.qa_gen_core.generator.logger") as mock_logger,
         ):
             result = await generate_single_qa(
                 mock_agent,

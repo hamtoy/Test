@@ -7,6 +7,11 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from checks.detect_forbidden_patterns import (
+    find_formatting_violations,
+    find_violations,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -87,11 +92,6 @@ async def validate_and_regenerate(
             pass
 
     # 기존 탐지 + 통합 검증 병합
-    from src.validation.output_constraints import (
-        find_formatting_violations,
-        find_violations,
-    )
-
     violations = find_violations(draft_answer)
     if violations:
         for v in violations:
