@@ -42,6 +42,7 @@ from src.web.routers import (
     ocr_router,
     pages_router,
     qa_router,
+    qa_streaming_router,
     session_router,
     stream_router,
     workspace_router,
@@ -414,6 +415,7 @@ templates = Jinja2Templates(directory=str(REPO_ROOT / "templates" / "web"))
 app.include_router(pages_router)
 app.include_router(health_router)
 app.include_router(qa_router)
+app.include_router(qa_streaming_router)
 app.include_router(workspace_router)
 app.include_router(stream_router)
 app.include_router(ocr_router)
