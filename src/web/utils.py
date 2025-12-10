@@ -374,8 +374,9 @@ def postprocess_answer(
         """
         normalized = QTYPE_MAP.get(qtype, qtype)
 
-        # target 타입은 평문 유지
-        if normalized == "target":
+        # explanation 타입에만 마크다운 구조 추가
+        # reasoning/target 타입은 평문 유지 (마크다운 자동 추가하지 않음)
+        if normalized != "explanation":
             return text
 
         lines = text.split("\n")
