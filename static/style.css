@@ -1,23 +1,25 @@
 /* Gemini QA System - Modern Web Interface */
 
-/* Color System */
+/* Color System & Design Tokens */
 :root {
-    /* Dark theme */
+    /* Dark theme Base */
     --bg-primary: #0f0f0f;
     --bg-secondary: #1a1a1a;
     --bg-tertiary: #242424;
     --bg-hover: #2d2d2d;
 
+    /* Surface & Borders */
     --surface: #1e1e1e;
     --surface-raised: #282828;
-
     --border: #333333;
     --border-light: #404040;
 
+    /* Typography Colors */
     --text-primary: #e8e8e8;
     --text-secondary: #b4b4b4;
     --text-tertiary: #808080;
 
+    /* Accents */
     --accent-primary: #10b981;
     --accent-primary-hover: #059669;
     --accent-primary-soft: rgba(16, 185, 129, 0.1);
@@ -33,14 +35,26 @@
     --accent-warning: #f59e0b;
     --accent-info: #06b6d4;
 
+    /* Shadows & Radius */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+    --shadow-elev-1: 0 4px 6px rgba(0, 0, 0, 0.4);
+    /* New Token */
 
     --radius-sm: 6px;
     --radius-md: 8px;
     --radius-lg: 12px;
     --radius-xl: 16px;
+
+    /* Motion Tokens */
+    --motion-duration: 200ms;
+    --motion-ease: cubic-bezier(0.4, 0.0, 0.2, 1);
+
+    /* Glass & Fallback */
+    --bg-glass: rgba(30, 30, 30, 0.8);
+    --bg-solid: #1e1e1e;
+    --blur-radius: 8px;
 }
 
 /* Reset & Base */
@@ -50,8 +64,21 @@
     box-sizing: border-box;
 }
 
+/* Reduced Motion Guard */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    ::before,
+    ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+    font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.6;
@@ -74,7 +101,9 @@ header {
     position: sticky;
     top: 0;
     z-index: 100;
-    backdrop-filter: blur(8px);
+    background: var(--bg-glass);
+    backdrop-filter: blur(var(--blur-radius));
+    -webkit-backdrop-filter: blur(var(--blur-radius));
 }
 
 header .container {
@@ -224,7 +253,7 @@ main {
     accent-color: var(--accent-primary);
 }
 
-.control-box input[type="radio"]:checked + label {
+.control-box input[type="radio"]:checked+label {
     color: var(--text-primary);
 }
 
@@ -281,6 +310,27 @@ main {
     border: none;
     box-shadow: none;
     width: 100%;
+    position: relative;
+    overflow: hidden;
+    /* For Ripple */
+    transform: translateZ(0);
+    /* GPU Boost */
+}
+
+/* Ripple Effect */
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    transform: scale(0);
+    animation: ripple-animation 600ms linear;
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes ripple-animation {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
 }
 
 .btn--primary:hover,
@@ -347,8 +397,15 @@ main {
 }
 
 @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
 }
 
 .btn--danger {
@@ -639,6 +696,7 @@ footer {
     0% {
         margin-left: -35%;
     }
+
     100% {
         margin-left: 100%;
     }
@@ -818,6 +876,7 @@ footer {
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -829,6 +888,7 @@ footer {
         opacity: 0;
         transform: translateY(-8px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -912,4 +972,85 @@ footer {
 /* Eval Page */
 .eval-error-message {
     color: var(--accent-danger);
+}
+
+/* Skeleton UI */
+.skeleton {
+    background: linear-gradient(90deg,
+            var(--bg-secondary) 25%,
+            var(--surface-raised) 50%,
+            var(--bg-secondary) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-sm);
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.skeleton-text {
+    height: 1em;
+    margin-bottom: 0.5em;
+    width: 100%;
+}
+
+.skeleton-text:last-child {
+    width: 80%;
+}
+
+.skeleton-block {
+    height: 100px;
+    width: 100%;
+    border-radius: var(--radius-md);
+}
+
+/* Enhanced Error State */
+.error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--accent-danger-soft);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    animation: fadeIn var(--motion-duration) var(--motion-ease);
+}
+
+.error-state__icon {
+    font-size: 24px;
+    margin-bottom: 16px;
+    color: var(--accent-danger);
+}
+
+.error-state__text {
+    color: var(--text-primary);
+    margin-bottom: 24px;
+}
+
+.retry-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.retry-btn:hover,
+.retry-btn:focus-visible {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent-primary-soft);
 }

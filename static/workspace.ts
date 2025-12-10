@@ -1,4 +1,4 @@
-import { apiCallWithRetry, copyToClipboard, showToast, debounce } from "./utils.js";
+import { apiCallWithRetry, copyToClipboard, showToast, debounce, createRipple } from "./utils.js";
 import { loadOCR, saveOCR } from "./ocr.js";
 import { validateRequest, ValidationError } from "./validation.js";
 
@@ -383,6 +383,11 @@ export function initWorkspace(): void {
         });
     });
 
+    // Ripple Effect
+    document.querySelectorAll(".btn-primary").forEach((btn) => {
+        btn.addEventListener("click", (e) => createRipple(e as MouseEvent));
+    });
+
     let isExecuting = false;
     let abortController: AbortController | null = null;
 
@@ -413,11 +418,28 @@ export function initWorkspace(): void {
                     error instanceof Error
                         ? error.message
                         : "알 수 없는 오류가 발생했습니다.";
+
+                // Enhanced Error UI with Retry Logic
                 resultsDiv.innerHTML = `
-                    <div style="text-align: center; padding: 20px; background: #ffebee; border-radius: 8px; border: 1px solid #f44336; margin-top: 20px;">
-                        <p style="color: #f44336; margin: 0;">❌ 작업 실패: ${message}</p>
+                    <div class="error-state" role="alert" aria-live="assertive">
+                        <div class="error-state__icon">⚠️</div>
+                        <h3 style="margin: 0 0 8px 0; color: var(--accent-danger);">작업 실패</h3>
+                        <p class="error-state__text">${message}</p>
+                        <button id="retry-btn" class="retry-btn">
+                            🔄 다시 시도
+                        </button>
                     </div>
                 `;
+
+                // Focus Logic
+                const retryBtn = document.getElementById("retry-btn");
+                if (retryBtn) {
+                    retryBtn.addEventListener("click", () => {
+                        document.getElementById("execute-btn")?.click();
+                    });
+                    // Move focus to retry button for a11y
+                    setTimeout(() => retryBtn.focus(), 100);
+                }
             }
         } finally {
             isExecuting = false;

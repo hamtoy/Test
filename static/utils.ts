@@ -93,7 +93,7 @@ function handleApiError(error: unknown): void {
             });
             return;
         }
-        
+
         if (error.canRetry) {
             showToast(`${error.message} [다시 시도 가능]`, "warning");
         } else {
@@ -283,4 +283,25 @@ export async function withRetry<T>(
         }
     }
     throw lastError;
+}
+
+export function createRipple(event: MouseEvent): void {
+    const button = event.currentTarget as HTMLElement;
+    const circle = document.createElement("span");
+    const diameter = Math.max(button.clientWidth, button.clientHeight);
+    const radius = diameter / 2;
+
+    circle.style.width = circle.style.height = `${diameter}px`;
+    circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
+    circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
+    circle.classList.add("ripple");
+
+    const existingRipple = button.getElementsByClassName("ripple")[0];
+    if (existingRipple) {
+        existingRipple.remove();
+    }
+
+    button.appendChild(circle);
+
+    setTimeout(() => circle.remove(), 600);
 }
