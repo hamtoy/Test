@@ -27,12 +27,14 @@ def normalize_qtype(qtype: str) -> str:
 def get_query_intent(
     qtype: str,
     previous_queries: list[str] | None = None,
+    explanation_answer: str | None = None,
 ) -> str:
     """쿼리 타입에 따른 질의 의도 문자열 생성.
 
     Args:
         qtype: Query type
         previous_queries: 이전 질의 목록 (중복 방지용)
+        explanation_answer: 설명문 답변 (target 타입에서 제외할 내용)
 
     Returns:
         질의 의도 지시문
@@ -48,6 +50,19 @@ def get_query_intent(
 [중복 방지]
 다음 질의에서 다룬 내용과 겹치지 않도록 구체적 팩트(날짜, 수치, 명칭 등)를 질문하세요:
 {prev_text}
+"""
+        # 설명문 답변 내용 제외 (지엽적인 사실만 질의)
+        if explanation_answer:
+            query_intent += f"""
+
+[필수 - 설명문 내용 제외]
+아래 설명문에서 이미 다룬 내용은 질의하지 마세요.
+OCR 원문에는 있지만 설명문에는 포함되지 않은 지엽적인 숫자, 날짜, 명칭 등을 질문하세요.
+
+--- 설명문 답변 (이 내용 제외) ---
+{explanation_answer[:1500]}
+---
+위 설명문에 없는 세부 정보만 질문하세요.
 """
     elif qtype == "target_long":
         query_intent = "핵심 요점을 묻는 질문"

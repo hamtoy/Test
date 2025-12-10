@@ -130,6 +130,8 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
                 # 2단계: 나머지 타입 전부 동시 병렬 생성
                 remaining_types = batch_types[1:]
                 previous_queries = [first_query] if first_query else []
+                # 설명문 답변 추출 (target 타입에서 중복 방지용)
+                first_answer = results[0].get("answer", "") if results else ""
 
                 if remaining_types:
                     logger.info(
@@ -144,6 +146,9 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
                                 qtype,
                                 previous_queries=previous_queries
                                 if previous_queries
+                                else None,
+                                explanation_answer=first_answer
+                                if qtype.startswith("target")
                                 else None,
                             )
                             for qtype in remaining_types
@@ -235,9 +240,12 @@ async def generate_single_qa_with_retry(
     ocr_text: str,
     qtype: str,
     previous_queries: list[str] | None = None,
+    explanation_answer: str | None = None,
 ) -> dict[str, Any]:
     """재시도 로직이 있는 QA 생성 래퍼."""
-    return await generate_single_qa(agent, ocr_text, qtype, previous_queries)
+    return await generate_single_qa(
+        agent, ocr_text, qtype, previous_queries, explanation_answer
+    )
 
 
 # 하위 호환성을 위한 re-export

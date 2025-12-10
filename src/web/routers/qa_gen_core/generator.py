@@ -79,6 +79,7 @@ async def generate_single_qa(
     ocr_text: str,
     qtype: str,
     previous_queries: list[str] | None = None,
+    explanation_answer: str | None = None,
 ) -> dict[str, Any]:
     """단일 QA 생성 - 규칙 적용 보장 + 호출 최소화.
 
@@ -87,6 +88,7 @@ async def generate_single_qa(
         ocr_text: OCR 텍스트
         qtype: Query type
         previous_queries: 이전 질의 목록 (중복 방지용)
+        explanation_answer: 설명문 답변 (target 타입에서 제외할 내용)
 
     Returns:
         생성된 QA pair dict (type, query, answer)
@@ -103,8 +105,8 @@ async def generate_single_qa(
         normalized_qtype,
     )
 
-    # Phase 2: Get query intent
-    query_intent = get_query_intent(qtype, previous_queries)
+    # Phase 2: Get query intent (설명문 답변 전달하여 중복 방지)
+    query_intent = get_query_intent(qtype, previous_queries, explanation_answer)
 
     # Phase 3: Load constraints from KG
     constraint_set = load_constraints_from_kg(kg_wrapper, normalized_qtype)
