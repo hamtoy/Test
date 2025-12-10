@@ -1,19 +1,2 @@
-import{s as r,b as o}from"../app.js";import{l as c,s as l}from"./ocr.js";function v(){var s,d;c(),(s=document.getElementById("save-ocr-btn"))==null||s.addEventListener("click",()=>l()),(d=document.getElementById("eval-btn"))==null||d.addEventListener("click",async()=>{const t=document.getElementById("query").value,e=[document.getElementById("answer-a").value,document.getElementById("answer-b").value,document.getElementById("answer-c").value];if(!t||e.some(a=>!a.trim())){r("모든 필드를 입력해주세요.","error");return}await i(t,e)})}async function i(s,d){const t=document.getElementById("eval-results");if(t){t.innerHTML='<div class="loading"></div> 처리 중...';try{const e=await o("/api/eval/external","POST",{query:s,answers:d});t.innerHTML="<h3>평가 결과</h3>";const a=document.createElement("table");a.innerHTML=`
-            <thead>
-                <tr>
-                    <th>답변</th>
-                    <th>점수</th>
-                    <th>피드백</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${e.results.map(n=>`
-                    <tr class="${n.candidate_id===e.best?"best-answer":""}">
-                        <td>${n.candidate_id} ${n.candidate_id===e.best?"⭐":""}</td>
-                        <td>${n.score}</td>
-                        <td>${n.feedback}</td>
-                    </tr>
-                `).join("")}
-            </tbody>
-        `,t.appendChild(a)}catch(e){const a=e instanceof Error?e.message:"알 수 없는 오류가 발생했습니다.";t.innerHTML=`<p style="color: var(--danger)">평가 실패: ${a}</p>`}}}export{v as initEval};
+import{s as h,b as C}from"../app.js";import{l as v,s as y}from"./ocr.js";function w(){var o,r;v(),(o=document.getElementById("save-ocr-btn"))==null||o.addEventListener("click",()=>y()),(r=document.getElementById("eval-btn"))==null||r.addEventListener("click",async()=>{const e=document.getElementById("query").value,c=[document.getElementById("answer-a").value,document.getElementById("answer-b").value,document.getElementById("answer-c").value];if(!e||c.some(t=>!t.trim())){h("모든 필드를 입력해주세요.","error");return}await b(e,c)})}async function b(o,r){const e=document.getElementById("eval-results");if(!e)return;e.innerHTML="";const c=document.createElement("div");c.className="loading",e.appendChild(c),e.appendChild(document.createTextNode(" 처리 중..."));try{const t=await C("/api/eval/external","POST",{query:o,answers:r});e.innerHTML="";const d=document.createElement("h3");d.textContent="평가 결과",e.appendChild(d);const s=document.createElement("table"),l=document.createElement("thead"),m=document.createElement("tr");["답변","점수","피드백"].forEach(a=>{const n=document.createElement("th");n.textContent=a,m.appendChild(n)}),l.appendChild(m),s.appendChild(l);const i=document.createElement("tbody");t.results.forEach(a=>{const n=document.createElement("tr");a.candidate_id===t.best&&(n.className="best-answer");const u=document.createElement("td");u.textContent=a.candidate_id+(a.candidate_id===t.best?" ⭐":""),n.appendChild(u);const p=document.createElement("td");p.textContent=String(a.score),n.appendChild(p);const E=document.createElement("td");E.textContent=a.feedback,n.appendChild(E),i.appendChild(n)}),s.appendChild(i),e.appendChild(s)}catch(t){e.innerHTML="";const d=document.createElement("p");d.className="eval-error-message",d.textContent=`평가 실패: ${t instanceof Error?t.message:"알 수 없는 오류가 발생했습니다."}`,e.appendChild(d)}}export{w as initEval};
 //# sourceMappingURL=eval.js.map

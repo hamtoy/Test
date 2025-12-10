@@ -123,11 +123,13 @@ function displayResults(raw: unknown): void {
         pairs = pairs.filter((p) => allowed.has(p.type));
     }
     if (!pairs.length) {
-        resultsDiv.innerHTML = `
-            <div class="qa-card">
-                <p style="margin:0; color: var(--text-secondary, #666);">결과가 없습니다.</p>
-            </div>
-        `;
+        const emptyCard = document.createElement("div");
+        emptyCard.className = "qa-card";
+        const emptyText = document.createElement("p");
+        emptyText.className = "qa-empty-message";
+        emptyText.textContent = "결과가 없습니다.";
+        emptyCard.appendChild(emptyText);
+        resultsDiv.appendChild(emptyCard);
         return;
     }
 
@@ -136,27 +138,51 @@ function displayResults(raw: unknown): void {
         card.className = "qa-card";
         card.style.animation = `slideIn 0.3s ease-out ${index * 0.05}s both`;
 
-        card.innerHTML = `
-            <div class="qa-header">
-                <span class="qa-type-badge">${getTypeBadge(item.type)}</span>
-            </div>
-            <div class="qa-section">
-                <strong>💬 질의</strong>
-                <div class="qa-content">${escapeHtml(item.query)}</div>
-            </div>
-            <div class="qa-section">
-                <strong>✨ 답변</strong>
-                <div class="qa-content">${formatAnswer(item.answer)}</div>
-            </div>
-            <div class="btn-row" style="margin-top: 15px;">
-                <button class="btn-small qa-copy-btn">📝 워크스페이스로 복사</button>
-            </div>
-        `;
+        // Header with type badge
+        const header = document.createElement("div");
+        header.className = "qa-header";
+        const badge = document.createElement("span");
+        badge.className = "qa-type-badge";
+        badge.textContent = getTypeBadge(item.type);
+        header.appendChild(badge);
+        card.appendChild(header);
 
-        const copyBtn = card.querySelector(".qa-copy-btn");
-        copyBtn?.addEventListener("click", () => {
+        // Query section
+        const querySection = document.createElement("div");
+        querySection.className = "qa-section";
+        const queryLabel = document.createElement("strong");
+        queryLabel.textContent = "💬 질의";
+        const queryContent = document.createElement("div");
+        queryContent.className = "qa-content";
+        queryContent.textContent = item.query;
+        querySection.appendChild(queryLabel);
+        querySection.appendChild(queryContent);
+        card.appendChild(querySection);
+
+        // Answer section
+        const answerSection = document.createElement("div");
+        answerSection.className = "qa-section";
+        const answerLabel = document.createElement("strong");
+        answerLabel.textContent = "✨ 답변";
+        const answerContent = document.createElement("div");
+        answerContent.className = "qa-content";
+        // Use innerHTML with sanitized content for answer formatting
+        answerContent.innerHTML = formatAnswer(item.answer);
+        answerSection.appendChild(answerLabel);
+        answerSection.appendChild(answerContent);
+        card.appendChild(answerSection);
+
+        // Button row
+        const btnRow = document.createElement("div");
+        btnRow.className = "btn-row qa-btn-row";
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "btn-small qa-copy-btn";
+        copyBtn.textContent = "📝 워크스페이스로 복사";
+        copyBtn.addEventListener("click", () => {
             copyToWorkspace(item.query || "", item.answer || "");
         });
+        btnRow.appendChild(copyBtn);
+        card.appendChild(btnRow);
 
         resultsDiv.appendChild(card);
     });

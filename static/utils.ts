@@ -3,6 +3,26 @@
 const copyTimeouts = new Map<HTMLElement, number>();
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Creates a debounced function that delays invoking fn until after delay ms
+ * have elapsed since the last time the debounced function was invoked.
+ */
+export function debounce<T extends (...args: Parameters<T>) => void>(
+    fn: T,
+    delay: number
+): (...args: Parameters<T>) => void {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    return (...args: Parameters<T>) => {
+        if (timeoutId !== undefined) {
+            clearTimeout(timeoutId);
+        }
+        timeoutId = setTimeout(() => {
+            fn(...args);
+            timeoutId = undefined;
+        }, delay);
+    };
+}
+
 export type ToastType = "info" | "success" | "warning" | "error";
 
 export function showToast(message: string, type: ToastType = "info"): void {

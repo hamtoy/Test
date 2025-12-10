@@ -1,5 +1,55 @@
 import { describe, expect, it, vi } from "vitest";
-import { ApiError, apiCallWithRetry, parseSSEBuffer, withRetry } from "../utils.js";
+import { ApiError, apiCallWithRetry, parseSSEBuffer, withRetry, debounce } from "../utils.js";
+
+describe("debounce", () => {
+    it("delays function execution", async () => {
+        vi.useFakeTimers();
+        const fn = vi.fn();
+        const debouncedFn = debounce(fn, 100);
+
+        debouncedFn();
+        expect(fn).not.toHaveBeenCalled();
+
+        vi.advanceTimersByTime(50);
+        expect(fn).not.toHaveBeenCalled();
+
+        vi.advanceTimersByTime(50);
+        expect(fn).toHaveBeenCalledTimes(1);
+
+        vi.useRealTimers();
+    });
+
+    it("consolidates multiple calls within delay", async () => {
+        vi.useFakeTimers();
+        const fn = vi.fn();
+        const debouncedFn = debounce(fn, 100);
+
+        debouncedFn();
+        debouncedFn();
+        debouncedFn();
+
+        vi.advanceTimersByTime(100);
+        expect(fn).toHaveBeenCalledTimes(1);
+
+        vi.useRealTimers();
+    });
+
+    it("allows separate calls after delay", async () => {
+        vi.useFakeTimers();
+        const fn = vi.fn();
+        const debouncedFn = debounce(fn, 100);
+
+        debouncedFn();
+        vi.advanceTimersByTime(100);
+        expect(fn).toHaveBeenCalledTimes(1);
+
+        debouncedFn();
+        vi.advanceTimersByTime(100);
+        expect(fn).toHaveBeenCalledTimes(2);
+
+        vi.useRealTimers();
+    });
+});
 
 describe("parseSSEBuffer", () => {
     it("parses complete SSE events and leaves no remainder", () => {

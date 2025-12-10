@@ -834,3 +834,82 @@ footer {
         transform: translateY(0);
     }
 }
+
+/* Workspace Messages */
+.workspace-success-message {
+    text-align: center;
+    padding: 20px;
+    background: var(--accent-primary-soft);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--accent-primary);
+    margin-top: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+.workspace-success-heading {
+    margin: 0 0 10px 0;
+    color: var(--accent-primary);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.workspace-success-description {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+
+.workspace-loading-message {
+    text-align: center;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    margin-top: 20px;
+}
+
+.workspace-loading-message p {
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.workspace-error-message {
+    text-align: center;
+    padding: 30px;
+    background: var(--accent-danger-soft);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--accent-danger);
+    margin-top: 20px;
+}
+
+.workspace-error-message h3 {
+    color: var(--accent-danger);
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+.workspace-error-detail {
+    color: var(--text-secondary);
+    margin: 0;
+    white-space: pre-line;
+}
+
+.workspace-error-hint {
+    color: var(--text-tertiary);
+    margin-top: 15px;
+    font-size: 0.9em;
+}
+
+/* QA Results */
+.qa-empty-message {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.qa-btn-row {
+    margin-top: 15px;
+}
+
+/* Eval Page */
+.eval-error-message {
+    color: var(--accent-danger);
+}

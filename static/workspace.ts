@@ -1,4 +1,4 @@
-import { apiCallWithRetry, copyToClipboard, showToast } from "./utils.js";
+import { apiCallWithRetry, copyToClipboard, showToast, debounce } from "./utils.js";
 import { loadOCR, saveOCR } from "./ocr.js";
 import { validateRequest, ValidationError } from "./validation.js";
 
@@ -171,14 +171,27 @@ function displayResult(data: WorkspaceResult): void {
 
     const resultsDiv = document.getElementById("workspace-results");
     if (!resultsDiv) return;
-    resultsDiv.innerHTML = `
-        <div style="text-align: center; padding: 20px; background: #e8f5e9; border-radius: 8px; border: 1px solid #4caf50; margin-top: 20px; animation: fadeIn 0.3s;">
-            <h3 style="margin: 0 0 10px 0; color: #4caf50;">✅ ${getWorkflowLabel(data.workflow)} 완료</h3>
-            <p style="margin: 0; color: #666; font-size: 0.9em;">
-                ${data.query ? "질의" : ""}${data.query && data.answer ? "와 " : ""}${data.answer ? "답변" : ""}이 입력 필드에 자동으로 채워졌습니다.
-            </p>
-        </div>
-    `;
+    resultsDiv.innerHTML = "";
+
+    // Create success message using DOM API
+    const successBox = document.createElement("div");
+    successBox.className = "workspace-success-message";
+
+    const heading = document.createElement("h3");
+    heading.className = "workspace-success-heading";
+    heading.textContent = `✅ ${getWorkflowLabel(data.workflow)} 완료`;
+    successBox.appendChild(heading);
+
+    const description = document.createElement("p");
+    description.className = "workspace-success-description";
+    const filledFields = [
+        data.query ? "질의" : "",
+        data.answer ? "답변" : "",
+    ].filter(Boolean).join("와 ");
+    description.textContent = `${filledFields}이 입력 필드에 자동으로 채워졌습니다.`;
+    successBox.appendChild(description);
+
+    resultsDiv.appendChild(successBox);
 
     setTimeout(() => {
         resultsDiv.innerHTML = "";
@@ -263,11 +276,7 @@ function setupTabs(): void {
 }
 
 function setupValidationInputs(): void {
-    let validationTimeout: number;
-    const debouncedValidation = () => {
-        clearTimeout(validationTimeout);
-        validationTimeout = setTimeout(() => WorkspaceMode.updateValidation(), 150);
-    };
+    const debouncedValidation = debounce(() => WorkspaceMode.updateValidation(), 150);
 
     ["query", "answer", "ocr-input", "global-explanation-ref"].forEach((id) => {
         const el = document.getElementById(id);
@@ -286,11 +295,15 @@ async function executeWorkspace(
 ): Promise<void> {
     const resultsDiv = document.getElementById("workspace-results");
     if (!resultsDiv) return;
-    resultsDiv.innerHTML = `
-        <div style="text-align: center; padding: 20px; background: var(--bg-secondary, #f5f5f5); border-radius: 8px; margin-top: 20px;">
-            <p style="color: var(--text-primary, #1f2121); margin: 0;">⏳ 처리 중...</p>
-        </div>
-    `;
+    resultsDiv.innerHTML = "";
+
+    // Create loading message using DOM API
+    const loadingBox = document.createElement("div");
+    loadingBox.className = "workspace-loading-message";
+    const loadingText = document.createElement("p");
+    loadingText.textContent = "⏳ 처리 중...";
+    loadingBox.appendChild(loadingText);
+    resultsDiv.appendChild(loadingBox);
 
     const body: WorkspacePayload = {
         mode,
@@ -314,13 +327,26 @@ async function executeWorkspace(
         validateRequest(body, "/api/workspace/unified");
     } catch (validationError) {
         if (validationError instanceof ValidationError) {
-            resultsDiv.innerHTML = `
-                <div style="text-align: center; padding: 30px; background: #ffebee; border-radius: 8px; border: 1px solid #f44336; margin-top: 20px;">
-                    <h3 style="color: #f44336; margin-bottom: 10px;">⚠️ 요청 데이터 오류</h3>
-                    <p style="color: #666; margin: 0; white-space: pre-line;">${validationError.message}</p>
-                    <p style="color: #999; margin-top: 15px; font-size: 0.9em;">💡 필드명과 데이터 타입을 확인하세요</p>
-                </div>
-            `;
+            resultsDiv.innerHTML = "";
+            // Create error message using DOM API
+            const errorBox = document.createElement("div");
+            errorBox.className = "workspace-error-message";
+
+            const errorHeading = document.createElement("h3");
+            errorHeading.textContent = "⚠️ 요청 데이터 오류";
+            errorBox.appendChild(errorHeading);
+
+            const errorDetail = document.createElement("p");
+            errorDetail.className = "workspace-error-detail";
+            errorDetail.textContent = validationError.message;
+            errorBox.appendChild(errorDetail);
+
+            const errorHint = document.createElement("p");
+            errorHint.className = "workspace-error-hint";
+            errorHint.textContent = "💡 필드명과 데이터 타입을 확인하세요";
+            errorBox.appendChild(errorHint);
+
+            resultsDiv.appendChild(errorBox);
             throw validationError;
         }
         throw validationError;
