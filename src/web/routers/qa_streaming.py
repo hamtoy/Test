@@ -1,11 +1,20 @@
 """Streaming batch QA generation endpoint."""
+# mypy: disable-error-code=unused-ignore
 
 from __future__ import annotations
 
 import asyncio
 import json
 import logging
-from typing import TYPE_CHECKING, AsyncIterator
+from typing import (
+    TYPE_CHECKING,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Any,
+    TypeVar,
+    cast,
+)
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -18,9 +27,15 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["qa-streaming"])
+StreamHandler = TypeVar(
+    "StreamHandler", bound=Callable[..., Awaitable[StreamingResponse]]
+)
+stream_route: Callable[[StreamHandler], StreamHandler] = cast(  # type: ignore[redundant-cast]
+    "Callable[[StreamHandler], StreamHandler]", router.post("/qa/generate/batch/stream")
+)
 
 
-@router.post("/qa/generate/batch/stream")  # type: ignore[misc]
+@stream_route  # type: ignore[misc]
 async def stream_batch_qa_generation(body: "GenerateQARequest") -> StreamingResponse:
     """배치 QA 생성 (SSE 스트리밍). batch/batch_three 모드 전용."""
     from src.web.routers.qa_common import _get_agent, _get_config
@@ -33,6 +48,8 @@ async def stream_batch_qa_generation(body: "GenerateQARequest") -> StreamingResp
         )
 
     current_agent = _get_agent()
+    if current_agent is None:
+        raise HTTPException(status_code=500, detail="Agent 초기화 실패")
     ocr_text = body.ocr_text or load_ocr_text(_get_config())
 
     async def event_generator() -> AsyncIterator[str]:
@@ -68,7 +85,8 @@ async def stream_batch_qa_generation(body: "GenerateQARequest") -> StreamingResp
 
         remaining_types = batch_types[1:]
         if remaining_types:
-            tasks = {}
+            task_map: dict[asyncio.Future[dict[str, Any]], str] = {}
+            task_list: list[asyncio.Future[dict[str, Any]]] = []
             for qtype in remaining_types:
                 coro = generate_single_qa_with_retry(
                     current_agent,
@@ -79,15 +97,16 @@ async def stream_batch_qa_generation(body: "GenerateQARequest") -> StreamingResp
                     if qtype.startswith("target")
                     else None,
                 )
-                task = asyncio.create_task(
+                fut: asyncio.Future[dict[str, Any]] = asyncio.ensure_future(
                     asyncio.wait_for(coro, timeout=_get_config().qa_single_timeout)
                 )
-                tasks[task] = qtype
+                task_map[fut] = qtype
+                task_list.append(fut)
 
-            for coro in asyncio.as_completed(tasks.keys()):
-                qtype = tasks[coro]
+            for fut in asyncio.as_completed(task_list):
+                qtype = task_map[fut]
                 try:
-                    result = await coro
+                    result = await fut
                     yield f"data: {json.dumps({'event': 'progress', 'type': qtype, 'data': result})}\\n\\n"
                     if result.get("query"):
                         completed_queries.append(result["query"])
