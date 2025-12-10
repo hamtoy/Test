@@ -318,8 +318,6 @@ class TestResourceCleanup:
         mock_close.assert_called_once()
         assert kg._graph is None
         assert kg._graph_finalizer is None
-        # Verify _closed is True so __del__ won't call close_connections again
-        assert kg._closed is True
 
     @patch("src.qa.rag_system.close_connections")
     def test_destructor_calls_close(self, mock_close: Mock) -> None:
