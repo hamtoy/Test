@@ -105,8 +105,8 @@ def setup_logging(
 
     handlers = []
 
-    info_log = os.getenv("LOG_FILE", "app.log")
-    error_log = os.getenv("ERROR_LOG_FILE", "error.log")
+    info_log = os.getenv("LOG_FILE", "logs/app.log")
+    error_log = os.getenv("ERROR_LOG_FILE", "logs/error.log")
 
     file_handler = _build_file_handler(
         log_level=resolved_level,
