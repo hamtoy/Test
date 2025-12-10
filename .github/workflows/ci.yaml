@@ -69,7 +69,7 @@ jobs:
         run: uv run autoflake --check --remove-all-unused-imports --ignore-pass-statements --recursive src/
 
       - name: Check dead code (vulture)
-        run: uv run vulture src/ scripts/vulture_whitelist.py --min-confidence=80
+        run: uv run vulture src/ scripts/dev/vulture_whitelist.py --min-confidence=80
 
       - name: Mypy
         run: uv run mypy .
