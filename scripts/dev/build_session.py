@@ -96,7 +96,8 @@ def validate_ctx(ctx: SessionContext) -> None:
 
 
 def repo_root() -> Path:
-    return Path(__file__).resolve().parents[1]
+    # scripts/dev sits one level under project root; ascend two levels to reach repo root
+    return Path(__file__).resolve().parents[2]
 
 
 def build_session(ctx: SessionContext, validate: bool = True) -> List[Turn]:

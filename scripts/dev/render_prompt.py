@@ -32,7 +32,8 @@ def render(template_path: str, context: dict, root: Path) -> str:
 
 
 def main() -> None:
-    repo_root = Path(__file__).resolve().parents[1]
+    # scripts/dev is nested one level; go two levels up to reach repo root
+    repo_root = Path(__file__).resolve().parents[2]
 
     parser = argparse.ArgumentParser(description="Render a Jinja2 prompt template.")
     parser.add_argument(

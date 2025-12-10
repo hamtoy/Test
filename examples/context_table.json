@@ -1,0 +1,12 @@
+{
+  "image_path": "images/sample_with_table.png",
+  "language_hint": "ko",
+  "text_density": "high",
+  "has_table_chart": true,
+  "session_turns": 4,
+  "must_include_reasoning": true,
+  "used_calc_query_count": 0,
+  "prior_focus_summary": "N/A (first turn)",
+  "candidate_focus": "표/그래프 제외 본문 요약",
+  "focus_history": []
+}
