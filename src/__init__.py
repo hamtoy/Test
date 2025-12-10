@@ -67,13 +67,14 @@ if TYPE_CHECKING:
 
 # Lazy loading mapping for public API
 # Maps attribute name to (module_path, attribute_name, is_deprecated)
+_EXC_MODULE = "src.config.exceptions"
 _LAZY_IMPORTS: dict[str, tuple[str, str | None, bool]] = {
     # Core public API (not deprecated)
     "GeminiAgent": ("src.agent", "GeminiAgent", False),
     "AppConfig": ("src.config", "AppConfig", False),
-    "BudgetExceededError": ("src.config.exceptions", "BudgetExceededError", False),
-    "APIRateLimitError": ("src.config.exceptions", "APIRateLimitError", False),
-    "ValidationFailedError": ("src.config.exceptions", "ValidationFailedError", False),
+    "BudgetExceededError": (_EXC_MODULE, "BudgetExceededError", False),
+    "APIRateLimitError": (_EXC_MODULE, "APIRateLimitError", False),
+    "ValidationFailedError": (_EXC_MODULE, "ValidationFailedError", False),
     "WorkflowResult": ("src.core.models", "WorkflowResult", False),
     "EvaluationResultSchema": ("src.core.models", "EvaluationResultSchema", False),
     "QueryResult": ("src.core.models", "QueryResult", False),

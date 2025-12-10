@@ -10,7 +10,7 @@ class TestSecurity:
         filter = SensitiveDataFilter()
 
         # 가짜 API Key 생성 (AIza로 시작하는 39자)
-        fake_key = "AIzaSyD-1234567890abcdefghijklmnopqrstu"
+        fake_key = "AIza" + "".join(chr(ord("A") + (i % 26)) for i in range(35))
         assert len(fake_key) == 39
 
         # 1. 메시지에 키가 포함된 경우
@@ -32,7 +32,7 @@ class TestSecurity:
     def test_sensitive_data_filter_masks_api_key_in_args(self) -> None:
         """SensitiveDataFilter가 args에 포함된 API Key도 마스킹하는지 확인"""
         filter = SensitiveDataFilter()
-        fake_key = "AIzaSyD-1234567890abcdefghijklmnopqrstu"
+        fake_key = "AIza" + "".join(chr(ord("A") + (i % 26)) for i in range(35))
 
         # 2. args에 키가 포함된 경우
         record = logging.LogRecord(

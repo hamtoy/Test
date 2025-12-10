@@ -85,8 +85,8 @@ async def stream_batch_qa_generation(body: "GenerateQARequest") -> StreamingResp
 
         remaining_types = batch_types[1:]
         if remaining_types:
-            task_map: dict[asyncio.Future[dict[str, Any]], str] = {}
-            task_list: list[asyncio.Future[dict[str, Any]]] = []
+            task_map: dict[asyncio.Task[dict[str, Any]], str] = {}
+            pending: set[asyncio.Task[dict[str, Any]]] = set()
             for qtype in remaining_types:
                 coro = generate_single_qa_with_retry(
                     current_agent,
@@ -97,23 +97,31 @@ async def stream_batch_qa_generation(body: "GenerateQARequest") -> StreamingResp
                     if qtype.startswith("target")
                     else None,
                 )
-                fut: asyncio.Future[dict[str, Any]] = asyncio.ensure_future(
+                task = asyncio.create_task(
                     asyncio.wait_for(coro, timeout=_get_config().qa_single_timeout)
                 )
-                task_map[fut] = qtype
-                task_list.append(fut)
+                task_map[task] = qtype
+                pending.add(task)
 
-            for fut in asyncio.as_completed(task_list):
-                qtype = task_map[fut]
-                try:
-                    result = await fut
-                    yield f"data: {json.dumps({'event': 'progress', 'type': qtype, 'data': result})}\\n\\n"
-                    if result.get("query"):
-                        completed_queries.append(result["query"])
-                    success_count += 1
-                except Exception as exc:
-                    logger.error(f"{qtype} 실패: {exc}")
-                    yield f"data: {json.dumps({'event': 'error', 'type': qtype, 'error': str(exc)})}\\n\\n"
+            try:
+                while pending:
+                    done, pending = await asyncio.wait(
+                        pending, return_when=asyncio.FIRST_COMPLETED
+                    )
+                    for task in done:
+                        qtype = task_map[task]
+                        try:
+                            result = task.result()
+                            yield f"data: {json.dumps({'event': 'progress', 'type': qtype, 'data': result})}\\n\\n"
+                            if result.get("query"):
+                                completed_queries.append(result["query"])
+                            success_count += 1
+                        except Exception as exc:
+                            logger.error(f"{qtype} 실패: {exc}")
+                            yield f"data: {json.dumps({'event': 'error', 'type': qtype, 'error': str(exc)})}\\n\\n"
+            finally:
+                for task in pending:
+                    task.cancel()
 
         yield f"data: {json.dumps({'event': 'done', 'success': True, 'completed': success_count, 'total': len(batch_types)})}\\n\\n"
 

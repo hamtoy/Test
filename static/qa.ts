@@ -62,9 +62,9 @@ function formatAnswer(text: string): string {
     // 마크다운 렌더링 없이 raw 텍스트로 표시 (워크스페이스와 동일)
     const escaped = escapeHtml(text);
     const formatted = escaped
-        .replace(/\n\n/g, "<br><br>")  // 문단 구분
-        .replace(/\n/g, "<br>")         // 일반 줄바꿈
-        .replace(/ - /g, "<br><br>- "); // 불릿 포인트 앞에 줄바꿈 추가
+        .replaceAll("\n\n", "<br><br>")  // 문단 구분
+        .replaceAll("\n", "<br>")         // 일반 줄바꿈
+        .replaceAll(" - ", "<br><br>- "); // 불릿 포인트 앞에 줄바꿈 추가
     return window.DOMPurify ? window.DOMPurify.sanitize(formatted) : formatted;
 }
 

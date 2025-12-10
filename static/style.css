@@ -95,7 +95,6 @@ body {
 
 /* Header */
 header {
-    background: var(--surface);
     border-bottom: 1px solid var(--border);
     padding: 16px 0;
     position: sticky;

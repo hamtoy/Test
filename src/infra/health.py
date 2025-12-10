@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 import time
+from pathlib import Path
 from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any
@@ -249,9 +250,11 @@ async def check_memory() -> dict[str, Any]:
             memory = psutil.virtual_memory()
             usage_percent = memory.percent
         except ImportError:
-            # Linux에서 /proc/meminfo 파싱
-            with open("/proc/meminfo") as f:
-                lines = f.readlines()
+            # Linux에서 /proc/meminfo 파싱 (동기 파일 I/O는 스레드로 offload)
+            def _read_meminfo() -> list[str]:
+                return Path("/proc/meminfo").read_text().splitlines()
+
+            lines = await asyncio.to_thread(_read_meminfo)
 
             mem_info: dict[str, int] = {}
             for line in lines:
