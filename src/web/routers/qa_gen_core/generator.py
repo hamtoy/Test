@@ -93,7 +93,9 @@ async def generate_single_qa(
         rules_list = rules_list[:5]
 
     # Phase 4: Build prompts
-    length_constraint, max_chars = build_length_constraint(qtype, len(ocr_text))
+    length_constraint, max_chars = build_length_constraint(
+        qtype, len(ocr_text), ocr_text
+    )
     extra_instructions = build_extra_instructions(qtype, normalized_qtype, current_kg)
     formatting_text = build_formatting_text(
         constraint_set.formatting_rules,

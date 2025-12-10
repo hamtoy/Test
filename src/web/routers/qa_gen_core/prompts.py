@@ -10,12 +10,15 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-def build_length_constraint(qtype: str, ocr_len: int) -> tuple[str, int | None]:
+def build_length_constraint(
+    qtype: str, ocr_len: int, ocr_text: str = ""
+) -> tuple[str, int | None]:
     """타입과 OCR 길이에 따른 길이 제약 문자열 생성.
 
     Args:
         qtype: Query type (normalized 아닌 원본)
         ocr_len: OCR 텍스트 길이
+        ocr_text: OCR 텍스트 (단어 수 계산용)
 
     Returns:
         (length_constraint 문자열, max_chars 값 또는 None)
@@ -34,14 +37,20 @@ def build_length_constraint(qtype: str, ocr_len: int) -> tuple[str, int | None]:
     elif qtype == "global_explanation":
         min_chars = int(ocr_len * 0.6)
         max_chars = int(ocr_len * 0.8)
+        # 단어 수 제약 추가 (OCR 텍스트 기반)
+        ocr_word_count = len(ocr_text.split()) if ocr_text else ocr_len // 10
+        min_words = int(ocr_word_count * 0.6)
+        max_words = int(ocr_word_count * 0.8)
         length_constraint = f"""
 [CRITICAL - 길이 제약]
-**절대 규칙**: 이 응답은 OCR 원문 길이({ocr_len}자)에 비례하여 **최소 {min_chars}자 ~ 최대 {max_chars}자** 분량입니다.
+**절대 규칙**: 이 응답은 OCR 원문 길이({ocr_len}자, {ocr_word_count}단어)에 비례합니다.
+- 문자 수: **최소 {min_chars}자 ~ 최대 {max_chars}자**
+- 단어 수: **최소 {min_words}단어 ~ 최대 {max_words}단어**
 - 5-8개 문단으로 구성
 - 굵은 제목 1줄 + 도입 1-2문장 + 불릿 5개 이상 + 결론
 - 각 불릿은 1-2문장
 - 핵심 포인트를 빠짐없이 다룰 것
-❌ {min_chars}자 미만 = 실패 (반드시 길이 준수)
+❌ {min_chars}자 미만 또는 {min_words}단어 미만 = 실패 (반드시 길이 준수)
 """
     elif qtype == "target_short":
         length_constraint = """
