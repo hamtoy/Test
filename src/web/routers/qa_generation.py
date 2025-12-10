@@ -123,19 +123,14 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
                         },
                     )
 
-                # 2단계: 나머지 타입 2개씩 병렬 생성 (Rate Limit 방지용 1초 딜레이)
+                # 2단계: 나머지 타입 전부 동시 병렬 생성
                 remaining_types = batch_types[1:]
                 previous_queries = [first_query] if first_query else []
 
-                # 2개씩 묶어서 처리 (완전 병렬보다 안전, 완전 순차보다 빠름)
-                for i in range(0, len(remaining_types), 2):
-                    batch = remaining_types[i : i + 2]
-
-                    # 첫 번째 배치가 아니면 딜레이 추가 (Rate Limit 방지)
-                    if i > 0:
-                        await asyncio.sleep(0.5)  # 1.0초 → 0.5초로 단축
-
-                    logger.info("⏳ %s 타입 생성 시작", ", ".join(batch))
+                if remaining_types:
+                    logger.info(
+                        "⏳ %s 타입 동시 병렬 생성 시작", ", ".join(remaining_types)
+                    )
 
                     batch_results = await asyncio.gather(
                         *[
@@ -147,13 +142,13 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
                                 if previous_queries
                                 else None,
                             )
-                            for qtype in batch
+                            for qtype in remaining_types
                         ],
                         return_exceptions=True,
                     )
 
                     for j, pair in enumerate(batch_results):
-                        qtype = batch[j]
+                        qtype = remaining_types[j]
                         if isinstance(pair, Exception):
                             import sys
 
