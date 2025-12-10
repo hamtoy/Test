@@ -206,14 +206,42 @@ def build_extra_instructions(
 
     elif normalized_qtype == "target":
         if qtype == "target_short":
-            extra_instructions = """
+            # Few-Shot: Load examples from Neo4j for target_short
+            fewshot_text = ""
+            try:
+                if kg is not None:
+                    from src.qa.dynamic_examples import DynamicExampleSelector
+
+                    example_selector = DynamicExampleSelector(kg)
+                    fewshot_examples = example_selector.select_best_examples(
+                        "target_short", {}, k=1
+                    )
+                    if fewshot_examples:
+                        ex = fewshot_examples[0]
+                        ex_text = ex.get("example", "")[:500]  # Short examples
+                        fewshot_text = f"""
+[좋은 단답 예시 - 이 길이와 형식을 참고하세요]
+{ex_text}
+---
+위 예시처럼 **1-2문장, 마크다운 없이** 작성하세요.
+"""
+                        logger.info(
+                            "Few-Shot target_short example loaded: %d chars",
+                            len(ex_text),
+                        )
+            except Exception as e:
+                logger.debug("Few-shot loading failed: %s", e)
+
+            extra_instructions = f"""
 ⚠️ 중요: 반드시 1-2문장만 작성. 3문장 이상 작성하면 실패입니다.
 - 명확하고 간결한 사실 전달
 - 불필요한 수식어 배제
 - 구체적 수치나 데이터 포함
 ❌ 볼드체(**) 사용 금지 - 줄글형 답변에는 **없이** 작성
 ❌ 설명문(global_explanation)에서 이미 사용된 문장을 그대로 가져오지 말 것
-→ 같은 세션에서 생성된 설명문 내용과 중복되는 답변은 위반입니다."""
+→ 같은 세션에서 생성된 설명문 내용과 중복되는 답변은 위반입니다.
+
+{fewshot_text}"""
         elif qtype == "target_long":
             extra_instructions = """
 - OCR 원문의 특정 내용에 집중하여 서술
