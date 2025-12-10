@@ -363,6 +363,91 @@ def postprocess_answer(
 
         return text
 
+    def _add_markdown_structure(text: str, qtype: str) -> str:
+        """평문에 마크다운 구조 자동 추가.
+
+        패턴 분석:
+        1. 소제목: 단독 줄 + 다음 줄에 '항목명:' 패턴 → **굵은 소제목**
+        2. 불릿 항목: '항목명: 설명' 패턴 → - **항목명**: 설명
+
+        target 타입은 평문 유지 (마크다운 추가하지 않음).
+        """
+        normalized = QTYPE_MAP.get(qtype, qtype)
+
+        # target 타입은 평문 유지
+        if normalized == "target":
+            return text
+
+        lines = text.split("\n")
+        result = []
+        i = 0
+
+        while i < len(lines):
+            line = lines[i]
+            stripped = line.strip()
+
+            # 빈 줄은 그대로 유지
+            if not stripped:
+                result.append(line)
+                i += 1
+                continue
+
+            # 이미 마크다운이 적용된 경우 스킵
+            if stripped.startswith("**") or stripped.startswith("- **"):
+                result.append(line)
+                i += 1
+                continue
+
+            # 이미 불릿이 있는 경우: 항목명에 볼드 추가
+            if stripped.startswith("- "):
+                bullet_content = stripped[2:].strip()
+                if ": " in bullet_content and not bullet_content.startswith("**"):
+                    # "- 항목명: 설명" → "- **항목명**: 설명"
+                    colon_idx = bullet_content.index(": ")
+                    item_name = bullet_content[:colon_idx]
+                    item_desc = bullet_content[colon_idx + 2 :]
+                    result.append(f"- **{item_name}**: {item_desc}")
+                else:
+                    result.append(line)
+                i += 1
+                continue
+
+            # 소제목 감지: 현재 줄이 짧고, 다음 줄에 "항목명:" 패턴이 있으면
+            is_section_header = False
+            if i + 1 < len(lines):
+                next_line = lines[i + 1].strip()
+                # 다음 줄이 "항목명: 설명" 패턴이고, 현재 줄이 50자 이하 콜론 없으면 소제목
+                if (
+                    ": " in next_line
+                    and not next_line.startswith("-")
+                    and len(stripped) <= 50
+                    and ": " not in stripped
+                ):
+                    is_section_header = True
+
+            if is_section_header:
+                # 소제목에 볼드 추가
+                result.append(f"**{stripped}**")
+                i += 1
+                continue
+
+            # "항목명: 설명" 패턴 감지 (불릿 없는 경우)
+            if ": " in stripped:
+                colon_idx = stripped.index(": ")
+                potential_name = stripped[:colon_idx]
+                # 항목명이 30자 이하이고 마침표가 없으면 불릿 항목으로 변환
+                if len(potential_name) <= 30 and "." not in potential_name:
+                    item_desc = stripped[colon_idx + 2 :]
+                    result.append(f"- **{potential_name}**: {item_desc}")
+                    i += 1
+                    continue
+
+            # 그 외의 경우 그대로 유지
+            result.append(line)
+            i += 1
+
+        return "\n".join(result)
+
     # 1. 태그 제거
     answer = strip_output_tags(answer)
     answer = _strip_code_and_links(answer)
@@ -394,7 +479,10 @@ def postprocess_answer(
 
     answer = "\n".join(cleaned_lines)
 
-    # 6. 길이 제한 적용
+    # 6. 마크다운 구조 자동 추가 (소제목, 불릿 항목에 볼드)
+    answer = _add_markdown_structure(answer, qtype)
+
+    # 7. 길이 제한 적용
     answer = apply_answer_limits(answer, qtype, max_length=max_length)
 
     return answer.strip()
