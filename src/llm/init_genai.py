@@ -25,15 +25,17 @@ def configure_genai(api_key: str | None = None) -> bool:
         초기화 성공 여부
     """
     global _configured
-    if _configured:
-        return True
 
     key = api_key or os.getenv("GEMINI_API_KEY")
     if not key:
         return False
 
-    genai.configure(api_key=key)
-    _configured = True
+    # Always configure when an explicit key is provided (satisfies tests and re-init use cases).
+    # Otherwise, skip if already configured.
+    if api_key or not _configured:
+        genai.configure(api_key=key)
+        _configured = True
+
     return True
 
 
