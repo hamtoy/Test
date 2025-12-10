@@ -7,7 +7,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import TYPE_CHECKING, Any, AsyncIterator, Awaitable, Callable, TypeVar, cast
+from typing import TYPE_CHECKING, Any, AsyncIterator
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -58,13 +58,7 @@ from .qa_generation import (  # noqa: E402
 # =====================================================
 
 streaming_router = APIRouter(prefix="/api", tags=["qa-streaming"])
-StreamHandler = TypeVar(
-    "StreamHandler", bound=Callable[..., Awaitable[StreamingResponse]]
-)
-stream_route: Callable[[StreamHandler], StreamHandler] = cast(
-    "Callable[[StreamHandler], StreamHandler]",
-    streaming_router.post("/qa/generate/batch/stream"),
-)
+stream_route = streaming_router.post("/qa/generate/batch/stream")
 
 
 @stream_route  # type: ignore[misc]
