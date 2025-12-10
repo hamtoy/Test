@@ -45,7 +45,7 @@ class DeprecationTracker:
         return result.stderr + result.stdout
 
     def parse_warnings(self, output: str) -> None:
-        """pytest 출력에서 경고 파싱"""
+        """Pytest 출력에서 경고 파싱"""
         # DeprecationWarning 패턴 매칭
         pattern = r"(.+?):(\d+): (DeprecationWarning|PendingDeprecationWarning): (.+)"
 

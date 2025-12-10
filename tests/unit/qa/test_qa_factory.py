@@ -258,7 +258,7 @@ class TestQASystemFactory:
             MockLCEL.assert_called_once()
 
     def test_close_cleans_resources(self) -> None:
-        """close should release cached resources."""
+        """Close should release cached resources."""
         with (
             patch("src.qa.factory.QAKnowledgeGraph") as MockKG,
             patch("src.qa.factory.GeminiModelClient") as MockClient,
