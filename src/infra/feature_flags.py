@@ -109,8 +109,11 @@ class FeatureFlags:
             if not user_id:
                 return False  # user_id 없으면 랜덤 선택 불가
 
-            # 일관된 해시 기반 선택
-            user_hash = int(hashlib.md5(user_id.encode()).hexdigest(), 16)
+            # 일관된 해시 기반 선택 (SHA-256, feature 스코프 포함)
+            user_hash = int(
+                hashlib.sha256(f"{flag_name}:{user_id}".encode("utf-8")).hexdigest(),
+                16,
+            )
             bucket = user_hash % 100
             if bucket >= rollout_percent:
                 return False
@@ -193,8 +196,11 @@ class FeatureFlags:
         if len(variants) <= 1:
             return variants[0]
 
-        # 일관된 해시 기반 변형 선택
-        user_hash = int(hashlib.md5(user_id.encode()).hexdigest(), 16)
+        # 일관된 해시 기반 변형 선택 (SHA-256, feature 스코프 포함)
+        user_hash = int(
+            hashlib.sha256(f"{flag_name}:{user_id}".encode("utf-8")).hexdigest(),
+            16,
+        )
         variant_index = user_hash % len(variants)
 
         return str(variants[variant_index])

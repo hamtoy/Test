@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import atexit
 import os
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable, Iterator
 from contextlib import asynccontextmanager, suppress
 from typing import Any
 
@@ -161,7 +161,12 @@ class Neo4jGraphProvider(GraphProvider):
         self._batch_size = batch_size
         self._driver: AsyncDriver | None = None
 
-    async def _get_driver(self) -> AsyncDriver:
+    def _chunk(self, items: list[dict[str, Any]]) -> Iterator[list[dict[str, Any]]]:
+        """Yield fixed-size chunks to reuse batch logic."""
+        for i in range(0, len(items), self._batch_size):
+            yield items[i : i + self._batch_size]
+
+    def _get_driver(self) -> AsyncDriver:
         """Lazily initialize and return the async driver.
 
         PHASE 1: Connection pool optimization for async operations.
@@ -180,7 +185,7 @@ class Neo4jGraphProvider(GraphProvider):
     @asynccontextmanager
     async def _session_context(self) -> AsyncIterator[Any]:
         """Async context manager for database session."""
-        driver = await self._get_driver()
+        driver = self._get_driver()
         async with driver.session() as session:
             yield session
 
@@ -201,8 +206,24 @@ class Neo4jGraphProvider(GraphProvider):
 
     async def verify_connectivity(self) -> None:
         """Verifies connection to the database."""
-        driver = await self._get_driver()
+        driver = self._get_driver()
         await driver.verify_connectivity()
+
+    async def _execute_batches(
+        self,
+        query: str,
+        param_name: str,
+        items: list[dict[str, Any]],
+    ) -> int:
+        """Execute a write query in batches and accumulate counts."""
+        total_count = 0
+        async with self.session() as session:
+            for batch in self._chunk(items):
+                result = await session.run(query, **{param_name: batch})
+                record = await result.single()
+                if record:
+                    total_count += record["count"]
+        return total_count
 
     async def create_nodes(
         self,
@@ -211,22 +232,7 @@ class Neo4jGraphProvider(GraphProvider):
         merge_on: str = "id",
         merge_keys: list[str] | None = None,
     ) -> int:
-        """Batch create or merge nodes using UNWIND for efficiency.
-
-        Args:
-            nodes: List of node property dictionaries. All nodes should have
-                   the same property keys for consistent schema handling.
-            label: Node label (e.g., "Person", "Organization").
-            merge_on: Primary key for MERGE operation (default: "id").
-            merge_keys: Additional keys for merge matching.
-
-        Returns:
-            Number of nodes created or merged.
-
-        Note:
-            This method assumes all nodes in the list have consistent property
-            keys. The first node's keys are used to build the SET clause.
-        """
+        """Create or merge nodes in batches using UNWIND."""
         if not nodes:
             return 0
 
@@ -246,17 +252,7 @@ class Neo4jGraphProvider(GraphProvider):
             query += f"SET {set_clause}\n"
         query += "RETURN count(n) AS count"
 
-        total_count = 0
-        async with self.session() as session:
-            # Process in batches
-            for i in range(0, len(nodes), self._batch_size):
-                batch = nodes[i : i + self._batch_size]
-                result = await session.run(query, nodes=batch)
-                record = await result.single()
-                if record:
-                    total_count += record["count"]
-
-        return total_count
+        return await self._execute_batches(query, "nodes", nodes)
 
     async def create_relationships(
         self,
@@ -267,26 +263,7 @@ class Neo4jGraphProvider(GraphProvider):
         from_key: str = "id",
         to_key: str = "id",
     ) -> int:
-        """Batch create relationships between nodes.
-
-        Args:
-            rels: List of relationship dictionaries containing
-                  'from_id', 'to_id', and optional properties. All relationships
-                  should have the same property keys for consistent schema handling.
-            rel_type: Relationship type (e.g., "WORKS_AT", "REFERENCES").
-            from_label: Label of the source node.
-            to_label: Label of the target node.
-            from_key: Key to match source node (default: "id").
-            to_key: Key to match target node (default: "id").
-
-        Returns:
-            Number of relationships created.
-
-        Note:
-            This method assumes all relationships in the list have consistent
-            property keys. The first relationship's keys are used to build
-            the property clause.
-        """
+        """Create relationships in batches between matched nodes."""
         if not rels:
             return 0
 
@@ -305,14 +282,4 @@ class Neo4jGraphProvider(GraphProvider):
         query += """]->(b)
         RETURN count(r) AS count"""
 
-        total_count = 0
-        async with self.session() as session:
-            # Process in batches
-            for i in range(0, len(rels), self._batch_size):
-                batch = rels[i : i + self._batch_size]
-                result = await session.run(query, rels=batch)
-                record = await result.single()
-                if record:
-                    total_count += record["count"]
-
-        return total_count
+        return await self._execute_batches(query, "rels", rels)

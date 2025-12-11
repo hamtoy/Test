@@ -68,9 +68,9 @@ class RealtimeDashboard:
             }
 
             self._metrics[endpoint].append(metric)
-            await self._cleanup_old_metrics()
+            self._cleanup_old_metrics()
 
-    async def _cleanup_old_metrics(self) -> None:
+    def _cleanup_old_metrics(self) -> None:
         """Remove metrics older than retention period."""
         cutoff = datetime.now() - timedelta(minutes=self.retention_minutes)
 

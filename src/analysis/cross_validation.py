@@ -198,8 +198,9 @@ class CrossValidationSystem:
 
             # 한국어 서술어 패턴: ~한다, ~된다, ~하며, ~습니다, ~되다, ~하는
             # 동사/형용사의 마지막 단어가 서술어
+            # Capture the token immediately preceding common Korean verb endings.
             predicate_match = re.search(
-                r"(.+?)(한다|된다|하며|합니다|습니다|되다|하는|되는)",
+                r"([^\s]+?)\s*(?:한다|된다|하며|합니다|습니다|되다|하는|되는)\b",
                 first_sentence,
             )
 

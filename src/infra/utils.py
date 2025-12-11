@@ -121,8 +121,8 @@ def clean_markdown_code_block(text: str) -> str:
     Gemini의 JSON 모드는 신뢰할 수 있으므로 복잡한 정규식 대신 단순 제거를 사용합니다.
     """
     # Remove markdown code blocks if present (case-insensitive for JSON/json)
-    pattern = r"```(?:json)?\s*(.*?)\s*```"
-    match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+    pattern = re.compile(r"```(?:json)?\s*([\s\S]*?)\s*```", re.IGNORECASE)
+    match = pattern.search(text)
 
     if match:
         return match.group(1).strip()

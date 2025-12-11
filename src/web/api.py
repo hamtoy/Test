@@ -296,10 +296,11 @@ async def init_resources() -> None:
         registry.register_config(app_config)
         logger.info("Config registered to ServiceRegistry")
 
-        from jinja2 import Environment, FileSystemLoader
+        from jinja2 import Environment, FileSystemLoader, select_autoescape
 
         jinja_env = Environment(
             loader=FileSystemLoader(str(REPO_ROOT / "templates")),
+            autoescape=select_autoescape(["html", "xml"]),
             trim_blocks=True,
             lstrip_blocks=True,
         )

@@ -301,6 +301,7 @@ class BatchProcessor:
             self.logger.info("Submitted batch job: %s", job.job_id)
 
             # Simulate async processing (production would poll the actual API)
+            await asyncio.sleep(0)
             if on_complete:
                 on_complete(job)
 

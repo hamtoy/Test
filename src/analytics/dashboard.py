@@ -26,6 +26,24 @@ class UsageDashboard:
         """
         self.stats_file = stats_file or Path("cache_stats.jsonl")
 
+    def _parse_timestamp(self, ts_str: str) -> datetime | None:
+        """Parse ISO timestamp string safely."""
+        if not ts_str:
+            return None
+        try:
+            return datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+
+    def _sum_field(
+        self,
+        entries: list[dict[str, Any]],
+        field: str,
+        default: float = 0,
+    ) -> float:
+        """Sum a numeric field across entries."""
+        return float(sum(float(e.get(field, default) or 0.0) for e in entries))
+
     def _load_last_n_days(self, days: int) -> list[dict[str, Any]]:
         """Load entries from the last n days.
 
@@ -50,18 +68,8 @@ class UsageDashboard:
                     try:
                         entry = json.loads(line)
                         # Parse timestamp if present
-                        ts_str = entry.get("timestamp", "")
-                        if ts_str:
-                            try:
-                                ts = datetime.fromisoformat(
-                                    ts_str.replace("Z", "+00:00"),
-                                )
-                                if ts.replace(tzinfo=None) >= cutoff:
-                                    entries.append(entry)
-                            except ValueError:
-                                # If timestamp parsing fails, include the entry
-                                entries.append(entry)
-                        else:
+                        ts = self._parse_timestamp(entry.get("timestamp", ""))
+                        if ts is None or ts.replace(tzinfo=None) >= cutoff:
                             entries.append(entry)
                     except json.JSONDecodeError:
                         continue
@@ -88,8 +96,8 @@ class UsageDashboard:
         stats: dict[str, Any] = {
             # 사용량
             "total_sessions": len(entries),
-            "total_queries": sum(e.get("query_count", 0) for e in entries),
-            "total_cost_usd": sum(e.get("cost", 0) for e in entries),
+            "total_queries": self._sum_field(entries, "query_count"),
+            "total_cost_usd": self._sum_field(entries, "cost"),
             # 성능
             "cache_hit_rate": self._calc_cache_hit_rate(entries),
             "avg_tokens_per_query": self._calc_avg_tokens(entries),
@@ -121,8 +129,8 @@ class UsageDashboard:
         Returns:
             Cache hit rate as a percentage (0-100)
         """
-        total_hits = sum(e.get("cache_hits", 0) for e in entries)
-        total_misses = sum(e.get("cache_misses", 0) for e in entries)
+        total_hits = self._sum_field(entries, "cache_hits")
+        total_misses = self._sum_field(entries, "cache_misses")
 
         if total_hits + total_misses == 0:
             return 0.0
@@ -138,8 +146,8 @@ class UsageDashboard:
         Returns:
             Average tokens per query
         """
-        total_tokens = sum(e.get("tokens", 0) for e in entries)
-        total_queries = sum(e.get("query_count", 1) for e in entries)
+        total_tokens = self._sum_field(entries, "tokens")
+        total_queries = self._sum_field(entries, "query_count", default=1) or 0
 
         if total_queries == 0:
             return 0.0
@@ -161,19 +169,15 @@ class UsageDashboard:
         # Filter to only previous week (days 7-14)
         cutoff_recent = datetime.now() - timedelta(days=7)
 
-        prev_week_entries = []
-        for e in prev_entries:
-            ts_str = e.get("timestamp", "")
-            if ts_str:
-                try:
-                    ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
-                    if ts.replace(tzinfo=None) < cutoff_recent:
-                        prev_week_entries.append(e)
-                except ValueError:
-                    pass
+        prev_week_entries = [
+            e
+            for e in prev_entries
+            if (ts := self._parse_timestamp(e.get("timestamp", "")))
+            and ts.replace(tzinfo=None) < cutoff_recent
+        ]
 
-        current_total = sum(e.get(field, 0) for e in entries)
-        prev_total = sum(e.get(field, 0) for e in prev_week_entries)
+        current_total = self._sum_field(entries, field)
+        prev_total = self._sum_field(prev_week_entries, field)
 
         if prev_total == 0:
             return 0.0 if current_total == 0 else 100.0
@@ -209,14 +213,10 @@ class UsageDashboard:
         distribution: dict[int, int] = dict.fromkeys(range(24), 0)
 
         for e in entries:
-            ts_str = e.get("timestamp", "")
-            if ts_str:
-                try:
-                    ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
-                    hour = ts.hour
-                    distribution[hour] = distribution.get(hour, 0) + 1
-                except ValueError:
-                    pass
+            ts = self._parse_timestamp(e.get("timestamp", ""))
+            if ts:
+                hour = ts.hour
+                distribution[hour] = distribution.get(hour, 0) + 1
 
         return distribution
 
@@ -230,16 +230,12 @@ class UsageDashboard:
         entries = self._load_last_n_days(1)
 
         # Filter to today only
-        today_entries = []
-        for e in entries:
-            ts_str = e.get("timestamp", "")
-            if ts_str:
-                try:
-                    ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
-                    if ts.date() == today:
-                        today_entries.append(e)
-                except ValueError:
-                    pass
+        today_entries = [
+            e
+            for e in entries
+            if (ts := self._parse_timestamp(e.get("timestamp", "")))
+            and ts.date() == today
+        ]
 
         return {
             "sessions": len(today_entries),

@@ -75,6 +75,40 @@ class SelfImprovingSystem:
 
         return entries
 
+    def _mean(self, entries: list[dict[str, Any]], key: str) -> float:
+        """Calculate mean of a numeric key in entries."""
+        if not entries:
+            return 0.0
+        total = sum(float(e.get(key, 0) or 0.0) for e in entries)
+        return total / len(entries)
+
+    def _sum_metric(self, entries: list[dict[str, Any]], key: str) -> float:
+        """Calculate sum of a numeric key in entries."""
+        return float(sum(float(e.get(key, 0) or 0.0) for e in entries))
+
+    def _append_issue(
+        self,
+        issues: list[dict[str, Any]],
+        *,
+        issue_type: str,
+        severity: str,
+        description: str,
+        suggestions: list[str],
+        auto_fix_available: bool,
+        auto_fix_action: str | None = None,
+    ) -> None:
+        """Append an issue record to the list to avoid duplication."""
+        issue: dict[str, Any] = {
+            "type": issue_type,
+            "severity": severity,
+            "description": description,
+            "suggestions": suggestions,
+            "auto_fix_available": auto_fix_available,
+        }
+        if auto_fix_action:
+            issue["auto_fix_action"] = auto_fix_action
+        issues.append(issue)
+
     async def analyze_and_suggest(self) -> dict[str, Any]:
         """성능 분석 및 개선 제안.
 
@@ -97,51 +131,48 @@ class SelfImprovingSystem:
 
         # 품질 저하
         if trends["quality_declining"]:
-            issues.append(
-                {
-                    "type": "quality_regression",
-                    "severity": "high",
-                    "description": "품질 점수가 지난주 대비 5% 이상 하락",
-                    "suggestions": [
-                        "프롬프트 재검토 필요",
-                        "모델 온도 조정 고려 (현재: 0.2 → 0.1)",
-                        "예시 데이터 업데이트",
-                    ],
-                    "auto_fix_available": False,
-                },
+            self._append_issue(
+                issues,
+                issue_type="quality_regression",
+                severity="high",
+                description="품질 점수가 지난주 대비 5% 이상 하락",
+                suggestions=[
+                    "프롬프트 재검토 필요",
+                    "모델 온도 조정 고려 (현재: 0.2 → 0.1)",
+                    "예시 데이터 업데이트",
+                ],
+                auto_fix_available=False,
             )
 
         # 비용 증가
         if trends["cost_increasing"]:
-            issues.append(
-                {
-                    "type": "cost_spike",
-                    "severity": "medium",
-                    "description": f"비용이 {trends['cost_increase_percent']:.1f}% 증가",
-                    "suggestions": [
-                        "캐싱 전략 재조정",
-                        f"현재 캐시 hit rate: {trends['cache_hit_rate']:.1f}% (목표: 70%)",
-                        "불필요한 재생성 줄이기",
-                    ],
-                    "auto_fix_available": True,
-                    "auto_fix_action": "adjust_cache_ttl",
-                },
+            self._append_issue(
+                issues,
+                issue_type="cost_spike",
+                severity="medium",
+                description=f"비용이 {trends['cost_increase_percent']:.1f}% 증가",
+                suggestions=[
+                    "캐싱 전략 재조정",
+                    f"현재 캐시 hit rate: {trends['cache_hit_rate']:.1f}% (목표: 70%)",
+                    "불필요한 재생성 줄이기",
+                ],
+                auto_fix_available=True,
+                auto_fix_action="adjust_cache_ttl",
             )
 
         # 레이턴시 증가
         if trends["latency_increasing"]:
-            issues.append(
-                {
-                    "type": "performance_degradation",
-                    "severity": "medium",
-                    "description": "평균 레이턴시 증가 감지",
-                    "suggestions": [
-                        "Neo4j 인덱스 확인",
-                        "Redis 메모리 사용량 확인",
-                        "동시성 제한 재조정",
-                    ],
-                    "auto_fix_available": False,
-                },
+            self._append_issue(
+                issues,
+                issue_type="performance_degradation",
+                severity="medium",
+                description="평균 레이턴시 증가 감지",
+                suggestions=[
+                    "Neo4j 인덱스 확인",
+                    "Redis 메모리 사용량 확인",
+                    "동시성 제한 재조정",
+                ],
+                auto_fix_available=False,
             )
 
         # 4. 리포트 생성
@@ -187,32 +218,16 @@ class SelfImprovingSystem:
         if not previous:
             previous = recent
 
-        recent_quality = (
-            sum(h.get("quality", 0) for h in recent) / len(recent) if recent else 0
-        )
-        prev_quality = (
-            sum(h.get("quality", 0) for h in previous) / len(previous)
-            if previous
-            else 0
-        )
+        recent_quality = self._mean(recent, "quality")
+        prev_quality = self._mean(previous, "quality")
 
-        recent_cost = sum(h.get("cost", 0) for h in recent)
-        prev_cost = sum(h.get("cost", 0) for h in previous)
+        recent_cost = self._sum_metric(recent, "cost")
+        prev_cost = self._sum_metric(previous, "cost")
 
-        recent_latency = (
-            sum(h.get("latency", 0) for h in recent) / len(recent) if recent else 0
-        )
-        prev_latency = (
-            sum(h.get("latency", 0) for h in previous) / len(previous)
-            if previous
-            else 0
-        )
+        recent_latency = self._mean(recent, "latency")
+        prev_latency = self._mean(previous, "latency")
 
-        cache_hit_rate = (
-            sum(h.get("cache_hit_rate", 0) for h in recent) / len(recent)
-            if recent
-            else 0
-        )
+        cache_hit_rate = self._mean(recent, "cache_hit_rate")
 
         # Calculate cost increase percentage safely
         cost_increase_percent = (
@@ -253,10 +268,10 @@ class SelfImprovingSystem:
             if action == "adjust_cache_ttl":
                 # 캐시 TTL 자동 조정
                 logger.info("🔧 캐시 TTL 자동 조정 중...")
-                await self._adjust_cache_ttl()
+                self._adjust_cache_ttl()
                 logger.info("   ✓ TTL 증가: 900s → 1800s")
 
-    async def _adjust_cache_ttl(self) -> None:
+    def _adjust_cache_ttl(self) -> None:
         """Adjust cache TTL settings.
 
         This is a placeholder for actual cache TTL adjustment logic.

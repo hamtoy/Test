@@ -147,28 +147,54 @@ class QueryGeneratorService:
 
         cleaned_response = clean_markdown_code_block(response_text)
         if not cleaned_response or not cleaned_response.strip():
-            agent.logger.error("Query Generation: Empty response received")
+            agent.logger.error(
+                "Query Generation: Empty response received | "
+                "query_type=%s | ocr_length=%d | raw_response_length=%d | "
+                "possible_cause=safety_filter_or_rate_limit",
+                query_type,
+                len(ocr_text),
+                len(response_text) if response_text else 0,
+            )
+            # Log raw response for debugging (truncated)
+            if response_text:
+                agent.logger.debug(
+                    "Raw response (truncated): %s",
+                    response_text[:500],
+                )
             return []
 
         try:
             result = QueryResult.model_validate_json(cleaned_response)
+            if not result.queries:
+                agent.logger.warning(
+                    "Query Generation: Empty queries list returned | "
+                    "query_type=%s | response=%s...",
+                    query_type,
+                    cleaned_response[:200],
+                )
             return result.queries if result.queries else []
         except ValidationError as e:
             agent.logger.error(
-                "Query Validation Failed: %s. Response: %s...",
+                "Query Validation Failed | query_type=%s | error=%s | response=%s...",
+                query_type,
                 e,
                 cleaned_response[:200],
             )
             return []
         except json.JSONDecodeError as e:
             agent.logger.error(
-                "Query JSON Parse Failed: %s. Response: %s...",
+                "Query JSON Parse Failed | query_type=%s | error=%s | response=%s...",
+                query_type,
                 e,
                 cleaned_response[:200],
             )
             return []
         except (TypeError, KeyError, AttributeError) as e:
-            agent.logger.error("Unexpected error in query parsing: %s", e)
+            agent.logger.error(
+                "Unexpected error in query parsing | query_type=%s | error=%s",
+                query_type,
+                e,
+            )
             return []
 
 

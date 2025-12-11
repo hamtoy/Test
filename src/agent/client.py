@@ -226,6 +226,6 @@ class GeminiClient:
 
             raise SafetyFilterError(error_msg)
 
-    async def parse_and_validate(self, response_text: str, key: str) -> Any:
+    def parse_and_validate(self, response_text: str, key: str) -> Any:
         """Utility wrapper around safe_json_parse for callers that need it."""
         return safe_json_parse(response_text, key)

@@ -83,7 +83,7 @@ class AdaptiveRateLimiter:
         """Current concurrency limit."""
         return int(self._current_limit)
 
-    async def _update_limits(self) -> None:
+    def _update_limits(self) -> None:
         """Update concurrency limits based on recent performance."""
         if not self._latencies:
             return
@@ -161,6 +161,6 @@ class AdaptiveRateLimiter:
                 self._active_count -= 1
                 self._latencies.append(latency)
                 if len(self._latencies) >= self._window_size or error_occurred:
-                    await self._update_limits()
+                    self._update_limits()
                 # Notify waiting coroutines that a slot is available
                 self._condition.notify()

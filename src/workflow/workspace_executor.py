@@ -12,7 +12,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 if TYPE_CHECKING:
     from src.agent import GeminiAgent
@@ -93,6 +93,7 @@ class WorkspaceExecutor:
         # Jinja2 environment for prompt templates
         self.jinja_env = Environment(
             loader=FileSystemLoader(str(REPO_ROOT / "templates")),
+            autoescape=select_autoescape(["html", "xml"]),
             trim_blocks=True,
             lstrip_blocks=True,
         )

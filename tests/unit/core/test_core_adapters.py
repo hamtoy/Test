@@ -279,112 +279,142 @@ class TestNeo4jProvider:
     """Tests for Neo4jProvider class."""
 
     @pytest.fixture
-    def mock_driver(self) -> Generator[MagicMock, None, None]:
-        """Create a mock Neo4j driver."""
-        with patch("src.core.adapters.AsyncGraphDatabase") as mock_db:
-            mock_driver = MagicMock()
-            mock_db.driver.return_value = mock_driver
-            yield mock_driver
+    def graph_provider(self) -> Generator[tuple[MagicMock, MagicMock], None, None]:
+        """Patch Neo4jGraphProvider and provide a mock instance."""
+        with patch("src.core.adapters.Neo4jGraphProvider") as provider_cls:
+            delegate = MagicMock()
+            delegate.close = AsyncMock()
+            delegate.verify_connectivity = AsyncMock()
+            delegate.create_nodes = AsyncMock(return_value=0)
+            delegate.create_relationships = AsyncMock(return_value=0)
+            delegate.session = MagicMock(return_value="session_ctx")
+            provider_cls.return_value = delegate
+            yield provider_cls, delegate
 
-    @pytest.fixture
-    def provider(self, mock_driver: Any) -> Any:
-        """Create a Neo4jProvider instance."""
+    def test_init_uses_infra_provider(
+        self, graph_provider: tuple[MagicMock, MagicMock]
+    ) -> None:
+        """Neo4jProvider wires credentials into Neo4jGraphProvider."""
+        provider_cls, _ = graph_provider
         from src.core.adapters import Neo4jProvider
 
-        return Neo4jProvider(
+        Neo4jProvider(
             uri="bolt://localhost:7687",
             auth=("neo4j", "password"),
+            batch_size=50,
         )
 
-    @pytest.mark.asyncio
-    async def test_close(self, provider: Any, mock_driver: Any) -> None:
-        """Test closing the driver."""
-        mock_driver.close = AsyncMock()
+        provider_cls.assert_called_once_with(
+            uri="bolt://localhost:7687",
+            user="neo4j",
+            password="password",
+            batch_size=50,
+        )
 
+    def test_session_delegates(
+        self, graph_provider: tuple[MagicMock, MagicMock]
+    ) -> None:
+        """Session delegates to the underlying provider."""
+        provider_cls, delegate = graph_provider
+        from src.core.adapters import Neo4jProvider
+
+        provider = Neo4jProvider(uri="bolt://localhost:7687", auth=("neo4j", "pw"))
+        result = provider.session()
+
+        assert result == "session_ctx"
+        delegate.session.assert_called_once()
+        provider_cls.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_close(self, graph_provider: tuple[MagicMock, MagicMock]) -> None:
+        """Close delegates to the underlying provider."""
+        provider_cls, delegate = graph_provider
+        from src.core.adapters import Neo4jProvider
+
+        provider = Neo4jProvider(uri="bolt://localhost:7687", auth=("neo4j", "pw"))
         await provider.close()
 
-        mock_driver.close.assert_called_once()
+        delegate.close.assert_called_once()
+        provider_cls.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_verify_connectivity_success(
-        self, provider: Any, mock_driver: Any
+        self, graph_provider: tuple[MagicMock, MagicMock]
     ) -> None:
-        """Test successful connectivity verification."""
-        mock_driver.verify_connectivity = AsyncMock()
+        """Successful verify_connectivity passes through."""
+        provider_cls, delegate = graph_provider
+        from src.core.adapters import Neo4jProvider
 
+        provider = Neo4jProvider(uri="bolt://localhost:7687", auth=("neo4j", "pw"))
         await provider.verify_connectivity()
 
-        mock_driver.verify_connectivity.assert_called_once()
+        delegate.verify_connectivity.assert_called_once()
+        provider_cls.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_verify_connectivity_failure(
-        self, provider: Any, mock_driver: Any
+        self, graph_provider: tuple[MagicMock, MagicMock]
     ) -> None:
-        """Test connectivity verification failure."""
-        mock_driver.verify_connectivity = AsyncMock(
+        """Connectivity errors are wrapped in ProviderError."""
+        provider_cls, delegate = graph_provider
+        delegate.verify_connectivity = AsyncMock(
             side_effect=Exception("Connection failed")
         )
+        from src.core.adapters import Neo4jProvider
+
+        provider = Neo4jProvider(uri="bolt://localhost:7687", auth=("neo4j", "pw"))
 
         with pytest.raises(ProviderError):
             await provider.verify_connectivity()
 
-    @pytest.mark.asyncio
-    async def test_create_nodes_empty_list(self, provider: Any) -> None:
-        """Test creating nodes with empty list."""
-        result = await provider.create_nodes([], "TestLabel")
-        assert result == 0
+        delegate.verify_connectivity.assert_called_once()
+        provider_cls.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_create_nodes_batch(self, provider: Any, mock_driver: Any) -> None:
-        """Test creating nodes in batches."""
-        mock_session = AsyncMock()
-        mock_result = AsyncMock()
-        mock_result.single = AsyncMock(return_value={"count": 3})
-        mock_session.run = AsyncMock(return_value=mock_result)
+    async def test_create_nodes_delegates(
+        self, graph_provider: tuple[MagicMock, MagicMock]
+    ) -> None:
+        """create_nodes delegates to shared provider."""
+        provider_cls, delegate = graph_provider
+        delegate.create_nodes = AsyncMock(return_value=3)
+        from src.core.adapters import Neo4jProvider
 
-        async_context = AsyncMock()
-        async_context.__aenter__ = AsyncMock(return_value=mock_session)
-        async_context.__aexit__ = AsyncMock(return_value=None)
-        mock_driver.session.return_value = async_context
+        provider = Neo4jProvider(uri="bolt://localhost:7687", auth=("neo4j", "pw"))
+        nodes = [{"id": "1"}]
 
-        nodes = [
-            {"id": "1", "name": "Node1", "value": 10},
-            {"id": "2", "name": "Node2", "value": 20},
-            {"id": "3", "name": "Node3", "value": 30},
-        ]
-
-        result = await provider.create_nodes(nodes, "TestLabel")
+        result = await provider.create_nodes(
+            nodes, "TestLabel", merge_on="id", merge_keys=["email"]
+        )
 
         assert result == 3
-        mock_session.run.assert_called_once()
+        delegate.create_nodes.assert_called_once_with(
+            nodes, "TestLabel", "id", ["email"]
+        )
+        provider_cls.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_create_relationships_empty_list(self, provider: Any) -> None:
-        """Test creating relationships with empty list."""
-        result = await provider.create_relationships([], "RELATES_TO", "From", "To")
-        assert result == 0
-
-    @pytest.mark.asyncio
-    async def test_create_relationships_batch(
-        self, provider: Any, mock_driver: Any
+    async def test_create_relationships_delegates(
+        self, graph_provider: tuple[MagicMock, MagicMock]
     ) -> None:
-        """Test creating relationships in batches."""
-        mock_session = AsyncMock()
-        mock_result = AsyncMock()
-        mock_result.single = AsyncMock(return_value={"count": 2})
-        mock_session.run = AsyncMock(return_value=mock_result)
+        """create_relationships delegates to shared provider."""
+        provider_cls, delegate = graph_provider
+        delegate.create_relationships = AsyncMock(return_value=2)
+        from src.core.adapters import Neo4jProvider
 
-        async_context = AsyncMock()
-        async_context.__aenter__ = AsyncMock(return_value=mock_session)
-        async_context.__aexit__ = AsyncMock(return_value=None)
-        mock_driver.session.return_value = async_context
+        provider = Neo4jProvider(uri="bolt://localhost:7687", auth=("neo4j", "pw"))
+        rels = [{"from_id": "1", "to_id": "2"}]
 
-        rels = [
-            {"from_id": "1", "to_id": "2", "weight": 0.5},
-            {"from_id": "2", "to_id": "3", "weight": 0.7},
-        ]
-
-        result = await provider.create_relationships(rels, "CONNECTS", "Node", "Node")
+        result = await provider.create_relationships(
+            rels,
+            "CONNECTS",
+            "From",
+            "To",
+            from_key="id",
+            to_key="id",
+        )
 
         assert result == 2
-        mock_session.run.assert_called_once()
+        delegate.create_relationships.assert_called_once_with(
+            rels, "CONNECTS", "From", "To", "id", "id"
+        )
+        provider_cls.assert_called_once()

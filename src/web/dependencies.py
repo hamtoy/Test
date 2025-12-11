@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
 
 from fastapi import Depends, HTTPException
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from src.config import AppConfig
 
@@ -35,6 +35,7 @@ def get_jinja_env() -> Environment:
     """Cached Jinja2 environment."""
     return Environment(
         loader=FileSystemLoader(str(REPO_ROOT / "templates")),
+        autoescape=select_autoescape(["html", "xml"]),
         trim_blocks=True,
         lstrip_blocks=True,
     )

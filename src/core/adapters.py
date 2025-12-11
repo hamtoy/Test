@@ -2,14 +2,12 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from typing import Any
 
 import google.generativeai as genai
 from google.api_core import exceptions as google_exceptions
 from google.generativeai.types import GenerationConfigDict
-from neo4j import AsyncGraphDatabase
+from src.infra.neo4j import Neo4jGraphProvider
 
 from src.core.interfaces import (
     ContextWindowExceededError,
@@ -164,40 +162,47 @@ class GeminiProvider(LLMProvider):
 
 
 class Neo4jProvider(GraphProvider):
-    """Neo4j implementation of GraphProvider using AsyncGraphDatabase."""
+    """Neo4j implementation of GraphProvider delegating to infra layer."""
 
-    def __init__(self, uri: str, auth: tuple[str, str], *, batch_size: int = 100):
+    def __init__(
+        self,
+        uri: str,
+        auth: tuple[str, str],
+        *,
+        batch_size: int = 100,
+        provider: Neo4jGraphProvider | None = None,
+    ):
         """Initialize the Neo4j provider.
 
         Args:
             uri: The Neo4j database URI.
             auth: A tuple of (username, password) for authentication.
             batch_size: Number of records to process in each batch.
+            provider: Optional pre-configured Neo4jGraphProvider for injection.
         """
-        self._driver = AsyncGraphDatabase.driver(uri, auth=auth)
-        self._batch_size = batch_size
+        if provider is None:
+            user, password = auth
+            provider = Neo4jGraphProvider(
+                uri=uri,
+                user=user,
+                password=password,
+                batch_size=batch_size,
+            )
 
-    @asynccontextmanager
-    async def session(self) -> AsyncIterator[Any]:
-        """Yields an async session.
+        self._provider = provider
 
-        Enforces explicit transaction scope via async context manager.
-        """
-        async with self._driver.session() as session:
-            yield session
+    def session(self) -> Any:
+        """Return an async session context manager."""
+        return self._provider.session()
 
     async def close(self) -> None:
         """Close the database connection."""
-        await self._driver.close()
+        await self._provider.close()
 
     async def verify_connectivity(self) -> None:
-        """Verify that the database connection is working.
-
-        Raises:
-            ProviderError: If connectivity check fails.
-        """
+        """Verify that the database connection is working."""
         try:
-            await self._driver.verify_connectivity()
+            await self._provider.verify_connectivity()
         except Exception as e:
             raise ProviderError(
                 f"Neo4j connectivity check failed: {e}",
@@ -211,52 +216,13 @@ class Neo4jProvider(GraphProvider):
         merge_on: str = "id",
         merge_keys: list[str] | None = None,
     ) -> int:
-        """Batch create or merge nodes using UNWIND for efficiency.
-
-        Args:
-            nodes: List of node property dictionaries. All nodes should have
-                   the same property keys for consistent schema handling.
-            label: Node label (e.g., "Person", "Organization").
-            merge_on: Primary key for MERGE operation (default: "id").
-            merge_keys: Additional keys for merge matching.
-
-        Returns:
-            Number of nodes created or merged.
-
-        Note:
-            This method assumes all nodes in the list have consistent property
-            keys. The first node's keys are used to build the SET clause.
-        """
-        if not nodes:
-            return 0
-
-        # Build merge keys
-        keys = [merge_on] + (merge_keys or [])
-        merge_clause = ", ".join(f"{k}: node.{k}" for k in keys)
-
-        # Build SET clause for remaining properties
-        set_props = [k for k in nodes[0] if k not in keys]
-        set_clause = ", ".join(f"n.{k} = node.{k}" for k in set_props)
-
-        query = f"""
-        UNWIND $nodes AS node
-        MERGE (n:{label} {{{merge_clause}}})
-        """
-        if set_clause:
-            query += f"SET {set_clause}\n"
-        query += "RETURN count(n) AS count"
-
-        total_count = 0
-        async with self.session() as session:
-            # Process in batches
-            for i in range(0, len(nodes), self._batch_size):
-                batch = nodes[i : i + self._batch_size]
-                result = await session.run(query, nodes=batch)
-                record = await result.single()
-                if record:
-                    total_count += record["count"]
-
-        return total_count
+        """Batch create or merge nodes using the shared provider implementation."""
+        return await self._provider.create_nodes(
+            nodes,
+            label,
+            merge_on,
+            merge_keys,
+        )
 
     async def create_relationships(
         self,
@@ -267,52 +233,12 @@ class Neo4jProvider(GraphProvider):
         from_key: str = "id",
         to_key: str = "id",
     ) -> int:
-        """Batch create relationships between nodes.
-
-        Args:
-            rels: List of relationship dictionaries containing
-                  'from_id', 'to_id', and optional properties. All relationships
-                  should have the same property keys for consistent schema handling.
-            rel_type: Relationship type (e.g., "WORKS_AT", "REFERENCES").
-            from_label: Label of the source node.
-            to_label: Label of the target node.
-            from_key: Key to match source node (default: "id").
-            to_key: Key to match target node (default: "id").
-
-        Returns:
-            Number of relationships created.
-
-        Note:
-            This method assumes all relationships in the list have consistent
-            property keys. The first relationship's keys are used to build
-            the property clause.
-        """
-        if not rels:
-            return 0
-
-        # Extract property keys (excluding from_id and to_id)
-        prop_keys = [k for k in rels[0] if k not in ("from_id", "to_id")]
-        props_clause = ", ".join(f"{k}: rel.{k}" for k in prop_keys)
-
-        query = f"""
-        UNWIND $rels AS rel
-        MATCH (a:{from_label} {{{from_key}: rel.from_id}})
-        MATCH (b:{to_label} {{{to_key}: rel.to_id}})
-        MERGE (a)-[r:{rel_type}"""
-
-        if props_clause:
-            query += f" {{{props_clause}}}"
-        query += """]->(b)
-        RETURN count(r) AS count"""
-
-        total_count = 0
-        async with self.session() as session:
-            # Process in batches
-            for i in range(0, len(rels), self._batch_size):
-                batch = rels[i : i + self._batch_size]
-                result = await session.run(query, rels=batch)
-                record = await result.single()
-                if record:
-                    total_count += record["count"]
-
-        return total_count
+        """Batch create relationships using the shared provider implementation."""
+        return await self._provider.create_relationships(
+            rels,
+            rel_type,
+            from_label,
+            to_label,
+            from_key,
+            to_key,
+        )

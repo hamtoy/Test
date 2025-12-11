@@ -140,7 +140,7 @@ def _sync_check_neo4j(uri: str, user: str, password: str) -> bool:
             driver.close()
 
 
-async def check_gemini_api() -> dict[str, Any]:
+def check_gemini_api() -> dict[str, Any]:
     """Gemini API 키 유효성 확인.
 
     Returns:
@@ -161,7 +161,7 @@ async def check_gemini_api() -> dict[str, Any]:
     return {"status": "up", "key_prefix": api_key[:8] + "..."}
 
 
-async def check_dependencies() -> dict[str, Any]:
+def check_dependencies() -> dict[str, Any]:
     """필수 의존성 버전 확인.
 
     Returns:
@@ -206,7 +206,7 @@ async def check_dependencies() -> dict[str, Any]:
     }
 
 
-async def check_disk() -> dict[str, Any]:
+def check_disk() -> dict[str, Any]:
     """디스크 공간 확인.
 
     Returns:
@@ -289,13 +289,18 @@ async def health_check_async() -> dict[str, Any]:
         전체 상태 정보 딕셔너리
 
     """
+    # Dependencies are checked synchronously
+    try:
+        deps_result = check_dependencies()
+    except Exception as exc:  # noqa: BLE001
+        deps_result = {"status": "error", "error": str(exc)}
+
     checks = await asyncio.gather(
         check_redis(),
         check_neo4j(),
-        check_gemini_api(),
-        check_disk(),
+        asyncio.to_thread(check_gemini_api),
+        asyncio.to_thread(check_disk),
         check_memory(),
-        check_dependencies(),
         return_exceptions=True,
     )
 
@@ -306,6 +311,9 @@ async def health_check_async() -> dict[str, Any]:
             check_results.append({"status": "error", "error": str(check)})
         else:
             check_results.append(check)
+
+    # Append dependencies check result
+    check_results.append(deps_result)
 
     # 전체 상태 결정
     all_statuses = [c.get("status", "unknown") for c in check_results]
@@ -375,7 +383,7 @@ def health_check() -> dict[str, Any]:
     }
 
 
-async def liveness_check() -> dict[str, Any]:
+def liveness_check() -> dict[str, Any]:
     """Kubernetes liveness probe - 프로세스 살아있는지 확인.
 
     Returns:
@@ -474,7 +482,7 @@ class HealthChecker:
 
         return SystemHealth(
             status=overall_status,
-            timestamp=datetime.datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat(),
             version=self.version,
             components=components,
         )
