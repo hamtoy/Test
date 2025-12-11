@@ -352,7 +352,8 @@ class AppConfig(BaseSettings):
             return v
         if v <= 0:
             raise ValueError(ERROR_MESSAGES["budget_positive"])
-        return v
+        # Normalize to cents precision to avoid unstable comparisons downstream.
+        return round(float(v), 2)
 
     @field_validator("cache_stats_max_entries")
     @classmethod
