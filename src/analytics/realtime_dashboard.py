@@ -75,16 +75,18 @@ class RealtimeDashboard:
         await asyncio.sleep(0)
         cutoff = datetime.now() - timedelta(minutes=self.retention_minutes)
 
-        for endpoint in list(self._metrics.keys()):
-            self._metrics[endpoint] = [
-                m
-                for m in self._metrics[endpoint]
-                if datetime.fromisoformat(m["timestamp"]) > cutoff
+        stale_endpoints: list[str] = []
+        for endpoint, metrics in self._metrics.items():
+            filtered = [
+                m for m in metrics if datetime.fromisoformat(m["timestamp"]) > cutoff
             ]
+            if filtered:
+                self._metrics[endpoint] = filtered
+            else:
+                stale_endpoints.append(endpoint)
 
-            # Remove endpoint if no metrics left
-            if not self._metrics[endpoint]:
-                del self._metrics[endpoint]
+        for endpoint in stale_endpoints:
+            del self._metrics[endpoint]
 
     async def get_summary(self) -> dict[str, Any]:
         """Get current metrics summary.

@@ -41,7 +41,10 @@ class FeatureFlags:
         try:
             content = self.config_file.read_text(encoding="utf-8")
             return dict(json.loads(content))
-        except (json.JSONDecodeError, Exception) as e:
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to load feature flags: {e}")
+            return {}
+        except Exception as e:  # noqa: BLE001
             logger.warning(f"Failed to load feature flags: {e}")
             return {}
 

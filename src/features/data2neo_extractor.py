@@ -246,7 +246,7 @@ OCR Text to analyze:
             Unique identifier string
         """
         # Normalize name for ID
-        normalized = re.sub(r"[^a-zA-Z0-9_]", "_", name.lower())
+        normalized = re.sub(r"\W", "_", name.lower())
         return f"{entity_type.lower()}_{normalized}"
 
     def _parse_extraction_response(self, response_text: str) -> ExtractedEntitiesSchema:

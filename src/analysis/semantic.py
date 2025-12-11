@@ -131,9 +131,9 @@ def count_keywords(contents: Iterable[str]) -> Counter[str]:
     for text in contents:
         counter.update(tokenize(text))
     # 빈도 필터
-    for word in list(counter.keys()):
-        if counter[word] < MIN_FREQ:
-            del counter[word]
+    to_remove = [word for word, freq in counter.items() if freq < MIN_FREQ]
+    for word in to_remove:
+        del counter[word]
     return counter
 
 
