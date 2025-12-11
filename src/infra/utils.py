@@ -73,7 +73,7 @@ def parse_raw_candidates(text: str) -> dict[str, str]:
     """A:, B: 패턴을 사용하여 후보 답변 파싱 (Raw Text Parsing)."""
     candidates = {}
     # 패턴: 대문자 알파벳 + 콜론으로 시작하는 블록
-    pattern = r"^([A-Z]):\s*(.+)(?=(?:^[A-Z]:)|$)"
+    pattern = r"^([A-Z]):\s*(.+?)(?=(?:^[A-Z]:)|$)"
 
     matches = re.finditer(pattern, text, re.MULTILINE | re.DOTALL)
 
