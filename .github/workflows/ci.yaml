@@ -179,7 +179,6 @@ jobs:
       - name: Run E2E tests
         run: uv run pytest tests/ -v -m e2e
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           REDIS_URL: "redis://localhost:6379"
 
   sonarcloud:
@@ -220,7 +219,7 @@ jobs:
         with:
           projectBaseDir: .
           args: >
-            -Dsonar.projectKey=hamtoy_Test
+            -Dsonar.projectKey=shining-quasar
             -Dsonar.organization=hamtoy
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
