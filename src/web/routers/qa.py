@@ -56,7 +56,7 @@ streaming_router = APIRouter(prefix="/api", tags=["qa-streaming"])
 stream_route = streaming_router.post("/qa/generate/batch/stream")
 
 
-@stream_route  # type: ignore[misc]
+@stream_route
 async def stream_batch_qa_generation(body: GenerateQARequest) -> StreamingResponse:
     """배치 QA 생성 (SSE 스트리밍). batch/batch_three 모드 전용."""
     if body.mode not in {"batch", "batch_three"}:

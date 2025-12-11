@@ -235,11 +235,13 @@ def _difficulty_hint(ocr_text: str) -> str:
 
 async def _evaluate_answer_quality(
     answer: str,
+    query: str,
     ocr_text: str,
     rules_list: list[str],
     weights: AnswerQualityWeights,
 ) -> float:
     """답변 품질 평가 (LATS용 헬퍼 함수)."""
+    _ = query  # currently not used in scoring
     await asyncio.sleep(0)
     from checks.detect_forbidden_patterns import find_violations
 

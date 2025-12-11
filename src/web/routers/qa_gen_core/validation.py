@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, cast
 
 from checks.detect_forbidden_patterns import (
     find_formatting_violations,
@@ -144,13 +144,16 @@ async def validate_and_regenerate(
         combined_request = "; ".join(all_issues)
         logger.warning("검증 실패, 재생성 시도: %s", combined_request)
         try:
-            rewritten = await agent.rewrite_best_answer(
-                ocr_text=ocr_text,
-                best_answer=draft_answer,
-                edit_request=f"다음 사항 수정: {combined_request}",
-                cached_content=None,
-                constraints=answer_constraints,
-                length_constraint=length_constraint,
+            rewritten = cast(
+                str | None,
+                await agent.rewrite_best_answer(
+                    ocr_text=ocr_text,
+                    best_answer=draft_answer,
+                    edit_request=f"다음 사항 수정: {combined_request}",
+                    cached_content=None,
+                    constraints=answer_constraints,
+                    length_constraint=length_constraint,
+                ),
             )
             # 빈 응답이면 원본 유지
             if rewritten and rewritten.strip():

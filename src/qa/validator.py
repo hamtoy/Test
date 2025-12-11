@@ -253,7 +253,7 @@ class UnifiedValidator:
 
 
 def validate_constraints(
-    _qtype: str,
+    qtype: str,
     max_length: int | None = None,
     min_per_paragraph: int | None = None,
     num_paragraphs: int | None = None,
@@ -273,6 +273,8 @@ def validate_constraints(
         - (True, "제약 일관성 확인됨") if no conflicts
         - (False, error_message) if conflicts detected
     """
+    _ = qtype  # keep signature compatibility; currently unused
+
     if min_per_paragraph and num_paragraphs and max_length:
         total_needed = min_per_paragraph * num_paragraphs
         if total_needed > max_length:

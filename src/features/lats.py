@@ -183,13 +183,10 @@ class LATSSearcher:
         current = node
         while current.children:
             parent_visits = current.visits or 1
-            current = max(
-                current.children,
-                key=lambda child, parent_visits=parent_visits: self._uct_score(
-                    child,
-                    parent_visits,
-                ),
-            )
+            def _uct(child: SearchNode) -> float:
+                return self._uct_score(child, parent_visits)
+
+            current = max(current.children, key=_uct)
         return current
 
     async def _expand(self, node: SearchNode) -> list[SearchNode]:

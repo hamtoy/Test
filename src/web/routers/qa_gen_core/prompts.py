@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from src.qa.dynamic_examples import DynamicExampleSelector  # type: ignore[import-not-found]
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +93,9 @@ def build_extra_instructions(
         fewshot_text = ""
         try:
             if kg is not None:
-                from src.qa.dynamic_examples import DynamicExampleSelector
+                from src.qa.dynamic_examples import (  # type: ignore[import-not-found]
+                    DynamicExampleSelector,
+                )
 
                 example_selector = DynamicExampleSelector(kg)
                 fewshot_examples = example_selector.select_best_examples(
