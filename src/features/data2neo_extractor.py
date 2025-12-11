@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import asyncio
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any
@@ -586,6 +587,7 @@ async def create_data2neo_extractor(
     Returns:
         Configured Data2NeoExtractor instance
     """
+    await asyncio.sleep(0)
     # Get providers if not provided and data2neo is enabled
     if getattr(config, "enable_data2neo", False):
         if llm_provider is None:
