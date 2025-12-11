@@ -263,7 +263,7 @@ OCR Text to analyze:
             # First, try to parse the entire response as JSON
             data = json.loads(response_text.strip())
             return ExtractedEntitiesSchema.model_validate(data)
-        except (json.JSONDecodeError, ValueError):
+        except ValueError:
             pass
 
         try:
@@ -288,7 +288,7 @@ OCR Text to analyze:
                 json_str = response_text[start_idx:end_idx]
                 data = json.loads(json_str)
                 return ExtractedEntitiesSchema.model_validate(data)
-        except (json.JSONDecodeError, ValueError) as e:
+        except ValueError as e:
             logger.warning("Failed to parse extraction response: %s", e)
 
         # Return empty result if parsing fails
