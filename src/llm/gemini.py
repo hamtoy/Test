@@ -81,6 +81,7 @@ class GeminiModelClient:
             temperature: 생성 온도.
             role: 호출 의도(호환성용, 현재 로직에서는 사용하지 않음).
         """
+        _ = role  # kept for compatibility; not used in current generation flow
         try:
             start = time.perf_counter()
             response = self.model.generate_content(

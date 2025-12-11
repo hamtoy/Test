@@ -182,9 +182,10 @@ class LATSSearcher:
     def _select(self, node: SearchNode) -> SearchNode:
         current = node
         while current.children:
+            parent_visits = current.visits or 1
             current = max(
                 current.children,
-                key=lambda child: self._uct_score(child, current.visits or 1),
+                key=lambda child: self._uct_score(child, parent_visits),
             )
         return current
 
