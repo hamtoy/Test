@@ -216,6 +216,11 @@ jobs:
           NEO4J_PASSWORD: ""
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-action@v5
+        uses: sonarsource/sonarcloud-github-action@v2
+        with:
+          projectBaseDir: .
+          args: >
+            -Dsonar.projectKey=hamtoy_Test
+            -Dsonar.organization=hamtoy
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
