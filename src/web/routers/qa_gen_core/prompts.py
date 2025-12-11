@@ -6,7 +6,10 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from src.qa.dynamic_examples import DynamicExampleSelector  # type: ignore[import-not-found]
+    try:
+        from src.qa.dynamic_examples import DynamicExampleSelector
+    except ImportError:
+        DynamicExampleSelector = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
 
