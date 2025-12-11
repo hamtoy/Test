@@ -219,7 +219,7 @@ jobs:
         with:
           projectBaseDir: .
           args: >
-            -Dsonar.projectKey=shining-quasar
+            -Dsonar.projectKey=hamtoy_Test
             -Dsonar.organization=hamtoy
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
