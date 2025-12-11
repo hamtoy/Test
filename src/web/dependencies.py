@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
@@ -190,6 +191,7 @@ async def require_agent() -> GeminiAgent:
     Raises:
         HTTPException: 500 if agent is not initialized.
     """
+    await asyncio.sleep(0)
     agent = ServiceContainer.get_agent()
     if agent is None:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
@@ -198,6 +200,7 @@ async def require_agent() -> GeminiAgent:
 
 async def require_config() -> AppConfig:
     """Return the app config."""
+    await asyncio.sleep(0)
     return ServiceContainer.get_config()
 
 
@@ -207,6 +210,7 @@ async def require_knowledge_graph() -> QAKnowledgeGraph:
     Raises:
         HTTPException: 500 if KG is not initialized.
     """
+    await asyncio.sleep(0)
     kg = ServiceContainer.get_knowledge_graph()
     if kg is None:
         raise HTTPException(status_code=500, detail="Knowledge Graph 초기화 실패")
@@ -219,6 +223,7 @@ async def require_pipeline() -> IntegratedQAPipeline:
     Raises:
         HTTPException: 500 if pipeline is not initialized.
     """
+    await asyncio.sleep(0)
     pipeline = ServiceContainer.get_pipeline()
     if pipeline is None:
         raise HTTPException(status_code=500, detail="Pipeline 초기화 실패")
