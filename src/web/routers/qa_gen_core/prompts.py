@@ -3,10 +3,23 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
-    from src.qa.dynamic_examples import DynamicExampleSelector
+    class DynamicExampleSelector(Protocol):
+        def __init__(self, kg: Any) -> None: ...
+
+        def select_best_examples(
+            self,
+            intent: str,
+            context: dict[str, Any],
+            k: int = 1,
+        ) -> list[dict[str, Any]]: ...
+else:
+    try:
+        from src.qa.dynamic_examples import DynamicExampleSelector as _DES  # type: ignore
+    except ImportError:  # pragma: no cover - optional dependency
+        _DES = None
 
 logger = logging.getLogger(__name__)
 
@@ -92,10 +105,8 @@ def build_extra_instructions(
         # Few-Shot: Load examples from Neo4j for reasoning
         fewshot_text = ""
         try:
-            if kg is not None:
-                from src.qa.dynamic_examples import DynamicExampleSelector
-
-                example_selector = DynamicExampleSelector(kg)
+            if kg is not None and "_DES" in globals() and _DES is not None:
+                example_selector = _DES(kg)
                 fewshot_examples = example_selector.select_best_examples(
                     "reasoning", {}, k=1
                 )
