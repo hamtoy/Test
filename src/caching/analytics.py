@@ -196,7 +196,7 @@ class RealTimeTracker:
     """Real-time cache hit rate tracker with sliding window."""
 
     window_size: int = 100  # Number of recent requests to track
-    _requests: list[bool] = field(default_factory=list)  # True=hit, False=miss
+    _requests: list[bool] = field(default_factory=list)
     _timestamps: list[float] = field(default_factory=list)
     _ttl_usage: list[float] = field(default_factory=list)  # TTL usage ratios
 

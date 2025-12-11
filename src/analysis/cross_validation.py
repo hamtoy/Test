@@ -170,7 +170,7 @@ class CrossValidationSystem:
 
         # 목록 아이템 추출
         list_items = re.findall(
-            r"^(?:\d+\.|[-*•])\s+(.+?)(?=\n(?:\d+\.|[-*•])\s|$)",
+            r"^(?:\d+\.|[-*•])\s+(.+)(?=\n(?:\d+\.|[-*•])\s|$)",
             answer,
             re.MULTILINE | re.DOTALL,
         )
@@ -245,10 +245,9 @@ class CrossValidationSystem:
 
         return violations
 
-    def _check_temporal_expressions(self, answer: str) -> list[str]:
+    def _check_temporal_expressions(self, _: str) -> list[str]:
         """시의성 표현 검증 (temporal_expression_check, 현재 비활성화)."""
         # Keep the hook for constraint-based calls; no active checks for now.
-        _ = answer.strip()
         return []
 
     def _check_rule_compliance(self, answer: str, query_type: str) -> dict[str, Any]:
