@@ -386,13 +386,14 @@ def health_check() -> dict[str, Any]:
     }
 
 
-def liveness_check() -> dict[str, Any]:
+async def liveness_check() -> dict[str, Any]:
     """Kubernetes liveness probe - 프로세스 살아있는지 확인.
 
     Returns:
         간단한 상태 딕셔너리
 
     """
+    await asyncio.sleep(0)
     return {"status": "ok"}
 
 
