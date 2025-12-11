@@ -170,7 +170,7 @@ class CrossValidationSystem:
 
         # 목록 아이템 추출
         list_items = re.findall(
-            r"^(?:\d+\.|[-*•])\s+(.+?)(?=(?:\n(?:\d+\.|[-*•])\s|$))",
+            r"^(?:\d+\.|[-*•])\s+((?:(?!\n(?:\d+\.|[-*•])\s).)+)",
             answer,
             re.MULTILINE | re.DOTALL,
         )

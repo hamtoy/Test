@@ -120,7 +120,7 @@ def fix_broken_numbers(text: str) -> str:
         "873\n- 3만 건" -> "873.3만 건"
     """
     # 패턴 1: 숫자 + 줄바꿈 + 불릿 + 숫자 → 소수점으로 병합
-    text = re.sub(r"(\d)[ \t]*(?:\r?\n)-[ \t]*(\d)", r"\1.\2", text)
+    text = re.sub(r"(\d)[ \t]*\r?\n-[ \t]*(\d)", r"\1.\2", text)
 
     # 패턴 2: 연속된 불릿 라인 중 숫자로 시작하는 경우 이전 줄과 병합
     lines = text.splitlines()

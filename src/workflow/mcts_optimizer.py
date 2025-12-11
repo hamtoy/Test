@@ -97,9 +97,8 @@ class MCTSWorkflowOptimizer:
         node.children.append(child)
         return child
 
-    async def _simulate(self, node: MCTSNode, query: str) -> float:
+    async def _simulate(self, node: MCTSNode, _: str) -> float:
         """Simulate execution: In reality, this might use a lighter model or cache."""
-        # template_name = node.state
         await asyncio.sleep(0)
         try:
             # 실제 API 호출 대신 가벼운 시뮬레이션 또는 캐시된 결과 사용 권장

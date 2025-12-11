@@ -235,7 +235,7 @@ async def run_workflow_interactive(
                 results.append(None)
 
     # 결과 요약 표시
-    _display_workflow_summary(queries, results, agent, config, timestamp)
+    _display_workflow_summary(queries, results, agent, timestamp)
 
     Prompt.ask("\n엔터를 눌러 메뉴로 돌아갑니다")
 
@@ -528,7 +528,6 @@ def _display_workflow_summary(
     queries: list[str],
     results: list[WorkflowResult | None],
     agent: GeminiAgent,
-    config: AppConfig,
     timestamp: str,
 ) -> None:
     """워크플로우 완료 후 결과 요약 표시."""

@@ -240,13 +240,11 @@ class Data2NeoExtractor:
     async def write_to_graph(
         self,
         result: ExtractionResult,
-        document_id: str | None = None,
     ) -> dict[str, int]:
         """Write extracted entities to Neo4j graph.
 
         Args:
             result: ExtractionResult to write
-            document_id: Optional document identifier for linking
 
         Returns:
             Dictionary with counts of created nodes/relationships

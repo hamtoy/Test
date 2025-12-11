@@ -1,5 +1,3 @@
-# mypy: allow-untyped-decorators
-# mypy: disable-error-code=unused-ignore
 """QA 생성 및 평가 엔드포인트 (메인 라우터 집합)."""
 
 from __future__ import annotations
@@ -7,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import TYPE_CHECKING, Any, AsyncIterator
+from typing import Any, AsyncIterator
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -17,9 +15,6 @@ from src.web.models import GenerateQARequest
 
 # Import sub-routers
 from . import qa_common, qa_evaluation, qa_generation, qa_tools
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

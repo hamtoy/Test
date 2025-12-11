@@ -1,5 +1,3 @@
-# mypy: allow-untyped-decorators
-# mypy: disable-error-code="import-not-found"
 """프롬프트 템플릿 및 빌더 함수."""
 
 from __future__ import annotations
@@ -315,7 +313,6 @@ def build_priority_hierarchy(
     normalized_qtype: str,
     length_constraint: str,
     formatting_text: str,
-    extra_instructions: str,
 ) -> str:
     """우선순위 계층 프롬프트 생성.
 
@@ -323,7 +320,6 @@ def build_priority_hierarchy(
         normalized_qtype: 정규화된 query type
         length_constraint: 길이 제약 문자열
         formatting_text: 서식 규칙 문자열
-        extra_instructions: 추가 지시사항
 
     Returns:
         우선순위 계층 프롬프트

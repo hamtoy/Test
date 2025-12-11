@@ -121,7 +121,7 @@ class UnifiedValidator:
 
         return violations
 
-    def validate_temporal_expressions(self, text: str) -> list[dict[str, Any]]:
+    def validate_temporal_expressions(self, _: str) -> list[dict[str, Any]]:
         """동적 규칙을 사용한 시의성 표현 검증.
 
         NOTE: 시의성 표현은 인간 작업자가 최종 수정하므로 비활성화됨.
@@ -253,7 +253,7 @@ class UnifiedValidator:
 
 
 def validate_constraints(
-    qtype: str,
+    _qtype: str,
     max_length: int | None = None,
     min_per_paragraph: int | None = None,
     num_paragraphs: int | None = None,

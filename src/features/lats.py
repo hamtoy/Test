@@ -185,7 +185,10 @@ class LATSSearcher:
             parent_visits = current.visits or 1
             current = max(
                 current.children,
-                key=lambda child: self._uct_score(child, parent_visits),
+                key=lambda child, parent_visits=parent_visits: self._uct_score(
+                    child,
+                    parent_visits,
+                ),
             )
         return current
 

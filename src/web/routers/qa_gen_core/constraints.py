@@ -1,5 +1,3 @@
-# mypy: allow-untyped-decorators
-# mypy: disable-error-code="unreachable"
 """제약조건 로딩 및 관리."""
 
 from __future__ import annotations

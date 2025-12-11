@@ -27,5 +27,5 @@
     "**/node_modules": true,
     "**/.venv": true
   },
-  "chatgpt.openOnStartup": false
+  "chatgpt.openOnStartup": true
 }

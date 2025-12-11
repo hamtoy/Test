@@ -72,9 +72,8 @@ async def load_file_async(file_path: Path) -> str:
 def parse_raw_candidates(text: str) -> dict[str, str]:
     """A:, B: 패턴을 사용하여 후보 답변 파싱 (Raw Text Parsing)."""
     candidates = {}
-    # 패턴: 대문자 알파벳 + 콜론으로 시작하는 블록
-    # 앵커 우선순위를 명확히 하기 위해 전체를 비캡처 그룹으로 감싼다.
-    pattern = r"^(?:([A-Z]):\s*(.+?))(?:\n(?=[A-Z]:)|$)"
+    # 패턴: 대문자 알파벳 + 콜론으로 시작하는 블록; 다음 라벨 시작 전까지 모두 캡처
+    pattern = r"^([A-Z]):\s*((?:(?!\n[A-Z]:).)+)"
 
     matches = re.finditer(pattern, text, re.MULTILINE | re.DOTALL)
 

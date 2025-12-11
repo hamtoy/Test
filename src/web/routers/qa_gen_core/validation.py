@@ -1,5 +1,3 @@
-# mypy: allow-untyped-decorators
-# mypy: disable-error-code="import-not-found,no-any-return"
 """검증 및 재생성 로직."""
 
 from __future__ import annotations
@@ -168,7 +166,6 @@ async def validate_and_regenerate(
 
 def validate_answer_length(
     final_answer: str,
-    qtype: str,
     normalized_qtype: str,
     ocr_text: str,
     query: str,
@@ -177,7 +174,6 @@ def validate_answer_length(
 
     Args:
         final_answer: 최종 답변
-        qtype: 원본 query type
         normalized_qtype: 정규화된 query type
         ocr_text: OCR 텍스트
         query: 질의

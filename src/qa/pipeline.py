@@ -88,9 +88,12 @@ class IntegratedQAPipeline:
         """
         density = image_meta.get("text_density", "high")
         if isinstance(density, (int, float)):
-            density = (
-                "high" if density >= 0.7 else "medium" if density >= 0.4 else "low"
-            )
+            if density >= 0.7:
+                density = "high"
+            elif density >= 0.4:
+                density = "medium"
+            else:
+                density = "low"
 
         return {
             "image_path": image_meta.get("image_path", "N/A"),

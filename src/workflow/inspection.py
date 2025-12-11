@@ -25,7 +25,7 @@ def _should_enable_lats(agent: GeminiAgent, lats: LATSSearcher | None) -> bool:
 
 
 async def inspect_query(
-    agent: GeminiAgent,
+    _agent: GeminiAgent,
     query: str,
     ocr_text: str = "",
     context: dict[str, Any] | None = None,

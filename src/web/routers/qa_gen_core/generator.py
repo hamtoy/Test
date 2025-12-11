@@ -1,5 +1,3 @@
-# mypy: allow-untyped-decorators
-# mypy: disable-error-code="import-not-found,arg-type"
 """QA 생성 핵심 오케스트레이션 모듈."""
 
 from __future__ import annotations
@@ -207,7 +205,6 @@ async def generate_single_qa(
             normalized_qtype,
             length_constraint,
             formatting_text,
-            extra_instructions,
         )
 
         answer_prompt = build_answer_prompt(
@@ -274,7 +271,7 @@ async def generate_single_qa(
             )
 
         # Validate answer length
-        validate_answer_length(final_answer, qtype, normalized_qtype, ocr_text, query)
+        validate_answer_length(final_answer, normalized_qtype, ocr_text, query)
 
         # Phase 10: Cache result
         result = {"type": qtype, "query": query, "answer": final_answer}

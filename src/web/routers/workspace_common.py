@@ -235,7 +235,6 @@ def _difficulty_hint(ocr_text: str) -> str:
 
 async def _evaluate_answer_quality(
     answer: str,
-    query: str,
     ocr_text: str,
     rules_list: list[str],
     weights: AnswerQualityWeights,
