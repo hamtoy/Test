@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import logging
 import re
@@ -240,6 +241,7 @@ async def _evaluate_answer_quality(
     weights: AnswerQualityWeights,
 ) -> float:
     """답변 품질 평가 (LATS용 헬퍼 함수)."""
+    await asyncio.sleep(0)
     from checks.detect_forbidden_patterns import find_violations
 
     score = weights.base_score
@@ -273,5 +275,6 @@ async def _evaluate_answer_quality(
 
 async def _lats_evaluate_answer(node: SearchNode) -> float:
     """LATS 노드의 답변 품질 평가."""
+    await asyncio.sleep(0)
     # This is a placeholder - actual implementation would use the node's context
     return 0.5
