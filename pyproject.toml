@@ -318,6 +318,9 @@ markers = [
 # E2E 테스트는 기본적으로 제외 (명시적으로 실행)
 addopts = "-m 'not e2e'"
 
+# Test discovery paths (excludes scripts/test_helpers which are not actual tests)
+testpaths = ["tests"]
+
 [dependency-groups]
 dev = [
     "mypy>=1.18.2",
