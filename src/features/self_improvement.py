@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from datetime import datetime, timedelta
@@ -272,11 +273,8 @@ class SelfImprovingSystem:
                 logger.info("   ✓ TTL 증가: 900s → 1800s")
 
     async def _adjust_cache_ttl(self) -> None:
-        """Adjust cache TTL settings.
-
-        This is a placeholder for actual cache TTL adjustment logic.
-        In a real implementation, this would update cache configuration.
-        """
+        """Adjust cache TTL settings."""
+        await asyncio.sleep(0)
         # Placeholder - in production this would update actual cache settings
         logger.debug("Cache TTL adjustment placeholder")
 
@@ -286,6 +284,7 @@ class SelfImprovingSystem:
         Send Slack notification for high-severity issues.
 
         Args:
+            self: SelfImprovingSystem instance
             report: Report dictionary containing issues
         """
         issues = report.get("issues", [])
