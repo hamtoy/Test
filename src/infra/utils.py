@@ -120,15 +120,23 @@ def clean_markdown_code_block(text: str) -> str:
 
     Gemini의 JSON 모드는 신뢰할 수 있으므로 복잡한 정규식 대신 단순 제거를 사용합니다.
     """
-    # Remove markdown code blocks if present (case-insensitive for JSON/json)
-    pattern = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.IGNORECASE | re.DOTALL)
-    match = pattern.search(text)
+    start = text.find("```")
+    if start == -1:
+        return text.strip()
 
-    if match:
-        return match.group(1).strip()
+    # Move past opening fence and optional language id (e.g., json)
+    cursor = start + 3
+    remainder = text[cursor:]
+    lower = remainder.lower()
+    if lower.startswith("json"):
+        remainder = remainder[4:]  # drop 'json'
 
-    # No markdown found - return original (likely already clean JSON)
-    return text.strip()
+    end = remainder.find("```")
+    if end == -1:
+        return text.strip()
+
+    code = remainder[:end].lstrip("\r\n").strip()
+    return code if code else text.strip()
 
 
 def _find_in_nested(obj: Any, target_key: str) -> Any | None:
