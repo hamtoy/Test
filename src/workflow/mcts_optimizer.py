@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import math
 import random
@@ -99,6 +100,7 @@ class MCTSWorkflowOptimizer:
     async def _simulate(self, node: MCTSNode, query: str) -> float:
         """Simulate execution: In reality, this might use a lighter model or cache."""
         # template_name = node.state
+        await asyncio.sleep(0)
         try:
             # 실제 API 호출 대신 가벼운 시뮬레이션 또는 캐시된 결과 사용 권장
             # 여기서는 예시로 Agent 호출 (실제 구현 시 비용 고려 필요)

@@ -293,6 +293,7 @@ async def _evaluate_answer_quality(
     weights: AnswerQualityWeights | None = None,
 ) -> float:
     """실전용 고품질 답변 평가 (0.0-1.0)."""
+    await asyncio.sleep(0)
     if not answer or len(answer) < 5:
         logger.debug("답변 너무 짧음: %d자", len(answer))
         return 0.0
@@ -356,6 +357,7 @@ async def _evaluate_answer_quality(
 
 async def _lats_evaluate_answer(node: SearchNode) -> float:
     """LATS 평가: 생성된 답변의 품질을 0.0-1.0로 점수화."""
+    await asyncio.sleep(0)
     # SearchState에서 필요한 정보 추출
     state = node.state
     current_answer = state.current_answer or ""
