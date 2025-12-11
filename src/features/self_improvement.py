@@ -268,10 +268,10 @@ class SelfImprovingSystem:
             if action == "adjust_cache_ttl":
                 # 캐시 TTL 자동 조정
                 logger.info("🔧 캐시 TTL 자동 조정 중...")
-                self._adjust_cache_ttl()
+                await self._adjust_cache_ttl()
                 logger.info("   ✓ TTL 증가: 900s → 1800s")
 
-    def _adjust_cache_ttl(self) -> None:
+    async def _adjust_cache_ttl(self) -> None:
         """Adjust cache TTL settings.
 
         This is a placeholder for actual cache TTL adjustment logic.

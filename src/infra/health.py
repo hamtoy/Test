@@ -140,7 +140,7 @@ def _sync_check_neo4j(uri: str, user: str, password: str) -> bool:
             driver.close()
 
 
-def check_gemini_api() -> dict[str, Any]:
+async def check_gemini_api() -> dict[str, Any]:
     """Gemini API 키 유효성 확인.
 
     Returns:
@@ -206,7 +206,7 @@ def check_dependencies() -> dict[str, Any]:
     }
 
 
-def check_disk() -> dict[str, Any]:
+async def check_disk() -> dict[str, Any]:
     """디스크 공간 확인.
 
     Returns:
@@ -298,8 +298,8 @@ async def health_check_async() -> dict[str, Any]:
     checks = await asyncio.gather(
         check_redis(),
         check_neo4j(),
-        asyncio.to_thread(check_gemini_api),
-        asyncio.to_thread(check_disk),
+        check_gemini_api(),
+        check_disk(),
         check_memory(),
         return_exceptions=True,
     )

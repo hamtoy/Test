@@ -257,7 +257,7 @@ generate_single_qa = qa_router_module.generate_single_qa
 generate_single_qa_with_retry = qa_router_module.generate_single_qa_with_retry
 
 
-async def _init_health_checks() -> None:
+def _init_health_checks() -> None:
     """Register health checks based on environment."""
     if os.getenv("NEO4J_URI"):
         health_checker.register_check(
@@ -277,7 +277,7 @@ async def _init_health_checks() -> None:
         health_checker.register_check("gemini", check_gemini_api)
 
 
-async def init_resources() -> None:
+def init_resources() -> None:
     """전역 리소스 초기화 (서버 시작 시 호출)."""
     global agent, kg, pipeline
     registry = get_registry()
@@ -381,8 +381,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         except Exception as exc:  # noqa: BLE001
             logger.warning("Failed to setup file logging: %s", exc)
 
-    await init_resources()
-    await _init_health_checks()
+    init_resources()
+    _init_health_checks()
     yield
 
     # Cleanup: Stop log listener on shutdown

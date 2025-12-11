@@ -571,7 +571,7 @@ OCR Text to analyze:
         return result
 
 
-def create_data2neo_extractor(
+async def create_data2neo_extractor(
     config: AppConfig,
     llm_provider: LLMProvider | None = None,
     graph_provider: GraphProvider | None = None,
