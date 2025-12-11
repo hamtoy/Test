@@ -77,12 +77,12 @@ class MultimodalUnderstanding:
 
         return metadata
 
-    def _detect_table(self, img: Image.Image) -> bool:
+    def _detect_table(self, _img: Image.Image) -> bool:
         """표 감지 (placeholder 휴리스틱)."""
         # 실제 구현 시 CV 모델 적용
         return False
 
-    def _detect_chart(self, img: Image.Image) -> bool:
+    def _detect_chart(self, _img: Image.Image) -> bool:
         """그래프 감지 (placeholder)."""
         # 실제 구현 시 색상 히스토그램/선 패턴 감지 등 적용
         return False

@@ -116,24 +116,14 @@ class CrossValidationSystem:
             return {"score": 0.5, "grounded": False, "note": "본문 키워드 부족"}
 
         sample = candidates[:50]  # 과도한 계산 방지
-        hits = sum(1 for w in sample if w in answer.lower())
+        answer_lower = answer.lower()
+        hits = sum(1 for w in sample if w in answer_lower)
         ratio = hits / len(sample)
         score = 0.3 + 0.7 * ratio
 
         return {"score": min(score, 1.0), "grounded": score > 0.6}
 
-    def _check_temporal_expressions(self, answer: str) -> list[str]:
-        """시의성 표현 검증 (temporal_expression_check).
-
-        Phase 4 Complete: 시의성 표현은 Gemini 생성, 인간이 최종 판단.
-        (이미지 기준), (보고서 기준) 같은 기준 표기는 선택사항으로 제거.
-        """
-        # 시의성 표현 검증 비활성화
-        # 이유: "최근", "현재" 같은 자연스러운 표현을 강제로 제거하면 부자연스러움
-        #       인간 검토자가 필요시 추가하면 됨
-        return []  # ← 검증 스킵
-
-    def _check_repetition(self, answer: str) -> list[str]:
+    def _check_repetition(self, _: str) -> list[str]:
         """반복 표현 검증 (repetition_check).
 
         Phase 4 Complete: 명사 반복은 Gemini의 자연스러운 표현이므로 검증 스킵.
@@ -200,7 +190,7 @@ class CrossValidationSystem:
             # 동사/형용사의 마지막 단어가 서술어
             # Capture the token immediately preceding common Korean verb endings.
             predicate_match = re.search(
-                r"([^\s]+?)\s*(?:한다|된다|하며|합니다|습니다|되다|하는|되는)\b",
+                r"([^\s]+)\s*(?:한다|된다|하며|합니다|습니다|되다|하는|되는)\b",
                 first_sentence,
             )
 
@@ -254,6 +244,12 @@ class CrossValidationSystem:
                 )
 
         return violations
+
+    def _check_temporal_expressions(self, answer: str) -> list[str]:
+        """시의성 표현 검증 (temporal_expression_check, 현재 비활성화)."""
+        # Keep the hook for constraint-based calls; no active checks for now.
+        _ = answer.strip()
+        return []
 
     def _check_rule_compliance(self, answer: str, query_type: str) -> dict[str, Any]:
         """패턴 기반 규칙 준수 여부를 확인합니다."""
