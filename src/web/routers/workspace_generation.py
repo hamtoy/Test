@@ -102,7 +102,7 @@ OCR에 없는 정보는 추가하지 마세요.
                 break
 
             if attempt < MAX_REWRITE_ATTEMPTS - 1:
-                violation_types = ", ".join(set(v["type"] for v in violations))
+                violation_types = ", ".join({v["type"] for v in violations})
                 logger.warning(
                     "답변에 금지 패턴 발견 (시도 %d/%d): %s",
                     attempt + 1,

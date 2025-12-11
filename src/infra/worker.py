@@ -599,7 +599,7 @@ async def handle_ocr_task(task: OCRTask) -> None:
             result = await _process_task(task)
         _append_jsonl(RESULTS_DIR / "results.jsonl", result)
         logger.info(f"Task {task.request_id} completed successfully.")
-    except (RateLimitError, SafetyBlockedError, ProviderError):
+    except ProviderError:
         # Transient or provider-related errors should be retried by FastStream
         raise
     except Exception as e:

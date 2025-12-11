@@ -27,7 +27,7 @@ def _load_rules_from_global_kg(query_type: str) -> tuple[str, ...]:
     """전역 KG에서 규칙을 로드하고 전역 캐시에 저장."""
     if _GLOBAL_KG is None:
         logger.debug("Global KG not set; returning defaults for type=%s", query_type)
-        return tuple()
+        return ()
 
     try:
         kg_rules = _GLOBAL_KG.get_rules_for_query_type(query_type)
@@ -42,7 +42,7 @@ def _load_rules_from_global_kg(query_type: str) -> tuple[str, ...]:
         return tuple(rules)
     except Exception as exc:  # noqa: BLE001
         logger.warning("Rule load failed for type=%s: %s", query_type, exc)
-        return tuple()
+        return ()
 
 
 def clear_global_rule_cache() -> None:

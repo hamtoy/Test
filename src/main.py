@@ -56,7 +56,7 @@ async def main() -> None:
         # Launch interactive menu
         await interactive_main(agent, config, logger)
 
-    except (FileNotFoundError, ValueError, OSError) as e:
+    except (OSError, ValueError) as e:
         logger.critical("[FATAL] Initialization failed: %s", e)
         console.print(f"[red]초기화 실패: {e}[/red]")
         sys.exit(1)

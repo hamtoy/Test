@@ -93,7 +93,7 @@ def parse_raw_candidates(text: str) -> dict[str, str]:
         ]
         if len(chunks) >= 2:
             labels = ["A", "B", "C"]
-            return {lbl: chunk for lbl, chunk in zip(labels, chunks)}
+            return dict(zip(labels, chunks))
         return {}
 
     # 구조화된 후보를 찾지 못한 경우 먼저 구분자로 split 시도 후 최종 fallback
@@ -266,7 +266,7 @@ async def load_checkpoint(path: Path) -> dict[str, WorkflowResult]:
                     payload = json.loads(line)
                     wf = WorkflowResult(**payload)
                     records[wf.query] = wf
-                except (TypeError, ValueError, json.JSONDecodeError):
+                except (TypeError, ValueError):
                     continue
     except OSError:
         return {}
