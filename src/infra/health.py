@@ -147,6 +147,9 @@ async def check_gemini_api() -> dict[str, Any]:
         Gemini API 상태 정보 딕셔너리
 
     """
+    # Yield to event loop to behave as a true coroutine.
+    await asyncio.sleep(0)
+
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         return {"status": "down", "error": "GEMINI_API_KEY not configured"}
@@ -216,7 +219,7 @@ async def check_disk() -> dict[str, Any]:
     try:
         import shutil
 
-        total, used, free = shutil.disk_usage("/")
+        total, used, free = await asyncio.to_thread(shutil.disk_usage, "/")
         usage_percent = (used / total) * 100
 
         status = "up"
