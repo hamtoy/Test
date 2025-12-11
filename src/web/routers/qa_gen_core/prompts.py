@@ -6,10 +6,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    try:
-        from src.qa.dynamic_examples import DynamicExampleSelector
-    except ImportError:
-        DynamicExampleSelector = None  # type: ignore[assignment]
+    from src.qa.dynamic_examples import DynamicExampleSelector
 
 logger = logging.getLogger(__name__)
 
@@ -96,9 +93,7 @@ def build_extra_instructions(
         fewshot_text = ""
         try:
             if kg is not None:
-                from src.qa.dynamic_examples import (  # type: ignore[import-not-found]
-                    DynamicExampleSelector,
-                )
+                from src.qa.dynamic_examples import DynamicExampleSelector
 
                 example_selector = DynamicExampleSelector(kg)
                 fewshot_examples = example_selector.select_best_examples(
