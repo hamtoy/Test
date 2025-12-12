@@ -45,6 +45,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["workspace-generation"])
 
+_NUMBER_REGEX = r"\d+(?:\.\d+)?"
+
 
 @router.post("/workspace/generate-answer")
 async def api_generate_answer_from_query(body: dict[str, Any]) -> dict[str, Any]:
@@ -310,8 +312,8 @@ async def _evaluate_answer_quality(
         score_details["failures"].append(f"length({len(answer)})")
 
     # 2️⃣ 숫자 정확도 (핵심 품질 지표!)
-    ocr_numbers = set(re.findall(r"\d+(?:\.\d+)?", ocr_text))
-    answer_numbers = set(re.findall(r"\d+(?:\.\d+)?", answer))
+    ocr_numbers = set(re.findall(_NUMBER_REGEX, ocr_text))
+    answer_numbers = set(re.findall(_NUMBER_REGEX, answer))
     overlap = len(answer_numbers & ocr_numbers)
 
     if overlap >= weights.min_number_overlap and ocr_numbers:
@@ -386,8 +388,8 @@ async def _lats_evaluate_answer(node: SearchNode) -> float:
         score_details["failures"].append(f"length({len(current_answer)})")
 
     # 2. OCR 숫자 포함 검증
-    ocr_numbers = set(re.findall(r"\d+(?:\.\d+)?", ocr_text))
-    answer_numbers = set(re.findall(r"\d+(?:\.\d+)?", current_answer))
+    ocr_numbers = set(re.findall(_NUMBER_REGEX, ocr_text))
+    answer_numbers = set(re.findall(_NUMBER_REGEX, current_answer))
     overlap = len(answer_numbers & ocr_numbers)
 
     if overlap >= weights.min_number_overlap and ocr_numbers:

@@ -32,6 +32,8 @@ logger = logging.getLogger(__name__)
 # Get repository root for template loading
 REPO_ROOT = Path(__file__).parent.parent.parent
 
+_DEFAULT_ANSWER_EDIT_REQUEST = "답변을 개선해주세요."
+
 
 class WorkflowType(Enum):
     """워크플로우 타입."""
@@ -216,7 +218,7 @@ class WorkspaceExecutor:
         answer = await self._apply_edit(
             target_text=ctx.answer,
             ctx=ctx,
-            edit_request=ctx.edit_request or "답변을 개선해주세요.",
+            edit_request=ctx.edit_request or _DEFAULT_ANSWER_EDIT_REQUEST,
         )
         changes.append("재작성 완료")
 
@@ -261,7 +263,7 @@ class WorkspaceExecutor:
         answer = await self._apply_edit(
             target_text=ctx.answer,
             ctx=ctx,
-            edit_request=ctx.edit_request or "답변을 개선해주세요.",
+            edit_request=ctx.edit_request or _DEFAULT_ANSWER_EDIT_REQUEST,
         )
         changes.append("답변 수정 완료")
 
@@ -281,7 +283,7 @@ class WorkspaceExecutor:
         answer = await self._apply_edit(
             target_text=ctx.answer,
             ctx=ctx,
-            edit_request=ctx.edit_request or "답변을 개선해주세요.",
+            edit_request=ctx.edit_request or _DEFAULT_ANSWER_EDIT_REQUEST,
         )
         changes.append("답변 수정 완료")
 

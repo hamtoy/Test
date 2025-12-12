@@ -18,6 +18,9 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/api/qa", tags=["qa-tools"])
 logger = logging.getLogger(__name__)
 
+_KG_NOT_AVAILABLE_ERROR = "Knowledge graph not available"
+_NEO4J_REQUIRED_MESSAGE = "Neo4j 연결 필요"
+
 
 @router.post("/validate")
 async def validate_qa_pair(
@@ -44,8 +47,8 @@ async def validate_qa_pair(
         if kg is None:
             return {
                 "success": False,
-                "error": "Knowledge graph not available",
-                "message": "Neo4j 연결 필요",
+                "error": _KG_NOT_AVAILABLE_ERROR,
+                "message": _NEO4J_REQUIRED_MESSAGE,
             }
 
         validator = CrossValidationSystem(kg)  # type: ignore[arg-type]
@@ -96,8 +99,8 @@ async def route_query(user_input: str) -> dict[str, Any]:
         if kg is None:
             return {
                 "success": False,
-                "error": "Knowledge graph not available",
-                "message": "Neo4j 연결 필요",
+                "error": _KG_NOT_AVAILABLE_ERROR,
+                "message": _NEO4J_REQUIRED_MESSAGE,
             }
 
         graph_router = GraphEnhancedRouter(kg=kg)  # type: ignore[arg-type]
@@ -148,8 +151,8 @@ async def suggest_next_query_type(session: str = "[]") -> dict[str, Any]:
         if kg is None:
             return {
                 "success": False,
-                "error": "Knowledge graph not available",
-                "message": "Neo4j 연결 필요",
+                "error": _KG_NOT_AVAILABLE_ERROR,
+                "message": _NEO4J_REQUIRED_MESSAGE,
             }
 
         autocomplete = SmartAutocomplete(kg)  # type: ignore[arg-type]

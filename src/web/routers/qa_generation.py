@@ -41,6 +41,9 @@ from .qa_gen_core import generate_single_qa
 
 router = APIRouter(prefix="/api", tags=["qa-generation"])
 
+_DICT_STR_ANY = "dict[str, Any]"
+_GENERATION_FAILED_QUERY = "생성 실패"
+
 
 @router.get("/qa/cache/stats")
 async def get_cache_stats() -> dict[str, Any]:
@@ -122,7 +125,7 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
                     results.append(
                         {
                             "type": first_type,
-                            "query": "생성 실패",
+                            "query": _GENERATION_FAILED_QUERY,
                             "answer": f"일시적 오류: {str(exc)[:100]}",
                         },
                     )
@@ -173,23 +176,23 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
                             results.append(
                                 {
                                     "type": qtype,
-                                    "query": "생성 실패",
+                                    "query": _GENERATION_FAILED_QUERY,
                                     "answer": f"일시적 오류: {str(pair)[:100]}",
                                 },
                             )
                         else:
-                            results.append(cast("dict[str, Any]", pair))
-                            pair_dict = cast("dict[str, Any]", pair)
+                            results.append(cast(_DICT_STR_ANY, pair))
+                            pair_dict = cast(_DICT_STR_ANY, pair)
                             if (
                                 pair_dict.get("query")
-                                and pair_dict.get("query") != "생성 실패"
+                                and pair_dict.get("query") != _GENERATION_FAILED_QUERY
                             ):
                                 previous_queries.append(pair_dict.get("query", ""))
 
                 duration = (datetime.now() - start).total_seconds()
                 meta = APIMetadata(duration=duration)
                 return cast(
-                    "dict[str, Any]",
+                    _DICT_STR_ANY,
                     build_response(
                         {"mode": "batch", "pairs": results},
                         metadata=meta,
@@ -211,7 +214,7 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
         duration = (datetime.now() - start).total_seconds()
         meta = APIMetadata(duration=duration)
         return cast(
-            "dict[str, Any]",
+            _DICT_STR_ANY,
             build_response(
                 {"mode": "single", "pair": pair},
                 metadata=meta,

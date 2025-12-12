@@ -9,6 +9,8 @@ from src.processing.example_selector import DynamicExampleSelector
 
 logger = logging.getLogger(__name__)
 
+_FEWSHOT_LOADING_FAILED = "Few-shot loading failed: %s"
+
 
 def build_length_constraint(
     qtype: str, ocr_len: int, ocr_text: str = ""
@@ -112,7 +114,7 @@ def build_extra_instructions(
                         len(ex_text),
                     )
         except Exception as e:
-            logger.debug("Few-shot loading failed: %s", e)
+            logger.debug(_FEWSHOT_LOADING_FAILED, e)
 
         extra_instructions = f"""추론형 답변입니다.
 
@@ -179,7 +181,7 @@ def build_extra_instructions(
 """
                     logger.info("Few-Shot example loaded: %d chars", len(ex_text))
         except Exception as e:
-            logger.debug("Few-shot loading failed: %s", e)
+            logger.debug(_FEWSHOT_LOADING_FAILED, e)
 
         extra_instructions = f"""설명형 답변입니다.
 
@@ -239,7 +241,7 @@ def build_extra_instructions(
                             len(ex_text),
                         )
             except Exception as e:
-                logger.debug("Few-shot loading failed: %s", e)
+                logger.debug(_FEWSHOT_LOADING_FAILED, e)
 
             extra_instructions = f"""
 ⚠️ 중요: 반드시 1-2문장만 작성. 3문장 이상 작성하면 실패입니다.
