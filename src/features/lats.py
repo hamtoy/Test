@@ -194,60 +194,81 @@ class LATSSearcher:
         return current
 
     async def _expand(self, node: SearchNode) -> list[SearchNode]:
-        actions: list[str] = []
-        if self.propose_actions:
-            actions = await self.propose_actions(node)
-        elif self.llm_provider:
-            prompt = "Suggest next actions for tree search (comma separated)."
-            gen = await self.llm_provider.generate_content_async(prompt=prompt)
-            actions = [a.strip() for a in gen.content.split(",") if a.strip()]
-
+        actions = await self._propose_actions_for_expand(node)
         if not actions:
             return []
 
-        valid_action_validation_pairs: list[tuple[str, ValidationResult]] = []
+        valid_pairs = await self._validate_actions_for_expand(node, actions)
+        if not valid_pairs:
+            return []
 
-        # Parallel validation for performance (only if multiple actions and validator exists)
-        if self.graph_validator and len(actions) > 1:
-            # Validate all actions in parallel
-            validations = await asyncio.gather(
-                *[self.graph_validator(node.state, action) for action in actions],
-                return_exceptions=True,
-            )
+        return self._create_children(node, valid_pairs)
 
-            # Filter valid actions and handle exceptions
-            for action, validation in zip(actions, validations):
-                if isinstance(validation, BaseException):
-                    # Log but continue if validation fails
-                    continue
-                if validation.allowed:
-                    valid_action_validation_pairs.append((action, validation))
-        elif self.graph_validator:
-            # Sequential for single action
-            for action in actions:
-                validation = await self.graph_validator(node.state, action)
-                if validation.allowed:
-                    valid_action_validation_pairs.append((action, validation))
-        else:
-            # No validator: allow all actions
-            valid_action_validation_pairs = [
-                (action, ValidationResult(allowed=True)) for action in actions
-            ]
+    async def _propose_actions_for_expand(self, node: SearchNode) -> list[str]:
+        if self.propose_actions:
+            return await self.propose_actions(node)
+        if not self.llm_provider:
+            return []
+        prompt = "Suggest next actions for tree search (comma separated)."
+        gen = await self.llm_provider.generate_content_async(prompt=prompt)
+        return [a.strip() for a in gen.content.split(",") if a.strip()]
 
-        # Create child nodes for valid actions
+    async def _validate_actions_for_expand(
+        self,
+        node: SearchNode,
+        actions: list[str],
+    ) -> list[tuple[str, ValidationResult]]:
+        if not self.graph_validator:
+            return [(action, ValidationResult(allowed=True)) for action in actions]
+        if len(actions) > 1:
+            return await self._validate_actions_parallel(node, actions)
+        return await self._validate_actions_sequential(node, actions)
+
+    async def _validate_actions_parallel(
+        self,
+        node: SearchNode,
+        actions: list[str],
+    ) -> list[tuple[str, ValidationResult]]:
+        if not self.graph_validator:
+            return []
+        validations = await asyncio.gather(
+            *[self.graph_validator(node.state, action) for action in actions],
+            return_exceptions=True,
+        )
+        pairs: list[tuple[str, ValidationResult]] = []
+        for action, validation in zip(actions, validations):
+            if isinstance(validation, BaseException):
+                continue
+            if validation.allowed:
+                pairs.append((action, validation))
+        return pairs
+
+    async def _validate_actions_sequential(
+        self,
+        node: SearchNode,
+        actions: list[str],
+    ) -> list[tuple[str, ValidationResult]]:
+        if not self.graph_validator:
+            return []
+        pairs: list[tuple[str, ValidationResult]] = []
+        for action in actions:
+            validation = await self.graph_validator(node.state, action)
+            if validation.allowed:
+                pairs.append((action, validation))
+        return pairs
+
+    def _create_children(
+        self,
+        node: SearchNode,
+        valid_pairs: list[tuple[str, ValidationResult]],
+    ) -> list[SearchNode]:
         new_children: list[SearchNode] = []
-        for action, validation in valid_action_validation_pairs:
+        for action, validation in valid_pairs:
             child_state = node.state.add_turn(action)
-            child = SearchNode(
-                state=child_state,
-                action=action,
-                parent=node,
-            )
-            # Apply penalty from validation
+            child = SearchNode(state=child_state, action=action, parent=node)
             child.reward -= validation.penalty
             node.children.append(child)
             new_children.append(child)
-
         return new_children
 
     async def _evaluate(self, node: SearchNode) -> float:
