@@ -207,8 +207,14 @@ def _render_section(section: Any, lines: list[str]) -> None:
     items_raw = section_dict.get("items") or section_dict.get("bullets", [])
 
     if title:
-        if lines and lines[-1] != "":
+        # 소제목 앞에 빈줄 추가 (마지막이 실제 내용일 때)
+        # 이전 item들 후 이미 빈줄이 있으면 추가 안함
+        if len(lines) >= 2 and lines[-1] == "" and lines[-2].strip():
+            # 이미 빈줄이 있고, 그 앞에 내용이 있으면 한 줄 더 추가 (문단 구분)
             lines.append("")
+        elif lines and lines[-1].strip():
+            # 빈줄 없이 내용이 있으면 빈줄 2개 추가 (문단 구분)
+            lines.extend(["", ""])
         lines.append(f"**{title}**")
 
     if isinstance(items_raw, list):
@@ -277,10 +283,19 @@ def render_structured_answer_if_present(answer: str, qtype: str) -> str:
 
     structured_any = _parse_structured_answer(answer)
     if structured_any is None:
+        # JSON 파싱 실패 - 평문 응답으로 추정
+        logger.debug(
+            "JSON 파싱 실패 (qtype=%s). 원문 샘플: %s...",
+            qtype,
+            answer[:200] if answer else "(empty)",
+        )
         return answer
 
     rendered = _render_structured_answer(structured_any, normalized)
-    return rendered if rendered is not None else answer
+    if rendered is not None:
+        logger.debug("JSON 구조화 답변 렌더링 성공 (qtype=%s)", qtype)
+        return rendered
+    return answer
 
 
 def fix_broken_numbers(text: str) -> str:
