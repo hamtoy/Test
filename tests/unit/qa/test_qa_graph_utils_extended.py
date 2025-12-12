@@ -89,34 +89,38 @@ class TestCustomGeminiEmbeddings:
 
     def test_embed_query(self) -> None:
         """Test embed_query method."""
-        with patch("google.generativeai.configure"):
-            with patch("google.generativeai.embed_content") as mock_embed:
-                mock_embed.return_value = {"embedding": [0.1, 0.2, 0.3]}
+        with (
+            patch("google.generativeai.configure"),
+            patch("google.generativeai.embed_content") as mock_embed,
+        ):
+            mock_embed.return_value = {"embedding": [0.1, 0.2, 0.3]}
 
-                embeddings = CustomGeminiEmbeddings(api_key="test-key")
-                result = embeddings.embed_query("test text")
+            embeddings = CustomGeminiEmbeddings(api_key="test-key")
+            result = embeddings.embed_query("test text")
 
-                assert result == [0.1, 0.2, 0.3]
-                mock_embed.assert_called_once_with(
-                    model="models/text-embedding-004",
-                    content="test text",
-                    task_type="retrieval_query",
-                )
+            assert result == [0.1, 0.2, 0.3]
+            mock_embed.assert_called_once_with(
+                model="models/text-embedding-004",
+                content="test text",
+                task_type="retrieval_query",
+            )
 
     def test_embed_documents(self) -> None:
         """Test embed_documents method."""
-        with patch("google.generativeai.configure"):
-            with patch("google.generativeai.embed_content") as mock_embed:
-                mock_embed.side_effect = [
-                    {"embedding": [0.1, 0.2]},
-                    {"embedding": [0.3, 0.4]},
-                ]
+        with (
+            patch("google.generativeai.configure"),
+            patch("google.generativeai.embed_content") as mock_embed,
+        ):
+            mock_embed.side_effect = [
+                {"embedding": [0.1, 0.2]},
+                {"embedding": [0.3, 0.4]},
+            ]
 
-                embeddings = CustomGeminiEmbeddings(api_key="test-key")
-                result = embeddings.embed_documents(["text1", "text2"])
+            embeddings = CustomGeminiEmbeddings(api_key="test-key")
+            result = embeddings.embed_documents(["text1", "text2"])
 
-                assert result == [[0.1, 0.2], [0.3, 0.4]]
-                assert mock_embed.call_count == 2
+            assert result == [[0.1, 0.2], [0.3, 0.4]]
+            assert mock_embed.call_count == 2
 
 
 class TestInitVectorStore:
@@ -126,16 +130,18 @@ class TestInitVectorStore:
         """Test when langchain_neo4j is not installed."""
         logger = MagicMock()
 
-        with patch.dict("sys.modules", {"langchain_neo4j": None}):
-            with patch("builtins.__import__", side_effect=ImportError):
-                result = init_vector_store(
-                    neo4j_uri="bolt://localhost",
-                    neo4j_user="neo4j",
-                    neo4j_password="password",
-                    logger=logger,
-                )
+        with (
+            patch.dict("sys.modules", {"langchain_neo4j": None}),
+            patch("builtins.__import__", side_effect=ImportError),
+        ):
+            result = init_vector_store(
+                neo4j_uri="bolt://localhost",
+                neo4j_user="neo4j",
+                neo4j_password="password",
+                logger=logger,
+            )
 
-                assert result is None
+            assert result is None
 
     def test_init_vector_store_no_api_key(
         self, monkeypatch: pytest.MonkeyPatch
@@ -148,7 +154,7 @@ class TestInitVectorStore:
             # Mock successful import
             pass
 
-        result = init_vector_store(
+        init_vector_store(
             neo4j_uri="bolt://localhost",
             neo4j_user="neo4j",
             neo4j_password="password",
@@ -165,21 +171,23 @@ class TestInitVectorStore:
         monkeypatch.setenv("GEMINI_API_KEY", "test-key")
         logger = MagicMock()
 
-        with patch("src.qa.graph.utils.CustomGeminiEmbeddings"):
-            with patch("langchain_neo4j.Neo4jVector") as mock_vector:
-                mock_vector.from_existing_graph.side_effect = Neo4jError(
-                    "Connection failed"
-                )
+        with (
+            patch("src.qa.graph.utils.CustomGeminiEmbeddings"),
+            patch("langchain_neo4j.Neo4jVector") as mock_vector,
+        ):
+            mock_vector.from_existing_graph.side_effect = Neo4jError(
+                "Connection failed"
+            )
 
-                result = init_vector_store(
-                    neo4j_uri="bolt://localhost",
-                    neo4j_user="neo4j",
-                    neo4j_password="password",
-                    logger=logger,
-                )
+            result = init_vector_store(
+                neo4j_uri="bolt://localhost",
+                neo4j_user="neo4j",
+                neo4j_password="password",
+                logger=logger,
+            )
 
-                assert result is None
-                logger.warning.assert_called()
+            assert result is None
+            logger.warning.assert_called()
 
 
 class TestEnsureFormattingRuleSchema:
@@ -363,7 +371,7 @@ class TestFormatRules:
             {"text": "   "},  # Whitespace (but not empty string)
         ]
 
-        result = format_rules(rules_data)
+        format_rules(rules_data)
 
         # Empty string should be filtered, whitespace might not be
         # depending on implementation

@@ -236,12 +236,14 @@ class TestRunNeo4jOptimization:
         monkeypatch.delenv("NEO4J_USER", raising=False)
         monkeypatch.delenv("NEO4J_PASSWORD", raising=False)
 
-        with patch("src.cli.neo4j", create=True):
-            with patch("src.cli.TwoTierIndexManager", create=True):
-                with pytest.raises(OSError) as exc_info:
-                    await run_neo4j_optimization()
+        with (
+            patch("src.cli.neo4j", create=True),
+            patch("src.cli.TwoTierIndexManager", create=True),
+            pytest.raises(OSError) as exc_info,
+        ):
+            await run_neo4j_optimization()
 
-                assert "NEO4J_URI" in str(exc_info.value)
+        assert "NEO4J_URI" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_run_neo4j_optimization_success(
@@ -255,18 +257,19 @@ class TestRunNeo4jOptimization:
         mock_driver = AsyncMock()
         mock_manager = AsyncMock()
 
-        with patch("neo4j.AsyncGraphDatabase") as mock_neo4j:
-            mock_neo4j.driver.return_value = mock_driver
-
-            with patch(
+        with (
+            patch("neo4j.AsyncGraphDatabase") as mock_neo4j,
+            patch(
                 "src.infra.neo4j_optimizer.TwoTierIndexManager",
                 return_value=mock_manager,
-            ):
-                await run_neo4j_optimization(drop_existing=False)
+            ),
+        ):
+            mock_neo4j.driver.return_value = mock_driver
+            await run_neo4j_optimization(drop_existing=False)
 
-                mock_manager.create_all_indexes.assert_called_once()
-                mock_manager.list_all_indexes.assert_called_once()
-                mock_driver.close.assert_called_once()
+            mock_manager.create_all_indexes.assert_called_once()
+            mock_manager.list_all_indexes.assert_called_once()
+            mock_driver.close.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_run_neo4j_optimization_with_drop(
@@ -280,14 +283,15 @@ class TestRunNeo4jOptimization:
         mock_driver = AsyncMock()
         mock_manager = AsyncMock()
 
-        with patch("neo4j.AsyncGraphDatabase") as mock_neo4j:
-            mock_neo4j.driver.return_value = mock_driver
-
-            with patch(
+        with (
+            patch("neo4j.AsyncGraphDatabase") as mock_neo4j,
+            patch(
                 "src.infra.neo4j_optimizer.TwoTierIndexManager",
                 return_value=mock_manager,
-            ):
-                await run_neo4j_optimization(drop_existing=True)
+            ),
+        ):
+            mock_neo4j.driver.return_value = mock_driver
+            await run_neo4j_optimization(drop_existing=True)
 
-                mock_manager.drop_all_indexes.assert_called_once()
-                mock_manager.create_all_indexes.assert_called_once()
+            mock_manager.drop_all_indexes.assert_called_once()
+            mock_manager.create_all_indexes.assert_called_once()
