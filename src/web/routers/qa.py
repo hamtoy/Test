@@ -71,7 +71,6 @@ async def _stream_first_batch_type(
     agent: Any,
     ocr_text: str,
     qtype: str,
-    timeout: float,
 ) -> tuple[str, list[str], int, list[str]]:
     first_answer = ""
     completed: list[str] = []
@@ -80,7 +79,7 @@ async def _stream_first_batch_type(
     try:
         first_result = await asyncio.wait_for(
             generate_single_qa_with_retry(agent, ocr_text, qtype),
-            timeout=timeout,
+            timeout=_get_config().qa_single_timeout,
         )
         events.append(_sse("progress", type=qtype, data=first_result))
         query = first_result.get("query")
@@ -164,7 +163,6 @@ async def _stream_batch_events(
         agent,
         ocr_text,
         first_type,
-        timeout,
     )
     for event in first_events:
         yield event

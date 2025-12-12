@@ -163,8 +163,6 @@ class QueryGeneratorService:
         self,
         model: Any,
         user_prompt: str,
-        ocr_text: str,
-        query_type: str,
     ) -> str:
         agent = self.agent
         try:
@@ -197,7 +195,6 @@ class QueryGeneratorService:
     def _parse_queries(
         self,
         cleaned_response: str,
-        response_text: str,
         query_type: str,
     ) -> list[str]:
         agent = self.agent
@@ -275,14 +272,14 @@ class QueryGeneratorService:
 
         agent.context_manager.track_cache_usage(cached_content is not None)
 
-        response_text = await self._call_model(model, user_prompt, ocr_text, query_type)
+        response_text = await self._call_model(model, user_prompt)
 
         cleaned_response = clean_markdown_code_block(response_text)
         if not cleaned_response or not cleaned_response.strip():
             self._log_empty_response(response_text, query_type, ocr_text)
             return []
 
-        return self._parse_queries(cleaned_response, response_text, query_type)
+        return self._parse_queries(cleaned_response, query_type)
 
 
 class ResponseEvaluatorService:
