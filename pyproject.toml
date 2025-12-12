@@ -269,6 +269,14 @@ members = ["notion-neo4j-graph"]
 fail_under = 80
 show_missing = true
 
+[tool.coverage.run]
+branch = true
+source = ["src"]
+relative_files = true
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
 [tool.pytest.ini_options]
 # Deprecation 경고 필터링 전략
 filterwarnings = [
