@@ -8,7 +8,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, TypedDict, cast
 
 from fastapi import HTTPException
 
@@ -140,7 +140,7 @@ def _extract_json_object(text: str) -> str | None:
     return stripped[start : end + 1]
 
 
-def _parse_structured_answer(text: str) -> _StructuredAnswer | None:
+def _parse_structured_answer(text: str) -> dict[str, Any] | None:
     candidate = _extract_json_object(text)
     if not candidate:
         return None
@@ -155,7 +155,8 @@ def _parse_structured_answer(text: str) -> _StructuredAnswer | None:
     if not isinstance(loaded, dict):
         return None
 
-    return loaded
+    # JSON object keys are always strings, but json.loads returns Any.
+    return cast("dict[str, Any]", loaded)
 
 
 def _sanitize_structured_text(value: Any) -> str:
@@ -180,7 +181,7 @@ def _ensure_starts_with(
 
 
 def _render_structured_answer(
-    structured: _StructuredAnswer,
+    structured: dict[str, Any],
     normalized_qtype: str,
 ) -> str | None:
     intro_raw = structured.get("intro", "")
@@ -202,10 +203,11 @@ def _render_structured_answer(
         if not isinstance(section, dict):
             continue
 
-        title = _sanitize_structured_text(section.get("title", ""))
-        items_raw = section.get("items", None)
+        section_dict = cast("dict[str, Any]", section)
+        title = _sanitize_structured_text(section_dict.get("title", ""))
+        items_raw = section_dict.get("items", None)
         if items_raw is None:
-            items_raw = section.get("bullets", [])
+            items_raw = section_dict.get("bullets", [])
 
         if title:
             lines.append(f"**{title}**")
@@ -214,8 +216,9 @@ def _render_structured_answer(
             for item in items_raw:
                 if not isinstance(item, dict):
                     continue
-                label = _sanitize_structured_text(item.get("label", ""))
-                text = _sanitize_structured_text(item.get("text", ""))
+                item_dict = cast("dict[str, Any]", item)
+                label = _sanitize_structured_text(item_dict.get("label", ""))
+                text = _sanitize_structured_text(item_dict.get("text", ""))
                 if label and text:
                     lines.append(f"- **{label}**: {text}")
                 elif text:
@@ -254,11 +257,11 @@ def render_structured_answer_if_present(answer: str, qtype: str) -> str:
     if normalized not in {"explanation", "reasoning"}:
         return answer
 
-    structured = _parse_structured_answer(answer)
-    if structured is None:
+    structured_any = _parse_structured_answer(answer)
+    if structured_any is None:
         return answer
 
-    rendered = _render_structured_answer(structured, normalized)
+    rendered = _render_structured_answer(structured_any, normalized)
     return rendered if rendered is not None else answer
 
 
