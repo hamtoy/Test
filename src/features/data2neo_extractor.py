@@ -309,10 +309,24 @@ OCR Text to analyze:
             ExtractionResult with entities and relationships
         """
         entities: list[Entity] = []
-        relationships: list[Relationship] = []
+        entities.extend(self._build_person_entities(schema.persons))
+        entities.extend(self._build_organization_entities(schema.organizations))
+        entities.extend(self._build_rule_entities(schema.rules))
+        relationships = self._build_relationships(schema.relationships)
 
-        # Process persons
-        for person in schema.persons:
+        # Filter by confidence threshold
+        entities = [e for e in entities if e.confidence >= self.confidence_threshold]
+
+        return ExtractionResult(
+            entities=entities,
+            relationships=relationships,
+            document_id=document_id,
+            chunk_count=0,
+        )
+
+    def _build_person_entities(self, persons: list[dict[str, Any]]) -> list[Entity]:
+        entities: list[Entity] = []
+        for person in persons:
             name = person.get("name", "")
             if not name:
                 continue
@@ -325,9 +339,14 @@ OCR Text to analyze:
                     confidence=float(person.get("confidence", 0.8)),
                 ),
             )
+        return entities
 
-        # Process organizations
-        for org in schema.organizations:
+    def _build_organization_entities(
+        self,
+        organizations: list[dict[str, Any]],
+    ) -> list[Entity]:
+        entities: list[Entity] = []
+        for org in organizations:
             name = org.get("name", "")
             if not name:
                 continue
@@ -340,9 +359,11 @@ OCR Text to analyze:
                     confidence=float(org.get("confidence", 0.8)),
                 ),
             )
+        return entities
 
-        # Process rules
-        for rule in schema.rules:
+    def _build_rule_entities(self, rules: list[dict[str, Any]]) -> list[Entity]:
+        entities: list[Entity] = []
+        for rule in rules:
             text = rule.get("text", "")
             if not text:
                 continue
@@ -358,31 +379,27 @@ OCR Text to analyze:
                     confidence=float(rule.get("confidence", 0.7)),
                 ),
             )
+        return entities
 
-        # Process relationships
-        for rel in schema.relationships:
+    def _build_relationships(
+        self,
+        relationships: list[dict[str, Any]],
+    ) -> list[Relationship]:
+        result: list[Relationship] = []
+        for rel in relationships:
             from_id = rel.get("from_id", "")
             to_id = rel.get("to_id", "")
-            rel_type = rel.get("type", "RELATED_TO")
-            if from_id and to_id:
-                relationships.append(
-                    Relationship(
-                        from_id=from_id,
-                        to_id=to_id,
-                        type=rel_type,
-                        properties=rel.get("properties", {}),
-                    ),
-                )
-
-        # Filter by confidence threshold
-        entities = [e for e in entities if e.confidence >= self.confidence_threshold]
-
-        return ExtractionResult(
-            entities=entities,
-            relationships=relationships,
-            document_id=document_id,
-            chunk_count=0,
-        )
+            if not from_id or not to_id:
+                continue
+            result.append(
+                Relationship(
+                    from_id=from_id,
+                    to_id=to_id,
+                    type=rel.get("type", "RELATED_TO"),
+                    properties=rel.get("properties", {}),
+                ),
+            )
+        return result
 
     async def extract_entities(
         self,

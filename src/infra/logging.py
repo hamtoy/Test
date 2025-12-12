@@ -218,37 +218,65 @@ def log_metrics(
 ) -> None:
     """표준화된 메트릭 로깅: latency, 토큰 처리율, 캐시 히트율을 계산해 기록."""
     metrics: dict[str, float | int] = {}
+    total_tokens = _add_token_metrics(metrics, prompt_tokens, completion_tokens)
+    _add_latency_metrics(metrics, latency_ms, total_tokens)
+    _add_cache_metrics(metrics, cache_hits, cache_misses)
+    _add_api_metrics(metrics, api_retries, api_failures)
+    logger.info("metrics", extra={"metrics": metrics})
+
+
+def _add_token_metrics(
+    metrics: dict[str, float | int],
+    prompt_tokens: int | None,
+    completion_tokens: int | None,
+) -> int:
     if prompt_tokens is not None:
         metrics["prompt_tokens"] = prompt_tokens
     if completion_tokens is not None:
         metrics["completion_tokens"] = completion_tokens
 
-    if latency_ms is not None:
-        metrics["latency_ms"] = round(latency_ms, 2)
-
-    total_tokens = 0
-    for t in (prompt_tokens, completion_tokens):
-        if t:
-            total_tokens += t
+    total_tokens = sum(t for t in (prompt_tokens, completion_tokens) if t)
     if total_tokens:
         metrics["total_tokens"] = total_tokens
-    if latency_ms and latency_ms > 0 and total_tokens:
+    return total_tokens
+
+
+def _add_latency_metrics(
+    metrics: dict[str, float | int],
+    latency_ms: float | None,
+    total_tokens: int,
+) -> None:
+    if latency_ms is None:
+        return
+    metrics["latency_ms"] = round(latency_ms, 2)
+    if latency_ms > 0 and total_tokens:
         metrics["tokens_per_sec"] = round(total_tokens / (latency_ms / 1000), 3)
 
-    if cache_hits is not None or cache_misses is not None:
-        hits = cache_hits or 0
-        misses = cache_misses or 0
-        total = hits + misses
-        metrics["cache_hit_ratio"] = round(hits / total, 3) if total else 0.0
-        metrics["cache_hits"] = hits
-        metrics["cache_misses"] = misses
 
+def _add_cache_metrics(
+    metrics: dict[str, float | int],
+    cache_hits: int | None,
+    cache_misses: int | None,
+) -> None:
+    if cache_hits is None and cache_misses is None:
+        return
+    hits = cache_hits or 0
+    misses = cache_misses or 0
+    total = hits + misses
+    metrics["cache_hit_ratio"] = round(hits / total, 3) if total else 0.0
+    metrics["cache_hits"] = hits
+    metrics["cache_misses"] = misses
+
+
+def _add_api_metrics(
+    metrics: dict[str, float | int],
+    api_retries: int | None,
+    api_failures: int | None,
+) -> None:
     if api_retries is not None:
         metrics["api_retries"] = api_retries
     if api_failures is not None:
         metrics["api_failures"] = api_failures
-
-    logger.info("metrics", extra={"metrics": metrics})
 
 
 class StructuredLogger:

@@ -66,36 +66,7 @@ class RuleCSVParser:
             with open(self.guide_path, encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    content = row.get("내용", "")
-
-                    # 시의성 표현 규칙
-                    if (
-                        "시의성 표현" in content
-                        or "현재" in content
-                        or "최근" in content
-                    ):
-                        rules["temporal_expressions"] = [
-                            "현재",
-                            "최근",
-                            "올해",
-                            "이미지에서",
-                        ]
-
-                    # 문장 수 규칙
-                    if "3-4문장" in content or "문장 수" in content:
-                        rules["sentence_rules"] = {"min": 3, "max": 4}
-
-                    # 포맷팅 규칙
-                    if "볼드체" in content or "강조" in content:
-                        rules["formatting_rules"].append(
-                            {"type": "bold_usage", "rule": content},
-                        )
-
-                    # 구조 규칙
-                    if "소제목" in content or "목록형" in content:
-                        rules["structure_rules"].append(
-                            {"type": "structure", "rule": content},
-                        )
+                    self._apply_guide_row(rules, row)
 
             logger.info("Successfully parsed guide.csv with %d rule types", len(rules))
 
@@ -104,6 +75,38 @@ class RuleCSVParser:
 
         self._cache["guide"] = rules
         return rules
+
+    def _apply_guide_row(self, rules: dict[str, Any], row: dict[str, str]) -> None:
+        content = row.get("내용", "")
+
+        if self._is_temporal_rule(content):
+            rules["temporal_expressions"] = [
+                "현재",
+                "최근",
+                "올해",
+                "이미지에서",
+            ]
+
+        if self._is_sentence_rule(content):
+            rules["sentence_rules"] = {"min": 3, "max": 4}
+
+        if self._is_bold_rule(content):
+            rules["formatting_rules"].append({"type": "bold_usage", "rule": content})
+
+        if self._is_structure_rule(content):
+            rules["structure_rules"].append({"type": "structure", "rule": content})
+
+    def _is_temporal_rule(self, content: str) -> bool:
+        return any(term in content for term in ("시의성 표현", "현재", "최근"))
+
+    def _is_sentence_rule(self, content: str) -> bool:
+        return "3-4문장" in content or "문장 수" in content
+
+    def _is_bold_rule(self, content: str) -> bool:
+        return "볼드체" in content or "강조" in content
+
+    def _is_structure_rule(self, content: str) -> bool:
+        return "소제목" in content or "목록형" in content
 
     def parse_qna_csv(self) -> dict[str, list[dict[str, str]]]:
         """qna.csv 파싱 → 검증 체크리스트 추출.

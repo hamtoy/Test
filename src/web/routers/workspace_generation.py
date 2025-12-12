@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import logging
 import re
 from datetime import datetime
@@ -46,6 +45,70 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["workspace-generation"])
 
 _NUMBER_REGEX = r"\d+(?:\.\d+)?"
+
+
+def _score_length(
+    text: str,
+    weights: AnswerQualityWeights,
+    failures: list[str],
+) -> float:
+    if weights.min_length <= len(text) <= weights.max_length:
+        return weights.length_weight
+    failures.append(f"length({len(text)})")
+    return 0.0
+
+
+def _score_numbers(
+    answer: str,
+    ocr_text: str,
+    weights: AnswerQualityWeights,
+    failures: list[str],
+    *,
+    score_details: dict[str, Any] | None = None,
+) -> float:
+    ocr_numbers = set(re.findall(_NUMBER_REGEX, ocr_text))
+    answer_numbers = set(re.findall(_NUMBER_REGEX, answer))
+    overlap = len(answer_numbers & ocr_numbers)
+
+    if overlap >= weights.min_number_overlap and ocr_numbers:
+        if score_details is not None:
+            score_details["numbers"] = {
+                "overlap": overlap,
+                "total_ocr": len(ocr_numbers),
+            }
+        return weights.number_match_weight
+    if not ocr_numbers:
+        return weights.number_match_weight * 0.5
+
+    failures.append(f"numbers({overlap}/{len(ocr_numbers)})")
+    return 0.0
+
+
+def _score_forbidden_patterns(
+    answer: str,
+    weights: AnswerQualityWeights,
+    failures: list[str],
+) -> float:
+    forbidden_patterns = [r"^\s*[-*•]\s", r"\*\*", r"__"]
+    has_forbidden = any(re.search(p, answer, re.MULTILINE) for p in forbidden_patterns)
+    if has_forbidden:
+        failures.append("forbidden_patterns")
+        return 0.0
+    return weights.no_forbidden_weight
+
+
+def _score_constraints(
+    weights: AnswerQualityWeights,
+    failures: list[str],
+) -> float:
+    kg = _get_kg()
+    if not kg or weights.constraint_weight <= 0:
+        return 0.0
+    try:
+        return weights.constraint_weight * 0.8
+    except Exception:
+        failures.append("constraints")
+        return 0.0
 
 
 @router.post("/workspace/generate-answer")
@@ -305,42 +368,17 @@ async def _evaluate_answer_quality(
     score_details = {"weights": vars(weights), "failures": []}
     score = weights.base_score
 
-    # 1️⃣ 길이 검증 (실사용자 선호 기준)
-    if weights.min_length <= len(answer) <= weights.max_length:
-        score += weights.length_weight
-    else:
-        score_details["failures"].append(f"length({len(answer)})")
-
-    # 2️⃣ 숫자 정확도 (핵심 품질 지표!)
-    ocr_numbers = set(re.findall(_NUMBER_REGEX, ocr_text))
-    answer_numbers = set(re.findall(_NUMBER_REGEX, answer))
-    overlap = len(answer_numbers & ocr_numbers)
-
-    if overlap >= weights.min_number_overlap and ocr_numbers:
-        score += weights.number_match_weight
-        score_details["numbers"] = {"overlap": overlap, "total_ocr": len(ocr_numbers)}
-    elif not ocr_numbers:
-        # OCR에 숫자가 없으면 감점 없이 기본 점수 부여
-        score += weights.number_match_weight * 0.5
-    else:
-        score_details["failures"].append(f"numbers({overlap}/{len(ocr_numbers)})")
-
-    # 3️⃣ 금지 패턴 (마크다운 불릿 등)
-    forbidden_patterns = [r"^\s*[-*•]\s", r"\*\*", r"__"]
-    has_forbidden = any(re.search(p, answer, re.MULTILINE) for p in forbidden_patterns)
-    if not has_forbidden:
-        score += weights.no_forbidden_weight
-    else:
-        score_details["failures"].append("forbidden_patterns")
-
-    # 4️⃣ Neo4j 제약사항 (선택)
-    kg = _get_kg()
-    if kg and weights.constraint_weight > 0:
-        try:
-            # 간단한 규칙 검증 (실제로는 KG별 규칙 적용)
-            score += weights.constraint_weight * 0.8  # 보수적 적용
-        except Exception:
-            score_details["failures"].append("constraints")
+    failures = cast("list[str]", score_details["failures"])
+    score += _score_length(answer, weights, failures)
+    score += _score_numbers(
+        answer,
+        ocr_text,
+        weights,
+        failures,
+        score_details=score_details,
+    )
+    score += _score_forbidden_patterns(answer, weights, failures)
+    score += _score_constraints(weights, failures)
 
     final_score = min(1.0, max(0.0, score))
 
@@ -380,36 +418,11 @@ async def _lats_evaluate_answer(node: SearchNode) -> float:
 
     score = weights.base_score
     score_details = {"weights": vars(weights), "failures": []}
-
-    # 1. 길이 검증
-    if weights.min_length <= len(current_answer) <= weights.max_length:
-        score += weights.length_weight
-    else:
-        score_details["failures"].append(f"length({len(current_answer)})")
-
-    # 2. OCR 숫자 포함 검증
-    ocr_numbers = set(re.findall(_NUMBER_REGEX, ocr_text))
-    answer_numbers = set(re.findall(_NUMBER_REGEX, current_answer))
-    overlap = len(answer_numbers & ocr_numbers)
-
-    if overlap >= weights.min_number_overlap and ocr_numbers:
-        score += weights.number_match_weight
-    elif not ocr_numbers:
-        score += weights.number_match_weight * 0.5
-
-    # 3. 금지 패턴 검증
-    forbidden_patterns = [r"^\s*[-*•]\s", r"\*\*", r"__"]
-    has_forbidden = any(
-        re.search(p, current_answer, re.MULTILINE) for p in forbidden_patterns
-    )
-    if not has_forbidden:
-        score += weights.no_forbidden_weight
-
-    # 4. Neo4j 제약사항 검증
-    current_kg = _get_kg()
-    if current_kg and weights.constraint_weight > 0:
-        with contextlib.suppress(Exception):
-            score += weights.constraint_weight * 0.8
+    failures = cast("list[str]", score_details["failures"])
+    score += _score_length(current_answer, weights, failures)
+    score += _score_numbers(current_answer, ocr_text, weights, failures)
+    score += _score_forbidden_patterns(current_answer, weights, failures)
+    score += _score_constraints(weights, failures)
 
     final_score = min(1.0, max(0.0, score))
 

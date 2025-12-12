@@ -124,22 +124,28 @@ class GeminiProvider(LLMProvider):
 
         except ProviderError:
             raise
-        except google_exceptions.ResourceExhausted as e:
-            raise RateLimitError("Gemini rate limit exceeded", original_error=e) from e
-        except google_exceptions.InvalidArgument as e:
-            if "token" in str(e).lower():
-                raise ContextWindowExceededError(
+        except Exception as exc:  # noqa: BLE001
+            raise self._convert_google_exception(exc) from exc
+
+    def _convert_google_exception(self, exc: Exception) -> ProviderError:
+        if isinstance(exc, google_exceptions.ResourceExhausted):
+            return RateLimitError(
+                "Gemini rate limit exceeded",
+                original_error=exc,
+            )
+        if isinstance(exc, google_exceptions.InvalidArgument):
+            if "token" in str(exc).lower():
+                return ContextWindowExceededError(
                     "Context window exceeded",
-                    original_error=e,
-                ) from e
-            raise ProviderError(f"Invalid argument: {e}", original_error=e) from e
-        except google_exceptions.DeadlineExceeded as e:
-            raise TimeoutError("Gemini request timed out", original_error=e) from e
-        except Exception as e:
-            raise ProviderError(
-                f"Gemini generation failed: {e}",
-                original_error=e,
-            ) from e
+                    original_error=exc,
+                )
+            return ProviderError(f"Invalid argument: {exc}", original_error=exc)
+        if isinstance(exc, google_exceptions.DeadlineExceeded):
+            return TimeoutError("Gemini request timed out", original_error=exc)
+        return ProviderError(
+            f"Gemini generation failed: {exc}",
+            original_error=exc,
+        )
 
     async def count_tokens(self, text: str) -> int:
         """Count tokens in the given text.

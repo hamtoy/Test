@@ -55,26 +55,34 @@ class SelfImprovingSystem:
                     line = line.strip()
                     if not line:
                         continue
-                    try:
-                        entry = json.loads(line)
-                        ts_str = entry.get("timestamp", "")
-                        if ts_str:
-                            try:
-                                ts = datetime.fromisoformat(
-                                    ts_str.replace("Z", "+00:00"),
-                                )
-                                if ts.replace(tzinfo=None) >= cutoff:
-                                    entries.append(entry)
-                            except ValueError:
-                                entries.append(entry)
-                        else:
-                            entries.append(entry)
-                    except json.JSONDecodeError:
-                        continue
+                    entry = self._parse_history_line(line, cutoff)
+                    if entry is not None:
+                        entries.append(entry)
         except Exception as e:
             logger.warning(f"Failed to load history file: {e}")
 
         return entries
+
+    def _parse_history_line(
+        self,
+        line: str,
+        cutoff: datetime,
+    ) -> dict[str, Any] | None:
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            return None
+
+        ts_str = str(entry.get("timestamp", "") or "")
+        if not ts_str:
+            return entry
+
+        try:
+            ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+        except ValueError:
+            return entry
+
+        return entry if ts.replace(tzinfo=None) >= cutoff else None
 
     def _mean(self, entries: list[dict[str, Any]], key: str) -> float:
         """Calculate mean of a numeric key in entries."""

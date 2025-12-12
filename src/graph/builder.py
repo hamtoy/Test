@@ -74,53 +74,11 @@ class QAGraphBuilder:
         """Notion 문서에서 규칙 추출 및 그래프화 (중복 방지 MERGE)."""
         with self.driver.session() as session:
             # 1. Find headings
-            headings = session.run(
-                """
-                MATCH (p:Page)-[:HAS_BLOCK]->(h:Block)
-                WHERE h.type = 'heading_1' AND h.content CONTAINS '자주 틀리는'
-                RETURN p.id as page_id, h.order as start_order, h.content as section
-                """,
-            ).data()
+            headings = self._fetch_rule_headings(session)
 
             created = 0
             for h in headings:
-                # 2. Fetch subsequent top-level blocks
-                siblings = session.run(
-                    """
-                    MATCH (p:Page {id: $page_id})-[:HAS_BLOCK]->(b:Block)
-                    WHERE b.order > $start_order
-                    RETURN b.id as id, b.content as content, b.type as type
-                    ORDER BY b.order ASC
-                    """,
-                    page_id=h["page_id"],
-                    start_order=h["start_order"],
-                )
-                siblings_list = list(siblings)
-
-                current_rules = []
-                for sib in siblings_list:
-                    # Stop at next major heading only (allow subsections)
-                    if sib["type"] == "heading_1":
-                        break
-
-                    # If content block, add
-                    if sib["type"] in ["paragraph", "bulleted_list_item", "callout"]:
-                        current_rules.append(sib["content"])
-
-                    # If container, fetch descendants
-                    elif sib["type"] in ["column_list", "column"]:
-                        descendants = session.run(
-                            """
-                            MATCH (b:Block {id: $id})-[:HAS_CHILD*]->(d:Block)
-                            WHERE d.type IN ['paragraph', 'bulleted_list_item', 'callout']
-                            RETURN d.content as content
-                            """,
-                            id=sib["id"],
-                        )
-                        desc_list: list[dict[str, Any]] = [dict(d) for d in descendants]
-                        current_rules.extend(
-                            d.get("content", "") for d in desc_list if d.get("content")
-                        )
+                current_rules = self._collect_rules_for_heading(session, h)
 
                 # 3. Create Rule nodes
                 for rule_text in current_rules:
@@ -142,6 +100,57 @@ class QAGraphBuilder:
                     )
                     created += 1
             print(f"✅ 규칙 {created}개 추출/병합 완료")
+
+    def _fetch_rule_headings(self, session: Any) -> list[dict[str, Any]]:
+        return session.run(
+            """
+            MATCH (p:Page)-[:HAS_BLOCK]->(h:Block)
+            WHERE h.type = 'heading_1' AND h.content CONTAINS '자주 틀리는'
+            RETURN p.id as page_id, h.order as start_order, h.content as section
+            """,
+        ).data()
+
+    def _collect_rules_for_heading(
+        self,
+        session: Any,
+        heading: dict[str, Any],
+    ) -> list[str]:
+        siblings = session.run(
+            """
+            MATCH (p:Page {id: $page_id})-[:HAS_BLOCK]->(b:Block)
+            WHERE b.order > $start_order
+            RETURN b.id as id, b.content as content, b.type as type
+            ORDER BY b.order ASC
+            """,
+            page_id=heading["page_id"],
+            start_order=heading["start_order"],
+        )
+        siblings_list = list(siblings)
+
+        current_rules: list[str] = []
+        for sib in siblings_list:
+            if sib["type"] == "heading_1":
+                break
+
+            if sib["type"] in ["paragraph", "bulleted_list_item", "callout"]:
+                current_rules.append(sib["content"])
+                continue
+
+            if sib["type"] in ["column_list", "column"]:
+                descendants = session.run(
+                    """
+                    MATCH (b:Block {id: $id})-[:HAS_CHILD*]->(d:Block)
+                    WHERE d.type IN ['paragraph', 'bulleted_list_item', 'callout']
+                    RETURN d.content as content
+                    """,
+                    id=sib["id"],
+                )
+                desc_list: list[dict[str, Any]] = [dict(d) for d in descendants]
+                current_rules.extend(
+                    d.get("content", "") for d in desc_list if d.get("content")
+                )
+
+        return current_rules
 
     def extract_query_types(self) -> None:
         """질의 유형 정의 추출."""

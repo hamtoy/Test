@@ -104,32 +104,52 @@ def ensure_formatting_rule_schema(
         """,
     ]
 
-    if driver is not None:
-        raw_driver = getattr(driver, "driver", None)
-        if raw_driver is not None and hasattr(raw_driver, "session"):
-            try:
-                with driver.session() as session:
-                    for stmt in statements:
-                        session.run(stmt)
-                return
-            except (Neo4jError, ServiceUnavailable) as exc:
-                logger.warning("FormattingRule schema ensure failed (sync): %s", exc)
-        else:
-            logger.info("Skip FormattingRule schema ensure: driver has no session()")
+    if driver is not None and _ensure_formatting_rule_schema_sync(
+        driver,
+        statements,
+        logger,
+    ):
+        return
 
     if provider is None:
         logger.info("Skipping FormattingRule schema ensure; no graph provider")
         return
 
-    async def _run() -> None:
-        try:
-            async with provider.session() as session:
-                for stmt in statements:
-                    await session.run(stmt)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("FormattingRule schema ensure failed (async): %s", exc)
+    run_async_safely(
+        _ensure_formatting_rule_schema_async(provider, statements, logger),
+    )
 
-    run_async_safely(_run())
+
+def _ensure_formatting_rule_schema_sync(
+    driver: SafeDriver,
+    statements: list[str],
+    logger: logging.Logger,
+) -> bool:
+    raw_driver = getattr(driver, "driver", None)
+    if raw_driver is None or not hasattr(raw_driver, "session"):
+        logger.info("Skip FormattingRule schema ensure: driver has no session()")
+        return False
+    try:
+        with driver.session() as session:
+            for stmt in statements:
+                session.run(stmt)
+        return True
+    except (Neo4jError, ServiceUnavailable) as exc:
+        logger.warning("FormattingRule schema ensure failed (sync): %s", exc)
+        return False
+
+
+async def _ensure_formatting_rule_schema_async(
+    provider: GraphProvider,
+    statements: list[str],
+    logger: logging.Logger,
+) -> None:
+    try:
+        async with provider.session() as session:
+            for stmt in statements:
+                await session.run(stmt)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("FormattingRule schema ensure failed (async): %s", exc)
 
 
 def record_vector_metrics(

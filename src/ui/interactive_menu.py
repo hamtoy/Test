@@ -40,6 +40,68 @@ PROGRESS_DESCRIPTION_TEMPLATE = "[progress.description]{task.description}"
 STATUS_DONE = "[green]✓ 완료[/green]"
 
 
+def _load_non_empty_file(
+    prompt_label: str,
+    *,
+    missing_message: str,
+    empty_message: str,
+) -> str | None:
+    file_str = Prompt.ask(prompt_label)
+    file_path = Path(file_str.strip())
+    if not file_path.exists():
+        console.print(missing_message.format(path=file_path))
+        return None
+    text = file_path.read_text(encoding="utf-8")
+    if not text.strip():
+        console.print(empty_message)
+        return None
+    return text
+
+
+def _load_optional_ocr_text(prompt_when_missing: str) -> str:
+    ocr_file = Path(DEFAULT_OCR_PATH)
+    if ocr_file.exists():
+        console.print(f"[dim]📄 OCR 자동 로드: {ocr_file}[/dim]")
+        try:
+            return ocr_file.read_text(encoding="utf-8")
+        except OSError as exc:  # noqa: PERF203
+            console.print(f"[yellow]OCR 로드 실패: {exc}[/yellow]")
+            return ""
+
+    ocr_path_input = Prompt.ask(prompt_when_missing, default="")
+    if not ocr_path_input:
+        return ""
+
+    ocr_path = Path(ocr_path_input.strip())
+    if not ocr_path.exists():
+        console.print(f"[yellow]OCR 파일을 찾을 수 없습니다: {ocr_path}[/yellow]")
+        return ""
+
+    return ocr_path.read_text(encoding="utf-8")
+
+
+def _prompt_optional_query(question_label: str, query_label: str) -> str:
+    if Prompt.ask(question_label, choices=["y", "n"], default="n").lower() != "y":
+        return ""
+    return Prompt.ask(query_label)
+
+
+def _init_answer_inspection_resources(
+    agent: GeminiAgent,
+    config: AppConfig,
+) -> tuple[
+    QAKnowledgeGraph | None,
+    LATSSearcher | None,
+    CrossValidationSystem | None,
+    RedisEvalCache | None,
+]:
+    kg = QAKnowledgeGraph() if config.neo4j_uri else None
+    lats = LATSSearcher(agent.llm_provider) if config.enable_lats else None
+    validator = CrossValidationSystem(kg) if kg else None
+    cache = RedisEvalCache() if os.getenv("REDIS_URL") else None
+    return kg, lats, validator, cache
+
+
 def show_error_with_guide(error_type: str, message: str, solution: str) -> None:
     """에러 메시지 + 해결 방법 표시."""
     console.print(f"\n[red]✗ {error_type}: {message}[/red]")
@@ -390,48 +452,21 @@ async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> No
     console.print(Panel("✅ 답변 검수 모드", style="cyan"))
 
     # [1] 파일 입력
-    answer_file_str = Prompt.ask("\n📂 답변 파일 경로")
-    answer_file = Path(answer_file_str.strip())
-
-    if not answer_file.exists():
-        console.print(f"[red]파일이 존재하지 않습니다: {answer_file}[/red]")
-        return
-
-    answer = answer_file.read_text(encoding="utf-8")
-    if not answer.strip():
-        console.print("[yellow]답변 파일이 비어있습니다.[/yellow]")
+    answer = _load_non_empty_file(
+        "\n📂 답변 파일 경로",
+        missing_message="[red]파일이 존재하지 않습니다: {path}[/red]",
+        empty_message="[yellow]답변 파일이 비어있습니다.[/yellow]",
+    )
+    if answer is None:
         return
 
     # [2] OCR 자동 로드 (사실 검증용)
-    ocr_text = ""
-    ocr_file = Path(DEFAULT_OCR_PATH)
-    if ocr_file.exists():
-        console.print(f"[dim]📄 OCR 자동 로드: {ocr_file}[/dim]")
-        ocr_text = ocr_file.read_text(encoding="utf-8")
-    else:
-        # OCR 파일이 없으면 사용자에게 경로 입력 요청
-        ocr_path_input = Prompt.ask("OCR 파일 경로", default="")
-        if ocr_path_input:
-            ocr_path = Path(ocr_path_input.strip())
-            if ocr_path.exists():
-                ocr_text = ocr_path.read_text(encoding="utf-8")
-            else:
-                console.print(
-                    f"[yellow]OCR 파일을 찾을 수 없습니다: {ocr_path}[/yellow]",
-                )
+    ocr_text = _load_optional_ocr_text("OCR 파일 경로")
 
     # [3] 질의 여부 (선택)
-    query = ""
-    if Prompt.ask("❓ 질의 입력?", choices=["y", "n"], default="n").lower() == "y":
-        query = Prompt.ask("   질의")
+    query = _prompt_optional_query("❓ 질의 입력?", "   질의")
 
-    # 리소스 초기화
-    kg = QAKnowledgeGraph() if config.neo4j_uri else None
-    lats = LATSSearcher(agent.llm_provider) if config.enable_lats else None
-    validator = CrossValidationSystem(kg) if kg else None
-    cache: RedisEvalCache | None = None
-    if os.getenv("REDIS_URL"):
-        cache = RedisEvalCache()
+    kg, lats, validator, cache = _init_answer_inspection_resources(agent, config)
 
     try:
         # [4] 실행 & 저장 (CLI 출력 X)
@@ -489,49 +524,21 @@ async def _handle_edit_menu(agent: GeminiAgent, config: AppConfig) -> None:
     console.print(Panel("✏️ 수정 모드: 간결한 요청으로 내용 재작성", style="cyan"))
 
     # [1] 답변 파일 입력
-    answer_file_str = Prompt.ask("\n📂 수정할 답변 파일 경로")
-    answer_file = Path(answer_file_str.strip())
-
-    if not answer_file.exists():
-        console.print(f"[red]❌ 파일을 찾을 수 없습니다: {answer_file}[/red]")
-        return
-
-    answer_text = answer_file.read_text(encoding="utf-8")
-    if not answer_text.strip():
-        console.print("[yellow]답변 파일이 비어있습니다.[/yellow]")
+    answer_text = _load_non_empty_file(
+        "\n📂 수정할 답변 파일 경로",
+        missing_message="[red]❌ 파일을 찾을 수 없습니다: {path}[/red]",
+        empty_message="[yellow]답변 파일이 비어있습니다.[/yellow]",
+    )
+    if answer_text is None:
         return
 
     # [2] OCR 자동 로드
-    ocr_text = ""
-    ocr_file = Path(DEFAULT_OCR_PATH)
-    if ocr_file.exists():
-        console.print(f"[dim]📄 OCR 자동 로드: {ocr_file}[/dim]")
-        ocr_text = ocr_file.read_text(encoding="utf-8")
-    else:
-        # OCR 파일이 없으면 사용자에게 경로 입력 요청 (한 번만)
-        ocr_path_input = Prompt.ask("📄 OCR 파일 경로 (없으면 Enter)", default="")
-        if ocr_path_input:
-            ocr_path = Path(ocr_path_input.strip())
-            if ocr_path.exists():
-                ocr_text = ocr_path.read_text(encoding="utf-8")
-            else:
-                console.print(
-                    f"[yellow]OCR 파일을 찾을 수 없습니다: {ocr_path}[/yellow]",
-                )
-        if not ocr_text:
-            console.print("[dim]⚠ OCR 텍스트 없음 (컨텍스트 없이 수정합니다)[/dim]")
+    ocr_text = _load_optional_ocr_text("📄 OCR 파일 경로 (없으면 Enter)")
+    if not ocr_text:
+        console.print("[dim]⚠ OCR 텍스트 없음 (컨텍스트 없이 수정합니다)[/dim]")
 
     # [3] 질의 입력 (선택)
-    query = ""
-    if (
-        Prompt.ask(
-            "❓ 질의를 문맥에 포함할까요?",
-            choices=["y", "n"],
-            default="n",
-        ).lower()
-        == "y"
-    ):
-        query = Prompt.ask("   ❓ 질의 내용")
+    query = _prompt_optional_query("❓ 질의를 문맥에 포함할까요?", "   ❓ 질의 내용")
 
     # [4] 수정 요청 입력 (핵심)
     edit_request = Prompt.ask("\n✏️ 어떻게 수정할까요? (한 줄)")

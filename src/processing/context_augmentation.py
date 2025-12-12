@@ -87,81 +87,113 @@ class AdvancedContextAugmentation:
             >>> result["relevant_rules"][0]["priority"]
             1
         """
-        similar_blocks: list[Any] = []
-        enriched_rules: list[dict[str, Any]] = []
-
-        if self.vector_index:
-            similar_blocks = self.vector_index.similarity_search(user_query, k=5)
-
-            block_ids = [
-                b.metadata.get("id")
-                for b in similar_blocks
-                if isinstance(b.metadata, dict) and b.metadata.get("id") is not None
-            ]
-
-            if block_ids:
-                with self.graph._driver.session() as session:
-                    result = session.run(
-                        """
-                        MATCH (b:Block)
-                        WHERE id(b) IN $block_ids
-                        MATCH (b)-[:RELATED_TO]->(r:Rule)
-                        OPTIONAL MATCH (r)<-[:DEMONSTRATES]-(e:Example)
-                        WHERE e.type = 'positive'
-                        RETURN DISTINCT
-                            r.text AS rule,
-                            r.priority AS priority,
-                            collect(DISTINCT e.text)[0..2] AS examples
-                        ORDER BY r.priority DESC
-                        LIMIT 5
-                        """,
-                        block_ids=block_ids,
-                    )
-                    enriched_rules = result.data()
-        else:
-            # 백업: QueryType 기반 그래프 조회로 규칙/예시/블록을 가져옵니다.
-            try:
-                with self.graph._driver.session() as session:
-                    record = session.run(
-                        """
-                        MATCH (qt:QueryType {name: $qt})
-                        OPTIONAL MATCH (qt)<-[:RELATED_TO]-(b:Block)
-                        WITH qt, collect(DISTINCT b)[0..5] AS blocks
-                        OPTIONAL MATCH (qt)<-[:APPLIES_TO]-(r:Rule)
-                        OPTIONAL MATCH (r)<-[:DEMONSTRATES]-(e:Example)
-                        WHERE r IS NOT NULL AND (e IS NULL OR e.type = 'positive')
-                        WITH blocks, r, [x IN collect(DISTINCT e.text) WHERE x IS NOT NULL][0..2] AS ex
-                        RETURN blocks,
-                               collect(DISTINCT {rule: r.text, priority: r.priority, examples: ex})[0..5] AS rules
-                        """,
-                        qt=query_type,
-                    ).single()
-
-                    if record:
-                        similar_blocks = record.get("blocks") or []
-                        enriched_rules = record.get("rules") or []
-            except Exception as exc:  # noqa: BLE001
-                import logging
-
-                logging.getLogger(__name__).warning(
-                    "Fallback graph search failed: %s",
-                    exc,
-                )
+        similar_blocks, enriched_rules = self._retrieve_similar_blocks_and_rules(
+            user_query,
+            query_type,
+        )
 
         return {
-            "similar_cases": [
-                str(
-                    getattr(b, "page_content", "")
-                    or (b.get("content") if hasattr(b, "get") else "")
-                    or (b.get("text") if hasattr(b, "get") else ""),
-                )
-                for b in similar_blocks
-                if getattr(b, "page_content", None)
-                or (hasattr(b, "get") and (b.get("content") or b.get("text")))
-            ],
+            "similar_cases": self._extract_similar_case_texts(similar_blocks),
             "relevant_rules": enriched_rules,
             "query_type": query_type,
         }
+
+    def _retrieve_similar_blocks_and_rules(
+        self,
+        user_query: str,
+        query_type: str,
+    ) -> tuple[list[Any], list[dict[str, Any]]]:
+        if self.vector_index:
+            return self._vector_search(user_query)
+        return self._fallback_graph_search(query_type)
+
+    def _vector_search(
+        self,
+        user_query: str,
+    ) -> tuple[list[Any], list[dict[str, Any]]]:
+        vector_index = self.vector_index
+        if vector_index is None:
+            return [], []
+
+        similar_blocks = vector_index.similarity_search(user_query, k=5)
+        enriched_rules: list[dict[str, Any]] = []
+
+        block_ids = [
+            b.metadata.get("id")
+            for b in similar_blocks
+            if isinstance(b.metadata, dict) and b.metadata.get("id") is not None
+        ]
+
+        if block_ids:
+            with self.graph._driver.session() as session:
+                result = session.run(
+                    """
+                    MATCH (b:Block)
+                    WHERE id(b) IN $block_ids
+                    MATCH (b)-[:RELATED_TO]->(r:Rule)
+                    OPTIONAL MATCH (r)<-[:DEMONSTRATES]-(e:Example)
+                    WHERE e.type = 'positive'
+                    RETURN DISTINCT
+                        r.text AS rule,
+                        r.priority AS priority,
+                        collect(DISTINCT e.text)[0..2] AS examples
+                    ORDER BY r.priority DESC
+                    LIMIT 5
+                    """,
+                    block_ids=block_ids,
+                )
+                enriched_rules = result.data()
+
+        return similar_blocks, enriched_rules
+
+    def _fallback_graph_search(
+        self,
+        query_type: str,
+    ) -> tuple[list[Any], list[dict[str, Any]]]:
+        similar_blocks: list[Any] = []
+        enriched_rules: list[dict[str, Any]] = []
+
+        try:
+            with self.graph._driver.session() as session:
+                record = session.run(
+                    """
+                    MATCH (qt:QueryType {name: $qt})
+                    OPTIONAL MATCH (qt)<-[:RELATED_TO]-(b:Block)
+                    WITH qt, collect(DISTINCT b)[0..5] AS blocks
+                    OPTIONAL MATCH (qt)<-[:APPLIES_TO]-(r:Rule)
+                    OPTIONAL MATCH (r)<-[:DEMONSTRATES]-(e:Example)
+                    WHERE r IS NOT NULL AND (e IS NULL OR e.type = 'positive')
+                    WITH blocks, r, [x IN collect(DISTINCT e.text) WHERE x IS NOT NULL][0..2] AS ex
+                    RETURN blocks,
+                           collect(DISTINCT {rule: r.text, priority: r.priority, examples: ex})[0..5] AS rules
+                    """,
+                    qt=query_type,
+                ).single()
+
+                if record:
+                    similar_blocks = record.get("blocks") or []
+                    enriched_rules = record.get("rules") or []
+        except Exception as exc:  # noqa: BLE001
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "Fallback graph search failed: %s",
+                exc,
+            )
+
+        return similar_blocks, enriched_rules
+
+    def _extract_similar_case_texts(self, similar_blocks: list[Any]) -> list[str]:
+        cases: list[str] = []
+        for block in similar_blocks:
+            text = (
+                getattr(block, "page_content", "")
+                or (block.get("content") if hasattr(block, "get") else "")
+                or (block.get("text") if hasattr(block, "get") else "")
+            )
+            if text:
+                cases.append(str(text))
+        return cases
 
     def generate_with_augmentation(
         self,

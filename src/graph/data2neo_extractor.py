@@ -254,6 +254,7 @@ class Data2NeoExtractor:
         """
         if self.graph_provider is None:
             raise RuntimeError("GraphProvider not configured")
+        graph_provider = self.graph_provider
 
         counts: dict[str, int] = {
             "persons": 0,
@@ -265,78 +266,42 @@ class Data2NeoExtractor:
 
         batch_size = self.config.data2neo_batch_size
 
-        # Write Person nodes
-        if result.persons:
-            person_nodes = [p.to_node_dict() for p in result.persons]
-            for node in person_nodes:
-                node["id"] = self._generate_entity_id("person", node["name"])
-            counts["persons"] = await self.graph_provider.create_nodes(
-                person_nodes[:batch_size],
-                "Person",
-                merge_on="id",
-            )
-
-        # Write Organization nodes
-        if result.organizations:
-            org_nodes = [o.to_node_dict() for o in result.organizations]
-            for node in org_nodes:
-                node["id"] = self._generate_entity_id("org", node["name"])
-            counts["organizations"] = await self.graph_provider.create_nodes(
-                org_nodes[:batch_size],
-                "Organization",
-                merge_on="id",
-            )
-
-        # Write Date nodes
-        if result.dates:
-            date_nodes = [d.to_node_dict() for d in result.dates]
-            for node in date_nodes:
-                node["id"] = self._generate_entity_id("date", node["name"])
-            counts["dates"] = await self.graph_provider.create_nodes(
-                date_nodes[:batch_size],
-                "Date",
-                merge_on="id",
-            )
-
-        # Write DocumentRule nodes
-        if result.document_rules:
-            rule_nodes = [r.to_node_dict() for r in result.document_rules]
-            for node in rule_nodes:
-                node["id"] = self._generate_entity_id("docrule", node["text"])
-            counts["document_rules"] = await self.graph_provider.create_nodes(
-                rule_nodes[:batch_size],
-                "DocumentRule",
-                merge_on="id",
-            )
-
-        # Write relationships
-        # Note: Relationship writing requires entity type resolution
-        # This is a simplified implementation
-        for rel in result.relationships:
-            try:
-                # Determine source and target labels based on relationship type
-                from_label, to_label = self._infer_relationship_labels(rel.rel_type)
-                await self.graph_provider.create_relationships(
-                    [
-                        {
-                            "from_id": self._generate_entity_id(
-                                from_label.lower(),
-                                rel.from_entity,
-                            ),
-                            "to_id": self._generate_entity_id(
-                                to_label.lower(),
-                                rel.to_entity,
-                            ),
-                            **rel.properties,
-                        },
-                    ],
-                    rel.rel_type,
-                    from_label,
-                    to_label,
-                )
-                counts["relationships"] += 1
-            except Exception as e:  # noqa: PERF203
-                self.logger.warning("Failed to create relationship: %s", e)
+        counts["persons"] = await self._write_entity_nodes(
+            graph_provider,
+            result.persons,
+            "Person",
+            "person",
+            "name",
+            batch_size,
+        )
+        counts["organizations"] = await self._write_entity_nodes(
+            graph_provider,
+            result.organizations,
+            "Organization",
+            "org",
+            "name",
+            batch_size,
+        )
+        counts["dates"] = await self._write_entity_nodes(
+            graph_provider,
+            result.dates,
+            "Date",
+            "date",
+            "name",
+            batch_size,
+        )
+        counts["document_rules"] = await self._write_entity_nodes(
+            graph_provider,
+            result.document_rules,
+            "DocumentRule",
+            "docrule",
+            "text",
+            batch_size,
+        )
+        counts["relationships"] = await self._write_relationships(
+            graph_provider,
+            result.relationships,
+        )
 
         self.logger.info(
             "Wrote entities to graph: %s",
@@ -344,6 +309,67 @@ class Data2NeoExtractor:
         )
 
         return counts
+
+    async def _write_entity_nodes(
+        self,
+        graph_provider: GraphProvider,
+        entities: list[Any],
+        label: str,
+        id_prefix: str,
+        name_key: str,
+        batch_size: int,
+    ) -> int:
+        if not entities:
+            return 0
+        nodes = [e.to_node_dict() for e in entities]
+        for node in nodes:
+            node["id"] = self._generate_entity_id(id_prefix, node[name_key])
+        return await graph_provider.create_nodes(
+            nodes[:batch_size],
+            label,
+            merge_on="id",
+        )
+
+    async def _write_relationships(
+        self,
+        graph_provider: GraphProvider,
+        relationships: list[Relationship],
+    ) -> int:
+        created = 0
+        for rel in relationships:
+            if await self._create_relationship_safe(graph_provider, rel):
+                created += 1
+        return created
+
+    async def _create_relationship_safe(
+        self,
+        graph_provider: GraphProvider,
+        rel: Relationship,
+    ) -> bool:
+        try:
+            from_label, to_label = self._infer_relationship_labels(rel.rel_type)
+            await graph_provider.create_relationships(
+                [
+                    {
+                        "from_id": self._generate_entity_id(
+                            from_label.lower(),
+                            rel.from_entity,
+                        ),
+                        "to_id": self._generate_entity_id(
+                            to_label.lower(),
+                            rel.to_entity,
+                        ),
+                        **rel.properties,
+                    },
+                ],
+                rel.rel_type,
+                from_label,
+                to_label,
+            )
+            return True
+        except Exception as exc:  # noqa: BLE001
+            self.logger.warning("Failed to create relationship: %s", exc)
+            return False
 
     @staticmethod
     def _generate_entity_id(prefix: str, name: str) -> str:

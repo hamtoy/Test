@@ -93,34 +93,62 @@ class QueryExecutor:
             Transformed result or default value
         """
         params = params or {}
+        transform_fn = self._resolve_transform(transform)
+
+        no_result = object()
+        sync_result = self._try_execute_sync(
+            cypher,
+            params,
+            transform_fn,
+            no_result,
+        )
+        if sync_result is not no_result:
+            return cast("T | list[dict[str, Any]]", sync_result)
+
+        return self._execute_async_fallback(cypher, params, default, transform_fn)
+
+    def _resolve_transform(
+        self,
+        transform: Callable[[list[Any]], T] | None,
+    ) -> Callable[[list[Any]], T | list[dict[str, Any]]]:
+        if transform is not None:
+            return transform
 
         def default_transform(records: list[Any]) -> list[dict[str, Any]]:
             return [dict(r) for r in records]
 
-        transform_fn: Callable[[list[Any]], T | list[dict[str, Any]]]
-        if transform is not None:
-            transform_fn = transform
-        else:
-            transform_fn = cast(
-                "Callable[[list[Any]], T | list[dict[str, Any]]]",
-                default_transform,
-            )
+        return cast(
+            "Callable[[list[Any]], T | list[dict[str, Any]]]",
+            default_transform,
+        )
 
-        # Try sync driver first
-        if self._graph is not None:
-            try:
-                with self._graph.session() as session:
-                    records = session.run(cypher, **params)
-                    return transform_fn(records)
-            except (Neo4jError, ServiceUnavailable) as exc:
-                logger.warning("Sync query failed: %s", exc)
+    def _try_execute_sync(
+        self,
+        cypher: str,
+        params: dict[str, Any],
+        transform_fn: Callable[[list[Any]], T | list[dict[str, Any]]],
+        no_result: object,
+    ) -> T | list[dict[str, Any]] | object:
+        if self._graph is None:
+            return no_result
+        try:
+            with self._graph.session() as session:
+                records = session.run(cypher, **params)
+                return transform_fn(records)
+        except (Neo4jError, ServiceUnavailable) as exc:
+            logger.warning("Sync query failed: %s", exc)
+            return no_result
 
-        # Fall back to async provider
+    def _execute_async_fallback(
+        self,
+        cypher: str,
+        params: dict[str, Any],
+        default: T | None,
+        transform_fn: Callable[[list[Any]], T | list[dict[str, Any]]],
+    ) -> T | list[dict[str, Any]]:
         if self._graph_provider is None:
             logger.warning("No graph provider available")
-            if default is not None:
-                return default
-            return []
+            return default if default is not None else []
 
         prov = self._graph_provider
 
@@ -128,16 +156,15 @@ class QueryExecutor:
             try:
                 async with prov.session() as session:
                     result = await session.run(cypher, **params)
-                    if hasattr(result, "__aiter__"):
-                        records = [record async for record in result]
-                    else:
-                        records = list(result)
+                    records = (
+                        [record async for record in result]
+                        if hasattr(result, "__aiter__")
+                        else list(result)
+                    )
                     return transform_fn(records)
             except (Neo4jError, ServiceUnavailable) as exc:
                 logger.warning("Async query failed: %s", exc)
-                if default is not None:
-                    return default
-                return []
+                return default if default is not None else []
 
         return run_async_safely(_run())
 
