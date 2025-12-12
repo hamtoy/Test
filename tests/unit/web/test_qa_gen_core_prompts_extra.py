@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import types
+from typing import Any
 
 import pytest
 
@@ -11,9 +12,14 @@ from src.web.routers.qa_gen_core import prompts
 
 class _FakeSelector:
     def __init__(self, _kg: object) -> None:
-        return None
+        pass
 
-    def select_best_examples(self, qtype: str, _ctx: object, k: int = 1):  # noqa: ARG002
+    def select_best_examples(
+        self,
+        qtype: str,
+        _ctx: object,
+        k: int = 1,  # noqa: ARG002
+    ) -> list[dict[str, str]]:
         return [{"example": f"example-{qtype}"}]
 
 

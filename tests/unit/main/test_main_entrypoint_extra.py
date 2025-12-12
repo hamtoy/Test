@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import runpy
+from collections.abc import Coroutine
+from typing import Any
 
 import pytest
 
@@ -23,7 +25,7 @@ def test_main_module_guard_handles_keyboard_interrupt(
 ) -> None:
     monkeypatch.setattr("dotenv.load_dotenv", lambda: None)
 
-    def _raise(_coro):  # noqa: ANN001
+    def _raise(_coro: Coroutine[Any, Any, Any]) -> None:
         raise KeyboardInterrupt
 
     monkeypatch.setattr("asyncio.run", _raise)

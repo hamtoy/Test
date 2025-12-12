@@ -206,13 +206,18 @@ class _FakeRedis:
     def __init__(self) -> None:
         self.store: dict[str, str] = {}
 
-    async def get(self, key: str):  # noqa: ANN001
+    async def get(self, key: str) -> str | None:
         return self.store.get(key)
 
     async def setex(self, key: str, ttl: int, value: str) -> None:
         self.store[key] = value
 
-    async def scan(self, cursor: int, match: str, count: int = 100):  # noqa: ANN001, ARG002
+    async def scan(
+        self,
+        cursor: int,
+        match: str,
+        count: int = 100,  # noqa: ARG002
+    ) -> tuple[int, list[str]]:
         prefix = match.rstrip("*")
         keys = [k for k in self.store if k.startswith(prefix)]
         return 0, keys
@@ -239,18 +244,18 @@ async def test_cache_redis_errors_fall_back_to_memory(
 ) -> None:
     redis = _FakeRedis()
 
-    async def _bad_setex(*_a, **_k):  # noqa: ANN001
+    async def _bad_setex(key: str, ttl: int, value: str) -> None:  # noqa: ARG001
         raise RuntimeError("boom")
 
-    redis.setex = _bad_setex  # type: ignore[assignment]
+    monkeypatch.setattr(redis, "setex", _bad_setex)
     cache = AnswerCache(redis_client=redis)
     await cache.set("q", "ocr", "explanation", {"answer": "a"})
 
     # Force Redis get to fail as well.
-    async def _bad_get(*_a, **_k):  # noqa: ANN001
+    async def _bad_get(key: str) -> str | None:  # noqa: ARG001
         raise RuntimeError("boom")
 
-    redis.get = _bad_get  # type: ignore[assignment]
+    monkeypatch.setattr(redis, "get", _bad_get)
     result = await cache.get("q", "ocr", "explanation")
     assert result == {"answer": "a"}
 

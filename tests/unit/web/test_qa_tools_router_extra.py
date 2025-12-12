@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 import types
+from typing import Any
 
 import pytest
 
@@ -25,10 +26,10 @@ async def test_validate_qa_pair_success_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeCV:
-        def __init__(self, _kg):  # noqa: ANN001
-            return None
+        def __init__(self, _kg: Any) -> None:
+            pass
 
-        def cross_validate_qa_pair(self, **_kwargs):  # noqa: ANN001
+        def cross_validate_qa_pair(self, **_kwargs: Any) -> dict[str, list[str]]:
             return {"consistency_issues": ["x"], "rule_issues": []}
 
     monkeypatch.setitem(
@@ -46,10 +47,14 @@ async def test_validate_qa_pair_success_path(
 @pytest.mark.asyncio
 async def test_route_query_success(monkeypatch: pytest.MonkeyPatch) -> None:
     class _FakeRouter:
-        def __init__(self, kg):  # noqa: ANN001
+        def __init__(self, kg: Any) -> None:
             self.kg = kg
 
-        def route_and_generate(self, user_input: str, handlers):  # noqa: ANN001
+        def route_and_generate(
+            self,
+            user_input: str,
+            handlers: dict[str, Any],
+        ) -> dict[str, str]:
             return {"choice": "summary"}
 
     monkeypatch.setitem(
@@ -74,10 +79,10 @@ async def test_suggest_next_query_type_handles_invalid_json() -> None:
 @pytest.mark.asyncio
 async def test_suggest_next_query_type_success(monkeypatch: pytest.MonkeyPatch) -> None:
     class _FakeAutocomplete:
-        def __init__(self, _kg):  # noqa: ANN001
-            return None
+        def __init__(self, _kg: Any) -> None:
+            pass
 
-        def suggest_next_query_type(self, session_list):  # noqa: ANN001
+        def suggest_next_query_type(self, session_list: list[str]) -> list[str]:
             return ["reasoning"]
 
     monkeypatch.setitem(

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import types
+from typing import Any, cast
 
 import pytest
+from fastapi import Request
 
 import src.web.rate_limit as rl
 
@@ -18,7 +20,12 @@ class _FakeLimiter:
         self.enter_count += 1
         return self
 
-    async def __aexit__(self, exc_type, exc, tb) -> None:  # noqa: ANN001
+    async def __aexit__(
+        self,
+        exc_type: Any,
+        exc: Any,
+        tb: Any,
+    ) -> None:
         return None
 
     async def acquire(self) -> None:
@@ -51,5 +58,5 @@ async def test_rate_limit_decorator_uses_limiter(
 async def test_check_rate_limit_acquires(monkeypatch: pytest.MonkeyPatch) -> None:
     fake = _FakeLimiter()
     monkeypatch.setattr(rl, "get_limiter", lambda *_a, **_k: fake)
-    await rl.check_rate_limit(types.SimpleNamespace(), name="default")
+    await rl.check_rate_limit(cast(Request, types.SimpleNamespace()), name="default")
     assert fake.acquire_count == 1

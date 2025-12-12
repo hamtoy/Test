@@ -1,5 +1,6 @@
 import pytest
 import types
+from typing import Any
 
 from neo4j.exceptions import Neo4jError
 
@@ -72,13 +73,18 @@ def test_fetch_query_types_error(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_log_routing_success_path() -> None:
     class _GraphSession:
-        def __enter__(self):  # noqa: ANN001
+        def __enter__(self) -> "_GraphSession":
             return self
 
-        def __exit__(self, exc_type, exc, tb):  # noqa: ANN001
+        def __exit__(
+            self,
+            exc_type: Any,
+            exc: Any,
+            tb: Any,
+        ) -> None:
             return None
 
-        def run(self, *_args, **_kwargs):  # noqa: ANN001
+        def run(self, *_args: Any, **_kwargs: Any) -> None:
             return None
 
     fake_graph = types.SimpleNamespace(session=lambda: _GraphSession())

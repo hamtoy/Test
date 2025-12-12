@@ -229,10 +229,15 @@ class TestQueryExecutorWithFallback:
         mock_async_session.run = AsyncMock(return_value=[{"id": 1}])
 
         class _AsyncCtx:
-            async def __aenter__(self):  # noqa: ANN001
+            async def __aenter__(self) -> MagicMock:
                 return mock_async_session
 
-            async def __aexit__(self, exc_type, exc_val, exc_tb):  # noqa: ANN001
+            async def __aexit__(
+                self,
+                exc_type: Any,
+                exc_val: Any,
+                exc_tb: Any,
+            ) -> None:
                 return None
 
         mock_provider = MagicMock()

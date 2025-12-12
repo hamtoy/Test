@@ -5,11 +5,13 @@ from __future__ import annotations
 import importlib
 import sys
 import types
+from types import ModuleType
+from typing import Any
 
 import pytest
 
 
-def _import_metrics(monkeypatch: pytest.MonkeyPatch, enabled: str):
+def _import_metrics(monkeypatch: pytest.MonkeyPatch, enabled: str) -> ModuleType:
     monkeypatch.setenv("ENABLE_METRICS", enabled)
     sys.modules.pop("src.web.routers.metrics", None)
     return importlib.import_module("src.web.routers.metrics")
@@ -33,13 +35,13 @@ async def test_metrics_enabled_routes_work(monkeypatch: pytest.MonkeyPatch) -> N
     assert resp.body == b"m"
 
     class _FakeDashboard:
-        def get_today_stats(self):  # noqa: ANN001
+        def get_today_stats(self) -> dict[str, float | int]:
             return {"sessions": 1, "cost": 2.0, "cache_hit_rate": 0.5}
 
-        def get_week_total_cost(self):  # noqa: ANN001
+        def get_week_total_cost(self) -> float:
             return 3.0
 
-        def get_week_avg_quality(self):  # noqa: ANN001
+        def get_week_avg_quality(self) -> float:
             return 0.9
 
     fake_dash_mod = types.SimpleNamespace(UsageDashboard=_FakeDashboard)

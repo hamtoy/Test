@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import types
+from typing import Any
 
 import pytest
 from fastapi import HTTPException
@@ -45,13 +46,13 @@ async def test_stream_batch_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
         lambda: types.SimpleNamespace(qa_single_timeout=5),
     )
 
-    async def _fake_generate(  # noqa: ANN001
-        _agent,
-        _ocr,
+    async def _fake_generate(
+        _agent: Any,
+        _ocr: str,
         qtype: str,
-        previous_queries=None,
-        explanation_answer=None,
-    ):
+        previous_queries: list[str] | None = None,
+        explanation_answer: str | None = None,
+    ) -> dict[str, str]:
         return {"type": qtype, "query": f"q-{qtype}", "answer": f"a-{qtype}"}
 
     monkeypatch.setattr(qa_router, "generate_single_qa_with_retry", _fake_generate)

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from src.features.action_executor import ActionExecutor
@@ -34,7 +36,7 @@ async def test_execute_action_llm_provider_success() -> None:
         usage = {"tokens": 1}
 
     class _LLM:
-        async def generate_content_async(self, **_kwargs):  # noqa: ANN001
+        async def generate_content_async(self, **_kwargs: Any) -> _Resp:
             return _Resp()
 
     executor = ActionExecutor(llm_provider=_LLM())
@@ -51,7 +53,7 @@ async def test_execute_action_llm_provider_success() -> None:
 @pytest.mark.asyncio
 async def test_execute_action_llm_fallback_on_error() -> None:
     class _BadLLM:
-        async def generate_content_async(self, **_kwargs):  # noqa: ANN001
+        async def generate_content_async(self, **_kwargs: Any) -> Any:
             raise RuntimeError("boom")
 
     executor = ActionExecutor(llm_provider=_BadLLM())

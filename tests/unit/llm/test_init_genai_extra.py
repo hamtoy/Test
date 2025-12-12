@@ -18,12 +18,14 @@ def test_configure_genai_returns_false_without_key(
 def test_configure_genai_sets_flag_and_is_idempotent(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    import google.generativeai as genai
+
     calls: list[str] = []
-    monkeypatch.setattr(
-        init_genai.genai,
-        "configure",
-        lambda api_key: calls.append(api_key),
-    )
+
+    def _configure(api_key: str) -> None:
+        calls.append(api_key)
+
+    monkeypatch.setattr(genai, "configure", _configure)
 
     init_genai._configured = False
     assert init_genai.configure_genai(api_key="k1") is True
