@@ -14,7 +14,7 @@ from __future__ import annotations
 import asyncio
 import traceback
 from datetime import datetime
-from typing import Any, cast
+from typing import Any, TypeAlias, cast
 
 from fastapi import APIRouter, HTTPException
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -41,7 +41,7 @@ from .qa_gen_core import generate_single_qa
 
 router = APIRouter(prefix="/api", tags=["qa-generation"])
 
-_DICT_STR_ANY = "dict[str, Any]"
+_DictStrAny: TypeAlias = dict[str, Any]
 _GENERATION_FAILED_QUERY = "생성 실패"
 
 
@@ -181,8 +181,8 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
                                 },
                             )
                         else:
-                            results.append(cast(_DICT_STR_ANY, pair))
-                            pair_dict = cast(_DICT_STR_ANY, pair)
+                            results.append(cast(_DictStrAny, pair))
+                            pair_dict = cast(_DictStrAny, pair)
                             if (
                                 pair_dict.get("query")
                                 and pair_dict.get("query") != _GENERATION_FAILED_QUERY
@@ -192,7 +192,7 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
                 duration = (datetime.now() - start).total_seconds()
                 meta = APIMetadata(duration=duration)
                 return cast(
-                    _DICT_STR_ANY,
+                    _DictStrAny,
                     build_response(
                         {"mode": "batch", "pairs": results},
                         metadata=meta,
@@ -214,7 +214,7 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
         duration = (datetime.now() - start).total_seconds()
         meta = APIMetadata(duration=duration)
         return cast(
-            _DICT_STR_ANY,
+            _DictStrAny,
             build_response(
                 {"mode": "single", "pair": pair},
                 metadata=meta,
