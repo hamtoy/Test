@@ -575,6 +575,52 @@ def _add_markdown_structure(text: str, qtype: str) -> str:
     return "\n".join(result)
 
 
+def _normalize_blank_lines(text: str) -> str:
+    """불릿 사이 빈줄 제거 및 연속 빈줄 최대 2개로 제한."""
+    lines = text.split("\n")
+    cleaned_lines: list[str] = []
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+
+        if stripped == "":
+            # 다음 유효 줄 찾기
+            next_content_idx = _find_next_content_line(lines, i)
+
+            # 이전 줄이 불릿이고 다음 줄도 불릿이면 빈줄 제거
+            if cleaned_lines and _is_between_bullets(
+                cleaned_lines, lines, next_content_idx
+            ):
+                continue
+
+            # 연속 빈줄 최대 2개
+            empty_count = sum(1 for ln in reversed(cleaned_lines) if not ln.strip())
+            if empty_count < 2:
+                cleaned_lines.append(line)
+        else:
+            cleaned_lines.append(line)
+
+    return "\n".join(cleaned_lines)
+
+
+def _find_next_content_line(lines: list[str], start: int) -> int | None:
+    """다음 비어있지 않은 줄의 인덱스를 찾음."""
+    for j in range(start + 1, len(lines)):
+        if lines[j].strip():
+            return j
+    return None
+
+
+def _is_between_bullets(
+    cleaned_lines: list[str], lines: list[str], next_idx: int | None
+) -> bool:
+    """이전 줄과 다음 줄이 모두 불릿인지 확인."""
+    prev_stripped = cleaned_lines[-1].strip()
+    prev_is_bullet = prev_stripped.startswith("- ")
+    next_is_bullet = next_idx is not None and lines[next_idx].strip().startswith("- ")
+    return prev_is_bullet and next_is_bullet
+
+
 def postprocess_answer(
     answer: str,
     qtype: str,
@@ -614,41 +660,7 @@ def postprocess_answer(
     answer = answer.strip()
 
     # 5. 불필요한 줄바꿈 정리 (마크다운 유지하면서)
-    # 연속된 빈 줄은 최대 2개까지만 유지 (= 최대 3개의 \n 문자)
-    # 단, 불릿 사이의 빈줄은 제거 (동일 범주는 줄바꿈 없이)
-    lines = answer.split("\n")
-    cleaned_lines: list[str] = []
-
-    for i, line in enumerate(lines):
-        stripped = line.strip()
-
-        # 현재 줄이 빈줄인 경우
-        if stripped == "":
-            # 다음 유효 줄 찾기
-            next_content_idx = None
-            for j in range(i + 1, len(lines)):
-                if lines[j].strip():
-                    next_content_idx = j
-                    break
-
-            # 이전 줄이 불릿이고 다음 줄도 불릿이면 빈줄 제거
-            if cleaned_lines:
-                prev_stripped = cleaned_lines[-1].strip()
-                prev_is_bullet = prev_stripped.startswith("- ")
-                next_is_bullet = next_content_idx is not None and lines[
-                    next_content_idx
-                ].strip().startswith("- ")
-                if prev_is_bullet and next_is_bullet:
-                    continue  # 불릿 사이 빈줄 건너뛰기
-
-            # 연속 빈줄 최대 2개
-            empty_count = sum(1 for ln in reversed(cleaned_lines) if not ln.strip())
-            if empty_count < 2:
-                cleaned_lines.append(line)
-        else:
-            cleaned_lines.append(line)
-
-    answer = "\n".join(cleaned_lines)
+    answer = _normalize_blank_lines(answer)
 
     # 6. 마크다운 구조 자동 추가 (소제목, 불릿 항목에 볼드)
     answer = _add_markdown_structure(answer, qtype)
