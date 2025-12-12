@@ -191,9 +191,9 @@ async def _stream_batch_events(
             completed_queries.extend(reasoning_queries)
             success_count += reasoning_success
             # reasoning_answer는 target_*에 불필요하므로 버림
-        except Exception as exc:  # noqa: BLE001
-            logger.error("reasoning 실패: %s", exc)
-            yield _sse("error", type="reasoning", error=str(exc))
+        except Exception as reasoning_exc:  # noqa: BLE001
+            logger.error("reasoning 실패: %s", reasoning_exc)
+            yield _sse("error", type="reasoning", error=str(reasoning_exc))
 
     if remaining_types:
         task_map = _create_stream_tasks(
@@ -204,10 +204,10 @@ async def _stream_batch_events(
             first_answer,
             timeout,
         )
-        async for qtype, result, exc in _iter_stream_task_results(task_map):
-            if exc is not None:
-                logger.error("%s 실패: %s", qtype, exc)
-                yield _sse("error", type=qtype, error=str(exc))
+        async for qtype, result, task_exc in _iter_stream_task_results(task_map):
+            if task_exc is not None:
+                logger.error("%s 실패: %s", qtype, task_exc)
+                yield _sse("error", type=qtype, error=str(task_exc))
                 continue
             if result is None:
                 continue
