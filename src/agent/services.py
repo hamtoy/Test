@@ -21,6 +21,23 @@ if TYPE_CHECKING:
 _FORMATTING_RULES_FETCH_FAILED = "Formatting rules 조회 실패: %s"
 
 
+async def _call_model_with_rate_limit_handling(
+    agent: GeminiAgent,
+    model: Any,
+    payload: str,
+    *,
+    operation: str,
+) -> str:
+    try:
+        return await agent.retry_handler.call(model, payload)
+    except Exception as exc:  # noqa: BLE001
+        if agent._is_rate_limit_error(exc):  # noqa: SLF001
+            raise APIRateLimitError(
+                f"Rate limit exceeded during {operation}: {exc}",
+            ) from exc
+        raise
+
+
 class QueryGeneratorService:
     """Encapsulates query generation steps."""
 
@@ -159,21 +176,6 @@ class QueryGeneratorService:
                 constraints=constraints,
             )
 
-    async def _call_model(
-        self,
-        model: Any,
-        user_prompt: str,
-    ) -> str:
-        agent = self.agent
-        try:
-            return await agent.retry_handler.call(model, user_prompt)
-        except Exception as exc:  # noqa: BLE001
-            if agent._is_rate_limit_error(exc):  # noqa: SLF001
-                raise APIRateLimitError(
-                    "Rate limit exceeded during query generation: %s" % exc,
-                ) from exc
-            raise
-
     def _log_empty_response(
         self,
         response_text: str,
@@ -272,7 +274,12 @@ class QueryGeneratorService:
 
         agent.context_manager.track_cache_usage(cached_content is not None)
 
-        response_text = await self._call_model(model, user_prompt)
+        response_text = await _call_model_with_rate_limit_handling(
+            agent,
+            model,
+            user_prompt,
+            operation="query generation",
+        )
 
         cleaned_response = clean_markdown_code_block(response_text)
         if not cleaned_response or not cleaned_response.strip():
@@ -338,17 +345,6 @@ class ResponseEvaluatorService:
         except Exception as exc:  # noqa: BLE001
             agent.logger.debug("템플릿 렌더링 실패: %s", exc)
             return agent.jinja_env.get_template("system/eval.j2").render()
-
-    async def _call_model(self, model: Any, payload: str) -> str:
-        agent = self.agent
-        try:
-            return await agent.retry_handler.call(model, payload)
-        except Exception as exc:  # noqa: BLE001
-            if agent._is_rate_limit_error(exc):  # noqa: SLF001
-                raise APIRateLimitError(
-                    "Rate limit exceeded during evaluation: %s" % exc,
-                ) from exc
-            raise
 
     def _parse_evaluation(
         self,
@@ -419,7 +415,12 @@ class ResponseEvaluatorService:
 
         agent.context_manager.track_cache_usage(cached_content is not None)
         payload = json.dumps(input_data, ensure_ascii=False)
-        response_text = await self._call_model(model, payload)
+        response_text = await _call_model_with_rate_limit_handling(
+            agent,
+            model,
+            payload,
+            operation="evaluation",
+        )
         return self._parse_evaluation(response_text)
 
 
@@ -536,17 +537,6 @@ class RewriterService:
                 length_constraint=length_constraint,
             )
 
-    async def _call_model(self, model: Any, payload: str) -> str:
-        agent = self.agent
-        try:
-            return await agent.retry_handler.call(model, payload)
-        except Exception as exc:  # noqa: BLE001
-            if agent._is_rate_limit_error(exc):  # noqa: SLF001
-                raise APIRateLimitError(
-                    "Rate limit exceeded during rewrite: %s" % exc,
-                ) from exc
-            raise
-
     def _unwrap_response(self, response_text: str) -> str:
         unwrapped = safe_json_parse(response_text, "rewritten_answer")
         if isinstance(unwrapped, str):
@@ -596,5 +586,10 @@ class RewriterService:
         )
 
         agent.context_manager.track_cache_usage(cached_content is not None)
-        response_text = await self._call_model(model, payload)
+        response_text = await _call_model_with_rate_limit_handling(
+            agent,
+            model,
+            payload,
+            operation="rewrite",
+        )
         return self._unwrap_response(response_text)
