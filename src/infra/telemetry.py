@@ -141,6 +141,33 @@ def _build_status(name: str, description: str | None = None) -> Any | None:
         return None
 
 
+def _set_span_attributes(span: Any, attributes: dict[str, Any] | None) -> None:
+    if not attributes:
+        return
+    for key, value in attributes.items():
+        try:
+            span.set_attribute(key, value)
+        except Exception:
+            continue
+
+
+def _set_span_status(span: Any, name: str, description: str | None = None) -> None:
+    status = _build_status(name, description)
+    if status and hasattr(span, "set_status"):
+        try:
+            span.set_status(status)
+        except Exception:
+            return
+
+
+def _record_span_exception(span: Any, exc: Exception) -> None:
+    if hasattr(span, "record_exception"):
+        try:
+            span.record_exception(exc)
+        except Exception:
+            return
+
+
 def traced(
     operation: str,
     attributes: dict[str, Any] | None = None,
@@ -152,25 +179,14 @@ def traced(
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             tracer = get_tracer()
             with tracer.start_as_current_span(operation) as span:
-                if attributes:
-                    for key, value in attributes.items():
-                        try:
-                            span.set_attribute(key, value)
-                        except Exception:
-                            continue
+                _set_span_attributes(span, attributes)
                 try:
                     result = func(*args, **kwargs)
-                    ok_status = _build_status("OK")
-                    if ok_status and hasattr(span, "set_status"):
-                        span.set_status(ok_status)
+                    _set_span_status(span, "OK")
                     return result
                 except Exception as exc:
-                    try:
-                        span.record_exception(exc)  # type: ignore[attr-defined]
-                    finally:
-                        error_status = _build_status("ERROR", str(exc))
-                        if error_status and hasattr(span, "set_status"):
-                            span.set_status(error_status)
+                    _record_span_exception(span, exc)
+                    _set_span_status(span, "ERROR", str(exc))
                     raise
 
         return wrapper
@@ -189,25 +205,14 @@ def traced_async(
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             tracer = get_tracer()
             with tracer.start_as_current_span(operation) as span:
-                if attributes:
-                    for key, value in attributes.items():
-                        try:
-                            span.set_attribute(key, value)
-                        except Exception:
-                            continue
+                _set_span_attributes(span, attributes)
                 try:
                     result = await func(*args, **kwargs)  # type: ignore[misc]
-                    ok_status = _build_status("OK")
-                    if ok_status and hasattr(span, "set_status"):
-                        span.set_status(ok_status)
+                    _set_span_status(span, "OK")
                     return result
                 except Exception as exc:
-                    try:
-                        span.record_exception(exc)  # type: ignore[attr-defined]
-                    finally:
-                        error_status = _build_status("ERROR", str(exc))
-                        if error_status and hasattr(span, "set_status"):
-                            span.set_status(error_status)
+                    _record_span_exception(span, exc)
+                    _set_span_status(span, "ERROR", str(exc))
                     raise
 
         return wrapper

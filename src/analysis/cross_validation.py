@@ -256,65 +256,83 @@ class CrossValidationSystem:
 
     def _check_rule_compliance(self, answer: str, query_type: str) -> dict[str, Any]:
         """패턴 기반 규칙 준수 여부를 확인합니다."""
+        violations = self._collect_constraint_violations(answer, query_type)
+        violations.extend(self._collect_error_pattern_violations(answer))
+        score = max(0.0, 1.0 - 0.2 * len(violations))
+        return {"score": score, "violations": violations}
+
+    def _collect_constraint_violations(
+        self,
+        answer: str,
+        query_type: str,
+    ) -> list[str]:
         violations: list[str] = []
-
-        # 제약 패턴 검사
         constraints = self.kg.get_constraints_for_query_type(query_type)
-        for c in constraints:
-            constraint_id = c.get("id")
-            pattern = c.get("pattern")
+        for constraint in constraints:
+            violations.extend(self._evaluate_single_constraint(answer, constraint))
+        return violations
 
-            # 기존 prohibition 타입 Constraint
-            if (
-                c.get("type") == "prohibition"
-                and pattern
-                and re.search(pattern, answer)
-            ):
-                violations.append(c.get("description", pattern))
+    def _evaluate_single_constraint(
+        self,
+        answer: str,
+        constraint: dict[str, Any],
+    ) -> list[str]:
+        constraint_id = constraint.get("id")
+        pattern = constraint.get("pattern")
+        if (
+            constraint.get("type") == "prohibition"
+            and pattern
+            and re.search(pattern, answer)
+        ):
+            return [constraint.get("description", pattern)]
+        if constraint_id == "temporal_expression_check":
+            return self._check_temporal_expressions(answer)
+        if constraint_id == "repetition_check":
+            return self._check_repetition(answer)
+        if constraint_id == "formatting_rules":
+            return self._check_formatting_rules(answer)
+        return []
 
-            # 피드백 기반 Constraint (ID 기반 호출)
-            elif constraint_id == "temporal_expression_check":
-                violations.extend(self._check_temporal_expressions(answer))
-
-            elif constraint_id == "repetition_check":
-                violations.extend(self._check_repetition(answer))
-
-            elif constraint_id == "formatting_rules":
-                violations.extend(self._check_formatting_rules(answer))
-
-        # 금지 패턴(ErrorPattern) 전체 검사
+    def _collect_error_pattern_violations(self, answer: str) -> list[str]:
+        session_ctx = self._get_graph_session_ctx_for_error_patterns()
+        if session_ctx is None:
+            return []
         try:
-            graph_session = getattr(self.kg, "graph_session", None)
-            if graph_session is None:
-                graph = getattr(self.kg, "_graph", None)
-                if graph is None:
-                    self.logger.debug("ErrorPattern check skipped: graph unavailable")
-                    raise RuntimeError("graph missing")
-                session_ctx = graph.session
-            else:
-                session_ctx = graph_session
-
             with session_ctx() as session:
                 if session is None:
                     self.logger.debug("ErrorPattern check skipped: graph unavailable")
-                    raise RuntimeError("graph missing")
+                    return []
                 eps = session.run(
                     """
                     MATCH (e:ErrorPattern)
                     RETURN e.pattern AS pattern, e.description AS description
                     """,
                 )
-                for ep in eps:
-                    pat = ep.get("pattern")
-                    if pat and re.search(pat, answer):
-                        violations.append(ep.get("description", pat))
+                return self._match_error_patterns(answer, eps)
         except Neo4jError as exc:
             self.logger.warning("ErrorPattern lookup failed: %s", exc)
+            return []
         except Exception as exc:  # noqa: BLE001
             self.logger.warning("ErrorPattern lookup failed (unknown): %s", exc)
+            return []
 
-        score = max(0.0, 1.0 - 0.2 * len(violations))
-        return {"score": score, "violations": violations}
+    def _get_graph_session_ctx_for_error_patterns(self) -> Any | None:
+        graph_session = getattr(self.kg, "graph_session", None)
+        if graph_session is not None:
+            return graph_session
+        graph = getattr(self.kg, "_graph", None)
+        if graph is None:
+            self.logger.debug("ErrorPattern check skipped: graph unavailable")
+            return None
+        return graph.session
+
+    def _match_error_patterns(self, answer: str, eps: Any) -> list[str]:
+        violations: list[str] = []
+        for ep in eps:
+            pat = ep.get("pattern")
+            if pat and re.search(pat, answer):
+                violations.append(ep.get("description", pat))
+        return violations
 
     def _check_novelty(self, question: str) -> dict[str, Any]:
         """질문의 참신함(중복 방지)을 간단히 평가합니다."""

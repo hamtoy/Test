@@ -65,48 +65,52 @@ class PerformanceTracker:
                 }
             }
         """
-        filtered = [
-            m for m in self.metrics if not operation or m.operation == operation
-        ]
-
+        filtered = self._filter_metrics(operation)
         if not filtered:
             return {}
+        aggregated = self._accumulate_by_operation(filtered)
+        return self._compute_stats(aggregated)
 
+    def _filter_metrics(self, operation: str | None) -> list[PerformanceMetric]:
+        return [
+            metric
+            for metric in self.metrics
+            if operation is None or metric.operation == operation
+        ]
+
+    def _accumulate_by_operation(
+        self,
+        metrics: list[PerformanceMetric],
+    ) -> dict[str, _StatsData]:
         result: dict[str, _StatsData] = {}
-
-        for metric in filtered:
-            op = metric.operation
-            if op not in result:
-                result[op] = _StatsData()
-            result[op].count += 1
-            result[op].durations.append(metric.duration_ms)
+        for metric in metrics:
+            data = result.setdefault(metric.operation, _StatsData())
+            data.count += 1
+            data.durations.append(metric.duration_ms)
             if metric.cache_hit:
-                result[op].cache_hits += 1
+                data.cache_hits += 1
             if metric.status == "success":
-                result[op].successes += 1
+                data.successes += 1
+        return result
 
-        # 통계 계산
+    def _compute_stats(
+        self,
+        aggregated: dict[str, _StatsData],
+    ) -> dict[str, dict[str, float]]:
         stats: dict[str, dict[str, float]] = {}
-        for op, data in result.items():
+        for op, data in aggregated.items():
+            if not data.durations:
+                continue
+            count = float(data.count)
             durations = data.durations
-            if durations:
-                stats[op] = {
-                    "count": float(data.count),
-                    "avg_duration_ms": sum(durations) / len(durations),
-                    "min_duration_ms": min(durations),
-                    "max_duration_ms": max(durations),
-                    "cache_hit_rate": (
-                        float(data.cache_hits) / float(data.count)
-                        if data.count > 0
-                        else 0.0
-                    ),
-                    "success_rate": (
-                        float(data.successes) / float(data.count)
-                        if data.count > 0
-                        else 0.0
-                    ),
-                }
-
+            stats[op] = {
+                "count": count,
+                "avg_duration_ms": sum(durations) / len(durations),
+                "min_duration_ms": min(durations),
+                "max_duration_ms": max(durations),
+                "cache_hit_rate": float(data.cache_hits) / count if count else 0.0,
+                "success_rate": float(data.successes) / count if count else 0.0,
+            }
         return stats
 
     def _cleanup_old(self) -> None:

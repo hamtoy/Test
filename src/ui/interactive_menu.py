@@ -5,6 +5,7 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import NoReturn
 
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TaskID, TextColumn
@@ -647,37 +648,63 @@ async def interactive_main(
     while True:
         try:
             choice = show_main_menu()
-
-            if choice == 0:  # 1. 질의 생성 및 평가
-                await run_workflow_interactive(agent, config, logger)
-            elif choice == 1:  # 2. 검수
-                # Sub-menu for review? Or just separate options?
-                # The menu has "2. 검수 (질의/답변)"
-                # Let's ask which one.
-                sub_choice = Prompt.ask(
-                    "검수 유형 선택 (1: 질의, 2: 답변)",
-                    choices=["1", "2"],
-                    default="1",
-                )
-                if sub_choice == "1":
-                    await _handle_query_inspection(agent, config)
-                else:
-                    await _handle_answer_inspection(agent, config)
-            elif choice == 2:  # 3. 수정
-                await _handle_edit_menu(agent, config)
-            elif choice == 3:  # 4. 캐시 통계
-                show_cache_statistics(config)
-            elif choice == 4:  # 5. 종료
-                console.print("[bold]시스템을 종료합니다. 안녕히 가세요! 👋[/bold]")
-                sys.exit(0)
+            await _handle_main_menu_choice(choice, agent, config, logger)
         except KeyboardInterrupt:  # noqa: PERF203
-            console.print("\n[yellow]⚠ 작업을 중단하시겠습니까?[/yellow]")
-            if Confirm.ask("메인 메뉴로 돌아가기", default=True):
-                console.print("[dim]→ 메인 메뉴로 이동합니다[/dim]\n")
-                continue  # 메인 메뉴로 돌아가기
-            console.print("[bold]시스템을 종료합니다. 안녕히 가세요! 👋[/bold]")
-            sys.exit(0)
-        except Exception as e:
-            console.print(f"[red]예기치 않은 오류 발생: {e}[/red]")
-            logger.exception("Interactive menu error")
-            Prompt.ask(RETURN_TO_MENU_PROMPT)
+            if _confirm_return_to_menu():
+                continue
+        except Exception as exc:  # noqa: BLE001
+            _handle_interactive_exception(exc, logger)
+
+
+def _exit_interactive() -> NoReturn:
+    console.print("[bold]시스템을 종료합니다. 안녕히 가세요! 👋[/bold]")
+    sys.exit(0)
+
+
+async def _handle_inspection_menu(agent: GeminiAgent, config: AppConfig) -> None:
+    sub_choice = Prompt.ask(
+        "검수 유형 선택 (1: 질의, 2: 답변)",
+        choices=["1", "2"],
+        default="1",
+    )
+    handler = (
+        _handle_query_inspection if sub_choice == "1" else _handle_answer_inspection
+    )
+    await handler(agent, config)
+
+
+async def _handle_main_menu_choice(
+    choice: int,
+    agent: GeminiAgent,
+    config: AppConfig,
+    logger: logging.Logger,
+) -> None:
+    if choice == 0:
+        await run_workflow_interactive(agent, config, logger)
+        return
+    if choice == 1:
+        await _handle_inspection_menu(agent, config)
+        return
+    if choice == 2:
+        await _handle_edit_menu(agent, config)
+        return
+    if choice == 3:
+        show_cache_statistics(config)
+        return
+    if choice == 4:
+        _exit_interactive()
+    console.print(f"[red]알 수 없는 선택: {choice}[/red]")
+
+
+def _confirm_return_to_menu() -> bool:
+    console.print("\n[yellow]⚠ 작업을 중단하시겠습니까?[/yellow]")
+    if Confirm.ask("메인 메뉴로 돌아가기", default=True):
+        console.print("[dim]→ 메인 메뉴로 이동합니다[/dim]\n")
+        return True
+    _exit_interactive()
+
+
+def _handle_interactive_exception(exc: Exception, logger: logging.Logger) -> None:
+    console.print(f"[red]예기치 않은 오류 발생: {exc}[/red]")
+    logger.exception("Interactive menu error")
+    Prompt.ask(RETURN_TO_MENU_PROMPT)
