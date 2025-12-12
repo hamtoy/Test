@@ -316,13 +316,16 @@ results = await asyncio.gather(*[
 | 변수                       | 기본값                 | 설명               |
 | -------------------------- | ---------------------- | ------------------ |
 | `GEMINI_API_KEY`           | 필수                   | Gemini API 키      |
-| `GEMINI_MODEL_NAME`        | `gemini-3-pro-preview` | 사용할 모델        |
-| `GEMINI_MAX_OUTPUT_TOKENS` | `8192`                 | 최대 출력 토큰 수  |
+| `GEMINI_MODEL_NAME`        | `gemini-flash-latest`  | 사용할 모델        |
+| `GEMINI_MAX_OUTPUT_TOKENS` | `4096`                 | 최대 출력 토큰 수  |
+| `GEMINI_MAX_OUTPUT_TOKENS_EXPLANATION` | (옵션) | explanation 토큰 상한 override |
+| `GEMINI_MAX_OUTPUT_TOKENS_REASONING` | (옵션) | reasoning 토큰 상한 override |
+| `GEMINI_MAX_OUTPUT_TOKENS_TARGET` | (옵션) | target 토큰 상한 override |
 | `GEMINI_TIMEOUT`           | `120`                  | API 타임아웃 (초)  |
-| `GEMINI_MAX_CONCURRENCY`   | `5`                    | 최대 동시 요청 수  |
+| `GEMINI_MAX_CONCURRENCY`   | `10`                   | 최대 동시 요청 수  |
 | `GEMINI_TEMPERATURE`       | `0.2`                  | 샘플링 온도        |
 | `GEMINI_CACHE_SIZE`        | `50`                   | 컨텍스트 캐시 크기 |
-| `GEMINI_CACHE_TTL_MINUTES` | `10`                   | 캐시 TTL (분)      |
+| `GEMINI_CACHE_TTL_MINUTES` | `360`                  | 캐시 TTL (분)      |
 | `LOG_LEVEL`                | `INFO`                 | 로그 레벨          |
 | `CACHE_STATS_FILE`         | `cache_stats.jsonl`    | 캐시/토큰 통계 파일 경로 |
 | `CACHE_STATS_MAX_ENTRIES`  | `100`                  | 통계 파일 보존 개수 |

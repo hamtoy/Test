@@ -50,6 +50,20 @@ class AppConfig(BaseSettings):
         alias="GEMINI_MODEL_NAME",
     )
     max_output_tokens: int = Field(4096, alias="GEMINI_MAX_OUTPUT_TOKENS")
+    # Per-query-type token overrides (optional). If unset, fall back to
+    # GEMINI_MAX_OUTPUT_TOKENS with conservative defaults for faster responses.
+    max_output_tokens_explanation: int | None = Field(
+        None,
+        alias="GEMINI_MAX_OUTPUT_TOKENS_EXPLANATION",
+    )
+    max_output_tokens_reasoning: int | None = Field(
+        None,
+        alias="GEMINI_MAX_OUTPUT_TOKENS_REASONING",
+    )
+    max_output_tokens_target: int | None = Field(
+        None,
+        alias="GEMINI_MAX_OUTPUT_TOKENS_TARGET",
+    )
     timeout: int = Field(120, alias="GEMINI_TIMEOUT")
     timeout_max: int = Field(3600, alias="GEMINI_TIMEOUT_MAX")
     max_concurrency: int = Field(10, alias="GEMINI_MAX_CONCURRENCY")
@@ -124,6 +138,41 @@ class AppConfig(BaseSettings):
     def __init__(self, **data: Any) -> None:
         """Initialize AppConfig from environment variables or provided data."""
         super().__init__(**data)
+
+    def resolve_max_output_tokens(self, query_type: str | None = None) -> int:
+        """qtype에 맞는 max_output_tokens를 반환한다.
+
+        - 환경 변수 override가 있으면 최우선 적용
+        - 없으면 GEMINI_MAX_OUTPUT_TOKENS를 기준으로 보수적인 기본값을 적용해
+          짧은 타입(target/reasoning) 응답 속도를 개선한다.
+        """
+        if not query_type:
+            return self.max_output_tokens
+
+        normalized = query_type
+        if normalized in {"global_explanation", "globalexplanation"}:
+            normalized = "explanation"
+        if normalized in {"target_short", "target_long"}:
+            normalized = "target"
+
+        if normalized == "explanation":
+            return (
+                self.max_output_tokens_explanation
+                if self.max_output_tokens_explanation is not None
+                else self.max_output_tokens
+            )
+
+        if normalized == "reasoning":
+            if self.max_output_tokens_reasoning is not None:
+                return self.max_output_tokens_reasoning
+            return min(self.max_output_tokens, 2048)
+
+        if normalized == "target":
+            if self.max_output_tokens_target is not None:
+                return self.max_output_tokens_target
+            return min(self.max_output_tokens, 512)
+
+        return self.max_output_tokens
 
     @model_validator(mode="after")
     def check_timeout_consistency(self) -> "AppConfig":
@@ -238,6 +287,20 @@ class AppConfig(BaseSettings):
             raise ValueError(
                 "Unsupported model. This system only allows 'gemini-flash-latest'.",
             )
+        return v
+
+    @field_validator(
+        "max_output_tokens",
+        "max_output_tokens_explanation",
+        "max_output_tokens_reasoning",
+        "max_output_tokens_target",
+    )
+    @classmethod
+    def validate_max_output_tokens(cls, v: int | None) -> int | None:
+        if v is None:
+            return v
+        if v < 1:
+            raise ValueError("max_output_tokens must be >= 1")
         return v
 
     @field_validator("max_concurrency")

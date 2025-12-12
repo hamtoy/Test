@@ -589,10 +589,12 @@ class RewriterService:
         if query_type in {"explanation", "reasoning", "global_explanation"}:
             response_schema = StructuredAnswerSchema
 
+        max_output_tokens = agent.config.resolve_max_output_tokens(query_type)
         model = agent._create_generative_model(  # noqa: SLF001
             system_prompt,
             response_schema=response_schema,
             cached_content=cached_content,
+            max_output_tokens=max_output_tokens,
         )
 
         agent.context_manager.track_cache_usage(cached_content is not None)

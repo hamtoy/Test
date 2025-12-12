@@ -353,6 +353,8 @@ class GeminiAgent:
         system_prompt: str,
         response_schema: type[BaseModel] | None = None,
         cached_content: caching.CachedContent | None = None,
+        *,
+        max_output_tokens: int | None = None,
     ) -> Any:
         """GenerativeModel 인스턴스를 생성하는 팩토리 메서드.
 
@@ -361,13 +363,19 @@ class GeminiAgent:
             response_schema (Optional[type[BaseModel]]): JSON 응답 스키마.
                 None이면 일반 텍스트 응답.
             cached_content (Optional[caching.CachedContent]): 재사용할 캐시 객체.
+            max_output_tokens: 요청별 토큰 제한 override (선택).
 
         Returns:
             Any: 설정된 GenerativeModel 인스턴스.
         """
+        resolved_max_output_tokens = (
+            max_output_tokens
+            if max_output_tokens is not None
+            else self.config.max_output_tokens
+        )
         generation_config: dict[str, object] = {
             "temperature": self.config.temperature,
-            "max_output_tokens": self.config.max_output_tokens,
+            "max_output_tokens": resolved_max_output_tokens,
         }
 
         if response_schema:
@@ -392,6 +400,7 @@ class GeminiAgent:
         try:
             model._agent_system_instruction = system_prompt
             model._agent_response_schema = response_schema
+            model._agent_max_output_tokens = resolved_max_output_tokens
         except (TypeError, AttributeError):
             pass
         return model

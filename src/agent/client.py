@@ -55,11 +55,16 @@ class GeminiClient:
         start = time.perf_counter()
         system_instruction = getattr(model, "_agent_system_instruction", None)
         response_schema = getattr(model, "_agent_response_schema", None)
+        max_output_tokens = getattr(
+            model,
+            "_agent_max_output_tokens",
+            self.agent.config.max_output_tokens,
+        )
         result = await provider.generate_content_async(
             prompt_text,
             system_instruction=system_instruction,
             temperature=self.agent.config.temperature,
-            max_output_tokens=self.agent.config.max_output_tokens,
+            max_output_tokens=max_output_tokens,
             response_schema=response_schema,
             request_options={"timeout": self.agent.config.timeout},
         )

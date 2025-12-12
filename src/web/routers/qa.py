@@ -156,12 +156,14 @@ def _maybe_start_reasoning_task(
     agent: Any,
     ocr_text: str,
 ) -> tuple[
-    asyncio.Task[tuple[str, list[str], int, list[str]]] | None,
+    asyncio.Task[dict[str, Any]] | None,
     list[str],
 ]:
     if remaining_types and remaining_types[0] == "reasoning":
         task = asyncio.create_task(
-            _stream_first_batch_type(agent, ocr_text, "reasoning")
+            _await_with_qa_timeout(
+                generate_single_qa_with_retry(agent, ocr_text, "reasoning"),
+            )
         )
         return task, remaining_types[1:]
     return None, remaining_types
@@ -186,42 +188,47 @@ async def _emit_first_type_events(
         yield event
 
 
-async def _emit_reasoning_task_events(
-    reasoning_task: asyncio.Task[tuple[str, list[str], int, list[str]]] | None,
-    state: _StreamBatchState,
-) -> AsyncIterator[str]:
-    if reasoning_task is None:
-        return
-
-    try:
-        _, reasoning_queries, reasoning_success, reasoning_events = await reasoning_task
-    except Exception as reasoning_exc:  # noqa: BLE001
-        logger.error("reasoning 실패: %s", reasoning_exc)
-        yield _sse("error", type="reasoning", error=str(reasoning_exc))
-        return
-
-    state.completed_queries.extend(reasoning_queries)
-    state.success_count += reasoning_success
-    for event in reasoning_events:
-        yield event
-
-
 async def _emit_remaining_type_events(
     remaining_types: list[str],
     agent: Any,
     ocr_text: str,
     state: _StreamBatchState,
+    *,
+    reasoning_task: asyncio.Task[dict[str, Any]] | None = None,
 ) -> AsyncIterator[str]:
-    if not remaining_types:
+    if not remaining_types and reasoning_task is None:
         return
 
-    task_map = _create_stream_tasks(
-        remaining_types,
-        agent,
-        ocr_text,
-        state.completed_queries,
-        state.first_answer,
-    )
+    if reasoning_task is not None and reasoning_task.done():
+        try:
+            reasoning_result = reasoning_task.result()
+        except Exception as exc:  # noqa: BLE001
+            logger.error("reasoning 실패: %s", exc)
+            yield _sse("error", type="reasoning", error=str(exc))
+        else:
+            if reasoning_result:
+                yield _sse("progress", type="reasoning", data=reasoning_result)
+                query = reasoning_result.get("query")
+                if query:
+                    state.completed_queries.append(str(query))
+                state.success_count += 1
+        reasoning_task = None
+
+    task_map: dict[asyncio.Task[dict[str, Any]], str] = {}
+    if remaining_types:
+        task_map = _create_stream_tasks(
+            remaining_types,
+            agent,
+            ocr_text,
+            state.completed_queries,
+            state.first_answer,
+        )
+    if reasoning_task is not None:
+        task_map[reasoning_task] = "reasoning"
+
+    if not task_map:
+        return
+
     async for qtype, result, task_exc in _iter_stream_task_results(task_map):
         if task_exc is not None:
             logger.error("%s 실패: %s", qtype, task_exc)
@@ -253,7 +260,8 @@ async def _stream_batch_events(
 
     state = _StreamBatchState()
 
-    # 첫 타입(global_explanation)과 reasoning을 병렬 실행해 체감 시간을 단축
+    # 첫 타입(global_explanation)과 reasoning을 병렬 실행하고,
+    # 첫 타입 완료 후 reasoning을 기다리지 않고 나머지 타입도 병렬 실행한다.
     first_type = batch_types[0]
     reasoning_task, remaining_types = _maybe_start_reasoning_task(
         batch_types[1:],
@@ -264,14 +272,12 @@ async def _stream_batch_events(
     async for event in _emit_first_type_events(agent, ocr_text, first_type, state):
         yield event
 
-    async for event in _emit_reasoning_task_events(reasoning_task, state):
-        yield event
-
     async for event in _emit_remaining_type_events(
         remaining_types,
         agent,
         ocr_text,
         state,
+        reasoning_task=reasoning_task,
     ):
         yield event
 

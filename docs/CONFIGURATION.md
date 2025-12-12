@@ -51,10 +51,13 @@ GEMINI_API_KEY=AIza...
 
 | 변수 | 기본값 | 범위 | 설명 |
 |------|--------|------|------|
-| `GEMINI_MODEL_NAME` | `gemini-3-pro-preview` | 고정 | 사용 모델 |
-| `GEMINI_MAX_OUTPUT_TOKENS` | `8192` | 1+ | 최대 출력 토큰 |
+| `GEMINI_MODEL_NAME` | `gemini-flash-latest` | 고정 | 사용 모델 |
+| `GEMINI_MAX_OUTPUT_TOKENS` | `4096` | 1+ | 최대 출력 토큰 |
+| `GEMINI_MAX_OUTPUT_TOKENS_EXPLANATION` | (옵션) | 1+ | explanation 토큰 상한 override |
+| `GEMINI_MAX_OUTPUT_TOKENS_REASONING` | (옵션) | 1+ | reasoning 토큰 상한 override |
+| `GEMINI_MAX_OUTPUT_TOKENS_TARGET` | (옵션) | 1+ | target 토큰 상한 override |
 | `GEMINI_TIMEOUT` | `120` | 30-600 | API 타임아웃 (초) |
-| `GEMINI_MAX_CONCURRENCY` | `5` | 1-20 | 최대 동시 요청 수 |
+| `GEMINI_MAX_CONCURRENCY` | `10` | 1-20 | 최대 동시 요청 수 |
 | `GEMINI_TEMPERATURE` | `0.2` | 0.0-2.0 | 샘플링 온도 |
 | `GEMINI_CACHE_SIZE` | `50` | 1+ | 컨텍스트 캐시 크기 |
 | `GEMINI_CACHE_TTL_MINUTES` | `360` | 1-1440 | 캐시 TTL (분) |

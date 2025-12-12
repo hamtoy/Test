@@ -187,6 +187,9 @@ class EnvValidator:
 
         for key in (
             "GEMINI_MAX_OUTPUT_TOKENS",
+            "GEMINI_MAX_OUTPUT_TOKENS_EXPLANATION",
+            "GEMINI_MAX_OUTPUT_TOKENS_REASONING",
+            "GEMINI_MAX_OUTPUT_TOKENS_TARGET",
             "GEMINI_TIMEOUT",
             "GEMINI_MAX_CONCURRENCY",
         ):
