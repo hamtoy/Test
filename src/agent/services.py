@@ -38,6 +38,37 @@ async def _call_model_with_rate_limit_handling(
         raise
 
 
+def _load_guide_context_shared(
+    agent: GeminiAgent,
+    query_type: str,
+    context_stage: str,
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    """Load guide rules and common mistakes from CSV (shared helper)."""
+    guide_rules: list[dict[str, str]] = []
+    common_mistakes: list[dict[str, str]] = []
+    try:
+        from src.qa.template_rules import (
+            get_all_template_context,
+            get_neo4j_config,
+        )
+
+        neo4j_config = get_neo4j_config()
+        if neo4j_config.get("neo4j_password"):
+            template_context = get_all_template_context(
+                query_type=query_type,
+                neo4j_uri=neo4j_config["neo4j_uri"],
+                neo4j_user=neo4j_config["neo4j_user"],
+                neo4j_password=neo4j_config["neo4j_password"],
+                include_mistakes=True,
+                context_stage=context_stage,
+            )
+            guide_rules = template_context.get("guide_rules", []) or []
+            common_mistakes = template_context.get("common_mistakes", []) or []
+    except Exception as exc:  # noqa: BLE001
+        agent.logger.debug("CSV 가이드 조회 실패 (선택사항): %s", exc)
+    return guide_rules, common_mistakes
+
+
 class QueryGeneratorService:
     """Encapsulates query generation steps."""
 
@@ -122,30 +153,7 @@ class QueryGeneratorService:
         self,
         query_type: str,
     ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-        agent = self.agent
-        guide_rules: list[dict[str, str]] = []
-        common_mistakes: list[dict[str, str]] = []
-        try:
-            from src.qa.template_rules import (
-                get_all_template_context,
-                get_neo4j_config,
-            )
-
-            neo4j_config = get_neo4j_config()
-            if neo4j_config.get("neo4j_password"):
-                template_context = get_all_template_context(
-                    query_type=query_type,
-                    neo4j_uri=neo4j_config["neo4j_uri"],
-                    neo4j_user=neo4j_config["neo4j_user"],
-                    neo4j_password=neo4j_config["neo4j_password"],
-                    include_mistakes=True,
-                    context_stage="query",
-                )
-                guide_rules = template_context.get("guide_rules", []) or []
-                common_mistakes = template_context.get("common_mistakes", []) or []
-        except Exception as exc:  # noqa: BLE001
-            agent.logger.debug("CSV 가이드 조회 실패 (선택사항): %s", exc)
-        return guide_rules, common_mistakes
+        return _load_guide_context_shared(self.agent, query_type, "query")
 
     def _render_system_prompt(
         self,
@@ -469,30 +477,7 @@ class RewriterService:
         self,
         query_type: str,
     ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-        agent = self.agent
-        guide_rules: list[dict[str, str]] = []
-        common_mistakes: list[dict[str, str]] = []
-        try:
-            from src.qa.template_rules import (
-                get_all_template_context,
-                get_neo4j_config,
-            )
-
-            neo4j_config = get_neo4j_config()
-            if neo4j_config.get("neo4j_password"):
-                template_context = get_all_template_context(
-                    query_type=query_type,
-                    neo4j_uri=neo4j_config["neo4j_uri"],
-                    neo4j_user=neo4j_config["neo4j_user"],
-                    neo4j_password=neo4j_config["neo4j_password"],
-                    include_mistakes=True,
-                    context_stage="rewrite",
-                )
-                guide_rules = template_context.get("guide_rules", []) or []
-                common_mistakes = template_context.get("common_mistakes", []) or []
-        except Exception as exc:  # noqa: BLE001
-            agent.logger.debug("CSV 가이드 조회 실패 (선택사항): %s", exc)
-        return guide_rules, common_mistakes
+        return _load_guide_context_shared(self.agent, query_type, "rewrite")
 
     def _resolve_formatting_rules(
         self,

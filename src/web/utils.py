@@ -16,6 +16,9 @@ from src.config import AppConfig
 
 logger = logging.getLogger(__name__)
 
+# Type alias constant to avoid duplicating the literal
+_DictStrAny = "dict[str, Any]"
+
 # 프로젝트 루트 경로 (templates, data 등 상대 경로 계산에 사용)
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -156,7 +159,7 @@ def _parse_structured_answer(text: str) -> dict[str, Any] | None:
         return None
 
     # JSON object keys are always strings, but json.loads returns Any.
-    return cast("dict[str, Any]", loaded)
+    return cast(_DictStrAny, loaded)
 
 
 def _sanitize_structured_text(value: Any) -> str:
@@ -180,66 +183,79 @@ def _ensure_starts_with(
     return f"{default_prefix}{text}"
 
 
-def _render_structured_answer(
-    structured: dict[str, Any],
-    normalized_qtype: str,
-) -> str | None:
-    intro_raw = structured.get("intro", "")
-    sections_raw = structured.get("sections", [])
-    conclusion_raw = structured.get("conclusion", "")
-
-    intro = _sanitize_structured_text(intro_raw)
-    conclusion = _sanitize_structured_text(conclusion_raw)
-
-    if not isinstance(sections_raw, list):
+def _render_item(item: Any) -> str | None:
+    """Render a single item from a section. Returns formatted line or None."""
+    if not isinstance(item, dict):
         return None
+    item_dict = cast(_DictStrAny, item)
+    label = _sanitize_structured_text(item_dict.get("label", ""))
+    text = _sanitize_structured_text(item_dict.get("text", ""))
+    if label and text:
+        return f"- **{label}**: {text}"
+    if text:
+        return f"- {text}"
+    return None
 
-    lines: list[str] = []
-    if intro:
-        lines.append(intro)
+
+def _render_section(section: Any, lines: list[str]) -> None:
+    """Render a single section and append to lines."""
+    if not isinstance(section, dict):
+        return
+
+    section_dict = cast(_DictStrAny, section)
+    title = _sanitize_structured_text(section_dict.get("title", ""))
+    items_raw = section_dict.get("items") or section_dict.get("bullets", [])
+
+    if title:
+        lines.append(f"**{title}**")
+
+    if isinstance(items_raw, list):
+        for item in items_raw:
+            rendered_item = _render_item(item)
+            if rendered_item:
+                lines.append(rendered_item)
+
+    if lines and lines[-1] != "":
         lines.append("")
 
-    for section in sections_raw:
-        if not isinstance(section, dict):
-            continue
 
-        section_dict = cast("dict[str, Any]", section)
-        title = _sanitize_structured_text(section_dict.get("title", ""))
-        items_raw = section_dict.get("items", None)
-        if items_raw is None:
-            items_raw = section_dict.get("bullets", [])
-
-        if title:
-            lines.append(f"**{title}**")
-
-        if isinstance(items_raw, list):
-            for item in items_raw:
-                if not isinstance(item, dict):
-                    continue
-                item_dict = cast("dict[str, Any]", item)
-                label = _sanitize_structured_text(item_dict.get("label", ""))
-                text = _sanitize_structured_text(item_dict.get("text", ""))
-                if label and text:
-                    lines.append(f"- **{label}**: {text}")
-                elif text:
-                    lines.append(f"- {text}")
-
-        if lines and lines[-1] != "":
-            lines.append("")
-
+def _format_conclusion(conclusion: str, normalized_qtype: str) -> str:
+    """Format conclusion with appropriate prefix based on qtype."""
     if normalized_qtype == "explanation":
-        conclusion = _ensure_starts_with(
+        return _ensure_starts_with(
             conclusion,
             prefixes=("요약하면", "이처럼"),
             default_prefix="요약하면, ",
         )
-    elif normalized_qtype == "reasoning":
-        conclusion = _ensure_starts_with(
+    if normalized_qtype == "reasoning":
+        return _ensure_starts_with(
             conclusion,
             prefixes=("결론적으로", "따라서", "종합하면", "요약하면"),
             default_prefix="종합하면, ",
         )
+    return conclusion
 
+
+def _render_structured_answer(
+    structured: dict[str, Any],
+    normalized_qtype: str,
+) -> str | None:
+    """Render structured JSON answer to markdown format."""
+    sections_raw = structured.get("sections", [])
+    if not isinstance(sections_raw, list):
+        return None
+
+    intro = _sanitize_structured_text(structured.get("intro", ""))
+    conclusion = _sanitize_structured_text(structured.get("conclusion", ""))
+
+    lines: list[str] = []
+    if intro:
+        lines.extend([intro, ""])
+
+    for section in sections_raw:
+        _render_section(section, lines)
+
+    conclusion = _format_conclusion(conclusion, normalized_qtype)
     if conclusion:
         lines.append(conclusion)
 
