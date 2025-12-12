@@ -109,6 +109,48 @@ async def _evaluate_and_rewrite_turn(
     )
 
 
+def _update_progress_if_available(
+    ctx: WorkflowContext,
+    task_id: Any | None,
+    **kwargs: Any,
+) -> None:
+    if ctx.progress and task_id:
+        ctx.progress.update(task_id, **kwargs)
+
+
+def _mark_turn_failed(ctx: WorkflowContext, task_id: Any | None, turn_id: int) -> None:
+    _update_progress_if_available(
+        ctx,
+        task_id,
+        description=PROGRESS_FAILED_TEMPLATE.format(turn_id=turn_id),
+    )
+
+
+async def _persist_turn_result(
+    ctx: WorkflowContext,
+    result: WorkflowResult,
+) -> None:
+    assert result.evaluation is not None
+    save_result_to_file(result, ctx.config)
+    if ctx.checkpoint_path:
+        await append_checkpoint(ctx.checkpoint_path, result)
+
+
+def _print_turn_panel(query: str, result: WorkflowResult, turn_id: int) -> None:
+    assert result.evaluation is not None
+    console.print(
+        Panel(
+            PANEL_TURN_BODY_TEMPLATE.format(
+                query=query,
+                best_candidate=result.evaluation.get_best_candidate_id(),
+                rewritten=result.rewritten_answer[:200],
+            ),
+            title=PANEL_TURN_TITLE_TEMPLATE.format(turn_id=turn_id),
+            border_style="blue",
+        ),
+    )
+
+
 async def process_single_query(
     ctx: WorkflowContext,
     query: str,
@@ -116,68 +158,35 @@ async def process_single_query(
     task_id: Any | None = None,
 ) -> WorkflowResult | None:
     """단일 질의 처리 (평가 → 재작성)."""
+    _update_progress_if_available(
+        ctx,
+        task_id,
+        description=PROGRESS_PROCESSING_TEMPLATE.format(turn_id=turn_id),
+    )
     try:
-        # Update progress description
-        if ctx.progress and task_id:
-            ctx.progress.update(
-                task_id,
-                description=PROGRESS_PROCESSING_TEMPLATE.format(turn_id=turn_id),
-            )
-
         result = await _evaluate_and_rewrite_turn(ctx=ctx, query=query, turn_id=turn_id)
-
-        if result:
-            # 결과 저장
-            assert result.evaluation is not None
-            save_result_to_file(result, ctx.config)
-            if ctx.checkpoint_path:
-                await append_checkpoint(ctx.checkpoint_path, result)
-
-            # 턴 결과 출력 (Thread-safe way needed for real app, but Rich handles it reasonably well)
-            console.print(
-                Panel(
-                    PANEL_TURN_BODY_TEMPLATE.format(
-                        query=query,
-                        best_candidate=result.evaluation.get_best_candidate_id(),
-                        rewritten=result.rewritten_answer[:200],
-                    ),
-                    title=PANEL_TURN_TITLE_TEMPLATE.format(turn_id=turn_id),
-                    border_style="blue",
-                ),
-            )
-
-            # Mark task as completed
-            if ctx.progress and task_id:
-                ctx.progress.update(
-                    task_id,
-                    advance=1,
-                    description=PROGRESS_DONE_TEMPLATE.format(turn_id=turn_id),
-                )
-
-            return result
-
-    except (APIRateLimitError, ValidationFailedError, SafetyFilterError) as e:
-        ctx.logger.error("복구 가능 오류로 턴 %s를 건너뜁니다: %s", turn_id, e)
-        if ctx.progress and task_id:
-            ctx.progress.update(
-                task_id,
-                description=PROGRESS_FAILED_TEMPLATE.format(turn_id=turn_id),
-            )
+    except (APIRateLimitError, ValidationFailedError, SafetyFilterError) as exc:
+        ctx.logger.error("복구 가능 오류로 턴 %s를 건너뜁니다: %s", turn_id, exc)
+        _mark_turn_failed(ctx, task_id, turn_id)
         return None
-    except BudgetExceededError as e:
-        ctx.logger.critical("예산 초과로 워크플로우를 중단합니다: %s", e)
-        if ctx.progress and task_id:
-            ctx.progress.update(
-                task_id,
-                description=PROGRESS_FAILED_TEMPLATE.format(turn_id=turn_id),
-            )
+    except BudgetExceededError as exc:
+        ctx.logger.critical("예산 초과로 워크플로우를 중단합니다: %s", exc)
+        _mark_turn_failed(ctx, task_id, turn_id)
         raise
-    except (OSError, RuntimeError) as e:
-        ctx.logger.exception(LOG_MESSAGES["turn_exception"].format(error=e))
-        if ctx.progress and task_id:
-            ctx.progress.update(
-                task_id,
-                description=PROGRESS_FAILED_TEMPLATE.format(turn_id=turn_id),
-            )
+    except (OSError, RuntimeError) as exc:
+        ctx.logger.exception(LOG_MESSAGES["turn_exception"].format(error=exc))
+        _mark_turn_failed(ctx, task_id, turn_id)
+        return None
 
-    return None
+    if not result:
+        return None
+
+    await _persist_turn_result(ctx, result)
+    _print_turn_panel(query, result, turn_id)
+    _update_progress_if_available(
+        ctx,
+        task_id,
+        advance=1,
+        description=PROGRESS_DONE_TEMPLATE.format(turn_id=turn_id),
+    )
+    return result
