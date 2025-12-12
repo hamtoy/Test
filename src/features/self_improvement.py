@@ -7,7 +7,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
@@ -69,9 +69,13 @@ class SelfImprovingSystem:
         cutoff: datetime,
     ) -> dict[str, Any] | None:
         try:
-            entry = json.loads(line)
+            entry_raw = json.loads(line)
         except json.JSONDecodeError:
             return None
+
+        if not isinstance(entry_raw, dict):
+            return None
+        entry = cast("dict[str, Any]", entry_raw)
 
         ts_str = str(entry.get("timestamp", "") or "")
         if not ts_str:

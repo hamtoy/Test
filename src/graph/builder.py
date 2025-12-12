@@ -102,13 +102,14 @@ class QAGraphBuilder:
             print(f"✅ 규칙 {created}개 추출/병합 완료")
 
     def _fetch_rule_headings(self, session: Any) -> list[dict[str, Any]]:
-        return session.run(
+        headings: list[dict[str, Any]] = session.run(
             """
             MATCH (p:Page)-[:HAS_BLOCK]->(h:Block)
             WHERE h.type = 'heading_1' AND h.content CONTAINS '자주 틀리는'
             RETURN p.id as page_id, h.order as start_order, h.content as section
             """,
         ).data()
+        return headings
 
     def _collect_rules_for_heading(
         self,
