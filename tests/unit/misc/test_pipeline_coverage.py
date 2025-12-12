@@ -115,3 +115,15 @@ def test_real_time_constraint_enforcer_stream_and_validate() -> None:
         "duplicate text 2023 - 2024", "explanation"
     )
     assert result["issues"]  # missing bold + similarity check
+
+
+def test_build_session_context_density_branches() -> None:
+    from src.qa.pipeline import IntegratedQAPipeline
+
+    pipeline_obj = IntegratedQAPipeline.__new__(IntegratedQAPipeline)
+    ctx = pipeline_obj._build_session_context({"text_density": 0.5})  # noqa: SLF001
+    assert ctx["text_density"] == "medium"
+    ctx = pipeline_obj._build_session_context({"text_density": 0.1})  # noqa: SLF001
+    assert ctx["text_density"] == "low"
+    ctx = pipeline_obj._build_session_context({"text_density": "high"})  # noqa: SLF001
+    assert ctx["text_density"] == "high"

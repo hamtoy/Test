@@ -202,3 +202,41 @@ class TestQueryExecutorWithAsyncProvider:
         result = executor.execute_write("CREATE (n:Node)")
 
         assert result == {"executed": True}
+
+
+class TestQueryExecutorWithFallback:
+    def test_execute_with_fallback_returns_default_when_no_provider(self) -> None:
+        executor = QueryExecutor()
+        assert executor.execute_with_fallback(
+            "MATCH (n) RETURN n", default={"x": 1}
+        ) == {
+            "x": 1,
+        }
+        assert executor.execute_with_fallback("MATCH (n) RETURN n") == []
+
+    def test_execute_with_fallback_uses_async_provider_on_sync_error(self) -> None:
+        from neo4j.exceptions import Neo4jError
+
+        mock_session = MagicMock()
+        mock_session.run.side_effect = Neo4jError("boom")
+        mock_session.__enter__ = MagicMock(return_value=mock_session)
+        mock_session.__exit__ = MagicMock(return_value=False)
+
+        mock_driver = MagicMock()
+        mock_driver.session.return_value = mock_session
+
+        mock_async_session = MagicMock()
+        mock_async_session.run = AsyncMock(return_value=[{"id": 1}])
+
+        class _AsyncCtx:
+            async def __aenter__(self):  # noqa: ANN001
+                return mock_async_session
+
+            async def __aexit__(self, exc_type, exc_val, exc_tb):  # noqa: ANN001
+                return None
+
+        mock_provider = MagicMock()
+        mock_provider.session.return_value = _AsyncCtx()
+
+        executor = QueryExecutor(graph_driver=mock_driver, graph_provider=mock_provider)
+        assert executor.execute_with_fallback("MATCH (n) RETURN n") == [{"id": 1}]

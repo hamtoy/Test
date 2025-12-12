@@ -68,3 +68,22 @@ def test_fetch_query_types_error(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     qtypes = router._fetch_query_types()
     assert qtypes == []
+
+
+def test_log_routing_success_path() -> None:
+    class _GraphSession:
+        def __enter__(self):  # noqa: ANN001
+            return self
+
+        def __exit__(self, exc_type, exc, tb):  # noqa: ANN001
+            return None
+
+        def run(self, *_args, **_kwargs):  # noqa: ANN001
+            return None
+
+    fake_graph = types.SimpleNamespace(session=lambda: _GraphSession())
+    router = GraphEnhancedRouter(
+        kg=types.SimpleNamespace(_graph=fake_graph),  # type: ignore[arg-type]
+        llm=_FakeLLM("any"),  # type: ignore[arg-type]
+    )
+    router._log_routing("input", "explanation")  # noqa: SLF001

@@ -1,0 +1,33 @@
+"""Extra tests for src.main __main__ guard."""
+
+from __future__ import annotations
+
+import runpy
+
+import pytest
+
+
+def test_main_module_guard_invokes_asyncio_run(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+    monkeypatch.setattr("dotenv.load_dotenv", lambda: None)
+    monkeypatch.setattr("asyncio.run", lambda _coro: calls.append("ran"))
+
+    runpy.run_module("src.main", run_name="__main__")
+    assert calls == ["ran"]
+
+
+def test_main_module_guard_handles_keyboard_interrupt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("dotenv.load_dotenv", lambda: None)
+
+    def _raise(_coro):  # noqa: ANN001
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr("asyncio.run", _raise)
+
+    with pytest.raises(SystemExit) as excinfo:
+        runpy.run_module("src.main", run_name="__main__")
+    assert excinfo.value.code == 130

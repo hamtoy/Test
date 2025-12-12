@@ -200,3 +200,66 @@ class TestCacheTTLExpiration:
         await cache.clear()
 
         assert cache.get_stats()["cache_size"] == 0
+
+
+class _FakeRedis:
+    def __init__(self) -> None:
+        self.store: dict[str, str] = {}
+
+    async def get(self, key: str):  # noqa: ANN001
+        return self.store.get(key)
+
+    async def setex(self, key: str, ttl: int, value: str) -> None:
+        self.store[key] = value
+
+    async def scan(self, cursor: int, match: str, count: int = 100):  # noqa: ANN001, ARG002
+        prefix = match.rstrip("*")
+        keys = [k for k in self.store if k.startswith(prefix)]
+        return 0, keys
+
+    async def delete(self, *keys: str) -> None:
+        for k in keys:
+            self.store.pop(k, None)
+
+
+@pytest.mark.asyncio
+async def test_cache_uses_redis_when_available() -> None:
+    redis = _FakeRedis()
+    cache = AnswerCache(redis_client=redis)
+    await cache.set("q", "ocr", "explanation", {"answer": "a"})
+
+    result = await cache.get("q", "ocr", "explanation")
+    assert result == {"answer": "a"}
+    assert cache.get_stats()["hits"] == 1
+
+
+@pytest.mark.asyncio
+async def test_cache_redis_errors_fall_back_to_memory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    redis = _FakeRedis()
+
+    async def _bad_setex(*_a, **_k):  # noqa: ANN001
+        raise RuntimeError("boom")
+
+    redis.setex = _bad_setex  # type: ignore[assignment]
+    cache = AnswerCache(redis_client=redis)
+    await cache.set("q", "ocr", "explanation", {"answer": "a"})
+
+    # Force Redis get to fail as well.
+    async def _bad_get(*_a, **_k):  # noqa: ANN001
+        raise RuntimeError("boom")
+
+    redis.get = _bad_get  # type: ignore[assignment]
+    result = await cache.get("q", "ocr", "explanation")
+    assert result == {"answer": "a"}
+
+
+@pytest.mark.asyncio
+async def test_cache_clear_removes_redis_keys() -> None:
+    redis = _FakeRedis()
+    cache = AnswerCache(redis_client=redis)
+    await cache.set("q1", "ocr", "explanation", {"a": 1})
+    assert redis.store
+    await cache.clear()
+    assert redis.store == {}

@@ -191,3 +191,74 @@ def test_strip_output_tags(workspace_executor):
     result = workspace_executor._strip_output_tags(text)
     assert "<output>" not in result.lower()
     assert "<OUTPUT>" not in result
+
+
+@pytest.mark.asyncio
+async def test_apply_edit_fallback_to_agent_rewrite(
+    mock_agent, mock_config, sample_context
+):
+    async def _bad_edit_fn(**_kwargs):  # noqa: ANN001
+        raise TypeError("bad")
+
+    executor = WorkspaceExecutor(
+        agent=mock_agent,
+        kg=None,
+        pipeline=None,
+        config=mock_config,
+        edit_fn=_bad_edit_fn,
+    )
+    edited = await executor._apply_edit(  # noqa: SLF001
+        target_text="t",
+        ctx=sample_context,
+        edit_request="e",
+    )
+    assert edited == "테스트 답변입니다."
+    assert mock_agent.rewrite_best_answer.called
+
+
+@pytest.mark.asyncio
+async def test_validate_and_fix_answer_rewrites_on_errors(
+    monkeypatch: pytest.MonkeyPatch,
+    mock_agent,
+    mock_config,
+    sample_context,
+) -> None:
+    class _ValResult:
+        warnings = ["warn"]
+
+        def has_errors(self) -> bool:
+            return True
+
+        def get_error_summary(self) -> str:
+            return "err"
+
+    class _FakeValidator:
+        def __init__(self, *_args, **_kwargs):  # noqa: ANN001
+            return None
+
+        def validate_all(self, *_args, **_kwargs):  # noqa: ANN001
+            return _ValResult()
+
+    monkeypatch.setattr(
+        "src.workflow.workspace_executor.UnifiedValidator",
+        _FakeValidator,
+    )
+    monkeypatch.setattr(
+        "src.workflow.workspace_executor.postprocess_answer",
+        lambda ans, *_a, **_k: ans,
+    )
+
+    mock_agent.rewrite_best_answer = AsyncMock(return_value="fixed")
+    executor = WorkspaceExecutor(
+        agent=mock_agent,
+        kg=None,
+        pipeline=None,
+        config=mock_config,
+    )
+    result = await executor._validate_and_fix_answer(  # noqa: SLF001
+        "bad",
+        sample_context,
+        "explanation",
+        "[len]",
+    )
+    assert result == "fixed"
