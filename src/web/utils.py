@@ -197,6 +197,16 @@ def _render_item(item: Any) -> str | None:
     return None
 
 
+def _ensure_title_spacing(lines: list[str]) -> None:
+    """소제목 앞에 적절한 빈줄을 추가."""
+    if len(lines) >= 2 and lines[-1] == "" and lines[-2].strip():
+        # 이미 빈줄이 있고, 그 앞에 내용이 있으면 한 줄 더 추가
+        lines.append("")
+    elif lines and lines[-1].strip():
+        # 빈줄 없이 내용이 있으면 빈줄 2개 추가 (문단 구분)
+        lines.extend(["", ""])
+
+
 def _render_section(section: Any, lines: list[str]) -> None:
     """Render a single section and append to lines."""
     if not isinstance(section, dict):
@@ -207,14 +217,7 @@ def _render_section(section: Any, lines: list[str]) -> None:
     items_raw = section_dict.get("items") or section_dict.get("bullets", [])
 
     if title:
-        # 소제목 앞에 빈줄 추가 (마지막이 실제 내용일 때)
-        # 이전 item들 후 이미 빈줄이 있으면 추가 안함
-        if len(lines) >= 2 and lines[-1] == "" and lines[-2].strip():
-            # 이미 빈줄이 있고, 그 앞에 내용이 있으면 한 줄 더 추가 (문단 구분)
-            lines.append("")
-        elif lines and lines[-1].strip():
-            # 빈줄 없이 내용이 있으면 빈줄 2개 추가 (문단 구분)
-            lines.extend(["", ""])
+        _ensure_title_spacing(lines)
         lines.append(f"**{title}**")
 
     if isinstance(items_raw, list):
