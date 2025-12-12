@@ -224,11 +224,13 @@ groups:
 ### 높은 레이턴시
 
 1. **캐시 히트율 확인**
+
    ```bash
    python -m src.main --analyze-cache
    ```
-   
+
 2. **Neo4j 연결 상태 확인**
+
    ```bash
    python scripts/neo4j_benchmark_stub.py
    ```
@@ -237,6 +239,7 @@ groups:
    - [Google Cloud Status](https://status.cloud.google.com/)
 
 4. **동시성 조정**
+
    ```bash
    GEMINI_MAX_CONCURRENCY=3
    ```
@@ -244,16 +247,19 @@ groups:
 ### 높은 에러율
 
 1. **로그에서 에러 타입 확인**
+
    ```bash
    tail -f error.log | grep ERROR
    ```
 
 2. **API 키 유효성 확인**
+
    ```bash
    python -m src.list_models
    ```
 
 3. **Rate Limit 도달 여부 확인**
+
    ```bash
    grep "429" app.log
    ```
@@ -264,11 +270,13 @@ groups:
 ### 캐시 히트율 저하
 
 1. **TTL 설정 확인**
+
    ```bash
    GEMINI_CACHE_TTL_MINUTES=360
    ```
 
 2. **캐시 크기 확인**
+
    ```bash
    GEMINI_CACHE_SIZE=100
    ```
@@ -287,6 +295,7 @@ python scripts/latency_baseline.py --log-file app.log
 ```
 
 출력:
+
 ```
 ┏━━━━━━━━┳━━━━━━━━┓
 ┃ Metric ┃ Value  ┃
@@ -303,7 +312,7 @@ python scripts/latency_baseline.py --log-file app.log
 ### 비용 분석
 
 ```bash
-python scripts/compare_runs.py --sort-by cost
+python scripts/analysis/compare_runs.py --sort-by cost
 ```
 
 ---

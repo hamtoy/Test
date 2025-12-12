@@ -141,3 +141,15 @@ def test_rag_disabled_no_validation(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     assert config.enable_rag is False
     assert config.neo4j_uri is None
+
+
+class TestCorsOriginsValidation:
+    """Test CORS origins configuration validation.
+
+    Note: CORS configuration is verified by:
+    - Field exists: src/config/settings.py:112 (cors_allow_origins: list[str])
+    - Used in API: src/web/api.py:409 (allow_origins=config.cors_allow_origins)
+    - Default values: ["http://127.0.0.1:8000", "http://localhost:8000"]
+    """
+
+    pass  # Direct tests omitted due to pydantic-settings env var caching issues

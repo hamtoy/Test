@@ -69,11 +69,11 @@ extend-select = [
 
 ### 2.1 프로파일링 자동화 ✅ 구현됨
 
-**위치**: `scripts/auto_profile.py`
+**위치**: `scripts/dev/auto_profile.py`
 
 ```python
 # 실행 예시
-python scripts/auto_profile.py src.main --mode AUTO --ocr-file example_ocr.txt
+python scripts/dev/auto_profile.py src.main --mode AUTO --ocr-file example_ocr.txt
 ```
 
 **기능**:
@@ -172,11 +172,11 @@ Select-String "ERROR" app.log | Select-Object -Last 20
 
 ### 4.1 실험 결과 비교 스크립트 ✅ 구현됨
 
-**위치**: `scripts/compare_runs.py`
+**위치**: `scripts/analysis/compare_runs.py`
 
 ```bash
 # 실행 예시
-python scripts/compare_runs.py --sort-by cost
+python scripts/analysis/compare_runs.py --sort-by cost
 ```
 
 **기능**:
