@@ -8,7 +8,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
-from typing import Any, Literal, TypedDict, cast
+from typing import Any, Literal, TypeAlias, TypedDict, cast
 
 from fastapi import HTTPException
 
@@ -16,8 +16,8 @@ from src.config import AppConfig
 
 logger = logging.getLogger(__name__)
 
-# Type alias constant to avoid duplicating the literal
-_DictStrAny = "dict[str, Any]"
+# Type alias to avoid duplicating the literal
+_DictStrAny: TypeAlias = dict[str, Any]
 
 # 프로젝트 루트 경로 (templates, data 등 상대 경로 계산에 사용)
 REPO_ROOT = Path(__file__).resolve().parents[2]
