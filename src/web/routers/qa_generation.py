@@ -222,6 +222,8 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
             ),
         )
 
+    except HTTPException:
+        raise
     except asyncio.TimeoutError:
         timeout_msg = (
             f"생성 시간 초과 ({_get_config().qa_batch_timeout if body.mode in {'batch', 'batch_three'} else _get_config().qa_single_timeout}초). "

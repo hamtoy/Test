@@ -14,10 +14,8 @@ def test_agent_lazy_caching_import(monkeypatch: pytest.MonkeyPatch) -> None:
     if "caching" in agent_pkg.__dict__:
         del agent_pkg.__dict__["caching"]
 
-    sys.modules.pop("google.generativeai.caching", None)
-    fake_caching = types.SimpleNamespace()
-    monkeypatch.setitem(sys.modules, "google.generativeai.caching", fake_caching)
-
     caching_mod = agent_pkg.caching  # triggers __getattr__
-    assert caching_mod is sys.modules["google.generativeai.caching"]
+    import google.generativeai.caching as genai_caching
+
+    assert caching_mod is genai_caching
     assert agent_pkg.caching is caching_mod
