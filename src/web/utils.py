@@ -247,6 +247,69 @@ def _format_conclusion(conclusion: str, normalized_qtype: str) -> str:
     return conclusion
 
 
+def _split_conclusion_block(
+    answer: str,
+    normalized_qtype: str,
+) -> tuple[str, str] | None:
+    """본문/결론을 분리한다.
+
+    - 우선: 렌더러가 추가한 '**결론**' 섹션 기준으로 분리
+    - 보조: 마지막 줄이 결론 접두어로 시작하면 결론으로 간주
+    """
+    lines = answer.splitlines()
+    for idx in range(len(lines) - 1, -1, -1):
+        if lines[idx].strip() == "**결론**":
+            prefix = "\n".join(lines[:idx]).rstrip()
+            conclusion = "\n".join(lines[idx:]).strip()
+            return prefix, conclusion
+
+    prefixes: tuple[str, ...]
+    if normalized_qtype == "explanation":
+        prefixes = ("요약하면", "이처럼")
+    elif normalized_qtype == "reasoning":
+        prefixes = ("결론적으로", "따라서", "종합하면", "요약하면")
+    else:
+        prefixes = ()
+
+    for idx in range(len(lines) - 1, -1, -1):
+        candidate = lines[idx].strip()
+        if not candidate:
+            continue
+        if prefixes and candidate.startswith(prefixes):
+            prefix = "\n".join(lines[:idx]).rstrip()
+            return prefix, candidate
+        break
+
+    return None
+
+
+def _truncate_markdown_preserving_lines(text: str, max_length: int) -> str:
+    """마크다운 라인 단위로 최대 길이까지 잘라낸다."""
+    if max_length <= 0:
+        return ""
+    if len(text) <= max_length:
+        return text.rstrip()
+
+    lines = text.splitlines()
+    kept: list[str] = []
+    current_len = 0
+    for line in lines:
+        add_len = len(line) + (1 if kept else 0)  # join 시 '\n'
+        if current_len + add_len > max_length:
+            break
+        kept.append(line)
+        current_len += add_len
+
+    if kept:
+        return "\n".join(kept).rstrip()
+
+    truncated = text[:max_length]
+    last_period = truncated.rfind(".")
+    if last_period != -1:
+        return truncated[: last_period + 1].rstrip()
+    return truncated.rstrip()
+
+
 def _render_structured_answer(
     structured: dict[str, Any],
     normalized_qtype: str,
@@ -258,17 +321,32 @@ def _render_structured_answer(
 
     intro = _sanitize_structured_text(structured.get("intro", ""))
     conclusion = _sanitize_structured_text(structured.get("conclusion", ""))
+    if not conclusion:
+        if intro:
+            sentences = _split_sentences_safe(intro)
+            conclusion = sentences[0] if sentences else intro
+        elif normalized_qtype == "explanation":
+            conclusion = "핵심 내용은 위와 같습니다"
+        elif normalized_qtype == "reasoning":
+            conclusion = "위 근거를 바탕으로 같은 결론입니다"
 
     lines: list[str] = []
+    lines.append("**서론**")
     if intro:
         lines.extend([intro, ""])
+    else:
+        lines.append("")
+
+    lines.extend(["**본론**", ""])
 
     for section in sections_raw:
         _render_section(section, lines)
 
     conclusion = _format_conclusion(conclusion, normalized_qtype)
     if conclusion:
-        lines.append(conclusion)
+        if lines and lines[-1] != "":
+            lines.append("")
+        lines.extend(["**결론**", conclusion])
 
     rendered = "\n".join(lines).strip()
     return rendered or None
@@ -420,11 +498,33 @@ def _apply_reasoning_limits(answer: str) -> str:
 def _truncate_explanation(answer: str, max_length: int | None) -> str:
     if not max_length or len(answer) <= max_length:
         return answer
-    truncated = answer[:max_length]
-    last_period = truncated.rfind(".")
-    if last_period != -1:
-        return truncated[: last_period + 1]
-    return truncated + "."
+
+    split = _split_conclusion_block(answer, normalized_qtype="explanation")
+    if split is None:
+        truncated = answer[:max_length]
+        last_period = truncated.rfind(".")
+        if last_period != -1:
+            return truncated[: last_period + 1]
+        return truncated + "."
+
+    prefix, conclusion_block = split
+    separator = "\n\n"
+
+    if len(conclusion_block) >= max_length:
+        truncated = answer[:max_length]
+        last_period = truncated.rfind(".")
+        if last_period != -1:
+            return truncated[: last_period + 1]
+        return truncated + "."
+
+    budget = max_length - len(conclusion_block) - len(separator)
+    if budget <= 0:
+        return conclusion_block[:max_length].rstrip()
+
+    truncated_prefix = _truncate_markdown_preserving_lines(prefix, budget)
+    if truncated_prefix:
+        return f"{truncated_prefix}{separator}{conclusion_block}".strip()
+    return conclusion_block.strip()
 
 
 def _apply_target_limits(answer: str) -> str:
