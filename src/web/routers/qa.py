@@ -153,7 +153,9 @@ def _maybe_start_reasoning_task(
     list[str],
 ]:
     if remaining_types and remaining_types[0] == "reasoning":
-        task = asyncio.create_task(_stream_first_batch_type(agent, ocr_text, "reasoning"))
+        task = asyncio.create_task(
+            _stream_first_batch_type(agent, ocr_text, "reasoning")
+        )
         return task, remaining_types[1:]
     return None, remaining_types
 
