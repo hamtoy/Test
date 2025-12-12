@@ -82,66 +82,120 @@ async def run_workflow_interactive(
     logger: logging.Logger,
 ) -> None:
     """질의 생성 및 평가 - 에러 핸들링 강화."""
-    # 1. API 키 검증
-    if not config.api_key or not config.api_key.startswith("AIza"):
-        show_error_with_guide(
-            "API 키가 유효하지 않습니다",
-            "GEMINI_API_KEY가 설정되지 않았거나 형식이 올바르지 않습니다",
-            ".env 파일에서 GEMINI_API_KEY='AIza...'로 시작하는 키를 설정하세요",
-        )
-        Prompt.ask(RETURN_TO_MENU_PROMPT)
+    if not _ensure_valid_api_key(config):
         return
 
-    # 2. 파일 존재 확인
+    ocr_file, cand_file = _prompt_workflow_input_files()
+    ocr_path, cand_path = _resolve_input_paths(config, ocr_file, cand_file)
+
+    if not _ensure_ocr_file(ocr_path):
+        return
+    if not _ensure_candidate_file(cand_path):
+        return
+
+    loaded = await _load_workflow_inputs(config, ocr_file, cand_file)
+    if loaded is None:
+        return
+    ocr_text, candidates = loaded
+
+    user_intent = Prompt.ask("사용자 의도 (선택)", default="")
+    queries = await _generate_queries_with_progress(agent, ocr_text, user_intent)
+    if not queries:
+        console.print("[yellow]생성된 질의가 없습니다.[/yellow]")
+        return
+
+    display_queries(queries)
+    if not _confirm_queries(queries):
+        return
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    results = await _execute_queries_with_progress(
+        queries,
+        agent,
+        ocr_text,
+        candidates,
+        config,
+        logger,
+    )
+    _display_workflow_summary(queries, results, agent, config, timestamp)
+    Prompt.ask(f"\n{RETURN_TO_MENU_PROMPT}")
+
+
+def _ensure_valid_api_key(config: AppConfig) -> bool:
+    if config.api_key and config.api_key.startswith("AIza"):
+        return True
+    show_error_with_guide(
+        "API 키가 유효하지 않습니다",
+        "GEMINI_API_KEY가 설정되지 않았거나 형식이 올바르지 않습니다",
+        ".env 파일에서 GEMINI_API_KEY='AIza...'로 시작하는 키를 설정하세요",
+    )
+    Prompt.ask(RETURN_TO_MENU_PROMPT)
+    return False
+
+
+def _prompt_workflow_input_files() -> tuple[str, str]:
     ocr_file = Prompt.ask("OCR 파일명", default="input_ocr.txt")
     cand_file = Prompt.ask("후보 답변 파일명", default="input_candidates.json")
+    return ocr_file, cand_file
 
-    ocr_path = config.input_dir / ocr_file
-    cand_path = config.input_dir / cand_file
 
-    if not ocr_path.exists():
-        console.print(f"[red]✗ OCR 파일이 없습니다: {ocr_path}[/red]")
-        if Confirm.ask("빈 파일을 생성할까요?", default=True):
-            ocr_path.parent.mkdir(parents=True, exist_ok=True)
-            ocr_path.write_text("", encoding="utf-8")
-            console.print("[green]✓ 파일 생성됨 - IDE에서 내용을 입력하세요[/green]")
-        else:
-            return
+def _resolve_input_paths(
+    config: AppConfig,
+    ocr_file: str,
+    cand_file: str,
+) -> tuple[Path, Path]:
+    return config.input_dir / ocr_file, config.input_dir / cand_file
 
-    if not cand_path.exists():
-        console.print(f"[red]✗ 후보 답변 파일이 없습니다: {cand_path}[/red]")
-        if Confirm.ask("템플릿을 생성할까요?", default=True):
-            import json
 
-            template = {"a": "첫 번째 답변", "b": "두 번째 답변", "c": "세 번째 답변"}
-            cand_path.parent.mkdir(parents=True, exist_ok=True)
-            cand_path.write_text(
-                json.dumps(template, ensure_ascii=False, indent=2),
-                encoding="utf-8",
-            )
-            console.print("[green]✓ 템플릿 생성됨 - IDE에서 답변을 입력하세요[/green]")
-        else:
-            return
+def _ensure_ocr_file(ocr_path: Path) -> bool:
+    if ocr_path.exists():
+        return True
+    console.print(f"[red]✗ OCR 파일이 없습니다: {ocr_path}[/red]")
+    if not Confirm.ask("빈 파일을 생성할까요?", default=True):
+        return False
+    ocr_path.parent.mkdir(parents=True, exist_ok=True)
+    ocr_path.write_text("", encoding="utf-8")
+    console.print("[green]✓ 파일 생성됨 - IDE에서 내용을 입력하세요[/green]")
+    return True
 
-    # 3. 데이터 로드
+
+def _ensure_candidate_file(cand_path: Path) -> bool:
+    if cand_path.exists():
+        return True
+    console.print(f"[red]✗ 후보 답변 파일이 없습니다: {cand_path}[/red]")
+    if not Confirm.ask("템플릿을 생성할까요?", default=True):
+        return False
+    import json
+
+    template = {"a": "첫 번째 답변", "b": "두 번째 답변", "c": "세 번째 답변"}
+    cand_path.parent.mkdir(parents=True, exist_ok=True)
+    cand_path.write_text(
+        json.dumps(template, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    console.print("[green]✓ 템플릿 생성됨 - IDE에서 답변을 입력하세요[/green]")
+    return True
+
+
+async def _load_workflow_inputs(
+    config: AppConfig,
+    ocr_file: str,
+    cand_file: str,
+) -> tuple[str, dict[str, str]] | None:
     try:
-        ocr_text, candidates = await load_input_data(
-            config.input_dir,
-            ocr_file,
-            cand_file,
-        )
-    except FileNotFoundError as e:
+        return await load_input_data(config.input_dir, ocr_file, cand_file)
+    except FileNotFoundError as exc:
         show_error_with_guide(
             "파일을 찾을 수 없습니다",
-            str(e),
+            str(exc),
             "IDE에서 data/inputs/ 폴더에 파일을 생성하세요",
         )
         Prompt.ask(RETURN_TO_MENU_PROMPT)
-        return
-    except Exception as e:
+        return None
+    except Exception as exc:  # noqa: BLE001
         import json
 
-        if isinstance(e.__cause__, json.JSONDecodeError):
+        if isinstance(getattr(exc, "__cause__", None), json.JSONDecodeError):
             show_error_with_guide(
                 "JSON 파싱 오류",
                 "후보 답변 파일 형식이 올바르지 않습니다",
@@ -150,16 +204,18 @@ async def run_workflow_interactive(
         else:
             show_error_with_guide(
                 "데이터 로드 실패",
-                str(e),
+                str(exc),
                 "파일 경로와 형식을 확인하세요",
             )
         Prompt.ask(RETURN_TO_MENU_PROMPT)
-        return
+        return None
 
-    # 4. 사용자 의도 입력
-    user_intent = Prompt.ask("사용자 의도 (선택)", default="")
 
-    # 5. 질의 생성 (진행 표시 개선)
+async def _generate_queries_with_progress(
+    agent: GeminiAgent,
+    ocr_text: str,
+    user_intent: str,
+) -> list[str]:
     with Progress(
         SpinnerColumn(),
         TextColumn(PROGRESS_DESCRIPTION_TEMPLATE),
@@ -169,44 +225,46 @@ async def run_workflow_interactive(
         try:
             queries = await agent.generate_query(ocr_text, user_intent or None)
             progress.update(task, description="[green]✓ 질의 생성 완료[/green]")
-        except Exception as e:
+            return queries
+        except Exception as exc:  # noqa: BLE001
             progress.update(task, description="[red]✗ 질의 생성 실패[/red]")
             show_error_with_guide(
                 "질의 생성 실패",
-                str(e),
+                str(exc),
                 "API 키와 네트워크 연결을 확인하고 다시 시도하세요",
             )
             Prompt.ask(RETURN_TO_MENU_PROMPT)
-            return
+            return []
 
-    if not queries:
-        console.print("[yellow]생성된 질의가 없습니다.[/yellow]")
-        return
 
-    display_queries(queries)
+def _confirm_queries(queries: list[str]) -> bool:
+    if Confirm.ask("위 질의들로 진행하시겠습니까?", default=True):
+        return True
+    console.print("[yellow]작업이 취소되었습니다.[/yellow]")
+    return False
 
-    if not Confirm.ask("위 질의들로 진행하시겠습니까?", default=True):
-        console.print("[yellow]작업이 취소되었습니다.[/yellow]")
-        return
 
-    # 6. 질의 처리 (결과 추적)
+async def _execute_queries_with_progress(
+    queries: list[str],
+    agent: GeminiAgent,
+    ocr_text: str,
+    candidates: dict[str, str],
+    config: AppConfig,
+    logger: logging.Logger,
+) -> list[WorkflowResult | None]:
     console.print(f"\n[bold]⚙️  {len(queries)}개 질의 처리 시작[/bold]\n")
-
     results: list[WorkflowResult | None] = []
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
     with Progress(
         SpinnerColumn(),
         TextColumn(PROGRESS_DESCRIPTION_TEMPLATE),
         console=console,
     ) as progress:
-        for i, query in enumerate(queries):
-            turn_id = i + 1
+        for idx, query in enumerate(queries):
+            turn_id = idx + 1
             task = progress.add_task(
                 f"[cyan]질의 {turn_id}/{len(queries)}: {query[:50]}...[/cyan]",
                 total=None,
             )
-
             try:
                 result = await execute_workflow_simple(
                     agent=agent,
@@ -218,29 +276,34 @@ async def run_workflow_interactive(
                     turn_id=turn_id,
                 )
                 results.append(result)
-
-                if result and result.success:
-                    progress.update(
-                        task,
-                        description=f"[green]✓ 질의 {turn_id}/{len(queries)} 완료[/green]",
-                    )
-                else:
-                    progress.update(
-                        task,
-                        description=f"[yellow]⚠ 질의 {turn_id}/{len(queries)} 건너뜀[/yellow]",
-                    )
-            except Exception:
-                logger.exception(f"Query {turn_id} failed")
+                _update_workflow_progress(progress, task, turn_id, len(queries), result)
+            except Exception:  # noqa: BLE001
+                logger.exception("Query %d failed", turn_id)
                 progress.update(
                     task,
                     description=f"[red]✗ 질의 {turn_id}/{len(queries)} 실패[/red]",
                 )
                 results.append(None)
+    return results
 
-    # 결과 요약 표시
-    _display_workflow_summary(queries, results, agent, config, timestamp)
 
-    Prompt.ask(f"\n{RETURN_TO_MENU_PROMPT}")
+def _update_workflow_progress(
+    progress: Progress,
+    task_id: int,
+    turn_id: int,
+    total_turns: int,
+    result: WorkflowResult | None,
+) -> None:
+    if result and result.success:
+        progress.update(
+            task_id,
+            description=f"[green]✓ 질의 {turn_id}/{total_turns} 완료[/green]",
+        )
+        return
+    progress.update(
+        task_id,
+        description=f"[yellow]⚠ 질의 {turn_id}/{total_turns} 건너뜀[/yellow]",
+    )
 
 
 async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> None:
