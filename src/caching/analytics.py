@@ -433,7 +433,7 @@ def analyze_cache_stats(path: Path) -> dict[str, Any]:
 
                 # Calculate savings incrementally
                 estimated_savings += calculate_savings(record)
-            except (json.JSONDecodeError, ValueError, TypeError):
+            except (ValueError, TypeError):
                 # Skip malformed lines without affecting counts
                 continue
 
