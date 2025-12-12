@@ -208,10 +208,9 @@ class TestQAGenerateApi:
         assert data["pair"]["type"] == "추론"
 
     def test_generate_single_qa_missing_type(self, client: Any) -> None:
-        """Test single QA generation with missing type returns 500 when agent is None."""
+        """Test single QA generation with missing type returns 400."""
         response = client.post("/api/qa/generate", json={"mode": "single"})
-        # Agent is None so returns 500
-        assert response.status_code == 500
+        assert response.status_code == 400
 
     def test_generate_single_qa_invalid_type(self, client: Any) -> None:
         """Test single QA generation with invalid type returns 422 (validation error)."""
