@@ -365,10 +365,10 @@ async def _evaluate_answer_quality(
 
     weights = weights or LATS_WEIGHTS_PRESETS.get(query_type, DEFAULT_LATS_WEIGHTS)
 
-    score_details = {"weights": vars(weights), "failures": []}
+    failures: list[str] = []
+    score_details = {"weights": vars(weights), "failures": failures}
     score = weights.base_score
 
-    failures = cast("list[str]", score_details["failures"])
     score += _score_length(answer, weights, failures)
     score += _score_numbers(
         answer,
@@ -388,7 +388,7 @@ async def _evaluate_answer_quality(
             "저품질 LATS 답변 (%.2f): %s, 실패: %s",
             final_score,
             query_type,
-            ", ".join(cast("list[str]", score_details["failures"])),
+            ", ".join(failures),
         )
 
     logger.debug("LATS 점수: %.2f (%s)", final_score, score_details)
@@ -417,8 +417,7 @@ async def _lats_evaluate_answer(node: SearchNode) -> float:
     weights = LATS_WEIGHTS_PRESETS.get(query_type, DEFAULT_LATS_WEIGHTS)
 
     score = weights.base_score
-    score_details = {"weights": vars(weights), "failures": []}
-    failures = cast("list[str]", score_details["failures"])
+    failures: list[str] = []
     score += _score_length(current_answer, weights, failures)
     score += _score_numbers(current_answer, ocr_text, weights, failures)
     score += _score_forbidden_patterns(current_answer, weights, failures)
