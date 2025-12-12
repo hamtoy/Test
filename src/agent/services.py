@@ -8,7 +8,11 @@ from typing import TYPE_CHECKING, Any
 from pydantic import ValidationError
 
 from src.config.exceptions import APIRateLimitError, ValidationFailedError
-from src.core.models import EvaluationResultSchema, QueryResult
+from src.core.models import (
+    EvaluationResultSchema,
+    QueryResult,
+    StructuredAnswerSchema,
+)
 from src.infra.utils import clean_markdown_code_block, safe_json_parse
 
 if TYPE_CHECKING:
@@ -522,7 +526,22 @@ class RewriterService:
                 length_constraint=length_constraint,
             )
 
-    def _unwrap_response(self, response_text: str) -> str:
+    def _unwrap_response(self, response_text: str, query_type: str) -> str:
+        """응답 텍스트를 언래핑. JSON 모드면 구조화된 필드 추출."""
+        # JSON 모드 응답 처리 (설명/추론 타입)
+        if query_type in {"explanation", "reasoning", "global_explanation"}:
+            try:
+                import json
+
+                data = json.loads(response_text)
+                if isinstance(data, dict) and "intro" in data:
+                    # StructuredAnswerSchema 형식 - JSON 그대로 반환하여
+                    # render_structured_answer_if_present()가 처리하도록 함
+                    return response_text
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        # 기존 로직: rewritten_answer 키 추출
         unwrapped = safe_json_parse(response_text, "rewritten_answer")
         if isinstance(unwrapped, str):
             return unwrapped
@@ -565,8 +584,14 @@ class RewriterService:
             length_constraint,
         )
 
+        # 설명/추론 타입은 JSON 모드 활성화
+        response_schema = None
+        if query_type in {"explanation", "reasoning", "global_explanation"}:
+            response_schema = StructuredAnswerSchema
+
         model = agent._create_generative_model(  # noqa: SLF001
             system_prompt,
+            response_schema=response_schema,
             cached_content=cached_content,
         )
 
@@ -577,4 +602,4 @@ class RewriterService:
             payload,
             operation="rewrite",
         )
-        return self._unwrap_response(response_text)
+        return self._unwrap_response(response_text, query_type)

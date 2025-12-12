@@ -61,6 +61,28 @@ class EvaluationResultSchema(BaseModel):
         return self.best_candidate
 
 
+class StructuredAnswerItem(BaseModel):
+    """항목 하나의 구조."""
+
+    label: str = Field(description="항목명")
+    text: str = Field(description="1-2문장 설명")
+
+
+class StructuredSection(BaseModel):
+    """섹션 하나의 구조."""
+
+    title: str = Field(description="소제목 (서론/본론/결론 같은 라벨 금지)")
+    items: list[StructuredAnswerItem] = Field(description="항목 목록")
+
+
+class StructuredAnswerSchema(BaseModel):
+    """구조화된 답변 스키마 - 설명/추론 타입용."""
+
+    intro: str = Field(description="1-2문장 도입")
+    sections: list[StructuredSection] = Field(description="섹션 목록")
+    conclusion: str = Field(description="마지막 1-2문장")
+
+
 class QueryResult(BaseModel):
     """LLM이 생성한 질의 리스트를 구조화하여 받기 위한 모델."""
 
