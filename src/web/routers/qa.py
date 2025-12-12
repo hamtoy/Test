@@ -151,9 +151,18 @@ async def _stream_batch_events(
 
     completed_queries: list[str] = []
     success_count = 0
-
     timeout = _get_config().qa_single_timeout
+
+    # 첫 타입(global_explanation)과 reasoning을 병렬 실행해 체감 시간을 단축
     first_type = batch_types[0]
+    remaining_types = batch_types[1:]
+    reasoning_task = None
+    if remaining_types and remaining_types[0] == "reasoning":
+        reasoning_task = asyncio.create_task(
+            _stream_first_batch_type(agent, ocr_text, "reasoning")
+        )
+        remaining_types = remaining_types[1:]
+
     (
         first_answer,
         first_queries,
@@ -169,7 +178,23 @@ async def _stream_batch_events(
     completed_queries.extend(first_queries)
     success_count += first_success
 
-    remaining_types = batch_types[1:]
+    if reasoning_task:
+        try:
+            (
+                reasoning_answer,
+                reasoning_queries,
+                reasoning_success,
+                reasoning_events,
+            ) = await reasoning_task
+            for event in reasoning_events:
+                yield event
+            completed_queries.extend(reasoning_queries)
+            success_count += reasoning_success
+            # reasoning_answer는 target_*에 불필요하므로 버림
+        except Exception as exc:  # noqa: BLE001
+            logger.error("reasoning 실패: %s", exc)
+            yield _sse("error", type="reasoning", error=str(exc))
+
     if remaining_types:
         task_map = _create_stream_tasks(
             remaining_types,

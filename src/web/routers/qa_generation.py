@@ -169,20 +169,41 @@ async def _process_batch_request(
     ocr_text: str,
     start: datetime,
 ) -> dict[str, Any]:
-    results: list[dict[str, Any]] = []
     batch_types = _resolve_batch_types(body)
 
+    # 글로벌 설명 + reasoning을 동시에 시작해 총 대기시간을 줄이고,
+    # 설명 결과가 필요한 target_* 만 설명 완료 후 시작한다.
     first_type = batch_types[0]
+    remaining_types = batch_types[1:]
+
+    # 먼저 global_explanation 태스크와 reasoning 태스크(있다면)를 병렬 실행
+    reasoning_task = None
+    if remaining_types and remaining_types[0] == "reasoning":
+        reasoning_task = asyncio.create_task(
+            _generate_first_pair(agent, ocr_text, "reasoning")
+        )
+        remaining_types = remaining_types[1:]
+
     first_pair, first_query = await _generate_first_pair(
         agent,
         ocr_text,
         first_type,
     )
-    results.append(first_pair)
-
-    remaining_types = batch_types[1:]
+    results: list[dict[str, Any]] = [first_pair]
     previous_queries = [first_query] if first_query else []
     first_answer = first_pair.get("answer", "")
+
+    # reasoning 결과 합류
+    if reasoning_task:
+        try:
+            reasoning_pair, reasoning_query = await reasoning_task
+            results.append(reasoning_pair)
+            if reasoning_query:
+                previous_queries.append(reasoning_query)
+        except Exception as exc:  # noqa: BLE001
+            results.append(_fallback_pair("reasoning", exc))
+
+    # 설명 결과가 필요한 target_* 실행
     if remaining_types:
         logger.info("⏳ %s 타입 동시 병렬 생성 시작", ", ".join(remaining_types))
         results.extend(

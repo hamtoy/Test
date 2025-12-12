@@ -7,6 +7,9 @@ declare global {
         DOMPurify: {
             sanitize: (text: string) => string;
         };
+        marked: {
+            parse: (src: string, options?: Record<string, unknown>) => string;
+        };
     }
 }
 
@@ -59,13 +62,15 @@ function escapeHtml(text: string): string {
 }
 
 function formatAnswer(text: string): string {
-    // 마크다운 렌더링 없이 raw 텍스트로 표시 (워크스페이스와 동일)
-    const escaped = escapeHtml(text);
-    const formatted = escaped
-        .replaceAll("\n\n", "<br><br>")  // 문단 구분
-        .replaceAll("\n", "<br>")         // 일반 줄바꿈
-        .replaceAll(" - ", "<br><br>- "); // 불릿 포인트 앞에 줄바꿈 추가
-    return window.DOMPurify ? window.DOMPurify.sanitize(formatted) : formatted;
+    const raw = text || "";
+    // 1) 마크다운을 HTML로 파싱, 2) Sanitize, 3) 파서가 없을 때는 기존 단순 변환
+    const parsed = window.marked?.parse
+        ? window.marked.parse(raw, { breaks: true })
+        : escapeHtml(raw)
+            .replaceAll("\n\n", "<br><br>")
+            .replaceAll("\n", "<br>")
+            .replaceAll(" - ", "<br><br>- ");
+    return window.DOMPurify ? window.DOMPurify.sanitize(parsed) : parsed;
 }
 
 function getTypeBadge(type: string): string {
