@@ -61,7 +61,7 @@ def test_build_formatting_text_and_priority_hierarchy() -> None:
     assert "마크다운" in fmt_target
 
     fmt_exp = prompts.build_formatting_text([], "explanation")
-    assert "마크다운 사용 규칙" in fmt_exp
+    assert "JSON" in fmt_exp
 
     hierarchy = prompts.build_priority_hierarchy(
         "target",

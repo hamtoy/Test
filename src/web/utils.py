@@ -8,7 +8,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
-from typing import Literal
+from typing import Any, Literal, TypedDict
 
 from fastapi import HTTPException
 
@@ -110,6 +110,156 @@ def log_review_session(
 def strip_output_tags(text: str) -> str:
     """<output> 태그 제거 후 트리밍."""
     return text.replace("<output>", "").replace("</output>", "").strip()
+
+
+class _StructuredItem(TypedDict, total=False):
+    label: str
+    text: str
+
+
+class _StructuredSection(TypedDict, total=False):
+    title: str
+    items: list[_StructuredItem]
+    bullets: list[_StructuredItem]
+
+
+class _StructuredAnswer(TypedDict, total=False):
+    intro: str
+    sections: list[_StructuredSection]
+    conclusion: str
+
+
+def _extract_json_object(text: str) -> str | None:
+    stripped = text.strip()
+    if not stripped:
+        return None
+    start = stripped.find("{")
+    end = stripped.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        return None
+    return stripped[start : end + 1]
+
+
+def _parse_structured_answer(text: str) -> _StructuredAnswer | None:
+    candidate = _extract_json_object(text)
+    if not candidate:
+        return None
+    if '"intro"' not in candidate and '"sections"' not in candidate:
+        return None
+
+    try:
+        loaded: Any = json.loads(candidate)
+    except json.JSONDecodeError:
+        return None
+
+    if not isinstance(loaded, dict):
+        return None
+
+    return loaded
+
+
+def _sanitize_structured_text(value: Any) -> str:
+    if value is None:
+        return ""
+    text = str(value)
+    text = strip_output_tags(text)
+    text = text.replace("**", "")
+    text = re.sub(r"(?m)^[ \t]*(?:[-*]|\d+\.)[ \t]+", "", text)
+    text = re.sub(r"[\r\n]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _ensure_starts_with(
+    text: str, prefixes: tuple[str, ...], default_prefix: str
+) -> str:
+    if not text:
+        return text
+    if text.startswith(prefixes):
+        return text
+    return f"{default_prefix}{text}"
+
+
+def _render_structured_answer(
+    structured: _StructuredAnswer,
+    normalized_qtype: str,
+) -> str | None:
+    intro_raw = structured.get("intro", "")
+    sections_raw = structured.get("sections", [])
+    conclusion_raw = structured.get("conclusion", "")
+
+    intro = _sanitize_structured_text(intro_raw)
+    conclusion = _sanitize_structured_text(conclusion_raw)
+
+    if not isinstance(sections_raw, list):
+        return None
+
+    lines: list[str] = []
+    if intro:
+        lines.append(intro)
+        lines.append("")
+
+    for section in sections_raw:
+        if not isinstance(section, dict):
+            continue
+
+        title = _sanitize_structured_text(section.get("title", ""))
+        items_raw = section.get("items", None)
+        if items_raw is None:
+            items_raw = section.get("bullets", [])
+
+        if title:
+            lines.append(f"**{title}**")
+
+        if isinstance(items_raw, list):
+            for item in items_raw:
+                if not isinstance(item, dict):
+                    continue
+                label = _sanitize_structured_text(item.get("label", ""))
+                text = _sanitize_structured_text(item.get("text", ""))
+                if label and text:
+                    lines.append(f"- **{label}**: {text}")
+                elif text:
+                    lines.append(f"- {text}")
+
+        if lines and lines[-1] != "":
+            lines.append("")
+
+    if normalized_qtype == "explanation":
+        conclusion = _ensure_starts_with(
+            conclusion,
+            prefixes=("요약하면", "이처럼"),
+            default_prefix="요약하면, ",
+        )
+    elif normalized_qtype == "reasoning":
+        conclusion = _ensure_starts_with(
+            conclusion,
+            prefixes=("결론적으로", "따라서", "종합하면", "요약하면"),
+            default_prefix="종합하면, ",
+        )
+
+    if conclusion:
+        lines.append(conclusion)
+
+    rendered = "\n".join(lines).strip()
+    return rendered or None
+
+
+def render_structured_answer_if_present(answer: str, qtype: str) -> str:
+    """JSON 구조화 답변이 있으면 마크다운 형태로 렌더링한다.
+
+    - reasoning/explanation 계열에서만 적용
+    - 실패 시 원문(answer) 그대로 반환
+    """
+    normalized = QTYPE_MAP.get(qtype, qtype)
+    if normalized not in {"explanation", "reasoning"}:
+        return answer
+
+    structured = _parse_structured_answer(answer)
+    if structured is None:
+        return answer
+
+    rendered = _render_structured_answer(structured, normalized)
+    return rendered if rendered is not None else answer
 
 
 def fix_broken_numbers(text: str) -> str:
@@ -404,6 +554,7 @@ def postprocess_answer(
     """
     # 1. 태그 제거
     answer = strip_output_tags(answer)
+    answer = render_structured_answer_if_present(answer, qtype)
     answer = _strip_code_and_links(answer)
 
     # 2. 숫자 포맷 깨짐 복원
@@ -451,6 +602,7 @@ __all__ = [
     "load_ocr_text",
     "log_review_session",
     "postprocess_answer",
+    "render_structured_answer_if_present",
     "save_ocr_text",
     "strip_output_tags",
 ]

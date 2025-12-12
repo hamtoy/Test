@@ -17,7 +17,7 @@ from src.config.exceptions import SafetyFilterError
 from src.qa.rule_loader import RuleLoader
 from src.qa.validator import UnifiedValidator
 from src.web.cache import answer_cache
-from src.web.utils import postprocess_answer
+from src.web.utils import postprocess_answer, render_structured_answer_if_present
 
 from ..qa_common import (
     _difficulty_hint,
@@ -231,6 +231,10 @@ async def generate_single_qa(
         )
         if not draft_answer:
             raise SafetyFilterError("No text content in response.")
+
+        # Structured(JSON) output is rendered to markdown before validation to avoid
+        # validators interpreting JSON punctuation/quotes as sentence/format issues.
+        draft_answer = render_structured_answer_if_present(draft_answer, qtype)
 
         # Enhanced logging for answer length debugging
         if logger.isEnabledFor(logging.DEBUG):
