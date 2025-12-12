@@ -17,7 +17,9 @@ if TYPE_CHECKING:
         ) -> list[dict[str, Any]]: ...
 else:
     try:
-        from src.qa.dynamic_examples import DynamicExampleSelector as _DES  # type: ignore
+        from src.qa.dynamic_examples import (  # type: ignore[import-not-found]
+            DynamicExampleSelector as _DES,
+        )
     except ImportError:  # pragma: no cover - optional dependency
         _DES = None
 
@@ -107,7 +109,11 @@ def build_extra_instructions(
         try:
             if kg is not None and "_DES" in globals() and _DES is not None:
                 example_selector = _DES(kg)
-                fewshot_examples = example_selector.select_best_examples("reasoning", {}, k=1)
+                fewshot_examples = example_selector.select_best_examples(
+                    "reasoning",
+                    {},
+                    k=1,
+                )
                 if fewshot_examples:
                     ex = fewshot_examples[0]
                     ex_text = ex.get("example", "")[:2000]  # Truncate if too long
@@ -117,7 +123,10 @@ def build_extra_instructions(
 ---
 위 예시처럼 **일관된 형식**으로 작성하세요.
 """
-                    logger.info("Few-Shot reasoning example loaded: %d chars", len(ex_text))
+                    logger.info(
+                        "Few-Shot reasoning example loaded: %d chars",
+                        len(ex_text),
+                    )
         except Exception as e:
             logger.debug("Few-shot loading failed: %s", e)
 
