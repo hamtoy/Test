@@ -179,6 +179,35 @@ def build_constraints_text(
     )
 
 
+def _extract_max_length(length_constraint: str) -> int | None:
+    for val in (50, 100, 200, 300):
+        if f"{val}단어" in length_constraint:
+            return val
+    return None
+
+
+def _extract_paragraph_constraints(
+    answer_constraints: list[dict[str, Any]],
+) -> tuple[int | None, int | None]:
+    min_per_para: int | None = None
+    num_paras: int | None = None
+    for constraint in answer_constraints:
+        desc = str(constraint.get("description", "")).lower()
+        if "문단" not in desc or "단어" not in desc:
+            continue
+        numbers = re.findall(r"\d+", desc)
+        if len(numbers) < 2:
+            continue
+        if "각" not in desc and "당" not in desc:
+            continue
+        try:
+            num_paras = int(numbers[0])
+            min_per_para = int(numbers[1])
+        except (ValueError, IndexError):
+            continue
+    return num_paras, min_per_para
+
+
 def validate_constraint_conflicts(
     answer_constraints: list[dict[str, Any]],
     length_constraint: str,
@@ -191,39 +220,16 @@ def validate_constraint_conflicts(
         length_constraint: 길이 제약 문자열
         normalized_qtype: 정규화된 query type
     """
-    # Extract max_length from length_constraint if present
-    max_length_val: int | None = None
-    if "50단어" in length_constraint:
-        max_length_val = 50
-    elif "100단어" in length_constraint:
-        max_length_val = 100
-    elif "200단어" in length_constraint:
-        max_length_val = 200
-    elif "300단어" in length_constraint:
-        max_length_val = 300
+    max_length_val = _extract_max_length(length_constraint)
+    num_paras, min_per_para = _extract_paragraph_constraints(answer_constraints)
+    if not max_length_val or not num_paras or not min_per_para:
+        return
 
-    # Check for paragraph constraints
-    min_per_para: int | None = None
-    num_paras: int | None = None
-    for constraint in answer_constraints:
-        desc = constraint.get("description", "").lower()
-        if "문단" in desc and "단어" in desc:
-            numbers = re.findall(r"\d+", desc)
-            if len(numbers) >= 2:
-                try:
-                    if "각" in desc or "당" in desc:
-                        num_paras = int(numbers[0])
-                        min_per_para = int(numbers[1])
-                except (ValueError, IndexError):
-                    pass
-
-    if max_length_val and num_paras and min_per_para:
-        # Simple conflict check: if min words per para * num paras > max length
-        min_total = min_per_para * num_paras
-        if min_total > max_length_val:
-            logger.warning(
-                "⚠️ 제약 충돌 감지: 최소 %d단어 필요하지만 최대 %d단어 (qtype=%s)",
-                min_total,
-                max_length_val,
-                normalized_qtype,
-            )
+    min_total = min_per_para * num_paras
+    if min_total > max_length_val:
+        logger.warning(
+            "⚠️ 제약 충돌 감지: 최소 %d단어 필요하지만 최대 %d단어 (qtype=%s)",
+            min_total,
+            max_length_val,
+            normalized_qtype,
+        )
