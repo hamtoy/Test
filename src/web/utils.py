@@ -602,23 +602,50 @@ def postprocess_answer(
     # 3. 허용되지 않은 마크다운 제거 (CSV 규칙 준수)
     answer = _remove_unauthorized_markdown(answer)
 
+    # 3.5. 서론-소제목 붙음 분리 (예: "문장입니다. **제목**" → 줄바꿈 추가)
+    # 패턴: 문장 끝(다/요/음/임 등 + .) 뒤에 **로 시작하는 소제목이 바로 오는 경우
+    answer = re.sub(
+        r"([.?!])(\s*)(\*\*[^*]+\*\*)",
+        r"\1\n\n\3",
+        answer,
+    )
+
     # 4. 기본 정리
     answer = answer.strip()
 
     # 5. 불필요한 줄바꿈 정리 (마크다운 유지하면서)
     # 연속된 빈 줄은 최대 2개까지만 유지 (= 최대 3개의 \n 문자)
-    # 예: "텍스트\n\n\n\n줄바꿈" (4개 \n) → "텍스트\n\n\n줄바꿈" (3개 \n)
+    # 단, 불릿 사이의 빈줄은 제거 (동일 범주는 줄바꿈 없이)
     lines = answer.split("\n")
-    cleaned_lines = []
-    empty_count = 0
+    cleaned_lines: list[str] = []
 
-    for line in lines:
-        if line.strip() == "":
-            empty_count += 1
-            if empty_count <= 2:
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+
+        # 현재 줄이 빈줄인 경우
+        if stripped == "":
+            # 다음 유효 줄 찾기
+            next_content_idx = None
+            for j in range(i + 1, len(lines)):
+                if lines[j].strip():
+                    next_content_idx = j
+                    break
+
+            # 이전 줄이 불릿이고 다음 줄도 불릿이면 빈줄 제거
+            if cleaned_lines:
+                prev_stripped = cleaned_lines[-1].strip()
+                prev_is_bullet = prev_stripped.startswith("- ")
+                next_is_bullet = next_content_idx is not None and lines[
+                    next_content_idx
+                ].strip().startswith("- ")
+                if prev_is_bullet and next_is_bullet:
+                    continue  # 불릿 사이 빈줄 건너뛰기
+
+            # 연속 빈줄 최대 2개
+            empty_count = sum(1 for ln in reversed(cleaned_lines) if not ln.strip())
+            if empty_count < 2:
                 cleaned_lines.append(line)
         else:
-            empty_count = 0
             cleaned_lines.append(line)
 
     answer = "\n".join(cleaned_lines)

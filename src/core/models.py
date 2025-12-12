@@ -78,9 +78,18 @@ class StructuredSection(BaseModel):
 class StructuredAnswerSchema(BaseModel):
     """구조화된 답변 스키마 - 설명/추론 타입용."""
 
-    intro: str = Field(description="1-2문장 도입")
-    sections: list[StructuredSection] = Field(description="섹션 목록")
-    conclusion: str = Field(description="마지막 1-2문장")
+    intro: str = Field(
+        min_length=10,
+        description="1-2문장 도입부. 질문에 대한 핵심 답변을 먼저 제시.",
+    )
+    sections: list[StructuredSection] = Field(
+        min_length=1,
+        description="본문 섹션 목록. 각 섹션은 소제목과 항목들로 구성.",
+    )
+    conclusion: str = Field(
+        min_length=10,
+        description="1-2문장 결론. '요약하면' 또는 '종합하면'으로 시작하는 마무리.",
+    )
 
 
 class QueryResult(BaseModel):
