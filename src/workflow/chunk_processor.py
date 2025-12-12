@@ -203,59 +203,80 @@ class ChunkProcessor(Generic[T, R]):
         """
         for attempt in range(self.config.max_retries):
             try:
-                # 병렬 처리
-                chunk_results_raw = await asyncio.gather(
-                    *[process_fn(item) for item in chunk],
-                    return_exceptions=True,
-                )
-
-                # 예외 처리
-                results: list[R | None] = []
-                errors: list[tuple[int, BaseException]] = []
-
-                for i, result in enumerate(chunk_results_raw):
-                    if isinstance(result, BaseException):
-                        errors.append((i, result))
-
-                        if self.config.fail_fast:
-                            raise result
-
-                        results.append(None)
-                        self.stats.failed += 1
-                    else:
-                        # result is R (not BaseException)
-                        results.append(result)
-                        self.stats.successful += 1
-
-                # 에러 로깅
-                if errors:
-                    logger.warning("Chunk %d had %d errors", chunk_num, len(errors))
-                    for idx, error in errors:
-                        error_msg = f"Chunk {chunk_num} item {idx}: {type(error).__name__}: {error}"
-                        logger.error("  %s", error_msg)
-                        self.stats.errors.append(error_msg)
-
+                chunk_results_raw = await self._gather_chunk_results(chunk, process_fn)
+                results, errors = self._collect_chunk_results(chunk_results_raw)
+                self._log_chunk_errors(chunk_num, errors)
                 return results
+            except Exception as exc:  # noqa: BLE001
+                if await self._should_retry_chunk(attempt, chunk_num, exc, len(chunk)):
+                    continue
+                return [None] * len(chunk)
 
-            except Exception as e:
-                logger.error(
-                    "Chunk %d failed (attempt %d/%d): %s",
-                    chunk_num,
-                    attempt + 1,
-                    self.config.max_retries,
-                    e,
-                )
-
-                if attempt < self.config.max_retries - 1:
-                    await asyncio.sleep(self.config.retry_delay)
-                else:
-                    # 모든 재시도 실패 - 전체 청크를 실패로 처리
-                    self.stats.failed += len(chunk)
-                    return [None] * len(chunk)
-
-        # 이론적으로 여기에 도달할 수 없음 (max_retries가 0일 때를 위한 안전장치)
         self.stats.failed += len(chunk)
         return [None] * len(chunk)
+
+    async def _gather_chunk_results(
+        self,
+        chunk: list[T],
+        process_fn: Callable[[T], Awaitable[R]],
+    ) -> list[R | BaseException]:
+        return await asyncio.gather(
+            *[process_fn(item) for item in chunk],
+            return_exceptions=True,
+        )
+
+    def _collect_chunk_results(
+        self,
+        chunk_results_raw: list[R | BaseException],
+    ) -> tuple[list[R | None], list[tuple[int, BaseException]]]:
+        results: list[R | None] = []
+        errors: list[tuple[int, BaseException]] = []
+        for idx, result in enumerate(chunk_results_raw):
+            if isinstance(result, BaseException):
+                errors.append((idx, result))
+                if self.config.fail_fast:
+                    raise result
+                results.append(None)
+                self.stats.failed += 1
+                continue
+
+            results.append(result)
+            self.stats.successful += 1
+
+        return results, errors
+
+    def _log_chunk_errors(
+        self,
+        chunk_num: int,
+        errors: list[tuple[int, BaseException]],
+    ) -> None:
+        if not errors:
+            return
+        logger.warning("Chunk %d had %d errors", chunk_num, len(errors))
+        for idx, error in errors:
+            error_msg = f"Chunk {chunk_num} item {idx}: {type(error).__name__}: {error}"
+            logger.error("  %s", error_msg)
+            self.stats.errors.append(error_msg)
+
+    async def _should_retry_chunk(
+        self,
+        attempt: int,
+        chunk_num: int,
+        exc: Exception,
+        chunk_size: int,
+    ) -> bool:
+        logger.error(
+            "Chunk %d failed (attempt %d/%d): %s",
+            chunk_num,
+            attempt + 1,
+            self.config.max_retries,
+            exc,
+        )
+        if attempt < self.config.max_retries - 1:
+            await asyncio.sleep(self.config.retry_delay)
+            return True
+        self.stats.failed += chunk_size
+        return False
 
     def get_stats(self) -> ChunkStats:
         """처리 통계 반환."""
