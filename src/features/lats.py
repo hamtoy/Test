@@ -184,7 +184,10 @@ class LATSSearcher:
         while current.children:
             parent_visits = current.visits or 1
 
-            def _uct(child: SearchNode) -> float:
+            def _uct(
+                child: SearchNode,
+                parent_visits: int = parent_visits,
+            ) -> float:
                 return self._uct_score(child, parent_visits)
 
             current = max(current.children, key=_uct)

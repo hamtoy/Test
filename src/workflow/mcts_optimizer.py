@@ -101,13 +101,14 @@ class MCTSWorkflowOptimizer:
         """Simulate execution: In reality, this might use a lighter model or cache."""
         await asyncio.sleep(0)
         try:
+            template_name = node.state
             # 실제 API 호출 대신 가벼운 시뮬레이션 또는 캐시된 결과 사용 권장
             # 여기서는 예시로 Agent 호출 (실제 구현 시 비용 고려 필요)
             # response = await self.agent.generate_query(query, template_name=template_name)
 
             # Mock Reward Calculation (비용/길이 기반)
             # 실제로는 결과의 품질을 평가하는 로직이 필요함
-            latency_sim = random.uniform(0.5, 2.0)
+            latency_sim = random.uniform(0.5, 2.0) * (1.0 + len(template_name) / 1000)
             return 1.0 / latency_sim  # 단순 예시: 빠를수록 높은 점수
         except Exception:
             return 0.0

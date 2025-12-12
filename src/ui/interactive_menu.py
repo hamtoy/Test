@@ -559,6 +559,12 @@ def _display_workflow_summary(
 
     # 통계 정보
     console.print(f"\n[bold]성공: {success_count}/{len(queries)}[/bold]")
+    logging.getLogger(__name__).debug(
+        "Workflow summary generated: %d/%d success (cache_dir=%s)",
+        success_count,
+        len(queries),
+        config.local_cache_dir,
+    )
 
     # 비용/토큰 정보 (Budget Panel 통합)
     console.print()
