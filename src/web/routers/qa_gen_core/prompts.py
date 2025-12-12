@@ -3,28 +3,9 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import Any
 
-if TYPE_CHECKING:
-
-    class DynamicExampleSelector(Protocol):
-        def __init__(self, kg: Any) -> None: ...
-
-        def select_best_examples(
-            self,
-            intent: str,
-            context: dict[str, Any],
-            k: int = 1,
-        ) -> list[dict[str, Any]]: ...
-
-    _DES: type[DynamicExampleSelector] | None
-else:
-    try:
-        from src.qa.dynamic_examples import (  # type: ignore[import-not-found]
-            DynamicExampleSelector as _DES,
-        )
-    except ImportError:  # pragma: no cover - optional dependency
-        _DES = None
+from src.processing.example_selector import DynamicExampleSelector
 
 logger = logging.getLogger(__name__)
 
@@ -110,8 +91,8 @@ def build_extra_instructions(
         # Few-Shot: Load examples from Neo4j for reasoning
         fewshot_text = ""
         try:
-            if kg is not None and _DES is not None:
-                example_selector = _DES(kg)
+            if kg is not None:
+                example_selector = DynamicExampleSelector(kg)
                 fewshot_examples = example_selector.select_best_examples(
                     "reasoning",
                     {},
@@ -180,8 +161,8 @@ def build_extra_instructions(
         # Few-Shot: Load examples from Neo4j for better length adherence
         fewshot_text = ""
         try:
-            if kg is not None and _DES is not None:
-                example_selector = _DES(kg)
+            if kg is not None:
+                example_selector = DynamicExampleSelector(kg)
                 fewshot_examples = example_selector.select_best_examples(
                     "explanation",
                     {},
@@ -237,8 +218,8 @@ def build_extra_instructions(
             # Few-Shot: Load examples from Neo4j for target_short
             fewshot_text = ""
             try:
-                if kg is not None and _DES is not None:
-                    example_selector = _DES(kg)
+                if kg is not None:
+                    example_selector = DynamicExampleSelector(kg)
                     fewshot_examples = example_selector.select_best_examples(
                         "target_short",
                         {},
