@@ -42,7 +42,7 @@ import sys
 from datetime import datetime, timedelta
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from typing_extensions import NotRequired
 
@@ -252,50 +252,61 @@ def parse_llm_response(response_text: str) -> list[PromotedRule]:
     Returns:
         list[PromotedRule]: 파싱된 규칙 리스트
     """
-    # 마크다운 코드 블록 제거
-    text = response_text.strip()
-    text = text.removeprefix("```json")
-    text = text.removeprefix("```")
-    text = text.removesuffix("```")
-    text = text.strip()
-
-    # JSON 배열 찾기
-    start_idx = text.find("[")
-    end_idx = text.rfind("]")
-
-    if start_idx == -1 or end_idx == -1 or start_idx > end_idx:
+    text = _clean_llm_response_text(response_text)
+    json_str = _extract_json_array(text)
+    if not json_str:
         return []
-
-    json_str = text[start_idx : end_idx + 1]
 
     try:
         parsed = json.loads(json_str)
-        if not isinstance(parsed, list):
-            return []
-
-        result: list[PromotedRule] = []
-        for item in parsed:
-            if isinstance(item, dict) and "rule" in item and "type_hint" in item:
-                # 필수 필드만으로 시작
-                rule_entry: dict[str, str] = {
-                    "rule": str(item.get("rule", "")),
-                    "type_hint": str(item.get("type_hint", "")),
-                }
-                # 선택 필드 추가
-                if "constraint" in item:
-                    rule_entry["constraint"] = str(item["constraint"])
-                if "best_practice" in item:
-                    rule_entry["best_practice"] = str(item["best_practice"])
-                if "before" in item:
-                    rule_entry["before"] = str(item["before"])
-                if "after" in item:
-                    rule_entry["after"] = str(item["after"])
-                # PromotedRule로 캐스팅
-                result.append(rule_entry)  # type: ignore[arg-type]
-
-        return result
     except json.JSONDecodeError:
         return []
+
+    if not isinstance(parsed, list):
+        return []
+
+    result: list[PromotedRule] = []
+    for item in parsed:
+        if not isinstance(item, dict):
+            continue
+        rule_entry = _to_promoted_rule(item)
+        if rule_entry:
+            result.append(rule_entry)
+
+    return result
+
+
+def _clean_llm_response_text(response_text: str) -> str:
+    text = response_text.strip()
+    for prefix in ("```json", "```"):
+        if text.startswith(prefix):
+            text = text.removeprefix(prefix)
+    if text.endswith("```"):
+        text = text.removesuffix("```")
+    return text.strip()
+
+
+def _extract_json_array(text: str) -> str | None:
+    start_idx = text.find("[")
+    end_idx = text.rfind("]")
+    if start_idx == -1 or end_idx == -1 or start_idx > end_idx:
+        return None
+    return text[start_idx : end_idx + 1]
+
+
+def _to_promoted_rule(item: dict[str, Any]) -> PromotedRule | None:
+    if "rule" not in item or "type_hint" not in item:
+        return None
+
+    rule_entry: dict[str, str] = {
+        "rule": str(item.get("rule", "")),
+        "type_hint": str(item.get("type_hint", "")),
+    }
+    for key in ("constraint", "best_practice", "before", "after"):
+        if key in item:
+            rule_entry[key] = str(item[key])
+
+    return cast(PromotedRule, rule_entry)
 
 
 def run_promote_rules(days: int = 7) -> list[PromotedRule]:
