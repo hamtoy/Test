@@ -183,27 +183,6 @@ python -m src.main --integrated-pipeline --pipeline-meta examples/session_input.
 
 ---
 
-## 🔄 자동 프로파일링
-
-성능 분석을 위한 자동 프로파일링 도구입니다.
-
-### 실행
-
-```bash
-python scripts/auto_profile.py src.main \
-  --mode AUTO \
-  --ocr-file example_ocr.txt \
-  --cand-file example_candidates.json \
-  --intent "요약"
-```
-
-### 출력
-
-- **상위 병목 20개**: 성능 병목 지점 표시
-- **결과 파일**: `profiling_results/{module}_stats.prof`
-
----
-
 ## 🎯 세션 검증
 
 세션 결과의 품질을 검증합니다.
@@ -215,6 +194,7 @@ python checks/detect_forbidden_patterns.py
 ```
 
 검출 항목:
+
 - 표/그래프 참조
 - 허용되지 않는 형식
 - 제약 조건 위반
@@ -226,6 +206,7 @@ python checks/validate_session.py --context examples/session_input.json
 ```
 
 검증 항목:
+
 - 턴 수 제한 (3~4턴)
 - 질의 타입 조합
 - 계산 요청 횟수
@@ -234,15 +215,7 @@ python checks/validate_session.py --context examples/session_input.json
 
 ## 💡 고급 사용 팁
 
-### 1. 캐시 워밍
-
-서버 시작 시 자주 사용하는 템플릿을 미리 캐싱:
-
-```bash
-python scripts/cache_warming.py
-```
-
-### 2. 배치 처리
+### 1. 배치 처리
 
 대량 질의를 청크로 나누어 처리:
 

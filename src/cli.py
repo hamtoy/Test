@@ -8,10 +8,6 @@ import json
 import os
 from dataclasses import dataclass
 
-import neo4j
-
-from src.infra.neo4j_optimizer import TwoTierIndexManager
-
 
 @dataclass
 class CLIArgs:
@@ -252,8 +248,20 @@ async def run_neo4j_optimization(drop_existing: bool = False) -> None:
         drop_existing: If True, drops existing indexes before creating new ones.
 
     Raises:
+        RuntimeError: If the neo4j package is not installed.
         EnvironmentError: If required NEO4J environment variables are not set.
     """
+    # Lazy import - only when Neo4j optimization is explicitly requested
+    try:
+        import neo4j
+
+        from src.infra.neo4j_optimizer import TwoTierIndexManager
+    except ImportError as e:
+        raise RuntimeError(
+            "Neo4j optimization requires the 'neo4j' package. "
+            "Install with: pip install neo4j  OR  uv sync --extra neo4j"
+        ) from e
+
     # Check required environment variables
     required_vars = ["NEO4J_URI", "NEO4J_USER", "NEO4J_PASSWORD"]
     for var in required_vars:

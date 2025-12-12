@@ -184,32 +184,12 @@ DEBUG - Cache expired: TTL exceeded
 
 ---
 
-## 🏃 캐시 워밍
-
-서버 시작 시 자주 사용하는 템플릿을 미리 캐싱:
-
-```bash
-python scripts/cache_warming.py
-```
-
-### 우선순위 템플릿
-
-```python
-PRIORITY_TEMPLATES = [
-    "system/qa/explanation.j2",
-    "system/qa/summary.j2",
-    "eval/compare_three_answers.j2",
-    "rewrite/enhance_answer.j2",
-]
-```
-
----
-
 ## ⏭️ 관련 문서
 
 - [설정 가이드](CONFIGURATION.md)
 - [모니터링](MONITORING.md)
 - [비용 추적](../DEPLOYMENT_VERIFIED.md)
+
 # Context Caching 가이드
 
 ## Gemini API 캐싱 제약사항

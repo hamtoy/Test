@@ -123,9 +123,9 @@ if __name__ == "__main__":
             # On Unix, it might not exist, which is fine
             pass
 
-    def test_keyboard_interrupt_exit_code(self) -> None:
+    def test_keyboard_interrupt_exit_code(self, tmp_path: Path) -> None:
         """Test that KeyboardInterrupt results in exit code 130."""
-        test_script_path = Path("/tmp/test_keyboard_interrupt.py")
+        test_script_path = tmp_path / "test_keyboard_interrupt.py"
         test_script_path.write_text("""
 import sys
 
@@ -143,9 +143,9 @@ except KeyboardInterrupt:
 
         assert result.returncode == 130
 
-    def test_general_exception_exit_code(self) -> None:
+    def test_general_exception_exit_code(self, tmp_path: Path) -> None:
         """Test that general exceptions result in exit code 1."""
-        test_script_path = Path("/tmp/test_general_exception.py")
+        test_script_path = tmp_path / "test_general_exception.py"
         test_script_path.write_text("""
 import sys
 import logging
@@ -164,3 +164,47 @@ except Exception as e:
         )
 
         assert result.returncode == 1
+
+    def test_import_without_neo4j_installed(self, tmp_path: Path) -> None:
+        """Test imports succeed when neo4j package is unavailable.
+
+        This ensures the base install path works without optional dependencies.
+        The test uses an import hook to simulate neo4j package not being installed.
+        """
+        test_script = tmp_path / "test_no_neo4j.py"
+        test_script.write_text('''
+import sys
+
+# Create a custom import hook that blocks neo4j
+class BlockNeo4jFinder:
+    """Meta path finder that blocks neo4j imports."""
+    def find_module(self, fullname, path=None):
+        if fullname == "neo4j" or fullname.startswith("neo4j."):
+            return self
+        return None
+
+    def load_module(self, fullname):
+        raise ImportError(f"No module named '{fullname}' (blocked for testing)")
+
+# Insert at the beginning to take priority
+sys.meta_path.insert(0, BlockNeo4jFinder())
+sys.path.insert(0, ".")
+
+# These imports should succeed even without neo4j
+import src
+import src.cli
+print("IMPORT_OK")
+''')
+
+        result = subprocess.run(
+            [sys.executable, str(test_script)],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+
+        assert "IMPORT_OK" in result.stdout, (
+            f"stdout: {result.stdout}, stderr: {result.stderr}"
+        )
+        assert result.returncode == 0

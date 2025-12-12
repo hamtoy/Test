@@ -1,9 +1,9 @@
 import json
 import logging
 import os
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 from pathlib import Path
-from collections.abc import Awaitable, Callable
 from typing import Any
 
 from faststream import FastStream
@@ -151,6 +151,11 @@ async def setup_redis() -> None:
     """Initialize Redis connection on application startup."""
     global redis_client
     from redis.asyncio import Redis
+
+    # Initialize OpenTelemetry if OTLP endpoint is configured
+    from src.infra.telemetry import init_telemetry
+
+    init_telemetry(service_name="gemini-qa-worker")
 
     config = get_config()
     redis_client = Redis.from_url(config.redis_url)

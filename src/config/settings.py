@@ -108,6 +108,13 @@ class AppConfig(BaseSettings):
         description="Redis URL for FastStream",
     )
 
+    # CORS Configuration
+    cors_allow_origins: list[str] = Field(
+        default=["http://127.0.0.1:8000", "http://localhost:8000"],
+        alias="CORS_ALLOW_ORIGINS",
+        description="Comma-separated list of allowed CORS origins",
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

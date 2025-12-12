@@ -36,8 +36,8 @@ from src.infra.structured_logging import setup_structured_logging
 from src.qa.pipeline import IntegratedQAPipeline
 from src.qa.rag_system import QAKnowledgeGraph
 from src.qa.rule_loader import set_global_kg
-from src.web.routers import health as health_router_module
 from src.web.routers import (
+    cache_stats_router,
     health_router,
     metrics_router,
     ocr_router,
@@ -47,6 +47,7 @@ from src.web.routers import (
     stream_router,
     workspace_router,
 )
+from src.web.routers import health as health_router_module
 from src.web.routers import ocr as ocr_router_module
 from src.web.routers import qa as qa_router_module
 from src.web.routers import session as session_router_module
@@ -375,6 +376,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """서버 시작/종료 시 리소스 관리."""
     global _log_listener
 
+    # Initialize OpenTelemetry if OTLP endpoint is configured
+    from src.infra.telemetry import init_telemetry
+
+    init_telemetry(service_name="gemini-qa-web")
+
     # Setup file-based logging (app.log, error.log)
     # Only if not using structured logging to stdout
     if os.getenv("ENABLE_STRUCT_LOGGING", "").lower() != "true":
@@ -400,7 +406,7 @@ app = FastAPI(title="Gemini QA System", version="1.0.0", lifespan=lifespan)
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:8000", "http://localhost:8000"],
+    allow_origins=config.cors_allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -423,6 +429,7 @@ app.include_router(stream_router)
 app.include_router(ocr_router)
 app.include_router(session_router)
 app.include_router(metrics_router)
+app.include_router(cache_stats_router)
 
 __all__ = [
     "DEFAULT_ANSWER_RULES",

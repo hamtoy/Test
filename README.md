@@ -165,18 +165,11 @@ python scripts/latency_baseline.py --log-file run1.log --log-file run2.log
 
 ### 성능 분석
 
-- **프로파일링**: `python scripts/auto_profile.py src.main --mode AUTO --ocr-file example_ocr.txt --cand-file example_candidates.json --intent "요약"`
-  - 병목 상위 20개 표시 (`--` 구분은 선택 사항)
-  - 결과 저장: `profiling_results/{module_name}_stats.prof`
-  
 - **레이턴시 분석**: `python scripts/latency_baseline.py --log-file app.log`
   - API 호출 레이턴시 통계 (p50/p90/p99)
 
 ### 결과 분석
 
-- **결과 비교**: `python scripts/compare_runs.py --sort-by cost`
-  - `data/outputs/result_*.md` 파일을 표로 정렬/요약
-  
 - **캐시 분석**: `python -m src.main --analyze-cache`
   - 캐시 hit/miss, 비용 절감 계산
 

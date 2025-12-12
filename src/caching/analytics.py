@@ -394,37 +394,59 @@ def calculate_savings(
 
 
 def analyze_cache_stats(path: Path) -> dict[str, Any]:
-    """Read cache stats JSONL and return summary metrics."""
+    """Read cache stats JSONL and return summary metrics.
+
+    Processes the file in a streaming manner (constant memory) by maintaining
+    running counters instead of storing all records in memory.
+
+    Args:
+        path: Path to the cache_stats.jsonl file.
+
+    Returns:
+        Dictionary with keys: total_records, total_hits, total_misses,
+        hit_rate, estimated_savings_usd
+
+    Raises:
+        FileNotFoundError: If the stats file does not exist.
+    """
     if not path.exists():
         raise FileNotFoundError(f"Cache stats file not found: {path}")
 
-    records = []
+    # Running counters for streaming processing
+    total_records = 0
+    total_hits = 0
+    total_misses = 0
+    estimated_savings = 0.0
+
     with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
                 continue
             try:
-                records.append(json.loads(line))
-            except json.JSONDecodeError:
+                record = json.loads(line)
+                total_records += 1
+
+                # Aggregate hits and misses
+                total_hits += int(record.get("cache_hits", 0))
+                total_misses += int(record.get("cache_misses", 0))
+
+                # Calculate savings incrementally
+                estimated_savings += calculate_savings(record)
+            except (json.JSONDecodeError, ValueError, TypeError):
+                # Skip malformed lines without affecting counts
                 continue
 
-    total_hits = sum(int(r.get("cache_hits", 0)) for r in records)
-    total_misses = sum(int(r.get("cache_misses", 0)) for r in records)
-    total_requests = len(records)
-    hit_rate = (
-        (total_hits / (total_hits + total_misses) * 100)
-        if (total_hits + total_misses) > 0
-        else 0.0
-    )
-    savings = sum(calculate_savings(r) for r in records)
+    # Calculate hit rate from aggregated totals
+    total_requests = total_hits + total_misses
+    hit_rate = (total_hits / total_requests * 100) if total_requests > 0 else 0.0
 
     return {
-        "total_records": total_requests,
+        "total_records": total_records,
         "total_hits": total_hits,
         "total_misses": total_misses,
         "hit_rate": hit_rate,
-        "estimated_savings_usd": savings,
+        "estimated_savings_usd": estimated_savings,
     }
 
 
