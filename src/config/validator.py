@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import re
+from collections.abc import Callable
 from pathlib import Path
 
 
@@ -112,6 +113,60 @@ class EnvValidator:
         except ValueError:
             raise ValidationError(f"{name} must be an integer, got {value}")
 
+    def _validate_required_env(
+        self,
+        key: str,
+        validator: Callable[[str], None],
+        errors: list[tuple[str, str]],
+    ) -> None:
+        value = os.getenv(key)
+        if not value:
+            errors.append((key, "Environment variable is required"))
+            return
+        self._validate_value(key, value, validator, errors)
+
+    def _validate_optional_env(
+        self,
+        key: str,
+        validator: Callable[[str], None],
+        errors: list[tuple[str, str]],
+    ) -> None:
+        value = os.getenv(key)
+        if value:
+            self._validate_value(key, value, validator, errors)
+
+    def _validate_optional_positive_int(
+        self,
+        key: str,
+        errors: list[tuple[str, str]],
+    ) -> None:
+        value = os.getenv(key)
+        if not value:
+            return
+        try:
+            self.validate_positive_int(value, key)
+        except ValidationError as exc:
+            errors.append((key, str(exc)))
+
+    def _validate_redis_url(self, errors: list[tuple[str, str]]) -> None:
+        redis_url = os.getenv("REDIS_URL")
+        if redis_url and not (
+            redis_url.startswith("redis://") or redis_url.startswith("rediss://")
+        ):
+            errors.append(("REDIS_URL", "Must start with 'redis://' or 'rediss://'"))
+
+    def _validate_value(
+        self,
+        key: str,
+        value: str,
+        validator: Callable[[str], None],
+        errors: list[tuple[str, str]],
+    ) -> None:
+        try:
+            validator(value)
+        except ValidationError as exc:
+            errors.append((key, str(exc)))
+
     def validate_all(self) -> list[tuple[str, str]]:
         """모든 환경 변수 검증.
 
@@ -121,62 +176,21 @@ class EnvValidator:
         """
         errors: list[tuple[str, str]] = []
 
-        # GEMINI_API_KEY 검증 (필수)
-        api_key = os.getenv("GEMINI_API_KEY")
-        if api_key:
-            try:
-                self.validate_gemini_api_key(api_key)
-            except ValidationError as e:
-                errors.append(("GEMINI_API_KEY", str(e)))
-        else:
-            errors.append(("GEMINI_API_KEY", "Environment variable is required"))
+        self._validate_required_env(
+            "GEMINI_API_KEY",
+            self.validate_gemini_api_key,
+            errors,
+        )
+        self._validate_optional_env("NEO4J_URI", self.validate_url, errors)
+        self._validate_redis_url(errors)
+        self._validate_optional_env("LOG_LEVEL", self.validate_log_level, errors)
 
-        # NEO4J_URI 검증 (선택)
-        neo4j_uri = os.getenv("NEO4J_URI")
-        if neo4j_uri:
-            try:
-                self.validate_url(neo4j_uri)
-            except ValidationError as e:
-                errors.append(("NEO4J_URI", str(e)))
-
-        # REDIS_URL 검증 (선택)
-        redis_url = os.getenv("REDIS_URL")
-        if redis_url and not (
-            redis_url.startswith("redis://") or redis_url.startswith("rediss://")
+        for key in (
+            "GEMINI_MAX_OUTPUT_TOKENS",
+            "GEMINI_TIMEOUT",
+            "GEMINI_MAX_CONCURRENCY",
         ):
-            errors.append(("REDIS_URL", "Must start with 'redis://' or 'rediss://'"))
-
-        # LOG_LEVEL 검증 (선택)
-        log_level = os.getenv("LOG_LEVEL")
-        if log_level:
-            try:
-                self.validate_log_level(log_level)
-            except ValidationError as e:
-                errors.append(("LOG_LEVEL", str(e)))
-
-        # GEMINI_MAX_OUTPUT_TOKENS 검증 (선택)
-        max_tokens = os.getenv("GEMINI_MAX_OUTPUT_TOKENS")
-        if max_tokens:
-            try:
-                self.validate_positive_int(max_tokens, "GEMINI_MAX_OUTPUT_TOKENS")
-            except ValidationError as e:
-                errors.append(("GEMINI_MAX_OUTPUT_TOKENS", str(e)))
-
-        # GEMINI_TIMEOUT 검증 (선택)
-        timeout = os.getenv("GEMINI_TIMEOUT")
-        if timeout:
-            try:
-                self.validate_positive_int(timeout, "GEMINI_TIMEOUT")
-            except ValidationError as e:
-                errors.append(("GEMINI_TIMEOUT", str(e)))
-
-        # GEMINI_MAX_CONCURRENCY 검증 (선택)
-        concurrency = os.getenv("GEMINI_MAX_CONCURRENCY")
-        if concurrency:
-            try:
-                self.validate_positive_int(concurrency, "GEMINI_MAX_CONCURRENCY")
-            except ValidationError as e:
-                errors.append(("GEMINI_MAX_CONCURRENCY", str(e)))
+            self._validate_optional_positive_int(key, errors)
 
         return errors
 
