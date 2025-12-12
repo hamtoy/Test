@@ -16,6 +16,8 @@ if TYPE_CHECKING:
             context: dict[str, Any],
             k: int = 1,
         ) -> list[dict[str, Any]]: ...
+
+    _DES: type[DynamicExampleSelector] | None
 else:
     try:
         from src.qa.dynamic_examples import (  # type: ignore[import-not-found]
@@ -108,7 +110,7 @@ def build_extra_instructions(
         # Few-Shot: Load examples from Neo4j for reasoning
         fewshot_text = ""
         try:
-            if kg is not None and "_DES" in globals() and _DES is not None:
+            if kg is not None and _DES is not None:
                 example_selector = _DES(kg)
                 fewshot_examples = example_selector.select_best_examples(
                     "reasoning",
@@ -178,12 +180,12 @@ def build_extra_instructions(
         # Few-Shot: Load examples from Neo4j for better length adherence
         fewshot_text = ""
         try:
-            if kg is not None:
-                from src.qa.dynamic_examples import DynamicExampleSelector
-
-                example_selector = DynamicExampleSelector(kg)
+            if kg is not None and _DES is not None:
+                example_selector = _DES(kg)
                 fewshot_examples = example_selector.select_best_examples(
-                    "explanation", {}, k=1
+                    "explanation",
+                    {},
+                    k=1,
                 )
                 if fewshot_examples:
                     ex = fewshot_examples[0]
@@ -235,12 +237,12 @@ def build_extra_instructions(
             # Few-Shot: Load examples from Neo4j for target_short
             fewshot_text = ""
             try:
-                if kg is not None:
-                    from src.qa.dynamic_examples import DynamicExampleSelector
-
-                    example_selector = DynamicExampleSelector(kg)
+                if kg is not None and _DES is not None:
+                    example_selector = _DES(kg)
                     fewshot_examples = example_selector.select_best_examples(
-                        "target_short", {}, k=1
+                        "target_short",
+                        {},
+                        k=1,
                     )
                     if fewshot_examples:
                         ex = fewshot_examples[0]
