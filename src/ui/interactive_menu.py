@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import Progress, SpinnerColumn, TaskID, TextColumn
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
@@ -289,7 +289,7 @@ async def _execute_queries_with_progress(
 
 def _update_workflow_progress(
     progress: Progress,
-    task_id: int,
+    task_id: TaskID,
     turn_id: int,
     total_turns: int,
     result: WorkflowResult | None,
