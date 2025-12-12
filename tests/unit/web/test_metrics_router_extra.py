@@ -6,7 +6,6 @@ import importlib
 import sys
 import types
 from types import ModuleType
-from typing import Any
 
 import pytest
 

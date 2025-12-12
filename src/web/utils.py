@@ -401,7 +401,6 @@ def postprocess_answer(
     - ❌ *italic*: 가독성 저하
     - ❌ ### 제목: 불필요한 헤더
     """
-
     # 1. 태그 제거
     answer = strip_output_tags(answer)
     answer = _strip_code_and_links(answer)

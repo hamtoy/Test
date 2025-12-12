@@ -649,7 +649,11 @@ async def _run_task_with_lats(task: OCRTask) -> dict[str, Any]:
         budget_limit_usd=getattr(config, "budget_limit_usd", 1.0),
     )
 
-    graph_validator = lambda s, a, gp=graph_provider: _validate_lats_action(s, a, gp)
+    async def graph_validator(
+        state: SearchState,
+        action: str,
+    ) -> ValidationResult:
+        return await _validate_lats_action(state, action, graph_provider)
     propose_actions = _make_lats_proposer(task, lats_agent, llm_provider)
     evaluate_action = _make_lats_evaluator(
         task,
