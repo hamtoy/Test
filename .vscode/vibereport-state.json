@@ -1,21 +1,21 @@
 {
   "lastSnapshot": {
-    "generatedAt": "2025-12-05T16:20:47.480Z",
-    "rootPath": "c:\\shining-quasar",
+    "generatedAt": "2025-12-12T17:15:42.329Z",
+    "rootPath": "e:\\shining-quasar",
     "projectName": "shining-quasar",
-    "filesCount": 939,
-    "dirsCount": 110,
+    "filesCount": 866,
+    "dirsCount": 109,
     "languageStats": {
-      "py": 446,
-      "md": 178,
-      "html": 36,
-      "js": 22,
-      "json": 19,
+      "py": 556,
+      "md": 76,
+      "json": 22,
+      "html": 18,
+      "ts": 13,
       "yml": 13,
-      "ts": 11,
-      "css": 9,
+      "js": 11,
+      "css": 5,
       "sh": 5,
-      "yaml": 3,
+      "yaml": 4,
       "ps1": 2
     },
     "mainConfigFiles": {
@@ -65,947 +65,885 @@
       "vite.config.ts"
     ],
     "fileList": [
-      ".dockerignore",
       ".env",
+      ".env.example",
+      ".dockerignore",
       "vitest.config.ts",
       "vite.config.ts",
       "tsconfig.json",
-      "templates/user/rewrite.j2",
-      "templates/user/query_gen.j2",
-      "templates/user/entity_extraction.j2",
-      "templates/web/workspace.html",
-      "templates/web/qa.html",
-      "templates/web/layout.html",
-      "templates/web/eval.html",
-      "templates/user/qa/target.j2",
-      "templates/user/qa/generic.j2",
       "tests/__init__.py",
-      "templates/system/rewrite.j2",
-      "templates/system/query_gen.j2",
-      "templates/prompts/workspace/answer_generation.jinja2",
-      "templates/prompts/workspace/query_from_answer.jinja2",
-      "templates/system/qa/summary.j2",
-      "templates/system/qa/rewrite.j2",
-      "templates/system/qa/reasoning.j2",
-      "templates/system/qa/global.j2",
-      "templates/system/qa/explanation.j2",
-      "templates/system/qa/compare_eval.j2",
-      "templates/prompts/query_generation.txt",
-      "templates/prompts/answer_generation.txt",
-      "templates/prompts/workspace/query_intent.jinja2",
-      "templates/system/eval.j2",
-      "templates/system/entity_extraction.j2",
-      "templates/system/base.j2",
-      "templates/prod/ocr_default.j2",
       "tests/web/test_service_registry.py",
+      "tests/unit/__init__.py",
+      "tests/unit/workflow/__init__.py",
+      "tests/unit/workflow/test_workspace_executor.py",
+      "tests/unit/workflow/test_workflow_processor.py",
+      "tests/unit/workflow/test_workflow_execution.py",
+      "tests/unit/workflow/test_edit_workflow.py",
+      "tests/unit/workflow/test_chunk_processor.py",
+      "tests/unit/web/__init__.py",
+      "tests/unit/web/test_workspace_generation_coverage.py",
+      "tests/unit/web/test_workspace_common_coverage.py",
+      "tests/unit/web/test_web_models.py",
+      "tests/unit/web/test_web_api_coverage.py",
+      "tests/unit/web/test_web_api.py",
+      "tests/unit/web/test_unified_workspace.py",
+      "tests/unit/web/test_structured_answer_rendering.py",
+      "tests/unit/web/test_session_router_extra.py",
+      "tests/unit/web/test_session.py",
+      "tests/unit/web/test_rate_limit.py",
+      "tests/unit/web/test_qa_tools_router_extra.py",
+      "tests/unit/web/test_qa_streaming_extra.py",
+      "tests/unit/web/test_qa_gen_core_types_extra.py",
+      "tests/unit/web/test_qa_gen_core_prompts_extra.py",
+      "tests/unit/web/test_qa_gen_core_constraints_extra.py",
+      "tests/unit/web/test_qa_generation_rules.py",
+      "tests/unit/web/test_qa_generation_router_extra.py",
+      "tests/unit/web/test_qa_constraint_validation.py",
+      "tests/unit/web/test_qa_common.py",
+      "tests/unit/web/test_postprocess_markdown.py",
+      "tests/unit/web/test_metrics_router_extra.py",
+      "tests/unit/web/test_lats_quality.py",
+      "tests/unit/web/test_health_router.py",
+      "tests/unit/web/test_explanation_length.py",
+      "tests/unit/web/test_exceptions.py",
+      "tests/unit/web/test_dependencies.py",
+      "tests/unit/web/test_dashboard.py",
+      "tests/unit/web/test_api_coverage.py",
+      "tests/unit/web/test_api_additional.py",
+      "tests/unit/web/test_answer_length_limits.py",
+      "tests/unit/web/test_answer_cache_config.py",
+      "tests/unit/validation/__init__.py",
+      "tests/unit/validation/test_rule_parser.py",
+      "tests/unit/utils/__init__.py",
+      "tests/unit/utils/test_utils_more.py",
+      "tests/unit/utils/test_utils_coverage.py",
+      "tests/unit/utils/test_utils_additional.py",
+      "tests/unit/utils/test_utils.py",
+      "tests/unit/utils/test_logging_setup.py",
+      "tests/unit/utils/test_logging_metrics.py",
+      "tests/unit/utils/test_latency_baseline.py",
+      "tests/unit/ui/__init__.py",
+      "tests/unit/ui/test_ui_panels_coverage.py",
+      "tests/unit/ui/test_ui_comprehensive_coverage.py",
+      "tests/unit/ui/test_interactive_menu_more_coverage.py",
+      "tests/unit/ui/test_interactive_menu_coverage.py",
+      "tests/unit/test_web_dependencies_coverage.py",
+      "tests/unit/test_push_to_80.py",
+      "tests/unit/test_monitoring_metrics_coverage.py",
+      "tests/unit/test_main_coverage.py",
+      "tests/unit/test_lcel_chain_coverage.py",
+      "tests/unit/test_final_coverage_push.py",
+      "tests/unit/test_additional_simple_coverage.py",
+      "tests/unit/qa/__init__.py",
+      "tests/unit/qa/test_validator.py",
+      "tests/unit/qa/test_template_rules.py",
+      "tests/unit/qa/test_rule_loader_cache.py",
+      "tests/unit/qa/test_rag_system_full_coverage.py",
+      "tests/unit/qa/test_rag_system_coverage.py",
+      "tests/unit/qa/test_qa_systems_coverage.py",
+      "tests/unit/qa/test_qa_rag_vector.py",
+      "tests/unit/qa/test_qa_rag_system_extra.py",
+      "tests/unit/qa/test_qa_rag_system.py",
+      "tests/unit/qa/test_qa_rag_extended.py",
+      "tests/unit/qa/test_qa_quality_coverage.py",
+      "tests/unit/qa/test_qa_factory.py",
+      "tests/unit/qa/test_graph_validators.py",
+      "tests/unit/qa/test_graph_utils.py",
+      "tests/unit/qa/test_constraint_validation.py",
+      "tests/unit/qa/graph/__init__.py",
+      "tests/unit/qa/graph/test_vector_search.py",
+      "tests/unit/qa/graph/test_rule_upsert_async_extra.py",
+      "tests/unit/qa/graph/test_rule_upsert.py",
+      "tests/unit/qa/graph/test_rule_manager.py",
+      "tests/unit/qa/graph/test_rule_extractor.py",
+      "tests/unit/qa/graph/test_query_executor.py",
+      "tests/unit/qa/graph/test_connection.py",
       "tests/unit/processing/__init__.py",
       "tests/unit/processing/test_templates_render.py",
       "tests/unit/processing/test_loader_coverage.py",
       "tests/unit/processing/test_data_loader_validation.py",
       "tests/unit/processing/test_data_loader.py",
-      "tests/unit/__init__.py",
-      "tests/unit/web/__init__.py",
-      "tests/unit/web/test_web_models.py",
-      "tests/unit/web/test_web_api_coverage.py",
-      "tests/unit/workflow/__init__.py",
-      "tests/unit/web/test_web_api.py",
-      "tests/unit/workflow/test_workspace_executor.py",
-      "tests/unit/web/test_unified_workspace.py",
-      "tests/unit/web/test_qa_generation_rules.py",
-      "tests/unit/workflow/test_workflow_processor.py",
-      "tests/unit/web/test_lats_quality.py",
-      "tests/unit/workflow/test_workflow_execution.py",
-      "tests/unit/web/test_dependencies.py",
-      "tests/unit/workflow/test_edit_workflow.py",
-      "tests/unit/web/test_dashboard.py",
-      "tests/unit/workflow/test_chunk_processor.py",
-      "tests/unit/utils/__init__.py",
-      "tests/unit/utils/test_utils_more.py",
-      "tests/unit/utils/test_utils_coverage.py",
-      "tests/unit/utils/test_utils_additional.py",
-      "tests/unit/ui/__init__.py",
-      "tests/unit/utils/test_utils.py",
-      "tests/unit/ui/test_ui_panels_coverage.py",
-      "tests/unit/utils/test_logging_setup.py",
-      "tests/unit/ui/test_ui_comprehensive_coverage.py",
-      "tests/unit/utils/test_logging_metrics.py",
-      "tests/unit/ui/test_interactive_menu_more_coverage.py",
-      "tests/unit/utils/test_latency_baseline.py",
-      "tests/unit/ui/test_interactive_menu_coverage.py",
-      "tests/unit/qa/test_template_rules.py",
-      "tests/unit/qa/__init__.py",
-      "tests/unit/qa/test_rule_loader_cache.py",
-      "tests/unit/qa/test_qa_systems_coverage.py",
-      "tests/unit/qa/test_qa_rag_vector.py",
-      "tests/unit/qa/test_qa_rag_system_extra.py",
       "tests/unit/monitoring/__init__.py",
-      "tests/unit/qa/test_qa_rag_system.py",
       "tests/unit/monitoring/test_monitoring_metrics_coverage.py",
-      "tests/unit/qa/test_qa_rag_extended.py",
+      "tests/unit/monitoring/test_metrics_exporter.py",
       "tests/unit/monitoring/test_inspection_feature.py",
-      "tests/unit/qa/test_qa_quality_coverage.py",
-      "tests/unit/qa/test_qa_factory.py",
-      "tests/unit/misc/test_promote_rules_coverage.py",
-      "tests/unit/misc/test_scripts_coverage.py",
+      "tests/unit/misc/__init__.py",
+      "tests/unit/misc/test_src_init_coverage.py",
       "tests/unit/misc/test_security.py",
+      "tests/unit/misc/test_scripts_coverage.py",
+      "tests/unit/misc/test_promote_rules_coverage.py",
       "tests/unit/misc/test_plugins.py",
       "tests/unit/misc/test_pipeline_coverage.py",
       "tests/unit/misc/test_package_init_coverage.py",
       "tests/unit/misc/test_new_import_paths.py",
       "tests/unit/misc/test_modular_arch.py",
-      "tests/unit/qa/graph/__init__.py",
       "tests/unit/misc/test_main.py",
-      "tests/unit/qa/graph/test_vector_search.py",
       "tests/unit/misc/test_io_and_checkpoint.py",
-      "tests/unit/qa/graph/test_rule_upsert.py",
-      "tests/unit/misc/__init__.py",
-      "tests/unit/misc/test_src_init_coverage.py",
       "tests/unit/misc/test_external_eval.py",
-      "tests/unit/qa/graph/test_rule_extractor.py",
-      "tests/unit/qa/graph/test_query_executor.py",
-      "tests/unit/qa/graph/test_connection.py",
-      "tests/unit/main/__init__.py",
-      "tests/unit/main/test_main_more_coverage.py",
-      "tests/unit/main/test_main_integration.py",
-      "tests/unit/main/test_main_coverage.py",
-      "tests/unit/main/test_coverage_improvement.py",
       "tests/unit/migration/__init__.py",
-      "tests/unit/main/test_coverage_expansion.py",
       "tests/unit/migration/test_migrate_imports.py",
-      "tests/unit/main/test_coverage_branches_additional.py",
       "tests/unit/migration/test_enhanced_deprecation.py",
       "tests/unit/migration/test_deprecation_warnings.py",
       "tests/unit/migration/test_deprecation_stats.py",
-      "templates/fact/text_image_qa_fact_check.j2",
-      "tests/unit/infra/__init__.py",
+      "tests/unit/main/__init__.py",
+      "tests/unit/main/test_main_more_coverage.py",
+      "tests/unit/main/test_main_integration.py",
+      "tests/unit/main/test_main_entrypoint_extra.py",
+      "tests/unit/main/test_main_coverage.py",
+      "tests/unit/main/test_coverage_improvement.py",
+      "tests/unit/main/test_coverage_expansion.py",
+      "tests/unit/main/test_coverage_branches_additional.py",
       "tests/unit/llm/__init__.py",
-      "tests/unit/infra/test_worker_process.py",
       "tests/unit/llm/test_mcts_optimizer.py",
-      "tests/unit/infra/test_telemetry.py",
-      "tests/unit/infra/test_structured_logging.py",
+      "tests/unit/llm/test_list_models_extra.py",
       "tests/unit/llm/test_lats_searcher.py",
-      "tests/unit/infra/test_retry.py",
+      "tests/unit/llm/test_init_genai_extra.py",
       "tests/unit/llm/test_gemini_types_coverage.py",
-      "tests/unit/infra/test_logging_extended_coverage.py",
       "tests/unit/llm/test_gemini_model_client_metrics.py",
       "tests/unit/llm/test_gemini_model_client_eval_rewrite.py",
+      "tests/unit/llm/test_gemini_coverage_additional.py",
+      "tests/unit/llm/test_gemini_client_coverage.py",
+      "tests/unit/llm/test_chain_systems.py",
+      "tests/unit/infra/__init__.py",
+      "tests/unit/infra/test_worker_process.py",
+      "tests/unit/infra/test_worker_init_providers_extra.py",
+      "tests/unit/infra/test_worker_additional.py",
+      "tests/unit/infra/test_telemetry.py",
+      "tests/unit/infra/test_structured_logging.py",
+      "tests/unit/infra/test_retry.py",
+      "tests/unit/infra/test_performance_tracker.py",
+      "tests/unit/infra/test_logging_extended_coverage.py",
       "tests/unit/infra/test_health_coverage.py",
       "tests/unit/infra/test_health_check_extended.py",
-      "tests/unit/llm/test_gemini_coverage_additional.py",
       "tests/unit/infra/test_health_check.py",
-      "tests/unit/llm/test_gemini_client_coverage.py",
       "tests/unit/infra/test_dependency_injection.py",
-      "tests/unit/llm/test_chain_systems.py",
       "tests/unit/infra/test_budget_qarag_worker.py",
-      "tests/unit/features/__init__.py",
-      "tests/unit/features/test_template_safety.py",
       "tests/unit/graph/__init__.py",
       "tests/unit/graph/test_session_validation.py",
-      "tests/unit/features/test_template_generator_coverage.py",
       "tests/unit/graph/test_session_snapshots.py",
-      "tests/unit/features/test_self_improvement.py",
       "tests/unit/graph/test_session_builder.py",
-      "tests/unit/features/test_multimodal_extended.py",
       "tests/unit/graph/test_neo4j_optimizer.py",
-      "tests/unit/features/test_feature_flags.py",
-      "tests/unit/features/test_dynamic_template_generator.py",
       "tests/unit/graph/test_neo4j_graph_provider.py",
-      "tests/unit/features/test_data2neo_extractor.py",
       "tests/unit/graph/test_graph_session_helper.py",
-      "tests/unit/features/test_adaptive_limiter.py",
       "tests/unit/graph/test_graph_schema_builder_more.py",
-      "tests/unit/features/test_adaptive_difficulty.py",
       "tests/unit/graph/test_graph_modules_coverage.py",
-      "tests/unit/features/test_ab_test.py",
       "tests/unit/graph/test_graph_enhanced_router.py",
       "tests/unit/graph/test_graph_builder_coverage.py",
-      "tests/unit/config/__init__.py",
-      "tests/unit/config/test_config_validator_coverage.py",
+      "tests/unit/features/__init__.py",
+      "tests/unit/features/test_template_safety.py",
+      "tests/unit/features/test_template_generator_coverage.py",
+      "tests/unit/features/test_self_improvement.py",
+      "tests/unit/features/test_multimodal_extended.py",
+      "tests/unit/features/test_feature_flags.py",
+      "tests/unit/features/test_dynamic_template_generator.py",
+      "tests/unit/features/test_data2neo_extractor_extra.py",
+      "tests/unit/features/test_data2neo_extractor.py",
+      "tests/unit/features/test_adaptive_limiter.py",
+      "tests/unit/features/test_adaptive_difficulty.py",
+      "tests/unit/features/test_action_executor.py",
+      "tests/unit/features/test_ab_test.py",
       "tests/unit/core/__init__.py",
-      "tests/unit/config/test_config_validation.py",
       "tests/unit/core/test_type_aliases_coverage.py",
       "tests/unit/core/test_schemas_coverage.py",
       "tests/unit/core/test_models.py",
       "tests/unit/core/test_core_adapters.py",
-      "tests/unit/caching/test_caching_layer_coverage.py",
-      "tests/unit/caching/test_caching_layer.py",
-      "tests/unit/caching/test_caching_init_coverage.py",
-      "tests/unit/caching/test_caching_analytics_coverage.py",
-      "tests/unit/caching/test_cache_ttl_policy.py",
-      "tests/unit/analytics/__init__.py",
-      "tests/unit/caching/test_cache_threshold.py",
-      "tests/unit/analytics/test_analytics_init_coverage.py",
-      "tests/unit/caching/test_cache_stats.py",
-      "tests/unit/caching/test_cache_analytics_additional.py",
-      "tests/unit/caching/test_cache_analytics.py",
       "tests/test_web_api.py",
+      "tests/test_truncation.py",
       "tests/test_infra_utils.py",
       "tests/test_infra_metrics.py",
       "tests/test_health.py",
       "tests/test_caching_analytics.py",
-      "tests/unit/analysis/test_advanced_context_augmentation_more.py",
-      "tests/unit/analysis/test_advanced_context_augmentation.py",
-      "templates/experiments/ocr_v2_concise.j2",
-      "tests/e2e/__init__.py",
-      "tests/e2e/test_workflow_e2e.py",
-      "tests/e2e/test_full_workflow.py",
-      "tests/e2e/smoke.spec.ts",
-      "templates/experiments/ocr_v3_structured.j2",
-      "tests/unit/analysis/test_analysis_coverage.py",
-      "tests/e2e/conftest.py",
-      "tests/integration/test_integrated_quality_system_integration.py",
-      "tests/custom_types.py",
-      "tests/conftest.py",
-      ".cache/context_cache.json",
-      "tests/unit/analysis/test_context_augmentation_extended.py",
-      "tests/unit/analysis/test_semantic_analysis.py",
-      "static/app.ts",
-      "tests/unit/analysis/__init__.py",
-      "tests/unit/analysis/test_semantic_analysis_exceptions.py",
-      "static/eval.ts",
-      "tests/integration/__init__.py",
       "tests/unit/analysis/test_hybrid_optimizer.py",
+      "tests/unit/agent/test_agent.py",
+      "tests/unit/analysis/test_semantic_analysis.py",
+      "tests/integration/__init__.py",
       "tests/unit/analysis/test_feedback_constraints.py",
       "tests/integration/test_workspace_refactoring.py",
+      "tests/unit/analysis/test_semantic_analysis_exceptions.py",
+      "tests/unit/analysis/test_context_augmentation_extended.py",
       "tests/integration/test_web_streaming.py",
-      "tests/integration/test_integration.py",
-      "static/ocr.ts",
+      "tests/integration/test_main_execution.py",
+      "tests/unit/caching/__init__.py",
       "tests/unit/analysis/test_context_augmentation_coverage.py",
-      "stubs/langchain/__init__.pyi",
+      "tests/integration/test_integration.py",
+      "tests/unit/analysis/test_analysis_coverage.py",
+      "tests/unit/caching/test_redis_cache_coverage.py",
+      "tests/unit/analysis/test_advanced_context_augmentation_more.py",
+      "tests/integration/test_integrated_quality_system_integration.py",
+      "tests/unit/caching/test_realtime_analytics.py",
+      "tests/unit/analytics/__init__.py",
+      "tests/unit/analysis/test_advanced_context_augmentation.py",
+      "tests/unit/caching/test_caching_layer_coverage.py",
+      "tests/unit/analytics/test_realtime_dashboard_extended.py",
+      "tests/unit/caching/test_caching_layer.py",
+      "tests/unit/caching/test_caching_init_coverage.py",
+      "tests/unit/analytics/test_analytics_init_extended.py",
+      "tests/unit/caching/test_caching_analytics_coverage.py",
+      "tests/unit/analytics/test_analytics_init_coverage.py",
+      "tests/unit/analysis/__init__.py",
+      "tests/unit/caching/test_cache_ttl_policy.py",
+      "tests/unit/agent/test_agent_additional.py",
+      "tests/unit/caching/test_cache_stats.py",
+      "tests/unit/caching/test_cache_analytics_additional.py",
+      "tests/unit/caching/test_cache_analytics.py",
+      "tests/custom_types.py",
+      "tests/conftest.py",
+      "tests/unit/caching/test_cache_threshold.py",
+      "tests/unit/agent/test_agent_cache.py",
+      "tests/unit/agent/test_agent_budget.py",
+      "tests/unit/agent/test_agent_cost_logging.py",
+      "tests/unit/agent/test_agent_extended.py",
+      "tests/unit/agent/test_agent_errors_remaining.py",
+      "tests/unit/agent/test_agent_init_caching_extra.py",
+      "tests/unit/agent/test_agent_resilience.py",
+      "static/eval.ts",
+      "tests/unit/agent/test_services_extended.py",
+      "static/ocr.ts",
+      "tests/unit/agent/test_services.py",
+      "templates/fact/text_image_qa_fact_check.j2",
       "static/workspace.ts",
+      "static/validation.ts",
       "static/utils.ts",
       "static/style.css",
+      "tests/unit/agent/__init__.py",
+      "static/README.md",
       "static/qa.ts",
-      "src/cli.py",
-      "src/caching/analytics.py",
-      "stubs/langchain/callbacks/base.pyi",
-      "scripts/analyze_markdown_rules.py",
-      "scripts/apply_all_constraints.py",
-      "scripts/auto_profile.py",
-      "src/automation/promote_rules.py",
-      "tests/unit/agent/test_agent_cache.py",
-      "scripts/cache_warming.py",
+      "tests/unit/agent/test_split_helpers.py",
+      "templates/user/entity_extraction.j2",
+      "templates/web/workspace.html",
+      "templates/system/base.j2",
+      "templates/web/qa.html",
+      "templates/system/entity_extraction.j2",
+      "templates/user/qa/generic.j2",
+      "templates/system/query_gen.j2",
+      "templates/user/rewrite.j2",
+      "tests/e2e/smoke.spec.ts",
+      "templates/user/qa/target.j2",
+      "templates/system/rewrite.j2",
+      "tests/e2e/conftest.py",
+      "templates/system/eval.j2",
+      "templates/user/query_gen.j2",
+      "static/__tests__/validation.test.ts",
+      "static/__tests__/utils.test.ts",
+      "templates/web/layout.html",
+      "templates/web/eval.html",
+      "tests/unit/agent/test_edge_cases.py",
+      "tests/e2e/test_full_workflow.py",
+      "static/app.ts",
+      "tests/unit/agent/test_client_logging.py",
+      "tests/unit/agent/test_batch_processor_extended.py",
       "tests/unit/agent/test_batch_processor.py",
+      "tests/unit/config/__init__.py",
       "tests/unit/agent/test_agent_streaming.py",
-      "tests/unit/agent/test_agent_resilience.py",
-      "scripts/build_session.py",
+      "tests/unit/config/test_config_validator_coverage.py",
+      "tests/unit/config/test_config_validation.py",
+      "tests/e2e/test_workflow_e2e.py",
+      "stubs/tabulate/__init__.pyi",
+      "tests/e2e/__init__.py",
       "tests/unit/agent/test_agent_rate_limit.py",
       "tests/unit/agent/test_agent_more_coverage.py",
-      "src/caching/__init__.py",
-      "scripts/benchmark.py",
-      "src/__init__.py",
-      "src/caching/ttl_policy.py",
-      "tests/unit/agent/test_agent_extended.py",
-      "src/automation/__init__.py",
-      "scripts/backup.py",
-      "tests/unit/agent/test_agent_errors_remaining.py",
-      "src/automation/py.typed",
-      "src/_deprecation.py",
-      "src/caching/redis_cache.py",
-      "tests/unit/agent/test_agent_cost_logging.py",
-      "tests/unit/agent/test_edge_cases.py",
-      "scripts/backup.ps1",
-      "tests/unit/agent/test_agent_budget.py",
-      "scripts/check_deprecated_imports.py",
-      "tests/unit/agent/__init__.py",
-      "scripts/check_db_simple.py",
-      "tests/unit/agent/test_split_helpers.py",
-      "scripts/check_database_status.py",
-      "tests/unit/agent/test_services.py",
-      "tests/unit/agent/test_agent_additional.py",
-      "scripts/check_mypy_progress.ps1",
-      "scripts/check_no_type_check.py",
-      "src/web/exceptions.py",
-      "scripts/checks/check_neo4j_rules.py",
-      "src/web/dependencies.py",
-      "scripts/check_mypy_baseline.py",
-      "scripts/check_missing_stubs.py",
-      "src/web/api.py",
-      "scripts/check_manual_mapping.py",
-      "scripts/check_docstrings.py",
-      "tests/unit/agent/test_agent.py",
-      "scripts/auto_extract_examples.py",
-      "src/web/__init__.py",
-      "src/ui/panels.py",
-      "src/web/utils.py",
-      "src/ui/interactive_menu.py",
-      "src/web/session.py",
-      "src/web/service_registry.py",
-      "scripts/convert.py",
-      "scripts/compare_runs.py",
-      "src/ui/__init__.py",
-      "src/ui/py.typed",
-      "scripts/checks/__init__.py",
-      "src/web/response.py",
-      "scripts/compare_profiles.py",
-      "scripts/checks/validate_session.py",
-      "src/web/py.typed",
-      "scripts/cleanup_misclassified_constraints.py",
-      "scripts/checks/detect_forbidden_patterns.py",
-      "src/web/models.py",
-      "scripts/checks/check_neo4j_summary.py",
-      "scripts/count_mappings.py",
-      "scripts/check_test_types.py",
-      "src/caching/py.typed",
-      "scripts/apply_target_short_constraints.py",
-      "scripts/count_rels.py",
-      "src/py.typed",
-      "scripts/apply_target_long_constraints.py",
-      "scripts/debug_headings.py",
-      "scripts/debug_descendants.py",
-      "scripts/daily_improvement_check.sh",
-      "scripts/apply_reasoning_constraints.py",
-      "src/qa/rag_system.py",
-      "scripts/fix_batch_mapping.py",
-      "src/qa/quality.py",
-      "scripts/final_verification.py",
-      "src/qa/py.typed",
-      "scripts/fetch_ids.py",
-      "scripts/feedback_queries.cypher",
-      "src/qa/pipeline.py",
-      "src/plugins/__init__.py",
-      "src/qa/multi_agent.py",
-      "scripts/feedback_mapper_improved.py",
-      "src/plugins/loader.py",
-      "src/processing/__init__.py",
-      "src/qa/memory_augmented.py",
-      "scripts/fix_constraint_query_types.py",
-      "src/qa/rule_loader.py",
-      "src/qa/template_rules.py",
-      "scripts/feedback_example_curator.py",
-      "src/processing/template_generator.py",
-      "scripts/feedback_analysis_to_neo4j.py",
-      "scripts/fix_mypy_level1.py",
-      "src/qa/validator.py",
-      "src/processing/py.typed",
-      "scripts/export_for_mapping.py",
-      "src/routing/__init__.py",
-      "src/processing/loader.py",
-      "src/plugins/base.py",
-      "scripts/execute_manual_mapping.py",
-      "src/routing/py.typed",
-      "src/processing/example_selector.py",
-      "src/qa/generator.py",
-      "scripts/estimate_cost.py",
-      "scripts/fix_rule_connections.py",
-      "src/routing/graph_router.py",
-      "src/processing/context_augmentation.py",
-      "scripts/enforce_type_hints.py",
-      "src/qa/factory.py",
-      "scripts/dump_block.py",
-      "src/qa/ab_test.py",
-      "scripts/diagnose_constraint_data.py",
-      "src/web/routers/__init__.py",
-      "src/web/routers/workspace.py",
-      "scripts/dev_startup.sh",
-      "src/qa/__init__.py",
-      "src/web/routers/stream.py",
-      "scripts/deprecation_stats.py",
-      "src/web/routers/qa.py",
-      "scripts/debug_rules.py",
-      "scripts/debug_order.py",
-      "src/web/routers/health.py",
-      "src/web/routers/admin.py",
-      "scripts/debug_neo4j.py",
-      "scripts/apply_formatting_constraints.py",
-      "src/caching/layer.py",
-      "stubs/langchain/callbacks/__init__.pyi",
-      "scripts/apply_explanation_constraints.py",
-      "scripts/import_to_aura.py",
-      "src/qa/graph/utils.py",
-      "src/qa/graph/rule_upsert.py",
-      "scripts/import_qa_examples.py",
-      "src/qa/graph/rule_extractor.py",
-      "scripts/generate_mappings_code.py",
-      "src/qa/graph/query_executor.py",
-      "scripts/generate_docs.sh",
-      "src/qa/graph/connection.py",
-      "scripts/generate_architecture_diagram.py",
-      "scripts/apply_all_mappings.py",
-      "src/main.py",
-      "tests/unit/caching/__init__.py",
-      "tests/unit/caching/test_redis_cache_coverage.py",
-      "tests/unit/caching/test_realtime_analytics.py",
-      "src/qa/graph/validators.py",
-      "scripts/analyze_manual_mapping.py",
-      "src/monitoring/__init__.py",
-      "src/plugins/builtin/__init__.py",
-      "scripts/interactive_migration_wizard.py",
-      "src/monitoring/metrics.py",
-      "src/plugins/builtin/example.py",
-      "scripts/init_neo4j_schema.py",
-      "src/qa/graph/__init__.py",
-      "src/qa/graph/vector_search.py",
-      "scripts/latency_baseline.py",
-      "scripts/manage_flags.py",
-      "scripts/analyze_logs.py",
-      "scripts/migrate_imports.py",
-      "scripts/measure_strict_baseline.py",
-      "scripts/neo4j_benchmark_stub.py",
-      "scripts/analyze_extra_constraints.py",
-      "src/infra/neo4j_optimizer.py",
-      "src/features/autocomplete.py",
-      "scripts/remove_shims_v3.py",
-      "src/core/adapters.py",
-      "src/features/action_executor.py",
-      "src/infra/neo4j.py",
-      "scripts/register_qa_rules.py",
-      "src/core/factory.py",
-      "scripts/reclassify_constraints_to_rules.py",
-      "scripts/render_prompt.py",
-      "scripts/queue_producer.py",
-      "src/infra/metrics.py",
-      "scripts/pre-push-check.sh",
-      "src/infra/logging.py",
-      "src/graph/__init__.py",
-      "src/infra/health.py",
-      "src/graph/schema.py",
-      "src/config/constants.py",
-      "src/infra/py.typed",
-      "src/infra/feature_flags.py",
-      "scripts/optimize_neo4j_indexes.cypher",
-      "src/graph/py.typed",
-      "src/infra/constraints.py",
-      "src/graph/mappings.py",
-      "src/graph/entities.py",
-      "src/core/py.typed",
-      "src/features/data2neo_extractor.py",
-      "src/core/models.py",
-      "src/config/exceptions.py",
-      "scripts/run_ab_test.py",
-      "src/core/interfaces.py",
-      "src/infra/callbacks.py",
-      "src/graph/data2neo_extractor.py",
-      "src/infra/budget.py",
-      "scripts/ocr_producer.py",
-      "src/graph/builder.py",
-      "src/config/py.typed",
-      "src/infra/adaptive_limiter.py",
-      "scripts/neo4j_query_examples.py",
-      "src/core/schemas.py",
-      "scripts/show_mappings.py",
-      "src/features/lats.py",
-      "src/infra/telemetry.py",
-      "src/config/__init__.py",
-      "scripts/run_pipeline.py",
-      "src/features/difficulty.py",
-      "src/config/validator.py",
-      "src/infra/utils.py",
-      "scripts/run_neo4j_optimization.py",
-      "src/infra/structured_logging.py",
-      "src/config/utils.py",
-      "src/core/__init__.py",
-      "src/core/type_aliases.py",
-      "src/infra/retry.py",
-      "src/config/settings.py",
-      "scripts/run_hybrid_optimizer.py",
-      "src/features/multimodal.py",
-      "scripts/suggest_mappings.py",
-      "static/__tests__/utils.test.ts",
-      "src/analytics/py.typed",
-      "src/analytics/__init__.py",
-      "scripts/track_deprecations.py",
-      "scripts/test_template_rules.py",
-      "src/analytics/dashboard.py",
-      "scripts/test_template_rendering.py",
-      "scripts/test_template_integration.py",
-      "src/features/__init__.py",
-      "scripts/test_regex.py",
-      "src/features/self_improvement.py",
-      "scripts/test_inspect_mode.py",
-      "src/features/self_correcting.py",
-      "scripts/test_get_constraints.py",
-      "src/infra/__init__.py",
-      "src/features/py.typed",
-      "scripts/test_cypher_query.py",
-      "src/infra/worker.py",
-      "scripts/track_mypy_progress.py",
+      "templates/system/qa/compare_eval.j2",
+      "sonar-project.properties",
+      "templates/prompts/answer_generation.txt",
+      "templates/system/qa/global.j2",
+      "templates/prompts/query_generation.txt",
+      "templates/prod/ocr_default.j2",
+      "templates/system/qa/explanation.j2",
       "run_web.py",
+      "templates/system/qa/summary.j2",
+      "templates/experiments/ocr_v2_concise.j2",
+      "templates/system/qa/rewrite.j2",
+      "templates/system/qa/reasoning.j2",
       "run.bat",
       "README.md",
       "pyproject.toml",
       "postcss.config.cjs",
-      "point.md",
       "playwright.config.ts",
       "package.json",
       "package-lock.json",
-      "scripts/update_constraint_query_types.py",
-      "src/analysis/cross_validation.py",
-      "src/analysis/__init__.py",
-      "src/llm/gemini.py",
-      "src/analysis/semantic.py",
-      "src/analysis/py.typed",
-      "src/analysis/document_compare.py",
-      "scripts/verify_counts.py",
-      "src/llm/lcel_chain.py",
-      "scripts/verify_constraints.py",
-      "src/llm/langchain_system.py",
-      "src/llm/gemini_types.py",
-      "src/agent/context_manager.py",
+      "stubs/langchain/__init__.pyi",
+      "templates/experiments/ocr_v3_structured.j2",
+      "templates/prompts/workspace/answer_generation.jinja2",
+      "scripts/benchmark.py",
+      "templates/prompts/workspace/query_intent.jinja2",
+      "templates/prompts/workspace/query_from_answer.jinja2",
+      "scripts/build_session.py",
+      "scripts/analysis/analyze_manual_mapping.py",
+      "scripts/migrate_imports.py",
+      "scripts/analysis/analyze_logs.py",
+      "stubs/langchain/callbacks/__init__.pyi",
+      "scripts/latency_baseline.py",
+      "scripts/analysis/analyze_extra_constraints.py",
+      "stubs/langchain/callbacks/base.pyi",
+      "notion-neo4j-graph/.python-version",
+      "scripts/migration/feedback_mapper_improved.py",
+      "notion-neo4j-graph/pyproject.toml",
+      "scripts/test_helpers/test_regex.py",
+      "scripts/test_helpers/test_inspect_mode.py",
+      "scripts/test_helpers/test_template_integration.py",
+      "scripts/test_helpers/test_get_constraints.py",
+      "scripts/migration/import_qa_examples.py",
+      "scripts/migration/feedback_example_curator.py",
+      "scripts/analysis/compare_profiles.py",
+      "scripts/test_helpers/test_example_selector.py",
+      "notion-neo4j-graph/main.py",
+      "scripts/analysis/analyze_markdown_rules.py",
+      "scripts/migration/auto_extract_examples.py",
+      "notion-neo4j-graph/import_pipeline.py",
       "scripts/__init__.py",
-      "src/agent/client.py",
-      "scripts/weekly_report.sh",
-      "src/agent/cache_manager.py",
-      "scripts/vulture_whitelist.py",
-      "src/agent/batch_processor.py",
-      "scripts/verify_v3_readiness.py",
-      "scripts/verify_rule_conversion.py",
-      "scripts/verify_neo4j_rules.py",
-      "src/llm/__init__.py",
-      "scripts/verify_neo4j_optimization.py",
+      "notion-neo4j-graph/compare_documents.py",
+      "scripts/migration/import_target_short_examples.py",
+      "scripts/analysis/compare_runs.py",
+      "notion-neo4j-graph/test_all_connections.py",
+      "scripts/validation/check_deprecated_imports.py",
+      "scripts/validation/check_docstrings.py",
+      "scripts/validation/check_neo4j_rules.py",
+      "scripts/validation/check_neo4j_summary.py",
+      "scripts/validation/check_test_types.py",
+      "src/main.py",
+      "scripts/validation/check_qtype_mapping.py",
+      "scripts/validation/final_verification.py",
+      "src/llm/init_genai.py",
+      "src/core/type_aliases.py",
+      "src/_deprecation.py",
+      "src/core/schemas.py",
+      "src/llm/gemini_types.py",
       "src/llm/py.typed",
-      "scripts/verify_mapping.py",
+      "src/processing/example_selector.py",
+      "src/processing/loader.py",
       "src/llm/list_models.py",
-      "src/agent/services.py",
+      "src/llm/lcel_chain.py",
+      "src/processing/context_augmentation.py",
+      "src/core/__init__.py",
+      "src/llm/langchain_system.py",
+      "src/__init__.py",
+      "scripts/validation/__init__.py",
+      "src/core/py.typed",
+      "scripts/validation/verify_v3_readiness.py",
+      "src/config/__init__.py",
+      "src/llm/gemini.py",
+      "src/core/models.py",
+      "src/llm/__init__.py",
+      "scripts/validation/verify_rule_conversion.py",
+      "src/config/validator.py",
+      "src/workflow/context.py",
+      "src/processing/__init__.py",
+      "src/workflow/chunk_processor.py",
+      "src/processing/template_generator.py",
+      "src/processing/py.typed",
+      "scripts/validation/verify_mapping.py",
+      "src/workflow/executor.py",
+      "src/workflow/edit.py",
+      "src/config/utils.py",
+      "src/core/interfaces.py",
+      "src/web/api.py",
+      "src/validation/py.typed",
+      "src/workflow/external_eval.py",
+      "scripts/validation/verify_counts.py",
+      "src/config/settings.py",
+      "src/core/factory.py",
+      "src/workflow/__init__.py",
+      "src/web/service_registry.py",
+      "src/routing/__init__.py",
+      "src/qa/ab_test.py",
+      "src/workflow/workspace_executor.py",
+      "src/web/utils.py",
+      "src/qa/factory.py",
+      "src/web/__init__.py",
+      "src/web/session.py",
+      "src/routing/py.typed",
+      "src/ui/__init__.py",
+      "src/workflow/py.typed",
+      "src/web/response.py",
+      "src/routing/graph_router.py",
+      "src/ui/py.typed",
+      "src/web/rate_limit.py",
+      "src/workflow/processor.py",
+      "src/qa/generator.py",
+      "src/validation/__init__.py",
+      "src/web/py.typed",
+      "src/ui/panels.py",
+      "src/workflow/mcts_optimizer.py",
+      "src/validation/rule_parser.py",
+      "src/web/models.py",
+      "src/ui/interactive_menu.py",
+      "src/web/exceptions.py",
+      "src/workflow/inspection.py",
+      "src/web/dependencies.py",
+      "src/validation/README.md",
+      "src/workflow/hybrid_optimizer.py",
+      "src/web/cache.py",
+      "scripts/validation/verify_constraints.py",
+      "src/qa/memory_augmented.py",
+      "src/config/py.typed",
+      "src/py.typed",
+      "scripts/validation/validate_session.py",
+      "src/core/adapters.py",
+      "src/config/exceptions.py",
+      "scripts/validation/detect_forbidden_patterns.py",
+      "src/config/constants.py",
+      "src/qa/multi_agent.py",
+      "scripts/validation/check_no_type_check.py",
+      "src/infra/constraints.py",
+      "src/plugins/__init__.py",
+      "src/web/routers/qa_common.py",
+      "src/qa/graph/rule_upsert.py",
+      "src/qa/graph/rule_manager.py",
+      "src/plugins/loader.py",
+      "src/infra/callbacks.py",
+      "src/web/routers/qa.py",
+      "src/infra/budget.py",
+      "src/qa/graph/rule_extractor.py",
+      "src/web/routers/pages.py",
+      "src/qa/graph/query_executor.py",
+      "src/qa/__init__.py",
+      "src/monitoring/__init__.py",
+      "src/web/routers/qa_evaluation.py",
+      "src/infra/metrics.py",
+      "src/qa/graph/vector_search.py",
+      "src/infra/logging.py",
+      "src/qa/graph/validators.py",
+      "src/infra/health.py",
+      "src/web/routers/qa_generation.py",
+      "src/web/routers/qa_tools.py",
+      "src/qa/graph/utils.py",
+      "src/infra/feature_flags.py",
+      "src/web/routers/ocr.py",
+      "src/infra/adaptive_limiter.py",
+      "src/infra/neo4j.py",
+      "src/monitoring/metrics_exporter.py",
+      "src/qa/graph/__init__.py",
+      "src/qa/validator.py",
+      "src/qa/graph/queries.py",
+      "src/plugins/base.py",
+      "src/monitoring/metrics.py",
+      "src/web/routers/metrics.py",
+      "src/qa/graph/connection.py",
+      "src/qa/template_rules.py",
+      "src/web/routers/health.py",
+      "src/qa/rule_loader.py",
+      "src/qa/rag_system.py",
+      "src/web/routers/cache_stats.py",
+      "src/qa/quality.py",
+      "src/qa/py.typed",
+      "src/qa/pipeline.py",
+      "src/infra/retry.py",
+      "src/web/routers/workspace.py",
+      "src/infra/py.typed",
+      "src/web/routers/stream.py",
+      "src/infra/performance_tracker.py",
+      "src/web/routers/session.py",
+      "src/infra/neo4j_optimizer.py",
+      "src/web/routers/__init__.py",
+      "src/graph/builder.py",
+      "src/infra/__init__.py",
+      "src/web/routers/workspace_unified.py",
+      "src/web/routers/qa_gen_core/prompts.py",
+      "src/infra/worker.py",
+      "src/web/routers/qa_gen_core/types.py",
+      "src/graph/data2neo_extractor.py",
+      "src/web/routers/qa_gen_core/generator.py",
+      "src/web/routers/workspace_review.py",
+      "src/infra/utils.py",
+      "src/plugins/builtin/__init__.py",
+      "src/web/routers/qa_gen_core/constraints.py",
+      "src/web/routers/workspace_generation.py",
+      "src/infra/telemetry.py",
+      "src/plugins/builtin/example.py",
+      "src/infra/structured_logging.py",
+      "src/web/routers/workspace_common.py",
+      "notion-neo4j-graph/verify_topics.py",
+      "scripts/validation/check_mypy_baseline.py",
+      "notion-neo4j-graph/verify_import.py",
+      "scripts/validation/check_missing_stubs.py",
+      "scripts/validation/check_manual_mapping.py",
+      "src/features/action_executor.py",
+      "notion-neo4j-graph/test_notion_connection.py",
+      "src/cli.py",
+      "notion-neo4j-graph/test_neo4j_connection.py",
+      "src/graph/entities.py",
+      "src/features/autocomplete.py",
+      "src/web/routers/qa_gen_core/validation.py",
+      "src/web/routers/qa_gen_core/__init__.py",
+      "src/graph/mappings.py",
+      "scripts/analysis/__init__.py",
+      "scripts/validation/check_db_simple.py",
+      "src/graph/__init__.py",
+      "src/features/difficulty.py",
+      "src/graph/schema.py",
+      "src/features/data2neo_extractor.py",
+      "src/graph/py.typed",
+      "scripts/validation/check_database_status.py",
+      "src/caching/analytics.py",
+      "src/features/py.typed",
+      "src/features/multimodal.py",
+      "src/features/lats.py",
+      "scripts/analysis/estimate_cost.py",
+      "scripts/migration/__init__.py",
+      "src/features/self_correcting.py",
+      "src/analytics/__init__.py",
+      "src/caching/ttl_policy.py",
+      "src/analysis/cross_validation.py",
+      "src/analytics/realtime_dashboard.py",
+      "src/caching/redis_cache.py",
+      "src/automation/__init__.py",
+      "src/caching/__init__.py",
+      "src/features/__init__.py",
+      "src/analytics/py.typed",
+      "src/automation/py.typed",
+      "src/caching/py.typed",
+      "src/features/self_improvement.py",
+      "src/analytics/dashboard.py",
+      "src/automation/promote_rules.py",
+      "src/caching/layer.py",
+      "notion-neo4j-graph/semantic_analysis.py",
+      "src/analysis/document_compare.py",
+      "scripts/analysis/diagnose_constraint_data.py",
+      "scripts/migration/remove_shims_v3.py",
+      "scripts/migration/migrate_imports.py",
+      "scripts/migration/interactive_migration_wizard.py",
+      "scripts/analysis/deprecation_stats.py",
+      "scripts/test_helpers/__init__.py",
+      "scripts/migration/import_reasoning_examples.py",
+      "scripts/test_helpers/test_template_rules.py",
+      "notion-neo4j-graph/README.md",
+      "scripts/test_helpers/test_template_rendering.py",
+      "scripts/render_prompt.py",
+      "src/agent/cache_manager.py",
+      "src/analysis/semantic.py",
+      "src/agent/batch_processor.py",
+      "src/analysis/__init__.py",
+      "src/analysis/py.typed",
+      "scripts/deprecation_stats.py",
+      "src/agent/context_manager.py",
+      "src/agent/client.py",
+      "scripts/dev/build_session.py",
+      "docs/ADVANCED_FEATURES.md",
       "experiments/__init__.py",
-      "notion-neo4j-graph/.env",
-      "src/agent/retry_handler.py",
-      "src/agent/rate_limiter.py",
-      "experiments/runner.py",
-      "src/agent/py.typed",
-      "src/agent/cost_tracker.py",
-      "experiments/ab_testing.py",
-      "src/agent/core.py",
+      "scripts/neo4j/apply_formatting_constraints.py",
+      "scripts/dev/bench_gemini_latency.py",
+      "scripts/neo4j/apply_reasoning_constraints.py",
+      "scripts/neo4j/apply_target_long_constraints.py",
+      "scripts/dev/cache_warming.py",
+      "scripts/neo4j/apply_explanation_constraints.py",
       "src/agent/__init__.py",
+      "examples/context_table.json",
+      "scripts/dev/benchmark.py",
+      "experiments/runner.py",
+      "src/agent/services.py",
+      "examples/context_low_text.json",
+      "scripts/neo4j/apply_all_mappings.py",
+      "scripts/dev/backup.py",
+      "src/agent/retry_handler.py",
+      "scripts/neo4j/apply_all_constraints.py",
+      "examples/context_calc_used.json",
+      "scripts/neo4j/apply_target_short_constraints.py",
+      "experiments/ab_testing.py",
+      "scripts/dev/backup.ps1",
+      "src/agent/rate_limiter.py",
+      "scripts/dev/check_mypy_progress.ps1",
+      "scripts/neo4j/add_bold_constraint.py",
+      "src/agent/py.typed",
+      "scripts/dev/auto_profile.py",
+      "src/agent/cost_tracker.py",
+      "src/agent/core.py",
       "Dockerfile",
       "docker-compose.yml",
       "docker-compose.worker.yml",
-      "docs/API.md",
-      "examples/session_input_low_density.json",
-      "notion-neo4j-graph/semantic_analysis.py",
-      "docs/CONFIGURATION.md",
-      "notion-neo4j-graph/verify_topics.py",
-      "docs/Data2Neo_Integration_Report.md",
-      "config/production.env",
-      "src/workflow/context.py",
-      "src/workflow/chunk_processor.py",
-      "docs/DEPRECATION.md",
-      "docs/DEPLOYMENT_VERIFIED.md",
-      "docs/CONTRIBUTING.md",
-      "notion-neo4j-graph/verify_import.py",
-      "docs/conf.py",
-      "notion-neo4j-graph/test_notion_connection.py",
-      "docs/architecture/system_architecture.md",
-      "docs/architecture/rag_system.md",
-      "src/workflow/edit.py",
-      "config/minimal.env",
-      "docs/CHANGELOG.md",
-      "src/workflow/mcts_optimizer.py",
-      "docs/GETTING_STARTED.md",
-      "src/workflow/inspection.py",
-      "src/workflow/hybrid_optimizer.py",
-      "src/workflow/external_eval.py",
-      "docs/ENVIRONMENT_SETUP.md",
-      "docs/GOpt_Integration_Report.md",
-      "src/workflow/executor.py",
-      "config/staging.env",
-      "notion-neo4j-graph/test_neo4j_connection.py",
-      "docs/architecture/ocr_workflow.md",
-      "docs/architecture/error_handling.md",
-      "notion-neo4j-graph/test_all_connections.py",
-      "docs/architecture/data_flow.md",
-      "docs/architecture/component_dependencies.md",
       "docs/CACHING.md",
-      "docs/architecture/caching_strategy.md",
-      "notion-neo4j-graph/README.md",
-      "config/feature_flags.json",
+      "scripts/dev/debug_order.py",
+      "data/blackwater.csv",
+      "devplan/Project_Evaluation_Report.md",
+      "scripts/dev/fix_constraint_query_types.py",
+      "scripts/neo4j/migrate_examples_to_neo4j.py",
+      "docs/Data2Neo_Integration_Report.md",
+      "scripts/neo4j/neo4j_benchmark_stub.py",
+      "scripts/dev/fix_batch_mapping.py",
+      "scripts/neo4j/init_neo4j_schema.py",
+      "devplan/Session_History.md",
+      "scripts/neo4j/import_to_aura.py",
+      "docs/CONTRIBUTING.md",
+      "scripts/dev/enforce_type_hints.py",
+      "devplan/Prompt.md",
+      "scripts/neo4j/fetch_ids.py",
+      "docs/CONFIGURATION.md",
+      "scripts/dev/fix_example_type.py",
+      "data/examples/단답답변예시.txt",
+      "scripts/dev/dump_block.py",
+      "scripts/neo4j/feedback_queries.cypher",
+      "scripts/dev/generate_mappings_code.py",
+      "scripts/neo4j/show_mappings.py",
+      "scripts/neo4j/setup_constraints.py",
+      "scripts/dev/generate_docs.sh",
+      "scripts/neo4j/run_neo4j_optimization.py",
+      "data/examples/추론답변예시.txt",
+      "scripts/neo4j/register_qa_rules.py",
+      "scripts/dev/generate_architecture_diagram.py",
+      "data/examples/설명답변예시.txt",
+      "scripts/neo4j/reclassify_constraints_to_rules.py",
+      "scripts/dev/fix_rule_connections.py",
+      "scripts/neo4j/optimize_neo4j_indexes.cypher",
+      "scripts/dev/fix_mypy_level1.py",
+      "scripts/neo4j/neo4j_query_examples.py",
+      "scripts/neo4j/suggest_mappings.py",
+      "scripts/dev/latency_baseline.py",
+      "docs/conf.py",
+      "devplan/Project_Improvement_Exploration_Report.md",
+      "data/neo4j/import_log.txt",
+      "scripts/dev/ocr_producer.py",
+      "data/neo4j/import_guide_data.cypher",
+      "scripts/dev/measure_strict_baseline.py",
+      "scripts/neo4j/verify_neo4j_optimization.py",
+      "scripts/dev/manage_flags.py",
+      "data/neo4j/guide.csv",
+      "data/outputs/qa_result_4pairs.json",
+      "scripts/neo4j/update_constraint_query_types.py",
+      "scripts/dev/dev_startup.sh",
+      "docs/CHANGELOG.md",
+      "scripts/neo4j/feedback_analysis_to_neo4j.py",
+      "scripts/dev/debug_rules.py",
+      "scripts/neo4j/export_for_mapping.py",
       "docs/BREAKING_CHANGES_v3.md",
+      "scripts/dev/debug_headings.py",
+      "scripts/neo4j/execute_manual_mapping.py",
+      "docs/api/index.rst",
       "docs/BRANCH_CLEANUP_STATUS.md",
+      "scripts/dev/debug_descendants.py",
+      "scripts/neo4j/debug_neo4j.py",
+      "data/neo4j/import_qna_data.cypher",
+      "scripts/neo4j/cypher_query_check.py",
+      "scripts/dev/debug_api_response.py",
+      "scripts/dev/daily_improvement_check.sh",
+      "scripts/neo4j/count_rels.py",
       "docs/BACKEND_REFACTORING.md",
-      "examples/workspace_executor_usage.py",
-      "config/development.env",
-      "examples/session_input_with_table.json",
-      "docs/guide_mapping.md",
+      "scripts/neo4j/verify_neo4j_rules.py",
+      "scripts/neo4j/count_mappings.py",
       "docs/ARCHITECTURE.md",
-      "notion-neo4j-graph/pyproject.toml",
-      "notion-neo4j-graph/main.py",
-      "docs/README_FULL.md",
-      "data/outputs/checkpoint.jsonl",
-      "docs/PRINCIPLES_REVIEW.md",
-      "docs/MYPY_STRICT_GUIDE.md",
-      "docs/MYPY_LEVEL3_REPORT.md",
-      "data/queue_results/results.jsonl",
-      "docs/MYPY_LEVEL2_BEST_PRACTICES.md",
-      "docs/MONITORING.md",
-      "docs/modules.rst",
-      "docs/MIGRATION.md",
+      "scripts/dev/convert.py",
+      "scripts/neo4j/cleanup_misclassified_constraints.py",
+      "scripts/dev/pre-push-check.sh",
+      "scripts/neo4j/__init__.py",
+      "data/neo4j/README_IMPORT.md",
+      "scripts/dev/run_ab_test.py",
+      "scripts/dev/render_prompt.py",
+      "data/neo4j/README_AURA_IMPORT.md",
+      "scripts/dev/queue_producer.py",
+      "data/neo4j/qna.csv",
+      "scripts/dev/consolidate_target.py",
+      "docs/API.md",
+      "scripts/neo4j/check_neo4j_constraints.py",
+      "coverage_fixed.xml",
+      "scripts/dev/run_hybrid_optimizer.py",
+      "checks/__init__.py",
+      "config/grafana_dashboard.json",
+      "docs/guide_mapping.md",
+      "config/feature_flags.json",
+      "docs/GOpt_Integration_Report.md",
+      "docs/GETTING_STARTED.md",
+      "checks/validate_session.py",
+      "config/development.env",
+      "data/inputs/notion_sample_ocr.txt",
+      "docs/ENVIRONMENT_SETUP.md",
+      "docs/ENDPOINT_ANALYSIS_SUMMARY.md",
+      "checks/detect_forbidden_patterns.py",
+      "data/inputs/input_ocr.txt",
+      "docs/architecture/component_dependencies.md",
+      "config/minimal.env",
+      "scripts/dev/__init__.py",
+      "docs/architecture/data_flow.md",
+      "docs/examples/basic_usage.py",
+      "data/inputs/input_candidates_raw.txt",
+      "scripts/dev/weekly_report.sh",
+      "docs/DEPRECATION.md",
+      "data/inputs/input_candidates.json",
+      "scripts/dev/vulture_whitelist.py",
+      "docs/DEPLOYMENT_VERIFIED.md",
+      "data/inputs/example_ocr.txt",
+      "scripts/dev/track_mypy_progress.py",
+      "scripts/dev/track_deprecations.py",
+      "config/patterns.yaml",
+      "docs/architecture/caching_strategy.md",
+      "data/inputs/example_candidates.json",
+      "scripts/dev/run_pipeline.py",
+      "docs/IMPLEMENTATION_SUMMARY.md",
+      "docs/examples/sample_image_meta.json",
+      "docs/devplan/FINAL_COMPLETION_REPORT.md",
+      "docs/devplan/back.md",
+      "docs/examples/demo_web_logging.py",
+      "docs/HOW_TO_USE_WEB_LOGGING.md",
+      "docs/examples/csv_validation_usage.py",
+      "docs/architecture/system_architecture.md",
+      "docs/examples/context_table.json",
+      "docs/architecture/rag_system.md",
+      "docs/examples/context_low_text.json",
+      "docs/architecture/ocr_workflow.md",
+      "config/production.env",
+      "config/staging.env",
+      "docs/devplan/Final_Implementation_Report.md",
+      "docs/examples/session_input.json",
+      "docs/IMPROVEMENTS.md",
+      "docs/examples/context_calc_used.json",
+      "docs/architecture/error_handling.md",
+      "docs/IMPROVEMENT_PROPOSAL.md",
+      "docs/examples/session_input_low_density.json",
       "docs/MANUAL_MAPPING_GUIDE.md",
       "docs/Makefile",
       "docs/make.bat",
+      "docs/examples/workspace_executor_usage.py",
+      "artifacts/coverage_test_report.md",
       "docs/index.rst",
-      "docs/IMPROVEMENT_PROPOSAL.md",
-      "data/neo4j/import_log.txt",
-      "data/outputs/edited_20251203_152905.md",
-      "data/outputs/edited_20251203_152656.md",
-      "data/outputs/edited_20251203_012321.md",
-      "data/outputs/edited_20251203_010939.md",
-      "data/outputs/edited_20251202_202325.md",
-      "data/outputs/edited_20251202_202109.md",
-      "data/neo4j/import_guide_data.cypher",
-      "data/outputs/edited_20251203_153419.md",
-      "data/outputs/edited_20251202_201646.md",
-      "data/outputs/edited_20251203_153928.md",
-      "data/outputs/edited_20251202_155620.md",
-      "data/outputs/edited_20251203_174710.md",
-      "data/outputs/edited_20251202_155619.md",
-      "docs/api/index.rst",
-      "docs/V3_SHIM_REMOVAL_ISSUE.md",
-      "data/outputs/edited_20251202_125626.md",
-      "data/outputs/edited_20251202_124629.md",
-      "docs/UV_GUIDE.md",
-      "data/outputs/edited_20251202_095743.md",
-      "data/outputs/edited_20251203_174836.md",
-      "data/neo4j/guide.csv",
-      "data/outputs/edited_20251202_095615.md",
-      "data/outputs/edited_20251202_080809.md",
-      "docs/update_log.md",
-      "data/outputs/edited_20251202_080526.md",
-      "docs/unified_workspace_workflow.md",
-      "data/outputs/edited_20251202_075335.md",
-      "data/outputs/edited_20251202_063323.md",
-      "data/outputs/edited_20251202_063019.md",
-      "data/outputs/edited_20251202_062903.md",
-      "data/outputs/edited_20251202_052232.md",
-      "data/outputs/edited_20251202_052126.md",
-      "docs/TROUBLESHOOTING.md",
-      "data/outputs/edited_20251202_033747.md",
-      "docs/src.rst",
-      "data/outputs/edited_20251202_033521.md",
-      "docs/SECURITY.md",
-      "data/outputs/edited_20251130_152026.md",
-      "docs/examples/basic_usage.py",
-      "data/outputs/edited_20251203_175431.md",
-      "data/outputs/edited_20251203_180650.md",
-      "data/neo4j/README_AURA_IMPORT.md",
-      "data/outputs/edited_20251203_175758.md",
-      "data/neo4j/qna.csv",
-      "data/outputs/edited_20251203_175229.md",
-      "data/outputs/edited_20251203_175117.md",
-      "data/neo4j/import_qna_data.cypher",
-      "data/outputs/edited_20251203_175016.md",
-      "docs/ADVANCED_FEATURES.md",
-      "devplan/Project_Improvement_Exploration_Report.md",
-      "data/outputs/edited_20251204_022929.md",
-      "examples/session_input.json",
-      "examples/sample_image_meta.json",
-      "notion-neo4j-graph/import_pipeline.py",
-      "devplan/Project_Evaluation_Report.md",
-      "notion-neo4j-graph/compare_documents.py",
-      "examples/context_table.json",
-      "examples/context_low_text.json",
-      "data/outputs/edited_20251204_024653.md",
-      "examples/context_calc_used.json",
-      "notion-neo4j-graph/.python-version",
-      "data/outputs/inspected_20251202_062903.md",
-      "data/outputs/inspected_20251202_124629.md",
-      "docs/_build/searchindex.js",
-      "data/outputs/inspected_20251202_155619.md",
-      "checks/__init__.py",
-      "data/outputs/inspected_20251203_152656.md",
-      "docs/_build/_modules/re.html",
-      "data/outputs/inspected_20251203_152905.md",
-      "docs/_build/_modules/index.html",
-      "data/outputs/inspected_20251203_012321.md",
-      "data/outputs/inspected_20251203_010939.md",
-      "data/outputs/inspected_20251202_202325.md",
-      "data/outputs/inspected_20251202_202109.md",
-      "docs/_build/src.html",
-      "data/outputs/inspected_20251202_201645.md",
-      "docs/_build/search.html",
-      "checks/validate_session.py",
-      "docs/_build/py-modindex.html",
-      "checks/detect_forbidden_patterns.py",
-      "docs/devplan/Prompt.md",
-      "data/outputs/inspected_20251204_214147.md",
-      "data/outputs/inspected_20251204_213721.md",
+      "docs/examples/session_input_with_table.json",
+      "docs/devplan/Final_Status_Report.md",
+      ".pre-commit-config.yaml",
+      ".gitignore",
       "docs/devplan/Project_Improvement_Exploration_Report.md",
-      "docs/_build/_static/basic.css",
-      "data/outputs/inspected_20251204_161815.md",
       "docs/devplan/Project_Evaluation_Report.md",
-      "data/outputs/inspected_20251204_161814.md",
-      "docs/_build/_sources/src.rst.txt",
-      "data/outputs/inspected_20251204_024653.md",
-      "docs/_build/_sources/modules.rst.txt",
+      "docs/devplan/Prompt_Execution_Report.md",
+      "docs/devplan/Prompt_Execution_Progress.md",
+      ".github/dependabot.yml",
+      "docs/devplan/Prompt_Completion_Report.md",
+      ".github/copilot-instructions.md",
+      "docs/devplan/Prompt.md",
+      ".vscode/vibereport-state.json",
       "docs/devplan/housekeeping.md",
-      "docs/_build/_sources/index.rst.txt",
-      "data/outputs/inspected_20251204_214418.md",
-      "data/outputs/inspected_20251204_022929.md",
-      "docs/devplan/back.md",
-      "data/outputs/inspected_20251203_180650.md",
-      "data/outputs/inspected_20251203_175758.md",
-      "data/outputs/inspected_20251203_175431.md",
-      "data/outputs/inspected_20251203_175229.md",
-      "data/outputs/inspected_20251203_175117.md",
-      "src/workflow/py.typed",
-      "data/outputs/inspected_20251203_175016.md",
-      "src/workflow/processor.py",
-      "data/outputs/inspected_20251203_174836.md",
-      "data/outputs/inspected_20251203_174710.md",
-      "data/outputs/inspected_20251203_153928.md",
-      "docs/_build/_static/plus.png",
-      "data/outputs/result_turn_1_20251130_041500.md",
-      "data/outputs/result_turn_1_20251130_041744.md",
-      "data/outputs/result_turn_1_20251128_191837.md",
-      "data/outputs/result_turn_1_20251128_181215.md",
-      "src/workflow/__init__.py",
-      "docs/_build/_static/css/theme.css",
-      "data/outputs/result_turn_1_20251128_073813.md",
-      "src/workflow/workspace_executor.py",
-      "data/outputs/result_turn_1_20251130_042552.md",
-      "data/outputs/result_turn_1_20251127_042801.md",
-      "docs/_build/_static/_sphinx_javascript_frameworks_compat.js",
-      "docs/_build/_static/css/badge_only.css",
-      "docs/_build/_static/sphinx_highlight.js",
-      "docs/_build/_static/searchtools.js",
-      "docs/_build/_static/pygments.css",
-      "docs/_build/_static/minus.png",
-      "docs/_build/_static/language_data.js",
-      "docs/_build/_static/jquery.js",
-      "data/outputs/qa_result_4pairs.json",
-      "docs/_build/_modules/src/agent.html",
-      "data/outputs/result_turn_1_20251130_152037.md",
-      "docs/_build/_static/file.png",
-      "data/outputs/result_turn_1_20251202_033527.md",
-      "data/outputs/inspected_20251205_163616.md",
-      "docs/_build/_static/documentation_options.js",
-      "data/outputs/inspected_20251205_163225.md",
-      "data/outputs/inspected_20251204_214708.md",
-      "docs/_build/_static/doctools.js",
-      "data/outputs/inspected_20251203_153927.md",
-      "data/outputs/inspected_20251203_153419.md",
-      "docs/_build/objects.inv",
-      "data/outputs/inspected_20251202_125626.md",
-      "data/inputs/notion_sample_ocr.txt",
-      "data/outputs/inspected_20251202_095743.md",
-      "docs/_build/modules.html",
-      "data/outputs/inspected_20251202_095615.md",
-      "data/outputs/inspected_20251202_080809.md",
-      "data/inputs/input_ocr.txt",
-      "data/outputs/inspected_20251202_080526.md",
-      "docs/_build/index.html",
-      "data/inputs/input_candidates_raw.txt",
-      "data/outputs/inspected_20251202_075335.md",
-      "data/outputs/inspected_20251202_063323.md",
-      "data/outputs/result_turn_1_20251203_153831.md",
-      "data/outputs/result_turn_1_20251203_154339.md",
-      "data/outputs/result_turn_1_20251203_153316.md",
-      "data/outputs/result_turn_1_20251202_202730.md",
-      "data/outputs/result_turn_1_20251202_155625.md",
-      "data/outputs/result_turn_1_20251202_125631.md",
-      "data/outputs/result_turn_1_20251203_180209.md",
-      "data/outputs/result_turn_1_20251202_124635.md",
-      "data/outputs/result_turn_1_20251204_214426.md",
-      "data/outputs/result_turn_1_20251204_214716.md",
-      "data/outputs/result_turn_1_20251204_214155.md",
-      "data/outputs/result_turn_1_20251204_213729.md",
-      "docs/_build/html/objects.inv",
-      "data/outputs/result_turn_1_20251203_181101.md",
-      "docs/_build/html/modules.html",
-      "docs/_build/_static/js/versions.js",
-      "docs/_build/html/index.html",
-      "docs/_build/html/genindex.html",
-      "docs/_build/_static/js/theme.js",
-      "docs/_build/_static/css/fonts/fontawesome-webfont.woff2",
-      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-bold.woff",
-      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-bold.woff2",
-      "docs/_build/html/src.html",
-      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-bold.ttf",
-      "docs/_build/_static/css/fonts/fontawesome-webfont.woff",
-      "docs/_build/html/searchindex.js",
-      "docs/_build/html/search.html",
-      "docs/_build/_static/css/fonts/fontawesome-webfont.ttf",
-      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-bold.eot",
-      "docs/_build/html/py-modindex.html",
-      "docs/_build/_static/css/fonts/fontawesome-webfont.svg",
-      "docs/_build/_static/css/fonts/fontawesome-webfont.eot",
-      "docs/_build/_static/fonts/Lato/lato-bolditalic.ttf",
-      "docs/_build/_static/css/fonts/lato-bold-italic.woff2",
-      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-regular.woff2",
-      "docs/_build/_static/fonts/Lato/lato-bolditalic.woff",
-      "docs/_build/html/.doctrees/src.doctree",
-      "docs/_build/_static/css/fonts/lato-bold-italic.woff",
-      "docs/_build/_static/fonts/Lato/lato-bolditalic.eot",
-      "docs/_build/html/.doctrees/modules.doctree",
-      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-regular.woff",
-      "docs/_build/_static/fonts/Lato/lato-bold.woff2",
-      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-regular.ttf",
-      "docs/_build/_static/fonts/Lato/lato-bold.woff",
-      "docs/_build/html/.doctrees/index.doctree",
-      "docs/_build/_static/fonts/Lato/lato-bold.ttf",
-      "docs/_build/_static/fonts/RobotoSlab/roboto-slab-v7-regular.eot",
-      "docs/_build/_static/fonts/Lato/lato-italic.ttf",
-      "docs/_build/_static/fonts/Lato/lato-italic.woff",
-      "docs/_build/_static/fonts/Lato/lato-italic.eot",
-      "docs/_build/_static/fonts/Lato/lato-bolditalic.woff2",
-      "docs/_build/html/.doctrees/environment.pickle",
-      "docs/_build/_static/fonts/Lato/lato-bold.eot",
-      "docs/_build/_static/css/fonts/lato-bold.woff",
-      "docs/_build/_static/css/fonts/lato-bold.woff2",
-      "docs/_build/html/_modules/index.html",
-      "docs/_build/_static/fonts/Lato/lato-regular.woff",
-      "docs/_build/_static/fonts/Lato/lato-regular.ttf",
-      "docs/_build/_static/fonts/Lato/lato-regular.eot",
-      "docs/_build/_static/fonts/Lato/lato-italic.woff2",
-      "data/outputs/result_turn_4_20251127_042621.md",
-      "docs/_build/_static/fonts/Lato/lato-regular.woff2",
-      "data/outputs/result_turn_3_20251127_042654.md",
-      "docs/_build/_static/css/fonts/lato-normal.woff",
-      "docs/_build/_static/css/fonts/lato-normal.woff2",
-      "data/outputs/review_logs/review_2025-12-02.jsonl",
-      "data/outputs/review_logs/review_2025-12-01.jsonl",
-      "docs/_build/_static/css/fonts/lato-normal-italic.woff2",
-      "data/outputs/review_logs/review_2025-12-03.jsonl",
-      "data/outputs/review_logs/review_2025-11-30.jsonl",
-      "docs/_build/_static/css/fonts/lato-normal-italic.woff",
-      "data/outputs/review_logs/review_2025-11-29.jsonl",
-      "data/outputs/result_turn_2_20251127_042646.md",
-      "data/outputs/result_turn_1_20251205_163631.md",
-      "data/outputs/result_turn_1_20251205_163239.md",
-      "docs/_build/html/_sources/index.rst.txt",
-      "docs/_build/_static/js/badge_only.js",
-      "docs/_build/html/.buildinfo",
-      "data/outputs/result_turn_1_20251202_095748.md",
-      "docs/_build/_modules/src/utils.html",
-      "data/outputs/result_turn_1_20251202_095620.md",
-      "docs/_build/_modules/src/models.html",
-      "data/outputs/result_turn_1_20251202_080814.md",
-      "data/outputs/result_turn_1_20251202_080531.md",
-      "docs/_build/_modules/src/main.html",
-      "docs/_build/_modules/src/logging_setup.html",
-      "data/outputs/result_turn_1_20251202_075341.md",
-      "data/outputs/result_turn_1_20251202_063328.md",
-      "docs/_build/_modules/src/exceptions.html",
-      "data/outputs/review_logs/review_2025-12-04.jsonl",
-      "data/outputs/result_turn_1_20251202_063024.md",
-      "docs/_build/_modules/src/data_loader.html",
-      "docs/_build/html/_sources/modules.rst.txt",
-      "data/outputs/result_turn_1_20251202_062908.md",
-      "docs/_build/_modules/src/constants.html",
-      "data/outputs/result_turn_1_20251202_052237.md",
-      "docs/_build/_modules/src/config.html",
-      "data/outputs/result_turn_1_20251202_052131.md",
-      "docs/_build/_modules/src/cache_analytics.html",
-      "data/outputs/result_turn_1_20251202_033752.md",
-      "data/inputs/input_candidates.json",
-      "data/outputs/inspected_20251202_063019.md",
-      "data/inputs/example_ocr.txt",
-      "docs/_build/genindex.html",
-      "data/outputs/inspected_20251202_052232.md",
-      "data/inputs/example_candidates.json",
-      "data/outputs/inspected_20251202_052126.md",
-      "data/outputs/inspected_20251202_033747.md",
-      "data/outputs/inspected_20251202_033521.md",
-      "data/outputs/inspected_20251130_152026.md",
-      "docs/_build/.buildinfo",
-      "docs/_build/html/_static/basic.css",
-      "docs/_build/html/_sources/src.rst.txt",
-      "data/outputs/review_logs/review_2025-12-05.jsonl",
-      "data/neo4j/README_IMPORT.md",
-      "data/outputs/edited_20251205_163616.md",
-      "data/outputs/edited_20251205_163225.md",
-      "data/outputs/edited_20251204_214708.md",
-      "data/outputs/edited_20251204_214418.md",
-      "data/outputs/edited_20251204_214147.md",
-      "data/outputs/edited_20251204_213721.md",
-      "data/outputs/edited_20251204_161815.md",
-      "blackwater.csv",
-      "docs/_build/html/_static/file.png",
-      "docs/_build/html/_modules/src/agent.html",
-      "docs/_build/html/_static/documentation_options.js",
-      "docs/_build/html/_static/doctools.js",
-      "docs/_build/html/_static/minus.png",
-      "docs/_build/html/_modules/src/main.html",
-      "docs/_build/html/_static/plus.png",
-      "docs/_build/_static/css/fonts/Roboto-Slab-Regular.woff",
-      "docs/_build/html/_modules/src/logging_setup.html",
-      "docs/_build/_static/css/fonts/Roboto-Slab-Bold.woff2",
-      "docs/_build/html/_static/language_data.js",
-      "docs/_build/html/_modules/src/data_loader.html",
-      "docs/_build/_static/css/fonts/Roboto-Slab-Bold.woff",
-      "docs/_build/html/_static/css/badge_only.css",
+      ".vscode/tasks.json",
+      ".vscode/settings.json",
+      "docs/MYPY_LEVEL3_REPORT.md",
+      "docs/devplan/Prompt_Execution_Summary.md",
+      "docs/MYPY_LEVEL2_BEST_PRACTICES.md",
+      ".vscode/extensions.json",
+      "docs/MONITORING.md",
+      "docs/modules.rst",
+      "docs/MIGRATION.md",
+      ".gitattributes",
+      ".github/agents/my-agent.agent.md",
+      "docs/MYPY_STRICT_GUIDE.md",
+      "docs/PERFORMANCE_OPTIMIZATION_SUMMARY.md",
+      "docs/TROUBLESHOOTING_422_ERRORS.md",
+      "docs/TROUBLESHOOTING.md",
+      ".sonar/report-task.txt",
+      "docs/src.rst",
+      "docs/TROUBLESHOOTING_TRUNCATED_RESPONSES.md",
+      ".sonar/.sonar_lock",
+      "docs/SECURITY.md",
+      "docs/README_FULL.md",
+      "docs/PROMPT_IMPROVEMENTS.md",
+      "docs/PRINCIPLES_REVIEW.md",
+      "docs/point.md",
+      ".github/workflows/deprecation-check.yml",
+      ".github/workflows/deploy.yml",
+      ".github/workflows/clear-cache.yaml",
+      "docs/web_api_logging.md",
+      ".github/workflows/ci.yaml",
+      "docs/WEB_API_ENDPOINTS.md",
+      "docs/VALIDATION_EXAMPLES.md",
+      ".github/workflows/weekly-deprecation-report.yml",
+      ".github/workflows/security.yml",
+      ".github/workflows/performance-check.yml",
+      ".github/workflows/docs.yml",
+      ".github/workflows/docker-build.yml",
+      "docs/V3_SHIM_REMOVAL_ISSUE.md",
+      "docs/UV_GUIDE.md",
+      "docs/update_log.md",
+      "docs/unified_workspace_workflow.md",
+      ".github/workflows/backup_20251204/qa-validation.yml",
+      ".github/workflows/backup_20251204/mypy-level1-check.yml",
+      ".github/workflows/backup_20251204/v3-compatibility.yml",
       "docs/_build/html/_static/_sphinx_javascript_frameworks_compat.js",
       "docs/_build/html/_static/sphinx_highlight.js",
-      "docs/_build/_static/css/fonts/Roboto-Slab-Regular.woff2",
-      "docs/_build/.doctrees/environment.pickle",
-      "docs/_build/.doctrees/src.doctree",
-      "docs/_build/.doctrees/modules.doctree",
-      "docs/_build/html/_static/css/theme.css",
-      "docs/_build/.doctrees/index.doctree",
-      ".vscode/extensions.json",
       "docs/_build/html/_static/searchtools.js",
-      "docs/_build/html/_modules/src/utils.html",
-      "docs/_build/html/_modules/src/models.html",
       "docs/_build/html/_static/pygments.css",
-      "docs/_build/html/_static/jquery.js",
-      "docs/_build/html/_modules/src/config.html",
-      ".vscode/settings.json",
-      ".vscode/vibereport-state.json",
+      "docs/_build/html/_static/plus.png",
+      "docs/_build/html/_static/minus.png",
+      "docs/_build/html/_static/language_data.js",
       "docs/_build/html/_static/js/versions.js",
       "docs/_build/html/_static/js/theme.js",
       "docs/_build/html/_static/js/badge_only.js",
-      ".vscode/tasks.json",
-      ".pre-commit-config.yaml",
-      ".gitignore",
-      ".gitattributes",
-      ".env.example",
-      "docs/_build/html/_static/css/fonts/fontawesome-webfont.ttf",
-      "docs/_build/html/_static/css/fonts/fontawesome-webfont.svg",
-      "docs/_build/html/_static/css/fonts/fontawesome-webfont.woff2",
-      "docs/_build/html/_static/css/fonts/lato-bold-italic.woff",
-      "docs/_build/html/_static/css/fonts/fontawesome-webfont.woff",
-      "docs/_build/html/_static/css/fonts/fontawesome-webfont.eot",
-      "docs/_build/html/_static/css/fonts/lato-bold-italic.woff2",
-      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-bold.eot",
-      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-bold.ttf",
-      "docs/_build/html/_static/fonts/Lato/lato-bold.eot",
-      "docs/_build/html/_static/css/fonts/Roboto-Slab-Regular.woff2",
-      "docs/_build/html/_static/css/fonts/Roboto-Slab-Regular.woff",
-      "docs/_build/html/_static/css/fonts/Roboto-Slab-Bold.woff2",
-      "docs/_build/html/_static/css/fonts/Roboto-Slab-Bold.woff",
+      "docs/_build/html/_static/jquery.js",
+      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-regular.woff2",
+      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-regular.woff",
+      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-regular.ttf",
+      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-regular.eot",
       "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-bold.woff2",
-      "docs/_build/html/_static/fonts/Lato/lato-bold.ttf",
       "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-bold.woff",
-      "docs/_build/html/_static/fonts/Lato/lato-bold.woff",
-      "docs/_build/html/_static/css/fonts/lato-normal.woff2",
-      "docs/_build/html/_static/css/fonts/lato-normal.woff",
-      "docs/_build/html/_static/css/fonts/lato-normal-italic.woff2",
-      ".github/dependabot.yml",
-      "docs/_build/html/_static/css/fonts/lato-normal-italic.woff",
-      ".github/copilot-instructions.md",
-      "docs/_build/html/_static/css/fonts/lato-bold.woff2",
-      "docs/_build/html/_static/css/fonts/lato-bold.woff",
-      "docs/_build/html/_static/fonts/Lato/lato-italic.woff",
+      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-bold.ttf",
+      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-bold.eot",
+      "docs/_build/html/_static/fonts/Lato/lato-regular.woff2",
+      "docs/_build/html/_static/fonts/Lato/lato-regular.woff",
+      "docs/_build/html/_static/fonts/Lato/lato-regular.ttf",
+      "docs/_build/html/_static/fonts/Lato/lato-regular.eot",
       "docs/_build/html/_static/fonts/Lato/lato-italic.woff2",
+      "docs/_build/html/_static/fonts/Lato/lato-italic.woff",
       "docs/_build/html/_static/fonts/Lato/lato-italic.ttf",
       "docs/_build/html/_static/fonts/Lato/lato-italic.eot",
       "docs/_build/html/_static/fonts/Lato/lato-bolditalic.woff2",
       "docs/_build/html/_static/fonts/Lato/lato-bolditalic.woff",
-      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-regular.woff2",
       "docs/_build/html/_static/fonts/Lato/lato-bolditalic.ttf",
-      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-regular.woff",
       "docs/_build/html/_static/fonts/Lato/lato-bolditalic.eot",
-      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-regular.ttf",
       "docs/_build/html/_static/fonts/Lato/lato-bold.woff2",
-      "docs/_build/html/_static/fonts/Lato/lato-regular.eot",
-      "docs/_build/html/_static/fonts/RobotoSlab/roboto-slab-v7-regular.eot",
-      ".github/workflows/ci.yaml",
-      ".github/workflows/clear-cache.yaml",
-      "docs/_build/html/_static/fonts/Lato/lato-regular.woff2",
-      ".github/agents/my-agent.agent.md",
-      "docs/_build/html/_static/fonts/Lato/lato-regular.woff",
-      "docs/_build/html/_static/fonts/Lato/lato-regular.ttf",
-      ".github/workflows/deploy.yml",
-      ".github/workflows/performance-check.yml",
-      ".github/workflows/security.yml",
-      ".github/workflows/docs.yml",
-      ".github/workflows/docker-build.yml",
-      ".github/workflows/deprecation-check.yml",
-      ".github/workflows/weekly-deprecation-report.yml",
-      ".github/workflows/backup_20251204/v3-compatibility.yml",
-      ".github/workflows/backup_20251204/qa-validation.yml",
-      ".github/workflows/backup_20251204/mypy-level1-check.yml"
+      "docs/_build/html/_static/fonts/Lato/lato-bold.woff",
+      "docs/_build/html/_static/fonts/Lato/lato-bold.ttf",
+      "docs/_build/html/_static/fonts/Lato/lato-bold.eot",
+      "docs/_build/html/_static/file.png",
+      "docs/_build/html/_static/documentation_options.js",
+      "docs/_build/html/_static/doctools.js",
+      "docs/_build/html/_static/css/theme.css",
+      "docs/_build/html/_static/css/fonts/Roboto-Slab-Regular.woff2",
+      "docs/_build/html/_static/css/fonts/Roboto-Slab-Regular.woff",
+      "docs/_build/html/_static/css/fonts/Roboto-Slab-Bold.woff2",
+      "docs/_build/html/_static/css/fonts/Roboto-Slab-Bold.woff",
+      "docs/_build/html/_static/css/fonts/lato-normal.woff2",
+      "docs/_build/html/_static/css/fonts/lato-normal.woff",
+      "docs/_build/html/_static/css/fonts/lato-normal-italic.woff2",
+      "docs/_build/html/_static/css/fonts/lato-normal-italic.woff",
+      "docs/_build/html/_static/css/fonts/lato-bold.woff2",
+      "docs/_build/html/_static/css/fonts/lato-bold.woff",
+      "docs/_build/html/_static/css/fonts/lato-bold-italic.woff2",
+      "docs/_build/html/_static/css/fonts/lato-bold-italic.woff",
+      "docs/_build/html/_static/css/fonts/fontawesome-webfont.woff2",
+      "docs/_build/html/_static/css/fonts/fontawesome-webfont.woff",
+      "docs/_build/html/_static/css/fonts/fontawesome-webfont.ttf",
+      "docs/_build/html/_static/css/fonts/fontawesome-webfont.svg",
+      "docs/_build/html/_static/css/fonts/fontawesome-webfont.eot",
+      "docs/_build/html/_static/css/badge_only.css",
+      "docs/_build/html/_static/basic.css",
+      "docs/_build/html/_sources/src.rst.txt",
+      "docs/_build/html/_sources/modules.rst.txt",
+      "docs/_build/html/_sources/index.rst.txt",
+      "docs/_build/html/_modules/src/utils.html",
+      "docs/_build/html/_modules/src/models.html",
+      "docs/_build/html/_modules/src/main.html",
+      "docs/_build/html/_modules/src/logging_setup.html",
+      "docs/_build/html/_modules/src/data_loader.html",
+      "docs/_build/html/_modules/src/config.html",
+      "docs/_build/html/_modules/src/agent.html",
+      "docs/_build/html/_modules/index.html",
+      "docs/_build/html/src.html",
+      "docs/_build/html/searchindex.js",
+      "docs/_build/html/search.html",
+      "docs/_build/html/py-modindex.html",
+      "docs/_build/html/objects.inv",
+      "docs/_build/html/modules.html",
+      "docs/_build/html/index.html",
+      "docs/_build/html/genindex.html",
+      "docs/_build/html/.doctrees/src.doctree",
+      "docs/_build/html/.doctrees/modules.doctree",
+      "docs/_build/html/.doctrees/index.doctree",
+      "docs/_build/html/.doctrees/environment.pickle",
+      "docs/_build/html/.buildinfo"
     ],
     "structureSummary": [
+      {
+        "name": "artifacts",
+        "type": "directory",
+        "children": [
+          {
+            "name": "coverage_test_report.md",
+            "type": "file",
+            "extension": "md"
+          }
+        ]
+      },
       {
         "name": "checks",
         "type": "directory",
@@ -1042,9 +980,19 @@
             "extension": "json"
           },
           {
+            "name": "grafana_dashboard.json",
+            "type": "file",
+            "extension": "json"
+          },
+          {
             "name": "minimal.env",
             "type": "file",
             "extension": "env"
+          },
+          {
+            "name": "patterns.yaml",
+            "type": "file",
+            "extension": "yaml"
           },
           {
             "name": "production.env",
@@ -1063,13 +1011,30 @@
         "type": "directory",
         "children": [
           {
-            "name": "inputs",
+            "name": "examples",
             "type": "directory",
             "children": [
               {
-                "name": "temp",
-                "type": "directory"
+                "name": "단답답변예시.txt",
+                "type": "file",
+                "extension": "txt"
               },
+              {
+                "name": "설명답변예시.txt",
+                "type": "file",
+                "extension": "txt"
+              },
+              {
+                "name": "추론답변예시.txt",
+                "type": "file",
+                "extension": "txt"
+              }
+            ]
+          },
+          {
+            "name": "inputs",
+            "type": "directory",
+            "children": [
               {
                 "name": "example_candidates.json",
                 "type": "file",
@@ -1148,693 +1113,16 @@
             "type": "directory",
             "children": [
               {
-                "name": "review_logs",
-                "type": "directory",
-                "children": [
-                  {
-                    "name": "review_2025-11-29.jsonl",
-                    "type": "file",
-                    "extension": "jsonl"
-                  },
-                  {
-                    "name": "review_2025-11-30.jsonl",
-                    "type": "file",
-                    "extension": "jsonl"
-                  },
-                  {
-                    "name": "review_2025-12-01.jsonl",
-                    "type": "file",
-                    "extension": "jsonl"
-                  },
-                  {
-                    "name": "review_2025-12-02.jsonl",
-                    "type": "file",
-                    "extension": "jsonl"
-                  },
-                  {
-                    "name": "review_2025-12-03.jsonl",
-                    "type": "file",
-                    "extension": "jsonl"
-                  },
-                  {
-                    "name": "review_2025-12-04.jsonl",
-                    "type": "file",
-                    "extension": "jsonl"
-                  },
-                  {
-                    "name": "review_2025-12-05.jsonl",
-                    "type": "file",
-                    "extension": "jsonl"
-                  }
-                ]
-              },
-              {
-                "name": "checkpoint.jsonl",
-                "type": "file",
-                "extension": "jsonl"
-              },
-              {
-                "name": "edited_20251130_152026.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_033521.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_033747.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_052126.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_052232.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_062903.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_063019.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_063323.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_075335.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_080526.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_080809.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_095615.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_095743.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_124629.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_125626.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_155619.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_155620.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_201646.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_202109.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251202_202325.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251203_010939.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251203_012321.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251203_152656.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251203_152905.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251203_153419.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251203_153928.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251203_174710.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251203_174836.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251203_175016.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251203_175117.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251203_175229.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251203_175431.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251203_175758.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251203_180650.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251204_022929.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251204_024653.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251204_161815.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251204_213721.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251204_214147.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251204_214418.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251204_214708.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251205_163225.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "edited_20251205_163616.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251130_152026.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_033521.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_033747.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_052126.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_052232.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_062903.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_063019.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_063323.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_075335.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_080526.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_080809.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_095615.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_095743.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_124629.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_125626.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_155619.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_201645.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_202109.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251202_202325.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251203_010939.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251203_012321.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251203_152656.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251203_152905.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251203_153419.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251203_153927.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251203_153928.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251203_174710.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251203_174836.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251203_175016.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251203_175117.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251203_175229.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251203_175431.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251203_175758.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251203_180650.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251204_022929.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251204_024653.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251204_161814.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251204_161815.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251204_213721.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251204_214147.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251204_214418.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251204_214708.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251205_163225.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "inspected_20251205_163616.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
                 "name": "qa_result_4pairs.json",
                 "type": "file",
                 "extension": "json"
-              },
-              {
-                "name": "result_turn_1_20251127_042801.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251128_073813.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251128_181215.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251128_191837.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251130_041500.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251130_041744.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251130_042552.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251130_152037.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_033527.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_033752.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_052131.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_052237.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_062908.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_063024.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_063328.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_075341.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_080531.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_080814.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_095620.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_095748.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_124635.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_125631.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_155625.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251202_202730.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251203_153316.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251203_153831.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251203_154339.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251203_180209.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251203_181101.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251204_213729.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251204_214155.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251204_214426.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251204_214716.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251205_163239.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_1_20251205_163631.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_2_20251127_042646.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_3_20251127_042654.md",
-                "type": "file",
-                "extension": "md"
-              },
-              {
-                "name": "result_turn_4_20251127_042621.md",
-                "type": "file",
-                "extension": "md"
               }
             ]
           },
           {
-            "name": "queue_results",
-            "type": "directory",
-            "children": [
-              {
-                "name": "results.jsonl",
-                "type": "file",
-                "extension": "jsonl"
-              }
-            ]
+            "name": "blackwater.csv",
+            "type": "file",
+            "extension": "csv"
           }
         ]
       },
@@ -1851,6 +1139,16 @@
             "name": "Project_Improvement_Exploration_Report.md",
             "type": "file",
             "extension": "md"
+          },
+          {
+            "name": "Prompt.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "Session_History.md",
+            "type": "file",
+            "extension": "md"
           }
         ]
       },
@@ -1862,125 +1160,6 @@
             "name": "_build",
             "type": "directory",
             "children": [
-              {
-                "name": "_modules",
-                "type": "directory",
-                "children": [
-                  {
-                    "name": "src",
-                    "type": "directory"
-                  },
-                  {
-                    "name": "index.html",
-                    "type": "file",
-                    "extension": "html"
-                  },
-                  {
-                    "name": "re.html",
-                    "type": "file",
-                    "extension": "html"
-                  }
-                ]
-              },
-              {
-                "name": "_sources",
-                "type": "directory",
-                "children": [
-                  {
-                    "name": "index.rst.txt",
-                    "type": "file",
-                    "extension": "txt"
-                  },
-                  {
-                    "name": "modules.rst.txt",
-                    "type": "file",
-                    "extension": "txt"
-                  },
-                  {
-                    "name": "src.rst.txt",
-                    "type": "file",
-                    "extension": "txt"
-                  }
-                ]
-              },
-              {
-                "name": "_static",
-                "type": "directory",
-                "children": [
-                  {
-                    "name": "css",
-                    "type": "directory"
-                  },
-                  {
-                    "name": "fonts",
-                    "type": "directory"
-                  },
-                  {
-                    "name": "js",
-                    "type": "directory"
-                  },
-                  {
-                    "name": "_sphinx_javascript_frameworks_compat.js",
-                    "type": "file",
-                    "extension": "js"
-                  },
-                  {
-                    "name": "basic.css",
-                    "type": "file",
-                    "extension": "css"
-                  },
-                  {
-                    "name": "doctools.js",
-                    "type": "file",
-                    "extension": "js"
-                  },
-                  {
-                    "name": "documentation_options.js",
-                    "type": "file",
-                    "extension": "js"
-                  },
-                  {
-                    "name": "file.png",
-                    "type": "file",
-                    "extension": "png"
-                  },
-                  {
-                    "name": "jquery.js",
-                    "type": "file",
-                    "extension": "js"
-                  },
-                  {
-                    "name": "language_data.js",
-                    "type": "file",
-                    "extension": "js"
-                  },
-                  {
-                    "name": "minus.png",
-                    "type": "file",
-                    "extension": "png"
-                  },
-                  {
-                    "name": "plus.png",
-                    "type": "file",
-                    "extension": "png"
-                  },
-                  {
-                    "name": "pygments.css",
-                    "type": "file",
-                    "extension": "css"
-                  },
-                  {
-                    "name": "searchtools.js",
-                    "type": "file",
-                    "extension": "js"
-                  },
-                  {
-                    "name": "sphinx_highlight.js",
-                    "type": "file",
-                    "extension": "js"
-                  }
-                ]
-              },
               {
                 "name": "html",
                 "type": "directory",
@@ -2038,46 +1217,6 @@
                     "extension": "html"
                   }
                 ]
-              },
-              {
-                "name": "genindex.html",
-                "type": "file",
-                "extension": "html"
-              },
-              {
-                "name": "index.html",
-                "type": "file",
-                "extension": "html"
-              },
-              {
-                "name": "modules.html",
-                "type": "file",
-                "extension": "html"
-              },
-              {
-                "name": "objects.inv",
-                "type": "file",
-                "extension": "inv"
-              },
-              {
-                "name": "py-modindex.html",
-                "type": "file",
-                "extension": "html"
-              },
-              {
-                "name": "search.html",
-                "type": "file",
-                "extension": "html"
-              },
-              {
-                "name": "searchindex.js",
-                "type": "file",
-                "extension": "js"
-              },
-              {
-                "name": "src.html",
-                "type": "file",
-                "extension": "html"
               }
             ]
           },
@@ -2143,6 +1282,21 @@
                 "extension": "md"
               },
               {
+                "name": "FINAL_COMPLETION_REPORT.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "Final_Implementation_Report.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "Final_Status_Report.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
                 "name": "housekeeping.md",
                 "type": "file",
                 "extension": "md"
@@ -2154,6 +1308,26 @@
               },
               {
                 "name": "Project_Improvement_Exploration_Report.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "Prompt_Completion_Report.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "Prompt_Execution_Progress.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "Prompt_Execution_Report.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "Prompt_Execution_Summary.md",
                 "type": "file",
                 "extension": "md"
               },
@@ -2170,6 +1344,56 @@
             "children": [
               {
                 "name": "basic_usage.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "context_calc_used.json",
+                "type": "file",
+                "extension": "json"
+              },
+              {
+                "name": "context_low_text.json",
+                "type": "file",
+                "extension": "json"
+              },
+              {
+                "name": "context_table.json",
+                "type": "file",
+                "extension": "json"
+              },
+              {
+                "name": "csv_validation_usage.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "demo_web_logging.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "sample_image_meta.json",
+                "type": "file",
+                "extension": "json"
+              },
+              {
+                "name": "session_input_low_density.json",
+                "type": "file",
+                "extension": "json"
+              },
+              {
+                "name": "session_input_with_table.json",
+                "type": "file",
+                "extension": "json"
+              },
+              {
+                "name": "session_input.json",
+                "type": "file",
+                "extension": "json"
+              },
+              {
+                "name": "workspace_executor_usage.py",
                 "type": "file",
                 "extension": "py"
               }
@@ -2246,6 +1470,11 @@
             "extension": "md"
           },
           {
+            "name": "ENDPOINT_ANALYSIS_SUMMARY.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
             "name": "ENVIRONMENT_SETUP.md",
             "type": "file",
             "extension": "md"
@@ -2266,7 +1495,22 @@
             "extension": "md"
           },
           {
+            "name": "HOW_TO_USE_WEB_LOGGING.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "IMPLEMENTATION_SUMMARY.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
             "name": "IMPROVEMENT_PROPOSAL.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "IMPROVEMENTS.md",
             "type": "file",
             "extension": "md"
           },
@@ -2320,7 +1564,22 @@
             "extension": "md"
           },
           {
+            "name": "PERFORMANCE_OPTIMIZATION_SUMMARY.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "point.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
             "name": "PRINCIPLES_REVIEW.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "PROMPT_IMPROVEMENTS.md",
             "type": "file",
             "extension": "md"
           },
@@ -2338,6 +1597,16 @@
             "name": "src.rst",
             "type": "file",
             "extension": "rst"
+          },
+          {
+            "name": "TROUBLESHOOTING_422_ERRORS.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "TROUBLESHOOTING_TRUNCATED_RESPONSES.md",
+            "type": "file",
+            "extension": "md"
           },
           {
             "name": "TROUBLESHOOTING.md",
@@ -2363,6 +1632,21 @@
             "name": "V3_SHIM_REMOVAL_ISSUE.md",
             "type": "file",
             "extension": "md"
+          },
+          {
+            "name": "VALIDATION_EXAMPLES.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "WEB_API_ENDPOINTS.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
+            "name": "web_api_logging.md",
+            "type": "file",
+            "extension": "md"
           }
         ]
       },
@@ -2384,31 +1668,6 @@
             "name": "context_table.json",
             "type": "file",
             "extension": "json"
-          },
-          {
-            "name": "sample_image_meta.json",
-            "type": "file",
-            "extension": "json"
-          },
-          {
-            "name": "session_input_low_density.json",
-            "type": "file",
-            "extension": "json"
-          },
-          {
-            "name": "session_input_with_table.json",
-            "type": "file",
-            "extension": "json"
-          },
-          {
-            "name": "session_input.json",
-            "type": "file",
-            "extension": "json"
-          },
-          {
-            "name": "workspace_executor_usage.py",
-            "type": "file",
-            "extension": "py"
           }
         ]
       },
@@ -2430,6 +1689,17 @@
             "name": "runner.py",
             "type": "file",
             "extension": "py"
+          }
+        ]
+      },
+      {
+        "name": "logs",
+        "type": "directory",
+        "children": [
+          {
+            "name": "semantic_analysis.log",
+            "type": "file",
+            "extension": "log"
           }
         ]
       },
@@ -2499,11 +1769,601 @@
         "type": "directory",
         "children": [
           {
-            "name": "checks",
+            "name": "analysis",
             "type": "directory",
             "children": [
               {
                 "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "analyze_extra_constraints.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "analyze_logs.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "analyze_manual_mapping.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "analyze_markdown_rules.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "compare_profiles.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "compare_runs.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "deprecation_stats.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "diagnose_constraint_data.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "estimate_cost.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "dev",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "auto_profile.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "backup.ps1",
+                "type": "file",
+                "extension": "ps1"
+              },
+              {
+                "name": "backup.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "bench_gemini_latency.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "benchmark.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "build_session.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "cache_warming.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "check_mypy_progress.ps1",
+                "type": "file",
+                "extension": "ps1"
+              },
+              {
+                "name": "consolidate_target.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "convert.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "daily_improvement_check.sh",
+                "type": "file",
+                "extension": "sh"
+              },
+              {
+                "name": "debug_api_response.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "debug_descendants.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "debug_headings.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "debug_order.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "debug_rules.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "dev_startup.sh",
+                "type": "file",
+                "extension": "sh"
+              },
+              {
+                "name": "dump_block.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "enforce_type_hints.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "fix_batch_mapping.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "fix_constraint_query_types.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "fix_example_type.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "fix_mypy_level1.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "fix_rule_connections.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "generate_architecture_diagram.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "generate_docs.sh",
+                "type": "file",
+                "extension": "sh"
+              },
+              {
+                "name": "generate_mappings_code.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "latency_baseline.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "manage_flags.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "measure_strict_baseline.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "ocr_producer.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "pre-push-check.sh",
+                "type": "file",
+                "extension": "sh"
+              },
+              {
+                "name": "queue_producer.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "render_prompt.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "run_ab_test.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "run_hybrid_optimizer.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "run_pipeline.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "track_deprecations.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "track_mypy_progress.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "vulture_whitelist.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "weekly_report.sh",
+                "type": "file",
+                "extension": "sh"
+              }
+            ]
+          },
+          {
+            "name": "migration",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "auto_extract_examples.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "feedback_example_curator.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "feedback_mapper_improved.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "import_qa_examples.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "import_reasoning_examples.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "import_target_short_examples.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "interactive_migration_wizard.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "migrate_imports.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "remove_shims_v3.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "neo4j",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "add_bold_constraint.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "apply_all_constraints.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "apply_all_mappings.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "apply_explanation_constraints.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "apply_formatting_constraints.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "apply_reasoning_constraints.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "apply_target_long_constraints.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "apply_target_short_constraints.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "check_neo4j_constraints.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "cleanup_misclassified_constraints.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "count_mappings.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "count_rels.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "cypher_query_check.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "debug_neo4j.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "execute_manual_mapping.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "export_for_mapping.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "feedback_analysis_to_neo4j.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "feedback_queries.cypher",
+                "type": "file",
+                "extension": "cypher"
+              },
+              {
+                "name": "fetch_ids.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "import_to_aura.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "init_neo4j_schema.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "migrate_examples_to_neo4j.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "neo4j_benchmark_stub.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "neo4j_query_examples.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "optimize_neo4j_indexes.cypher",
+                "type": "file",
+                "extension": "cypher"
+              },
+              {
+                "name": "reclassify_constraints_to_rules.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "register_qa_rules.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "run_neo4j_optimization.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "setup_constraints.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "show_mappings.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "suggest_mappings.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "update_constraint_query_types.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "verify_neo4j_optimization.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "verify_neo4j_rules.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "test_helpers",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_example_selector.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_get_constraints.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_inspect_mode.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_regex.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_template_integration.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_template_rendering.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_template_rules.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
+            "name": "validation",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "check_database_status.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "check_db_simple.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "check_deprecated_imports.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "check_docstrings.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "check_manual_mapping.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "check_missing_stubs.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "check_mypy_baseline.py",
                 "type": "file",
                 "extension": "py"
               },
@@ -2518,7 +2378,27 @@
                 "extension": "py"
               },
               {
+                "name": "check_no_type_check.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "check_qtype_mapping.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "check_test_types.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
                 "name": "detect_forbidden_patterns.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "final_verification.py",
                 "type": "file",
                 "extension": "py"
               },
@@ -2526,86 +2406,36 @@
                 "name": "validate_session.py",
                 "type": "file",
                 "extension": "py"
+              },
+              {
+                "name": "verify_constraints.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "verify_counts.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "verify_mapping.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "verify_rule_conversion.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "verify_v3_readiness.py",
+                "type": "file",
+                "extension": "py"
               }
             ]
           },
           {
             "name": "__init__.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "analyze_extra_constraints.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "analyze_logs.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "analyze_manual_mapping.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "analyze_markdown_rules.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "apply_all_constraints.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "apply_all_mappings.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "apply_explanation_constraints.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "apply_formatting_constraints.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "apply_reasoning_constraints.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "apply_target_long_constraints.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "apply_target_short_constraints.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "auto_extract_examples.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "auto_profile.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "backup.ps1",
-            "type": "file",
-            "extension": "ps1"
-          },
-          {
-            "name": "backup.py",
             "type": "file",
             "extension": "py"
           },
@@ -2620,242 +2450,7 @@
             "extension": "py"
           },
           {
-            "name": "cache_warming.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "check_database_status.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "check_db_simple.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "check_deprecated_imports.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "check_docstrings.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "check_manual_mapping.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "check_missing_stubs.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "check_mypy_baseline.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "check_mypy_progress.ps1",
-            "type": "file",
-            "extension": "ps1"
-          },
-          {
-            "name": "check_no_type_check.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "check_test_types.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "cleanup_misclassified_constraints.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "compare_profiles.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "compare_runs.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "convert.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "count_mappings.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "count_rels.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "daily_improvement_check.sh",
-            "type": "file",
-            "extension": "sh"
-          },
-          {
-            "name": "debug_descendants.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "debug_headings.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "debug_neo4j.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "debug_order.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "debug_rules.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
             "name": "deprecation_stats.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "dev_startup.sh",
-            "type": "file",
-            "extension": "sh"
-          },
-          {
-            "name": "diagnose_constraint_data.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "dump_block.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "enforce_type_hints.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "estimate_cost.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "execute_manual_mapping.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "export_for_mapping.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "feedback_analysis_to_neo4j.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "feedback_example_curator.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "feedback_mapper_improved.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "feedback_queries.cypher",
-            "type": "file",
-            "extension": "cypher"
-          },
-          {
-            "name": "fetch_ids.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "final_verification.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "fix_batch_mapping.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "fix_constraint_query_types.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "fix_mypy_level1.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "fix_rule_connections.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "generate_architecture_diagram.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "generate_docs.sh",
-            "type": "file",
-            "extension": "sh"
-          },
-          {
-            "name": "generate_mappings_code.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "import_qa_examples.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "import_to_aura.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "init_neo4j_schema.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "interactive_migration_wizard.py",
             "type": "file",
             "extension": "py"
           },
@@ -2865,62 +2460,7 @@
             "extension": "py"
           },
           {
-            "name": "manage_flags.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "measure_strict_baseline.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
             "name": "migrate_imports.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "neo4j_benchmark_stub.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "neo4j_query_examples.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "ocr_producer.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "optimize_neo4j_indexes.cypher",
-            "type": "file",
-            "extension": "cypher"
-          },
-          {
-            "name": "pre-push-check.sh",
-            "type": "file",
-            "extension": "sh"
-          },
-          {
-            "name": "queue_producer.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "reclassify_constraints_to_rules.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "register_qa_rules.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "remove_shims_v3.py",
             "type": "file",
             "extension": "py"
           },
@@ -2928,131 +2468,6 @@
             "name": "render_prompt.py",
             "type": "file",
             "extension": "py"
-          },
-          {
-            "name": "run_ab_test.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "run_hybrid_optimizer.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "run_neo4j_optimization.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "run_pipeline.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "show_mappings.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "suggest_mappings.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "test_cypher_query.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "test_get_constraints.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "test_inspect_mode.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "test_regex.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "test_template_integration.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "test_template_rendering.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "test_template_rules.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "track_deprecations.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "track_mypy_progress.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "update_constraint_query_types.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "verify_constraints.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "verify_counts.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "verify_mapping.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "verify_neo4j_optimization.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "verify_neo4j_rules.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "verify_rule_conversion.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "verify_v3_readiness.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "vulture_whitelist.py",
-            "type": "file",
-            "extension": "py"
-          },
-          {
-            "name": "weekly_report.sh",
-            "type": "file",
-            "extension": "sh"
           }
         ]
       },
@@ -3170,6 +2585,11 @@
                 "name": "py.typed",
                 "type": "file",
                 "extension": "typed"
+              },
+              {
+                "name": "realtime_dashboard.py",
+                "type": "file",
+                "extension": "py"
               }
             ]
           },
@@ -3474,6 +2894,11 @@
                 "extension": "py"
               },
               {
+                "name": "performance_tracker.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
                 "name": "py.typed",
                 "type": "file",
                 "extension": "typed"
@@ -3525,6 +2950,11 @@
                 "extension": "py"
               },
               {
+                "name": "init_genai.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
                 "name": "langchain_system.py",
                 "type": "file",
                 "extension": "py"
@@ -3552,6 +2982,11 @@
             "children": [
               {
                 "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "metrics_exporter.py",
                 "type": "file",
                 "extension": "py"
               },
@@ -3654,12 +3089,22 @@
                     "extension": "py"
                   },
                   {
+                    "name": "queries.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
                     "name": "query_executor.py",
                     "type": "file",
                     "extension": "py"
                   },
                   {
                     "name": "rule_extractor.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "rule_manager.py",
                     "type": "file",
                     "extension": "py"
                   },
@@ -3800,6 +3245,32 @@
             ]
           },
           {
+            "name": "validation",
+            "type": "directory",
+            "children": [
+              {
+                "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "py.typed",
+                "type": "file",
+                "extension": "typed"
+              },
+              {
+                "name": "README.md",
+                "type": "file",
+                "extension": "md"
+              },
+              {
+                "name": "rule_parser.py",
+                "type": "file",
+                "extension": "py"
+              }
+            ]
+          },
+          {
             "name": "web",
             "type": "directory",
             "children": [
@@ -3808,12 +3279,16 @@
                 "type": "directory",
                 "children": [
                   {
+                    "name": "qa_gen_core",
+                    "type": "directory"
+                  },
+                  {
                     "name": "__init__.py",
                     "type": "file",
                     "extension": "py"
                   },
                   {
-                    "name": "admin.py",
+                    "name": "cache_stats.py",
                     "type": "file",
                     "extension": "py"
                   },
@@ -3823,12 +3298,72 @@
                     "extension": "py"
                   },
                   {
+                    "name": "metrics.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "ocr.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "pages.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "qa_common.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "qa_evaluation.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "qa_generation.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "qa_tools.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
                     "name": "qa.py",
                     "type": "file",
                     "extension": "py"
                   },
                   {
+                    "name": "session.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
                     "name": "stream.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "workspace_common.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "workspace_generation.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "workspace_review.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "workspace_unified.py",
                     "type": "file",
                     "extension": "py"
                   },
@@ -3846,6 +3381,11 @@
               },
               {
                 "name": "api.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "cache.py",
                 "type": "file",
                 "extension": "py"
               },
@@ -3868,6 +3408,11 @@
                 "name": "py.typed",
                 "type": "file",
                 "extension": "typed"
+              },
+              {
+                "name": "rate_limit.py",
+                "type": "file",
+                "extension": "py"
               },
               {
                 "name": "response.py",
@@ -3996,6 +3541,11 @@
                 "name": "utils.test.ts",
                 "type": "file",
                 "extension": "ts"
+              },
+              {
+                "name": "validation.test.ts",
+                "type": "file",
+                "extension": "ts"
               }
             ]
           },
@@ -4020,12 +3570,22 @@
             "extension": "ts"
           },
           {
+            "name": "README.md",
+            "type": "file",
+            "extension": "md"
+          },
+          {
             "name": "style.css",
             "type": "file",
             "extension": "css"
           },
           {
             "name": "utils.ts",
+            "type": "file",
+            "extension": "ts"
+          },
+          {
+            "name": "validation.ts",
             "type": "file",
             "extension": "ts"
           },
@@ -4060,6 +3620,17 @@
                   }
                 ]
               },
+              {
+                "name": "__init__.pyi",
+                "type": "file",
+                "extension": "pyi"
+              }
+            ]
+          },
+          {
+            "name": "tabulate",
+            "type": "directory",
+            "children": [
               {
                 "name": "__init__.pyi",
                 "type": "file",
@@ -4335,6 +3906,11 @@
                 "extension": "py"
               },
               {
+                "name": "test_main_execution.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
                 "name": "test_web_streaming.py",
                 "type": "file",
                 "extension": "py"
@@ -4390,6 +3966,11 @@
                     "extension": "py"
                   },
                   {
+                    "name": "test_agent_init_caching_extra.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
                     "name": "test_agent_more_coverage.py",
                     "type": "file",
                     "extension": "py"
@@ -4415,12 +3996,27 @@
                     "extension": "py"
                   },
                   {
+                    "name": "test_batch_processor_extended.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
                     "name": "test_batch_processor.py",
                     "type": "file",
                     "extension": "py"
                   },
                   {
+                    "name": "test_client_logging.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
                     "name": "test_edge_cases.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_services_extended.py",
                     "type": "file",
                     "extension": "py"
                   },
@@ -4503,6 +4099,16 @@
                   },
                   {
                     "name": "test_analytics_init_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_analytics_init_extended.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_realtime_dashboard_extended.py",
                     "type": "file",
                     "extension": "py"
                   }
@@ -4641,12 +4247,22 @@
                     "extension": "py"
                   },
                   {
+                    "name": "test_action_executor.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
                     "name": "test_adaptive_difficulty.py",
                     "type": "file",
                     "extension": "py"
                   },
                   {
                     "name": "test_adaptive_limiter.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_data2neo_extractor_extra.py",
                     "type": "file",
                     "extension": "py"
                   },
@@ -4788,6 +4404,11 @@
                     "extension": "py"
                   },
                   {
+                    "name": "test_performance_tracker.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
                     "name": "test_retry.py",
                     "type": "file",
                     "extension": "py"
@@ -4799,6 +4420,16 @@
                   },
                   {
                     "name": "test_telemetry.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_worker_additional.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_worker_init_providers_extra.py",
                     "type": "file",
                     "extension": "py"
                   },
@@ -4849,7 +4480,17 @@
                     "extension": "py"
                   },
                   {
+                    "name": "test_init_genai_extra.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
                     "name": "test_lats_searcher.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_list_models_extra.py",
                     "type": "file",
                     "extension": "py"
                   },
@@ -4886,6 +4527,11 @@
                   },
                   {
                     "name": "test_main_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_main_entrypoint_extra.py",
                     "type": "file",
                     "extension": "py"
                   },
@@ -5018,6 +4664,11 @@
                     "extension": "py"
                   },
                   {
+                    "name": "test_metrics_exporter.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
                     "name": "test_monitoring_metrics_coverage.py",
                     "type": "file",
                     "extension": "py"
@@ -5069,6 +4720,21 @@
                     "extension": "py"
                   },
                   {
+                    "name": "test_constraint_validation.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_graph_utils.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_graph_validators.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
                     "name": "test_qa_factory.py",
                     "type": "file",
                     "extension": "py"
@@ -5104,12 +4770,27 @@
                     "extension": "py"
                   },
                   {
+                    "name": "test_rag_system_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_rag_system_full_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
                     "name": "test_rule_loader_cache.py",
                     "type": "file",
                     "extension": "py"
                   },
                   {
                     "name": "test_template_rules.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_validator.py",
                     "type": "file",
                     "extension": "py"
                   }
@@ -5193,11 +4874,47 @@
                 ]
               },
               {
+                "name": "validation",
+                "type": "directory",
+                "children": [
+                  {
+                    "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_rule_parser.py",
+                    "type": "file",
+                    "extension": "py"
+                  }
+                ]
+              },
+              {
                 "name": "web",
                 "type": "directory",
                 "children": [
                   {
                     "name": "__init__.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_answer_cache_config.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_answer_length_limits.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_api_additional.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_api_coverage.py",
                     "type": "file",
                     "extension": "py"
                   },
@@ -5212,12 +4929,97 @@
                     "extension": "py"
                   },
                   {
+                    "name": "test_exceptions.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_explanation_length.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_health_router.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
                     "name": "test_lats_quality.py",
                     "type": "file",
                     "extension": "py"
                   },
                   {
+                    "name": "test_metrics_router_extra.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_postprocess_markdown.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_qa_common.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_qa_constraint_validation.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_qa_gen_core_constraints_extra.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_qa_gen_core_prompts_extra.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_qa_gen_core_types_extra.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_qa_generation_router_extra.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
                     "name": "test_qa_generation_rules.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_qa_streaming_extra.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_qa_tools_router_extra.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_rate_limit.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_session_router_extra.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_session.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_structured_answer_rendering.py",
                     "type": "file",
                     "extension": "py"
                   },
@@ -5238,6 +5040,16 @@
                   },
                   {
                     "name": "test_web_models.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_workspace_common_coverage.py",
+                    "type": "file",
+                    "extension": "py"
+                  },
+                  {
+                    "name": "test_workspace_generation_coverage.py",
                     "type": "file",
                     "extension": "py"
                   }
@@ -5281,6 +5093,41 @@
               },
               {
                 "name": "__init__.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_additional_simple_coverage.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_final_coverage_push.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_lcel_chain_coverage.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_main_coverage.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_monitoring_metrics_coverage.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_push_to_80.py",
+                "type": "file",
+                "extension": "py"
+              },
+              {
+                "name": "test_web_dependencies_coverage.py",
                 "type": "file",
                 "extension": "py"
               }
@@ -5333,6 +5180,11 @@
             "extension": "py"
           },
           {
+            "name": "test_truncation.py",
+            "type": "file",
+            "extension": "py"
+          },
+          {
             "name": "test_web_api.py",
             "type": "file",
             "extension": "py"
@@ -5340,9 +5192,14 @@
         ]
       },
       {
-        "name": "blackwater.csv",
+        "name": "app.log",
         "type": "file",
-        "extension": "csv"
+        "extension": "log"
+      },
+      {
+        "name": "coverage_fixed.xml",
+        "type": "file",
+        "extension": "xml"
       },
       {
         "name": "docker-compose.worker.yml",
@@ -5359,6 +5216,11 @@
         "type": "file"
       },
       {
+        "name": "error.log",
+        "type": "file",
+        "extension": "log"
+      },
+      {
         "name": "package-lock.json",
         "type": "file",
         "extension": "json"
@@ -5372,11 +5234,6 @@
         "name": "playwright.config.ts",
         "type": "file",
         "extension": "ts"
-      },
-      {
-        "name": "point.md",
-        "type": "file",
-        "extension": "md"
       },
       {
         "name": "postcss.config.cjs",
@@ -5404,6 +5261,11 @@
         "extension": "bat"
       },
       {
+        "name": "sonar-project.properties",
+        "type": "file",
+        "extension": "properties"
+      },
+      {
         "name": "tsconfig.json",
         "type": "file",
         "extension": "json"
@@ -5425,8 +5287,21 @@
       }
     ]
   },
-  "sessions": [],
+  "sessions": [
+    {
+      "id": "session_mj34oo0w_8pq1j7",
+      "timestamp": "2025-12-12T17:15:42.368Z",
+      "userPrompt": "보고서 업데이트",
+      "changesSummary": "### 변경 요약 (2025-12-05T16:20:47.480Z 이후)\n\n**새 파일 (50개):**\n- scripts/analysis/deprecation_stats.py\n- scripts/analysis/estimate_cost.py\n- tests/test_truncation.py\n- scripts/analysis/diagnose_constraint_data.py\n- scripts/analysis/compare_runs.py\n- scripts/analysis/compare_profiles.py\n- scripts/analysis/analyze_markdown_rules.py\n- scripts/analysis/analyze_manual_mapping.py\n- tests/integration/test_main_execution.py\n- scripts/analysis/__init__.py\n- ... 외 40개\n\n**삭제된 파일 (50개):**\n- .cache/context_cache.json\n- scripts/analyze_markdown_rules.py\n- scripts/apply_all_constraints.py\n- scripts/auto_profile.py\n- scripts/cache_warming.py\n- scripts/backup.py\n- scripts/backup.ps1\n- scripts/check_deprecated_imports.py\n- scripts/check_db_simple.py\n- scripts/check_database_status.py\n- ... 외 40개\n\n**언어별 파일 수 변화:**\n- py: +110\n- md: -102\n- html: -18\n- js: -11\n- json: +3\n- ts: +2\n- css: -4\n- yaml: +1\n",
+      "diffSummary": {
+        "newFilesCount": 50,
+        "removedFilesCount": 50,
+        "changedConfigsCount": 0,
+        "totalChanges": 100
+      }
+    }
+  ],
   "appliedImprovements": [],
-  "lastUpdated": "2025-12-05T16:20:47.527Z",
+  "lastUpdated": "2025-12-12T17:15:42.368Z",
   "version": 1
 }

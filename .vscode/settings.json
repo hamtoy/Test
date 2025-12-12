@@ -27,5 +27,29 @@
     "**/node_modules": true,
     "**/.venv": true
   },
-  "chatgpt.openOnStartup": true
+  "chatgpt.openOnStartup": true,
+  "vibereport.reportDirectory": "devplan",
+  "vibereport.snapshotFile": ".vscode/vibereport-state.json",
+  "vibereport.maxFilesToScan": 5000,
+  "vibereport.excludePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/out/**",
+    "**/build/**",
+    "**/.git/**",
+    "**/target/**",
+    "**/.next/**",
+    "**/__pycache__/**",
+    "**/.venv/**",
+    "**/coverage/**",
+    "**/*.log",
+    "**/*.lock"
+  ],
+  "vibereport.enableGitDiff": true,
+  "vibereport.autoOpenReports": true,
+  "vibereport.language": "ko",
+  "vibereport.projectVisionMode": "auto",
+  "vibereport.defaultProjectType": "auto-detect",
+  "vibereport.defaultQualityFocus": "maintenance",
+  "vibereport.previewBackgroundColor": "ide"
 }
