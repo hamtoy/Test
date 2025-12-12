@@ -431,7 +431,7 @@ async def _validate_lats_action(
     return ValidationResult(allowed=True, penalty=penalty)
 
 
-async def _read_ocr_text_for_lats(image_path: str) -> str:
+def _read_ocr_text_for_lats(image_path: str) -> str:
     try:
         return Path(image_path).read_text(encoding="utf-8", errors="ignore")
     except OSError:
@@ -512,7 +512,7 @@ def _make_lats_proposer(
     async def propose(node: Any) -> list[str]:
         candidates: list[str] = []
         if agent:
-            ocr_text = await _read_ocr_text_for_lats(task.image_path)
+            ocr_text = _read_ocr_text_for_lats(task.image_path)
             candidates.extend(await _propose_from_lats_agent(agent, ocr_text))
         if provider and len(candidates) < 2:
             candidates.extend(await _propose_from_llm(provider))

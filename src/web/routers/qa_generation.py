@@ -104,12 +104,12 @@ async def _generate_first_pair(
     agent: GeminiAgent,
     ocr_text: str,
     qtype: str,
-    timeout: float,
 ) -> tuple[dict[str, Any], str]:
+    single_timeout = _get_config().qa_single_timeout
     try:
         pair = await asyncio.wait_for(
             generate_single_qa_with_retry(agent, ocr_text, qtype),
-            timeout=timeout,
+            timeout=single_timeout,
         )
         return pair, pair.get("query", "")
     except Exception as exc:  # noqa: BLE001
@@ -177,7 +177,6 @@ async def _process_batch_request(
         agent,
         ocr_text,
         first_type,
-        timeout=_get_config().qa_single_timeout,
     )
     results.append(first_pair)
 
