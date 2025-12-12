@@ -542,7 +542,7 @@ def _add_markdown_structure(text: str, qtype: str) -> str:
     target 타입은 평문 유지 (마크다운 추가하지 않음).
     """
     normalized = QTYPE_MAP.get(qtype, qtype)
-    if normalized not in {"explanation", "reasoning"}:
+    if normalized != "explanation":
         return text
 
     lines = text.split("\n")
