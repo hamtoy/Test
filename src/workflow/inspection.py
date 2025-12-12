@@ -24,6 +24,154 @@ def _should_enable_lats(agent: GeminiAgent, lats: LATSSearcher | None) -> bool:
     return bool(env_flag or config_flag)
 
 
+async def _is_cached(
+    cache: RedisEvalCache | None,
+    cache_key: str,
+    kind: str,
+) -> bool:
+    if cache is None:
+        return False
+    cached = await cache.get(cache_key)
+    if cached is None:
+        return False
+    logger.info("Cache hit for %s inspection - returning original %s", kind, kind)
+    return True
+
+
+def _format_rules_context(
+    constraints: list[dict[str, str]],
+    rules: list[str],
+) -> str:
+    if not constraints and not rules:
+        return ""
+    lines = [
+        f"- {desc}"
+        for c in constraints
+        if (desc := c.get("description", ""))
+    ]
+    lines.extend([f"- {r}" for r in rules if r])
+    return "[준수해야 할 규칙]\n" + "\n".join(lines) + "\n\n"
+
+
+def _default_rules_context() -> str:
+    return _format_rules_context([], DEFAULT_ANSWER_RULES)
+
+
+def _build_rules_context(
+    kg: QAKnowledgeGraph | None,
+    query_type: str,
+    query: str,
+) -> str:
+    if kg is None:
+        return _default_rules_context()
+    try:
+        constraints = kg.get_constraints_for_query_type(query_type)
+        rules = kg.find_relevant_rules(query, k=5) if query else []
+        return _format_rules_context(constraints, rules)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("규칙 컨텍스트 조회 실패: %s", exc)
+        return ""
+
+
+def _build_context_with_answer(
+    context: dict[str, Any],
+    answer: str,
+    query: str,
+    ocr_text: str,
+    rules_context: str,
+) -> dict[str, Any]:
+    ctx = context.copy()
+    ctx.update(
+        {
+            "draft_answer": answer,
+            "original_answer": answer,
+            "query": query,
+            "ocr_text": ocr_text,
+            "rules_context": rules_context,
+            "language": "한국어",
+        },
+    )
+    return ctx
+
+
+def _self_correct_answer(
+    query_type: str,
+    context_with_answer: dict[str, Any],
+    kg: QAKnowledgeGraph | None,
+    fallback_answer: str,
+) -> str:
+    if kg is None:
+        return fallback_answer
+    corrector = SelfCorrectingQAChain(kg)
+    result = corrector.generate_with_self_correction(query_type, context_with_answer)
+    return str(result.get("output", fallback_answer))
+
+
+def _maybe_create_lats(
+    agent: GeminiAgent,
+    lats: LATSSearcher | None,
+) -> LATSSearcher | None:
+    if lats is not None:
+        return lats
+    provider = getattr(agent, "llm_provider", None)
+    if provider is None:
+        logger.debug("LATS disabled: llm_provider not available")
+        return None
+    try:
+        return LATSSearcher(llm_provider=provider)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("LATS init skipped: %s", exc)
+        return None
+
+
+async def _apply_lats_if_enabled(
+    lats: LATSSearcher | None,
+    enabled: bool,
+    query: str,
+    ocr_text: str,
+    current_answer: str,
+) -> str:
+    if not enabled or lats is None:
+        return current_answer
+    try:
+        initial_state = SearchState(
+            query=query,
+            ocr_text=ocr_text,
+            current_answer=current_answer,
+        )
+        best_node = await lats.run(initial_state=initial_state)
+        candidate = getattr(best_node.state, "current_answer", None)
+        return candidate or current_answer
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("LATS search skipped: %s", exc)
+        return current_answer
+
+
+def _cross_validate_if_needed(
+    query: str,
+    final_answer: str,
+    query_type: str,
+    context: dict[str, Any],
+    validator: Any | None,
+) -> None:
+    if not query or validator is None:
+        return
+    val_result = validator.cross_validate_qa_pair(
+        query,
+        final_answer,
+        query_type,
+        context.get("image_meta", {}),
+    )
+    if val_result.get("overall_score", 0) < 0.7:
+        logger.warning("Validation failed: %s", val_result)
+        context["validation_warning"] = True
+
+
+async def _mark_cached(cache: RedisEvalCache | None, cache_key: str) -> None:
+    if cache is not None:
+        await cache.set(cache_key, 1.0)
+
+
 async def inspect_query(
     _agent: GeminiAgent,
     query: str,
@@ -133,93 +281,29 @@ async def inspect_answer(
     query_type = context.get("type", "general")
 
     cache_key = f"inspect:ans:{hash(answer + query + ocr_text)}"
-    if cache:
-        cached = await cache.get(cache_key)
-        if cached is not None:
-            logger.info("Cache hit for answer inspection - returning original answer")
-            # 캐시에서 처리 완료 표시만 저장하므로 원본 반환
-            return answer
+    if await _is_cached(cache, cache_key, "answer"):
+        return answer
 
-    rules_context = ""
-    if kg is not None:
-        try:
-            constraints = kg.get_constraints_for_query_type(query_type)
-            rules = kg.find_relevant_rules(query, k=5) if query else []
-
-            if constraints or rules:
-                rules_context = "[준수해야 할 규칙]\n"
-                rules_context += "\n".join(
-                    f"- {c.get('description', '')}"
-                    for c in constraints
-                    if c.get("description")
-                )
-                if rules:
-                    rules_context += "\n" + "\n".join(f"- {r}" for r in rules if r)
-                rules_context += "\n\n"
-        except Exception as e:
-            logger.debug(f"규칙 컨텍스트 조회 실패: {e}")
-    else:
-        # Neo4j 없을 때 기본 규칙 사용
-        rules_context = "[준수해야 할 규칙]\n"
-        rules_context += "\n".join(f"- {r}" for r in DEFAULT_ANSWER_RULES)
-        rules_context += "\n\n"
-
-    context_with_answer = context.copy()
-    context_with_answer["draft_answer"] = answer
-    context_with_answer["original_answer"] = answer
-    context_with_answer["query"] = query
-    context_with_answer["ocr_text"] = ocr_text
-    context_with_answer["rules_context"] = rules_context
-    context_with_answer["language"] = "한국어"
-
-    if kg:
-        corrector = SelfCorrectingQAChain(kg)
-        result = corrector.generate_with_self_correction(
-            query_type,
-            context_with_answer,
-        )
-        final_answer = str(result.get("output", answer))
-    else:
-        # kg가 없으면 원본 answer 반환
-        final_answer = answer
+    rules_context = _build_rules_context(kg, query_type, query)
+    context_with_answer = _build_context_with_answer(
+        context,
+        answer,
+        query,
+        ocr_text,
+        rules_context,
+    )
+    final_answer = _self_correct_answer(query_type, context_with_answer, kg, answer)
 
     lats_enabled = _should_enable_lats(agent, lats)
-    if lats is None and lats_enabled:
-        provider = getattr(agent, "llm_provider", None)
-        if provider:
-            try:
-                lats = LATSSearcher(llm_provider=provider)
-            except Exception as exc:  # noqa: BLE001
-                logger.debug("LATS init skipped: %s", exc)
-        else:
-            logger.debug("LATS disabled: llm_provider not available")
+    lats = _maybe_create_lats(agent, lats) if lats_enabled else lats
+    final_answer = await _apply_lats_if_enabled(
+        lats,
+        lats_enabled,
+        query,
+        ocr_text,
+        final_answer,
+    )
 
-    if lats_enabled and lats is not None:
-        try:
-            initial_state = SearchState(
-                query=query,
-                ocr_text=ocr_text,
-                current_answer=final_answer,
-            )
-            best_node = await lats.run(initial_state=initial_state)
-            candidate = getattr(best_node.state, "current_answer", None)
-            if candidate:
-                final_answer = candidate
-        except Exception as exc:  # noqa: BLE001
-            logger.debug("LATS search skipped: %s", exc)
-
-    if query and validator:
-        val_result = validator.cross_validate_qa_pair(
-            query,
-            final_answer,
-            query_type,
-            context.get("image_meta", {}),
-        )
-        if val_result.get("overall_score", 0) < 0.7:
-            logger.warning(f"Validation failed: {val_result}")
-            context["validation_warning"] = True
-
-    if cache:
-        await cache.set(cache_key, 1.0)
-
+    _cross_validate_if_needed(query, final_answer, query_type, context, validator)
+    await _mark_cached(cache, cache_key)
     return final_answer

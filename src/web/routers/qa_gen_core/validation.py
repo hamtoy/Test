@@ -13,6 +13,152 @@ from checks.detect_forbidden_patterns import (
 logger = logging.getLogger(__name__)
 
 
+def _count_sentences(text: str) -> int:
+    sentences = [
+        s for s in text.replace("?", ".").replace("!", ".").split(".") if s.strip()
+    ]
+    return len(sentences)
+
+
+def _collect_sentence_issues(draft_answer: str, qtype: str) -> list[str]:
+    if qtype != "target_short":
+        return []
+    sentence_count = _count_sentences(draft_answer)
+    if sentence_count > 2:
+        return [f"1-2문장으로 축소 필요 (현재 {sentence_count}문장)"]
+    return []
+
+
+def _collect_summary_header_violations(
+    draft_answer: str,
+    normalized_qtype: str,
+) -> list[str]:
+    if normalized_qtype != "reasoning":
+        return []
+    first_line = draft_answer.splitlines()[0] if draft_answer.splitlines() else ""
+    if "요약문" in draft_answer or "요약" in first_line:
+        return ["summary_header_not_allowed"]
+    return []
+
+
+def _collect_kg_rule_violations(
+    draft_answer: str,
+    normalized_qtype: str,
+    kg_wrapper: Any,
+    validator_class: type | None,
+) -> list[str]:
+    if kg_wrapper is None or validator_class is None:
+        return []
+    try:
+        validator = validator_class(kg_wrapper)
+        rule_check = validator._check_rule_compliance(
+            draft_answer,
+            normalized_qtype,
+        )
+        score = rule_check.get("score")
+        score_val = score if isinstance(score, (int, float)) else 1.0
+        violations = rule_check.get("violations", [])
+        if violations and score_val < 0.3:
+            return list(violations)
+    except Exception:
+        return []
+    return []
+
+
+def _collect_pattern_violations(draft_answer: str) -> list[str]:
+    violations = find_violations(draft_answer)
+    if not violations:
+        return []
+
+    collected: list[str] = []
+    for v in violations:
+        v_type = v.get("type", "")
+        if v_type.startswith("error_pattern:시의성"):
+            continue
+        if "temporal" in v_type.lower():
+            continue
+        collected.append(v_type)
+    return collected
+
+
+def _collect_formatting_violations(draft_answer: str) -> list[str]:
+    formatting_violations = find_formatting_violations(draft_answer)
+    collected: list[str] = []
+    for fv in formatting_violations:
+        if fv.get("severity") == "error":
+            collected.append(fv.get("type", "formatting"))
+            logger.warning(
+                "서식 위반 감지: %s - '%s'",
+                fv.get("description", ""),
+                fv.get("match", ""),
+            )
+    return collected
+
+
+def _collect_pipeline_violations(
+    pipeline: Any,
+    normalized_qtype: str,
+    draft_answer: str,
+) -> list[str]:
+    if pipeline is None:
+        return []
+    validation = pipeline.validate_output(
+        normalized_qtype,
+        draft_answer,
+    )
+    collected: list[str] = []
+    if not validation.get("valid", True):
+        collected.extend(validation.get("violations", []))
+    missing_rules = validation.get("missing_rules_hint", [])
+    if missing_rules:
+        logger.debug("누락 가능성 있는 규칙: %s", missing_rules)
+    return collected
+
+
+def _merge_unified_validator_results(val_result: Any) -> tuple[list[str], list[str]]:
+    violations: list[str] = []
+    warnings: list[str] = []
+    if val_result.has_errors():
+        violations.extend([v.get("type", "rule") for v in val_result.violations])
+    if val_result.warnings:
+        warnings.extend(val_result.warnings)
+    return violations, warnings
+
+
+def _filter_temporal_violations(violations: list[str]) -> list[str]:
+    return [v for v in violations if "시의성" not in v and "temporal" not in v.lower()]
+
+
+async def _try_rewrite_answer(
+    agent: Any,
+    draft_answer: str,
+    ocr_text: str,
+    issues: list[str],
+    answer_constraints: list[dict[str, Any]],
+    length_constraint: str,
+) -> str | None:
+    combined_request = "; ".join(issues)
+    logger.warning("검증 실패, 재생성 시도: %s", combined_request)
+    try:
+        rewritten = cast(
+            str | None,
+            await agent.rewrite_best_answer(
+                ocr_text=ocr_text,
+                best_answer=draft_answer,
+                edit_request=f"다음 사항 수정: {combined_request}",
+                cached_content=None,
+                constraints=answer_constraints,
+                length_constraint=length_constraint,
+            ),
+        )
+        if rewritten and rewritten.strip():
+            return rewritten
+        logger.warning("재생성 빈 응답, 원본 답변 사용")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("재생성 실패, 원본 답변 사용: %s", str(exc)[:100])
+    return None
+
+
 async def validate_and_regenerate(
     agent: Any,
     draft_answer: str,
@@ -53,116 +199,45 @@ async def validate_and_regenerate(
         query,
     )
     all_issues: list[str] = []
-
-    # 문장 수 검증
-    sentences = [
-        s
-        for s in draft_answer.replace("?", ".").replace("!", ".").split(".")
-        if s.strip()
-    ]
-    sentence_count = len(sentences)
-
-    # target_short만 문장 수 제한 (1-2문장), 나머지 타입은 검증 skip
-    if qtype == "target_short" and sentence_count > 2:
-        all_issues.append(f"1-2문장으로 축소 필요 (현재 {sentence_count}문장)")
-
     all_violations: list[str] = []
 
-    # 요약문 헤더 검증
-    if normalized_qtype == "reasoning" and (
-        "요약문" in draft_answer or "요약" in draft_answer.splitlines()[0]
-    ):
-        all_violations.append("summary_header_not_allowed")
-
-    # Explicit rule compliance check when KG is available
-    if kg_wrapper is not None and validator_class is not None:
-        try:
-            validator = validator_class(kg_wrapper)
-            rule_check = validator._check_rule_compliance(
-                draft_answer,
-                normalized_qtype,
-            )
-            score = rule_check.get("score")
-            score_val = score if isinstance(score, (int, float)) else 1.0
-            if rule_check.get("violations") and score_val < 0.3:
-                all_violations.extend(rule_check.get("violations", []))
-        except Exception:
-            pass
-
-    # 기존 탐지 + 통합 검증 병합
-    violations = find_violations(draft_answer)
-    if violations:
-        for v in violations:
-            v_type = v["type"]
-            # NOTE: 시의성 표현은 인간 작업자가 최종 수정 예정이므로 검증 제외
-            if v_type.startswith("error_pattern:시의성"):
-                continue
-            if "temporal" in v_type.lower():
-                continue  # 시의성 관련 모든 패턴 제외
-            all_violations.append(v_type)
-
-    formatting_violations = find_formatting_violations(draft_answer)
-    for fv in formatting_violations:
-        if fv.get("severity") == "error":
-            all_violations.append(fv["type"])
-            logger.warning(
-                "서식 위반 감지: %s - '%s'",
-                fv.get("description", ""),
-                fv["match"],
-            )
-
-    # Pipeline 검증
-    if pipeline is not None:
-        validation = pipeline.validate_output(
-            normalized_qtype,
+    all_issues.extend(_collect_sentence_issues(draft_answer, qtype))
+    all_violations.extend(
+        _collect_summary_header_violations(draft_answer, normalized_qtype),
+    )
+    all_violations.extend(
+        _collect_kg_rule_violations(
             draft_answer,
-        )
-        if not validation.get("valid", True):
-            all_violations.extend(validation.get("violations", []))
-        missing_rules = validation.get("missing_rules_hint", [])
-        if missing_rules:
-            logger.debug("누락 가능성 있는 규칙: %s", missing_rules)
+            normalized_qtype,
+            kg_wrapper,
+            validator_class,
+        ),
+    )
+    all_violations.extend(_collect_pattern_violations(draft_answer))
+    all_violations.extend(_collect_formatting_violations(draft_answer))
+    all_violations.extend(
+        _collect_pipeline_violations(pipeline, normalized_qtype, draft_answer),
+    )
 
-    # UnifiedValidator 결과 병합
-    if val_result.has_errors():
-        all_violations.extend(
-            [v.get("type", "rule") for v in val_result.violations],
-        )
-    if val_result.warnings:
-        all_issues.extend(val_result.warnings)
+    unified_violations, unified_warnings = _merge_unified_validator_results(val_result)
+    all_violations.extend(unified_violations)
+    all_issues.extend(unified_warnings)
 
-    # 시의성 관련 위반 필터링 (인간 작업자가 최종 수정 예정)
-    all_violations = [
-        v for v in all_violations if "시의성" not in v and "temporal" not in v.lower()
-    ]
-
+    all_violations = _filter_temporal_violations(all_violations)
     if all_violations:
         all_issues.extend(all_violations[:3])
 
-    # 재생성 필요 시
     if all_issues:
-        combined_request = "; ".join(all_issues)
-        logger.warning("검증 실패, 재생성 시도: %s", combined_request)
-        try:
-            rewritten = cast(
-                str | None,
-                await agent.rewrite_best_answer(
-                    ocr_text=ocr_text,
-                    best_answer=draft_answer,
-                    edit_request=f"다음 사항 수정: {combined_request}",
-                    cached_content=None,
-                    constraints=answer_constraints,
-                    length_constraint=length_constraint,
-                ),
-            )
-            # 빈 응답이면 원본 유지
-            if rewritten and rewritten.strip():
-                return rewritten
-            else:
-                logger.warning("재생성 빈 응답, 원본 답변 사용")
-        except Exception as e:
-            # 재생성 실패 시 원본 답변 사용 (Gemini API 일시 오류 대응)
-            logger.warning("재생성 실패, 원본 답변 사용: %s", str(e)[:100])
+        rewritten = await _try_rewrite_answer(
+            agent,
+            draft_answer,
+            ocr_text,
+            all_issues,
+            answer_constraints,
+            length_constraint,
+        )
+        if rewritten is not None:
+            return rewritten
 
     return draft_answer
 

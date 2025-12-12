@@ -7,9 +7,57 @@ import json
 import logging
 import os
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+def _op_equals(ctx_value: Any, value: Any) -> bool:
+    return ctx_value == value
+
+
+def _op_not_equals(ctx_value: Any, value: Any) -> bool:
+    return ctx_value != value
+
+
+def _op_greater_than(ctx_value: Any, value: Any) -> bool:
+    return ctx_value is not None and ctx_value > value
+
+
+def _op_less_than(ctx_value: Any, value: Any) -> bool:
+    return ctx_value is not None and ctx_value < value
+
+
+def _op_contains(ctx_value: Any, value: Any) -> bool:
+    if ctx_value is None or not isinstance(value, str):
+        return False
+    return value in str(ctx_value)
+
+
+def _op_in(ctx_value: Any, value: Any) -> bool:
+    if ctx_value is None:
+        return False
+    if isinstance(value, (list, tuple, str)):
+        return ctx_value in value
+    return False
+
+
+_RULE_OPERATORS: dict[str, Callable[[Any, Any], bool]] = {
+    "equals": _op_equals,
+    "not_equals": _op_not_equals,
+    "greater_than": _op_greater_than,
+    "less_than": _op_less_than,
+    "contains": _op_contains,
+    "in": _op_in,
+}
+
+
+def _evaluate_rule(operator: str, ctx_value: Any, value: Any) -> bool:
+    checker = _RULE_OPERATORS.get(operator)
+    if checker is None:
+        return True
+    return checker(ctx_value, value)
 
 
 class FeatureFlags:
@@ -148,33 +196,9 @@ class FeatureFlags:
             field = rule.get("field", "")
             operator = rule.get("operator", "")
             value = rule.get("value")
-
             ctx_value = context.get(field)
-
-            if operator == "equals":
-                if ctx_value != value:
-                    return False
-            elif operator == "not_equals":
-                if ctx_value == value:
-                    return False
-            elif operator == "greater_than":
-                if ctx_value is None or ctx_value <= value:
-                    return False
-            elif operator == "less_than":
-                if ctx_value is None or ctx_value >= value:
-                    return False
-            elif operator == "contains":
-                if ctx_value is None:
-                    return False
-                # Check if value is in the string representation of ctx_value
-                if isinstance(value, str) and value not in str(ctx_value):
-                    return False
-            elif operator == "in":
-                if ctx_value is None:
-                    return False
-                if isinstance(value, (list, tuple, str)) and ctx_value not in value:
-                    return False
-
+            if not _evaluate_rule(operator, ctx_value, value):
+                return False
         return True
 
     def get_variant(self, flag_name: str, user_id: str) -> str:
