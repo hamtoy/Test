@@ -6,8 +6,9 @@ import asyncio
 import json
 import logging
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator
+from typing import Any, AsyncIterator, Awaitable, TypeVar
 
+import anyio
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
@@ -68,6 +69,14 @@ def _resolve_stream_batch_types(body: GenerateQARequest) -> list[str]:
     return list(batch_types)
 
 
+_T = TypeVar("_T")
+
+
+async def _await_with_qa_timeout(coro: Awaitable[_T]) -> _T:
+    with anyio.fail_after(_get_config().qa_single_timeout):
+        return await coro
+
+
 async def _stream_first_batch_type(
     agent: Any,
     ocr_text: str,
@@ -78,9 +87,8 @@ async def _stream_first_batch_type(
     events: list[str] = []
     success = 0
     try:
-        first_result = await asyncio.wait_for(
-            generate_single_qa_with_retry(agent, ocr_text, qtype),
-            timeout=_get_config().qa_single_timeout,
+        first_result = await _await_with_qa_timeout(
+            generate_single_qa_with_retry(agent, ocr_text, qtype)
         )
         events.append(_sse("progress", type=qtype, data=first_result))
         query = first_result.get("query")
@@ -100,7 +108,6 @@ def _create_stream_tasks(
     ocr_text: str,
     completed_queries: list[str],
     first_answer: str,
-    timeout: float,
 ) -> dict[asyncio.Task[dict[str, Any]], str]:
     task_map: dict[asyncio.Task[dict[str, Any]], str] = {}
     for qtype in remaining_types:
@@ -111,7 +118,7 @@ def _create_stream_tasks(
             previous_queries=completed_queries if completed_queries else None,
             explanation_answer=first_answer if qtype.startswith("target") else None,
         )
-        task = asyncio.create_task(asyncio.wait_for(coro, timeout=timeout))
+        task = asyncio.create_task(_await_with_qa_timeout(coro))
         task_map[task] = qtype
     return task_map
 
@@ -204,7 +211,6 @@ async def _emit_remaining_type_events(
     agent: Any,
     ocr_text: str,
     state: _StreamBatchState,
-    timeout: float,
 ) -> AsyncIterator[str]:
     if not remaining_types:
         return
@@ -215,7 +221,6 @@ async def _emit_remaining_type_events(
         ocr_text,
         state.completed_queries,
         state.first_answer,
-        timeout,
     )
     async for qtype, result, task_exc in _iter_stream_task_results(task_map):
         if task_exc is not None:
@@ -247,7 +252,6 @@ async def _stream_batch_events(
     yield _sse("started", total=len(batch_types))
 
     state = _StreamBatchState()
-    timeout = _get_config().qa_single_timeout
 
     # 첫 타입(global_explanation)과 reasoning을 병렬 실행해 체감 시간을 단축
     first_type = batch_types[0]
@@ -268,7 +272,6 @@ async def _stream_batch_events(
         agent,
         ocr_text,
         state,
-        timeout,
     ):
         yield event
 
