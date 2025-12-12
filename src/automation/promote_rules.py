@@ -40,6 +40,7 @@ import glob
 import json
 import sys
 from datetime import datetime, timedelta
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, TypedDict
 
@@ -139,34 +140,33 @@ def extract_comments_from_files(file_paths: list[Path]) -> list[str]:
     comments: set[str] = set()
 
     for file_path in file_paths:
-        try:
-            with open(file_path, encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    try:
-                        data = json.loads(line)
-
-                        # inspector_comment 추출
-                        if isinstance(data, dict):
-                            inspector_comment = data.get("inspector_comment", "")
-                            if _is_meaningful_comment(inspector_comment):
-                                comments.add(str(inspector_comment).strip())
-
-                            # edit_request_used 추출
-                            edit_request = data.get("edit_request_used", "")
-                            if _is_meaningful_comment(edit_request):
-                                comments.add(str(edit_request).strip())
-
-                    except json.JSONDecodeError:
-                        # 잘못된 JSON 라인은 건너뜀
-                        continue
-        except OSError:
-            # 파일 읽기 실패는 건너뜀
-            continue
+        for record in _iter_jsonl_records(file_path):
+            _add_comment(comments, record.get("inspector_comment", ""))
+            _add_comment(comments, record.get("edit_request_used", ""))
 
     return list(comments)
+
+
+def _iter_jsonl_records(file_path: Path) -> Iterator[dict[str, Any]]:
+    try:
+        with open(file_path, encoding="utf-8") as f:
+            for line in f:
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                try:
+                    data = json.loads(stripped)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(data, dict):
+                    yield data
+    except OSError:
+        return
+
+
+def _add_comment(comments: set[str], value: Any) -> None:
+    if _is_meaningful_comment(value):
+        comments.add(str(value).strip())
 
 
 def _is_meaningful_comment(value: Any) -> bool:
