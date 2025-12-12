@@ -654,6 +654,7 @@ async def _run_task_with_lats(task: OCRTask) -> dict[str, Any]:
         action: str,
     ) -> ValidationResult:
         return await _validate_lats_action(state, action, graph_provider)
+
     propose_actions = _make_lats_proposer(task, lats_agent, llm_provider)
     evaluate_action = _make_lats_evaluator(
         task,
