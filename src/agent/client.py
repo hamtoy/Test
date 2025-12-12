@@ -81,7 +81,10 @@ class GeminiClient:
         response_length = len(result.content) if result.content else 0
         self._log_finish_reason(finish_reason, response_length)
         self._warn_if_truncated(finish_reason, response_length)
-        self._raise_if_unexpected_finish(finish_reason, result.safety_ratings or "")
+        self._raise_if_unexpected_finish(
+            finish_reason,
+            str(result.safety_ratings or ""),
+        )
         return result.content
 
     async def _execute_with_native_model(self, model: Any, prompt_text: str) -> str:

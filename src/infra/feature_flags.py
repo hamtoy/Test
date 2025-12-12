@@ -14,19 +14,19 @@ logger = logging.getLogger(__name__)
 
 
 def _op_equals(ctx_value: Any, value: Any) -> bool:
-    return ctx_value == value
+    return bool(ctx_value == value)
 
 
 def _op_not_equals(ctx_value: Any, value: Any) -> bool:
-    return ctx_value != value
+    return bool(ctx_value != value)
 
 
 def _op_greater_than(ctx_value: Any, value: Any) -> bool:
-    return ctx_value is not None and ctx_value > value
+    return bool(ctx_value is not None and ctx_value > value)
 
 
 def _op_less_than(ctx_value: Any, value: Any) -> bool:
-    return ctx_value is not None and ctx_value < value
+    return bool(ctx_value is not None and ctx_value < value)
 
 
 def _op_contains(ctx_value: Any, value: Any) -> bool:
