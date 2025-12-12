@@ -111,67 +111,106 @@ class GeminiModelClient:
 
     def evaluate(self, question: str, answers: list[str]) -> dict[str, Any]:
         """Evaluate answers; parse 점수/최고 형식, otherwise length fallback."""
-
-        def _length_fallback(notes: str = "길이 기반 임시 평가") -> dict[str, Any]:
-            scores = [len(a) for a in answers]
-            best_idx = scores.index(max(scores)) if scores else None
-            return {
-                "scores": scores,
-                "best_index": best_idx,
-                "best_answer": answers[best_idx] if best_idx is not None else None,
-                "notes": notes,
-            }
-
         if not answers:
-            return _length_fallback("평가 실패: 답변이 없습니다.")
+            return self._length_fallback(answers, "평가 실패: 답변이 없습니다.")
 
+        raw, latency_ms, fallback_note = self._generate_evaluation_raw(
+            question, answers
+        )
+        if raw is None or latency_ms is None:
+            return self._length_fallback(
+                answers,
+                fallback_note or "예상치 못한 오류로 길이 기반 평가 수행",
+            )
+
+        scores, best_idx = self._parse_evaluation_output(raw)
+        if not scores:
+            return self._length_fallback(answers)
+
+        best_idx = self._normalize_best_index(best_idx, scores, answers)
+        log_metrics(
+            self.logger,
+            latency_ms=latency_ms,
+            prompt_tokens=len(question),
+            completion_tokens=sum(scores),
+        )
+        return {
+            "scores": scores,
+            "best_index": best_idx,
+            "best_answer": answers[best_idx],
+            "notes": "점수 파싱 기반 평가",
+        }
+
+    def _length_fallback(
+        self,
+        answers: list[str],
+        notes: str = "길이 기반 임시 평가",
+    ) -> dict[str, Any]:
+        scores = [len(a) for a in answers]
+        best_idx = scores.index(max(scores)) if scores else None
+        return {
+            "scores": scores,
+            "best_index": best_idx,
+            "best_answer": answers[best_idx] if best_idx is not None else None,
+            "notes": notes,
+        }
+
+    def _generate_evaluation_raw(
+        self,
+        question: str,
+        answers: list[str],
+    ) -> tuple[str | None, float | None, str | None]:
         start = time.perf_counter()
         try:
             raw = self.generate(
                 f"질문: {question}\n답변 수: {len(answers)}",
                 role="evaluator",
             )
+            latency_ms = (time.perf_counter() - start) * 1000
+            return raw, latency_ms, None
         except google_exceptions.GoogleAPIError:
-            return _length_fallback("API 오류로 길이 기반 평가 수행")
-        except Exception:
-            return _length_fallback("예상치 못한 오류로 길이 기반 평가 수행")
-        latency_ms = (time.perf_counter() - start) * 1000
+            return None, None, "API 오류로 길이 기반 평가 수행"
+        except Exception:  # noqa: BLE001
+            return None, None, "예상치 못한 오류로 길이 기반 평가 수행"
 
+    def _parse_evaluation_output(self, raw: str) -> tuple[list[int], int | None]:
         scores: list[int] = []
         best_idx: int | None = None
         for line in raw.splitlines():
-            line = line.strip()
-            if line.startswith("점수"):
-                try:
-                    _, val = line.split(":", 1)
-                    scores.append(int(val.strip()))
-                except Exception:
-                    continue
-            elif line.startswith("최고"):
-                try:
-                    _, val = line.split(":", 1)
-                    best_idx = int(val.strip()) - 1
-                except Exception:
-                    continue
+            stripped = line.strip()
+            if stripped.startswith("점수"):
+                score = self._parse_score_line(stripped)
+                if score is not None:
+                    scores.append(score)
+                continue
+            if stripped.startswith("최고"):
+                best_idx = self._parse_best_line(stripped) or best_idx
+        return scores, best_idx
 
-        if scores:
-            if best_idx is None:
-                best_idx = scores.index(max(scores))
-            best_idx = max(0, min(best_idx, len(answers) - 1))
-            log_metrics(
-                self.logger,
-                latency_ms=latency_ms,
-                prompt_tokens=len(question),
-                completion_tokens=sum(scores),
-            )
-            return {
-                "scores": scores,
-                "best_index": best_idx,
-                "best_answer": answers[best_idx],
-                "notes": "점수 파싱 기반 평가",
-            }
+    def _parse_score_line(self, line: str) -> int | None:
+        try:
+            _, val = line.split(":", 1)
+            return int(val.strip())
+        except Exception:  # noqa: BLE001
+            return None
 
-        return _length_fallback()
+    def _parse_best_line(self, line: str) -> int | None:
+        try:
+            _, val = line.split(":", 1)
+            return int(val.strip()) - 1
+        except Exception:  # noqa: BLE001
+            return None
+
+    def _normalize_best_index(
+        self,
+        best_idx: int | None,
+        scores: list[int],
+        answers: list[str],
+    ) -> int:
+        resolved = best_idx
+        if resolved is None:
+            resolved = scores.index(max(scores))
+        return max(0, min(resolved, len(answers) - 1))
 
     def rewrite(self, answer: str) -> str:
         """Rewrite an answer with light prompting."""
