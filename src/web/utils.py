@@ -168,6 +168,90 @@ def detect_workflow(
     return "edit_answer" if has_edit else "query_generation"
 
 
+def _limit_words(text: str, max_words: int) -> str:
+    words = text.split()
+    if len(words) > max_words:
+        return " ".join(words[:max_words])
+    return text
+
+
+def _normalize_ending_punctuation(text: str) -> str:
+    """Replace ellipsis with period, or add period if missing."""
+    if not text:
+        return text
+    if text.endswith("..."):
+        return text[:-3] + "."
+    if not text.endswith("."):
+        return text + "."
+    return text
+
+
+def _ensure_period_preserve_ellipsis(text: str) -> str:
+    """Add period if missing, but preserve existing ellipsis."""
+    if text and not text.endswith(".") and not text.endswith("..."):
+        return text + "."
+    return text
+
+
+def _split_sentences_safe(text: str) -> list[str]:
+    """Split sentences carefully, avoiding split on decimal points."""
+    protected = re.sub(r"(\d)\.(\d)", r"\1_DOT_\2", text)
+    protected = re.sub(r"(\d)\.\s+(\d)", r"\1_DOT_SPACE_\2", protected)
+    sentences = [s.strip() for s in protected.split(".") if s.strip()]
+    return [s.replace("_DOT_SPACE_", ". ").replace("_DOT_", ".") for s in sentences]
+
+
+# 실제 사용되는 4가지 질의 타입별 설정 (추후 확장 가능)
+_ANSWER_LIMITS_CONFIG: dict[str, dict[str, int]] = {}
+
+
+def _apply_sentence_word_limits(answer: str, limits: dict[str, int]) -> str:
+    sentences = _split_sentences_safe(answer)
+    if sentences:
+        max_sentences = limits.get("max_sentences", len(sentences))
+        sentences = sentences[:max_sentences]
+        answer = ". ".join(sentences)
+        if answer and not answer.endswith("."):
+            answer += "."
+    max_words = limits.get("max_words")
+    return _limit_words(answer, max_words) if max_words else answer
+
+
+def _apply_reasoning_limits(answer: str) -> str:
+    sentences = _split_sentences_safe(answer)
+    if sentences and len(sentences) > 5:
+        sentences = sentences[:5]
+        answer = ". ".join(sentences)
+        if answer and not answer.endswith("."):
+            answer += "."
+    answer = _limit_words(answer, 200)
+    return _normalize_ending_punctuation(answer)
+
+
+def _truncate_explanation(answer: str, max_length: int | None) -> str:
+    if not max_length or len(answer) <= max_length:
+        return answer
+    truncated = answer[:max_length]
+    last_period = truncated.rfind(".")
+    if last_period != -1:
+        return truncated[: last_period + 1]
+    return truncated + "."
+
+
+def _apply_target_limits(answer: str) -> str:
+    word_count = len(answer.split())
+    if word_count < 15:
+        return _limit_words(answer, 50)
+
+    sentences = _split_sentences_safe(answer)
+    if sentences:
+        sentences = sentences[:6]
+        answer = ". ".join(sentences)
+        if answer and not answer.endswith("."):
+            answer += "."
+    return _limit_words(answer, 200)
+
+
 def apply_answer_limits(
     answer: str,
     qtype: str,
@@ -184,127 +268,121 @@ def apply_answer_limits(
     # Normalize qtype locally
     normalized_qtype = QTYPE_MAP.get(qtype, qtype)
 
-    def _limit_words(text: str, max_words: int) -> str:
-        words = text.split()
-        if len(words) > max_words:
-            text = " ".join(words[:max_words])
-        return text
+    if normalized_qtype in _ANSWER_LIMITS_CONFIG:
+        return _apply_sentence_word_limits(
+            answer,
+            _ANSWER_LIMITS_CONFIG[normalized_qtype],
+        )
 
-    def _normalize_ending_punctuation(text: str) -> str:
-        """Replace ellipsis with period, or add period if missing."""
-        if text:
-            if text.endswith("..."):
-                return text[:-3] + "."
-            elif not text.endswith("."):
-                return text + "."
-        return text
+    if normalized_qtype == "reasoning":
+        return _apply_reasoning_limits(answer)
 
-    def _ensure_period_preserve_ellipsis(text: str) -> str:
-        """Add period if missing, but preserve existing ellipsis."""
-        if text and not text.endswith(".") and not text.endswith("..."):
-            return text + "."
-        return text
-
-    # 실제 사용되는 4가지 질질 타입별 설정
-    config: dict[str, dict[str, int]] = {
-        # 1. 전체 마모뇌 설명: No word limit (length controlled by prompt: 1000-1500 chars)
-        # 2. 추론 (reasoning): 제약 제거 - 프롬프트 레벨에서 길이 제어
-        #    Gemini의 원래 생성 길이를 사용하여 답변 손실 방지 (28-50% 손실 문제 해결)
-    }
-
-    def _split_sentences(text: str) -> list[str]:
-        """Split sentences carefully, avoiding split on decimal points."""
-        # 1. Protect decimal patterns temporarily (e.g. 3.5, 3. 5)
-        protected = re.sub(r"(\d)\.(\d)", r"\1_DOT_\2", text)
-        protected = re.sub(r"(\d)\.\s+(\d)", r"\1_DOT_SPACE_\2", protected)
-
-        # 2. Split by "."
-        sentences = [s.strip() for s in protected.split(".") if s.strip()]
-
-        # 3. Restore patterns
-        final_sentences = []
-        for s in sentences:
-            restored = s.replace("_DOT_SPACE_", ". ").replace("_DOT_", ".")
-            final_sentences.append(restored)
-
-        return final_sentences
-
-    if normalized_qtype in config:
-        limits = config[normalized_qtype]
-
-        # 1단계: 문장 제한
-        sentences = _split_sentences(answer)
-        if sentences:
-            sentences = sentences[: limits["max_sentences"]]
-            answer = ". ".join(sentences)
-            if answer and not answer.endswith("."):
-                answer += "."
-
-        # 2단계: 단어 수 제한 (최종 조정)
-        answer = _limit_words(answer, limits["max_words"])
-
-    elif normalized_qtype == "reasoning":
-        # reasoning: 3-4문장, 최대 200단어로 제한
-        def _limit_words_reasoning(text: str, max_words: int) -> str:
-            words = text.split()
-            if len(words) > max_words:
-                text = " ".join(words[:max_words])
-            return text
-
-        sentences = _split_sentences(answer)
-        if sentences and len(sentences) > 5:
-            sentences = sentences[:5]
-            answer = ". ".join(sentences)
-            if answer and not answer.endswith("."):
-                answer += "."
-        answer = _limit_words_reasoning(answer, 200)
-        # For reasoning: replace ellipsis with period
-        answer = _normalize_ending_punctuation(answer)
-
-    elif normalized_qtype == "explanation":
-        # global_explanation: No word/sentence limits, but ensure period at end
-        # Preserve ellipsis if present, only add period when both period and ellipsis are missing
+    if normalized_qtype == "explanation":
         answer = _ensure_period_preserve_ellipsis(answer)
+        return _truncate_explanation(answer, max_length)
 
-        # Dynamic max length enforcement (if provided)
-        if max_length and len(answer) > max_length:
-            # Cut at maximum length first
-            truncated = answer[:max_length]
-
-            # Try to find the last sentence ending within the limit
-            # (Check for period within the last 20% or last 100 chars to avoid cutting too much)
-            last_period = truncated.rfind(".")
-            if last_period > -1 and last_period > len(truncated) - 150:
-                answer = truncated[: last_period + 1]
-            else:
-                # If no suitable period found, we might be cutting a very long sentence.
-                # For now, just force cut and add ellipsis if strictly needed,
-                # but usually answer should have periods.
-                # Let's trust the cut or try to keep it slightly over if no period found?
-                # User wants STRICT max. So we force cut if no period.
-                if last_period > -1:
-                    answer = truncated[: last_period + 1]
-                else:
-                    answer = truncated + "."
-
-    elif qtype == "target":
-        # 타겟 질질: 단답형 vs 서술형 자동 판단
-        word_count = len(answer.split())
-
-        if word_count < 15:
-            # Short target answers preserved as-is without automatic punctuation
-            answer = _limit_words(answer, 50)
-        else:
-            # 4. target long: 200단어, 최대 6문장
-            sentences = _split_sentences(answer)
-            if sentences:
-                sentences = sentences[:6]
-                answer = ". ".join(sentences)
-                if answer and not answer.endswith("."):
-                    answer += "."
-            answer = _limit_words(answer, 200)
+    if normalized_qtype == "target":
+        return _apply_target_limits(answer)
 
     return answer
+
+
+def _strip_code_and_links(text: str) -> str:
+    text = re.sub(r"```.*?```", " ", text, flags=re.DOTALL)
+    text = re.sub(r"`([^`]+)`", r"\1", text)
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+    text = re.sub(r"^\|.*\|\s*$", " ", text, flags=re.MULTILINE)  # table rows
+    return text
+
+
+def _remove_unauthorized_markdown(text: str) -> str:
+    """허용되지 않은 마크다운만 선별적으로 제거.
+
+    전략:
+    1. ### 헤더 제거 (샵 기호만 제거하여 평문으로 변환)
+    2. *italic* 제거하되 **bold**는 보호
+       - **bold**를 고유한 임시 토큰으로 변환
+       - 홑별표(*) 제거
+       - 임시 토큰을 **bold**로 복원
+    """
+    text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
+    bold_placeholder = "##BOLD_PLACEHOLDER_8A3F2E1C##"
+    text = text.replace("**", bold_placeholder)
+    text = re.sub(r"\*([^*]+?)\*", r"\1", text)
+    text = text.replace("*", "")
+    return text.replace(bold_placeholder, "**")
+
+
+def _add_markdown_structure(text: str, qtype: str) -> str:
+    """평문에 마크다운 구조 자동 추가.
+
+    패턴 분석:
+    1. 소제목: 단독 줄 + 다음 줄에 '항목명:' 패턴 → **굵은 소제목**
+    2. 불릿 항목: '항목명: 설명' 패턴 → - **항목명**: 설명
+
+    target 타입은 평문 유지 (마크다운 추가하지 않음).
+    """
+    normalized = QTYPE_MAP.get(qtype, qtype)
+    if normalized != "explanation":
+        return text
+
+    lines = text.split("\n")
+    result: list[str] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        stripped = line.strip()
+        if not stripped:
+            result.append(line)
+            i += 1
+            continue
+
+        if stripped.startswith("**") or stripped.startswith("- **"):
+            result.append(line)
+            i += 1
+            continue
+
+        if stripped.startswith("- "):
+            bullet_content = stripped[2:].strip()
+            if ": " in bullet_content and not bullet_content.startswith("**"):
+                colon_idx = bullet_content.index(": ")
+                item_name = bullet_content[:colon_idx]
+                item_desc = bullet_content[colon_idx + 2 :]
+                result.append(f"- **{item_name}**: {item_desc}")
+            else:
+                result.append(line)
+            i += 1
+            continue
+
+        is_section_header = False
+        if i + 1 < len(lines):
+            next_line = lines[i + 1].strip()
+            if (
+                ": " in next_line
+                and not next_line.startswith("-")
+                and len(stripped) <= 50
+                and ": " not in stripped
+            ):
+                is_section_header = True
+
+        if is_section_header:
+            result.append(f"**{stripped}**")
+            i += 1
+            continue
+
+        if ": " in stripped:
+            colon_idx = stripped.index(": ")
+            potential_name = stripped[:colon_idx]
+            if len(potential_name) <= 30 and "." not in potential_name:
+                item_desc = stripped[colon_idx + 2 :]
+                result.append(f"- **{potential_name}**: {item_desc}")
+                i += 1
+                continue
+
+        result.append(line)
+        i += 1
+
+    return "\n".join(result)
 
 
 def postprocess_answer(
@@ -323,131 +401,6 @@ def postprocess_answer(
     - ❌ *italic*: 가독성 저하
     - ❌ ### 제목: 불필요한 헤더
     """
-
-    def _strip_code_and_links(text: str) -> str:
-        text = re.sub(r"```.*?```", " ", text, flags=re.DOTALL)
-        text = re.sub(r"`([^`]+)`", r"\1", text)
-        text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
-        text = re.sub(r"^\|.*\|\s*$", " ", text, flags=re.MULTILINE)  # table rows
-        return text
-
-    def _remove_unauthorized_markdown(text: str) -> str:
-        """허용되지 않은 마크다운만 선별적으로 제거.
-
-        전략:
-        1. ### 헤더 제거 (샵 기호만 제거하여 평문으로 변환)
-        2. *italic* 제거하되 **bold**는 보호
-           - **bold**를 고유한 임시 토큰으로 변환
-           - 홑별표(*) 제거
-           - 임시 토큰을 **bold**로 복원
-        """
-        # 1. ### 헤더 제거 (### 뒤의 공백까지 제거)
-        # 예: "### 제목" → "제목"
-        text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
-
-        # 2. *italic* 제거하되 **bold**는 보호
-        # 2-1. **bold**를 고유한 임시 토큰으로 보호 (충돌 방지)
-        bold_placeholder = "##BOLD_PLACEHOLDER_8A3F2E1C##"
-        text = text.replace("**", bold_placeholder)
-
-        # 2-2. 홑별표 제거 (italic 제거)
-        # 패턴: *텍스트* → 텍스트
-        # [^*]+? : 별표가 아닌 문자들을 최소 매칭 (italic 내용만 추출)
-        text = re.sub(r"\*([^*]+?)\*", r"\1", text)
-
-        # 남은 홑별표도 제거 (짝이 맞지 않는 경우)
-        text = text.replace("*", "")
-
-        # 2-3. 임시 토큰을 **bold**로 복원
-        text = text.replace(bold_placeholder, "**")
-
-        return text
-
-    def _add_markdown_structure(text: str, qtype: str) -> str:
-        """평문에 마크다운 구조 자동 추가.
-
-        패턴 분석:
-        1. 소제목: 단독 줄 + 다음 줄에 '항목명:' 패턴 → **굵은 소제목**
-        2. 불릿 항목: '항목명: 설명' 패턴 → - **항목명**: 설명
-
-        target 타입은 평문 유지 (마크다운 추가하지 않음).
-        """
-        normalized = QTYPE_MAP.get(qtype, qtype)
-
-        # explanation 타입에만 마크다운 구조 추가
-        # reasoning/target 타입은 평문 유지 (마크다운 자동 추가하지 않음)
-        if normalized != "explanation":
-            return text
-
-        lines = text.split("\n")
-        result = []
-        i = 0
-
-        while i < len(lines):
-            line = lines[i]
-            stripped = line.strip()
-
-            # 빈 줄은 그대로 유지
-            if not stripped:
-                result.append(line)
-                i += 1
-                continue
-
-            # 이미 마크다운이 적용된 경우 스킵
-            if stripped.startswith("**") or stripped.startswith("- **"):
-                result.append(line)
-                i += 1
-                continue
-
-            # 이미 불릿이 있는 경우: 항목명에 볼드 추가
-            if stripped.startswith("- "):
-                bullet_content = stripped[2:].strip()
-                if ": " in bullet_content and not bullet_content.startswith("**"):
-                    # "- 항목명: 설명" → "- **항목명**: 설명"
-                    colon_idx = bullet_content.index(": ")
-                    item_name = bullet_content[:colon_idx]
-                    item_desc = bullet_content[colon_idx + 2 :]
-                    result.append(f"- **{item_name}**: {item_desc}")
-                else:
-                    result.append(line)
-                i += 1
-                continue
-
-            # 소제목 감지: 현재 줄이 짧고, 다음 줄에 "항목명:" 패턴이 있으면
-            is_section_header = False
-            if i + 1 < len(lines):
-                next_line = lines[i + 1].strip()
-                # 다음 줄이 "항목명: 설명" 패턴이고, 현재 줄이 50자 이하 콜론 없으면 소제목
-                if (
-                    ": " in next_line
-                    and not next_line.startswith("-")
-                    and len(stripped) <= 50
-                    and ": " not in stripped
-                ):
-                    is_section_header = True
-
-            if is_section_header:
-                # 소제목에 볼드 추가
-                result.append(f"**{stripped}**")
-                i += 1
-                continue
-
-            # "항목명: 설명" 패턴 감지 (불릿 없는 경우)
-            if ": " in stripped:
-                colon_idx = stripped.index(": ")
-                potential_name = stripped[:colon_idx]
-                # 항목명이 30자 이하이고 마침표가 없으면 불릿 항목으로 변환
-                if len(potential_name) <= 30 and "." not in potential_name:
-                    item_desc = stripped[colon_idx + 2 :]
-                    result.append(f"- **{potential_name}**: {item_desc}")
-                    i += 1
-                    continue
-
-            # 그 외의 경우 그대로 유지
-            result.append(line)
-            i += 1
-
-        return "\n".join(result)
 
     # 1. 태그 제거
     answer = strip_output_tags(answer)

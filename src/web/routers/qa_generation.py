@@ -82,6 +82,156 @@ async def clear_cache() -> dict[str, Any]:
     }
 
 
+def _resolve_batch_types(body: GenerateQARequest) -> list[str]:
+    batch_types = body.batch_types or QA_BATCH_TYPES
+    if body.mode == "batch_three" and body.batch_types is None:
+        batch_types = QA_BATCH_TYPES_THREE
+    if not batch_types:
+        raise HTTPException(status_code=400, detail="batch_types이 비어 있습니다.")
+    return list(batch_types)
+
+
+def _fallback_pair(qtype: str, exc: Exception) -> dict[str, Any]:
+    logger.error("%s 생성 실패: %s", qtype, exc)
+    return {
+        "type": qtype,
+        "query": _GENERATION_FAILED_QUERY,
+        "answer": f"일시적 오류: {str(exc)[:100]}",
+    }
+
+
+async def _generate_first_pair(
+    agent: GeminiAgent,
+    ocr_text: str,
+    qtype: str,
+    timeout: float,
+) -> tuple[dict[str, Any], str]:
+    try:
+        pair = await asyncio.wait_for(
+            generate_single_qa_with_retry(agent, ocr_text, qtype),
+            timeout=timeout,
+        )
+        return pair, pair.get("query", "")
+    except Exception as exc:  # noqa: BLE001
+        return _fallback_pair(qtype, exc), ""
+
+
+def _traceback_str(exc: BaseException) -> str:
+    return "".join(
+        traceback.format_exception(type(exc), exc, exc.__traceback__),
+    )
+
+
+def _append_previous_query(pair: dict[str, Any], previous_queries: list[str]) -> None:
+    query = pair.get("query")
+    if query and query != _GENERATION_FAILED_QUERY:
+        previous_queries.append(str(query))
+
+
+async def _generate_remaining_pairs(
+    agent: GeminiAgent,
+    ocr_text: str,
+    remaining_types: list[str],
+    previous_queries: list[str],
+    first_answer: str,
+) -> list[dict[str, Any]]:
+    batch_results = await asyncio.gather(
+        *[
+            generate_single_qa_with_retry(
+                agent,
+                ocr_text,
+                qtype,
+                previous_queries=previous_queries if previous_queries else None,
+                explanation_answer=first_answer if qtype.startswith("target") else None,
+            )
+            for qtype in remaining_types
+        ],
+        return_exceptions=True,
+    )
+
+    results: list[dict[str, Any]] = []
+    for qtype, pair in zip(remaining_types, batch_results, strict=True):
+        if isinstance(pair, Exception):
+            tb_str = _traceback_str(pair)
+            logger.error("%s 생성 실패:\n%s", qtype, tb_str)
+            results.append(_fallback_pair(qtype, pair))
+            continue
+        pair_dict = cast(_DictStrAny, pair)
+        results.append(pair_dict)
+        _append_previous_query(pair_dict, previous_queries)
+
+    return results
+
+
+async def _process_batch_request(
+    body: GenerateQARequest,
+    agent: GeminiAgent,
+    ocr_text: str,
+    start: datetime,
+) -> dict[str, Any]:
+    results: list[dict[str, Any]] = []
+    batch_types = _resolve_batch_types(body)
+
+    first_type = batch_types[0]
+    first_pair, first_query = await _generate_first_pair(
+        agent,
+        ocr_text,
+        first_type,
+        timeout=_get_config().qa_single_timeout,
+    )
+    results.append(first_pair)
+
+    remaining_types = batch_types[1:]
+    previous_queries = [first_query] if first_query else []
+    first_answer = first_pair.get("answer", "")
+    if remaining_types:
+        logger.info("⏳ %s 타입 동시 병렬 생성 시작", ", ".join(remaining_types))
+        results.extend(
+            await _generate_remaining_pairs(
+                agent,
+                ocr_text,
+                remaining_types,
+                previous_queries,
+                first_answer,
+            ),
+        )
+
+    duration = (datetime.now() - start).total_seconds()
+    meta = APIMetadata(duration=duration)
+    return cast(
+        _DictStrAny,
+        build_response(
+            {"mode": "batch", "pairs": results},
+            metadata=meta,
+            config=_get_config(),
+        ),
+    )
+
+
+async def _process_single_request(
+    body: GenerateQARequest,
+    agent: GeminiAgent,
+    ocr_text: str,
+    start: datetime,
+) -> dict[str, Any]:
+    if not body.qtype:
+        raise HTTPException(status_code=400, detail="qtype이 필요합니다.")
+    pair = await asyncio.wait_for(
+        generate_single_qa(agent, ocr_text, body.qtype),
+        timeout=_get_config().qa_single_timeout,
+    )
+    duration = (datetime.now() - start).total_seconds()
+    meta = APIMetadata(duration=duration)
+    return cast(
+        _DictStrAny,
+        build_response(
+            {"mode": "single", "pair": pair},
+            metadata=meta,
+            config=_get_config(),
+        ),
+    )
+
+
 @router.post("/qa/generate")
 async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
     """QA 생성 (배치: explanation 먼저 → 나머지 3개 동시 병렬, 단일: 타입별 생성)."""
@@ -94,133 +244,11 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
     try:
         start = datetime.now()
         if body.mode in {"batch", "batch_three"}:
-            # Wrap entire batch processing in timeout
-            async def _process_batch() -> dict[str, Any]:
-                results: list[dict[str, Any]] = []
-
-                batch_types = body.batch_types or QA_BATCH_TYPES
-                if body.mode == "batch_three" and body.batch_types is None:
-                    batch_types = QA_BATCH_TYPES_THREE
-                if not batch_types:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="batch_types이 비어 있습니다.",
-                    )
-
-                first_type = batch_types[0]
-                first_query: str = ""
-
-                # 1단계: global_explanation 순차 생성
-                try:
-                    first_pair = await asyncio.wait_for(
-                        generate_single_qa_with_retry(
-                            current_agent, ocr_text, first_type
-                        ),
-                        timeout=_get_config().qa_single_timeout,
-                    )
-                    results.append(first_pair)
-                    first_query = first_pair.get("query", "")
-                except Exception as exc:  # noqa: BLE001
-                    logger.error("%s 생성 실패: %s", first_type, exc)
-                    results.append(
-                        {
-                            "type": first_type,
-                            "query": _GENERATION_FAILED_QUERY,
-                            "answer": f"일시적 오류: {str(exc)[:100]}",
-                        },
-                    )
-
-                # 2단계: 나머지 타입 전부 동시 병렬 생성
-                remaining_types = batch_types[1:]
-                previous_queries = [first_query] if first_query else []
-                # 설명문 답변 추출 (target 타입에서 중복 방지용)
-                first_answer = results[0].get("answer", "") if results else ""
-
-                if remaining_types:
-                    logger.info(
-                        "⏳ %s 타입 동시 병렬 생성 시작", ", ".join(remaining_types)
-                    )
-
-                    batch_results = await asyncio.gather(
-                        *[
-                            generate_single_qa_with_retry(
-                                current_agent,
-                                ocr_text,
-                                qtype,
-                                previous_queries=previous_queries
-                                if previous_queries
-                                else None,
-                                explanation_answer=first_answer
-                                if qtype.startswith("target")
-                                else None,
-                            )
-                            for qtype in remaining_types
-                        ],
-                        return_exceptions=True,
-                    )
-
-                    for j, pair in enumerate(batch_results):
-                        qtype = remaining_types[j]
-                        if isinstance(pair, Exception):
-                            import sys
-
-                            tb_str = "".join(
-                                traceback.format_exception(
-                                    type(pair), pair, pair.__traceback__
-                                )
-                            )
-                            sys.stderr.write(
-                                f"\n[ERROR TRACEBACK] {qtype}:\n{tb_str}\n"
-                            )
-                            logger.error("%s 생성 실패:\n%s", qtype, tb_str)
-                            results.append(
-                                {
-                                    "type": qtype,
-                                    "query": _GENERATION_FAILED_QUERY,
-                                    "answer": f"일시적 오류: {str(pair)[:100]}",
-                                },
-                            )
-                        else:
-                            results.append(cast(_DictStrAny, pair))
-                            pair_dict = cast(_DictStrAny, pair)
-                            if (
-                                pair_dict.get("query")
-                                and pair_dict.get("query") != _GENERATION_FAILED_QUERY
-                            ):
-                                previous_queries.append(pair_dict.get("query", ""))
-
-                duration = (datetime.now() - start).total_seconds()
-                meta = APIMetadata(duration=duration)
-                return cast(
-                    _DictStrAny,
-                    build_response(
-                        {"mode": "batch", "pairs": results},
-                        metadata=meta,
-                        config=_get_config(),
-                    ),
-                )
-
             return await asyncio.wait_for(
-                _process_batch(),
+                _process_batch_request(body, current_agent, ocr_text, start),
                 timeout=_get_config().qa_batch_timeout,
             )
-
-        if not body.qtype:
-            raise HTTPException(status_code=400, detail="qtype이 필요합니다.")
-        pair = await asyncio.wait_for(
-            generate_single_qa(current_agent, ocr_text, body.qtype),
-            timeout=_get_config().qa_single_timeout,
-        )
-        duration = (datetime.now() - start).total_seconds()
-        meta = APIMetadata(duration=duration)
-        return cast(
-            _DictStrAny,
-            build_response(
-                {"mode": "single", "pair": pair},
-                metadata=meta,
-                config=_get_config(),
-            ),
-        )
+        return await _process_single_request(body, current_agent, ocr_text, start)
 
     except HTTPException:
         raise
