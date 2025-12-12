@@ -1,6 +1,7 @@
 """추론답변예시.txt를 Neo4j Example 노드로 등록하는 스크립트."""
 
 import hashlib
+import re
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -20,21 +21,35 @@ def import_reasoning_examples():
 
     # 파일 읽기
     content = examples_file.read_text(encoding="utf-8")
-    lines = content.strip().split("\n")
 
-    # 탭으로 구분된 질문-답변 쌍 파싱
+    # 멀티라인 답변 지원: 각 엔트리는 "로 끝나고, 다음 줄은 새 질문으로 시작
+    entries = re.split(r'"\r?\n(?=[^\r\n])', content)
+
     qa_pairs = []
-    for line in lines:
-        if "\t" in line:
-            parts = line.split("\t", 1)
-            if len(parts) == 2:
-                question = parts[0].strip()
-                answer = parts[1].strip()
-                # 따옴표 제거
-                if answer.startswith('"') and answer.endswith('"'):
-                    answer = answer[1:-1]
-                if question and answer:
-                    qa_pairs.append({"question": question, "answer": answer})
+    for i, entry in enumerate(entries):
+        entry = entry.strip()
+        if not entry:
+            continue
+
+        # 마지막 엔트리가 아니면 닫는 따옴표 추가
+        if i < len(entries) - 1:
+            entry = entry + '"'
+
+        # 탭 구분자 찾기
+        tab_pos = entry.find("\t")
+        if tab_pos == -1:
+            continue
+
+        question = entry[:tab_pos].strip()
+        answer = entry[tab_pos + 1 :].strip()
+
+        # 따옴표 제거
+        answer = answer.removeprefix('"').removesuffix('"')
+        # 줄바꿈 정규화
+        answer = answer.replace("\r\n", "\n").replace("\r", "\n")
+
+        if question and answer:
+            qa_pairs.append({"question": question, "answer": answer})
 
     print(f"📝 {len(qa_pairs)}개 QA 쌍 추출")
 
