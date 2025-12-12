@@ -3,6 +3,7 @@ import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from faststream import FastStream
@@ -507,7 +508,7 @@ def _make_lats_proposer(
     task: OCRTask,
     agent: GeminiAgent | None,
     provider: Any,
-):
+) -> Callable[[Any], Awaitable[list[str]]]:
     async def propose(node: Any) -> list[str]:
         candidates: list[str] = []
         if agent:
@@ -589,7 +590,7 @@ def _make_lats_evaluator(
     provider: Any,
     eval_cache: Any,
     budget_tracker: Any,
-):
+) -> Callable[[Any], Awaitable[float]]:
     async def evaluate(node: Any) -> float:
         executor = ActionExecutor(llm_provider=provider)
         result = await _process_task(task)
