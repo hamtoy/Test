@@ -158,98 +158,116 @@ class UnifiedValidator:
         warnings: list[str] = []
         score = 1.0
 
-        # 1) 동적 CSV 규칙 검증 (우선순위: 높음)
-        csv_violations_sentence = self.validate_sentence_count(answer)
-        csv_violations_temporal = self.validate_temporal_expressions(answer)
-        violations.extend(csv_violations_sentence)
-        violations.extend(csv_violations_temporal)
+        violations.extend(self._collect_csv_violations(answer))
+        violations.extend(self._collect_pattern_violations(answer, question))
 
-        if csv_violations_sentence or csv_violations_temporal:
+        pipeline_violations, pipeline_warnings = self._collect_pipeline_violations(
+            answer,
+            query_type,
+        )
+        violations.extend(pipeline_violations)
+        warnings.extend(pipeline_warnings)
+
+        existing_types = {v.get("type") for v in violations if isinstance(v, dict)}
+        neo4j_violations, rule_score, neo4j_warnings = self._collect_neo4j_violations(
+            answer,
+            query_type,
+            existing_types,
+        )
+        if rule_score < 1.0:
+            score = min(score, rule_score)
+        violations.extend(neo4j_violations)
+        warnings.extend(neo4j_warnings)
+
+        return ValidationResult(violations=violations, warnings=warnings, score=score)
+
+    def _collect_csv_violations(self, answer: str) -> list[dict[str, Any]]:
+        sentence = self.validate_sentence_count(answer)
+        temporal = self.validate_temporal_expressions(answer)
+        if sentence or temporal:
             logger.debug(
                 "CSV 규칙 검증: 문장 수 %d개, 시의성 표현 %d개",
-                len(csv_violations_sentence),
-                len(csv_violations_temporal),
+                len(sentence),
+                len(temporal),
             )
+        return [*sentence, *temporal]
 
-        # 2) 패턴/포맷 위반 검사 (우선순위: 높음)
-        # Combine question and answer with space separator to avoid false positives
+    def _collect_pattern_violations(
+        self,
+        answer: str,
+        question: str,
+    ) -> list[dict[str, Any]]:
         combined_text = f"{question} {answer}" if question else answer
         pattern_violations = self.validate_forbidden_patterns(combined_text)
         format_violations = self.validate_formatting(answer)
-
-        # [FIX] 타입 검증: 문자열이면 dict로 변환
-        violations.extend(self._normalize_violations(pattern_violations))
-        violations.extend(self._normalize_violations(format_violations))
-
         if pattern_violations or format_violations:
             logger.debug(
                 "패턴 검증: 금지 패턴 %d개, 포맷팅 %d개",
                 len(pattern_violations),
                 len(format_violations),
             )
+        return [
+            *self._normalize_violations(pattern_violations),
+            *self._normalize_violations(format_violations),
+        ]
 
-        # 3) 파이프라인 검증
-        if self.pipeline:
-            try:
-                validation = self.pipeline.validate_output(query_type, answer)
-                pipeline_violations = validation.get("violations", [])
+    def _collect_pipeline_violations(
+        self,
+        answer: str,
+        query_type: str,
+    ) -> tuple[list[dict[str, Any]], list[str]]:
+        if not self.pipeline:
+            return [], []
+        try:
+            validation = self.pipeline.validate_output(query_type, answer)
+            pipeline_violations = validation.get("violations", [])
+            violations = self._normalize_violations(pipeline_violations)
+            warnings: list[str] = []
+            if not validation.get("valid", True):
+                warnings.append("파이프라인 검증 실패")
+            return violations, warnings
+        except Exception as exc:  # noqa: BLE001
+            return [], [f"파이프라인 검증 오류: {exc}"]
 
-                violations.extend(self._normalize_violations(pipeline_violations))
+    def _collect_neo4j_violations(
+        self,
+        answer: str,
+        query_type: str,
+        existing_types: set[str],
+    ) -> tuple[list[dict[str, Any]], float, list[str]]:
+        if not self.kg:
+            return [], 1.0, []
+        try:
+            from src.analysis.cross_validation import CrossValidationSystem
 
-                if not validation.get("valid", True):
-                    warnings.append("파이프라인 검증 실패")
-            except Exception as exc:  # noqa: BLE001
-                warnings.append(f"파이프라인 검증 오류: {exc}")
+            validator = CrossValidationSystem(self.kg)
+            rule_check = validator._check_rule_compliance(  # noqa: SLF001
+                answer,
+                query_type,
+            )
+        except Exception as exc:  # noqa: BLE001
+            return [], 1.0, [f"규칙 검증 오류: {exc}"]
 
-        # 4) Neo4j 규칙 검증 (우선순위: 낮음, CSV 규칙과 중복 시 제외)
-        if self.kg:
-            try:
-                from src.analysis.cross_validation import CrossValidationSystem
+        rule_score = float(rule_check.get("score", 1.0))
+        rule_violations = rule_check.get("violations", [])
+        added: list[dict[str, Any]] = []
 
-                validator = CrossValidationSystem(self.kg)
-                rule_check = validator._check_rule_compliance(  # noqa: SLF001
-                    answer,
-                    query_type,
-                )
-                rule_score = rule_check.get("score", 1.0)
-                if rule_score < 1.0:
-                    score = min(score, rule_score)
+        for v in rule_violations:
+            if isinstance(v, dict):
+                normalized_v = v
+            elif isinstance(v, str):
+                normalized_v = {"type": "rule", "description": v}
+            else:
+                normalized_v = {"type": "rule", "description": str(v)}
 
-                rule_violations = rule_check.get("violations", [])
+            v_type = normalized_v.get("type", "")
+            if v_type not in existing_types:
+                added.append(normalized_v)
 
-                # Track existing violation types from CSV rules to avoid duplicates
-                existing_types = {
-                    v.get("type") for v in violations if isinstance(v, dict)
-                }
+        if added:
+            logger.debug("Neo4j 규칙 검증: %d개 추가 (중복 제외)", len(added))
 
-                # Rule violations need special handling: add "rule" type for strings
-                neo4j_added = 0
-                for v in rule_violations:
-                    normalized_v: dict[str, Any]
-                    if isinstance(v, dict):
-                        normalized_v = v
-                    elif isinstance(v, str):
-                        normalized_v = {"type": "rule", "description": v}
-                    else:
-                        # Handle unexpected types gracefully
-                        normalized_v = {"type": "rule", "description": str(v)}
-
-                    # Only add Neo4j rule if not already detected by CSV rules
-                    v_type = normalized_v.get("type", "")
-                    if v_type not in existing_types:
-                        violations.append(normalized_v)
-                        neo4j_added += 1
-
-                if neo4j_added > 0:
-                    logger.debug(
-                        "Neo4j 규칙 검증: %d개 추가 (중복 제외)",
-                        neo4j_added,
-                    )
-
-            except Exception as exc:  # noqa: BLE001
-                warnings.append(f"규칙 검증 오류: {exc}")
-
-        return ValidationResult(violations=violations, warnings=warnings, score=score)
+        return added, rule_score, []
 
 
 def validate_constraints(

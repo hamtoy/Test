@@ -166,82 +166,86 @@ class CrossValidationSystem:
         ✅ A 서술어 2회, B/C/D 각 1회
         ❌ A 서술어 2회, B 서술어 2회, C 각 1회
         """
-        violations: list[str] = []
+        list_items = self._extract_bullet_items(answer)
+        if not list_items:
+            return []
 
-        # 목록 아이템 추출
-        list_items = re.findall(
+        predicates = self._extract_item_predicates(list_items)
+        predicate_counts = self._count_predicates(predicates)
+        list_count = len(list_items)
+
+        if list_count <= 3:
+            return self._validate_predicates_small(list_count, predicate_counts)
+        return self._validate_predicates_large(list_count, predicate_counts)
+
+    def _extract_bullet_items(self, answer: str) -> list[str]:
+        return re.findall(
             r"^(?:\d+\.|[-*•])\s+((?:(?!\n(?:\d+\.|[-*•])\s).)+)",
             answer,
             re.MULTILINE | re.DOTALL,
         )
 
-        if not list_items:
-            return violations
-
-        list_count = len(list_items)
-
-        # 각 아이템의 서술어(동사) 추출
-        predicates = []
+    def _extract_item_predicates(self, list_items: list[str]) -> list[str]:
+        predicates: list[str] = []
         for item in list_items:
-            # 첫 문장만 추출
             first_sentence = item.split(".")[0].strip()
-
-            # 한국어 서술어 패턴: ~한다, ~된다, ~하며, ~습니다, ~되다, ~하는
-            # 동사/형용사의 마지막 단어가 서술어
-            # Capture the token immediately preceding common Korean verb endings.
             predicate_match = re.search(
                 r"([가-힣A-Za-z0-9]+)(?=\s*(?:한다|된다|하며|합니다|습니다|되다|하는|되는))",
                 first_sentence,
             )
-
             if predicate_match:
-                # 동사 앞의 어근 추출
                 verb_base = predicate_match.group(1).strip()
-                # 마지막 단어만 추출
                 predicates.append(verb_base.split()[-1] if verb_base else "")
             else:
-                # 서술어 미발견 시 빈 문자열
                 predicates.append("")
+        return predicates
 
-        # 서술어 빈도 계산
+    def _count_predicates(self, predicates: list[str]) -> dict[str, int]:
         predicate_counts: dict[str, int] = {}
-        for p in predicates:
-            if p:  # 빈 문자열 제외
-                predicate_counts[p] = predicate_counts.get(p, 0) + 1
+        for pred in predicates:
+            if pred:
+                predicate_counts[pred] = predicate_counts.get(pred, 0) + 1
+        return predicate_counts
 
-        # CSV 규칙 검증
-        if list_count <= 3:
-            # 규칙 1: 3개 이하는 모두 달라야 함
-            for pred, count in predicate_counts.items():
-                if count > 1:
-                    violations.append(
-                        f"목록 {list_count}개: '{pred}' 서술어 {count}회 반복 "
-                        f"(3개 이하는 동일 서술어 불가)",
-                    )
-
-        else:  # list_count >= 4
-            # 규칙 2: 4개 이상에서는 50% 미만만 허용
-            # 예: 4개 -> 최대 1회, 5개 -> 최대 2회, 6개 -> 최대 2회
-            max_allowed = (list_count - 1) // 2  # 50% 미만
-            repeated_predicates = []
-
-            for pred, count in predicate_counts.items():
-                if count > 1:
-                    if count > max_allowed:
-                        violations.append(
-                            f"목록 {list_count}개: '{pred}' 서술어 {count}회 반복 "
-                            f"(최대 {max_allowed}회)",
-                        )
-                    repeated_predicates.append((pred, count))
-
-            # 규칙 3: 2개 이상의 서술어가 동시에 반복 불가
-            repeat_count = sum(1 for _, count in repeated_predicates if count >= 2)
-            if repeat_count >= 2:
-                repeat_preds = [p for p, c in repeated_predicates if c >= 2]
+    def _validate_predicates_small(
+        self,
+        list_count: int,
+        predicate_counts: dict[str, int],
+    ) -> list[str]:
+        violations: list[str] = []
+        for pred, count in predicate_counts.items():
+            if count > 1:
                 violations.append(
-                    f"목록 {list_count}개: 2개 이상의 서술어 동시 반복 불가 "
-                    f"({', '.join(repeat_preds)})",
+                    f"목록 {list_count}개: '{pred}' 서술어 {count}회 반복 "
+                    f"(3개 이하는 동일 서술어 불가)",
                 )
+        return violations
+
+    def _validate_predicates_large(
+        self,
+        list_count: int,
+        predicate_counts: dict[str, int],
+    ) -> list[str]:
+        violations: list[str] = []
+        max_allowed = (list_count - 1) // 2
+        repeated_predicates: list[tuple[str, int]] = []
+
+        for pred, count in predicate_counts.items():
+            if count <= 1:
+                continue
+            repeated_predicates.append((pred, count))
+            if count > max_allowed:
+                violations.append(
+                    f"목록 {list_count}개: '{pred}' 서술어 {count}회 반복 "
+                    f"(최대 {max_allowed}회)",
+                )
+
+        if sum(1 for _, count in repeated_predicates if count >= 2) >= 2:
+            repeat_preds = [pred for pred, count in repeated_predicates if count >= 2]
+            violations.append(
+                f"목록 {list_count}개: 2개 이상의 서술어 동시 반복 불가 "
+                f"({', '.join(repeat_preds)})",
+            )
 
         return violations
 

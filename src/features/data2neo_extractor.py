@@ -454,85 +454,122 @@ OCR Text to analyze:
             logger.warning("No graph provider available, skipping import")
             return {"nodes": 0, "relationships": 0}
 
-        counts = {"nodes": 0, "relationships": 0}
+        entities_by_type = self._group_entities_for_import(result.entities)
+        node_count = await self._import_entity_nodes(entities_by_type)
 
-        # Group entities by type
+        rel_count = 0
+        if result.relationships:
+            entity_labels = {e.id: e.type.value for e in result.entities}
+            rels_by_type = self._group_relationships_for_import(result.relationships)
+            rel_count = await self._import_relationships(
+                rels_by_type,
+                entity_labels,
+            )
+
+        logger.info("Imported %d nodes and %d relationships", node_count, rel_count)
+        return {"nodes": node_count, "relationships": rel_count}
+
+    def _group_entities_for_import(
+        self,
+        entities: list[Entity],
+    ) -> dict[EntityType, list[dict[str, Any]]]:
         entities_by_type: dict[EntityType, list[dict[str, Any]]] = {}
-        for entity in result.entities:
-            if entity.type not in entities_by_type:
-                entities_by_type[entity.type] = []
-            node_props = {"id": entity.id, **entity.properties}
-            entities_by_type[entity.type].append(node_props)
+        for entity in entities:
+            entities_by_type.setdefault(entity.type, []).append(
+                {"id": entity.id, **entity.properties},
+            )
+        return entities_by_type
 
-        # Create nodes by type with batching
+    async def _import_entity_nodes(
+        self,
+        entities_by_type: dict[EntityType, list[dict[str, Any]]],
+    ) -> int:
+        if not self.graph_provider:
+            return 0
+
+        total = 0
         for entity_type, nodes in entities_by_type.items():
             label = entity_type.value
             for i in range(0, len(nodes), self.batch_size):
                 batch = nodes[i : i + self.batch_size]
-                try:
-                    count = await self.graph_provider.create_nodes(
-                        nodes=batch,
-                        label=label,
-                        merge_on="id",
-                    )
-                    counts["nodes"] += count
-                except Exception as e:  # noqa: BLE001
-                    logger.error("Failed to create %s nodes: %s", label, e)
+                total += await self._create_nodes_safe(batch, label)
+        return total
 
-        # Create relationships with batching
-        if result.relationships:
-            # Build entity ID to label mapping
-            entity_labels = {e.id: e.type.value for e in result.entities}
+    async def _create_nodes_safe(
+        self,
+        batch: list[dict[str, Any]],
+        label: str,
+    ) -> int:
+        if not batch or not self.graph_provider:
+            return 0
+        try:
+            return await self.graph_provider.create_nodes(
+                nodes=batch,
+                label=label,
+                merge_on="id",
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Failed to create %s nodes: %s", label, exc)
+            return 0
 
-            # Group relationships by type
-            rels_by_type: dict[str, list[dict[str, Any]]] = {}
-            for rel in result.relationships:
-                if rel.type not in rels_by_type:
-                    rels_by_type[rel.type] = []
-                rel_props = {
+    def _group_relationships_for_import(
+        self,
+        relationships: list[Relationship],
+    ) -> dict[str, list[dict[str, Any]]]:
+        rels_by_type: dict[str, list[dict[str, Any]]] = {}
+        for rel in relationships:
+            rels_by_type.setdefault(rel.type, []).append(
+                {
                     "from_id": rel.from_id,
                     "to_id": rel.to_id,
                     **rel.properties,
-                }
-                rels_by_type[rel.type].append(rel_props)
+                },
+            )
+        return rels_by_type
 
-            for rel_type, rels in rels_by_type.items():
-                for i in range(0, len(rels), self.batch_size):
-                    batch = rels[i : i + self.batch_size]
-                    try:
-                        # Determine labels from entity mapping, fallback to defaults
-                        first_rel = batch[0] if batch else {}
-                        from_label = entity_labels.get(
-                            first_rel.get("from_id", ""),
-                            "Person",
-                        )
-                        to_label = entity_labels.get(
-                            first_rel.get("to_id", ""),
-                            "Organization",
-                        )
+    async def _import_relationships(
+        self,
+        rels_by_type: dict[str, list[dict[str, Any]]],
+        entity_labels: dict[str, str],
+    ) -> int:
+        if not self.graph_provider:
+            return 0
 
-                        count = await self.graph_provider.create_relationships(
-                            rels=batch,
-                            rel_type=rel_type,
-                            from_label=from_label,
-                            to_label=to_label,
-                            from_key="id",
-                            to_key="id",
-                        )
-                        counts["relationships"] += count
-                    except Exception as e:  # noqa: BLE001
-                        logger.error(
-                            "Failed to create %s relationships: %s",
-                            rel_type,
-                            e,
-                        )
+        total = 0
+        for rel_type, rels in rels_by_type.items():
+            for i in range(0, len(rels), self.batch_size):
+                batch = rels[i : i + self.batch_size]
+                total += await self._create_relationships_safe(
+                    batch,
+                    rel_type,
+                    entity_labels,
+                )
+        return total
 
-        logger.info(
-            "Imported %d nodes and %d relationships",
-            counts["nodes"],
-            counts["relationships"],
-        )
-        return counts
+    async def _create_relationships_safe(
+        self,
+        batch: list[dict[str, Any]],
+        rel_type: str,
+        entity_labels: dict[str, str],
+    ) -> int:
+        if not batch or not self.graph_provider:
+            return 0
+
+        first_rel = batch[0]
+        from_label = entity_labels.get(first_rel.get("from_id", ""), "Person")
+        to_label = entity_labels.get(first_rel.get("to_id", ""), "Organization")
+        try:
+            return await self.graph_provider.create_relationships(
+                rels=batch,
+                rel_type=rel_type,
+                from_label=from_label,
+                to_label=to_label,
+                from_key="id",
+                to_key="id",
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Failed to create %s relationships: %s", rel_type, exc)
+            return 0
 
     async def extract_and_import(
         self,

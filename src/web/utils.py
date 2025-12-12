@@ -313,6 +313,39 @@ def _remove_unauthorized_markdown(text: str) -> str:
     return text.replace(bold_placeholder, "**")
 
 
+def _is_existing_markdown_line(stripped: str) -> bool:
+    return stripped.startswith("**") or stripped.startswith("- **")
+
+
+def _convert_dash_bullet(line: str) -> str:
+    stripped = line.strip()
+    bullet_content = stripped[2:].strip()
+    if ": " in bullet_content and not bullet_content.startswith("**"):
+        item_name, item_desc = bullet_content.split(": ", 1)
+        return f"- **{item_name}**: {item_desc}"
+    return line
+
+
+def _is_section_header_line(stripped: str, next_stripped: str) -> bool:
+    if not next_stripped:
+        return False
+    return (
+        ": " in next_stripped
+        and not next_stripped.startswith("-")
+        and len(stripped) <= 50
+        and ": " not in stripped
+    )
+
+
+def _convert_colon_item_line(stripped: str) -> str | None:
+    if ": " not in stripped:
+        return None
+    potential_name, item_desc = stripped.split(": ", 1)
+    if len(potential_name) <= 30 and "." not in potential_name:
+        return f"- **{potential_name}**: {item_desc}"
+    return None
+
+
 def _add_markdown_structure(text: str, qtype: str) -> str:
     """평문에 마크다운 구조 자동 추가.
 
@@ -328,59 +361,27 @@ def _add_markdown_structure(text: str, qtype: str) -> str:
 
     lines = text.split("\n")
     result: list[str] = []
-    i = 0
-    while i < len(lines):
-        line = lines[i]
+    for idx, line in enumerate(lines):
         stripped = line.strip()
-        if not stripped:
+        if not stripped or _is_existing_markdown_line(stripped):
             result.append(line)
-            i += 1
-            continue
-
-        if stripped.startswith("**") or stripped.startswith("- **"):
-            result.append(line)
-            i += 1
             continue
 
         if stripped.startswith("- "):
-            bullet_content = stripped[2:].strip()
-            if ": " in bullet_content and not bullet_content.startswith("**"):
-                colon_idx = bullet_content.index(": ")
-                item_name = bullet_content[:colon_idx]
-                item_desc = bullet_content[colon_idx + 2 :]
-                result.append(f"- **{item_name}**: {item_desc}")
-            else:
-                result.append(line)
-            i += 1
+            result.append(_convert_dash_bullet(line))
             continue
 
-        is_section_header = False
-        if i + 1 < len(lines):
-            next_line = lines[i + 1].strip()
-            if (
-                ": " in next_line
-                and not next_line.startswith("-")
-                and len(stripped) <= 50
-                and ": " not in stripped
-            ):
-                is_section_header = True
-
-        if is_section_header:
+        next_stripped = lines[idx + 1].strip() if idx + 1 < len(lines) else ""
+        if _is_section_header_line(stripped, next_stripped):
             result.append(f"**{stripped}**")
-            i += 1
             continue
 
-        if ": " in stripped:
-            colon_idx = stripped.index(": ")
-            potential_name = stripped[:colon_idx]
-            if len(potential_name) <= 30 and "." not in potential_name:
-                item_desc = stripped[colon_idx + 2 :]
-                result.append(f"- **{potential_name}**: {item_desc}")
-                i += 1
-                continue
+        colon_item = _convert_colon_item_line(stripped)
+        if colon_item is not None:
+            result.append(colon_item)
+            continue
 
         result.append(line)
-        i += 1
 
     return "\n".join(result)
 

@@ -67,6 +67,76 @@ def _resolve_stream_batch_types(body: GenerateQARequest) -> list[str]:
     return list(batch_types)
 
 
+async def _stream_first_batch_type(
+    agent: Any,
+    ocr_text: str,
+    qtype: str,
+    timeout: float,
+) -> tuple[str, list[str], int, list[str]]:
+    first_answer = ""
+    completed: list[str] = []
+    events: list[str] = []
+    success = 0
+    try:
+        first_result = await asyncio.wait_for(
+            generate_single_qa_with_retry(agent, ocr_text, qtype),
+            timeout=timeout,
+        )
+        events.append(_sse("progress", type=qtype, data=first_result))
+        query = first_result.get("query")
+        if query:
+            completed.append(str(query))
+        first_answer = first_result.get("answer", "")
+        success = 1
+    except Exception as exc:  # noqa: BLE001
+        logger.error("%s 실패: %s", qtype, exc)
+        events.append(_sse("error", type=qtype, error=str(exc)))
+    return first_answer, completed, success, events
+
+
+def _create_stream_tasks(
+    remaining_types: list[str],
+    agent: Any,
+    ocr_text: str,
+    completed_queries: list[str],
+    first_answer: str,
+    timeout: float,
+) -> dict[asyncio.Task[dict[str, Any]], str]:
+    task_map: dict[asyncio.Task[dict[str, Any]], str] = {}
+    for qtype in remaining_types:
+        coro = generate_single_qa_with_retry(
+            agent,
+            ocr_text,
+            qtype,
+            previous_queries=completed_queries if completed_queries else None,
+            explanation_answer=first_answer if qtype.startswith("target") else None,
+        )
+        task = asyncio.create_task(asyncio.wait_for(coro, timeout=timeout))
+        task_map[task] = qtype
+    return task_map
+
+
+async def _iter_stream_task_results(
+    task_map: dict[asyncio.Task[dict[str, Any]], str],
+) -> AsyncIterator[tuple[str, dict[str, Any] | None, Exception | None]]:
+    pending: set[asyncio.Task[dict[str, Any]]] = set(task_map.keys())
+    try:
+        while pending:
+            done, pending = await asyncio.wait(
+                pending,
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            for task in done:
+                qtype = task_map[task]
+                try:
+                    yield qtype, task.result(), None
+                except Exception as exc:  # noqa: BLE001
+                    yield qtype, None, exc
+    finally:
+        for task in pending:
+            task.cancel()
+
+
 async def _stream_batch_events(
     body: GenerateQARequest,
     agent: Any,
@@ -83,62 +153,46 @@ async def _stream_batch_events(
     completed_queries: list[str] = []
     success_count = 0
 
+    timeout = _get_config().qa_single_timeout
     first_type = batch_types[0]
-    first_answer = ""
-    try:
-        first_result = await asyncio.wait_for(
-            generate_single_qa_with_retry(agent, ocr_text, first_type),
-            timeout=_get_config().qa_single_timeout,
-        )
-        yield _sse("progress", type=first_type, data=first_result)
-        query = first_result.get("query")
-        if query:
-            completed_queries.append(str(query))
-        first_answer = first_result.get("answer", "")
-        success_count += 1
-    except Exception as exc:  # noqa: BLE001
-        logger.error("%s 실패: %s", first_type, exc)
-        yield _sse("error", type=first_type, error=str(exc))
+    (
+        first_answer,
+        first_queries,
+        first_success,
+        first_events,
+    ) = await _stream_first_batch_type(
+        agent,
+        ocr_text,
+        first_type,
+        timeout,
+    )
+    for event in first_events:
+        yield event
+    completed_queries.extend(first_queries)
+    success_count += first_success
 
     remaining_types = batch_types[1:]
     if remaining_types:
-        task_map: dict[asyncio.Task[dict[str, Any]], str] = {}
-        pending: set[asyncio.Task[dict[str, Any]]] = set()
-        for qtype in remaining_types:
-            coro = generate_single_qa_with_retry(
-                agent,
-                ocr_text,
-                qtype,
-                previous_queries=completed_queries if completed_queries else None,
-                explanation_answer=first_answer if qtype.startswith("target") else None,
-            )
-            task = asyncio.create_task(
-                asyncio.wait_for(coro, timeout=_get_config().qa_single_timeout),
-            )
-            task_map[task] = qtype
-            pending.add(task)
-
-        try:
-            while pending:
-                done, pending = await asyncio.wait(
-                    pending,
-                    return_when=asyncio.FIRST_COMPLETED,
-                )
-                for task in done:
-                    qtype = task_map[task]
-                    try:
-                        result = task.result()
-                        yield _sse("progress", type=qtype, data=result)
-                        query = result.get("query")
-                        if query:
-                            completed_queries.append(str(query))
-                        success_count += 1
-                    except Exception as exc:  # noqa: BLE001
-                        logger.error("%s 실패: %s", qtype, exc)
-                        yield _sse("error", type=qtype, error=str(exc))
-        finally:
-            for task in pending:
-                task.cancel()
+        task_map = _create_stream_tasks(
+            remaining_types,
+            agent,
+            ocr_text,
+            completed_queries,
+            first_answer,
+            timeout,
+        )
+        async for qtype, result, exc in _iter_stream_task_results(task_map):
+            if exc is not None:
+                logger.error("%s 실패: %s", qtype, exc)
+                yield _sse("error", type=qtype, error=str(exc))
+                continue
+            if result is None:
+                continue
+            yield _sse("progress", type=qtype, data=result)
+            query = result.get("query")
+            if query:
+                completed_queries.append(str(query))
+            success_count += 1
 
     yield _sse(
         "done",

@@ -12,6 +12,44 @@ logger = logging.getLogger(__name__)
 _FEWSHOT_LOADING_FAILED = "Few-shot loading failed: %s"
 
 
+def _load_fewshot_text(
+    kg: Any,
+    example_key: str,
+    truncate_at: int,
+    header: str,
+    guidance: str,
+    log_label: str,
+) -> str:
+    """Neo4j 기반 few-shot 예시를 안전하게 로드."""
+    if kg is None:
+        return ""
+    try:
+        example_selector = DynamicExampleSelector(kg)
+        fewshot_examples = example_selector.select_best_examples(
+            example_key,
+            {},
+            k=1,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.debug(_FEWSHOT_LOADING_FAILED, exc)
+        return ""
+
+    if not fewshot_examples:
+        return ""
+
+    ex_text = str(fewshot_examples[0].get("example", ""))[:truncate_at]
+    if not ex_text:
+        return ""
+
+    logger.info("Few-Shot %s example loaded: %d chars", log_label, len(ex_text))
+    return f"""
+[{header}]
+{ex_text}
+---
+{guidance}
+"""
+
+
 def build_length_constraint(
     qtype: str, ocr_len: int, ocr_text: str = ""
 ) -> tuple[str, int | None]:
@@ -87,36 +125,16 @@ def build_extra_instructions(
     Returns:
         추가 지시사항 문자열
     """
-    extra_instructions = "질의 유형에 맞게 작성하세요."
-
     if normalized_qtype == "reasoning":
-        # Few-Shot: Load examples from Neo4j for reasoning
-        fewshot_text = ""
-        try:
-            if kg is not None:
-                example_selector = DynamicExampleSelector(kg)
-                fewshot_examples = example_selector.select_best_examples(
-                    "reasoning",
-                    {},
-                    k=1,
-                )
-                if fewshot_examples:
-                    ex = fewshot_examples[0]
-                    ex_text = ex.get("example", "")[:2000]  # Truncate if too long
-                    fewshot_text = f"""
-[좋은 추론 답변 예시 - 이 구조와 형식을 참고하세요]
-{ex_text}
----
-위 예시처럼 **일관된 형식**으로 작성하세요.
-"""
-                    logger.info(
-                        "Few-Shot reasoning example loaded: %d chars",
-                        len(ex_text),
-                    )
-        except Exception as e:
-            logger.debug(_FEWSHOT_LOADING_FAILED, e)
-
-        extra_instructions = f"""추론형 답변입니다.
+        fewshot_text = _load_fewshot_text(
+            kg,
+            example_key="reasoning",
+            truncate_at=2000,
+            header="좋은 추론 답변 예시 - 이 구조와 형식을 참고하세요",
+            guidance="위 예시처럼 **일관된 형식**으로 작성하세요.",
+            log_label="reasoning",
+        )
+        return f"""추론형 답변입니다.
 
 [필수 3단 구조 - 소제목이 있으면 반드시 서론/본론/결론 포함]
 
@@ -159,31 +177,16 @@ def build_extra_instructions(
 - ❌ 결론 없이 본론만 나열하면 실패 (불릿으로 끝나면 안 됨!)
 - ❌ 장황한 서론 금지 (바로 핵심으로)"""
 
-    elif normalized_qtype == "explanation":
-        # Few-Shot: Load examples from Neo4j for better length adherence
-        fewshot_text = ""
-        try:
-            if kg is not None:
-                example_selector = DynamicExampleSelector(kg)
-                fewshot_examples = example_selector.select_best_examples(
-                    "explanation",
-                    {},
-                    k=1,
-                )
-                if fewshot_examples:
-                    ex = fewshot_examples[0]
-                    ex_text = ex.get("example", "")[:1500]  # Truncate if too long
-                    fewshot_text = f"""
-[좋은 답변 예시 - 이 길이와 구조를 참고하세요]
-{ex_text}
----
-위 예시처럼 **충분한 길이와 구조**로 작성하세요.
-"""
-                    logger.info("Few-Shot example loaded: %d chars", len(ex_text))
-        except Exception as e:
-            logger.debug(_FEWSHOT_LOADING_FAILED, e)
-
-        extra_instructions = f"""설명형 답변입니다.
+    if normalized_qtype == "explanation":
+        fewshot_text = _load_fewshot_text(
+            kg,
+            example_key="explanation",
+            truncate_at=1500,
+            header="좋은 답변 예시 - 이 길이와 구조를 참고하세요",
+            guidance="위 예시처럼 **충분한 길이와 구조**로 작성하세요.",
+            log_label="explanation",
+        )
+        return f"""설명형 답변입니다.
 
 [필수 구조 - 마크다운 형식 엄격 준수]
 
@@ -215,35 +218,16 @@ def build_extra_instructions(
 ❌ 결론 문단 없으면 실패 → 마지막에 반드시 종합 문장 포함
 ❌ '서론', '본론', '결론' 라벨 사용 금지"""
 
-    elif normalized_qtype == "target":
-        if qtype == "target_short":
-            # Few-Shot: Load examples from Neo4j for target_short
-            fewshot_text = ""
-            try:
-                if kg is not None:
-                    example_selector = DynamicExampleSelector(kg)
-                    fewshot_examples = example_selector.select_best_examples(
-                        "target_short",
-                        {},
-                        k=1,
-                    )
-                    if fewshot_examples:
-                        ex = fewshot_examples[0]
-                        ex_text = ex.get("example", "")[:500]  # Short examples
-                        fewshot_text = f"""
-[좋은 단답 예시 - 이 길이와 형식을 참고하세요]
-{ex_text}
----
-위 예시처럼 **1-2문장, 마크다운 없이** 작성하세요.
-"""
-                        logger.info(
-                            "Few-Shot target_short example loaded: %d chars",
-                            len(ex_text),
-                        )
-            except Exception as e:
-                logger.debug(_FEWSHOT_LOADING_FAILED, e)
-
-            extra_instructions = f"""
+    if normalized_qtype == "target" and qtype == "target_short":
+        fewshot_text = _load_fewshot_text(
+            kg,
+            example_key="target_short",
+            truncate_at=500,
+            header="좋은 단답 예시 - 이 길이와 형식을 참고하세요",
+            guidance="위 예시처럼 **1-2문장, 마크다운 없이** 작성하세요.",
+            log_label="target_short",
+        )
+        return f"""
 ⚠️ 중요: 반드시 1-2문장만 작성. 3문장 이상 작성하면 실패입니다.
 - 명확하고 간결한 사실 전달
 - 불필요한 수식어 배제
@@ -253,15 +237,16 @@ def build_extra_instructions(
 → 같은 세션에서 생성된 설명문 내용과 중복되는 답변은 위반입니다.
 
 {fewshot_text}"""
-        elif qtype == "target_long":
-            extra_instructions = """
+
+    if normalized_qtype == "target" and qtype == "target_long":
+        return """
 - OCR 원문의 특정 내용에 집중하여 서술
 - 핵심 맥락과 함께 간결하게 답변
 - 불필요한 배경 설명 최소화
 ❌ 볼드체(**) 사용 금지 - 줄글형 답변에는 **없이** 작성
 """
 
-    return extra_instructions
+    return "질의 유형에 맞게 작성하세요."
 
 
 def build_formatting_text(
