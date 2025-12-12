@@ -6,6 +6,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
+
     class DynamicExampleSelector(Protocol):
         def __init__(self, kg: Any) -> None: ...
 
