@@ -39,6 +39,178 @@ class RuleUpsertManager:
         self._graph = graph
         self._graph_provider = graph_provider
 
+    @staticmethod
+    def _generate_batch_id() -> str:
+        return f"batch_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+
+    @staticmethod
+    def _init_result(batch_id: str) -> dict[str, Any]:
+        return {
+            "success": True,
+            "batch_id": batch_id,
+            "created": {
+                "rules": 0,
+                "constraints": 0,
+                "best_practices": 0,
+                "examples": 0,
+            },
+            "updated": {
+                "rules": 0,
+                "constraints": 0,
+                "best_practices": 0,
+                "examples": 0,
+            },
+            "errors": [],
+        }
+
+    @staticmethod
+    def _record_upsert_result(
+        result: dict[str, Any],
+        node_type: str,
+        created: bool,
+    ) -> None:
+        key = "created" if created else "updated"
+        result[key][node_type] += 1
+
+    def _extract_rule_fields(
+        self,
+        pattern: dict[str, Any],
+        result: dict[str, Any],
+    ) -> tuple[str | None, str | None, str]:
+        rule_id = pattern.get("id")
+        rule_text = pattern.get("rule")
+        type_hint = pattern.get("type_hint") or ""
+        if not rule_id or not rule_text:
+            result["errors"].append(f"패턴에 id/rule 필드가 없음: {pattern}")
+            return None, None, type_hint
+        return str(rule_id), str(rule_text), str(type_hint)
+
+    def _upsert_optional_constraint(
+        self,
+        pattern: dict[str, Any],
+        rule_id: str,
+        batch_id: str,
+        timestamp: str,
+        result: dict[str, Any],
+    ) -> None:
+        constraint_text = pattern.get("constraint")
+        if not constraint_text:
+            return
+        constraint_id = f"{rule_id}_constraint"
+        const_result = self._upsert_constraint_node(
+            constraint_id=constraint_id,
+            description=str(constraint_text),
+            rule_id=rule_id,
+            batch_id=batch_id,
+            timestamp=timestamp,
+        )
+        self._record_upsert_result(result, "constraints", bool(const_result["created"]))
+
+    def _upsert_optional_best_practice(
+        self,
+        pattern: dict[str, Any],
+        rule_id: str,
+        batch_id: str,
+        timestamp: str,
+        result: dict[str, Any],
+    ) -> None:
+        best_practice_text = pattern.get("best_practice")
+        if not best_practice_text:
+            return
+        bp_id = f"{rule_id}_bestpractice"
+        bp_result = self._upsert_best_practice_node(
+            bp_id=bp_id,
+            text=str(best_practice_text),
+            rule_id=rule_id,
+            batch_id=batch_id,
+            timestamp=timestamp,
+        )
+        self._record_upsert_result(
+            result,
+            "best_practices",
+            bool(bp_result["created"]),
+        )
+
+    def _upsert_optional_example(
+        self,
+        pattern: dict[str, Any],
+        rule_id: str,
+        batch_id: str,
+        timestamp: str,
+        result: dict[str, Any],
+    ) -> None:
+        example_before = pattern.get("example_before")
+        example_after = pattern.get("example_after")
+        if not (example_before or example_after):
+            return
+        example_id = f"{rule_id}_example"
+        ex_result = self._upsert_example_node(
+            example_id=example_id,
+            before=str(example_before or ""),
+            after=str(example_after or ""),
+            rule_id=rule_id,
+            batch_id=batch_id,
+            timestamp=timestamp,
+        )
+        self._record_upsert_result(result, "examples", bool(ex_result["created"]))
+
+    def _upsert_pattern(
+        self,
+        pattern: dict[str, Any],
+        batch_id: str,
+        timestamp: str,
+        result: dict[str, Any],
+    ) -> None:
+        rule_id, rule_text, type_hint = self._extract_rule_fields(pattern, result)
+        if not rule_id or not rule_text:
+            return
+
+        rule_result = self._upsert_rule_node(
+            rule_id=rule_id,
+            description=rule_text,
+            type_hint=type_hint,
+            batch_id=batch_id,
+            timestamp=timestamp,
+        )
+        self._record_upsert_result(result, "rules", bool(rule_result["created"]))
+
+        self._upsert_optional_constraint(
+            pattern,
+            rule_id,
+            batch_id,
+            timestamp,
+            result,
+        )
+        self._upsert_optional_best_practice(
+            pattern,
+            rule_id,
+            batch_id,
+            timestamp,
+            result,
+        )
+        self._upsert_optional_example(
+            pattern,
+            rule_id,
+            batch_id,
+            timestamp,
+            result,
+        )
+
+    def _upsert_pattern_safe(
+        self,
+        pattern: dict[str, Any],
+        batch_id: str,
+        timestamp: str,
+        result: dict[str, Any],
+    ) -> None:
+        try:
+            self._upsert_pattern(pattern, batch_id, timestamp, result)
+        except Exception as exc:  # noqa: BLE001
+            result["errors"].append(
+                f"패턴 처리 중 오류 ({pattern.get('id', 'unknown')}): {exc}",
+            )
+            result["success"] = False
+
     def upsert_auto_generated_rules(
         self,
         patterns: list[dict[str, Any]],
@@ -62,110 +234,17 @@ class RuleUpsertManager:
                 - success (bool): 성공 여부
                 - batch_id (str): 사용된 배치 ID
                 - created (Dict): 생성된 노드 수
-                - updated (Dict): 갱신된 노드 수
-                - errors (List[str]): 오류 목록
+                    - updated (Dict): 갱신된 노드 수
+                    - errors (List[str]): 오류 목록
         """
         if batch_id is None:
-            batch_id = f"batch_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+            batch_id = self._generate_batch_id()
 
-        result: dict[str, Any] = {
-            "success": True,
-            "batch_id": batch_id,
-            "created": {
-                "rules": 0,
-                "constraints": 0,
-                "best_practices": 0,
-                "examples": 0,
-            },
-            "updated": {
-                "rules": 0,
-                "constraints": 0,
-                "best_practices": 0,
-                "examples": 0,
-            },
-            "errors": [],
-        }
-
+        result = self._init_result(batch_id)
         timestamp = datetime.now(timezone.utc).isoformat()
 
         for pattern in patterns:
-            try:
-                rule_id = pattern.get("id")
-                rule_text = pattern.get("rule")
-                type_hint = pattern.get("type_hint")
-
-                if not rule_id or not rule_text:
-                    result["errors"].append(f"패턴에 id/rule 필드가 없음: {pattern}")
-                    continue
-
-                # 1. Rule 노드 업서트
-                rule_result = self._upsert_rule_node(
-                    rule_id=rule_id,
-                    description=rule_text,
-                    type_hint=type_hint or "",
-                    batch_id=batch_id,
-                    timestamp=timestamp,
-                )
-                if rule_result["created"]:
-                    result["created"]["rules"] += 1
-                else:
-                    result["updated"]["rules"] += 1
-
-                # 2. Constraint 노드 업서트 (있는 경우)
-                constraint_text = pattern.get("constraint")
-                if constraint_text:
-                    constraint_id = f"{rule_id}_constraint"
-                    const_result = self._upsert_constraint_node(
-                        constraint_id=constraint_id,
-                        description=constraint_text,
-                        rule_id=rule_id,
-                        batch_id=batch_id,
-                        timestamp=timestamp,
-                    )
-                    if const_result["created"]:
-                        result["created"]["constraints"] += 1
-                    else:
-                        result["updated"]["constraints"] += 1
-
-                # 3. BestPractice 노드 업서트 (있는 경우)
-                best_practice_text = pattern.get("best_practice")
-                if best_practice_text:
-                    bp_id = f"{rule_id}_bestpractice"
-                    bp_result = self._upsert_best_practice_node(
-                        bp_id=bp_id,
-                        text=best_practice_text,
-                        rule_id=rule_id,
-                        batch_id=batch_id,
-                        timestamp=timestamp,
-                    )
-                    if bp_result["created"]:
-                        result["created"]["best_practices"] += 1
-                    else:
-                        result["updated"]["best_practices"] += 1
-
-                # 4. Example 노드 업서트 (before/after가 있는 경우)
-                example_before = pattern.get("example_before")
-                example_after = pattern.get("example_after")
-                if example_before or example_after:
-                    example_id = f"{rule_id}_example"
-                    ex_result = self._upsert_example_node(
-                        example_id=example_id,
-                        before=example_before or "",
-                        after=example_after or "",
-                        rule_id=rule_id,
-                        batch_id=batch_id,
-                        timestamp=timestamp,
-                    )
-                    if ex_result["created"]:
-                        result["created"]["examples"] += 1
-                    else:
-                        result["updated"]["examples"] += 1
-
-            except Exception as exc:  # noqa: BLE001
-                result["errors"].append(
-                    f"패턴 처리 중 오류 ({pattern.get('id', 'unknown')}): {exc}",
-                )
-                result["success"] = False
+            self._upsert_pattern_safe(pattern, batch_id, timestamp, result)
 
         return result
 

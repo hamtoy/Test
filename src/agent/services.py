@@ -28,29 +28,31 @@ class QueryGeneratorService:
         """Initialize the query generator service."""
         self.agent = agent
 
-    async def generate_query(
+    def _build_user_prompt(
         self,
         ocr_text: str,
         user_intent: str | None,
-        cached_content: caching.CachedContent | None,
         template_name: str | None,
-        query_type: str,
-        kg: QAKnowledgeGraph | None,
-        constraints: list[dict[str, Any]] | None,
-    ) -> list[str]:
-        """Generate candidate queries from OCR text and intent."""
+    ) -> str:
         agent = self.agent
-        agent._api_call_counter.add(1, {"operation": "generate_query"})  # noqa: SLF001
         user_template_name = template_name or "user/query_gen.j2"
         user_template = agent.jinja_env.get_template(user_template_name)
-        user_prompt = user_template.render(ocr_text=ocr_text, user_intent=user_intent)
+        return user_template.render(ocr_text=ocr_text, user_intent=user_intent)
 
-        schema_json = json.dumps(
+    def _schema_json(self) -> str:
+        return json.dumps(
             QueryResult.model_json_schema(),
             indent=2,
             ensure_ascii=False,
         )
 
+    def _load_constraints(
+        self,
+        query_type: str,
+        constraints: list[dict[str, Any]] | None,
+        kg: QAKnowledgeGraph | None,
+    ) -> tuple[list[dict[str, Any]], QAKnowledgeGraph | None]:
+        agent = self.agent
         constraint_list = constraints if constraints is not None else []
         kg_obj = kg
         try:
@@ -61,34 +63,49 @@ class QueryGeneratorService:
             if not constraint_list and kg_obj is not None:
                 all_constraints = kg_obj.get_constraints_for_query_type(query_type)
                 constraint_list = [
-                    c for c in all_constraints if c.get("category") in ["query", "both"]
+                    c for c in all_constraints if c.get("category") in {"query", "both"}
                 ]
-        except Exception as e:  # noqa: BLE001
-            agent.logger.debug("Neo4j 제약사항 조회 실패: %s", e)
+        except Exception as exc:  # noqa: BLE001
+            agent.logger.debug("Neo4j 제약사항 조회 실패: %s", exc)
 
         if constraint_list:
-            # priority가 None일 경우 0으로 처리 (TypeError 방지)
             constraint_list.sort(
                 key=lambda x: (x.get("priority") or 0)
                 if isinstance(x.get("priority"), (int, float))
                 else 0,
                 reverse=True,
             )
+        return constraint_list, kg_obj
 
-        rules: list[str] = []
+    def _load_rules(
+        self,
+        kg_obj: QAKnowledgeGraph | None,
+        ocr_text: str,
+    ) -> list[str]:
+        agent = self.agent
+        if kg_obj is None:
+            return []
         try:
-            if kg_obj is not None:
-                rules = kg_obj.find_relevant_rules(ocr_text[:500], k=10)
-        except Exception as e:  # noqa: BLE001
-            agent.logger.debug("Neo4j 규칙 조회 실패: %s", e)
+            return kg_obj.find_relevant_rules(ocr_text[:500], k=10)
+        except Exception as exc:  # noqa: BLE001
+            agent.logger.debug("Neo4j 규칙 조회 실패: %s", exc)
+            return []
 
-        formatting_rules = ""
+    def _load_formatting_rules(self, kg_obj: QAKnowledgeGraph | None) -> str:
+        agent = self.agent
+        if not kg_obj:
+            return ""
         try:
-            if kg_obj:
-                formatting_rules = kg_obj.get_formatting_rules("query_gen")
-        except Exception as e:  # noqa: BLE001
-            agent.logger.debug(_FORMATTING_RULES_FETCH_FAILED, e)
+            return kg_obj.get_formatting_rules("query_gen")
+        except Exception as exc:  # noqa: BLE001
+            agent.logger.debug(_FORMATTING_RULES_FETCH_FAILED, exc)
+            return ""
 
+    def _load_guide_context(
+        self,
+        query_type: str,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        agent = self.agent
         guide_rules: list[dict[str, str]] = []
         common_mistakes: list[dict[str, str]] = []
         try:
@@ -109,63 +126,81 @@ class QueryGeneratorService:
                 )
                 guide_rules = template_context.get("guide_rules", []) or []
                 common_mistakes = template_context.get("common_mistakes", []) or []
-        except Exception as e:  # noqa: BLE001
-            agent.logger.debug("CSV 가이드 조회 실패 (선택사항): %s", e)
+        except Exception as exc:  # noqa: BLE001
+            agent.logger.debug("CSV 가이드 조회 실패 (선택사항): %s", exc)
+        return guide_rules, common_mistakes
 
+    def _render_system_prompt(
+        self,
+        schema_json: str,
+        rules: list[str],
+        constraints: list[dict[str, Any]],
+        formatting_rules: str,
+        guide_rules: list[dict[str, str]],
+        common_mistakes: list[dict[str, str]],
+    ) -> str:
+        agent = self.agent
         system_template_name = "system/query_gen.j2"
         try:
             system_template = agent.jinja_env.get_template(system_template_name)
-            system_prompt = system_template.render(
+            return system_template.render(
                 response_schema=schema_json,
                 rules=rules,
-                constraints=constraint_list,
+                constraints=constraints,
                 formatting_rules=formatting_rules,
                 guide_rules=guide_rules,
                 common_mistakes=common_mistakes,
             )
-        except Exception as e:  # noqa: BLE001
-            agent.logger.debug("템플릿 렌더링 실패: %s", e)
-            system_prompt = agent.jinja_env.get_template(system_template_name).render(
+        except Exception as exc:  # noqa: BLE001
+            agent.logger.debug("템플릿 렌더링 실패: %s", exc)
+            return agent.jinja_env.get_template(system_template_name).render(
                 response_schema=schema_json,
                 formatting_rules=formatting_rules,
-                constraints=constraint_list,
+                constraints=constraints,
             )
 
-        model = agent._create_generative_model(  # noqa: SLF001
-            system_prompt,
-            response_schema=QueryResult,
-            cached_content=cached_content,
-        )
-
-        agent.context_manager.track_cache_usage(cached_content is not None)
-
+    async def _call_model(
+        self,
+        model: Any,
+        user_prompt: str,
+        ocr_text: str,
+        query_type: str,
+    ) -> str:
+        agent = self.agent
         try:
-            response_text = await agent.retry_handler.call(model, user_prompt)
-        except Exception as e:
-            if agent._is_rate_limit_error(e):  # noqa: SLF001
+            return await agent.retry_handler.call(model, user_prompt)
+        except Exception as exc:  # noqa: BLE001
+            if agent._is_rate_limit_error(exc):  # noqa: SLF001
                 raise APIRateLimitError(
-                    "Rate limit exceeded during query generation: %s" % e,
-                ) from e
+                    "Rate limit exceeded during query generation: %s" % exc,
+                ) from exc
             raise
 
-        cleaned_response = clean_markdown_code_block(response_text)
-        if not cleaned_response or not cleaned_response.strip():
-            agent.logger.error(
-                "Query Generation: Empty response received | "
-                "query_type=%s | ocr_length=%d | raw_response_length=%d | "
-                "possible_cause=safety_filter_or_rate_limit",
-                query_type,
-                len(ocr_text),
-                len(response_text) if response_text else 0,
-            )
-            # Log raw response for debugging (truncated)
-            if response_text:
-                agent.logger.debug(
-                    "Raw response (truncated): %s",
-                    response_text[:500],
-                )
-            return []
+    def _log_empty_response(
+        self,
+        response_text: str,
+        query_type: str,
+        ocr_text: str,
+    ) -> None:
+        agent = self.agent
+        agent.logger.error(
+            "Query Generation: Empty response received | "
+            "query_type=%s | ocr_length=%d | raw_response_length=%d | "
+            "possible_cause=safety_filter_or_rate_limit",
+            query_type,
+            len(ocr_text),
+            len(response_text) if response_text else 0,
+        )
+        if response_text:
+            agent.logger.debug("Raw response (truncated): %s", response_text[:500])
 
+    def _parse_queries(
+        self,
+        cleaned_response: str,
+        response_text: str,
+        query_type: str,
+    ) -> list[str]:
+        agent = self.agent
         try:
             result = QueryResult.model_validate_json(cleaned_response)
             if not result.queries:
@@ -176,29 +211,78 @@ class QueryGeneratorService:
                     cleaned_response[:200],
                 )
             return result.queries if result.queries else []
-        except ValidationError as e:
+        except ValidationError as exc:
             agent.logger.error(
                 "Query Validation Failed | query_type=%s | error=%s | response=%s...",
                 query_type,
-                e,
+                exc,
                 cleaned_response[:200],
             )
             return []
-        except json.JSONDecodeError as e:
+        except json.JSONDecodeError as exc:
             agent.logger.error(
                 "Query JSON Parse Failed | query_type=%s | error=%s | response=%s...",
                 query_type,
-                e,
+                exc,
                 cleaned_response[:200],
             )
             return []
-        except (TypeError, KeyError, AttributeError) as e:
+        except (TypeError, KeyError, AttributeError) as exc:
             agent.logger.error(
                 "Unexpected error in query parsing | query_type=%s | error=%s",
                 query_type,
-                e,
+                exc,
             )
             return []
+
+    async def generate_query(
+        self,
+        ocr_text: str,
+        user_intent: str | None,
+        cached_content: caching.CachedContent | None,
+        template_name: str | None,
+        query_type: str,
+        kg: QAKnowledgeGraph | None,
+        constraints: list[dict[str, Any]] | None,
+    ) -> list[str]:
+        """Generate candidate queries from OCR text and intent."""
+        agent = self.agent
+        agent._api_call_counter.add(1, {"operation": "generate_query"})  # noqa: SLF001
+        user_prompt = self._build_user_prompt(ocr_text, user_intent, template_name)
+        schema_json = self._schema_json()
+        constraint_list, kg_obj = self._load_constraints(
+            query_type,
+            constraints,
+            kg,
+        )
+        rules = self._load_rules(kg_obj, ocr_text)
+        formatting_rules = self._load_formatting_rules(kg_obj)
+        guide_rules, common_mistakes = self._load_guide_context(query_type)
+        system_prompt = self._render_system_prompt(
+            schema_json,
+            rules,
+            constraint_list,
+            formatting_rules,
+            guide_rules,
+            common_mistakes,
+        )
+
+        model = agent._create_generative_model(  # noqa: SLF001
+            system_prompt,
+            response_schema=QueryResult,
+            cached_content=cached_content,
+        )
+
+        agent.context_manager.track_cache_usage(cached_content is not None)
+
+        response_text = await self._call_model(model, user_prompt, ocr_text, query_type)
+
+        cleaned_response = clean_markdown_code_block(response_text)
+        if not cleaned_response or not cleaned_response.strip():
+            self._log_empty_response(response_text, query_type, ocr_text)
+            return []
+
+        return self._parse_queries(cleaned_response, response_text, query_type)
 
 
 class ResponseEvaluatorService:
@@ -207,6 +291,97 @@ class ResponseEvaluatorService:
     def __init__(self, agent: GeminiAgent) -> None:
         """Initialize the response evaluator service."""
         self.agent = agent
+
+    def _load_eval_context(
+        self,
+        ocr_text: str,
+        query_type: str,
+        kg: QAKnowledgeGraph | None,
+    ) -> tuple[list[str], list[str], str]:
+        agent = self.agent
+        rules: list[str] = []
+        constraints: list[str] = []
+        kg_obj = kg
+        try:
+            if kg_obj is None:
+                from src.qa.rag_system import QAKnowledgeGraph
+
+                kg_obj = QAKnowledgeGraph()
+            constraint_list = kg_obj.get_constraints_for_query_type(query_type)
+            constraints = [
+                desc for c in constraint_list if (desc := c.get("description"))
+            ]
+            rules = kg_obj.find_relevant_rules(ocr_text[:500], k=10)
+        except Exception as exc:  # noqa: BLE001
+            agent.logger.debug("Neo4j 규칙 조회 실패: %s", exc)
+
+        formatting_rules = ""
+        if kg_obj:
+            try:
+                formatting_rules = kg_obj.get_formatting_rules("eval")
+            except Exception as exc:  # noqa: BLE001
+                agent.logger.debug(_FORMATTING_RULES_FETCH_FAILED, exc)
+
+        return rules, constraints, formatting_rules
+
+    def _render_system_prompt(
+        self,
+        rules: list[str],
+        constraints: list[str],
+        formatting_rules: str,
+    ) -> str:
+        agent = self.agent
+        try:
+            system_template = agent.jinja_env.get_template("system/qa/compare_eval.j2")
+            return system_template.render(
+                rules=rules,
+                constraints=constraints,
+                formatting_rules=formatting_rules,
+            )
+        except Exception as exc:  # noqa: BLE001
+            agent.logger.debug("템플릿 렌더링 실패: %s", exc)
+            return agent.jinja_env.get_template("system/eval.j2").render()
+
+    async def _call_model(self, model: Any, payload: str) -> str:
+        agent = self.agent
+        try:
+            return await agent.retry_handler.call(model, payload)
+        except Exception as exc:  # noqa: BLE001
+            if agent._is_rate_limit_error(exc):  # noqa: SLF001
+                raise APIRateLimitError(
+                    "Rate limit exceeded during evaluation: %s" % exc,
+                ) from exc
+            raise
+
+    def _parse_evaluation(
+        self,
+        response_text: str,
+    ) -> EvaluationResultSchema | None:
+        agent = self.agent
+        cleaned_response = clean_markdown_code_block(response_text)
+        if not cleaned_response or not cleaned_response.strip():
+            agent.logger.error("Evaluation: Empty response received")
+            return None
+        try:
+            return EvaluationResultSchema.model_validate_json(cleaned_response)
+        except ValidationError as exc:
+            agent.logger.error(
+                "Evaluation Validation Failed: %s. Response: %s...",
+                exc,
+                response_text[:200],
+            )
+            raise ValidationFailedError(
+                "Evaluation validation failed: %s" % exc,
+            ) from exc
+        except json.JSONDecodeError as exc:
+            agent.logger.error(
+                "Evaluation JSON Parse Failed: %s. Response: %s...",
+                exc,
+                response_text[:200],
+            )
+            raise ValidationFailedError(
+                "Evaluation JSON parsing failed: %s" % exc,
+            ) from exc
 
     async def evaluate_responses(
         self,
@@ -228,41 +403,16 @@ class ResponseEvaluatorService:
             "target_query": query,
             "candidates": candidates,
         }
-
-        rules: list[str] = []
-        constraints: list[str] = []
-        kg_obj = kg
-        try:
-            if kg_obj is None:
-                from src.qa.rag_system import QAKnowledgeGraph
-
-                kg_obj = QAKnowledgeGraph()
-            constraint_list = kg_obj.get_constraints_for_query_type(query_type)
-            for c in constraint_list:
-                desc = c.get("description")
-                if desc:
-                    constraints.append(desc)
-            rules = kg_obj.find_relevant_rules(ocr_text[:500], k=10)
-        except Exception as e:  # noqa: BLE001
-            agent.logger.debug("Neo4j 규칙 조회 실패: %s", e)
-
-        formatting_rules = ""
-        try:
-            if kg_obj:
-                formatting_rules = kg_obj.get_formatting_rules("eval")
-        except Exception as e:  # noqa: BLE001
-            agent.logger.debug(_FORMATTING_RULES_FETCH_FAILED, e)
-
-        try:
-            system_template = agent.jinja_env.get_template("system/qa/compare_eval.j2")
-            system_prompt = system_template.render(
-                rules=rules,
-                constraints=constraints,
-                formatting_rules=formatting_rules,
-            )
-        except Exception as e:  # noqa: BLE001
-            agent.logger.debug("템플릿 렌더링 실패: %s", e)
-            system_prompt = agent.jinja_env.get_template("system/eval.j2").render()
+        rules, constraints, formatting_rules = self._load_eval_context(
+            ocr_text,
+            query_type,
+            kg,
+        )
+        system_prompt = self._render_system_prompt(
+            rules,
+            constraints,
+            formatting_rules,
+        )
 
         model = agent._create_generative_model(  # noqa: SLF001
             system_prompt,
@@ -271,40 +421,9 @@ class ResponseEvaluatorService:
         )
 
         agent.context_manager.track_cache_usage(cached_content is not None)
-
-        try:
-            response_text = await agent.retry_handler.call(
-                model,
-                json.dumps(input_data, ensure_ascii=False),
-            )
-        except Exception as e:
-            if agent._is_rate_limit_error(e):  # noqa: SLF001
-                raise APIRateLimitError(
-                    "Rate limit exceeded during evaluation: %s" % e,
-                ) from e
-            raise
-
-        try:
-            cleaned_response = clean_markdown_code_block(response_text)
-            if not cleaned_response or not cleaned_response.strip():
-                agent.logger.error("Evaluation: Empty response received")
-                return None
-            result = EvaluationResultSchema.model_validate_json(cleaned_response)
-            return result
-        except ValidationError as e:
-            agent.logger.error(
-                "Evaluation Validation Failed: %s. Response: %s...",
-                e,
-                response_text[:200],
-            )
-            raise ValidationFailedError("Evaluation validation failed: %s" % e) from e
-        except json.JSONDecodeError as e:
-            agent.logger.error(
-                "Evaluation JSON Parse Failed: %s. Response: %s...",
-                e,
-                response_text[:200],
-            )
-            raise ValidationFailedError("Evaluation JSON parsing failed: %s" % e) from e
+        payload = json.dumps(input_data, ensure_ascii=False)
+        response_text = await self._call_model(model, payload)
+        return self._parse_evaluation(response_text)
 
 
 class RewriterService:
@@ -314,46 +433,47 @@ class RewriterService:
         """Initialize the rewrite service."""
         self.agent = agent
 
-    async def rewrite_best_answer(
+    def _load_kg_context(
         self,
-        user_query: str,
-        selected_answer: str,
-        edit_request: str | None,
-        formatting_rules: str | None,
-        cached_content: caching.CachedContent | None,
         query_type: str,
-    ) -> str:
-        """Rewrite a selected answer using constraints and formatting rules."""
+        user_query: str,
+    ) -> tuple[list[dict[str, Any]], list[str], QAKnowledgeGraph | None]:
         agent = self.agent
         constraint_list: list[dict[str, Any]] = []
         rules: list[str] = []
         kg_obj: QAKnowledgeGraph | None = None
-
         try:
             from src.qa.rag_system import QAKnowledgeGraph
 
             kg_obj = QAKnowledgeGraph()
             constraint_list = kg_obj.get_constraints_for_query_type(query_type)
             rules = kg_obj.find_relevant_rules(user_query[:500], k=10)
-        except Exception as e:  # noqa: BLE001
-            agent.logger.debug("Neo4j 조회 실패 (선택사항): %s", e)
+        except Exception as exc:  # noqa: BLE001
+            agent.logger.debug("Neo4j 조회 실패 (선택사항): %s", exc)
+        return constraint_list, rules, kg_obj
 
-        if constraint_list:
-            # [Fix] Sanitize constraints for template safety (handle NoneType comparison)
-            sanitized = []
-            for c in constraint_list:
-                if isinstance(c, dict):
-                    # Create a safe copy for template rendering
-                    c_safe = c.copy()
-                    # Ensure priority is a number for sorting and template comparison
-                    if not isinstance(c_safe.get("priority"), (int, float)):
-                        c_safe["priority"] = 0
-                    sanitized.append(c_safe)
+    def _sanitize_constraints(
+        self,
+        constraints: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        if not constraints:
+            return []
+        sanitized: list[dict[str, Any]] = []
+        for c in constraints:
+            if not isinstance(c, dict):
+                continue
+            c_safe = c.copy()
+            if not isinstance(c_safe.get("priority"), (int, float)):
+                c_safe["priority"] = 0
+            sanitized.append(c_safe)
+        sanitized.sort(key=lambda x: x.get("priority", 0), reverse=True)
+        return sanitized
 
-            constraint_list = sanitized
-            # Sort by priority (safe now as we ensured it's int/float)
-            constraint_list.sort(key=lambda x: x["priority"], reverse=True)
-
+    def _load_guide_context(
+        self,
+        query_type: str,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        agent = self.agent
         guide_rules: list[dict[str, str]] = []
         common_mistakes: list[dict[str, str]] = []
         try:
@@ -374,15 +494,88 @@ class RewriterService:
                 )
                 guide_rules = template_context.get("guide_rules", []) or []
                 common_mistakes = template_context.get("common_mistakes", []) or []
-        except Exception as e:  # noqa: BLE001
-            agent.logger.debug("CSV 가이드 조회 실패 (선택사항): %s", e)
+        except Exception as exc:  # noqa: BLE001
+            agent.logger.debug("CSV 가이드 조회 실패 (선택사항): %s", exc)
+        return guide_rules, common_mistakes
 
-        if formatting_rules is None and kg_obj:
-            try:
-                formatting_rules = kg_obj.get_formatting_rules("rewrite")
-            except Exception as e:  # noqa: BLE001
-                agent.logger.debug(_FORMATTING_RULES_FETCH_FAILED, e)
+    def _resolve_formatting_rules(
+        self,
+        formatting_rules: str | None,
+        kg_obj: QAKnowledgeGraph | None,
+    ) -> str | None:
+        agent = self.agent
+        if formatting_rules is not None or not kg_obj:
+            return formatting_rules
+        try:
+            return kg_obj.get_formatting_rules("rewrite")
+        except Exception as exc:  # noqa: BLE001
+            agent.logger.debug(_FORMATTING_RULES_FETCH_FAILED, exc)
+            return formatting_rules
 
+    def _render_system_prompt(
+        self,
+        rules: list[str],
+        constraints: list[dict[str, Any]],
+        guide_rules: list[dict[str, str]],
+        common_mistakes: list[dict[str, str]],
+        formatting_rules: str | None,
+        length_constraint: str | None,
+    ) -> str:
+        agent = self.agent
+        try:
+            system_template = agent.jinja_env.get_template("system/qa/rewrite.j2")
+            return system_template.render(
+                rules=rules,
+                constraints=constraints,
+                guide_rules=guide_rules,
+                common_mistakes=common_mistakes,
+                has_table_chart=False,
+                formatting_rules=formatting_rules,
+                length_constraint=length_constraint,
+            )
+        except Exception as exc:  # noqa: BLE001
+            agent.logger.warning("동적 템플릿 실패, 기본 사용: %s", exc)
+            return agent.jinja_env.get_template("system/rewrite.j2").render(
+                formatting_rules=formatting_rules,
+                constraints=constraints,
+                length_constraint=length_constraint,
+            )
+
+    async def _call_model(self, model: Any, payload: str) -> str:
+        agent = self.agent
+        try:
+            return await agent.retry_handler.call(model, payload)
+        except Exception as exc:  # noqa: BLE001
+            if agent._is_rate_limit_error(exc):  # noqa: SLF001
+                raise APIRateLimitError(
+                    "Rate limit exceeded during rewrite: %s" % exc,
+                ) from exc
+            raise
+
+    def _unwrap_response(self, response_text: str) -> str:
+        unwrapped = safe_json_parse(response_text, "rewritten_answer")
+        if isinstance(unwrapped, str):
+            return unwrapped
+        return response_text if response_text else ""
+
+    async def rewrite_best_answer(
+        self,
+        user_query: str,
+        selected_answer: str,
+        edit_request: str | None,
+        formatting_rules: str | None,
+        cached_content: caching.CachedContent | None,
+        query_type: str,
+    ) -> str:
+        """Rewrite a selected answer using constraints and formatting rules."""
+        agent = self.agent
+        constraint_list, rules, kg_obj = self._load_kg_context(
+            query_type,
+            user_query,
+        )
+        constraint_list = self._sanitize_constraints(constraint_list)
+        guide_rules, common_mistakes = self._load_guide_context(query_type)
+        formatting_rules = self._resolve_formatting_rules(formatting_rules, kg_obj)
         length_constraint = getattr(agent.config, "target_length", None)
 
         payload = json.dumps(
@@ -393,25 +586,14 @@ class RewriterService:
             },
             ensure_ascii=False,
         )
-
-        try:
-            system_template = agent.jinja_env.get_template("system/qa/rewrite.j2")
-            system_prompt = system_template.render(
-                rules=rules,
-                constraints=constraint_list,
-                guide_rules=guide_rules,
-                common_mistakes=common_mistakes,
-                has_table_chart=False,
-                formatting_rules=formatting_rules,
-                length_constraint=length_constraint,
-            )
-        except Exception as e:  # noqa: BLE001
-            agent.logger.warning("동적 템플릿 실패, 기본 사용: %s", e)
-            system_prompt = agent.jinja_env.get_template("system/rewrite.j2").render(
-                formatting_rules=formatting_rules,
-                constraints=constraint_list,
-                length_constraint=length_constraint,
-            )
+        system_prompt = self._render_system_prompt(
+            rules,
+            constraint_list,
+            guide_rules,
+            common_mistakes,
+            formatting_rules,
+            length_constraint,
+        )
 
         model = agent._create_generative_model(  # noqa: SLF001
             system_prompt,
@@ -419,19 +601,5 @@ class RewriterService:
         )
 
         agent.context_manager.track_cache_usage(cached_content is not None)
-
-        try:
-            response_text = await agent.retry_handler.call(model, payload)
-        except Exception as e:
-            if agent._is_rate_limit_error(e):  # noqa: SLF001
-                raise APIRateLimitError(
-                    "Rate limit exceeded during rewrite: %s" % e,
-                ) from e
-            raise
-
-        unwrapped = safe_json_parse(response_text, "rewritten_answer")
-
-        if isinstance(unwrapped, str):
-            return unwrapped
-
-        return response_text if response_text else ""
+        response_text = await self._call_model(model, payload)
+        return self._unwrap_response(response_text)
