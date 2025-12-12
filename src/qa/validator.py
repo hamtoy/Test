@@ -168,7 +168,11 @@ class UnifiedValidator:
         violations.extend(pipeline_violations)
         warnings.extend(pipeline_warnings)
 
-        existing_types = {v.get("type") for v in violations if isinstance(v, dict)}
+        existing_types: set[str] = set()
+        for violation in violations:
+            v_type = violation.get("type")
+            if isinstance(v_type, str):
+                existing_types.add(v_type)
         neo4j_violations, rule_score, neo4j_warnings = self._collect_neo4j_violations(
             answer,
             query_type,

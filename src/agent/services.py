@@ -460,8 +460,6 @@ class RewriterService:
             return []
         sanitized: list[dict[str, Any]] = []
         for c in constraints:
-            if not isinstance(c, dict):
-                continue
             c_safe = c.copy()
             if not isinstance(c_safe.get("priority"), (int, float)):
                 c_safe["priority"] = 0
