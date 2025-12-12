@@ -5,6 +5,8 @@ from __future__ import annotations
 import importlib
 from typing import Any
 
+_UTILS_MODULE = "src.infra.utils"
+
 _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "setup_logging": ("src.infra.logging", "setup_logging"),
     "log_metrics": ("src.infra.logging", "log_metrics"),
@@ -12,10 +14,10 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "BudgetTracker": ("src.infra.budget", "BudgetTracker"),
     "SafeDriver": ("src.infra.neo4j", "SafeDriver"),
     "get_neo4j_driver_from_env": ("src.infra.neo4j", "get_neo4j_driver_from_env"),
-    "write_cache_stats": ("src.infra.utils", "write_cache_stats"),
-    "run_async_safely": ("src.infra.utils", "run_async_safely"),
-    "clean_markdown_code_block": ("src.infra.utils", "clean_markdown_code_block"),
-    "safe_json_parse": ("src.infra.utils", "safe_json_parse"),
+    "write_cache_stats": (_UTILS_MODULE, "write_cache_stats"),
+    "run_async_safely": (_UTILS_MODULE, "run_async_safely"),
+    "clean_markdown_code_block": (_UTILS_MODULE, "clean_markdown_code_block"),
+    "safe_json_parse": (_UTILS_MODULE, "safe_json_parse"),
     "RealTimeConstraintEnforcer": (
         "src.infra.constraints",
         "RealTimeConstraintEnforcer",
