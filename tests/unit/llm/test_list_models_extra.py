@@ -53,7 +53,8 @@ def test_list_models_logs_supported_models(
         types.SimpleNamespace(configure_genai=lambda _k: True),
     )
 
-    caplog.set_level("INFO")
+    caplog.set_level("INFO", logger="src.llm.list_models")
     sys.modules.pop("src.llm.list_models", None)
+    sys.modules.pop("src.list_models", None)
     importlib.import_module("src.llm.list_models")
     assert any("m1" in rec.message for rec in caplog.records)

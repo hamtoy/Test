@@ -30,6 +30,7 @@ async def test_api_generate_batch_empty_types(
 ) -> None:
     body = GenerateQARequest(mode="batch", ocr_text="OCR", batch_types=[])
     monkeypatch.setattr(qg, "_get_agent", lambda: object())
+    monkeypatch.setattr(qg, "QA_BATCH_TYPES", [])
     monkeypatch.setattr(
         qg,
         "_get_config",
