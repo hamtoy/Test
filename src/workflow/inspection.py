@@ -44,11 +44,7 @@ def _format_rules_context(
 ) -> str:
     if not constraints and not rules:
         return ""
-    lines = [
-        f"- {desc}"
-        for c in constraints
-        if (desc := c.get("description", ""))
-    ]
+    lines = [f"- {desc}" for c in constraints if (desc := c.get("description", ""))]
     lines.extend([f"- {r}" for r in rules if r])
     return "[준수해야 할 규칙]\n" + "\n".join(lines) + "\n\n"
 
