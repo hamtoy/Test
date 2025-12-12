@@ -105,7 +105,7 @@ async def run_workflow_interactive(
         return
 
     display_queries(queries)
-    if not _confirm_queries(queries):
+    if not _confirm_queries():
         return
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -237,7 +237,7 @@ async def _generate_queries_with_progress(
             return []
 
 
-def _confirm_queries(queries: list[str]) -> bool:
+def _confirm_queries() -> bool:
     if Confirm.ask("위 질의들로 진행하시겠습니까?", default=True):
         return True
     console.print("[yellow]작업이 취소되었습니다.[/yellow]")

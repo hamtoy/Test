@@ -15,8 +15,8 @@ _CAND_IDS = ("A", "B", "C")
 def _parse_eval_response(
     response: str,
 ) -> tuple[dict[str, int], dict[str, str]]:
-    scores: dict[str, int] = {cid: 3 for cid in _CAND_IDS}
-    feedbacks: dict[str, str] = {cid: "" for cid in _CAND_IDS}
+    scores: dict[str, int] = dict.fromkeys(_CAND_IDS, 3)
+    feedbacks: dict[str, str] = dict.fromkeys(_CAND_IDS, "")
     for raw_line in response.splitlines():
         line = raw_line.strip()
         cid = _match_candidate_id(line)
