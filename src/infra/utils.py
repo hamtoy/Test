@@ -156,6 +156,76 @@ def _find_in_nested(obj: Any, target_key: str) -> Any | None:
     return None
 
 
+def _prepare_json_text(
+    text: str,
+    raise_on_error: bool,
+    logger: Any,
+) -> str | None:
+    if not text or not text.strip():
+        message = "safe_json_parse: Empty input"
+        if raise_on_error:
+            raise ValueError(message)
+        logger.warning(message)
+        return None
+
+    cleaned = clean_markdown_code_block(text)
+    if not cleaned.strip().startswith("{"):
+        message = "safe_json_parse: Not JSON format"
+        if raise_on_error:
+            raise ValueError(message)
+        logger.debug(message)
+        return None
+
+    return cleaned
+
+
+def _parse_json_dict(
+    cleaned: str,
+    raise_on_error: bool,
+    logger: Any,
+) -> dict[str, Any] | None:
+    try:
+        data = json.loads(cleaned)
+    except json.JSONDecodeError as exc:
+        message = f"safe_json_parse: JSON decode error - {exc}"
+        if raise_on_error:
+            raise
+        logger.warning(message)
+        return None
+    except (TypeError, ValueError) as exc:
+        message = f"safe_json_parse: Invalid JSON structure - {exc}"
+        if raise_on_error:
+            raise
+        logger.error(message)
+        return None
+    except Exception as exc:  # noqa: BLE001
+        message = f"safe_json_parse: Unexpected error - {exc}"
+        if raise_on_error:
+            raise
+        logger.error(message)
+        return None
+
+    if not isinstance(data, dict):
+        message = "safe_json_parse: Parsed data is not a dict"
+        if raise_on_error:
+            raise ValueError(message)
+        logger.warning(message)
+        return None
+
+    return data
+
+
+def _extract_target_key(
+    data: dict[str, Any],
+    target_key: str,
+    logger: Any,
+) -> Any | None:
+    found = _find_in_nested(data, target_key)
+    if found is None:
+        logger.debug("safe_json_parse: Key '%s' not found", target_key)
+    return found
+
+
 def safe_json_parse(
     text: str,
     target_key: str | None = None,
@@ -177,63 +247,18 @@ def safe_json_parse(
 
     logger = logging.getLogger("GeminiWorkflow")
 
-    # Guard: 빈 입력
-    if not text or not text.strip():
-        message = "safe_json_parse: Empty input"
-        if raise_on_error:
-            raise ValueError(message)
-        logger.warning(message)
+    cleaned = _prepare_json_text(text, raise_on_error, logger)
+    if cleaned is None:
         return None
 
-    # Clean markdown
-    cleaned = clean_markdown_code_block(text)
-
-    # Guard: JSON 형식이 아님
-    if not cleaned.strip().startswith("{"):
-        message = "safe_json_parse: Not JSON format"
-        if raise_on_error:
-            raise ValueError(message)
-        logger.debug(message)
+    data = _parse_json_dict(cleaned, raise_on_error, logger)
+    if data is None:
         return None
 
-    try:
-        data = json.loads(cleaned)
+    if target_key:
+        return _extract_target_key(data, target_key, logger)
 
-        # Guard: dict가 아님
-        if not isinstance(data, dict):
-            message = "safe_json_parse: Parsed data is not a dict"
-            if raise_on_error:
-                raise ValueError(message)
-            logger.warning(message)
-            return None
-
-        # 특정 키 추출
-        if target_key:
-            found = _find_in_nested(data, target_key)
-            if found is None:
-                logger.debug(f"safe_json_parse: Key '{target_key}' not found")
-            return found
-
-        return data
-
-    except json.JSONDecodeError as e:
-        message = f"safe_json_parse: JSON decode error - {e}"
-        if raise_on_error:
-            raise
-        logger.warning(message)
-        return None
-    except (TypeError, ValueError) as e:
-        message = f"safe_json_parse: Invalid JSON structure - {e}"
-        if raise_on_error:
-            raise
-        logger.error(message)
-        return None
-    except Exception as e:
-        message = f"safe_json_parse: Unexpected error - {e}"
-        if raise_on_error:
-            raise
-        logger.error(message)
-        return None
+    return data
 
 
 def write_cache_stats(path: Path, max_entries: int, entry: dict[str, Any]) -> None:
