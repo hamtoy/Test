@@ -10,6 +10,9 @@ from langchain_core.prompts import PromptTemplate
 from src.qa.rag_system import CustomGeminiEmbeddings
 
 
+_NONE_PLACEHOLDER = "(none)"
+
+
 class AdvancedContextAugmentation:
     """유사 사례/규칙/예시를 찾아 프롬프트에 주입하는 보조 유틸.
 
@@ -207,18 +210,18 @@ Generate output that follows ALL rules and learns from successful cases.
             similar_cases="\n".join(
                 [f"- {c[:100]}..." for c in aug_ctx["similar_cases"]],
             )
-            or "(none)",
+            or _NONE_PLACEHOLDER,
             rules="\n".join(
                 [
                     f"[P{r.get('priority', '?')}] {r.get('rule', '')}"
                     for r in aug_ctx["relevant_rules"]
                 ],
             )
-            or "(none)",
+            or _NONE_PLACEHOLDER,
             examples="\n".join(
                 [ex for r in aug_ctx["relevant_rules"] for ex in r.get("examples", [])],
             )
-            or "(none)",
+            or _NONE_PLACEHOLDER,
             user_query=user_query,
             base_context=str(base_context),
         )

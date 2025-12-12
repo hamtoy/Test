@@ -34,6 +34,9 @@ from src.workflow.inspection import inspect_answer, inspect_query
 # Constants
 MENU_CHOICES = ["1", "2", "3", "4", "5"]
 DEFAULT_OCR_PATH = "data/inputs/input_ocr.txt"
+RETURN_TO_MENU_PROMPT = "엔터를 눌러 메뉴로 돌아갑니다"
+PROGRESS_DESCRIPTION_TEMPLATE = "[progress.description]{task.description}"
+STATUS_DONE = "[green]✓ 완료[/green]"
 
 
 def show_error_with_guide(error_type: str, message: str, solution: str) -> None:
@@ -86,7 +89,7 @@ async def run_workflow_interactive(
             "GEMINI_API_KEY가 설정되지 않았거나 형식이 올바르지 않습니다",
             ".env 파일에서 GEMINI_API_KEY='AIza...'로 시작하는 키를 설정하세요",
         )
-        Prompt.ask("엔터를 눌러 메뉴로 돌아갑니다")
+        Prompt.ask(RETURN_TO_MENU_PROMPT)
         return
 
     # 2. 파일 존재 확인
@@ -133,7 +136,7 @@ async def run_workflow_interactive(
             str(e),
             "IDE에서 data/inputs/ 폴더에 파일을 생성하세요",
         )
-        Prompt.ask("엔터를 눌러 메뉴로 돌아갑니다")
+        Prompt.ask(RETURN_TO_MENU_PROMPT)
         return
     except Exception as e:
         import json
@@ -150,7 +153,7 @@ async def run_workflow_interactive(
                 str(e),
                 "파일 경로와 형식을 확인하세요",
             )
-        Prompt.ask("엔터를 눌러 메뉴로 돌아갑니다")
+        Prompt.ask(RETURN_TO_MENU_PROMPT)
         return
 
     # 4. 사용자 의도 입력
@@ -159,7 +162,7 @@ async def run_workflow_interactive(
     # 5. 질의 생성 (진행 표시 개선)
     with Progress(
         SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
+        TextColumn(PROGRESS_DESCRIPTION_TEMPLATE),
         console=console,
     ) as progress:
         task = progress.add_task("전략적 질의 생성 중...", total=None)
@@ -173,7 +176,7 @@ async def run_workflow_interactive(
                 str(e),
                 "API 키와 네트워크 연결을 확인하고 다시 시도하세요",
             )
-            Prompt.ask("엔터를 눌러 메뉴로 돌아갑니다")
+            Prompt.ask(RETURN_TO_MENU_PROMPT)
             return
 
     if not queries:
@@ -194,7 +197,7 @@ async def run_workflow_interactive(
 
     with Progress(
         SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
+        TextColumn(PROGRESS_DESCRIPTION_TEMPLATE),
         console=console,
     ) as progress:
         for i, query in enumerate(queries):
@@ -237,7 +240,7 @@ async def run_workflow_interactive(
     # 결과 요약 표시
     _display_workflow_summary(queries, results, agent, config, timestamp)
 
-    Prompt.ask("\n엔터를 눌러 메뉴로 돌아갑니다")
+    Prompt.ask(f"\n{RETURN_TO_MENU_PROMPT}")
 
 
 async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> None:
@@ -277,7 +280,7 @@ async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> Non
         # [3] 실행 & 출력
         with Progress(
             SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
+            TextColumn(PROGRESS_DESCRIPTION_TEMPLATE),
             console=console,
         ) as progress:
             task = progress.add_task("[cyan]최적화 중...", total=None)
@@ -296,7 +299,7 @@ async def _handle_query_inspection(agent: GeminiAgent, config: AppConfig) -> Non
                 cache,
             )
 
-            progress.update(task, completed=100, description="[green]✓ 완료[/green]")
+            progress.update(task, completed=100, description=STATUS_DONE)
 
         # 결과 즉시 출력 (패널)
         result_content = (
@@ -374,7 +377,7 @@ async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> No
 
         with Progress(
             SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
+            TextColumn(PROGRESS_DESCRIPTION_TEMPLATE),
             console=console,
         ) as progress:
             task = progress.add_task("[cyan]검수 및 수정 중...", total=None)
@@ -397,7 +400,7 @@ async def _handle_answer_inspection(agent: GeminiAgent, config: AppConfig) -> No
             output_dir.mkdir(parents=True, exist_ok=True)
             output_path.write_text(fixed_answer, encoding="utf-8")
 
-            progress.update(task, completed=100, description="[green]✓ 완료[/green]")
+            progress.update(task, completed=100, description=STATUS_DONE)
 
         console.print("\n✅ [bold green]완료[/bold green]")
         console.print(f"💾 저장됨: {output_path}")
@@ -483,7 +486,7 @@ async def _handle_edit_menu(agent: GeminiAgent, config: AppConfig) -> None:
 
         with Progress(
             SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
+            TextColumn(PROGRESS_DESCRIPTION_TEMPLATE),
             console=console,
         ) as progress:
             task = progress.add_task("[cyan]요청에 따라 내용 수정 중...", total=None)
@@ -501,7 +504,7 @@ async def _handle_edit_menu(agent: GeminiAgent, config: AppConfig) -> None:
             output_dir.mkdir(parents=True, exist_ok=True)
             output_path.write_text(edited_text, encoding="utf-8")
 
-            progress.update(task, completed=100, description="[green]✓ 완료[/green]")
+            progress.update(task, completed=100, description=STATUS_DONE)
 
         console.print("\n✅ [bold green]수정 완료[/bold green]")
         console.print(f"💾 저장됨: {output_path}")
@@ -521,7 +524,7 @@ def show_cache_statistics(config: AppConfig) -> None:
         print_cache_report(summary)
     except Exception as e:
         console.print(f"[red]통계 분석 실패: {e}[/red]")
-    Prompt.ask("엔터를 눌러 메뉴로 돌아갑니다")
+    Prompt.ask(RETURN_TO_MENU_PROMPT)
 
 
 def _display_workflow_summary(
@@ -545,7 +548,7 @@ def _display_workflow_summary(
     for i, (query, result) in enumerate(zip(queries, results), 1):
         if result and result.success:
             output_file = f"result_turn_{i}_{timestamp}.md"
-            status = "[green]✓ 완료[/green]"
+            status = STATUS_DONE
             success_count += 1
         else:
             output_file = "-"
@@ -614,4 +617,4 @@ async def interactive_main(
         except Exception as e:
             console.print(f"[red]예기치 않은 오류 발생: {e}[/red]")
             logger.exception("Interactive menu error")
-            Prompt.ask("엔터를 눌러 메뉴로 돌아갑니다")
+            Prompt.ask(RETURN_TO_MENU_PROMPT)

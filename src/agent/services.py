@@ -18,6 +18,9 @@ if TYPE_CHECKING:
     from src.qa.rag_system import QAKnowledgeGraph
 
 
+_FORMATTING_RULES_FETCH_FAILED = "Formatting rules 조회 실패: %s"
+
+
 class QueryGeneratorService:
     """Encapsulates query generation steps."""
 
@@ -84,7 +87,7 @@ class QueryGeneratorService:
             if kg_obj:
                 formatting_rules = kg_obj.get_formatting_rules("query_gen")
         except Exception as e:  # noqa: BLE001
-            agent.logger.debug("Formatting rules 조회 실패: %s", e)
+            agent.logger.debug(_FORMATTING_RULES_FETCH_FAILED, e)
 
         guide_rules: list[dict[str, str]] = []
         common_mistakes: list[dict[str, str]] = []
@@ -248,7 +251,7 @@ class ResponseEvaluatorService:
             if kg_obj:
                 formatting_rules = kg_obj.get_formatting_rules("eval")
         except Exception as e:  # noqa: BLE001
-            agent.logger.debug("Formatting rules 조회 실패: %s", e)
+            agent.logger.debug(_FORMATTING_RULES_FETCH_FAILED, e)
 
         try:
             system_template = agent.jinja_env.get_template("system/qa/compare_eval.j2")
@@ -378,7 +381,7 @@ class RewriterService:
             try:
                 formatting_rules = kg_obj.get_formatting_rules("rewrite")
             except Exception as e:  # noqa: BLE001
-                agent.logger.debug("Formatting rules 조회 실패: %s", e)
+                agent.logger.debug(_FORMATTING_RULES_FETCH_FAILED, e)
 
         length_constraint = getattr(agent.config, "target_length", None)
 

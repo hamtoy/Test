@@ -68,6 +68,7 @@ if TYPE_CHECKING:
 # Lazy loading mapping for public API
 # Maps attribute name to (module_path, attribute_name, is_deprecated)
 _EXC_MODULE = "src.config.exceptions"
+_CORE_MODELS_MODULE = "src.core.models"
 _LAZY_IMPORTS: dict[str, tuple[str, str | None, bool]] = {
     # Core public API (not deprecated)
     "GeminiAgent": ("src.agent", "GeminiAgent", False),
@@ -75,9 +76,9 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None, bool]] = {
     "BudgetExceededError": (_EXC_MODULE, "BudgetExceededError", False),
     "APIRateLimitError": (_EXC_MODULE, "APIRateLimitError", False),
     "ValidationFailedError": (_EXC_MODULE, "ValidationFailedError", False),
-    "WorkflowResult": ("src.core.models", "WorkflowResult", False),
-    "EvaluationResultSchema": ("src.core.models", "EvaluationResultSchema", False),
-    "QueryResult": ("src.core.models", "QueryResult", False),
+    "WorkflowResult": (_CORE_MODELS_MODULE, "WorkflowResult", False),
+    "EvaluationResultSchema": (_CORE_MODELS_MODULE, "EvaluationResultSchema", False),
+    "QueryResult": (_CORE_MODELS_MODULE, "QueryResult", False),
     # Deprecated module shims (will be removed in v4.0)
     "gemini_model_client": ("src.llm.gemini", None, True),
     "lcel_optimized_chain": ("src.llm.lcel_chain", None, True),

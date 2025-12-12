@@ -27,6 +27,7 @@ load_dotenv()
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR = REPO_ROOT / "templates"
+USER_TARGET_TEMPLATE = "user/qa/target.j2"
 
 
 class DynamicTemplateGenerator:
@@ -141,10 +142,10 @@ class DynamicTemplateGenerator:
             "global_explanation": "system/qa/global.j2",
             "summary": "system/qa/summary.j2",
             "reasoning": "system/qa/reasoning.j2",
-            "target": "user/qa/target.j2",
-            "target_short": "user/qa/target.j2",
-            "target_long": "user/qa/target.j2",
-            "factual": "user/qa/target.j2",
+            "target": USER_TARGET_TEMPLATE,
+            "target_short": USER_TARGET_TEMPLATE,
+            "target_long": USER_TARGET_TEMPLATE,
+            "factual": USER_TARGET_TEMPLATE,
             "general": "system/qa/explanation.j2",
         }
         template_name = template_map.get(query_type, "system/base.j2")
