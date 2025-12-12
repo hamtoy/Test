@@ -9,6 +9,82 @@ from src.agent.core import GeminiAgent
 
 logger = logging.getLogger(__name__)
 
+_CAND_IDS = ("A", "B", "C")
+
+
+def _parse_eval_response(
+    response: str,
+) -> tuple[dict[str, int], dict[str, str]]:
+    scores: dict[str, int] = {cid: 3 for cid in _CAND_IDS}
+    feedbacks: dict[str, str] = {cid: "" for cid in _CAND_IDS}
+    for raw_line in response.splitlines():
+        line = raw_line.strip()
+        cid = _match_candidate_id(line)
+        if cid is None:
+            continue
+        if line.startswith(f"{cid}점수:"):
+            score_val = _parse_score(line)
+            if score_val is not None:
+                scores[cid] = score_val
+            continue
+        if line.startswith(f"{cid}피드백:"):
+            feedbacks[cid] = line.split(":", 1)[1].strip()
+    return scores, feedbacks
+
+
+def _match_candidate_id(line: str) -> str | None:
+    for cid in _CAND_IDS:
+        if line.startswith(f"{cid}점수:") or line.startswith(f"{cid}피드백:"):
+            return cid
+    return None
+
+
+def _parse_score(line: str) -> int | None:
+    try:
+        _, val = line.split(":", 1)
+        score_val = int(val.strip())
+        return max(1, min(6, score_val))
+    except ValueError:
+        return None
+
+
+def _adjust_tied_scores(scores: dict[str, int]) -> dict[str, int]:
+    adjusted: dict[str, int] = {}
+    used_scores: set[int] = set()
+    for cid, score in sorted(scores.items(), key=lambda item: item[1], reverse=True):
+        adjusted[cid] = _dedupe_score(score, used_scores)
+    return adjusted
+
+
+def _dedupe_score(score: int, used_scores: set[int]) -> int:
+    while score in used_scores and score > 1:
+        score -= 1
+    used_scores.add(score)
+    return score
+
+
+def _build_eval_results(
+    adjusted_scores: dict[str, int],
+    feedbacks: dict[str, str],
+    raw_response: str,
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "candidate_id": cid,
+            "score": adjusted_scores[cid],
+            "feedback": feedbacks[cid] or raw_response,
+        }
+        for cid in _CAND_IDS
+    ]
+
+
+def _fallback_eval_results(exc: Exception) -> list[dict[str, Any]]:
+    return [
+        {"candidate_id": "A", "score": 3, "feedback": f"평가 실패: {exc}"},
+        {"candidate_id": "B", "score": 2, "feedback": f"평가 실패: {exc}"},
+        {"candidate_id": "C", "score": 1, "feedback": f"평가 실패: {exc}"},
+    ]
+
 
 async def evaluate_external_answers(
     agent: GeminiAgent,
@@ -86,42 +162,9 @@ C피드백: [한 줄 평가]"""
         response = await agent._call_api_with_retry(model, user_prompt)
         response = response.strip()
 
-        scores: dict[str, int] = {"A": 3, "B": 3, "C": 3}
-        feedbacks: dict[str, str] = {"A": "", "B": "", "C": ""}
-
-        for raw_line in response.split("\n"):
-            line = raw_line.strip()
-            for cid in ("A", "B", "C"):
-                if line.startswith(f"{cid}점수:"):
-                    try:
-                        score_val = int(line.split(":", 1)[1].strip())
-                        scores[cid] = max(1, min(6, score_val))
-                    except ValueError:
-                        continue
-                elif line.startswith(f"{cid}피드백:"):
-                    feedbacks[cid] = line.split(":", 1)[1].strip()
-
-        # 동점 해소: 높은 점수부터 사용, 중복이면 -1씩 조정
-        adjusted_scores: dict[str, int] = {}
-        used_scores: set[int] = set()
-        for cid, score in sorted(
-            scores.items(),
-            key=lambda item: item[1],
-            reverse=True,
-        ):
-            while score in used_scores and score > 1:
-                score -= 1
-            used_scores.add(score)
-            adjusted_scores[cid] = score
-
-        return [
-            {
-                "candidate_id": cid,
-                "score": adjusted_scores[cid],
-                "feedback": feedbacks[cid] or response,
-            }
-            for cid in ("A", "B", "C")
-        ]
+        scores, feedbacks = _parse_eval_response(response)
+        adjusted_scores = _adjust_tied_scores(scores)
+        return _build_eval_results(adjusted_scores, feedbacks, response)
     except Exception as exc:
         logger.error(
             "비교 평가 실패",
@@ -132,8 +175,4 @@ C피드백: [한 줄 평가]"""
             },
             exc_info=True,
         )
-        return [
-            {"candidate_id": "A", "score": 3, "feedback": f"평가 실패: {exc}"},
-            {"candidate_id": "B", "score": 2, "feedback": f"평가 실패: {exc}"},
-            {"candidate_id": "C", "score": 1, "feedback": f"평가 실패: {exc}"},
-        ]
+        return _fallback_eval_results(exc)
