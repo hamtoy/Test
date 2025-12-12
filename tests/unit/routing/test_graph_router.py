@@ -10,6 +10,7 @@ Covers:
 
 from __future__ import annotations
 
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from neo4j.exceptions import Neo4jError
@@ -320,7 +321,7 @@ class TestRouteAndGenerate:
 
         router = GraphEnhancedRouter(kg=mock_kg, llm=mock_llm)
 
-        handlers = {}
+        handlers: dict[str, Any] = {}
 
         result = router.route_and_generate("테스트", handlers)
 

@@ -160,7 +160,7 @@ class TestFormatOutput:
 
     def test_format_output_text_with_dict(self) -> None:
         """Test text format with nested dictionary."""
-        result = {
+        result: dict[str, object] = {
             "stats": {
                 "hits": 100,
                 "misses": 20,
@@ -175,7 +175,7 @@ class TestFormatOutput:
 
     def test_format_output_text_with_list(self) -> None:
         """Test text format with list values."""
-        result = {"items": ["apple", "banana", "cherry"]}
+        result: dict[str, object] = {"items": ["apple", "banana", "cherry"]}
 
         output = format_output(result, "text")
 
@@ -206,7 +206,7 @@ class TestFormatOutput:
         """Test JSON format handles non-serializable types."""
         from datetime import datetime
 
-        result = {"timestamp": datetime(2024, 1, 15, 12, 0, 0)}
+        result: dict[str, object] = {"timestamp": datetime(2024, 1, 15, 12, 0, 0)}
 
         # Should not raise, uses default=str
         output = format_output(result, "json")
