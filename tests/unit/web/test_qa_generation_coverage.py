@@ -81,9 +81,7 @@ class TestBatchTypeResolution:
 
     def test_resolve_batch_types_custom(self) -> None:
         """Test custom batch types."""
-        body = GenerateQARequest(
-            mode="batch", batch_types=["explanation", "reasoning"]
-        )
+        body = GenerateQARequest(mode="batch", batch_types=["explanation", "reasoning"])
         result = _resolve_batch_types(body)
         assert result == ["explanation", "reasoning"]
 
@@ -161,58 +159,64 @@ class TestGenerateFirstPair:
         """Test successful first pair generation."""
         mock_agent = Mock()
 
-        with patch(
-            "src.web.routers.qa_generation.generate_single_qa_with_retry"
-        ) as mock_gen:
+        with (
+            patch(
+                "src.web.routers.qa_generation.generate_single_qa_with_retry"
+            ) as mock_gen,
+            patch("src.web.routers.qa_generation._get_config") as mock_cfg,
+        ):
             mock_gen.return_value = {"query": "질문", "answer": "답변"}
-            with patch("src.web.routers.qa_generation._get_config") as mock_cfg:
-                mock_cfg.return_value = Mock(qa_single_timeout=30)
+            mock_cfg.return_value = Mock(qa_single_timeout=30)
 
-                result, query = await _generate_first_pair(
-                    mock_agent, "OCR 텍스트", "reasoning"
-                )
+            result, query = await _generate_first_pair(
+                mock_agent, "OCR 텍스트", "reasoning"
+            )
 
-                assert result["query"] == "질문"
-                assert query == "질문"
+            assert result["query"] == "질문"
+            assert query == "질문"
 
     @pytest.mark.asyncio
     async def test_generate_first_pair_timeout(self) -> None:
         """Test first pair generation with timeout."""
         mock_agent = Mock()
 
-        with patch(
-            "src.web.routers.qa_generation.generate_single_qa_with_retry"
-        ) as mock_gen:
+        with (
+            patch(
+                "src.web.routers.qa_generation.generate_single_qa_with_retry"
+            ) as mock_gen,
+            patch("src.web.routers.qa_generation._get_config") as mock_cfg,
+        ):
             mock_gen.side_effect = asyncio.TimeoutError()
-            with patch("src.web.routers.qa_generation._get_config") as mock_cfg:
-                mock_cfg.return_value = Mock(qa_single_timeout=1)
+            mock_cfg.return_value = Mock(qa_single_timeout=1)
 
-                result, query = await _generate_first_pair(
-                    mock_agent, "OCR 텍스트", "reasoning"
-                )
+            result, query = await _generate_first_pair(
+                mock_agent, "OCR 텍스트", "reasoning"
+            )
 
-                # Should return fallback pair
-                assert result["query"] == "생성 실패"
-                assert query == ""
+            # Should return fallback pair
+            assert result["query"] == "생성 실패"
+            assert query == ""
 
     @pytest.mark.asyncio
     async def test_generate_first_pair_exception(self) -> None:
         """Test first pair generation with general exception."""
         mock_agent = Mock()
 
-        with patch(
-            "src.web.routers.qa_generation.generate_single_qa_with_retry"
-        ) as mock_gen:
+        with (
+            patch(
+                "src.web.routers.qa_generation.generate_single_qa_with_retry"
+            ) as mock_gen,
+            patch("src.web.routers.qa_generation._get_config") as mock_cfg,
+        ):
             mock_gen.side_effect = ValueError("생성 중 오류")
-            with patch("src.web.routers.qa_generation._get_config") as mock_cfg:
-                mock_cfg.return_value = Mock(qa_single_timeout=30)
+            mock_cfg.return_value = Mock(qa_single_timeout=30)
 
-                result, query = await _generate_first_pair(
-                    mock_agent, "OCR 텍스트", "explanation"
-                )
+            result, query = await _generate_first_pair(
+                mock_agent, "OCR 텍스트", "explanation"
+            )
 
-                assert result["query"] == "생성 실패"
-                assert "생성 중 오류" in result["answer"]
+            assert result["query"] == "생성 실패"
+            assert "생성 중 오류" in result["answer"]
 
 
 class TestAPIGenerateQA:
@@ -236,15 +240,17 @@ class TestAPIGenerateQA:
         body = GenerateQARequest(mode="single")
 
         mock_agent = Mock()
-        with patch("src.web.routers.qa_generation._get_agent", return_value=mock_agent):
-            with patch("src.web.routers.qa_generation.load_ocr_text") as mock_ocr:
-                mock_ocr.return_value = "OCR 텍스트"
-                with patch("src.web.routers.qa_generation._get_config"):
-                    with pytest.raises(HTTPException) as exc_info:
-                        await api_generate_qa(body)
+        with (
+            patch("src.web.routers.qa_generation._get_agent", return_value=mock_agent),
+            patch("src.web.routers.qa_generation.load_ocr_text") as mock_ocr,
+            patch("src.web.routers.qa_generation._get_config"),
+        ):
+            mock_ocr.return_value = "OCR 텍스트"
+            with pytest.raises(HTTPException) as exc_info:
+                await api_generate_qa(body)
 
-                    assert exc_info.value.status_code == 400
-                    assert "qtype이 필요합니다" in exc_info.value.detail
+            assert exc_info.value.status_code == 400
+            assert "qtype이 필요합니다" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_api_generate_qa_batch_timeout(self) -> None:
@@ -252,24 +258,22 @@ class TestAPIGenerateQA:
         body = GenerateQARequest(mode="batch")
 
         mock_agent = Mock()
-        with patch("src.web.routers.qa_generation._get_agent", return_value=mock_agent):
-            with patch("src.web.routers.qa_generation.load_ocr_text") as mock_ocr:
-                mock_ocr.return_value = "OCR 텍스트"
-                with patch("src.web.routers.qa_generation._get_config") as mock_cfg:
-                    mock_cfg.return_value = Mock(
-                        qa_batch_timeout=1, qa_single_timeout=1
-                    )
-                    with patch(
-                        "src.web.routers.qa_generation._process_batch_request"
-                    ) as mock_batch:
-                        # Simulate timeout with asyncio.TimeoutError
-                        mock_batch.side_effect = asyncio.TimeoutError()
+        with (
+            patch("src.web.routers.qa_generation._get_agent", return_value=mock_agent),
+            patch("src.web.routers.qa_generation.load_ocr_text") as mock_ocr,
+            patch("src.web.routers.qa_generation._get_config") as mock_cfg,
+            patch("src.web.routers.qa_generation._process_batch_request") as mock_batch,
+        ):
+            mock_ocr.return_value = "OCR 텍스트"
+            mock_cfg.return_value = Mock(qa_batch_timeout=1, qa_single_timeout=1)
+            # Simulate timeout with asyncio.TimeoutError
+            mock_batch.side_effect = asyncio.TimeoutError()
 
-                        with pytest.raises(HTTPException) as exc_info:
-                            await api_generate_qa(body)
+            with pytest.raises(HTTPException) as exc_info:
+                await api_generate_qa(body)
 
-                        assert exc_info.value.status_code == 504
-                        assert "시간 초과" in exc_info.value.detail
+            assert exc_info.value.status_code == 504
+            assert "시간 초과" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_api_generate_qa_uses_provided_ocr(self) -> None:
@@ -279,20 +283,20 @@ class TestAPIGenerateQA:
         )
 
         mock_agent = Mock()
-        with patch("src.web.routers.qa_generation._get_agent", return_value=mock_agent):
-            with patch("src.web.routers.qa_generation._get_config") as mock_cfg:
-                mock_cfg.return_value = Mock(qa_single_timeout=30)
-                with patch(
-                    "src.web.routers.qa_generation.generate_single_qa"
-                ) as mock_gen:
-                    mock_gen.return_value = {"query": "Q", "answer": "A"}
+        with (
+            patch("src.web.routers.qa_generation._get_agent", return_value=mock_agent),
+            patch("src.web.routers.qa_generation._get_config") as mock_cfg,
+            patch("src.web.routers.qa_generation.generate_single_qa") as mock_gen,
+        ):
+            mock_cfg.return_value = Mock(qa_single_timeout=30)
+            mock_gen.return_value = {"query": "Q", "answer": "A"}
 
-                    await api_generate_qa(body)
+            await api_generate_qa(body)
 
-                    # Verify generate_single_qa was called with provided OCR
-                    mock_gen.assert_called_once()
-                    call_args = mock_gen.call_args
-                    assert call_args[0][1] == "직접 제공한 OCR"
+            # Verify generate_single_qa was called with provided OCR
+            mock_gen.assert_called_once()
+            call_args = mock_gen.call_args
+            assert call_args[0][1] == "직접 제공한 OCR"
 
 
 class TestGenerateSingleQAWithRetry:
@@ -306,9 +310,7 @@ class TestGenerateSingleQAWithRetry:
         with patch("src.web.routers.qa_generation.generate_single_qa") as mock_gen:
             mock_gen.return_value = {"query": "Q", "answer": "A"}
 
-            result = await generate_single_qa_with_retry(
-                mock_agent, "OCR", "reasoning"
-            )
+            result = await generate_single_qa_with_retry(mock_agent, "OCR", "reasoning")
 
             assert result["query"] == "Q"
             mock_gen.assert_called_once()
@@ -384,21 +386,23 @@ class TestProcessBatchRequest:
         )
         mock_agent = Mock()
 
-        with patch(
-            "src.web.routers.qa_generation.generate_single_qa_with_retry"
-        ) as mock_gen:
+        with (
+            patch(
+                "src.web.routers.qa_generation.generate_single_qa_with_retry"
+            ) as mock_gen,
+            patch("src.web.routers.qa_generation._get_config") as mock_cfg,
+        ):
             mock_gen.side_effect = [
                 {"query": "Q1", "answer": "A1", "type": "global_explanation"},
                 {"query": "Q2", "answer": "A2", "type": "reasoning"},
                 {"query": "Q3", "answer": "A3", "type": "target_short"},
             ]
-            with patch("src.web.routers.qa_generation._get_config") as mock_cfg:
-                mock_cfg.return_value = Mock()
+            mock_cfg.return_value = Mock()
 
-                result = await _process_batch_request(
-                    body, mock_agent, "OCR", datetime.now()
-                )
+            result = await _process_batch_request(
+                body, mock_agent, "OCR", datetime.now()
+            )
 
-                assert "pairs" in result["data"]
-                # Should have all three results
-                assert len(result["data"]["pairs"]) == 3
+            assert "pairs" in result["data"]
+            # Should have all three results
+            assert len(result["data"]["pairs"]) == 3

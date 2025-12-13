@@ -19,12 +19,12 @@ from fastapi import HTTPException
 
 from src.web.models import GenerateQARequest
 from src.web.routers.qa import (
-    _StreamBatchState,
     _build_task_map,
     _create_stream_tasks,
     _maybe_start_reasoning_task,
     _resolve_stream_batch_types,
     _sse,
+    _StreamBatchState,
     _yield_completed_reasoning_task,
     stream_batch_qa_generation,
 )
@@ -63,9 +63,7 @@ class TestStreamBatchTypes:
 
     def test_resolve_stream_batch_types_custom(self) -> None:
         """Test custom batch types."""
-        body = GenerateQARequest(
-            mode="batch", batch_types=["explanation", "reasoning"]
-        )
+        body = GenerateQARequest(mode="batch", batch_types=["explanation", "reasoning"])
         result = _resolve_stream_batch_types(body)
         assert result == ["explanation", "reasoning"]
 
@@ -108,9 +106,7 @@ class TestReasoningTaskManagement:
         remaining_types = ["reasoning", "target_short"]
         mock_agent = Mock()
 
-        with patch(
-            "src.web.routers.qa.generate_single_qa_with_retry"
-        ) as mock_gen:
+        with patch("src.web.routers.qa.generate_single_qa_with_retry") as mock_gen:
             mock_gen.return_value = asyncio.Future()
             mock_gen.return_value.set_result({"query": "Q", "answer": "A"})
 
@@ -161,9 +157,7 @@ class TestYieldCompletedReasoningTask:
         task = asyncio.create_task(completed_task())
         await task  # Ensure it's done
 
-        events = []
-        async for event in _yield_completed_reasoning_task(task, state):
-            events.append(event)
+        events = [event async for event in _yield_completed_reasoning_task(task, state)]
 
         assert len(events) == 1
         assert "reasoning" in events[0]
@@ -183,9 +177,7 @@ class TestYieldCompletedReasoningTask:
         with contextlib.suppress(ValueError):
             await task
 
-        events = []
-        async for event in _yield_completed_reasoning_task(task, state):
-            events.append(event)
+        events = [event async for event in _yield_completed_reasoning_task(task, state)]
 
         assert len(events) == 1
         assert '"error"' in events[0]
@@ -196,9 +188,7 @@ class TestYieldCompletedReasoningTask:
         """Test with no reasoning task."""
         state = _StreamBatchState()
 
-        events = []
-        async for event in _yield_completed_reasoning_task(None, state):
-            events.append(event)
+        events = [event async for event in _yield_completed_reasoning_task(None, state)]
 
         assert len(events) == 0
 
@@ -211,9 +201,7 @@ class TestYieldCompletedReasoningTask:
         future: asyncio.Future[dict[str, Any]] = asyncio.Future()
         task = asyncio.create_task(future)
 
-        events = []
-        async for event in _yield_completed_reasoning_task(task, state):
-            events.append(event)
+        events = [event async for event in _yield_completed_reasoning_task(task, state)]
 
         assert len(events) == 0
         task.cancel()
@@ -227,15 +215,11 @@ class TestCreateStreamTasks:
         remaining_types = ["target_short", "target_long"]
         mock_agent = Mock()
 
-        with patch(
-            "src.web.routers.qa.generate_single_qa_with_retry"
-        ) as mock_gen:
+        with patch("src.web.routers.qa.generate_single_qa_with_retry") as mock_gen:
             mock_gen.return_value = asyncio.Future()
             mock_gen.return_value.set_result({"query": "Q", "answer": "A"})
 
-            task_map = _create_stream_tasks(
-                remaining_types, mock_agent, "OCR", [], ""
-            )
+            task_map = _create_stream_tasks(remaining_types, mock_agent, "OCR", [], "")
 
             assert len(task_map) == 2
             for qtype in task_map.values():
@@ -248,9 +232,7 @@ class TestCreateStreamTasks:
         completed_queries = ["이전 질문1", "이전 질문2"]
         first_answer = "첫 답변"
 
-        with patch(
-            "src.web.routers.qa.generate_single_qa_with_retry"
-        ) as mock_gen:
+        with patch("src.web.routers.qa.generate_single_qa_with_retry") as mock_gen:
             mock_gen.return_value = asyncio.Future()
             mock_gen.return_value.set_result({"query": "Q", "answer": "A"})
 
@@ -277,9 +259,7 @@ class TestBuildTaskMap:
         with patch("src.web.routers.qa._create_stream_tasks") as mock_create:
             mock_create.return_value = {"task": "target_short"}
 
-            task_map = _build_task_map(
-                remaining_types, mock_agent, "OCR", state, None
-            )
+            task_map = _build_task_map(remaining_types, mock_agent, "OCR", state, None)
 
             assert task_map == {"task": "target_short"}
             mock_create.assert_called_once()
@@ -304,9 +284,7 @@ class TestBuildTaskMap:
         mock_agent = Mock()
         state = _StreamBatchState()
 
-        task_map = _build_task_map(
-            remaining_types, mock_agent, "OCR", state, None
-        )
+        task_map = _build_task_map(remaining_types, mock_agent, "OCR", state, None)
 
         assert len(task_map) == 0
 
@@ -343,27 +321,27 @@ class TestStreamBatchQAGeneration:
         body = GenerateQARequest(mode="batch", ocr_text="직접 제공 OCR")
 
         mock_agent = Mock()
-        with patch("src.web.routers.qa._get_agent", return_value=mock_agent):
-            with patch("src.web.routers.qa._get_config") as mock_cfg:
-                mock_cfg.return_value = Mock()
-                with patch(
-                    "src.web.routers.qa._stream_batch_events"
-                ) as mock_stream:
+        with (
+            patch("src.web.routers.qa._get_agent", return_value=mock_agent),
+            patch("src.web.routers.qa._get_config") as mock_cfg,
+            patch("src.web.routers.qa._stream_batch_events") as mock_stream,
+        ):
+            mock_cfg.return_value = Mock()
 
-                    async def dummy_stream(*args: Any) -> AsyncIterator[str]:
-                        # Empty generator for testing
-                        return
-                        yield  # Never reached, but needed for type checking
+            async def dummy_stream(*args: Any) -> AsyncIterator[str]:
+                # Empty generator for testing
+                return
+                yield  # Never reached, but needed for type checking
 
-                    mock_stream.return_value = dummy_stream()
+            mock_stream.return_value = dummy_stream()
 
-                    response = await stream_batch_qa_generation(body)
+            response = await stream_batch_qa_generation(body)
 
-                    assert response is not None
-                    # Verify _stream_batch_events was called with provided OCR
-                    mock_stream.assert_called_once()
-                    call_args = mock_stream.call_args
-                    assert call_args[0][2] == "직접 제공 OCR"
+            assert response is not None
+            # Verify _stream_batch_events was called with provided OCR
+            mock_stream.assert_called_once()
+            call_args = mock_stream.call_args
+            assert call_args[0][2] == "직접 제공 OCR"
 
 
 class TestStreamBatchEventsIntegration:
@@ -377,9 +355,9 @@ class TestStreamBatchEventsIntegration:
         body = GenerateQARequest(mode="batch", batch_types=[])
         mock_agent = Mock()
 
-        events = []
-        async for event in _stream_batch_events(body, mock_agent, "OCR"):
-            events.append(event)
+        events = [
+            event async for event in _stream_batch_events(body, mock_agent, "OCR")
+        ]
 
         # Should emit error and done events
         assert any("error" in e for e in events)
@@ -393,14 +371,12 @@ class TestStreamBatchEventsIntegration:
         body = GenerateQARequest(mode="batch", batch_types=["explanation"])
         mock_agent = Mock()
 
-        with patch(
-            "src.web.routers.qa.generate_single_qa_with_retry"
-        ) as mock_gen:
+        with patch("src.web.routers.qa.generate_single_qa_with_retry") as mock_gen:
             mock_gen.return_value = {"query": "Q", "answer": "A"}
 
-            events = []
-            async for event in _stream_batch_events(body, mock_agent, "OCR"):
-                events.append(event)
+            events = [
+                event async for event in _stream_batch_events(body, mock_agent, "OCR")
+            ]
 
             # Should emit: started, progress, done
             assert any("started" in e for e in events)
@@ -427,11 +403,12 @@ class TestEmitFirstTypeEvents:
                 ['data: {"event": "progress"}\n\n'],
             )
 
-            events = []
-            async for event in _emit_first_type_events(
-                mock_agent, "OCR", "explanation", state
-            ):
-                events.append(event)
+            events = [
+                event
+                async for event in _emit_first_type_events(
+                    mock_agent, "OCR", "explanation", state
+                )
+            ]
 
             assert len(events) == 1
             assert state.first_answer == "첫 답변"
@@ -449,11 +426,12 @@ class TestEmitRemainingTypeEvents:
 
         state = _StreamBatchState()
 
-        events = []
-        async for event in _emit_remaining_type_events(
-            [], Mock(), "OCR", state, reasoning_task=None
-        ):
-            events.append(event)
+        events = [
+            event
+            async for event in _emit_remaining_type_events(
+                [], Mock(), "OCR", state, reasoning_task=None
+            )
+        ]
 
         assert len(events) == 0
 
@@ -476,11 +454,12 @@ class TestEmitRemainingTypeEvents:
 
             mock_build.return_value = {task: "target_short"}
 
-            events = []
-            async for event in _emit_remaining_type_events(
-                ["target_short"], mock_agent, "OCR", state
-            ):
-                events.append(event)
+            events = [
+                event
+                async for event in _emit_remaining_type_events(
+                    ["target_short"], mock_agent, "OCR", state
+                )
+            ]
 
             # Should emit error event
             assert any("error" in e for e in events)
