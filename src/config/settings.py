@@ -172,7 +172,7 @@ class AppConfig(BaseSettings):
         config_map = {
             "explanation": (self.max_output_tokens_explanation, base),
             "reasoning": (self.max_output_tokens_reasoning, min(base, 2048)),
-            "target": (self.max_output_tokens_target, min(base, 512)),
+            "target": (self.max_output_tokens_target, min(base, 2048)),
         }
 
         if normalized not in config_map:

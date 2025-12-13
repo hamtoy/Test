@@ -757,6 +757,15 @@ def postprocess_answer(
         answer,
     )
 
+    # 3.6. 서론/본론/결론 같은 구조 라벨 제거
+    # **서론**, **본론**, **결론** 형태의 줄은 제거
+    answer = re.sub(
+        r"^\*\*(서론|본론|결론|도입|마무리)\*\*\s*$",
+        "",
+        answer,
+        flags=re.MULTILINE,
+    )
+
     # 4. 기본 정리
     answer = answer.strip()
 
