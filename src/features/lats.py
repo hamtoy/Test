@@ -176,14 +176,46 @@ class LATSSearcher:
             else:
                 expanded = await self._expand(leaf)
                 if expanded:
-                    leaf = expanded[0]
-                reward = await self._evaluate(leaf)
+                    # Parallel evaluation of expanded children with rate limiting
+                    rewards = await self._evaluate_children_parallel(expanded)
+                    # Find best child from this expansion
+                    best_idx = max(range(len(rewards)), key=lambda i: rewards[i])
+                    leaf = expanded[best_idx]
+                    reward = rewards[best_idx]
+                else:
+                    reward = await self._evaluate(leaf)
             if reward > best.reward or (leaf.reflection and best is root):
                 best = leaf
             self._backpropagate(leaf, reward)
             self.total_visits += 1
 
         return best
+
+    async def _evaluate_children_parallel(
+        self,
+        children: list[SearchNode],
+    ) -> list[float]:
+        """Evaluate multiple child nodes in parallel with rate limiting.
+
+        Args:
+            children: List of child nodes to evaluate.
+
+        Returns:
+            List of reward scores for each child.
+        """
+        if not children:
+            return []
+
+        async def evaluate_with_semaphore(child: SearchNode) -> float:
+            """Evaluate a single child with semaphore for rate limiting."""
+            async with self._semaphore or asyncio.Semaphore(self.concurrency_limit):
+                return await self._evaluate(child)
+
+        # Use asyncio.gather for parallel evaluation
+        rewards = await asyncio.gather(
+            *[evaluate_with_semaphore(child) for child in children],
+        )
+        return list(rewards)
 
     def _select(self, node: SearchNode) -> SearchNode:
         current = node

@@ -29,21 +29,22 @@
 | 우선순위 | 남은 개수 |
 |:---:|:---:|
 | 🔴 P1 | 0 |
-| 🟡 P2 | 1 |
+| 🟡 P2 | 2 |
 | 🟢 P3 | 1 |
 | 🚀 OPT | 2 |
-| **합계** | **4** |
+| **합계** | **5** |
 
 | # | 항목명 | 우선순위 | 카테고리 |
 |:---:|:---|:---:|:---|
-| 1 | 전체 워크플로우 E2E 테스트 구축 | P2 | 🧪 테스트 |
-| 2 | 대시보드 UI 고도화 (상세 제어) | P3 | ✨ 기능 |
-| 3 | Web API 동기 파일 I/O 비동기 전환 | OPT | ⚙️ 성능 |
-| 4 | LATS 워크플로우 실행 속도 최적화 | OPT | ⚙️ 성능 |
+| 1 | 설정 파일 동시성(Lock) 제어 | P2 | 🔒 보안/안정성 |
+| 2 | 대시보드 UI 단위 테스트 추가 | P2 | 🧪 테스트 |
+| 3 | 프론트/백엔드 빌드 파이프라인 통합 | P3 | 📦 배포 |
+| 4 | Web API 완전 비동기 I/O (aiofiles) | OPT | ⚙️ 성능 |
+| 5 | LATS 워크플로우 실행 속도 최적화 | OPT | ⚙️ 성능 |
 
-- **P1 (Critical):** 현재 크리티컬한 배포/실행 차단 요인은 **없습니다**.
-- **P2 (High):** 전체 시스템을 관통하는 E2E 테스트 확보가 시급합니다.
-- **P3/OPT:** Web API와 LATS의 성능을 최적화하고 UI 편의성을 높이는 작업이 남았습니다.
+- **P1 (Critical):** 현재 서비스 중단을 야기할 치명적 결함은 없습니다.
+- **P2 (High):** `config_api`의 동시성 문제 해결과 UI 컴포넌트 테스트 확보가 시급합니다.
+- **P3/OPT:** 운영 편의성을 위한 빌드 통합과 고성능 처리를 위한 최적화 과제가 남아있습니다.
 <!-- AUTO-SUMMARY-END -->
 
 ---
@@ -51,38 +52,70 @@
 <!-- AUTO-IMPROVEMENT-LIST-START -->
 ## 🔧 P1 (Critical) & P2 (High) 개선 과제
 
-> **Note:** 이전 P1/P2 과제들은 모두 완료되었습니다.
+> **Note:** 이전 P1/P2 과제들은 모두 완료되었습니다. P1 과제는 현재 없습니다.
 
 ### 🟡 중요 (P2)
 
-#### [P2-1] 전체 워크플로우 E2E 테스트 구축
+#### [P2-1] 설정 파일 동시성(Lock) 제어
 
 | 항목 | 내용 |
 |------|------|
-| **ID** | `test-e2e-001` |
-| **카테고리** | 🧪 테스트 |
-| **복잡도** | Medium |
-| **대상 파일** | `tests/e2e/`, `src/workflow/` |
-| **Origin** | manual-idea |
+| **ID** | `fix-config-concurrency-001` |
+| **카테고리** | 🔒 보안/안정성 |
+| **복잡도** | Low |
+| **대상 파일** | `src/web/routers/config_api.py`, `src/utils/file_lock.py` |
+| **Origin** | static-analysis |
 | **리스크 레벨** | medium |
-| **관련 평가 카테고리** | testCoverage, productionReadiness |
+| **관련 평가 카테고리** | errorHandling, productionReadiness |
 
 - **현재 상태:**
-  - 단위 테스트(`Vitest`, `pytest`)는 풍부하지만, 실제 CLI 실행부터 결과 생성까지의 전체 흐름을 검증하는 E2E 테스트가 부재함.
+  - `config_api.py`가 `settings.json` 등의 설정 파일을 직접 덮어씁니다(`write_text`).
+  - 여러 사용자가 동시에 웹 대시보드에서 설정을 변경하거나, 백그라운드 프로세스가 접근할 경우 경합 조건(Race Condition)이 발생할 수 있습니다.
 - **문제점 (Problem):**
-  - 개별 모듈은 정상이어도, 실제 실행 환경에서 설정 로딩이나 파일 I/O 등이 꼬일 경우 감지하지 못함.
+  - 설정 파일 내용이 깨지거나(Corrupted), 마지막 변경사항만 적용되는 데이터 손실 위험 존재.
 - **영향 (Impact):**
-  - 배포 후 통합 오류 발생 가능성 존재.
+  - 운영 환경에서의 신뢰성 저하 및 예기치 않은 동작 오류 유발.
 - **원인 (Cause):**
-  - 모킹(Mocking) 위주의 테스트 전략만 수립됨.
+  - 파일 쓰기 시점의 배타적 잠금(Exclusive Lock) 메커니즘 부재.
 - **개선 내용 (Proposed Solution):**
-  - `subprocess`를 활용하여 실제 `python -m src.main` 명령을 실행하고 종료 코드와 출력을 검증하는 테스트 스크립트 작성.
+  - `fasteners` 패키지 또는 `portalocker`를 도입하여 파일 쓰기 전 락을 획득하도록 수정.
+  - Context Manager(`with FileLock(...)`) 패턴 적용.
 - **기대 효과:**
-  - 배포 전 최종 안전장치 확보 및 통합 무결성 보장.
+  - 다중 접속 환경에서도 설정 데이터의 무결성 보장.
 - **Definition of Done:**
-  - [ ] `tests/e2e` 디렉토리 생성 및 테스트 스크립트 작성
-  - [ ] CLI 정상 종료 및 출력 파일 생성 여부 검증
-  - [ ] CI 파이프라인에 E2E 단계 추가
+  - [ ] 파일 락 유틸리티 함수 구현 (`src/utils/file_lock.py`)
+  - [ ] `config_api.py`의 쓰기 로직에 락 적용
+  - [ ] 동시성 테스트(Concurrency Test) 스크립트로 데이터 무결성 검증
+
+#### [P2-2] 대시보드 UI 단위 테스트 추가
+
+| 항목 | 내용 |
+|------|------|
+| **ID** | `test-dashboard-unit-001` |
+| **카테고리** | 🧪 테스트 |
+| **복잡도** | Medium |
+| **대상 파일** | `static/LogViewer.ts`, `static/ConfigEditor.ts`, `tests/frontend/` |
+| **Origin** | manual-idea |
+| **리스크 레벨** | low |
+| **관련 평가 카테고리** | testCoverage |
+
+- **현재 상태:**
+  - E2E 테스트(`test_cli_flow`)는 전체 흐름을 보지만, `LogViewer`의 필터링 로직이나 `ConfigEditor`의 폼 검증 로직 같은 상세 단위 테스트는 부족합니다.
+- **문제점 (Problem):**
+  - UI 로직 변경 시 회귀 버그(Regression)를 E2E만으로 잡아내기에는 피드백 루프가 느리고 부정확함.
+- **영향 (Impact):**
+  - 프론트엔드 기능 고도화 시 개발 속도 저하.
+- **원인 (Cause):**
+  - 초기 개발 시 Vitest 환경이 E2E 위주로 구성됨.
+- **개선 내용 (Proposed Solution):**
+  - `src/static/` 내의 TS 파일들에 대한 `vitest` 단위 테스트 케이스 작성.
+  - `jsdom` 환경에서 React 컴포넌트 렌더링 및 이벤트 핸들링 테스트.
+- **기대 효과:**
+  - UI 컴포넌트의 독립적 품질 보증 및 리팩토링 안전망 확보.
+- **Definition of Done:**
+  - [ ] `LogViewer.test.ts` 작성 (WebSocket 메시지 파싱 테스트)
+  - [ ] `ConfigEditor.test.ts` 작성 (유효성 검증 로직 테스트)
+  - [ ] `pnpm test:unit` 명령으로 통과 확인
 
 <!-- AUTO-IMPROVEMENT-LIST-END -->
 
@@ -93,22 +126,22 @@
 
 ### 🟢 P3 (Feature Additions)
 
-#### [P3-1] 대시보드 UI 고도화 (`feat-ui-dashboard-advanced`)
+#### [P3-1] 프론트/백엔드 빌드 파이프라인 통합 (`feat-build-integration-001`)
 
 | 항목 | 내용 |
 |------|------|
-| **ID** | `feat-ui-dashboard-advanced` |
-| **카테고리** | ✨ 기능 추가 |
-| **대상 파일** | `src/web/`, `packages/frontend/` |
+| **ID** | `feat-build-integration-001` |
+| **카테고리** | 📦 배포 |
+| **대상 파일** | `tasks.py` (또는 신규 스크립트), `pyproject.toml`, `package.json` |
 | **리스크 레벨** | Low |
 
 - **현재 상태:**
-  - 기본 대시보드와 메뉴 UI는 존재하나, 실시간 로그 스트리밍이나 상세 설정(Config) 편집 기능이 부족함.
+  - 백엔드 실행(`python -m src.main`)과 프론트엔드 빌드(`npm run build`)가 분리되어 있습니다.
+  - 배포 시 두 과정을 각각 수동으로 수행해야 하는 약간의 불편함 존재.
 - **개선 내용:**
-  - 웹 UI에서 `settings.py`의 주요 파라미터를 직접 수정하고 저장하는 기능 추가.
-  - 실행 로그를 실시간으로 웹소켓을 통해 조회하는 기능 구현.
+  - 단일 명령(`python scripts/build_release.py` 등)으로 프론트엔드 빌드 -> 정적 파일 이동 -> 백엔드 패키징까지 수행하는 스크립트 작성.
 - **기대 효과:**
-  - CLI에 익숙하지 않은 운영자도 쉽게 시스템을 제어 가능.
+  - CI/CD 파이프라인 단순화 및 로컬 개발 시 배포 테스트 용이성 증대.
 
 <!-- AUTO-FEATURE-LIST-END -->
 
@@ -117,24 +150,24 @@
 <!-- AUTO-OPTIMIZATION-START -->
 ## 🚀 코드 품질 & 성능 최적화 (OPT)
 
-### 3-1. Web API 동기 파일 I/O 비동기 전환 (`opt-web-async-io-001`)
+### 3-1. Web API 완전 비동기 I/O 도입 (`opt-web-async-io-002`)
 
 | 항목 | 내용 |
 |------|------|
-| **ID** | `opt-web-async-io-001` |
+| **ID** | `opt-web-async-io-002` |
 | **카테고리** | ⚙️ 성능 튜닝 |
-| **영향 범위** | 성능 / 확장성 |
-| **대상 파일** | `src/web/routers/`, `src/utils/file_io.py` |
+| **영향 범위** | 성능 / 품질 |
+| **대상 파일** | `src/web/routers/logs_api.py`, `src/utils/file_io.py` |
 
 - **현재 상태:**
-  - `async def` 라우터 내부에서 표준 `open()`이나 `Path.read_text()`를 사용하여 파일 I/O를 수행.
-  - 이는 이벤트 루프를 차단(Block)하여, 트래픽 증가 시 전체 API 응답성을 저하시킴.
+  - `logs_api.py`에서 `run_in_executor`를 사용하여 블로킹을 우회하고 있지만, 이는 스레드 풀을 사용하는 방식으로 대규모 동시 접속 시 100% 효율적이지 않습니다.
 - **최적화 내용:**
-  - `aiofiles` 라이브러리를 도입하거나 `run_in_executor` 패턴을 적용하여 Non-blocking I/O로 전환.
+  - `aiofiles` 라이브러리를 도입하여 커널 레벨의 Non-blocking I/O를 활용하는 진정한 비동기 코드로 리팩토링.
+  - `async for` 구문을 통한 로그 스트리밍 처리.
 - **예상 효과:**
-  - 동시 접속자 수 증가 시에도 안정적인 응답 속도 유지.
+  - 스레드 컨텍스트 스위칭 오버헤드 제거 및 더 높은 동시성 처리량(Throughput) 달성.
 - **측정 지표:**
-  - `locust` 등을 이용한 부하 테스트 시 99th percentile 응답 시간.
+  - 동시 WebSocket 연결 100개 이상 유지 시 CPU/메모리 점유율 비교.
 
 ### 3-2. LATS 워크플로우 실행 속도 최적화 (`opt-lats-performance-001`)
 

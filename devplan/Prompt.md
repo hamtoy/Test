@@ -12,95 +12,124 @@
 
 | # | Prompt ID | Title | Priority | Status |
 |:---:|:---|:---|:---:|:---:|
-| 1 | **PROMPT-001** | Implement End-to-End Workflow Tests | P2 | ✅ Done |
-| 2 | **PROMPT-002** | Enhance Dashboard UI Features | P3 | ✅ Done |
-| 3 | **OPT-1** | Optimize Web API for Async I/O | OPT | ✅ Done |
-| 4 | **OPT-2** | Optimize LATS Workflow Performance | OPT | ✅ Done |
+| 1 | **PROMPT-001** | Fix Config File Concurrency | P2 | ✅ Done |
+| 2 | **PROMPT-002** | Add Dashboard Unit Tests | P2 | ✅ Done |
+| 3 | **PROMPT-003** | Integrate Build Pipeline | P3 | ✅ Done |
+| 4 | **OPT-1** | Optimize Web API with Aiofiles | OPT | ✅ Done |
+| 5 | **OPT-2** | Optimize LATS Workflow Performance | OPT | ✅ Done |
 
-**Status Summary:** Total: 4 prompts | Completed: 4 | Remaining: 0
+**Status Summary:** Total: 5 prompts | Completed: 5 | Remaining: 0
 
 ---
 
-## 🔧 P1 & P2 Prompts (Critical/High)
+## 🔧 P2 Prompts (High Priority)
 
-### [PROMPT-001] Implement End-to-End Workflow Tests
+### [PROMPT-001] Fix Config File Concurrency
 
 **Directive:** Execute this prompt now, then proceed to [PROMPT-002].
 
 **Task:**
-Create a comprehensive End-to-End (E2E) test suite that verifies the full `src.main` execution flow, from CLI invocation to output generation.
+Implement file locking mechanisms to prevent race conditions when writing to configuration files (`settings.json` or `.env`) via the `config_api`.
 
 **Target Files:**
 
-- `tests/e2e/test_cli_flow.py` (NEW)
-- `tests/e2e/conftest.py` (NEW)
+- `src/utils/file_lock.py` (NEW)
+- `src/web/routers/config_api.py`
 
 **Steps:**
 
-1. Create a new directory `tests/e2e`.
-2. Create `tests/e2e/conftest.py` to handle any necessary fixtures (e.g., temporary output directories).
-3. Create `tests/e2e/test_cli_flow.py` using `pytest` and `subprocess` to:
-   - Run the application in non-interactive mode: `python -m src.main --non-interactive --config test_config.yaml`.
-   - Mock necessary external calls (LLM) if possible, or use a "dry-run" mode if available. If neither, implement utilizing `unittest.mock` to patch `src.agent.gemini.GeminiAgent.generate`.
-   - Verify that the process exits with code 0.
-   - Verify that output files (e.g., reports in `output/`) are actually created.
-4. Ensure these tests are excluded from normal unit tests if they allow external network calls, or mark them clearly.
+1. Create `src/utils/file_lock.py` containing a robust `FileLock` context manager.
+   - You may use a simple lock file strategy (e.g., `filename.lock`) or `portalocker`/`fasteners` if available in the environment.
+   - If utilizing external libs, attempt to import them; if missing, implement a simple `fcntl` (Linux) or `msvcrt` (Windows) based fallback, or just a generic `.lock` file with PID.
+   - Ideally, keep it simple: a `.lock` file that waits for release.
+2. Modify `src/web/routers/config_api.py`:
+   - Import the `FileLock`.
+   - Wrap the file writing logic (where `files.write_text` or `json.dump` happens) within the `with FileLock(...)` block.
+   - Ensure exceptions are handled and the lock is released.
 
 **Implementation Details:**
 
-- Use `subprocess.run` to trigger the actual entry point.
-- Implement a robust mock for the LLM response to ensure deterministic tests and avoid API costs.
-- Check for common error cases (missing config, invalid args).
+- The lock should have a timeout to prevent infinite deadlocks.
+- The `config_api` is critical; ensure 500 errors are returned if the lock cannot be acquired after retries.
 
 **Verification:**
 
-- Run `pytest tests/e2e` and confirm the test passes.
-- Ensure `pytest tests/unit` still passes without interference.
+- Create a temporary test script that spawns multiple threads attempting to write to the same dummy config file.
+- Verify that the final file content is valid JSON and not corrupted.
 
 **Transition:**
 After completing this prompt, proceed to [PROMPT-002].
 
 ---
 
-## ✨ P3 Prompts (Medium)
+### [PROMPT-002] Add Dashboard Unit Tests
 
-### [PROMPT-002] Enhance Dashboard UI Features
+**Directive:** Execute this prompt now, then proceed to [PROMPT-003].
+
+**Task:**
+Create unit tests for the frontend components `LogViewer` and `ConfigEditor` to ensure reliability of log parsing and form validation.
+
+**Target Files:**
+
+- `src/web/tests/LogViewer.test.ts` (NEW)
+- `src/web/tests/ConfigEditor.test.ts` (NEW)
+- `package.json` (Verify test scripts)
+
+**Steps:**
+
+1. Ensure `vitest` and `jsdom` are available (they should be in `devDependencies`).
+2. Create `src/web/tests/LogViewer.test.ts`:
+   - Mock the WebSocket connection.
+   - Simulate receiving a JSON log line.
+   - Verify that the processed state (lines array) updates correctly.
+3. Create `src/web/tests/ConfigEditor.test.ts`:
+   - Test validation logic (e.g., ensure numeric fields reject non-numeric input).
+   - Mock the API `fetch` calls for save operations.
+4. Run `pnpm test:unit` (or `vitest run`) to verify they pass.
+
+**Implementation Details:**
+
+- Use `@testing-library/react` if available, or plain `vitest` assertions on logic functions if the internal logic is separated.
+- Focus on the *logic* (WebSocket message handling), not just visual rendering.
+
+**Verification:**
+
+- Run `npm test` or `vitest run`.
+- Confirm `LogViewer.test.ts` passes.
+
+**Transition:**
+After completing this prompt, proceed to [PROMPT-003].
+
+---
+
+## ✨ P3 Prompts (Feature Additions)
+
+### [PROMPT-003] Integrate Build Pipeline
 
 **Directive:** Execute this prompt now, then proceed to [OPT-1].
 
 **Task:**
-Implement advanced controls in the Web Dashboard, specifically a Configuration Editor and a Real-time Log Viewer.
+Create a unified build script that handles both Frontend building and Backend packaging to simplify the release process.
 
 **Target Files:**
 
-- `src/web/routers/config_api.py` (NEW)
-- `src/web/routers/logs_api.py` (NEW)
-- `static/src/pages/ConfigEditor.tsx` (NEW)
-- `static/src/pages/LogViewer.tsx` (NEW)
+- `scripts/build_release.py` (NEW)
+- `tasks.py` (if using invoke, optional)
 
 **Steps:**
 
-1. **Backend Implementation**:
-   - Create `src/web/routers/config_api.py`: Implement `GET /api/config` (read settings) and `POST /api/config` (update `config/settings.yaml` or `.env`, ensuring validation).
-   - Create `src/web/routers/logs_api.py`: Implement a WebSocket endpoint `/api/ws/logs` that tails the application log file and streams lines to the client.
-   - Register these routers in `src/web/app.py`.
-
-2. **Frontend Implementation** (Vite/React):
-   - Create `ConfigEditor.tsx`: A form to edit key settings (LLM Model, Temperatures, Paths). Use a secure approach (password fields for implementation of API keys).
-   - Create `LogViewer.tsx`: A terminal-like view that connects to the WebSocket and displays logs.
-   - Update `App.tsx` or Sidebar to include links to these new pages.
-
-**Implementation Details:**
-
-- Ensure robust error handling for file writes (Configuration).
-- Use `pydantic` models to validate incoming configuration updates.
-- For the log viewer, keep a limited buffer (e.g., last 1000 lines) in the frontend to avoid browser crashes.
+1. Create `scripts/build_release.py`.
+2. Implement a sequence:
+   - Run `npm install` and `npm run build` in the frontend directory.
+   - Verify `dist/` is created.
+   - Copy/Move `dist/` assets to the backend static file location (e.g., `src/web/static/`).
+   - Run basic backend verification (`python -m src.main --version`).
+3. Add a verbose flag to show/hide output.
 
 **Verification:**
 
-- Start the server (`python -m src.main --web`).
-- Visit the dashboard and verify you can read/write config (check file change on disk).
-- Verify logs appear in real-time when actions are performed.
+- Run `python scripts/build_release.py`.
+- Check if `src/web/static/index.html` is updated.
 
 **Transition:**
 After completing this prompt, proceed to [OPT-1].
@@ -109,51 +138,47 @@ After completing this prompt, proceed to [OPT-1].
 
 ## 🚀 Optimization Prompts (OPT)
 
-### [OPT-1] Optimize Web API for Async I/O
+### [OPT-1] Optimize Web API with Aiofiles
 
 **Directive:** Execute this prompt now, then proceed to [OPT-2].
 
 **Task:**
-Refactor synchronous file I/O operations within `src/web` routers to use improved asynchronous patterns, preventing event loop blocking.
+Refactor `src/web/routers/logs_api.py` to use `aiofiles` for true non-blocking file I/O, replacing `run_in_executor`.
 
 **Target Files:**
 
-- `src/web/routers/` (All relevant router files)
-- `src/utils/file_io.py` (Helper if exists)
+- `src/web/routers/logs_api.py`
+- `requirements.txt` / `pyproject.toml`
 
 **Steps:**
 
-1. Identify all occurrences of `open()`, `Path.read_text()`, or `Path.write_text()` inside `async def` route handlers.
-2. Refactor them to use `aiofiles` (if installed) or `loop.run_in_executor`.
-3. Example pattern:
+1. Add `aiofiles` to project dependencies.
+2. In `logs_api.py`, import `aiofiles`.
+3. Refactor the log reading logic:
+   - Instead of `await loop.run_in_executor(None, path.read_text)`, use:
 
-   ```python
-   # Before
-   content = path.read_text()
+     ```python
+     async with aiofiles.open(path, mode='r') as f:
+         content = await f.read()
+     ```
 
-   # After
-   import asyncio
-   loop = asyncio.get_running_loop()
-   content = await loop.run_in_executor(None, path.read_text)
-   ```
-
-4. Update `requirements.txt` if adding `aiofiles`.
+   - For the tailing logic, use `async with` context managers.
+4. Ensure `encoding="utf-8"` is specified.
 
 **Verification:**
 
-- Run load tests (using `locust` or simple `ab`) to confirm that high concurrency does not block requests (e.g., `/health` should remain responsive while a large file is being read).
+- Verify log streaming still works in the Dashboard.
+- High concurrency load should show lower thread usage compared to the executor pool approach.
 
 **Transition:**
 After completing this prompt, proceed to [OPT-2].
 
----
-
 ### [OPT-2] Optimize LATS Workflow Performance
 
-**Directive:** Execute this prompt now, then proceed to the Final Completion step.
+**Directive:** Execute this prompt now, then proceed to Final Completion.
 
 **Task:**
-Optimize the LATS (Language Agent Tree Search) engine by parallelizing node expansion steps.
+Parallelize node expansion in the LATS (Language Agent Tree Search) engine to reduce total execution time.
 
 **Target Files:**
 
@@ -162,17 +187,14 @@ Optimize the LATS (Language Agent Tree Search) engine by parallelizing node expa
 
 **Steps:**
 
-1. Analyze `src/lats/search.py` for loops where child nodes are expanded or evaluated sequentially.
-   - Look for: `for child in nodes: await evaluate(child)`
-2. Refactor to use `asyncio.gather`.
-   - Change to: `await asyncio.gather(*[evaluate(child) for child in nodes])`
-3. Ensure that rate limits or concurrency semaphores are respected (add a `asyncio.Semaphore` if necessary to prevent API rate limit errors).
+1. Identify the loop in `src/lats/search.py` where child nodes are expanded.
+2. Refactor to specific `asyncio.gather(*tasks)` pattern.
+3. Add a safety semaphore (e.g., `asyncio.Semaphore(5)`) to prevent hitting API rate limits if expanding many nodes at once.
 
 **Verification:**
 
-- Run the LATS performance benchmark or a sample LATS workflow.
-- Measure execution time before and after for the same depth/width settings.
-- Ensure no "Rate Limit Exceeded" errors occur (mock API if needed).
+- Run a designated benchmark script or a complex query.
+- Confirm execution time is reduced.
 
 **Transition:**
 Proceed to Final Completion.
@@ -185,12 +207,10 @@ Proceed to Final Completion.
 
 **Actions:**
 
-1. Run a full project verify command: `pnpm run verify` (or `pytest` + `npm run build`).
+1. Run a full project verify command: `pnpm run test` (or `pytest`) to ensure no regressions.
 2. Ensure all prompts from the checklist are marked as Done.
 3. Print the following message:
 
 > **ALL PROMPTS COMPLETED.**
 > All pending improvement and optimization items from the latest report have been applied.
 > The `shining-quasar` project is now optimized, tested, and feature-complete according to the plan.
-
-<!-- END_OF_FILE -->

@@ -11,6 +11,8 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
+from src.utils.file_lock import FileLock
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/config", tags=["config"])
@@ -96,23 +98,26 @@ def _process_existing_line(
 
 
 def _write_env_file(updates: dict[str, str]) -> None:
-    """Update values in the .env file."""
+    """Update values in the .env file with file locking for concurrency safety."""
     env_path = _get_env_file_path()
-    lines: list[str] = []
-    updated_keys: set[str] = set()
 
-    if env_path.exists():
-        content = env_path.read_text(encoding="utf-8")
-        for line in content.splitlines():
-            processed = _process_existing_line(line, updates, updated_keys)
-            lines.append(processed)
+    # Use file lock to prevent race conditions
+    with FileLock(env_path, timeout=5.0):
+        lines: list[str] = []
+        updated_keys: set[str] = set()
 
-    # Add new keys that weren't in the file
-    for key, value in updates.items():
-        if key not in updated_keys:
-            lines.append(f"{key}={value}")
+        if env_path.exists():
+            content = env_path.read_text(encoding="utf-8")
+            for line in content.splitlines():
+                processed = _process_existing_line(line, updates, updated_keys)
+                lines.append(processed)
 
-    env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        # Add new keys that weren't in the file
+        for key, value in updates.items():
+            if key not in updated_keys:
+                lines.append(f"{key}={value}")
+
+        env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 # Mapping from config fields to environment variable names

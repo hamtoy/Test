@@ -1,5 +1,5 @@
 # mypy: allow-untyped-decorators
-"""Logs streaming API via WebSocket."""
+"""Logs streaming API via WebSocket - Optimized with aiofiles."""
 
 from __future__ import annotations
 
@@ -8,6 +8,8 @@ import contextlib
 import logging
 from pathlib import Path
 
+import aiofiles
+import aiofiles.os
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 logger = logging.getLogger(__name__)
@@ -19,6 +21,25 @@ def _get_log_file_path() -> Path:
     """Get the path to the application log file."""
     repo_root = Path(__file__).resolve().parents[3]
     return repo_root / "app.log"
+
+
+async def _read_file_content(path: Path) -> str:
+    """Read file content asynchronously using aiofiles."""
+    async with aiofiles.open(path, mode="r", encoding="utf-8", errors="replace") as f:
+        return await f.read()
+
+
+async def _read_file_range(path: Path, start: int, end: int) -> str:
+    """Read a range of bytes from file asynchronously."""
+    async with aiofiles.open(path, mode="r", encoding="utf-8", errors="replace") as f:
+        await f.seek(start)
+        return await f.read(end - start)
+
+
+async def _get_file_size(path: Path) -> int:
+    """Get file size asynchronously."""
+    stat = await aiofiles.os.stat(path)
+    return stat.st_size
 
 
 async def _tail_log_file(
@@ -39,10 +60,7 @@ async def _tail_log_file(
 
     # Send initial content (last N lines)
     try:
-        loop = asyncio.get_running_loop()
-        content = await loop.run_in_executor(
-            None, lambda: log_path.read_text(encoding="utf-8", errors="replace")
-        )
+        content = await _read_file_content(log_path)
         lines = content.splitlines()
         initial_lines = lines[-buffer_size:] if len(lines) > buffer_size else lines
 
@@ -58,24 +76,17 @@ async def _tail_log_file(
         return
 
     # Track file position for new content
-    last_size = log_path.stat().st_size
+    last_size = await _get_file_size(log_path)
 
     # Stream new content
     try:
         while True:
             await asyncio.sleep(1)  # Poll every second
 
-            current_size = log_path.stat().st_size
+            current_size = await _get_file_size(log_path)
             if current_size > last_size:
-                # Read new content
-                # Use partial to capture values and ensure proper typing
-                from functools import partial
-
-                loop = asyncio.get_running_loop()
-                new_content = await loop.run_in_executor(
-                    None,
-                    partial(_read_new_content, log_path, last_size, current_size),
-                )
+                # Read new content using aiofiles
+                new_content = await _read_file_range(log_path, last_size, current_size)
                 if new_content:
                     new_lines = new_content.splitlines()
                     await websocket.send_json(
@@ -92,13 +103,6 @@ async def _tail_log_file(
         pass  # Normal disconnection
     except Exception as e:
         logger.warning("Log streaming error: %s", e)
-
-
-def _read_new_content(path: Path, start: int, end: int) -> str:
-    """Read new content from file between positions."""
-    with open(path, "r", encoding="utf-8", errors="replace") as f:
-        f.seek(start)
-        return f.read(end - start)
 
 
 @router.websocket("/logs")
