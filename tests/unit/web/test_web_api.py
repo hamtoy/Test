@@ -479,45 +479,6 @@ class TestWorkspaceApi:
         assert response.status_code == 422
 
 
-class TestMultimodalApi:
-    """Tests for multimodal/image analysis API endpoint."""
-
-    @pytest.mark.skip(
-        reason="Multimodal analyze endpoint was removed in router cleanup"
-    )
-    def test_analyze_image_valid(self, client: Any) -> None:
-        """Test image analysis with valid image file."""
-        pass
-
-    @pytest.mark.skip(
-        reason="Multimodal analyze endpoint was removed in router cleanup"
-    )
-    def test_analyze_image_jpeg(self, client: Any) -> None:
-        """Test image analysis with JPEG file."""
-        pass
-
-    @pytest.mark.skip(
-        reason="Multimodal analyze endpoint was removed in router cleanup"
-    )
-    def test_analyze_non_image_file(self, client: Any) -> None:
-        """Test image analysis with non-image file returns 500 when mm is None."""
-        pass
-
-    @pytest.mark.skip(
-        reason="Multimodal analyze endpoint was removed in router cleanup"
-    )
-    def test_analyze_image_no_content_type(self, client: Any) -> None:
-        """Test image analysis with file missing content type returns 500."""
-        pass
-
-    @pytest.mark.skip(
-        reason="Multimodal analyze endpoint was removed in router cleanup"
-    )
-    def test_analyze_image_with_gif(self, client: Any) -> None:
-        """Test image analysis with GIF file."""
-        pass
-
-
 class TestLogReviewSession:
     """Tests for log_review_session helper function."""
 
