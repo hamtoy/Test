@@ -12,9 +12,9 @@
 |:--:|:---|:---:|:---:|
 | **PROMPT-001** | Fix Skipped Web API Tests (`test-webapi-no-key-001`) | 🟡 P2 | [x] ✅ Done |
 | **PROMPT-002** | Sync Docs with Scripts (`docs-scripts-sync-001`) | 🟡 P2 | [x] ✅ Done |
-| **PROMPT-003** | Refactor Settings (`refactor-settings-split-001`) | 🟢 P3 | [ ] Deferred |
-| **PROMPT-004** | Async File I/O (`opt-async-file-io-001`) | 🚀 OPT | [ ] Deferred |
-| **FINISH** | Final Verification & Cleanup | - | [ ] Ready |
+| **PROMPT-003** | Refactor Settings (`refactor-settings-split-001`) | 🟢 P3 | [x] ✅ Done |
+| **PROMPT-004** | Async File I/O (`opt-async-file-io-001`) | 🚀 OPT | [x] ✅ Done |
+| **FINISH** | Final Verification & Cleanup | - | [x] ✅ Done |
 
 ---
 
