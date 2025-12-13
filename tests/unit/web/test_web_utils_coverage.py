@@ -446,8 +446,9 @@ class TestAnswerLimitsEdgeCases:
         """Test target long answer detection."""
         long_answer = " ".join(["단어"] * 30)
         result = postprocess_answer(long_answer, "target")
-        # Should apply longer limits
-        assert len(result) > 0
+        # Should apply longer limits and preserve content
+        assert len(result) > 0, "Result should not be empty"
+        assert "단어" in result, "Result should contain original words"
 
 
 class TestComplexScenarios:
@@ -556,7 +557,8 @@ class TestPrivateFunctionsExtended:
         text = '{\n- "intro": "서론",\n- "sections": []\n}'
         result = _parse_structured_answer(text)
         # List markers should be removed, making it valid JSON
-        assert result is not None
+        assert result is not None, "Parser should handle list markers"
+        assert isinstance(result, dict), "Result should be a dict"
 
     def test_sanitize_structured_text(self) -> None:
         """Test _sanitize_structured_text removes unwanted elements."""
