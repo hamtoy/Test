@@ -61,8 +61,8 @@ async def _tail_log_file(
     last_size = log_path.stat().st_size
 
     # Stream new content
-    while True:
-        try:
+    try:
+        while True:
             await asyncio.sleep(1)  # Poll every second
 
             current_size = log_path.stat().st_size
@@ -85,16 +85,10 @@ async def _tail_log_file(
             elif current_size < last_size:
                 # File was truncated or rotated
                 last_size = 0
-
-        except WebSocketDisconnect:
-            break
-        except Exception as e:
-            logger.warning("Log streaming error: %s", e)
-            try:
-                await websocket.send_json({"type": "error", "message": str(e)})
-            except Exception:
-                break
-            await asyncio.sleep(5)
+    except WebSocketDisconnect:
+        pass  # Normal disconnection
+    except Exception as e:
+        logger.warning("Log streaming error: %s", e)
 
 
 def _read_new_content(path: Path, start: int, end: int) -> str:
