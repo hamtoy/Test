@@ -63,9 +63,11 @@ class TestStreamBatchTypes:
 
     def test_resolve_stream_batch_types_custom(self) -> None:
         """Test custom batch types."""
-        body = GenerateQARequest(mode="batch", batch_types=["explanation", "reasoning"])
+        body = GenerateQARequest(
+            mode="batch", batch_types=["global_explanation", "reasoning"]
+        )
         result = _resolve_stream_batch_types(body)
-        assert result == ["explanation", "reasoning"]
+        assert result == ["global_explanation", "reasoning"]
 
     def test_resolve_stream_batch_types_batch_three(self) -> None:
         """Test batch_three mode."""
@@ -101,14 +103,18 @@ class TestStreamBatchState:
 class TestReasoningTaskManagement:
     """Test reasoning task management."""
 
-    def test_maybe_start_reasoning_task_when_present(self) -> None:
+    @pytest.mark.asyncio
+    async def test_maybe_start_reasoning_task_when_present(self) -> None:
         """Test starting reasoning task when it's first in remaining types."""
         remaining_types = ["reasoning", "target_short"]
         mock_agent = Mock()
 
         with patch("src.web.routers.qa.generate_single_qa_with_retry") as mock_gen:
-            mock_gen.return_value = asyncio.Future()
-            mock_gen.return_value.set_result({"query": "Q", "answer": "A"})
+
+            async def mock_coro() -> dict[str, Any]:
+                return {"query": "Q", "answer": "A"}
+
+            mock_gen.return_value = mock_coro()
 
             task, new_remaining = _maybe_start_reasoning_task(
                 remaining_types, mock_agent, "OCR"
@@ -213,14 +219,18 @@ class TestYieldCompletedReasoningTask:
 class TestCreateStreamTasks:
     """Test stream task creation."""
 
-    def test_create_stream_tasks_creates_all_tasks(self) -> None:
+    @pytest.mark.asyncio
+    async def test_create_stream_tasks_creates_all_tasks(self) -> None:
         """Test creating tasks for all remaining types."""
         remaining_types = ["target_short", "target_long"]
         mock_agent = Mock()
 
         with patch("src.web.routers.qa.generate_single_qa_with_retry") as mock_gen:
-            mock_gen.return_value = asyncio.Future()
-            mock_gen.return_value.set_result({"query": "Q", "answer": "A"})
+
+            async def mock_coro() -> dict[str, Any]:
+                return {"query": "Q", "answer": "A"}
+
+            mock_gen.return_value = mock_coro()
 
             task_map = _create_stream_tasks(remaining_types, mock_agent, "OCR", [], "")
 
@@ -228,7 +238,8 @@ class TestCreateStreamTasks:
             for qtype in task_map.values():
                 assert qtype in remaining_types
 
-    def test_create_stream_tasks_passes_previous_queries(self) -> None:
+    @pytest.mark.asyncio
+    async def test_create_stream_tasks_passes_previous_queries(self) -> None:
         """Test that previous queries are passed to task creation."""
         remaining_types = ["target_short"]
         mock_agent = Mock()
@@ -236,8 +247,11 @@ class TestCreateStreamTasks:
         first_answer = "첫 답변"
 
         with patch("src.web.routers.qa.generate_single_qa_with_retry") as mock_gen:
-            mock_gen.return_value = asyncio.Future()
-            mock_gen.return_value.set_result({"query": "Q", "answer": "A"})
+
+            async def mock_coro() -> dict[str, Any]:
+                return {"query": "Q", "answer": "A"}
+
+            mock_gen.return_value = mock_coro()
 
             task_map = _create_stream_tasks(
                 remaining_types,
@@ -375,7 +389,7 @@ class TestStreamBatchEventsIntegration:
         """Test streaming with single QA type."""
         from src.web.routers.qa import _stream_batch_events
 
-        body = GenerateQARequest(mode="batch", batch_types=["explanation"])
+        body = GenerateQARequest(mode="batch", batch_types=["global_explanation"])
         mock_agent = Mock()
 
         with patch("src.web.routers.qa.generate_single_qa_with_retry") as mock_gen:

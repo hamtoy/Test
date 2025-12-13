@@ -251,9 +251,13 @@ class TestValidateOutput:
             patch("src.qa.pipeline.QAKnowledgeGraph"),
             patch("src.qa.pipeline.DynamicTemplateGenerator") as mock_gen,
         ):
-            mock_driver = Mock()
+            # Setup mock session with context manager support
             mock_session = Mock()
             mock_session.run = Mock(return_value=[])
+            mock_session.__enter__ = Mock(return_value=mock_session)
+            mock_session.__exit__ = Mock(return_value=None)
+
+            mock_driver = Mock()
             mock_driver.session = Mock(return_value=mock_session)
 
             mock_template_gen = Mock()
@@ -275,9 +279,13 @@ class TestValidateOutput:
             patch("src.qa.pipeline.QAKnowledgeGraph"),
             patch("src.qa.pipeline.DynamicTemplateGenerator") as mock_gen,
         ):
-            mock_driver = Mock()
+            # Setup mock session with context manager support
             mock_session = Mock()
             mock_session.run = Mock(return_value=[])
+            mock_session.__enter__ = Mock(return_value=mock_session)
+            mock_session.__exit__ = Mock(return_value=None)
+
+            mock_driver = Mock()
             mock_driver.session = Mock(return_value=mock_session)
 
             mock_template_gen = Mock()
@@ -301,12 +309,17 @@ class TestValidateOutput:
             patch("src.qa.pipeline.QAKnowledgeGraph"),
             patch("src.qa.pipeline.DynamicTemplateGenerator") as mock_gen,
         ):
+            # Mock record with proper getitem
             mock_record = Mock()
-            mock_record.__getitem__ = lambda self, key: {
-                "pattern": r"\berror\b",
-                "desc": "에러 패턴",
-            }[key]
+            mock_record.__getitem__ = Mock(
+                side_effect=lambda key: {
+                    "pattern": r"\berror\b",
+                    "desc": "에러 패턴",
+                    "text": "규칙 텍스트",
+                }.get(key, "")
+            )
 
+            # Setup mock session with context manager support
             mock_session = Mock()
             mock_session.run = Mock(return_value=[mock_record])
             mock_session.__enter__ = Mock(return_value=mock_session)

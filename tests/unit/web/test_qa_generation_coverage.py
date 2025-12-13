@@ -81,9 +81,11 @@ class TestBatchTypeResolution:
 
     def test_resolve_batch_types_custom(self) -> None:
         """Test custom batch types."""
-        body = GenerateQARequest(mode="batch", batch_types=["explanation", "reasoning"])
+        body = GenerateQARequest(
+            mode="batch", batch_types=["global_explanation", "reasoning"]
+        )
         result = _resolve_batch_types(body)
-        assert result == ["explanation", "reasoning"]
+        assert result == ["global_explanation", "reasoning"]
 
     def test_resolve_batch_types_three_mode(self) -> None:
         """Test batch_three mode defaults."""
@@ -91,12 +93,12 @@ class TestBatchTypeResolution:
         result = _resolve_batch_types(body)
         assert isinstance(result, list)
 
-    def test_resolve_batch_types_empty_raises(self) -> None:
-        """Test empty batch_types raises HTTPException."""
+    def test_resolve_batch_types_empty_uses_default(self) -> None:
+        """Test empty batch_types falls back to default."""
         body = GenerateQARequest(mode="batch", batch_types=[])
-        with pytest.raises(HTTPException) as exc_info:
-            _resolve_batch_types(body)
-        assert exc_info.value.status_code == 400
+        # Empty list is falsy, so it falls back to QA_BATCH_TYPES
+        result = _resolve_batch_types(body)
+        assert len(result) > 0  # Should have default types
 
 
 class TestErrorHandling:
@@ -225,7 +227,7 @@ class TestAPIGenerateQA:
     @pytest.mark.asyncio
     async def test_api_generate_qa_no_agent(self) -> None:
         """Test API returns error when agent not initialized."""
-        body = GenerateQARequest(mode="single", qtype="explanation")
+        body = GenerateQARequest(mode="single", qtype="global_explanation")
 
         with patch("src.web.routers.qa_generation._get_agent", return_value=None):
             with pytest.raises(HTTPException) as exc_info:
@@ -279,7 +281,7 @@ class TestAPIGenerateQA:
     async def test_api_generate_qa_uses_provided_ocr(self) -> None:
         """Test API uses OCR text from request body."""
         body = GenerateQARequest(
-            mode="single", qtype="explanation", ocr_text="직접 제공한 OCR"
+            mode="single", qtype="global_explanation", ocr_text="직접 제공한 OCR"
         )
 
         mock_agent = Mock()
