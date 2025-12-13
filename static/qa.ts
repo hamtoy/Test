@@ -84,10 +84,13 @@ function getTypeBadge(type: string): string {
     return badges[type] || type;
 }
 
-function copyToWorkspace(query: string, answer: string): void {
-    sessionStorage.setItem("workspace_query", query);
-    sessionStorage.setItem("workspace_answer", answer);
-    window.location.href = "/workspace";
+function copyToClipboard(query: string, answer: string): void {
+    const text = `💬 질의\n${query}\n\n✨ 답변\n${answer}`;
+    navigator.clipboard.writeText(text).then(() => {
+        showToast("클립보드에 복사되었습니다.", "success");
+    }).catch(() => {
+        showToast("복사에 실패했습니다.", "error");
+    });
 }
 
 function isQAPair(value: unknown): value is QAPair {
@@ -182,9 +185,9 @@ function displayResults(raw: unknown): void {
         btnRow.className = "btn-row qa-btn-row";
         const copyBtn = document.createElement("button");
         copyBtn.className = "btn-small qa-copy-btn";
-        copyBtn.textContent = "📝 워크스페이스로 복사";
+        copyBtn.textContent = "📋 복사";
         copyBtn.addEventListener("click", () => {
-            copyToWorkspace(item.query || "", item.answer || "");
+            copyToClipboard(item.query || "", item.answer || "");
         });
         btnRow.appendChild(copyBtn);
         card.appendChild(btnRow);
@@ -339,8 +342,8 @@ function updateCardWithData(type: string, data: QAPair): void {
     btnRow.className = "btn-row qa-btn-row";
     const copyBtn = document.createElement("button");
     copyBtn.className = "btn-small qa-copy-btn";
-    copyBtn.textContent = "📝 워크스페이스로 복사";
-    copyBtn.addEventListener("click", () => copyToWorkspace(data.query, data.answer));
+    copyBtn.textContent = "📋 복사";
+    copyBtn.addEventListener("click", () => copyToClipboard(data.query, data.answer));
     btnRow.appendChild(copyBtn);
     card.appendChild(btnRow);
 }
