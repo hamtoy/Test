@@ -265,8 +265,6 @@ class TestAPIGenerateQA:
                     ) as mock_batch:
                         # Simulate timeout
                         async def slow_process(*args: Any, **kwargs: Any) -> None:
-                            import asyncio
-
                             await asyncio.sleep(10)
 
                         mock_batch.side_effect = slow_process
