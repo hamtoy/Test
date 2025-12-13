@@ -361,7 +361,7 @@ async def init_resources() -> None:
 
             from src.web.cache import answer_cache
 
-            redis_client = aioredis.from_url(redis_url)
+            redis_client = aioredis.from_url(redis_url)  # type: ignore[no-untyped-call]
             answer_cache.redis = redis_client
             answer_cache.use_redis = True
             logger.info("Redis connected to AnswerCache (TTL: %ds)", answer_cache.ttl)
