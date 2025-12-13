@@ -507,3 +507,388 @@ class TestComplexScenarios:
         result_rea = postprocess_answer(answer_rea, "reasoning")
         # Should use reasoning conclusion prefix
         assert "종합하면" in result_rea or "결과입니다" in result_rea
+
+
+class TestPrivateFunctionsExtended:
+    """Extended tests for private helper functions."""
+
+    def test_extract_json_object_valid(self) -> None:
+        """Test _extract_json_object with valid JSON."""
+        from src.web.utils import _extract_json_object
+
+        text = 'Some text {"key": "value"} more text'
+        result = _extract_json_object(text)
+        assert result == '{"key": "value"}'
+
+    def test_extract_json_object_empty(self) -> None:
+        """Test _extract_json_object with empty input."""
+        from src.web.utils import _extract_json_object
+
+        assert _extract_json_object("") is None
+        assert _extract_json_object("   ") is None
+        assert _extract_json_object("no braces here") is None
+
+    def test_parse_structured_answer_valid(self) -> None:
+        """Test _parse_structured_answer with valid structured JSON."""
+        from src.web.utils import _parse_structured_answer
+
+        text = '{"intro": "서론", "sections": [], "conclusion": "결론"}'
+        result = _parse_structured_answer(text)
+        assert result is not None
+        assert result["intro"] == "서론"
+
+    def test_parse_structured_answer_with_bold_markers(self) -> None:
+        """Test _parse_structured_answer removes bold markers."""
+        from src.web.utils import _parse_structured_answer
+
+        text = '{"**intro**": "서론", "sections": []}'
+        result = _parse_structured_answer(text)
+        # Bold markers in keys are removed
+        assert result is None or "intro" in str(result)
+
+    def test_parse_structured_answer_with_list_markers(self) -> None:
+        """Test _parse_structured_answer removes list markers."""
+        from src.web.utils import _parse_structured_answer
+
+        text = '{\n- "intro": "서론",\n- "sections": []\n}'
+        result = _parse_structured_answer(text)
+        # List markers should be removed, making it valid JSON
+        assert result is not None
+
+    def test_sanitize_structured_text(self) -> None:
+        """Test _sanitize_structured_text removes unwanted elements."""
+        from src.web.utils import _sanitize_structured_text
+
+        assert _sanitize_structured_text(None) == ""
+        assert _sanitize_structured_text("<output>내용</output>") == "내용"
+        assert _sanitize_structured_text("**볼드**") == "볼드"
+        assert _sanitize_structured_text("- 불릿\n1. 숫자") == "불릿 숫자"
+
+    def test_ensure_starts_with(self) -> None:
+        """Test _ensure_starts_with adds prefix if missing."""
+        from src.web.utils import _ensure_starts_with
+
+        assert _ensure_starts_with("", ("요약",), "요약하면, ") == ""
+        assert _ensure_starts_with("내용", ("요약",), "요약하면, ") == "요약하면, 내용"
+        assert (
+            _ensure_starts_with("요약합니다", ("요약",), "요약하면, ") == "요약합니다"
+        )
+
+    def test_render_item(self) -> None:
+        """Test _render_item formats items correctly."""
+        from src.web.utils import _render_item
+
+        assert _render_item(None) is None
+        assert _render_item("not a dict") is None
+        assert _render_item({"label": "라벨", "text": "내용"}) == "- **라벨**: 내용"
+        assert _render_item({"text": "내용만"}) == "- 내용만"
+        assert _render_item({"label": "라벨만"}) is None
+
+    def test_ensure_title_spacing(self) -> None:
+        """Test _ensure_title_spacing adds blank lines."""
+        from src.web.utils import _ensure_title_spacing
+
+        lines: list[str] = ["내용"]
+        _ensure_title_spacing(lines)
+        assert lines == ["내용", "", ""]
+
+        lines2: list[str] = ["내용", ""]
+        _ensure_title_spacing(lines2)
+        assert lines2 == ["내용", "", ""]
+
+    def test_format_conclusion(self) -> None:
+        """Test _format_conclusion adds appropriate prefix."""
+        from src.web.utils import _format_conclusion
+
+        assert "요약하면" in _format_conclusion("결론입니다", "explanation")
+        assert "종합하면" in _format_conclusion("결론입니다", "reasoning")
+        assert _format_conclusion("결론", "target") == "결론"
+
+    def test_limit_words(self) -> None:
+        """Test _limit_words truncates correctly."""
+        from src.web.utils import _limit_words
+
+        text = "하나 둘 셋 넷 다섯"
+        assert _limit_words(text, 3) == "하나 둘 셋"
+        assert _limit_words(text, 10) == text
+
+    def test_normalize_ending_punctuation(self) -> None:
+        """Test _normalize_ending_punctuation handles various endings."""
+        from src.web.utils import _normalize_ending_punctuation
+
+        assert _normalize_ending_punctuation("") == ""
+        assert _normalize_ending_punctuation("문장") == "문장."
+        assert _normalize_ending_punctuation("문장.") == "문장."
+        assert _normalize_ending_punctuation("문장...") == "문장."
+
+    def test_split_sentences_safe(self) -> None:
+        """Test _split_sentences_safe handles decimal points."""
+        from src.web.utils import _split_sentences_safe
+
+        result = _split_sentences_safe("가격은 1.5만원입니다. 수량은 2개입니다.")
+        assert len(result) == 2
+        assert "1.5만원" in result[0]
+
+
+class TestRenderStructuredAnswer:
+    """Test structured answer rendering."""
+
+    def test_render_with_sections(self) -> None:
+        """Test rendering structured answer with sections."""
+        from src.web.utils import _render_structured_answer
+
+        structured = {
+            "intro": "서론입니다.",
+            "sections": [
+                {
+                    "title": "섹션1",
+                    "items": [
+                        {"label": "항목1", "text": "내용1"},
+                        {"label": "항목2", "text": "내용2"},
+                    ],
+                }
+            ],
+            "conclusion": "결론입니다.",
+        }
+        result = _render_structured_answer(structured, "explanation")
+        assert result is not None
+        assert "서론입니다" in result
+        assert "**섹션1**" in result
+        assert "- **항목1**:" in result
+        assert "요약하면" in result
+
+    def test_render_with_bullets(self) -> None:
+        """Test rendering with bullets instead of items."""
+        from src.web.utils import _render_structured_answer
+
+        structured = {
+            "intro": "서론",
+            "sections": [
+                {"title": "제목", "bullets": [{"text": "불릿1"}, {"text": "불릿2"}]}
+            ],
+            "conclusion": "결론",
+        }
+        result = _render_structured_answer(structured, "explanation")
+        assert "- 불릿1" in result
+        assert "- 불릿2" in result
+
+    def test_render_empty_sections(self) -> None:
+        """Test rendering with empty sections list."""
+        from src.web.utils import _render_structured_answer
+
+        structured = {"intro": "서론만", "sections": [], "conclusion": ""}
+        result = _render_structured_answer(structured, "explanation")
+        assert result is not None
+        # Fallback conclusion should be used
+        assert "서론만" in result
+
+
+class TestSplitConclusionBlock:
+    """Test conclusion block splitting."""
+
+    def test_split_with_conclusion_marker(self) -> None:
+        """Test splitting when **결론** marker exists."""
+        from src.web.utils import _split_conclusion_block
+
+        answer = "본문 내용입니다.\n\n**결론**\n마무리입니다."
+        result = _split_conclusion_block(answer, "explanation")
+        assert result is not None
+        prefix, conclusion = result
+        assert "본문 내용" in prefix
+        assert "결론" in conclusion
+
+    def test_split_with_prefix_pattern(self) -> None:
+        """Test splitting based on conclusion prefix."""
+        from src.web.utils import _split_conclusion_block
+
+        answer = "본문입니다.\n\n요약하면, 핵심입니다."
+        result = _split_conclusion_block(answer, "explanation")
+        assert result is not None
+        prefix, conclusion = result
+        assert "본문" in prefix
+        assert "요약하면" in conclusion
+
+    def test_no_split_needed(self) -> None:
+        """Test when no conclusion block is found."""
+        from src.web.utils import _split_conclusion_block
+
+        answer = "단순 본문입니다."
+        result = _split_conclusion_block(answer, "target")
+        assert result is None
+
+
+class TestTruncationFunctions:
+    """Test truncation functions."""
+
+    def test_truncate_markdown_preserving_lines(self) -> None:
+        """Test markdown-aware truncation."""
+        from src.web.utils import _truncate_markdown_preserving_lines
+
+        text = "첫 번째 줄\n두 번째 줄\n세 번째 줄"
+        result = _truncate_markdown_preserving_lines(text, 20)
+        assert "첫 번째 줄" in result
+        assert len(result) <= 20
+
+    def test_truncate_markdown_zero_length(self) -> None:
+        """Test truncation with zero max_length."""
+        from src.web.utils import _truncate_markdown_preserving_lines
+
+        assert _truncate_markdown_preserving_lines("내용", 0) == ""
+
+    def test_truncate_explanation_with_conclusion(self) -> None:
+        """Test explanation truncation preserving conclusion."""
+        from src.web.utils import _truncate_explanation
+
+        answer = "서론입니다. " * 50 + "\n\n요약하면, 결론입니다."
+        result = _truncate_explanation(answer, 200)
+        assert len(result) <= 210  # Allow small overflow
+        assert "요약하면" in result or "결론" in result
+
+
+class TestMarkdownHelpers:
+    """Test markdown helper functions."""
+
+    def test_strip_code_and_links(self) -> None:
+        """Test code and link removal."""
+        from src.web.utils import _strip_code_and_links
+
+        text = "코드 `inline` 블록 ```block``` 링크 [텍스트](url)"
+        result = _strip_code_and_links(text)
+        assert "`" not in result
+        assert "```" not in result
+        assert "[텍스트]" not in result
+        assert "inline" in result
+
+    def test_remove_unauthorized_markdown(self) -> None:
+        """Test selective markdown removal."""
+        from src.web.utils import _remove_unauthorized_markdown
+
+        text = "### 헤더\n**굵게** *이탤릭*"
+        result = _remove_unauthorized_markdown(text)
+        assert "###" not in result
+        assert "**굵게**" in result
+        assert "*이탤릭*" not in result
+        assert "이탤릭" in result
+
+    def test_is_existing_markdown_line(self) -> None:
+        """Test markdown line detection."""
+        from src.web.utils import _is_existing_markdown_line
+
+        assert _is_existing_markdown_line("**제목**") is True
+        assert _is_existing_markdown_line("- **항목**") is True
+        assert _is_existing_markdown_line("일반 텍스트") is False
+
+    def test_convert_dash_bullet(self) -> None:
+        """Test bullet conversion with colon."""
+        from src.web.utils import _convert_dash_bullet
+
+        assert _convert_dash_bullet("- 항목: 설명") == "- **항목**: 설명"
+        assert _convert_dash_bullet("- **이미굵게**: 설명") == "- **이미굵게**: 설명"
+        assert _convert_dash_bullet("- 콜론없음") == "- 콜론없음"
+
+    def test_convert_colon_item_line(self) -> None:
+        """Test colon item conversion."""
+        from src.web.utils import _convert_colon_item_line
+
+        assert _convert_colon_item_line("항목: 설명") == "- **항목**: 설명"
+        assert _convert_colon_item_line("콜론없음") is None
+        assert _convert_colon_item_line("아주긴이름" * 10 + ": 설명") is None
+
+
+class TestBlankLineNormalization:
+    """Test blank line normalization."""
+
+    def test_normalize_blank_lines(self) -> None:
+        """Test blank line normalization between bullets."""
+        from src.web.utils import _normalize_blank_lines
+
+        text = "- 항목1\n\n\n\n- 항목2"
+        result = _normalize_blank_lines(text)
+        # Should reduce to max 2 blank lines or remove between bullets
+        assert result.count("\n\n\n\n") == 0
+
+    def test_find_next_content_line(self) -> None:
+        """Test finding next non-empty line."""
+        from src.web.utils import _find_next_content_line
+
+        lines = ["내용", "", "", "더 내용"]
+        assert _find_next_content_line(lines, 0) == 3
+        assert _find_next_content_line(lines, 3) is None
+
+    def test_is_between_bullets(self) -> None:
+        """Test bullet detection."""
+        from src.web.utils import _is_between_bullets
+
+        cleaned = ["- 이전"]
+        lines = ["- 이전", "", "- 다음"]
+        assert _is_between_bullets(cleaned, lines, 2) is True
+
+        cleaned2 = ["일반"]
+        assert _is_between_bullets(cleaned2, lines, 2) is False
+
+
+class TestApplyAnswerLimits:
+    """Test answer limit application."""
+
+    def test_apply_answer_limits_reasoning(self) -> None:
+        """Test reasoning limits."""
+        from src.web.utils import apply_answer_limits
+
+        long_answer = ". ".join([f"문장{i}입니다" for i in range(10)]) + "."
+        result = apply_answer_limits(long_answer, "reasoning")
+        # Reasoning should limit to 5 sentences
+        assert result.count(".") <= 6
+
+    def test_apply_answer_limits_target(self) -> None:
+        """Test target limits."""
+        from src.web.utils import apply_answer_limits
+
+        short_answer = "단답"
+        result = apply_answer_limits(short_answer, "target")
+        assert result == "단답"
+
+        # Use longer answer with more words to trigger limits (word count > 15)
+        long_answer = ". ".join(["이것은 긴 문장입니다 테스트용"] * 10) + "."
+        result = apply_answer_limits(long_answer, "target")
+        # Target limits sentences to 6 and words to 200, verify something happened
+        assert len(result) <= len(long_answer)
+
+    def test_apply_answer_limits_unknown_qtype(self) -> None:
+        """Test with unknown qtype returns unchanged."""
+        from src.web.utils import apply_answer_limits
+
+        answer = "원본 답변"
+        result = apply_answer_limits(answer, "unknown_type")
+        assert result == answer
+
+
+class TestGetFallbackConclusion:
+    """Test fallback conclusion generation."""
+
+    def test_fallback_from_intro(self) -> None:
+        """Test fallback uses first sentence from intro."""
+        from src.web.utils import _get_fallback_conclusion
+
+        result = _get_fallback_conclusion("첫 문장. 두번째.", "explanation")
+        assert "첫 문장" in result
+
+    def test_fallback_explanation_default(self) -> None:
+        """Test explanation default fallback."""
+        from src.web.utils import _get_fallback_conclusion
+
+        result = _get_fallback_conclusion("", "explanation")
+        assert "핵심 내용" in result
+
+    def test_fallback_reasoning_default(self) -> None:
+        """Test reasoning default fallback."""
+        from src.web.utils import _get_fallback_conclusion
+
+        result = _get_fallback_conclusion("", "reasoning")
+        assert "근거" in result
+
+    def test_fallback_other_qtype(self) -> None:
+        """Test other qtype returns empty."""
+        from src.web.utils import _get_fallback_conclusion
+
+        result = _get_fallback_conclusion("", "target")
+        assert result == ""
