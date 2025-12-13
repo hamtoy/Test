@@ -46,10 +46,11 @@ def _get_request_id(request: Request) -> str:
 
 @router.get("/ocr")
 async def api_get_ocr(request: Request) -> dict[str, str]:
-    """OCR 텍스트 조회."""
+    """OCR 텍스트 조회 (비동기 파일 I/O)."""
     try:
         config = _get_config()
-        ocr_text = _load_ocr_text(config)
+        loop = asyncio.get_event_loop()
+        ocr_text = await loop.run_in_executor(None, _load_ocr_text, config)
         return {"ocr": ocr_text}
     except HTTPException:
         raise
