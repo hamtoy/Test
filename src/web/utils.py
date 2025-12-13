@@ -796,6 +796,13 @@ def postprocess_answer(
         answer,
     )
 
+    # 3.7.1. 결론 접두어 중복 제거 (요약하면, 종합하면 등이 연속으로 나오면 첫 번째만 유지)
+    answer = re.sub(
+        r"(요약하면|종합하면|결론적으로|정리하면)[,\s]*(요약하면|종합하면|결론적으로|정리하면)",
+        r"\1",
+        answer,
+    )
+
     # 4. 기본 정리
     answer = answer.strip()
 
