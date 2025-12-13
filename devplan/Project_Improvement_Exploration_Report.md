@@ -29,22 +29,21 @@
 | 우선순위 | 남은 개수 |
 |:---:|:---:|
 | 🔴 P1 | 0 |
-| 🟡 P2 | 2 |
+| 🟡 P2 | 1 |
 | 🟢 P3 | 1 |
 | 🚀 OPT | 2 |
-| **합계** | **5** |
+| **합계** | **4** |
 
 | # | 항목명 | 우선순위 | 카테고리 |
 |:---:|:---|:---:|:---|
-| 1 | 설정 파일 동시성(Lock) 제어 | P2 | 🔒 보안/안정성 |
-| 2 | 대시보드 UI 단위 테스트 추가 | P2 | 🧪 테스트 |
-| 3 | 프론트/백엔드 빌드 파이프라인 통합 | P3 | 📦 배포 |
-| 4 | Web API 완전 비동기 I/O (aiofiles) | OPT | ⚙️ 성능 |
-| 5 | LATS 워크플로우 실행 속도 최적화 | OPT | ⚙️ 성능 |
+| 1 | GitHub Actions 기반 CI 자동화 | P2 | 📦 배포/DevOps |
+| 2 | LLM Rate Limit 모델 폴백(Fallback) | P3 | ✨ 기능 추가 |
+| 3 | FileLock 모듈 타입 안정성 강화 | OPT | 🧹 코드 품질 |
+| 4 | 서버 로그 로테이션(Rotation) 적용 | OPT | ⚙️ 성능/운영 |
 
-- **P1 (Critical):** 현재 서비스 중단을 야기할 치명적 결함은 없습니다.
-- **P2 (High):** `config_api`의 동시성 문제 해결과 UI 컴포넌트 테스트 확보가 시급합니다.
-- **P3/OPT:** 운영 편의성을 위한 빌드 통합과 고성능 처리를 위한 최적화 과제가 남아있습니다.
+- **P1 (Critical):** 현재 긴급한 장애 요인은 없습니다.
+- **P2 (High):** 로컬 스크립트로 동작하는 빌드/테스트 과정을 **CI 파이프라인(GitHub Actions)**으로 이관하여 자동화해야 합니다.
+- **P3/OPT:** 운영 안정성을 위한 로그 관리와 타입 시스템의 엄격함을 되찾는 최적화 작업이 필요합니다.
 <!-- AUTO-SUMMARY-END -->
 
 ---
@@ -56,66 +55,36 @@
 
 ### 🟡 중요 (P2)
 
-#### [P2-1] 설정 파일 동시성(Lock) 제어
+#### [P2-1] GitHub Actions 기반 CI 자동화
 
 | 항목 | 내용 |
 |------|------|
-| **ID** | `fix-config-concurrency-001` |
-| **카테고리** | 🔒 보안/안정성 |
-| **복잡도** | Low |
-| **대상 파일** | `src/web/routers/config_api.py`, `src/utils/file_lock.py` |
-| **Origin** | static-analysis |
-| **리스크 레벨** | medium |
-| **관련 평가 카테고리** | errorHandling, productionReadiness |
-
-- **현재 상태:**
-  - `config_api.py`가 `settings.json` 등의 설정 파일을 직접 덮어씁니다(`write_text`).
-  - 여러 사용자가 동시에 웹 대시보드에서 설정을 변경하거나, 백그라운드 프로세스가 접근할 경우 경합 조건(Race Condition)이 발생할 수 있습니다.
-- **문제점 (Problem):**
-  - 설정 파일 내용이 깨지거나(Corrupted), 마지막 변경사항만 적용되는 데이터 손실 위험 존재.
-- **영향 (Impact):**
-  - 운영 환경에서의 신뢰성 저하 및 예기치 않은 동작 오류 유발.
-- **원인 (Cause):**
-  - 파일 쓰기 시점의 배타적 잠금(Exclusive Lock) 메커니즘 부재.
-- **개선 내용 (Proposed Solution):**
-  - `fasteners` 패키지 또는 `portalocker`를 도입하여 파일 쓰기 전 락을 획득하도록 수정.
-  - Context Manager(`with FileLock(...)`) 패턴 적용.
-- **기대 효과:**
-  - 다중 접속 환경에서도 설정 데이터의 무결성 보장.
-- **Definition of Done:**
-  - [ ] 파일 락 유틸리티 함수 구현 (`src/utils/file_lock.py`)
-  - [ ] `config_api.py`의 쓰기 로직에 락 적용
-  - [ ] 동시성 테스트(Concurrency Test) 스크립트로 데이터 무결성 검증
-
-#### [P2-2] 대시보드 UI 단위 테스트 추가
-
-| 항목 | 내용 |
-|------|------|
-| **ID** | `test-dashboard-unit-001` |
-| **카테고리** | 🧪 테스트 |
+| **ID** | `feat-ci-workflow-001` |
+| **카테고리** | 📦 배포/DevOps |
 | **복잡도** | Medium |
-| **대상 파일** | `static/LogViewer.ts`, `static/ConfigEditor.ts`, `tests/frontend/` |
+| **대상 파일** | `.github/workflows/ci.yml` |
 | **Origin** | manual-idea |
-| **리스크 레벨** | low |
-| **관련 평가 카테고리** | testCoverage |
+| **리스크 레벨** | medium |
+| **관련 평가 카테고리** | productionReadiness |
 
 - **현재 상태:**
-  - E2E 테스트(`test_cli_flow`)는 전체 흐름을 보지만, `LogViewer`의 필터링 로직이나 `ConfigEditor`의 폼 검증 로직 같은 상세 단위 테스트는 부족합니다.
+  - `python -m pytest` 및 `npm run build` 등의 검증 과정이 로컬 개발자 환경에 의존적입니다.
+  - `build_release.py`가 추가되었으나 이를 자동 실행하는 파이프라인이 없습니다.
 - **문제점 (Problem):**
-  - UI 로직 변경 시 회귀 버그(Regression)를 E2E만으로 잡아내기에는 피드백 루프가 느리고 부정확함.
+  - PR 병합 시 테스트가 누락되거나, 환경 차이로 인한 빌드 오류 발생 가능성.
 - **영향 (Impact):**
-  - 프론트엔드 기능 고도화 시 개발 속도 저하.
+  - 메인 브랜치의 안정성 저하 및 배포 프로세스의 인적 오류 위험.
 - **원인 (Cause):**
-  - 초기 개발 시 Vitest 환경이 E2E 위주로 구성됨.
+  - 자동화된 CI/CD 워크플로우(`yaml`) 부재.
 - **개선 내용 (Proposed Solution):**
-  - `src/static/` 내의 TS 파일들에 대한 `vitest` 단위 테스트 케이스 작성.
-  - `jsdom` 환경에서 React 컴포넌트 렌더링 및 이벤트 핸들링 테스트.
+  - GitHub Actions 워크플로우(`.github/workflows/ci.yml`) 작성.
+  - Push 및 PR 이벤트 발생 시 백엔드 테스트(`pytest`)와 프론트엔드 빌드 검증 수행.
 - **기대 효과:**
-  - UI 컴포넌트의 독립적 품질 보증 및 리팩토링 안전망 확보.
+  - 코드 변경에 대한 즉각적인 피드백 루프 확보 및 배포 신뢰도 상승.
 - **Definition of Done:**
-  - [ ] `LogViewer.test.ts` 작성 (WebSocket 메시지 파싱 테스트)
-  - [ ] `ConfigEditor.test.ts` 작성 (유효성 검증 로직 테스트)
-  - [ ] `pnpm test:unit` 명령으로 통과 확인
+  - [ ] `.github/workflows/ci.yml` 파일 생성
+  - [ ] Python 3.10+ 환경 설정 및 의존성 설치 스텝 구현
+  - [ ] `pytest` 및 `npm run build` (또는 `build_release.py`) 실행 성공 단계 추가
 
 <!-- AUTO-IMPROVEMENT-LIST-END -->
 
@@ -126,22 +95,22 @@
 
 ### 🟢 P3 (Feature Additions)
 
-#### [P3-1] 프론트/백엔드 빌드 파이프라인 통합 (`feat-build-integration-001`)
+#### [P3-1] LLM Rate Limit 모델 폴백(Fallback) (`feat-model-fallback-001`)
 
 | 항목 | 내용 |
 |------|------|
-| **ID** | `feat-build-integration-001` |
-| **카테고리** | 📦 배포 |
-| **대상 파일** | `tasks.py` (또는 신규 스크립트), `pyproject.toml`, `package.json` |
+| **ID** | `feat-model-fallback-001` |
+| **카테고리** | ✨ 기능 추가 |
+| **대상 파일** | `src/llm/gemini_client.py` |
 | **리스크 레벨** | Low |
 
 - **현재 상태:**
-  - 백엔드 실행(`python -m src.main`)과 프론트엔드 빌드(`npm run build`)가 분리되어 있습니다.
-  - 배포 시 두 과정을 각각 수동으로 수행해야 하는 약간의 불편함 존재.
+  - `429 Too Many Requests` 발생 시 단순 Retry만 수행하며, 할당량이 소진된 경우 실패합니다.
 - **개선 내용:**
-  - 단일 명령(`python scripts/build_release.py` 등)으로 프론트엔드 빌드 -> 정적 파일 이동 -> 백엔드 패키징까지 수행하는 스크립트 작성.
+  - `gemini-pro` 사용 불가 시 `gemini-flash` 등 하위 모델로 자동 전환하는 로직 구현.
+  - `FallbackStrategy` 클래스 설계.
 - **기대 효과:**
-  - CI/CD 파이프라인 단순화 및 로컬 개발 시 배포 테스트 용이성 증대.
+  - API 제한 상황에서도 서비스 연속성 보장.
 
 <!-- AUTO-FEATURE-LIST-END -->
 
@@ -150,39 +119,40 @@
 <!-- AUTO-OPTIMIZATION-START -->
 ## 🚀 코드 품질 & 성능 최적화 (OPT)
 
-### 3-1. Web API 완전 비동기 I/O 도입 (`opt-web-async-io-002`)
+### 3-1. FileLock 모듈 타입 안정성 강화 (`opt-type-strictness-001`)
 
 | 항목 | 내용 |
 |------|------|
-| **ID** | `opt-web-async-io-002` |
-| **카테고리** | ⚙️ 성능 튜닝 |
-| **영향 범위** | 성능 / 품질 |
-| **대상 파일** | `src/web/routers/logs_api.py`, `src/utils/file_io.py` |
+| **ID** | `opt-type-strictness-001` |
+| **카테고리** | 🧹 코드 품질 |
+| **영향 범위** | 품질 |
+| **대상 파일** | `src/infra/file_lock.py`, `pyproject.toml` |
 
 - **현재 상태:**
-  - `logs_api.py`에서 `run_in_executor`를 사용하여 블로킹을 우회하고 있지만, 이는 스레드 풀을 사용하는 방식으로 대규모 동시 접속 시 100% 효율적이지 않습니다.
+  - `msvcrt`(Windows) 및 `fcntl`(Unix) 모듈이 특정 OS에만 존재하여 `mypy` 검사 시 `import-error`가 발생.
+  - 현재는 `type: ignore`와 `pyproject.toml`의 `warn_unused_ignores = false` 옵션으로 경고를 억제 중입니다.
 - **최적화 내용:**
-  - `aiofiles` 라이브러리를 도입하여 커널 레벨의 Non-blocking I/O를 활용하는 진정한 비동기 코드로 리팩토링.
-  - `async for` 구문을 통한 로그 스트리밍 처리.
+  - `sys.platform` 분기에 따라 조건부 타입 정의(`Protocol` 또는 `stub` 파일)를 적용.
+  - `Any` 타입 사용을 줄이고 명시적인 타입 힌트 적용.
 - **예상 효과:**
-  - 스레드 컨텍스트 스위칭 오버헤드 제거 및 더 높은 동시성 처리량(Throughput) 달성.
+  - 타입 시스템의 엄격함 회복 및 잠재적 타입 오류 사전 방지.
 - **측정 지표:**
-  - 동시 WebSocket 연결 100개 이상 유지 시 CPU/메모리 점유율 비교.
+  - `mypy` 실행 시 `warn_unused_ignores = true` 상태에서 에러 0건 달성.
 
-### 3-2. LATS 워크플로우 실행 속도 최적화 (`opt-lats-performance-001`)
+### 3-2. 서버 로그 로테이션(Rotation) 적용 (`opt-log-rotation-001`)
 
 | 항목 | 내용 |
 |------|------|
-| **ID** | `opt-lats-performance-001` |
-| **카테고리** | 🚀 알고리즘 최적화 |
-| **대상 파일** | `src/lats/search.py`, `src/agent/gemini.py` |
+| **ID** | `opt-log-rotation-001` |
+| **카테고리** | ⚙️ 성능/운영 |
+| **대상 파일** | `src/infra/logging.py` |
 
 - **현재 상태:**
-  - 트리 탐색(Tree Search) 시 노드 확장이 순차적으로 이루어지거나, 불필요하게 많은 토큰을 소모하는 프롬프트 구조.
+  - 로그 파일이 단일 파일(`app.log`)에 계속 누적되어, 장기 운영 시 디스크 용량 문제 및 분석 어려움 발생 가능.
 - **최적화 내용:**
-  - 자식 노드 생성 시 `asyncio.gather`를 활용한 병렬 요청 처리.
-  - 중간 평가 단계에서 프롬프트 Context Window를 절약하는 요약 기법 적용.
+  - `RotatingFileHandler` 또는 `TimedRotatingFileHandler`를 도입하여, 파일 크기(예: 10MB) 또는 날짜 기준으로 로그 분할.
+  - 오래된 로그 자동 삭제 정책 적용.
 - **예상 효과:**
-  - 복잡한 질의에 대한 자기 교정 소요 시간 30% 이상 단축.
+  - 디스크 공간 고갈 방지 및 로그 파일 접근 속도 유지.
 
 <!-- AUTO-OPTIMIZATION-END -->

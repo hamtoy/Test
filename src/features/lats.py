@@ -179,7 +179,7 @@ class LATSSearcher:
                     # Parallel evaluation of expanded children with rate limiting
                     rewards = await self._evaluate_children_parallel(expanded)
                     # Find best child from this expansion
-                    best_idx = max(range(len(rewards)), key=lambda i, r=rewards: r[i])
+                    best_idx = max(range(len(rewards)), key=lambda i, r=rewards: r[i])  # type: ignore[misc]
                     leaf = expanded[best_idx]
                     reward = rewards[best_idx]
                 else:
