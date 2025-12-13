@@ -28,20 +28,11 @@ from src.config.constants import (
 logger = logging.getLogger(__name__)
 
 
-class AppConfig(BaseSettings):
-    """애플리케이션 설정 관리.
+class LLMSettingsMixin(BaseSettings):
+    """LLM-related configuration settings (Mixin).
 
-    환경 변수(.env)를 통해 모든 설정을 주입받으며,
-    Pydantic을 사용한 엄격한 타입 검증을 수행합니다.
-
-    주요 설정:
-    - API 키 검증 (길이 제한, AIza 시작)
-    - 동시성 제한 (1-20)
-    - 타임아웃 (30-600초)
-    - 캐시 TTL (1-1440분)
-
-    Raises:
-        ValueError: 설정값이 유효하지 않은 경우
+    Handles API keys, model selection, tokens, timeouts, concurrency,
+    temperature, caching, and budget management.
     """
 
     api_key: str = Field(..., alias="GEMINI_API_KEY")
@@ -50,8 +41,6 @@ class AppConfig(BaseSettings):
         alias="GEMINI_MODEL_NAME",
     )
     max_output_tokens: int = Field(4096, alias="GEMINI_MAX_OUTPUT_TOKENS")
-    # Per-query-type token overrides (optional). If unset, fall back to
-    # GEMINI_MAX_OUTPUT_TOKENS with conservative defaults for faster responses.
     max_output_tokens_explanation: int | None = Field(
         3072,
         alias="GEMINI_MAX_OUTPUT_TOKENS_EXPLANATION",
@@ -74,15 +63,205 @@ class AppConfig(BaseSettings):
     cache_size: int = Field(50, alias="GEMINI_CACHE_SIZE")
     temperature: float = Field(0.2, alias="GEMINI_TEMPERATURE")
     cache_ttl_minutes: int = Field(360, alias="GEMINI_CACHE_TTL_MINUTES")
-    log_level: str = Field("INFO", alias="LOG_LEVEL")
-    cache_stats_file: str = Field("cache_stats.jsonl", alias="CACHE_STATS_FILE")
-    cache_stats_max_entries: int = Field(100, alias="CACHE_STATS_MAX_ENTRIES")
-    local_cache_dir: str = Field(".cache", alias="LOCAL_CACHE_DIR")
-    budget_limit_usd: float | None = Field(None, alias="BUDGET_LIMIT_USD")
     cache_min_tokens: int = Field(MIN_CACHE_TOKENS, alias="GEMINI_CACHE_MIN_TOKENS")
-    # Standardized API response toggle
+    budget_limit_usd: float | None = Field(None, alias="BUDGET_LIMIT_USD")
+
+    @model_validator(mode="after")
+    def check_timeout_consistency(self) -> "LLMSettingsMixin":
+        """Timeout <= timeout_max 확인."""
+        if self.timeout > self.timeout_max:
+            raise ValueError(
+                f"timeout ({self.timeout}s) must be <= timeout_max ({self.timeout_max}s)",
+            )
+        return self
+
+    @field_validator("api_key")
+    @classmethod
+    def validate_api_key(cls, v: str) -> str:
+        """Validate Gemini API key format with detailed error messages."""
+        if not v:
+            raise ValueError(
+                "❌ GEMINI_API_KEY is required.\n"
+                "   Get one at: https://aistudio.google.com/app/apikey\n"
+                "   Set in .env: GEMINI_API_KEY=AIza...",
+            )
+
+        if v == "your_api_key_here":
+            raise ValueError(
+                "❌ GEMINI_API_KEY is a placeholder. "
+                "Replace with actual key from https://aistudio.google.com",
+            )
+
+        if len(v) != GEMINI_API_KEY_LENGTH:
+            raise ValueError(
+                f"❌ API key length is {len(v)}, expected {GEMINI_API_KEY_LENGTH}.\n"
+                f"   Your key: {v[:10]}...{v[-4:]}\n"
+                f"   Check if copied correctly from https://aistudio.google.com/app/apikey",
+            )
+
+        if not v.startswith("AIza"):
+            raise ValueError(
+                f"❌ API key must start with 'AIza', got '{v[:10]}...'\n"
+                f"   Make sure you copied the full key",
+            )
+
+        if not re.match(r"^AIza[0-9A-Za-z_\-]{35}$", v):
+            raise ValueError(
+                f"❌ API key format invalid. Key contains invalid characters.\n"
+                f"   Valid chars: A-Z, a-z, 0-9, _, -\n"
+                f"   Your key: {v[:10]}...{v[-4:]}",
+            )
+
+        logger.debug("API key validated successfully")
+        return v
+
+    @field_validator("model_name")
+    @classmethod
+    def enforce_single_model(cls, v: str) -> str:
+        """Enforce use of the supported Gemini model only."""
+        if v != "gemini-flash-latest":
+            raise ValueError(
+                "Unsupported model. This system only allows 'gemini-flash-latest'.",
+            )
+        return v
+
+    @field_validator(
+        "max_output_tokens",
+        "max_output_tokens_explanation",
+        "max_output_tokens_reasoning",
+        "max_output_tokens_target_short",
+        "max_output_tokens_target_long",
+    )
+    @classmethod
+    def validate_max_output_tokens(cls, v: int | None) -> int | None:
+        if v is None:
+            return None
+        if v < 1:
+            raise ValueError("max_output_tokens must be >= 1")
+        return v
+
+    @field_validator("max_concurrency")
+    @classmethod
+    def validate_concurrency(cls, v: int) -> int:
+        """Validate concurrency is within allowed range."""
+        if not 1 <= v <= 100:
+            raise ValueError(f"Concurrency must be between 1 and 100, got {v}")
+
+        if v > 20:
+            logger.warning(
+                "High concurrency (%d) may trigger rate limiting. "
+                "Consider increasing GEMINI_MAX_CONCURRENCY or reducing batch size.",
+                v,
+            )
+
+        return v
+
+    @field_validator("timeout")
+    @classmethod
+    def validate_timeout(cls, v: int) -> int:
+        """Validate timeout is within allowed range."""
+        if not 30 <= v <= 3600:
+            raise ValueError(f"Timeout must be between 30 and 3600 seconds, got {v}")
+        return v
+
+    @field_validator("timeout_max")
+    @classmethod
+    def validate_timeout_max(cls, v: int) -> int:
+        """Validate timeout_max is at least 30 seconds."""
+        if v < 30:
+            raise ValueError("Timeout max must be at least 30 seconds")
+        return v
+
+    @field_validator("temperature")
+    @classmethod
+    def validate_temperature(cls, v: float) -> float:
+        """Validate temperature is within allowed range."""
+        if not 0.0 <= v <= 2.0:
+            raise ValueError(ERROR_MESSAGES["temperature_range"])
+        return v
+
+    @field_validator("cache_ttl_minutes")
+    @classmethod
+    def validate_cache_ttl(cls, v: int) -> int:
+        """Validate cache TTL is within allowed range."""
+        if not 1 <= v <= 10080:
+            raise ValueError(
+                f"Cache TTL must be between 1 and 10080 minutes (7 days), got {v}",
+            )
+
+        if v > 7200:
+            logger.warning(
+                "Very long cache TTL (%d minutes) may not be practical for learning projects.",
+                v,
+            )
+
+        return v
+
+    @field_validator("budget_limit_usd")
+    @classmethod
+    def validate_budget(cls, v: float | None) -> float | None:
+        """Validate budget limit is positive if set."""
+        if v is None:
+            return v
+        if v <= 0:
+            raise ValueError(ERROR_MESSAGES["budget_positive"])
+        return round(float(v), 2)
+
+    @field_validator("cache_min_tokens")
+    @classmethod
+    def validate_cache_min_tokens(cls, v: int) -> int:
+        """Gemini Context Caching API는 2048 토큰 미만을 지원하지 않습니다."""
+        api_min = CacheConfig.MIN_TOKENS_FOR_CACHING
+
+        if v < api_min:
+            logger.warning(
+                "CACHE_MIN_TOKENS=%d는 Gemini API 제약(%d)보다 작습니다. "
+                "캐싱이 작동하지 않을 수 있습니다. %d로 자동 조정합니다.",
+                v,
+                api_min,
+                api_min,
+            )
+            return api_min
+
+        if v > api_min:
+            logger.info(
+                "CACHE_MIN_TOKENS=%d로 설정됨. "
+                "API 최소값(%d)보다 높으므로 일부 요청에서 캐싱이 건너뛰어질 수 있습니다.",
+                v,
+                api_min,
+            )
+
+        return v
+
+
+class DatabaseSettingsMixin(BaseSettings):
+    """Database configuration settings (Mixin).
+
+    Handles Neo4j (graph database) and Redis (message queue) configuration.
+    """
+
+    neo4j_uri: str | None = Field(None, alias="NEO4J_URI")
+    neo4j_user: str | None = Field(None, alias="NEO4J_USER")
+    neo4j_password: str | None = Field(None, alias="NEO4J_PASSWORD")
+    redis_url: str = Field(
+        "redis://localhost:6379",
+        alias="REDIS_URL",
+        description="Redis URL for FastStream",
+    )
+
+
+class WebSettingsMixin(BaseSettings):
+    """Web API configuration settings (Mixin).
+
+    Handles CORS, timeouts, and response formatting.
+    """
+
+    cors_allow_origins: list[str] = Field(
+        default=["http://127.0.0.1:8000", "http://localhost:8000"],
+        alias="CORS_ALLOW_ORIGINS",
+        description="Comma-separated list of allowed CORS origins",
+    )
     enable_standard_response: bool = Field(False, alias="ENABLE_STANDARD_RESPONSE")
-    # Timeout overrides (environment can override; defaults keep backward compatibility)
     qa_single_timeout: int = Field(
         QA_SINGLE_GENERATION_TIMEOUT,
         alias="QA_SINGLE_TIMEOUT",
@@ -97,10 +276,16 @@ class AppConfig(BaseSettings):
         alias="WORKSPACE_UNIFIED_TIMEOUT",
     )
 
-    # RAG Configuration
-    enable_rag: bool = Field(False, alias="ENABLE_RAG")
 
-    # Provider Configuration
+class FeatureSettingsMixin(BaseSettings):
+    """Feature flags and optional functionality (Mixin).
+
+    Handles RAG, LATS, Data2Neo, and provider selection.
+    """
+
+    enable_rag: bool = Field(False, alias="ENABLE_RAG")
+    enable_lats: bool = Field(False, alias="ENABLE_LATS")
+    enable_data2neo: bool = Field(False, alias="ENABLE_DATA2NEO")
     llm_provider_type: str = Field(
         "gemini",
         description="LLM provider type (gemini, etc.)",
@@ -109,29 +294,43 @@ class AppConfig(BaseSettings):
         "neo4j",
         description="Graph provider type (neo4j, etc.)",
     )
-    neo4j_uri: str | None = Field(None, alias="NEO4J_URI")
-    neo4j_user: str | None = Field(None, alias="NEO4J_USER")
-    neo4j_password: str | None = Field(None, alias="NEO4J_PASSWORD")
-    enable_lats: bool = Field(False, alias="ENABLE_LATS")
-
-    # Data2Neo Configuration
-    enable_data2neo: bool = Field(False, alias="ENABLE_DATA2NEO")
     data2neo_batch_size: int = Field(100, alias="DATA2NEO_BATCH_SIZE")
     data2neo_confidence: float = Field(0.7, alias="DATA2NEO_CONFIDENCE_THRESHOLD")
 
-    # Async Queue Configuration
-    redis_url: str = Field(
-        "redis://localhost:6379",
-        alias="REDIS_URL",
-        description="Redis URL for FastStream",
-    )
 
-    # CORS Configuration
-    cors_allow_origins: list[str] = Field(
-        default=["http://127.0.0.1:8000", "http://localhost:8000"],
-        alias="CORS_ALLOW_ORIGINS",
-        description="Comma-separated list of allowed CORS origins",
-    )
+class AppConfig(
+    LLMSettingsMixin,
+    DatabaseSettingsMixin,
+    WebSettingsMixin,
+    FeatureSettingsMixin,
+    BaseSettings,
+):
+    """애플리케이션 설정 관리 (Composed from Mixins).
+
+    환경 변수(.env)를 통해 모든 설정을 주입받으며,
+    Pydantic을 사용한 엄격한 타입 검증을 수행합니다.
+
+    설정은 다음 Mixin들로 구성됩니다:
+    - LLMSettingsMixin: API 키, 모델, 토큰, 타임아웃, 온도, 캐싱, 예산
+    - DatabaseSettingsMixin: Neo4j, Redis 설정
+    - WebSettingsMixin: CORS, API 타임아웃
+    - FeatureSettingsMixin: RAG, LATS, Data2Neo 플래그
+
+    추가 설정:
+    - log_level: 로깅 레벨
+    - cache_stats_file: 캐시 통계 파일 경로
+    - cache_stats_max_entries: 캐시 통계 최대 항목 수
+    - local_cache_dir: 로컬 캐시 디렉토리
+
+    Raises:
+        ValueError: 설정값이 유효하지 않은 경우
+    """
+
+    # General settings (not in mixins)
+    log_level: str = Field("INFO", alias="LOG_LEVEL")
+    cache_stats_file: str = Field("cache_stats.jsonl", alias="CACHE_STATS_FILE")
+    cache_stats_max_entries: int = Field(100, alias="CACHE_STATS_MAX_ENTRIES")
+    local_cache_dir: str = Field(".cache", alias="LOCAL_CACHE_DIR")
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -194,15 +393,6 @@ class AppConfig(BaseSettings):
         return default
 
     @model_validator(mode="after")
-    def check_timeout_consistency(self) -> "AppConfig":
-        """Timeout <= timeout_max 확인."""
-        if self.timeout > self.timeout_max:
-            raise ValueError(
-                f"timeout ({self.timeout}s) must be <= timeout_max ({self.timeout_max}s)",
-            )
-        return self
-
-    @model_validator(mode="after")
     def check_rag_dependencies(self) -> "AppConfig":
         """RAG 기능 활성화 시 Neo4j 설정 확인.
 
@@ -238,190 +428,6 @@ class AppConfig(BaseSettings):
 
         return self
 
-    @field_validator("api_key")
-    @classmethod
-    def validate_api_key(cls, v: str) -> str:
-        """Validate Gemini API key format with detailed error messages.
-
-        Args:
-            v (str): API 키 문자열.
-
-        Returns:
-            str: 검증된 API 키.
-
-        Raises:
-            ValueError: 키가 비어있거나, 'AIza'로 시작하지 않거나,
-                길이가 39자가 아니거나, 형식이 잘못된 경우.
-
-        Examples:
-            >>> AppConfig.validate_api_key("AIzaSyABC123...")
-            'AIzaSyABC123...'
-        """
-        # 1️⃣ 필수 확인
-        if not v:
-            raise ValueError(
-                "❌ GEMINI_API_KEY is required.\n"
-                "   Get one at: https://aistudio.google.com/app/apikey\n"
-                "   Set in .env: GEMINI_API_KEY=AIza...",
-            )
-
-        if v == "your_api_key_here":
-            raise ValueError(
-                "❌ GEMINI_API_KEY is a placeholder. "
-                "Replace with actual key from https://aistudio.google.com",
-            )
-
-        # 2️⃣ 길이 확인
-        if len(v) != GEMINI_API_KEY_LENGTH:
-            raise ValueError(
-                f"❌ API key length is {len(v)}, expected {GEMINI_API_KEY_LENGTH}.\n"
-                f"   Your key: {v[:10]}...{v[-4:]}\n"
-                f"   Check if copied correctly from https://aistudio.google.com/app/apikey",
-            )
-
-        # 3️⃣ 형식 확인
-        if not v.startswith("AIza"):
-            raise ValueError(
-                f"❌ API key must start with 'AIza', got '{v[:10]}...'\n"
-                f"   Make sure you copied the full key",
-            )
-
-        # 4️⃣ 정규식 확인
-        # Google API 키 형식: AIza + 35개의 안전 문자 (총 GEMINI_API_KEY_LENGTH자)
-        if not re.match(r"^AIza[0-9A-Za-z_\-]{35}$", v):
-            raise ValueError(
-                f"❌ API key format invalid. Key contains invalid characters.\n"
-                f"   Valid chars: A-Z, a-z, 0-9, _, -\n"
-                f"   Your key: {v[:10]}...{v[-4:]}",
-            )
-
-        logger.debug("API key validated successfully")
-        return v
-
-    @field_validator("model_name")
-    @classmethod
-    def enforce_single_model(cls, v: str) -> str:
-        """Enforce use of the supported Gemini model only."""
-        if v != "gemini-flash-latest":
-            raise ValueError(
-                "Unsupported model. This system only allows 'gemini-flash-latest'.",
-            )
-        return v
-
-    @field_validator(
-        "max_output_tokens",
-        "max_output_tokens_explanation",
-        "max_output_tokens_reasoning",
-        "max_output_tokens_target_short",
-        "max_output_tokens_target_long",
-    )
-    @classmethod
-    def validate_max_output_tokens(cls, v: int | None) -> int | None:
-        if v is None:
-            return None  # Explicitly return None instead of v
-        if v < 1:
-            raise ValueError("max_output_tokens must be >= 1")
-        return v
-
-    @field_validator("max_concurrency")
-    @classmethod
-    def validate_concurrency(cls, v: int) -> int:
-        """Validate concurrency is within allowed range.
-
-        Args:
-            v (int): 동시성 제한 값.
-
-        Returns:
-            int: 검증된 동시성 값 (1-100 범위).
-
-        Raises:
-            ValueError: 값이 1-100 범위를 벗어난 경우.
-        """
-        if not 1 <= v <= 100:
-            raise ValueError(f"Concurrency must be between 1 and 100, got {v}")
-
-        # 경고: 높은 동시성은 Rate Limit 위험
-        if v > 20:
-            logger.warning(
-                "High concurrency (%d) may trigger rate limiting. "
-                "Consider increasing GEMINI_MAX_CONCURRENCY or reducing batch size.",
-                v,
-            )
-
-        return v
-
-    @field_validator("timeout")
-    @classmethod
-    def validate_timeout(cls, v: int) -> int:
-        """Validate timeout is within allowed range.
-
-        Args:
-            v (int): 타임아웃 값 (초).
-
-        Returns:
-            int: 검증된 타임아웃 값 (30-3600초 범위).
-
-        Raises:
-            ValueError: 값이 30-3600초 범위를 벗어난 경우.
-        """
-        if not 30 <= v <= 3600:
-            raise ValueError(f"Timeout must be between 30 and 3600 seconds, got {v}")
-        return v
-
-    @field_validator("timeout_max")
-    @classmethod
-    def validate_timeout_max(cls, v: int) -> int:
-        """Validate timeout_max is at least 30 seconds.
-
-        Args:
-            v (int): 최대 타임아웃 값 (초).
-
-        Returns:
-            int: 검증된 최대 타임아웃 값.
-
-        Raises:
-            ValueError: 값이 30초 미만인 경우.
-        """
-        if v < 30:
-            raise ValueError("Timeout max must be at least 30 seconds")
-        return v
-
-    @field_validator("temperature")
-    @classmethod
-    def validate_temperature(cls, v: float) -> float:
-        """Validate temperature is within allowed range."""
-        if not 0.0 <= v <= 2.0:
-            raise ValueError(ERROR_MESSAGES["temperature_range"])
-        return v
-
-    @field_validator("cache_ttl_minutes")
-    @classmethod
-    def validate_cache_ttl(cls, v: int) -> int:
-        """Validate cache TTL is within allowed range.
-
-        Args:
-            v (int): 캐시 TTL (분).
-
-        Returns:
-            int: 검증된 캐시 TTL (1-10080분 범위).
-
-        Raises:
-            ValueError: 값이 1-10080분 범위를 벗어난 경우.
-        """
-        if not 1 <= v <= 10080:  # 1분 ~ 7일 (10080 = 7 * 24 * 60)
-            raise ValueError(
-                f"Cache TTL must be between 1 and 10080 minutes (7 days), got {v}",
-            )
-
-        # 경고: 7일 이상은 실용적이지 않음
-        if v > 7200:  # 5일 이상
-            logger.warning(
-                "Very long cache TTL (%d minutes) may not be practical for learning projects.",
-                v,
-            )
-
-        return v
-
     @field_validator("log_level")
     @classmethod
     def validate_log_level(cls, v: str) -> str:
@@ -434,49 +440,12 @@ class AppConfig(BaseSettings):
             )
         return upper
 
-    @field_validator("budget_limit_usd")
-    @classmethod
-    def validate_budget(cls, v: float | None) -> float | None:
-        """Validate budget limit is positive if set."""
-        if v is None:
-            return v
-        if v <= 0:
-            raise ValueError(ERROR_MESSAGES["budget_positive"])
-        # Normalize to cents precision to avoid unstable comparisons downstream.
-        return round(float(v), 2)
-
     @field_validator("cache_stats_max_entries")
     @classmethod
     def validate_cache_stats_max_entries(cls, v: int) -> int:
         """Validate cache stats max entries is at least 1."""
         if v < 1:
             raise ValueError(ERROR_MESSAGES["cache_stats_min_entries"])
-        return v
-
-    @field_validator("cache_min_tokens")
-    @classmethod
-    def validate_cache_min_tokens(cls, v: int) -> int:
-        """Gemini Context Caching API는 2048 토큰 미만을 지원하지 않습니다."""
-        api_min = CacheConfig.MIN_TOKENS_FOR_CACHING
-
-        if v < api_min:
-            logger.warning(
-                "CACHE_MIN_TOKENS=%d는 Gemini API 제약(%d)보다 작습니다. "
-                "캐싱이 작동하지 않을 수 있습니다. %d로 자동 조정합니다.",
-                v,
-                api_min,
-                api_min,
-            )
-            return api_min
-
-        if v > api_min:
-            logger.info(
-                "CACHE_MIN_TOKENS=%d로 설정됨. "
-                "API 최소값(%d)보다 높으므로 일부 요청에서 캐싱이 건너뛰어질 수 있습니다.",
-                v,
-                api_min,
-            )
-
         return v
 
     def model_post_init(self, __context: Any) -> None:
