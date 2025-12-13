@@ -10,8 +10,9 @@ Targets:
 from __future__ import annotations
 
 import asyncio
-from typing import Any
-from unittest.mock import AsyncMock, Mock, patch
+import contextlib
+from typing import Any, AsyncIterator
+from unittest.mock import Mock, patch
 
 import pytest
 from fastapi import HTTPException
@@ -179,10 +180,8 @@ class TestYieldCompletedReasoningTask:
             raise ValueError("생성 실패")
 
         task = asyncio.create_task(failing_task())
-        try:
+        with contextlib.suppress(ValueError):
             await task
-        except ValueError:
-            pass
 
         events = []
         async for event in _yield_completed_reasoning_task(task, state):
@@ -239,7 +238,7 @@ class TestCreateStreamTasks:
             )
 
             assert len(task_map) == 2
-            for task, qtype in task_map.items():
+            for qtype in task_map.values():
                 assert qtype in remaining_types
 
     def test_create_stream_tasks_passes_previous_queries(self) -> None:
@@ -472,10 +471,8 @@ class TestEmitRemainingTypeEvents:
                 raise ValueError("태스크 실패")
 
             task = asyncio.create_task(failing_task())
-            try:
+            with contextlib.suppress(ValueError):
                 await task
-            except ValueError:
-                pass
 
             mock_build.return_value = {task: "target_short"}
 

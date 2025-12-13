@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -157,8 +158,9 @@ class TestCreateSession:
                                 assert "turns" in session
                                 assert "context" in session
                                 assert len(session["turns"]) == 1
-                                # Prompt should be updated by template generator
-                                assert session["turns"][0]["prompt"] == "생성된 프롬프트"
+                                # Prompt updated by template generator
+                                expected_prompt = "생성된 프롬프트"
+                                assert session["turns"][0]["prompt"] == expected_prompt
 
     def test_create_session_with_forbidden_patterns(self) -> None:
         """Test session creation fails with forbidden patterns."""
@@ -176,7 +178,9 @@ class TestCreateSession:
                         mock_turn.__dict__ = {"type": "reasoning", "prompt": ""}
                         mock_build.return_value = [mock_turn]
 
-                        with patch("src.qa.pipeline.find_violations") as mock_violations:
+                        with patch(
+                            "src.qa.pipeline.find_violations"
+                        ) as mock_violations:
                             mock_violations.return_value = [
                                 {"type": "forbidden", "match": "금지 패턴"}
                             ]
@@ -204,19 +208,22 @@ class TestCreateSession:
                         mock_turn.__dict__ = {"type": "reasoning", "prompt": ""}
                         mock_build.return_value = [mock_turn]
 
-                        with patch("src.qa.pipeline.find_violations", return_value=[]):
-                            with patch("src.qa.pipeline.validate_turns") as mock_validate:
-                                mock_validate.return_value = {
-                                    "ok": False,
-                                    "issues": ["검증 실패"],
-                                }
+                        with patch(
+                            "src.qa.pipeline.find_violations", return_value=[]
+                        ), patch(
+                            "src.qa.pipeline.validate_turns"
+                        ) as mock_validate:
+                            mock_validate.return_value = {
+                                "ok": False,
+                                "issues": ["검증 실패"],
+                            }
 
-                                pipeline = IntegratedQAPipeline()
+                            pipeline = IntegratedQAPipeline()
 
-                                with pytest.raises(ValueError) as exc_info:
-                                    pipeline.create_session({"image_path": "test.png"})
+                            with pytest.raises(ValueError) as exc_info:
+                                pipeline.create_session({"image_path": "test.png"})
 
-                                assert "세션 검증 실패" in str(exc_info.value)
+                            assert "세션 검증 실패" in str(exc_info.value)
 
 
 class TestValidateOutput:

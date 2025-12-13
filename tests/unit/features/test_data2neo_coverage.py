@@ -154,9 +154,12 @@ class TestParseExtractionResponse:
         config = Mock()
         extractor = Data2NeoExtractor(config=config)
 
-        response = """Here is the result:
-        {"persons": [{"id": "p1", "name": "김철수"}], "organizations": [], "rules": [], "relationships": []}
+        response = (
+            """Here is the result:
+        {"persons": [{"id": "p1", "name": "김철수"}], """
+            """"organizations": [], "rules": [], "relationships": []}
         That's all."""
+        )
 
         result = extractor._parse_extraction_response(response)
 
@@ -439,7 +442,7 @@ class TestExtractEntities:
         CHUNK_SIZE = 4000
         long_text = "A" * (CHUNK_SIZE * 3)
 
-        result = await extractor.extract_entities(long_text, "doc1")
+        await extractor.extract_entities(long_text, "doc1")
 
         # Should have called LLM multiple times (at least 3)
         assert mock_llm.generate_content_async.call_count >= 3
@@ -600,7 +603,7 @@ class TestExtractAndImport:
             graph_provider=mock_graph,
         )
 
-        result = await extractor.extract_and_import("OCR", "/path/to/doc.pdf")
+        await extractor.extract_and_import("OCR", "/path/to/doc.pdf")
 
         # Should have tried to create document node
         mock_graph.create_nodes.assert_called()
