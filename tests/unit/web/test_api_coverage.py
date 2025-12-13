@@ -453,35 +453,27 @@ class TestUtilityWrappers:
     """Test utility wrapper functions."""
 
     @patch("src.web.api.config")
-    def test_load_ocr_text_wrapper(self, mock_config: Mock) -> None:
+    @pytest.mark.asyncio
+    async def test_load_ocr_text_wrapper(self, mock_config: Mock) -> None:
         """Test load_ocr_text wrapper function."""
         from src.web.api import load_ocr_text
 
-        # Create a mock path that simulates OCR file
-        mock_path = MagicMock()
-        mock_path.exists.return_value = True
-        mock_path.read_text.return_value = "OCR content"
+        from unittest.mock import AsyncMock, patch
 
-        mock_input_dir = MagicMock()
-        mock_input_dir.__truediv__.return_value = mock_path
-        mock_config.input_dir = mock_input_dir
+        with patch("src.web.api._load_ocr_text", new=AsyncMock(return_value="OCR content")):
+            result = await load_ocr_text()
 
-        result = load_ocr_text()
-
-        assert result == "OCR content"
+            assert result == "OCR content"
 
     @patch("src.web.api.config")
-    def test_save_ocr_text_wrapper(self, mock_config: Mock) -> None:
+    @pytest.mark.asyncio
+    async def test_save_ocr_text_wrapper(self, mock_config: Mock) -> None:
         """Test save_ocr_text wrapper function."""
         from src.web.api import save_ocr_text
 
-        # Create a mock path
-        mock_path = MagicMock()
-        mock_input_dir = MagicMock()
-        mock_input_dir.__truediv__.return_value = mock_path
-        mock_config.input_dir = mock_input_dir
+        from unittest.mock import AsyncMock, patch
 
-        save_ocr_text("New content")
-
-        # Should have called write_text
-        mock_path.write_text.assert_called_once()
+        save_mock = AsyncMock()
+        with patch("src.web.api._save_ocr_text", new=save_mock):
+            await save_ocr_text("New content")
+            save_mock.assert_awaited_once_with(mock_config, "New content")

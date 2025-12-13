@@ -23,6 +23,7 @@ from src.config.constants import ERROR_MESSAGES
 from src.config.database import DatabaseSettingsMixin
 from src.config.features import FeatureSettingsMixin
 from src.config.llm import LLMSettingsMixin
+from src.config.validator import calculate_max_output_tokens, validate_rag_dependencies
 from src.config.web import WebSettingsMixin
 
 logger = logging.getLogger(__name__)
@@ -74,53 +75,14 @@ class AppConfig(
 
     def resolve_max_output_tokens(self, query_type: str | None = None) -> int:
         """qtype에 맞는 max_output_tokens를 반환한다."""
-        base = self._get_base_max_output_tokens()
-
-        if not query_type:
-            return base
-
-        normalized = self._normalize_query_type(query_type)
-        return self._get_tokens_for_type(normalized, base)
-
-    def _get_base_max_output_tokens(self) -> int:
-        """기본 max_output_tokens 반환 (검증 포함)."""
-        if self.max_output_tokens <= 0:
-            logger.warning(
-                "Invalid GEMINI_MAX_OUTPUT_TOKENS=%s; falling back to 4096",
-                self.max_output_tokens,
-            )
-            return 4096
-        return self.max_output_tokens
-
-    def _normalize_query_type(self, query_type: str) -> str:
-        """query_type을 정규화된 형태로 변환."""
-        if query_type in {"global_explanation", "globalexplanation"}:
-            return "explanation"
-        # target_short, target_long은 분리하여 처리
-        return query_type
-
-    def _get_tokens_for_type(self, normalized: str, base: int) -> int:
-        """타입별 토큰 설정 반환."""
-        config_map = {
-            "explanation": (self.max_output_tokens_explanation, base),
-            "reasoning": (self.max_output_tokens_reasoning, min(base, 2048)),
-            "target_short": (self.max_output_tokens_target_short, min(base, 512)),
-            "target_long": (self.max_output_tokens_target_long, min(base, 2048)),
-        }
-
-        if normalized not in config_map:
-            return base
-
-        override, default = config_map[normalized]
-        if override is not None and override > 0:
-            return override
-        if override is not None and override <= 0:
-            logger.warning(
-                "Invalid GEMINI_MAX_OUTPUT_TOKENS_%s=%s; ignoring",
-                normalized.upper(),
-                override,
-            )
-        return default
+        return calculate_max_output_tokens(
+            max_output_tokens=self.max_output_tokens,
+            max_output_tokens_explanation=self.max_output_tokens_explanation,
+            max_output_tokens_reasoning=self.max_output_tokens_reasoning,
+            max_output_tokens_target_short=self.max_output_tokens_target_short,
+            max_output_tokens_target_long=self.max_output_tokens_target_long,
+            query_type=query_type,
+        )
 
     @model_validator(mode="after")
     def check_rag_dependencies(self) -> "AppConfig":
@@ -132,29 +94,12 @@ class AppConfig(
            (the field might be set for other purposes)
         3. neo4j_uri set implies all other Neo4j fields are required
         """
-        # Case 1: ENABLE_RAG is explicitly True - require all Neo4j fields
-        if self.enable_rag:
-            required_fields = ["neo4j_uri", "neo4j_user", "neo4j_password"]
-            missing = [f for f in required_fields if not getattr(self, f, None)]
-            if missing:
-                raise ValueError(
-                    "NEO4J_URI 설정 시 필수: {fields}\n"
-                    "ENABLE_RAG=True 설정 시 필수: {fields}\n"
-                    "또는 ENABLE_RAG=false로 설정하세요".format(
-                        fields=", ".join(missing),
-                    ),
-                )
-
-        # Case 2: neo4j_uri is set (without enable_rag=True) - still require other Neo4j fields
-        # This handles cases where user sets NEO4J_URI without ENABLE_RAG
-        elif self.neo4j_uri:
-            required_fields = ["neo4j_user", "neo4j_password"]
-            missing = [f for f in required_fields if not getattr(self, f, None)]
-            if missing:
-                raise ValueError(
-                    f"NEO4J_URI 설정 시 필수: {', '.join(missing)}\n"
-                    f"또는 .env에서 NEO4J_URI를 제거하세요",
-                )
+        validate_rag_dependencies(
+            enable_rag=self.enable_rag,
+            neo4j_uri=self.neo4j_uri,
+            neo4j_user=self.neo4j_user,
+            neo4j_password=self.neo4j_password,
+        )
 
         return self
 

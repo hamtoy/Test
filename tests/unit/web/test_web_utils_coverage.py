@@ -35,7 +35,8 @@ from src.web.utils import (
 class TestOCRCaching:
     """Test OCR text caching functionality."""
 
-    def test_load_ocr_text_cache_hit(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_load_ocr_text_cache_hit(self, tmp_path: Path) -> None:
         """Test OCR cache hit (same file, same mtime)."""
         ocr_file = tmp_path / "input_ocr.txt"
         ocr_file.write_text("테스트 OCR 내용", encoding="utf-8")
@@ -44,18 +45,19 @@ class TestOCRCaching:
         config.input_dir = tmp_path
 
         # First load - cache miss
-        result1 = load_ocr_text(config)
+        result1 = await load_ocr_text(config)
         # Second load - cache hit
-        result2 = load_ocr_text(config)
+        result2 = await load_ocr_text(config)
 
         assert result1 == "테스트 OCR 내용"
         assert result2 == "테스트 OCR 내용"
 
-    def test_load_ocr_text_cache_invalidation_on_modification(
+    @pytest.mark.asyncio
+    async def test_load_ocr_text_cache_invalidation_on_modification(
         self, tmp_path: Path
     ) -> None:
         """Test cache invalidation when file is modified."""
-        import time
+        import asyncio
 
         ocr_file = tmp_path / "input_ocr.txt"
         ocr_file.write_text("원본 내용", encoding="utf-8")
@@ -63,41 +65,43 @@ class TestOCRCaching:
         config = Mock(spec=AppConfig)
         config.input_dir = tmp_path
 
-        result1 = load_ocr_text(config)
+        result1 = await load_ocr_text(config)
         assert result1 == "원본 내용"
 
         # Wait for mtime to change (Windows has ~1s resolution)
-        time.sleep(0.1)
+        await asyncio.sleep(0.1)
 
         # Modify file
         ocr_file.write_text("수정된 내용", encoding="utf-8")
 
         # Should read new content (mtime has changed)
-        result2 = load_ocr_text(config)
+        result2 = await load_ocr_text(config)
         # Note: If mtime didn't change due to filesystem resolution,
         # the test may return cached value. This is expected behavior.
         assert result2 in ["수정된 내용", "원본 내용"]
 
-    def test_save_ocr_text_invalidates_cache(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_save_ocr_text_invalidates_cache(self, tmp_path: Path) -> None:
         """Test that save_ocr_text invalidates the cache."""
         config = Mock(spec=AppConfig)
         config.input_dir = tmp_path
 
         # Save initial content
-        save_ocr_text(config, "초기 내용")
+        await save_ocr_text(config, "초기 내용")
 
         # Load to populate cache
-        result1 = load_ocr_text(config)
+        result1 = await load_ocr_text(config)
         assert result1 == "초기 내용"
 
         # Save new content (should invalidate cache)
-        save_ocr_text(config, "새 내용")
+        await save_ocr_text(config, "새 내용")
 
         # Load again - should get new content
-        result2 = load_ocr_text(config)
+        result2 = await load_ocr_text(config)
         assert result2 == "새 내용"
 
-    def test_load_ocr_text_file_not_found(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_load_ocr_text_file_not_found(self, tmp_path: Path) -> None:
         """Test loading OCR when file doesn't exist."""
         config = Mock(spec=AppConfig)
         config.input_dir = tmp_path
@@ -105,7 +109,7 @@ class TestOCRCaching:
         from fastapi import HTTPException
 
         with pytest.raises(HTTPException) as exc_info:
-            load_ocr_text(config)
+            await load_ocr_text(config)
 
         assert exc_info.value.status_code == 404
         assert "OCR 파일이 없습니다" in exc_info.value.detail
@@ -114,9 +118,10 @@ class TestOCRCaching:
 class TestReviewSessionLogging:
     """Test review session logging functionality."""
 
-    def test_log_review_session_creates_log_file(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_log_review_session_creates_log_file(self, tmp_path: Path) -> None:
         """Test that log_review_session creates log file correctly."""
-        log_review_session(
+        await log_review_session(
             mode="inspect",
             question="테스트 질문",
             answer_before="원래 답변",
@@ -145,10 +150,11 @@ class TestReviewSessionLogging:
         assert log_entry["inspector_comment"] == "검수 의견"
         assert "timestamp" in log_entry
 
-    def test_log_review_session_append_mode(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_log_review_session_append_mode(self, tmp_path: Path) -> None:
         """Test that log_review_session appends to existing log."""
         # Log first entry
-        log_review_session(
+        await log_review_session(
             mode="edit",
             question="질문1",
             answer_before="답변1",
@@ -159,7 +165,7 @@ class TestReviewSessionLogging:
         )
 
         # Log second entry
-        log_review_session(
+        await log_review_session(
             mode="inspect",
             question="질문2",
             answer_before="답변2",
@@ -177,7 +183,8 @@ class TestReviewSessionLogging:
         lines = log_file.read_text(encoding="utf-8").strip().split("\n")
         assert len(lines) == 2
 
-    def test_log_review_session_handles_errors(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_log_review_session_handles_errors(self, tmp_path: Path) -> None:
         """Test that log_review_session handles errors gracefully."""
         # Create a directory as the log file to cause write error
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -187,7 +194,7 @@ class TestReviewSessionLogging:
         log_file.mkdir()  # Create as directory instead of file
 
         # Should not raise exception
-        log_review_session(
+        await log_review_session(
             mode="inspect",
             question="테스트",
             answer_before="전",

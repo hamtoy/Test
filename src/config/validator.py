@@ -5,10 +5,13 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 from collections.abc import Callable
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 class ValidationError(Exception):
@@ -265,9 +268,108 @@ def validate_environment(strict: bool = False) -> bool:
     return True
 
 
+def validate_rag_dependencies(
+    *,
+    enable_rag: bool,
+    neo4j_uri: str | None,
+    neo4j_user: str | None,
+    neo4j_password: str | None,
+) -> None:
+    """RAG 기능 활성화 시 Neo4j 설정을 검증한다.
+
+    Note:
+        settings.py의 model_validator에서 호출되며, 에러 메시지는 기존과 동일해야 합니다.
+    """
+    if enable_rag:
+        required_fields = ["neo4j_uri", "neo4j_user", "neo4j_password"]
+        values = {
+            "neo4j_uri": neo4j_uri,
+            "neo4j_user": neo4j_user,
+            "neo4j_password": neo4j_password,
+        }
+        missing = [field for field in required_fields if not values.get(field)]
+        if missing:
+            raise ValueError(
+                "NEO4J_URI 설정 시 필수: {fields}\n"
+                "ENABLE_RAG=True 설정 시 필수: {fields}\n"
+                "또는 ENABLE_RAG=false로 설정하세요".format(
+                    fields=", ".join(missing),
+                ),
+            )
+
+    elif neo4j_uri:
+        required_fields = ["neo4j_user", "neo4j_password"]
+        values = {
+            "neo4j_user": neo4j_user,
+            "neo4j_password": neo4j_password,
+        }
+        missing = [field for field in required_fields if not values.get(field)]
+        if missing:
+            raise ValueError(
+                f"NEO4J_URI 설정 시 필수: {', '.join(missing)}\n"
+                f"또는 .env에서 NEO4J_URI를 제거하세요",
+            )
+
+
+def _normalize_query_type(query_type: str) -> str:
+    if query_type in {"global_explanation", "globalexplanation"}:
+        return "explanation"
+    return query_type
+
+
+def _get_base_max_output_tokens(max_output_tokens: int) -> int:
+    if max_output_tokens <= 0:
+        logger.warning(
+            "Invalid GEMINI_MAX_OUTPUT_TOKENS=%s; falling back to 4096",
+            max_output_tokens,
+        )
+        return 4096
+    return max_output_tokens
+
+
+def calculate_max_output_tokens(
+    *,
+    max_output_tokens: int,
+    max_output_tokens_explanation: int | None,
+    max_output_tokens_reasoning: int | None,
+    max_output_tokens_target_short: int | None,
+    max_output_tokens_target_long: int | None,
+    query_type: str | None = None,
+) -> int:
+    """qtype에 맞는 max_output_tokens를 계산한다."""
+    base = _get_base_max_output_tokens(max_output_tokens)
+
+    if not query_type:
+        return base
+
+    normalized = _normalize_query_type(query_type)
+    config_map: dict[str, tuple[int | None, int]] = {
+        "explanation": (max_output_tokens_explanation, base),
+        "reasoning": (max_output_tokens_reasoning, min(base, 2048)),
+        "target_short": (max_output_tokens_target_short, min(base, 512)),
+        "target_long": (max_output_tokens_target_long, min(base, 2048)),
+    }
+
+    if normalized not in config_map:
+        return base
+
+    override, default = config_map[normalized]
+    if override is not None and override > 0:
+        return override
+    if override is not None and override <= 0:
+        logger.warning(
+            "Invalid GEMINI_MAX_OUTPUT_TOKENS_%s=%s; ignoring",
+            normalized.upper(),
+            override,
+        )
+    return default
+
+
 __all__ = [
     "EnvValidator",
     "ValidationError",
     "validate_env_file_permissions",
     "validate_environment",
+    "validate_rag_dependencies",
+    "calculate_max_output_tokens",
 ]

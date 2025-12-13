@@ -482,9 +482,10 @@ class TestWorkspaceApi:
 class TestLogReviewSession:
     """Tests for log_review_session helper function."""
 
-    def test_log_review_session_creates_directory(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_log_review_session_creates_directory(self, tmp_path: Path) -> None:
         """Test that log_review_session creates the log directory if it doesn't exist."""
-        log_review_session(
+        await log_review_session(
             mode="inspect",
             question="테스트 질문",
             answer_before="수정 전 답변",
@@ -516,10 +517,11 @@ class TestLogReviewSession:
         assert log_entry["inspector_comment"] == "테스트 코멘트"
         assert "timestamp" in log_entry
 
-    def test_log_review_session_appends_multiple_entries(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_log_review_session_appends_multiple_entries(self, tmp_path: Path) -> None:
         """Test that log_review_session appends multiple entries to the same file."""
         # Log first entry
-        log_review_session(
+        await log_review_session(
             mode="inspect",
             question="Q1",
             answer_before="A1 before",
@@ -530,7 +532,7 @@ class TestLogReviewSession:
         )
 
         # Log second entry
-        log_review_session(
+        await log_review_session(
             mode="edit",
             question="Q2",
             answer_before="A2 before",
@@ -555,9 +557,10 @@ class TestLogReviewSession:
         assert entry2["mode"] == "edit"
         assert entry2["edit_request_used"] == "수정 요청"
 
-    def test_log_review_session_handles_empty_strings(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_log_review_session_handles_empty_strings(self, tmp_path: Path) -> None:
         """Test that log_review_session accepts empty strings for all fields."""
-        log_review_session(
+        await log_review_session(
             mode="inspect",
             question="",
             answer_before="",
@@ -580,11 +583,12 @@ class TestLogReviewSession:
         assert log_entry["edit_request_used"] == ""
         assert log_entry["inspector_comment"] == ""
 
-    def test_log_review_session_failure_does_not_raise(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_log_review_session_failure_does_not_raise(self, tmp_path: Path) -> None:
         """Test that log_review_session failure doesn't raise an exception."""
         # Patch REPO_ROOT to an invalid path (read-only or non-existent)
         # Should not raise even though it can't write
-        log_review_session(
+        await log_review_session(
             mode="inspect",
             question="Q",
             answer_before="A",

@@ -36,7 +36,7 @@ async def api_eval_external(body: EvalExternalRequest) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
     cfg = _get_config()
-    ocr_text = load_ocr_text(cfg)
+    ocr_text = await load_ocr_text(cfg)
 
     try:
         from src.workflow.external_eval import evaluate_external_answers

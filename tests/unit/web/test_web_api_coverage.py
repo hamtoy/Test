@@ -40,7 +40,8 @@ def client() -> Any:
 class TestHelperFunctions:
     """Tests for helper functions."""
 
-    def test_load_ocr_text_success(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_load_ocr_text_success(self, tmp_path: Path) -> None:
         """Test load_ocr_text with existing file."""
         inputs_dir = tmp_path / "inputs"
         inputs_dir.mkdir()
@@ -49,10 +50,11 @@ class TestHelperFunctions:
 
         with patch("src.web.api.config") as mock_config:
             mock_config.input_dir = inputs_dir
-            result = load_ocr_text()
+            result = await load_ocr_text()
             assert result == "테스트 OCR 내용"
 
-    def test_load_ocr_text_whitespace_stripped(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_load_ocr_text_whitespace_stripped(self, tmp_path: Path) -> None:
         """Test load_ocr_text strips whitespace."""
         inputs_dir = tmp_path / "inputs"
         inputs_dir.mkdir()
@@ -61,23 +63,25 @@ class TestHelperFunctions:
 
         with patch("src.web.api.config") as mock_config:
             mock_config.input_dir = inputs_dir
-            result = load_ocr_text()
+            result = await load_ocr_text()
             assert result == "테스트 내용"
 
-    def test_save_ocr_text_creates_directory(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_save_ocr_text_creates_directory(self, tmp_path: Path) -> None:
         """Test save_ocr_text creates directory if not exists."""
         inputs_dir = tmp_path / "inputs"
         # Directory doesn't exist yet
 
         with patch("src.web.api.config") as mock_config:
             mock_config.input_dir = inputs_dir
-            save_ocr_text("새 OCR 텍스트")
+            await save_ocr_text("새 OCR 텍스트")
 
             ocr_file = inputs_dir / "input_ocr.txt"
             assert ocr_file.exists()
             assert ocr_file.read_text(encoding="utf-8") == "새 OCR 텍스트"
 
-    def test_save_ocr_text_overwrites(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_save_ocr_text_overwrites(self, tmp_path: Path) -> None:
         """Test save_ocr_text overwrites existing file."""
         inputs_dir = tmp_path / "inputs"
         inputs_dir.mkdir()
@@ -86,11 +90,12 @@ class TestHelperFunctions:
 
         with patch("src.web.api.config") as mock_config:
             mock_config.input_dir = inputs_dir
-            save_ocr_text("새 내용")
+            await save_ocr_text("새 내용")
 
             assert ocr_file.read_text(encoding="utf-8") == "새 내용"
 
-    def test_save_ocr_text_invalidates_cache(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_save_ocr_text_invalidates_cache(self, tmp_path: Path) -> None:
         """Test save_ocr_text invalidates cache to ensure fresh data on next load."""
 
         inputs_dir = tmp_path / "inputs"
@@ -102,14 +107,14 @@ class TestHelperFunctions:
             mock_config.input_dir = inputs_dir
 
             # First load - populates cache
-            result1 = load_ocr_text()
+            result1 = await load_ocr_text()
             assert result1 == "초기 내용"
 
             # Save new content - should invalidate cache
-            save_ocr_text("업데이트된 내용")
+            await save_ocr_text("업데이트된 내용")
 
             # Second load - should read fresh data, not cached
-            result2 = load_ocr_text()
+            result2 = await load_ocr_text()
             assert result2 == "업데이트된 내용"
 
             # Verify cache was invalidated (set to None)
@@ -259,9 +264,10 @@ class TestGenerateSingleQA:
 class TestLogReviewSessionEdgeCases:
     """Additional edge case tests for log_review_session."""
 
-    def test_log_review_session_unicode_content(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_log_review_session_unicode_content(self, tmp_path: Path) -> None:
         """Test log_review_session handles unicode content."""
-        log_review_session(
+        await log_review_session(
             mode="edit",
             question="한글 질문 🎉",
             answer_before="이모지 포함 답변 ✨",
@@ -283,11 +289,12 @@ class TestLogReviewSessionEdgeCases:
         assert "🚀" in entry["answer_after"]
         assert "👍" in entry["inspector_comment"]
 
-    def test_log_review_session_long_content(self, tmp_path: Path) -> None:
+    @pytest.mark.asyncio
+    async def test_log_review_session_long_content(self, tmp_path: Path) -> None:
         """Test log_review_session handles very long content."""
         long_text = "A" * 10000
 
-        log_review_session(
+        await log_review_session(
             mode="inspect",
             question=long_text,
             answer_before=long_text,

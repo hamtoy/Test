@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from datetime import datetime
+import time
 from typing import Any
 
 from src.config.constants import DEFAULT_CACHE_TTL_SECONDS
@@ -103,7 +103,7 @@ class AnswerCache:
         # Fallback to memory cache
         if key in self.cache:
             value, timestamp = self.cache[key]
-            age = datetime.now().timestamp() - timestamp
+            age = time.monotonic() - timestamp
             if age < self.ttl:
                 self._hits += 1
                 logger.info(
@@ -147,7 +147,7 @@ class AnswerCache:
                 logger.warning("Redis cache set failed: %s, stored in memory only", e)
 
         # Always store in memory as backup
-        self.cache[key] = (result, datetime.now().timestamp())
+        self.cache[key] = (result, time.monotonic())
         logger.debug(
             "Cache SET (memory): query_type=%s, cache_size=%d",
             query_type,
@@ -160,7 +160,7 @@ class AnswerCache:
         Returns:
             Number of entries removed
         """
-        now = datetime.now().timestamp()
+        now = time.monotonic()
         expired = [k for k, (_, ts) in self.cache.items() if now - ts > self.ttl]
         for k in expired:
             del self.cache[k]

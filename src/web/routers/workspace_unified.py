@@ -51,7 +51,7 @@ async def api_unified_workspace(body: UnifiedWorkspaceRequest) -> dict[str, Any]
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
     # Load OCR text
-    ocr_text = body.ocr_text or load_ocr_text(config)
+    ocr_text = body.ocr_text or await load_ocr_text(config)
 
     # Detect workflow
     workflow_str = detect_workflow(

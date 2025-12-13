@@ -40,7 +40,7 @@ async def api_workspace(body: WorkspaceRequest) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail="Agent 초기화 실패")
 
     config = _get_config()
-    ocr_text = load_ocr_text(config)
+    ocr_text = await load_ocr_text(config)
     meta_start = datetime.now()
 
     async def _run_workspace() -> dict[str, Any]:
@@ -56,7 +56,7 @@ async def api_workspace(body: WorkspaceRequest) -> dict[str, Any]:
                 cache=None,
             )
 
-            log_review_session(
+            await log_review_session(
                 mode="inspect",
                 question=body.query or "",
                 answer_before=body.answer,
@@ -87,7 +87,7 @@ async def api_workspace(body: WorkspaceRequest) -> dict[str, Any]:
             cache=None,
         )
 
-        log_review_session(
+        await log_review_session(
             mode="edit",
             question=body.query or "",
             answer_before=body.answer,

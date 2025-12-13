@@ -121,7 +121,7 @@ async def api_generate_answer_from_query(body: dict[str, Any]) -> dict[str, Any]
 
     query = body.get("query", "")
     config = _get_config()
-    ocr_text = body.get("ocr_text") or load_ocr_text(config)
+    ocr_text = body.get("ocr_text") or await load_ocr_text(config)
     meta_start = datetime.now()
     query_type = body.get("query_type", "explanation")
     normalized_qtype = QTYPE_MAP.get(query_type, "explanation")
@@ -219,7 +219,7 @@ async def api_generate_query_from_answer(body: dict[str, Any]) -> dict[str, Any]
 
     answer = body.get("answer", "")
     config = _get_config()
-    ocr_text = body.get("ocr_text") or load_ocr_text(config)
+    ocr_text = body.get("ocr_text") or await load_ocr_text(config)
     meta_start = datetime.now()
 
     try:

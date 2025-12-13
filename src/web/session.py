@@ -19,11 +19,13 @@ class SessionData:
     session_id: str
     created_at: float
     last_access: float
+    last_access_monotonic: float = field(default_factory=time.monotonic, repr=False)
     data: dict[str, Any] = field(default_factory=dict)
 
     def touch(self) -> None:
         """Update last access time."""
         self.last_access = time.time()
+        self.last_access_monotonic = time.monotonic()
 
 
 class SessionManager:
@@ -36,7 +38,7 @@ class SessionManager:
 
     def _is_expired(self, sess: SessionData) -> bool:
         """Check if a session is expired."""
-        return (time.time() - sess.last_access) > self.ttl_seconds
+        return (time.monotonic() - sess.last_access_monotonic) > self.ttl_seconds
 
     def _cleanup_expired(self) -> None:
         """Remove all expired sessions."""
@@ -58,8 +60,14 @@ class SessionManager:
     def create(self) -> SessionData:
         """Create a new session."""
         session_id = uuid.uuid4().hex
-        now = time.time()
-        session = SessionData(session_id=session_id, created_at=now, last_access=now)
+        now_epoch = time.time()
+        now_mono = time.monotonic()
+        session = SessionData(
+            session_id=session_id,
+            created_at=now_epoch,
+            last_access=now_epoch,
+            last_access_monotonic=now_mono,
+        )
         self._store[session_id] = session
         return session
 

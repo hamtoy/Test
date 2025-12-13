@@ -5,11 +5,12 @@ from __future__ import annotations
 import json
 import logging
 import re
+import asyncio
 from datetime import datetime, timezone
 from pathlib import Path
-from threading import Lock
 from typing import Any, Literal, TypeAlias, TypedDict, cast
 
+import aiofiles
 from fastapi import HTTPException
 
 from src.config import AppConfig
@@ -24,7 +25,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # Thread-safe OCR cache
 _OCR_CACHE: tuple[Path, float, str] | None = None
-_OCR_CACHE_LOCK = Lock()
+_OCR_CACHE_LOCK = asyncio.Lock()
 
 # 질의 유형 매핑 (QA/워크스페이스 공용)
 # Phase 2-1: Map globalexplanation to explanation for better rule coverage
@@ -42,7 +43,7 @@ QTYPE_MAP = {
 }
 
 
-def load_ocr_text(config: AppConfig) -> str:
+async def load_ocr_text(config: AppConfig) -> str:
     """data/inputs/input_ocr.txt 로드 (mtime 기반 thread-safe 캐시 포함)."""
     global _OCR_CACHE
     ocr_path: Path = config.input_dir / "input_ocr.txt"
@@ -52,28 +53,30 @@ def load_ocr_text(config: AppConfig) -> str:
     mtime = ocr_path.stat().st_mtime
 
     # Thread-safe cache check and update
-    with _OCR_CACHE_LOCK:
+    async with _OCR_CACHE_LOCK:
         if _OCR_CACHE and _OCR_CACHE[0] == ocr_path and _OCR_CACHE[1] == mtime:
             return _OCR_CACHE[2]
 
-        text = ocr_path.read_text(encoding="utf-8").strip()
+        async with aiofiles.open(ocr_path, encoding="utf-8") as f:
+            text = (await f.read()).strip()
         _OCR_CACHE = (ocr_path, mtime, text)
         return text
 
 
-def save_ocr_text(config: AppConfig, text: str) -> None:
+async def save_ocr_text(config: AppConfig, text: str) -> None:
     """OCR 텍스트 저장 (이미지 분석 후) - 캐시 무효화 포함."""
     global _OCR_CACHE
     ocr_path = config.input_dir / "input_ocr.txt"
     ocr_path.parent.mkdir(parents=True, exist_ok=True)
-    ocr_path.write_text(text, encoding="utf-8")
+    async with aiofiles.open(ocr_path, "w", encoding="utf-8") as f:
+        await f.write(text)
 
     # Invalidate cache to ensure next read gets fresh data
-    with _OCR_CACHE_LOCK:
+    async with _OCR_CACHE_LOCK:
         _OCR_CACHE = None
 
 
-def log_review_session(
+async def log_review_session(
     mode: Literal["inspect", "edit"],
     question: str,
     answer_before: str,
@@ -103,8 +106,8 @@ def log_review_session(
             "inspector_comment": inspector_comment,
         }
 
-        with open(log_file, "a", encoding="utf-8") as f:
-            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+        async with aiofiles.open(log_file, "a", encoding="utf-8") as f:
+            await f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
     except Exception as e:
         logger.warning("검수 로그 기록 실패: %s", e)

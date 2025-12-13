@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 
 from fastapi import APIRouter, HTTPException
@@ -49,8 +48,7 @@ async def api_get_ocr(request: Request) -> dict[str, str]:
     """OCR 텍스트 조회 (비동기 파일 I/O)."""
     try:
         config = _get_config()
-        loop = asyncio.get_event_loop()
-        ocr_text = await loop.run_in_executor(None, _load_ocr_text, config)
+        ocr_text = await _load_ocr_text(config)
         return {"ocr": ocr_text}
     except HTTPException:
         raise
@@ -74,8 +72,7 @@ async def api_save_ocr(request: Request, payload: OCRTextInput) -> dict[str, str
     """OCR 텍스트 저장 (비동기 파일 I/O)."""
     try:
         config = _get_config()
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, _save_ocr_text, config, payload.text)
+        await _save_ocr_text(config, payload.text)
 
         logger.info(
             "OCR text saved successfully",
