@@ -259,7 +259,7 @@ disallow_any_generics = false
 
 # File lock uses platform-specific modules (msvcrt on Windows, fcntl on Unix)
 [[tool.mypy.overrides]]
-module = ["src.utils.file_lock"]
+module = ["src.infra.file_lock"]
 warn_unused_ignores = false
 
 [tool.uv.workspace]

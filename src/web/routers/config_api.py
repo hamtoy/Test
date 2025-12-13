@@ -11,7 +11,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, field_validator
 
-from src.utils.file_lock import FileLock
+from src.infra.file_lock import FileLock
 
 logger = logging.getLogger(__name__)
 
