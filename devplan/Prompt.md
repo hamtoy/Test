@@ -1,118 +1,164 @@
 # 🤖 Project Auto-Improvement Prompts
 
 > **Usage Guide:**
-> Copy and paste the prompts below **one by one** into your AI agent session.
-> Do **NOT** skip steps. Execute strictly in order.
+> These prompts should be executed **sequentially** by an AI agent.
+> Execute all prompts from start to finish. Do **NOT** skip any steps.
 >
-> ⚠️ **IMPORTANT:** Before starting, ensure you have read `devplan/Project_Improvement_Exploration_Report.md`.
+> ⚠️ **IMPORTANT:** Before starting, read `devplan/Project_Improvement_Exploration_Report.md`.
 
 ## 📋 Execution Checklist
 
-| ID | Task Name | Priority | Status |
-|:--:|:---|:---:|:---:|
-| **PROMPT-001** | Fix Skipped Web API Tests (`test-webapi-no-key-001`) | 🟡 P2 | [x] ✅ Done |
-| **PROMPT-002** | Sync Docs with Scripts (`docs-scripts-sync-001`) | 🟡 P2 | [x] ✅ Done |
-| **PROMPT-003** | Refactor Settings (`refactor-settings-split-001`) | 🟢 P3 | [x] ✅ Done |
-| **PROMPT-004** | Async File I/O (`opt-async-file-io-001`) | 🚀 OPT | [x] ✅ Done |
-| **FINISH** | Final Verification & Cleanup | - | [x] ✅ Done |
+| # | Prompt ID | Title | Priority | Status |
+|:---:|:---|:---|:---:|:---:|
+| 1 | PROMPT-001 | LATS Module Documentation Guide | P2 | ⬜ Pending |
+| 2 | PROMPT-002 | Frontend-Backend Integration Guide | P2 | ⬜ Pending |
+| 3 | PROMPT-003 | Frontend Vitest Test Coverage | P3 | ⬜ Pending |
+| 4 | OPT-1 | Frontend Bundle Optimization | OPT | ⬜ Pending |
+| 5 | FINISH | Final Verification and Cleanup | - | ⬜ Ready |
+
+Total: 4 prompts | Completed: 0 | Remaining: 4
 
 ---
 
-## 🟡 [PROMPT-001] Fix Skipped Web API Tests
+## 🟡 [PROMPT-001] LATS Module Documentation Guide
 
-**Title:** Remove `@pytest.mark.skip` from Web API tests by injecting robust mocks
-**Target:** `tests/test_web_api.py`, `tests/conftest.py`
+**Title:** Create comprehensive LATS/Self-Correction module documentation
+**Target:** `docs/LATS_GUIDE.md`, `README.md`
 
 **Context:**
-Several Web API tests (e.g., `TestQAGeneration`, `TestWorkspace`) are currently skipped because they rely on actual LLM keys or complex async mocks that were missing. This creates a testing gap.
+The LATS (Language Agent Tree Search) and self-correction modules exist in `src/lats/` but lack operational documentation. Users cannot easily understand how to enable, configure, or tune these features.
 
 **Task:**
 
-1. Analyze `tests/test_web_api.py` to identify skipped tests.
-2. Update `tests/conftest.py` (or creating a new `tests/mock_web_dependencies.py`) to provide a `MockAgent` and `MockPipeline` that simulate the `GeminiAgent` interface (returning fixed JSON/Strings) without making network calls.
-3. Inject these mocks into the FastAPI app using `app.dependency_overrides` or by patching the router's `agent`/`pipeline` dependencies.
-4. Remove `@pytest.mark.skip` and ensure tests pass.
+1. Create `docs/LATS_GUIDE.md` with the following sections:
+   - Overview of LATS functionality
+   - Configuration options (`ENABLE_LATS`, search depth, etc.)
+   - Usage examples (CLI and programmatic)
+   - Performance tuning recommendations
+2. Add a link to this guide in `README.md` under the "Advanced Features" section.
+3. Include at least one complete usage example with code snippets.
 
 **Verification:**
 
 ```bash
-pytest tests/test_web_api.py -v
-# EXPECTED: All tests passing, 0 skipped (or significantly fewer).
+# Check file exists
+test -f docs/LATS_GUIDE.md && echo "OK"
+# Verify README link
+grep -q "LATS_GUIDE" README.md && echo "OK"
 ```
+
+After completing this prompt, proceed to **[PROMPT-002]**.
 
 ---
 
-## 🟡 [PROMPT-002] Sync Docs with Scripts
+## 🟡 [PROMPT-002] Frontend-Backend Integration Guide
 
-**Title:** Update README and docs to reflect current `scripts/` status
-**Target:** `README.md`, `docs/*.md`, `scripts/`
+**Title:** Create frontend-backend integration documentation
+**Target:** `docs/FRONTEND_INTEGRATION.md`, `packages/frontend/`
 
 **Context:**
-The `scripts/` directory content has changed (some scripts removed/renamed), but `README.md` and other documentation files still reference old scripts (e.g., `auto_profile.py`).
+A Vite/Vitest-based frontend exists in `packages/frontend/`, but there is no documentation on how to connect it to the FastAPI backend. Frontend developers lack clarity on API endpoints, authentication, and CORS configuration.
 
 **Task:**
 
-1. List files in `scripts/` to confirm what exists.
-2. Search for `python scripts/` in `README.md` and `docs/`.
-3. Remove references to non-existent scripts.
-4. If a script was renamed or moved (e.g., to CLI commands), update the instruction.
+1. Create `docs/FRONTEND_INTEGRATION.md` with:
+   - List of available API endpoints (from `src/web/routers/`)
+   - Environment variable setup for frontend (API base URL, etc.)
+   - CORS configuration guide
+   - Development workflow (running both frontend and backend)
+2. Document the following key endpoints:
+   - `GET /api/ocr` - OCR text retrieval
+   - `POST /api/ocr` - OCR text save
+   - `GET /api/cache/summary` - Cache statistics
+   - Health check endpoints
+3. Include example fetch/axios calls for frontend usage.
 
 **Verification:**
 
 ```bash
-# Manual check:
-grep "python scripts/" README.md
-# Ensure listed commands point to existing files.
+# Check file exists
+test -f docs/FRONTEND_INTEGRATION.md && echo "OK"
 ```
+
+After completing this prompt, proceed to **[PROMPT-003]**.
 
 ---
 
-## 🟢 [PROMPT-003] Refactor Settings
+## 🟢 [PROMPT-003] Frontend Vitest Test Coverage
 
-**Title:** Split `AppConfig` into modular settings classes
-**Target:** `src/config/settings.py`
+**Title:** Expand Vitest test coverage for frontend components
+**Target:** `packages/frontend/src/`, `packages/frontend/tests/`
 
 **Context:**
-`src/config/settings.py` contains a monolithic `AppConfig` class handling LLM, DB, Web, CI, and Path settings. It is over 500 lines long and hard to maintain.
+The Vitest testing environment is set up in `packages/frontend/`, but component test coverage is low. Frontend changes may introduce regression bugs that go undetected.
 
 **Task:**
 
-1. Create separate Pydantic models in `src/config/settings.py` (or new files if preferred, but keeping single file is fine for now):
-    - `LLMSettings`: API keys, models, timeouts.
-    - `DatabaseSettings`: Neo4j, Redis.
-    - `WebSettings`: CORS, Host, Port.
-2. Refactor `AppConfig` to compose these settings (e.g., `self.llm = LLMSettings()`).
-3. Ensure backward compatibility (properties on `AppConfig` that proxy to sub-settings) so existing code doesn't break immediately.
+1. Analyze existing components in `packages/frontend/src/` to identify untested components.
+2. Create unit tests for at least 3 major components:
+   - Test component rendering
+   - Test user interactions (clicks, input)
+   - Test prop variations
+3. Update `packages/frontend/package.json` if needed to ensure test scripts work.
+4. Verify tests pass locally.
 
 **Verification:**
 
 ```bash
-pytest tests/unit/config/test_config.py
-# Verify no regression in config loading.
+cd packages/frontend
+pnpm run test
+# EXPECTED: All tests passing
 ```
+
+After completing this prompt, proceed to **[OPT-1]**.
 
 ---
 
-## 🚀 [PROMPT-004] Async File I/O
+## 🚀 [OPT-1] Frontend Bundle Optimization
 
-**Title:** Convert blocking File I/O in Async Handlers to Non-blocking
-**Target:** `src/web/routers/ocr.py`, `src/web/utils.py`
+**Title:** Optimize frontend bundle size and loading performance
+**Target:** `packages/frontend/vite.config.ts`, `packages/frontend/src/`
 
 **Context:**
-The `api_save_ocr` endpoint allows `async def` but calls functions using `open()` or `path.write_text()`. This blocks the event loop.
+The frontend bundle may not be optimized for production, leading to longer initial load times. Code splitting and tree-shaking improvements can enhance user experience.
 
 **Task:**
 
-1. Identify blocking I/O in `src/web/routers/ocr.py` (lines ~71) and `log_review_session` in `src/web/utils.py`.
-2. Use `aiofiles` (if available in pyproject.toml, otherwise add it) OR usage `asyncio.to_thread` / `loop.run_in_executor` to wrap these calls.
-3. Update the functions to be `async def` if necessary (and update callers).
+1. Analyze current bundle size using `vite-bundle-analyzer` or similar tool.
+2. Implement optimizations in `vite.config.ts`:
+   - Enable code splitting for routes
+   - Configure tree-shaking for unused exports
+   - Add chunk naming for better caching
+3. Document bundle size before and after optimization.
+4. Verify production build works correctly.
+
+**Implementation Details:**
+
+```typescript
+// vite.config.ts optimizations
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          // Add other chunks as needed
+        },
+      },
+    },
+  },
+});
+```
 
 **Verification:**
 
 ```bash
-pytest tests/test_web_api.py
-# Ensure OCR and Review logging endpoints still work.
+cd packages/frontend
+pnpm run build
+# Check bundle size in dist/
 ```
+
+After completing this prompt, proceed to **[FINISH]**.
 
 ---
 
@@ -120,8 +166,21 @@ pytest tests/test_web_api.py
 
 **Task:**
 
-1. Run the full test suite one last time: `pytest`.
-2. Print the following success message:
-    > "🎉 All pending improvements have been successfully implemented! Please review the changes."
+1. Run the full test suite to ensure no regressions:
+
+   ```bash
+   uv run python -m pytest
+   cd packages/frontend && pnpm run test
+   ```
+
+2. Verify all documentation files were created:
+
+   ```bash
+   test -f docs/LATS_GUIDE.md && echo "LATS Guide OK"
+   test -f docs/FRONTEND_INTEGRATION.md && echo "Frontend Guide OK"
+   ```
+
+3. Print the following success message:
+   > "🎉 ALL PROMPTS COMPLETED. All pending improvement and optimization items from the latest report have been applied."
 
 ---
