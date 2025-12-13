@@ -121,11 +121,7 @@ exclude = ["vulture_whitelist.py"]
 [tool.ruff.lint]
 extend-select = ["PERF", "FURB", "SIM", "D"]
 ignore = [
-    "D100",   # Missing docstring in public module
-    "D101",   # Missing docstring in public class
-    "D200",   # One-line docstring should fit on one line
-    "D205",   # 1 blank line required between summary line and description
-    "D415",   # First line should end with a period, question mark, or exclamation point
+    "D100",   # Missing docstring in public module (36 violations)
 ]
 
 
