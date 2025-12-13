@@ -66,6 +66,15 @@ class LLMSettingsMixin(BaseSettings):
     cache_min_tokens: int = Field(MIN_CACHE_TOKENS, alias="GEMINI_CACHE_MIN_TOKENS")
     budget_limit_usd: float | None = Field(None, alias="BUDGET_LIMIT_USD")
 
+    @model_validator(mode="after")
+    def check_timeout_consistency(self) -> "LLMSettingsMixin":
+        """Timeout <= timeout_max 확인."""
+        if self.timeout > self.timeout_max:
+            raise ValueError(
+                f"timeout ({self.timeout}s) must be <= timeout_max ({self.timeout_max}s)",
+            )
+        return self
+
     @field_validator("api_key")
     @classmethod
     def validate_api_key(cls, v: str) -> str:
@@ -140,7 +149,8 @@ class LLMSettingsMixin(BaseSettings):
 
         if v > 20:
             logger.warning(
-                "High concurrency (%d) may trigger rate limiting.",
+                "High concurrency (%d) may trigger rate limiting. "
+                "Consider increasing GEMINI_MAX_CONCURRENCY or reducing batch size.",
                 v,
             )
 
@@ -181,7 +191,7 @@ class LLMSettingsMixin(BaseSettings):
 
         if v > 7200:
             logger.warning(
-                "Very long cache TTL (%d minutes) may not be practical.",
+                "Very long cache TTL (%d minutes) may not be practical for learning projects.",
                 v,
             )
 
@@ -206,7 +216,7 @@ class LLMSettingsMixin(BaseSettings):
         if v < api_min:
             logger.warning(
                 "CACHE_MIN_TOKENS=%d는 Gemini API 제약(%d)보다 작습니다. "
-                "%d로 자동 조정합니다.",
+                "캐싱이 작동하지 않을 수 있습니다. %d로 자동 조정합니다.",
                 v,
                 api_min,
                 api_min,
@@ -215,8 +225,10 @@ class LLMSettingsMixin(BaseSettings):
 
         if v > api_min:
             logger.info(
-                "CACHE_MIN_TOKENS=%d로 설정됨.",
+                "CACHE_MIN_TOKENS=%d로 설정됨. "
+                "API 최소값(%d)보다 높으므로 일부 요청에서 캐싱이 건너뛰어질 수 있습니다.",
                 v,
+                api_min,
             )
 
         return v
