@@ -154,6 +154,20 @@ def _parse_structured_answer(text: str) -> dict[str, Any] | None:
     # 단독 **도 제거
     candidate = candidate.replace("**", "")
 
+    # LLM이 마크다운 리스트 마커를 추가하는 경우 제거 (예: - "intro" → "intro")
+    # 각 줄에서 `- ` 프리픽스 제거
+    lines = candidate.split("\n")
+    cleaned_lines = []
+    for line in lines:
+        stripped = line.lstrip()
+        if stripped.startswith("- "):
+            # `- ` 제거하고 원래 들여쓰기 유지
+            indent = line[: len(line) - len(stripped)]
+            cleaned_lines.append(indent + stripped[2:])
+        else:
+            cleaned_lines.append(line)
+    candidate = "\n".join(cleaned_lines)
+
     if '"intro"' not in candidate and '"sections"' not in candidate:
         return None
 
