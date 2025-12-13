@@ -376,6 +376,13 @@ export async function generateQAStreaming(mode: "batch" | "batch_three"): Promis
         return;
     }
     resultsDiv.innerHTML = "";
+
+    // 즉시 skeleton 카드 표시 (서버 응답 전에 로딩 피드백 제공)
+    const immediateTypes = mode === "batch_three"
+        ? ["global_explanation", "reasoning", "target_long"]
+        : ["global_explanation", "reasoning", "target_short", "target_long"];
+    immediateTypes.forEach(type => resultsDiv.appendChild(createSkeletonCard(type)));
+
     try {
         const response = await fetch("/api/qa/generate/batch/stream", {
             method: "POST",
@@ -400,8 +407,7 @@ export async function generateQAStreaming(mode: "batch" | "batch_three"): Promis
                 try {
                     const data = JSON.parse(payload);
                     if (data.event === "started") {
-                        const batchTypes = mode === "batch_three" ? ["global_explanation", "reasoning", "target_long"] : ["global_explanation", "reasoning", "target_short", "target_long"];
-                        batchTypes.forEach(type => resultsDiv.appendChild(createSkeletonCard(type)));
+                        // skeleton은 이미 fetch 전에 표시됨, skip
                     } else if (data.event === "progress") {
                         updateCardWithData(data.type, data.data);
                     } else if (data.event === "error") {
