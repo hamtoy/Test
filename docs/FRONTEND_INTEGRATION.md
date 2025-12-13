@@ -24,7 +24,7 @@ The project consists of:
 
 ### Architecture
 
-```
+```text
 ┌─────────────────┐     HTTP/JSON     ┌─────────────────┐
 │                 │ ◄───────────────► │                 │
 │    Frontend     │                   │    Backend      │

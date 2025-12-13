@@ -1,5 +1,9 @@
 import { defineConfig } from "vite";
-import path from "path";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export default defineConfig({
     base: "/static/dist/",
@@ -12,7 +16,7 @@ export default defineConfig({
         target: "es2020", // Modern browsers for smaller bundles
         chunkSizeWarningLimit: 500, // KB warning threshold
         rollupOptions: {
-            input: path.resolve(__dirname, "static/app.ts"),
+            input: resolve(__dirname, "static/app.ts"),
             output: {
                 entryFileNames: "[name].[hash].js",
                 chunkFileNames: "chunks/[name].[hash].js",
