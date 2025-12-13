@@ -307,13 +307,33 @@ class TestConditionalEndpoints:
         """Create test client."""
         return TestClient(app)
 
-    @pytest.mark.skip(reason="Metrics endpoint requires ENABLE_METRICS at app startup")
-    @patch.dict(os.environ, {"ENABLE_METRICS": "true"})
-    def test_metrics_endpoint_enabled(self, client: TestClient) -> None:
-        """Test /metrics endpoint when enabled."""
-        # This test requires the app to be recreated with ENABLE_METRICS=true
-        # during startup, which is not possible in the current test structure
-        pass
+    def test_metrics_endpoint_enabled(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test /metrics endpoint when enabled using module reimport pattern."""
+        import importlib
+        import sys
+        import types
+
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
+        # Set env and reimport metrics module
+        monkeypatch.setenv("ENABLE_METRICS", "true")
+        sys.modules.pop("src.web.routers.metrics", None)
+        metrics = importlib.import_module("src.web.routers.metrics")
+
+        # Mock the metrics dependency
+        fake_metrics_mod = types.SimpleNamespace(get_metrics=lambda: "# HELP test\n")
+        monkeypatch.setitem(sys.modules, "src.monitoring.metrics", fake_metrics_mod)
+
+        # Create temp app with metrics router
+        tmp_app = FastAPI()
+        tmp_app.include_router(metrics.router)
+
+        client = TestClient(tmp_app)
+        response = client.get("/metrics")
+
+        assert response.status_code == 200
+        assert "HELP" in response.text
 
     @patch.dict(os.environ, {"ENABLE_METRICS": "true"})
     @patch("src.analytics.dashboard.UsageDashboard")
