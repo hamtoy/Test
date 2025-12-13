@@ -7,9 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import os
-import sys
-from pathlib import Path
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
