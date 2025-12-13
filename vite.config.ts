@@ -7,14 +7,38 @@ export default defineConfig({
         outDir: "static/dist",
         emptyOutDir: true,
         sourcemap: true,
+        // OPT-1: Bundle optimization settings
+        minify: "esbuild", // Fast minification
+        target: "es2020", // Modern browsers for smaller bundles
+        chunkSizeWarningLimit: 500, // KB warning threshold
         rollupOptions: {
             input: path.resolve(__dirname, "static/app.ts"),
             output: {
-                entryFileNames: "[name].js",
-                chunkFileNames: "chunks/[name].js",
-                assetFileNames: "assets/[name][extname]",
+                entryFileNames: "[name].[hash].js",
+                chunkFileNames: "chunks/[name].[hash].js",
+                assetFileNames: "assets/[name].[hash][extname]",
+                // Manual chunks for better caching
+                manualChunks: (id) => {
+                    // Separate vendor chunks for better caching
+                    if (id.includes("node_modules")) {
+                        return "vendor";
+                    }
+                    // Group related modules
+                    if (id.includes("/utils")) {
+                        return "utils";
+                    }
+                },
+            },
+            // Tree-shaking optimization
+            treeshake: {
+                moduleSideEffects: false,
+                propertyReadSideEffects: false,
             },
         },
+    },
+    // Optimize dependencies
+    optimizeDeps: {
+        include: [], // Pre-bundle common dependencies
     },
     publicDir: false,
 });

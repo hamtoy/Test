@@ -128,6 +128,17 @@ python -m src.main
 
 자세한 내용은 [캐싱 가이드](docs/CACHING.md)를 참조하세요.
 
+### 🔍 LATS (Language Agent Tree Search)
+
+고품질 답변 생성을 위한 트리 기반 탐색 기능입니다:
+
+```bash
+# LATS 활성화 (.env)
+ENABLE_LATS=true
+```
+
+자세한 설정 및 사용법은 [LATS 가이드](docs/LATS_GUIDE.md)를 참조하세요.
+
 ## 성능 분석 개요
 
 ### API Latency 통계
