@@ -90,6 +90,10 @@ describe("ocr module", () => {
         it("should handle non-existent element gracefully", async () => {
             const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => { });
 
+            // Remove both ocr-input and ocr-preview to trigger console.error
+            mockTextArea.remove();
+            mockDiv.remove();
+
             await loadOCR("non-existent-id");
 
             expect(consoleSpy).toHaveBeenCalledWith("OCR element not found");
