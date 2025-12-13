@@ -77,7 +77,8 @@ class TestBatchTypeResolution:
         body = GenerateQARequest(mode="batch")
         result = _resolve_batch_types(body)
         assert isinstance(result, list)
-        assert len(result) > 0
+        # Default batch mode should return at least 3 types
+        assert len(result) >= 3, f"Expected at least 3 batch types, got {len(result)}"
 
     def test_resolve_batch_types_custom(self) -> None:
         """Test custom batch types."""

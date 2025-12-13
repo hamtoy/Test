@@ -3,8 +3,9 @@
 These tests target uncovered code paths with simple, reliable testing patterns.
 """
 
-import pytest
 from unittest.mock import Mock
+
+import pytest
 
 
 class TestInfraMetrics:
@@ -39,7 +40,8 @@ class TestInfraMetrics:
 
     def test_measure_latency_decorator(self) -> None:
         """Test measure_latency decorator."""
-        from typing import cast, Callable
+        from typing import Callable, cast
+
         from src.infra.metrics import measure_latency
 
         @measure_latency("test_operation")  # type: ignore[arg-type]
@@ -53,7 +55,8 @@ class TestInfraMetrics:
 
     def test_measure_latency_with_extra(self) -> None:
         """Test measure_latency decorator with get_extra."""
-        from typing import cast, Callable
+        from typing import Callable, cast
+
         from src.infra.metrics import measure_latency
 
         def get_extra(*args: object) -> dict[str, int]:
@@ -71,7 +74,8 @@ class TestInfraMetrics:
     @pytest.mark.asyncio
     async def test_measure_latency_async_decorator(self) -> None:
         """Test measure_latency_async decorator."""
-        from typing import cast, Callable, Awaitable
+        from typing import Awaitable, Callable, cast
+
         from src.infra.metrics import measure_latency_async
 
         @measure_latency_async("test_async_operation")  # type: ignore[arg-type]
@@ -86,7 +90,8 @@ class TestInfraMetrics:
     @pytest.mark.asyncio
     async def test_measure_latency_async_with_extra(self) -> None:
         """Test measure_latency_async decorator with get_extra."""
-        from typing import cast, Callable, Awaitable
+        from typing import Awaitable, Callable, cast
+
         from src.infra.metrics import measure_latency_async
 
         def get_extra(*args: object) -> dict[str, int]:
@@ -140,8 +145,9 @@ class TestQARagSystemSimple:
 
     def test_find_relevant_rules_no_vector_store(self) -> None:
         """Test find_relevant_rules without vector store."""
-        from src.qa.rag_system import QAKnowledgeGraph
         from unittest.mock import Mock
+
+        from src.qa.rag_system import QAKnowledgeGraph
 
         kg = QAKnowledgeGraph.__new__(QAKnowledgeGraph)
         kg._vector_store = None
@@ -172,7 +178,10 @@ class TestWorkspaceCommonSimple:
         result = _difficulty_hint(long_text)
 
         assert isinstance(result, str)
-        assert len(result) > 0
+        # Long text should produce a non-empty difficulty hint
+        assert len(result) > 0, "Difficulty hint should not be empty for long text"
+        # Hint should contain Korean text about difficulty
+        assert "long" in result.lower() or "긴" in result or len(result) > 2
 
     def test_answer_quality_weights_defaults(self) -> None:
         """Test AnswerQualityWeights default values."""

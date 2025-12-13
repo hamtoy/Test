@@ -59,7 +59,8 @@ class TestStreamBatchTypes:
         body = GenerateQARequest(mode="batch")
         result = _resolve_stream_batch_types(body)
         assert isinstance(result, list)
-        assert len(result) > 0
+        # Default batch types should have at least 3 types
+        assert len(result) >= 3, f"Expected at least 3 batch types, got {len(result)}"
 
     def test_resolve_stream_batch_types_custom(self) -> None:
         """Test custom batch types."""
