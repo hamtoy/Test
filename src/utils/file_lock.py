@@ -15,17 +15,19 @@ from typing import IO, Any
 
 # Try to use platform-specific locking
 try:
-    import msvcrt  # Windows
+    import msvcrt  # type: ignore  # Windows
 
     _WINDOWS = True
 except ImportError:
+    msvcrt = None  # type: ignore
     _WINDOWS = False
 
 try:
-    import fcntl  # Unix/Linux/Mac
+    import fcntl  # type: ignore  # Unix/Linux/Mac
 
     _UNIX = True
 except ImportError:
+    fcntl = None  # type: ignore
     _UNIX = False
 
 
@@ -81,13 +83,13 @@ class FileLock:
 
         # Apply OS-level lock if available
         if _WINDOWS:
-            msvcrt.locking(
+            msvcrt.locking(  # type: ignore
                 self._lock_file.fileno(),
-                msvcrt.LK_NBLCK,
+                msvcrt.LK_NBLCK,  # type: ignore
                 1,
             )
         elif _UNIX:
-            fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)  # type: ignore
 
         return True
 
@@ -151,14 +153,14 @@ class FileLock:
                 # Release OS-level lock
                 if _WINDOWS:
                     with contextlib.suppress(OSError):
-                        msvcrt.locking(
+                        msvcrt.locking(  # type: ignore
                             self._lock_file.fileno(),
-                            msvcrt.LK_UNLCK,
+                            msvcrt.LK_UNLCK,  # type: ignore
                             1,
                         )
                 elif _UNIX:
                     with contextlib.suppress(OSError):
-                        fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_UN)
+                        fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_UN)  # type: ignore
 
                 self._lock_file.close()
             finally:
