@@ -373,13 +373,10 @@ def render_structured_answer_if_present(answer: str, qtype: str) -> str:
         )
         return answer
 
-    # target은 intro만 출력 (결론 포함 시 추가)
+    # target은 intro만 출력 (짧은 단답형)
     if normalized == "target":
         intro = _sanitize_structured_text(structured_any.get("intro", ""))
-        conclusion = _sanitize_structured_text(structured_any.get("conclusion", ""))
-        if intro and conclusion:
-            return f"{intro}\n\n{conclusion}"
-        return intro or conclusion or answer
+        return intro if intro else answer
 
     rendered = _render_structured_answer(structured_any, normalized)
     if rendered is not None:
@@ -758,7 +755,15 @@ def postprocess_answer(
     answer = _remove_unauthorized_markdown(answer)
 
     # 3.5. 서론-소제목 붙음 분리 (예: "문장입니다. **제목**" → 줄바꿈 추가)
-    # 패턴: 문장 끝(다/요/음/임 등 + .) 뒤에 **로 시작하는 소제목이 바로 오는 경우
+    # 패턴: 문장 끝(다/요/음/임 등) 뒤에 **로 시작하는 소제목이 바로 오는 경우
+    # 더 넓은 한글 종결어미 포함
+    answer = re.sub(
+        r"(다|요|음|임|됨|함|습니다|입니다|였습니다|됩니다|합니다|겠습니다)(\s*)(\*\*[^*]+\*\*)",
+        r"\1\n\n\3",
+        answer,
+    )
+
+    # 3.5.1. 마침표/물음표/느낌표 뒤 소제목 분리
     answer = re.sub(
         r"([.?!])(\s*)(\*\*[^*]+\*\*)",
         r"\1\n\n\3",
@@ -769,6 +774,15 @@ def postprocess_answer(
     # **서론**, **본론**, **결론** 형태의 줄은 제거
     answer = re.sub(
         r"^\*\*(서론|본론|결론|도입|마무리)\*\*\s*$",
+        "",
+        answer,
+        flags=re.MULTILINE,
+    )
+
+    # 3.6.1. 불필요한 단독 소제목 제거 (투자의견 유지, 목표주가 유지 등)
+    # 내용 없이 소제목만 있는 줄 제거
+    answer = re.sub(
+        r"^\*\*(투자의견|목표주가|투자등급).*?\*\*\s*$",
         "",
         answer,
         flags=re.MULTILINE,
