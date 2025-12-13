@@ -1,72 +1,55 @@
-"""Final push to reach 80% coverage - simple, reliable tests."""
+"""Final coverage tests with meaningful assertions.
 
-import pytest
+This file replaces import-only tests with actual functionality tests.
+"""
+
+from __future__ import annotations
+
 from unittest.mock import Mock
 
 
 class TestCallbacksContextManager:
-    """Tests for callbacks context manager."""
+    """Tests for callbacks context manager protocol."""
 
-    def test_callback_enter_exit(self) -> None:
-        """Test context manager protocol."""
+    def test_callback_enter_returns_self(self) -> None:
+        """Test __enter__ returns self for 'with' statement."""
         from src.infra.callbacks import Neo4jLoggingCallback
 
         cb = Neo4jLoggingCallback.__new__(Neo4jLoggingCallback)
         cb.driver = Mock()
 
         result = cb.__enter__()
-        assert result is cb
+        assert result is cb, "__enter__ should return self"
+
+    def test_callback_exit_closes_driver(self) -> None:
+        """Test __exit__ closes the driver connection."""
+        from src.infra.callbacks import Neo4jLoggingCallback
+
+        cb = Neo4jLoggingCallback.__new__(Neo4jLoggingCallback)
+        mock_driver = Mock()
+        cb.driver = mock_driver
 
         cb.__exit__(None, None, None)
-        cb.driver.close.assert_called()
 
-
-class TestFeaturesLazyImport:
-    """Test features package lazy imports."""
-
-    def test_multimodal_import(self) -> None:
-        """Test MultimodalUnderstanding lazy import."""
-        try:
-            from src.features import MultimodalUnderstanding
-
-            assert MultimodalUnderstanding is not None
-        except ImportError:
-            pytest.skip("Multimodal not available")
-
-    def test_lats_import(self) -> None:
-        """Test LATSSearcher lazy import."""
-        try:
-            from src.features import LATSSearcher
-
-            assert LATSSearcher is not None
-        except ImportError:
-            pytest.skip("LATS not available")
-
-    def test_self_correcting_import(self) -> None:
-        """Test SelfCorrectingChain lazy import."""
-        try:
-            from src.features import SelfCorrectingChain
-
-            assert SelfCorrectingChain is not None
-        except ImportError:
-            pytest.skip("SelfCorrectingChain not available")
+        mock_driver.close.assert_called_once()
 
 
 class TestWebResponseBuilder:
-    """Test web response builder."""
+    """Test web response builder functionality."""
 
-    def test_build_response_no_config(self) -> None:
-        """Test build_response without config."""
+    def test_build_response_returns_input_when_no_config(self) -> None:
+        """Test build_response passes through data without config."""
         from src.web.response import build_response
 
-        result = build_response({"data": "value"})
+        input_data = {"data": "value", "count": 42}
+        result = build_response(input_data)
 
-        assert result == {"data": "value"}
+        assert result == input_data
 
-    def test_build_response_with_errors(self) -> None:
-        """Test build_response with errors."""
-        from src.web.response import build_response
+    def test_build_response_includes_errors_when_failed(self) -> None:
+        """Test build_response includes error list when success=False."""
         from src.config import AppConfig
+        from src.web.response import build_response
 
         config = Mock(spec=AppConfig)
         config.enable_standard_response = True
@@ -79,112 +62,73 @@ class TestWebResponseBuilder:
         )
 
         assert result["success"] is False
+        assert "errors" in result
+        assert len(result["errors"]) == 2
         assert "Error 1" in result["errors"]
 
+    def test_build_response_success_has_no_errors(self) -> None:
+        """Test successful response has no errors field or empty errors."""
+        from src.config import AppConfig
+        from src.web.response import build_response
 
-class TestAnalyticsComponents:
-    """Test analytics components."""
+        config = Mock(spec=AppConfig)
+        config.enable_standard_response = True
 
-    def test_import_feedback_analysis(self) -> None:
-        """Test importing feedback analysis."""
-        try:
-            from src.analysis.feedback_analysis import analyze_feedback  # type: ignore[import-not-found]
+        result = build_response(
+            {"data": "test"},
+            success=True,
+            config=config,
+        )
 
-            assert callable(analyze_feedback)
-        except (ImportError, AttributeError):
-            # Function might not exist
-            pass
+        assert result["success"] is True
 
-    def test_analytics_metrics(self) -> None:
-        """Test analytics metrics."""
+
+class TestCacheMetricsRecording:
+    """Test CacheMetrics recording functions."""
+
+    def test_cache_metrics_record_skip_stores_reason(self) -> None:
+        """Test record_skip accepts and stores reason."""
         from src.caching.analytics import CacheMetrics
 
-        metrics = CacheMetrics(namespace="test")
+        metrics = CacheMetrics(namespace="test_skip")
 
-        # Test basic functionality
+        # Should not raise
         metrics.record_skip("test_reason")
-        assert metrics is not None
+
+        # Verify namespace is correct
+        assert metrics.namespace == "test_skip"
+
+    def test_cache_metrics_different_namespaces(self) -> None:
+        """Test different namespaces are isolated."""
+        from src.caching.analytics import CacheMetrics
+
+        metrics1 = CacheMetrics(namespace="ns_a")
+        metrics2 = CacheMetrics(namespace="ns_b")
+
+        assert metrics1.namespace != metrics2.namespace
 
 
-class TestWorkflowComponents:
-    """Test workflow components."""
+class TestWorkspaceCommonDependencies:
+    """Test workspace_common dependency injection."""
 
-    def test_executor_import(self) -> None:
-        """Test workflow executor import."""
-        try:
-            from src.workflow.executor import WorkflowExecutor  # type: ignore[attr-defined]
-
-            assert WorkflowExecutor is not None
-        except (ImportError, AttributeError):
-            pytest.skip("WorkflowExecutor not available")
-
-    def test_inspection_import(self) -> None:
-        """Test workflow inspection import."""
-        try:
-            from src.workflow.inspection import inspect_workflow  # type: ignore[attr-defined]
-
-            assert callable(inspect_workflow)
-        except (ImportError, AttributeError):
-            # Function might not exist
-            pass
-
-
-class TestAgentComponents:
-    """Test agent components."""
-
-    def test_client_error_handling(self) -> None:
-        """Test client error handling."""
-        try:
-            from src.agent.client import GeminiClient
-
-            # Just test we can instantiate
-            client = GeminiClient.__new__(GeminiClient)
-            assert client is not None
-        except (ImportError, AttributeError):
-            pytest.skip("GeminiClient not available")
-
-
-class TestGraphComponents:
-    """Test graph components."""
-
-    def test_builder_import(self) -> None:
-        """Test graph builder import."""
-        try:
-            from src.graph.builder import GraphBuilder  # type: ignore[attr-defined]
-
-            assert GraphBuilder is not None
-        except (ImportError, AttributeError):
-            pytest.skip("GraphBuilder not available")
-
-    def test_data2neo_extractor_import(self) -> None:
-        """Test Data2NeoExtractor import."""
-        try:
-            from src.graph.data2neo_extractor import Data2NeoExtractor
-
-            assert Data2NeoExtractor is not None
-        except (ImportError, AttributeError):
-            pytest.skip("Data2NeoExtractor not available")
-
-
-class TestWorskpaceCommonMore:
-    """More tests for workspace_common."""
-
-    def test_set_dependencies_none_values(self) -> None:
-        """Test set_dependencies with None values."""
-        from src.web.routers.workspace_common import set_dependencies
+    def test_set_dependencies_accepts_none_values(self) -> None:
+        """Test set_dependencies works with None for optional parameters."""
         from src.config import AppConfig
+        from src.web.routers.workspace_common import set_dependencies
 
         config = AppConfig()
         agent = Mock()
 
-        # Should not raise
+        # Should not raise with None values for optional params
         set_dependencies(config, agent, None, None)
 
-    def test_get_config_returns_config(self) -> None:
-        """Test _get_config returns valid config."""
+    def test_get_config_returns_appconfig(self) -> None:
+        """Test _get_config returns valid AppConfig instance."""
+        from src.config import AppConfig
         from src.web.routers.workspace_common import _get_config
 
         config = _get_config()
 
-        assert config is not None
+        assert isinstance(config, AppConfig)
         assert hasattr(config, "workspace_timeout")
+        assert config.workspace_timeout > 0

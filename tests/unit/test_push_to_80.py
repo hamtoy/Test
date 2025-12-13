@@ -98,14 +98,17 @@ class TestDependencyFunctions:
         assert hasattr(config, "workspace_timeout")
         assert hasattr(config, "qa_single_timeout")
 
-    def test_get_agent_with_mock_registry(self) -> None:
-        """Test get_agent returns None when not initialized."""
+    def test_get_agent_returns_optional(self) -> None:
+        """Test get_agent returns Agent or None."""
         from src.web.dependencies import get_agent
 
-        # Agent should be None if not explicitly initialized
+        # get_agent returns None when not initialized, Agent otherwise
         result = get_agent()
-        # Accept None or actual agent
-        assert result is None or result is not None
+        # Just verify return type is acceptable (None or Agent)
+        if result is not None:
+            assert hasattr(result, "generate_query") or hasattr(result, "model"), (
+                "Should be an Agent"
+            )
 
 
 class TestCacheMetricsNamespace:
