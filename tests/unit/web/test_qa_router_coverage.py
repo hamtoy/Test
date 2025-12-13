@@ -351,9 +351,10 @@ class TestStreamBatchQAGeneration:
                     "src.web.routers.qa._stream_batch_events"
                 ) as mock_stream:
 
-                    async def dummy_stream(*args: Any) -> None:
-                        if False:
-                            yield ""
+                    async def dummy_stream(*args: Any) -> AsyncIterator[str]:
+                        # Empty generator for testing
+                        return
+                        yield  # Never reached, but needed for type checking
 
                     mock_stream.return_value = dummy_stream()
 

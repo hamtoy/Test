@@ -434,13 +434,15 @@ class TestExtractEntities:
 
         extractor = Data2NeoExtractor(config=config, llm_provider=mock_llm)
 
-        # Long text to trigger chunking
-        long_text = "A" * 10000
+        # Long text to trigger chunking (default chunk_size is 4000)
+        # Use 3x chunk size to ensure multiple chunks
+        CHUNK_SIZE = 4000
+        long_text = "A" * (CHUNK_SIZE * 3)
 
         result = await extractor.extract_entities(long_text, "doc1")
 
-        # Should have called LLM multiple times
-        assert mock_llm.generate_content_async.call_count > 1
+        # Should have called LLM multiple times (at least 3)
+        assert mock_llm.generate_content_async.call_count >= 3
 
     @pytest.mark.asyncio
     async def test_extract_entities_deduplicates(self) -> None:
@@ -471,8 +473,9 @@ class TestExtractEntities:
 
         extractor = Data2NeoExtractor(config=config, llm_provider=mock_llm)
 
-        # Long text to trigger chunking
-        result = await extractor.extract_entities("A" * 10000, "doc1")
+        # Long text to trigger chunking (2x chunk size to get 2 chunks)
+        CHUNK_SIZE = 4000
+        result = await extractor.extract_entities("A" * (CHUNK_SIZE * 2), "doc1")
 
         # Should have only one entity despite appearing in both chunks
         entity_ids = [e.id for e in result.entities]
