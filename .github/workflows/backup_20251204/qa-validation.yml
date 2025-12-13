@@ -71,4 +71,4 @@ jobs:
         run: uv run python -m src.graph.builder
 
       - name: Run tests
-        run: uv run pytest --maxfail=1 --disable-warnings -q
+        run: uv run python -m pytest --maxfail=1 --disable-warnings -q

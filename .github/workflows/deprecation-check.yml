@@ -39,7 +39,7 @@ jobs:
         run: uv run python scripts/deprecation_stats.py --path . --exclude .venv --exclude __pycache__
 
       - name: Run tests (warnings allowed)
-        run: uv run pytest tests/ -v -W default::DeprecationWarning
+        run: uv run python -m pytest tests/ -v -W default::DeprecationWarning
         continue-on-error: true
 
   test-strict-mode:
