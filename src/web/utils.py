@@ -147,6 +147,13 @@ def _parse_structured_answer(text: str) -> dict[str, Any] | None:
     candidate = _extract_json_object(text)
     if not candidate:
         return None
+
+    # LLM이 JSON 키에 **를 적용하는 경우 제거 (예: **"intro"** → "intro")
+    candidate = candidate.replace('**"', '"').replace('"**', '"')
+    candidate = candidate.replace("**'", "'").replace("'**", "'")
+    # 단독 **도 제거
+    candidate = candidate.replace("**", "")
+
     if '"intro"' not in candidate and '"sections"' not in candidate:
         return None
 

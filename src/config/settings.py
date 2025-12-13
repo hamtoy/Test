@@ -53,16 +53,20 @@ class AppConfig(BaseSettings):
     # Per-query-type token overrides (optional). If unset, fall back to
     # GEMINI_MAX_OUTPUT_TOKENS with conservative defaults for faster responses.
     max_output_tokens_explanation: int | None = Field(
-        None,
+        2560,
         alias="GEMINI_MAX_OUTPUT_TOKENS_EXPLANATION",
     )
     max_output_tokens_reasoning: int | None = Field(
-        None,
+        1536,
         alias="GEMINI_MAX_OUTPUT_TOKENS_REASONING",
     )
-    max_output_tokens_target: int | None = Field(
-        None,
-        alias="GEMINI_MAX_OUTPUT_TOKENS_TARGET",
+    max_output_tokens_target_short: int | None = Field(
+        256,
+        alias="GEMINI_MAX_OUTPUT_TOKENS_TARGET_SHORT",
+    )
+    max_output_tokens_target_long: int | None = Field(
+        1024,
+        alias="GEMINI_MAX_OUTPUT_TOKENS_TARGET_LONG",
     )
     timeout: int = Field(120, alias="GEMINI_TIMEOUT")
     timeout_max: int = Field(3600, alias="GEMINI_TIMEOUT_MAX")
@@ -163,8 +167,7 @@ class AppConfig(BaseSettings):
         """query_type을 정규화된 형태로 변환."""
         if query_type in {"global_explanation", "globalexplanation"}:
             return "explanation"
-        if query_type in {"target_short", "target_long"}:
-            return "target"
+        # target_short, target_long은 분리하여 처리
         return query_type
 
     def _get_tokens_for_type(self, normalized: str, base: int) -> int:
@@ -172,7 +175,8 @@ class AppConfig(BaseSettings):
         config_map = {
             "explanation": (self.max_output_tokens_explanation, base),
             "reasoning": (self.max_output_tokens_reasoning, min(base, 2048)),
-            "target": (self.max_output_tokens_target, min(base, 2048)),
+            "target_short": (self.max_output_tokens_target_short, min(base, 512)),
+            "target_long": (self.max_output_tokens_target_long, min(base, 2048)),
         }
 
         if normalized not in config_map:
@@ -308,7 +312,8 @@ class AppConfig(BaseSettings):
         "max_output_tokens",
         "max_output_tokens_explanation",
         "max_output_tokens_reasoning",
-        "max_output_tokens_target",
+        "max_output_tokens_target_short",
+        "max_output_tokens_target_long",
     )
     @classmethod
     def validate_max_output_tokens(cls, v: int | None) -> int | None:
