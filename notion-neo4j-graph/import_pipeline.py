@@ -1,12 +1,12 @@
+import logging
 import os
 import re
-import logging
-from typing import List, Dict, Any
 from contextlib import contextmanager
+from typing import Any, Dict, List
 
-from notion_client import Client
-from neo4j import GraphDatabase, Session
 from dotenv import load_dotenv
+from neo4j import GraphDatabase, Session
+from notion_client import Client
 
 # 로깅 설정
 logging.basicConfig(
@@ -24,6 +24,7 @@ class DataValidator:
 
     @staticmethod
     def validate_block(block: Dict[str, Any]) -> bool:
+        """블록 데이터 유효성 검증"""
         if not isinstance(block, dict):
             return False
         return not ("id" not in block or "type" not in block)
@@ -33,6 +34,7 @@ class NotionExtractor:
     """Notion 데이터 추출 클래스"""
 
     def __init__(self, token: str):
+        """Notion 클라이언트 초기화"""
         self.client = Client(auth=token)
 
     def get_page(self, page_id: str) -> Dict[str, Any]:
@@ -85,13 +87,16 @@ class Neo4jAuraImporter:
     REFERENCE_BATCH_SIZE = 500
 
     def __init__(self, uri: str, auth: tuple):
+        """Neo4j 드라이버 초기화 및 연결 확인"""
         self.driver = GraphDatabase.driver(uri, auth=auth)
         self.verify_connection()
 
     def close(self):
+        """Neo4j 드라이버 연결 종료"""
         self.driver.close()
 
     def verify_connection(self):
+        """Neo4j 서버 연결 상태 확인"""
         try:
             self.driver.verify_connectivity()
             logger.info("✅ Neo4j 연결 확인됨")
@@ -101,6 +106,7 @@ class Neo4jAuraImporter:
 
     @contextmanager
     def session_context(self):
+        """Neo4j 세션 컨텍스트 매니저"""
         session = self.driver.session()
         try:
             yield session
@@ -266,6 +272,7 @@ class Neo4jAuraImporter:
         session.run(query, blocks=blocks_data)
 
     def create_cross_references(self):
+        """페이지 간 교차 참조(멘션) 관계 생성"""
         pattern = re.compile(self.NOTION_URL_PATTERN)
 
         with self.session_context() as session:
@@ -324,6 +331,7 @@ class Neo4jAuraImporter:
 
 
 def main():
+    """Notion 데이터 가져오기 및 Neo4j 저장 메인 함수"""
     # 환경 변수 확인
     notion_token = os.environ.get("NOTION_TOKEN")
     page_ids_str = os.environ.get("NOTION_PAGE_IDS")

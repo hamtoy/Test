@@ -1,12 +1,12 @@
+import logging
 import os
 import re
-import logging
 import sys
-from typing import List, Dict
 from collections import Counter as CounterClass
+from typing import Dict, List
 
-from neo4j import GraphDatabase
 from dotenv import load_dotenv
+from neo4j import GraphDatabase
 
 # 로깅 설정
 logging.basicConfig(
@@ -155,6 +155,7 @@ class SemanticAnalyzer:
     BATCH_SIZE = 500
 
     def __init__(self):
+        """초기화: 환경 변수 검증 및 Neo4j 드라이버 설정"""
         self._validate_env()
         self.driver = GraphDatabase.driver(
             os.environ["NEO4J_URI"],
@@ -170,6 +171,7 @@ class SemanticAnalyzer:
             sys.exit(1)
 
     def close(self):
+        """Neo4j 드라이버 종료"""
         self.driver.close()
 
     def analyze_blocks(self):
@@ -245,6 +247,7 @@ class SemanticAnalyzer:
 
 
 def main():
+    """의미 분석 메인 실행 함수"""
     analyzer = SemanticAnalyzer()
     try:
         analyzer.analyze_blocks()

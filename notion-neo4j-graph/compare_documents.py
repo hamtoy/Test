@@ -1,10 +1,10 @@
+import logging
 import os
 import sys
-import logging
 from contextlib import contextmanager
 
-from neo4j import GraphDatabase
 from dotenv import load_dotenv
+from neo4j import GraphDatabase
 
 # 로깅 설정
 logging.basicConfig(
@@ -21,6 +21,7 @@ class DocumentComparator:
     """문서 간 유사성 및 공통점 분석"""
 
     def __init__(self):
+        """초기화: 환경 변수 검증 및 Neo4j 드라이버 설정"""
         self._validate_env()
         self.driver = GraphDatabase.driver(
             os.environ["NEO4J_URI"],
@@ -36,10 +37,12 @@ class DocumentComparator:
             sys.exit(1)
 
     def close(self):
+        """Neo4j 드라이버 종료"""
         self.driver.close()
 
     @contextmanager
     def session_context(self):
+        """Neo4j 세션 관리를 위한 컨텍스트 매니저"""
         session = self.driver.session()
         try:
             yield session
@@ -135,6 +138,7 @@ class DocumentComparator:
 
 
 def main():
+    """문서 비교 메인 실행 함수"""
     comparator = DocumentComparator()
     try:
         comparator.find_common_content()

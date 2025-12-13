@@ -1,11 +1,13 @@
 import os
-from neo4j import GraphDatabase
+
 from dotenv import load_dotenv
+from neo4j import GraphDatabase
 
 load_dotenv()
 
 
 def verify_topics():
+    """토픽 분석 결과 검증"""
     driver = GraphDatabase.driver(
         os.environ["NEO4J_URI"],
         auth=(os.environ.get("NEO4J_USER", "neo4j"), os.environ["NEO4J_PASSWORD"]),
