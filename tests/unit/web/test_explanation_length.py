@@ -75,9 +75,6 @@ class TestExplanationAnswerLength:
                 assert "1000-1500자" in length_constraint or "최소" in length_constraint
                 assert "5-8개 문단" in length_constraint or "문단" in length_constraint
 
-    @pytest.mark.skip(
-        reason="Warning for short explanation not implemented in qa_generation.py"
-    )
     async def test_explanation_answer_length_validation_warning(self) -> None:
         """Test that short explanation answers trigger a warning."""
         from src.web.routers.qa_generation import generate_single_qa
@@ -85,10 +82,13 @@ class TestExplanationAnswerLength:
         mock_agent = MagicMock()
         mock_agent.generate_query = AsyncMock(return_value=["테스트 질의"])
 
-        # Short answer (should trigger warning)
+        # Short answer (should trigger warning) - very short compared to OCR
         short_answer = "전일 한국 증시는 FOMC 회의를 앞두고 하락했습니다."
 
         mock_agent.rewrite_best_answer = AsyncMock(return_value=short_answer)
+
+        # Long OCR text to trigger the length warning (60% of this = ~150 chars)
+        long_ocr = "테스트 " * 50  # ~250 chars
 
         with (
             patch(
@@ -107,17 +107,18 @@ class TestExplanationAnswerLength:
                 "src.web.routers.qa_gen_core.generator.postprocess_answer",
                 return_value=short_answer,
             ),
-            patch("src.web.routers.qa_gen_core.generator.logger") as mock_logger,
+            # Patch validation.logger where warning is actually called
+            patch("src.web.routers.qa_gen_core.validation.logger") as mock_logger,
         ):
             await generate_single_qa(
                 mock_agent,
-                "OCR 텍스트",
+                long_ocr,
                 "global_explanation",
             )
 
             # Should log warning for short answer
             warning_called = any(
-                call[0][0].startswith("⚠️ Answer too short")
+                "Answer too short" in str(call)
                 for call in mock_logger.warning.call_args_list
             )
             assert warning_called, "Expected warning for short explanation answer"
