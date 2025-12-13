@@ -10,7 +10,9 @@ Targets uncovered lines and edge cases:
 
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -406,8 +408,3 @@ class TestProcessBatchRequest:
                 assert "pairs" in result["data"]
                 # Should have all three results
                 assert len(result["data"]["pairs"]) == 3
-
-
-# Import asyncio for timeout tests
-import asyncio
-from typing import Any

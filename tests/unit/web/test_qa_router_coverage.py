@@ -207,8 +207,9 @@ class TestYieldCompletedReasoningTask:
         """Test with task that's not done yet."""
         state = _StreamBatchState()
 
-        # Create a task that will never complete
-        task: asyncio.Task[dict[str, Any]] = asyncio.create_task(asyncio.sleep(1000))
+        # Create a task that's not done yet (using asyncio.Future that never completes)
+        future: asyncio.Future[dict[str, Any]] = asyncio.Future()
+        task = asyncio.create_task(asyncio.wait_for(future, timeout=None))
 
         events = []
         async for event in _yield_completed_reasoning_task(task, state):
