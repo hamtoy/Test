@@ -250,18 +250,18 @@ class TestMetricsDecorators:
         """Test measure_latency records execution time."""
         from src.infra.metrics import measure_latency
 
-        @measure_latency("test_operation")
+        @measure_latency("test_operation")  # type: ignore[arg-type]
         def sample_function() -> str:
             return "result"
 
-        result = sample_function()
+        result: str = sample_function()
         assert result == "result"
 
     def test_measure_latency_decorator_propagates_exception(self) -> None:
         """Test measure_latency propagates exceptions from wrapped function."""
         from src.infra.metrics import measure_latency
 
-        @measure_latency("failing_op")
+        @measure_latency("failing_op")  # type: ignore[arg-type]
         def failing_function() -> None:
             raise ValueError("Intentional test error")
 
@@ -273,11 +273,11 @@ class TestMetricsDecorators:
         """Test async version of measure_latency."""
         from src.infra.metrics import measure_latency_async
 
-        @measure_latency_async("async_test_op")
+        @measure_latency_async("async_test_op")  # type: ignore[arg-type]
         async def async_sample() -> str:
             return "async_result"
 
-        result = await async_sample()
+        result: str = await async_sample()
         assert result == "async_result"
 
     @pytest.mark.asyncio
@@ -285,7 +285,7 @@ class TestMetricsDecorators:
         """Test async measure_latency propagates exceptions."""
         from src.infra.metrics import measure_latency_async
 
-        @measure_latency_async("async_failing_op")
+        @measure_latency_async("async_failing_op")  # type: ignore[arg-type]
         async def async_failing() -> None:
             raise RuntimeError("Async test error")
 
