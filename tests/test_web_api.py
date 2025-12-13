@@ -11,6 +11,12 @@ from src.web.api import app
 # Apply mock_genai fixture to all tests in this module
 pytestmark = pytest.mark.usefixtures("mock_genai")
 
+# Patch paths for mocking external dependencies
+PATCH_GENERATE_BATCH = "src.web.routers.qa_generation.generate_single_qa_with_retry"
+PATCH_EVALUATE_EXTERNAL = "src.workflow.external_eval.evaluate_external_answers"
+PATCH_INSPECT_ANSWER = "src.web.routers.workspace_review.inspect_answer"
+PATCH_EDIT_CONTENT = "src.web.routers.workspace_review.edit_content"
+
 
 def _create_mock_agent() -> MagicMock:
     """Create a mock GeminiAgent for testing."""
@@ -114,9 +120,14 @@ def mock_web_dependencies(tmp_path: Path, isolate_registry: None) -> tuple[Magic
     return mock_config, mock_agent, mock_pipeline
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def client(mock_web_dependencies: tuple) -> TestClient:
-    """Create a test client with mocked dependencies."""
+    """Create a test client with mocked dependencies.
+    
+    Note: init_resources is called once per test to ensure fresh state.
+    This is acceptable for test isolation but could be optimized to session
+    scope if tests don't modify global state.
+    """
     # Force initialization to use the mocked registry
     import asyncio
     from src.web.api import init_resources
@@ -238,7 +249,7 @@ class TestQAGeneration:
         }
         
         # Patch the generate_single_qa_with_retry function
-        with patch("src.web.routers.qa_generation.generate_single_qa_with_retry") as mock_gen:
+        with patch(PATCH_GENERATE_BATCH) as mock_gen:
             mock_gen.return_value = {
                 "type": "target_short",
                 "query": "샘플 질의",
@@ -274,7 +285,7 @@ class TestEvaluation:
         }
         
         # Patch the evaluate_external_answers function from workflow module
-        with patch("src.workflow.external_eval.evaluate_external_answers") as mock_eval:
+        with patch(PATCH_EVALUATE_EXTERNAL) as mock_eval:
             mock_eval.return_value = [
                 {"candidate_id": "A", "score": 0.9, "reasoning": "최고"},
                 {"candidate_id": "B", "score": 0.7, "reasoning": "좋음"},
@@ -328,7 +339,7 @@ class TestWorkspace:
         }
         
         # Patch the inspect_answer function
-        with patch("src.web.routers.workspace_review.inspect_answer") as mock_inspect:
+        with patch(PATCH_INSPECT_ANSWER) as mock_inspect:
             mock_inspect.return_value = "[검수됨] 원본 텍스트"
             
             response = client.post("/api/workspace", json=payload)
@@ -358,7 +369,7 @@ class TestWorkspace:
         }
         
         # Patch the edit_content function
-        with patch("src.web.routers.workspace_review.edit_content") as mock_edit:
+        with patch(PATCH_EDIT_CONTENT) as mock_edit:
             mock_edit.return_value = "수정된 텍스트"
             
             response = client.post("/api/workspace", json=payload)
@@ -388,8 +399,8 @@ class TestWorkspace:
         }
         
         # Patch functions to avoid actual execution
-        with patch("src.web.routers.workspace_review.edit_content") as mock_edit:
-            with patch("src.web.routers.workspace_review.inspect_answer") as mock_inspect:
+        with patch(PATCH_EDIT_CONTENT) as mock_edit:
+            with patch(PATCH_INSPECT_ANSWER) as mock_inspect:
                 mock_edit.return_value = "수정됨"
                 mock_inspect.return_value = "검수됨"
                 
