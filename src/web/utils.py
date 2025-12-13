@@ -331,13 +331,8 @@ def _render_structured_answer(
             conclusion = "위 근거를 바탕으로 같은 결론입니다"
 
     lines: list[str] = []
-    lines.append("**서론**")
     if intro:
         lines.extend([intro, ""])
-    else:
-        lines.append("")
-
-    lines.extend(["**본론**", ""])
 
     for section in sections_raw:
         _render_section(section, lines)
@@ -346,7 +341,7 @@ def _render_structured_answer(
     if conclusion:
         if lines and lines[-1] != "":
             lines.append("")
-        lines.extend(["**결론**", conclusion])
+        lines.append(conclusion)
 
     rendered = "\n".join(lines).strip()
     return rendered or None

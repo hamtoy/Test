@@ -373,6 +373,18 @@ class GeminiAgent:
             if max_output_tokens is not None
             else self.config.max_output_tokens
         )
+        if resolved_max_output_tokens <= 0:
+            fallback_tokens = (
+                self.config.max_output_tokens
+                if self.config.max_output_tokens > 0
+                else 4096
+            )
+            self.logger.warning(
+                "Invalid max_output_tokens=%s; falling back to %s",
+                resolved_max_output_tokens,
+                fallback_tokens,
+            )
+            resolved_max_output_tokens = fallback_tokens
         generation_config: dict[str, object] = {
             "temperature": self.config.temperature,
             "max_output_tokens": resolved_max_output_tokens,

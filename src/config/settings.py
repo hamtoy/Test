@@ -146,8 +146,16 @@ class AppConfig(BaseSettings):
         - 없으면 GEMINI_MAX_OUTPUT_TOKENS를 기준으로 보수적인 기본값을 적용해
           짧은 타입(target/reasoning) 응답 속도를 개선한다.
         """
+        base_max_output_tokens = self.max_output_tokens
+        if base_max_output_tokens <= 0:
+            logger.warning(
+                "Invalid GEMINI_MAX_OUTPUT_TOKENS=%s; falling back to 4096",
+                base_max_output_tokens,
+            )
+            base_max_output_tokens = 4096
+
         if not query_type:
-            return self.max_output_tokens
+            return base_max_output_tokens
 
         normalized = query_type
         if normalized in {"global_explanation", "globalexplanation"}:
@@ -156,23 +164,39 @@ class AppConfig(BaseSettings):
             normalized = "target"
 
         if normalized == "explanation":
-            return (
-                self.max_output_tokens_explanation
-                if self.max_output_tokens_explanation is not None
-                else self.max_output_tokens
-            )
+            override = self.max_output_tokens_explanation
+            if override is not None and override > 0:
+                return override
+            if override is not None and override <= 0:
+                logger.warning(
+                    "Invalid GEMINI_MAX_OUTPUT_TOKENS_EXPLANATION=%s; ignoring",
+                    override,
+                )
+            return base_max_output_tokens
 
         if normalized == "reasoning":
-            if self.max_output_tokens_reasoning is not None:
-                return self.max_output_tokens_reasoning
-            return min(self.max_output_tokens, 2048)
+            override = self.max_output_tokens_reasoning
+            if override is not None and override > 0:
+                return override
+            if override is not None and override <= 0:
+                logger.warning(
+                    "Invalid GEMINI_MAX_OUTPUT_TOKENS_REASONING=%s; ignoring",
+                    override,
+                )
+            return min(base_max_output_tokens, 2048)
 
         if normalized == "target":
-            if self.max_output_tokens_target is not None:
-                return self.max_output_tokens_target
-            return min(self.max_output_tokens, 512)
+            override = self.max_output_tokens_target
+            if override is not None and override > 0:
+                return override
+            if override is not None and override <= 0:
+                logger.warning(
+                    "Invalid GEMINI_MAX_OUTPUT_TOKENS_TARGET=%s; ignoring",
+                    override,
+                )
+            return min(base_max_output_tokens, 512)
 
-        return self.max_output_tokens
+        return base_max_output_tokens
 
     @model_validator(mode="after")
     def check_timeout_consistency(self) -> "AppConfig":
