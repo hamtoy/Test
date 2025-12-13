@@ -263,9 +263,9 @@ class TestAPIGenerateQA:
                     with patch(
                         "src.web.routers.qa_generation._process_batch_request"
                     ) as mock_batch:
-                        # Simulate timeout
+                        # Simulate timeout with a short delay
                         async def slow_process(*args: Any, **kwargs: Any) -> None:
-                            await asyncio.sleep(10)
+                            await asyncio.sleep(2)  # Slightly longer than timeout
 
                         mock_batch.side_effect = slow_process
 

@@ -154,9 +154,10 @@ class TestYieldCompletedReasoningTask:
         state = _StreamBatchState()
 
         # Create a completed task
-        task: asyncio.Task[dict[str, Any]] = asyncio.create_task(
-            asyncio.sleep(0, result={"query": "Q", "answer": "A"})
-        )
+        async def completed_task() -> dict[str, Any]:
+            return {"query": "Q", "answer": "A"}
+
+        task = asyncio.create_task(completed_task())
         await task  # Ensure it's done
 
         events = []

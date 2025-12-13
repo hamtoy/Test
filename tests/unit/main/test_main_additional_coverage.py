@@ -43,10 +43,7 @@ class TestWindowsEventLoop:
 
     def test_windows_selector_event_loop_policy_applied(self) -> None:
         """Test WindowsSelectorEventLoopPolicy is applied on Windows."""
-        original_os_name = os.name
-        try:
-            os.name = "nt"
-
+        with patch("os.name", "nt"):
             # Test the actual code path
             if os.name == "nt":
                 try:
@@ -57,5 +54,3 @@ class TestWindowsEventLoop:
                 except AttributeError:
                     # Should handle gracefully
                     pass
-        finally:
-            os.name = original_os_name
