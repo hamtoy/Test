@@ -102,12 +102,13 @@ async def test_main_analyze_cache_quick_path(
         ),
     )
     # Mock interactive_main to prevent stdin reads
-    monkeypatch.setattr(main_module, "interactive_main", AsyncMock())
+    interactive_mock = AsyncMock()
+    monkeypatch.setattr(main_module, "interactive_main", interactive_mock)
 
     await main_module.main()
 
-    # Test passes if no exception is raised (interactive_main is mocked)
-    assert True
+    # Verify interactive_main was called (main() completes without exception)
+    interactive_mock.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -901,8 +902,8 @@ class TestMainEntryPoint:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Test KeyboardInterrupt causes graceful shutdown with exit code 130."""
-        from src.ui import console
         from src.config.constants import USER_INTERRUPT_MESSAGE
+        from src.ui import console
 
         mock_console_print = MagicMock()
 
@@ -928,8 +929,8 @@ class TestMainEntryPoint:
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         """Test general exception causes sys.exit(1)."""
-        from src.ui import console
         from src.config.constants import USER_INTERRUPT_MESSAGE
+        from src.ui import console
 
         mock_logging_critical = MagicMock()
 
