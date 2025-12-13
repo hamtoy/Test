@@ -17,7 +17,8 @@
       <!-- Neo4j에서 정의한 타입별 제약사항 (priority 순) -->
       <neo4j_constraints>
         {% for constraint in constraints %}
-        <constraint priority="{{ constraint.priority if constraint.priority is not none else 50 }}" name="{{ constraint.name | default('') }}">
+        <constraint priority="{{ constraint.priority if constraint.priority is not none else 50 }}"
+          name="{{ constraint.name | default('') }}">
           {{ constraint.description }}
         </constraint>
         {% endfor %}
@@ -135,7 +136,23 @@
         <prohibited_patterns>
           <rule>PARENTHESIS_BAN: 질의 문장에 소괄호 '()'를 포함하는 것을 절대 금지한다.</rule>
           <rule>COPY_PASTE_BAN: 본문 문장을 그대로 복사하여 질문을 만들지 않는다.</rule>
-          <rule>COMPOSITE_QUERY_BAN: 두 가지 과업을 '와/과'로 연결하여 병렬적으로 묻는 것을 금지한다.</rule>
+          <rule>COMPOSITE_QUERY_BAN: 두 가지 이상의 정보를 하나의 질의에 묻는 것을 절대 금지한다.
+            [금지 패턴]: 다음 연결어가 포함된 질의는 복합 질의로 간주하여 즉시 폐기한다:
+            - "~이며," / "~이고," (병렬 연결)
+            - "각각" (복수 정보 요청)
+            - "그중" / "그 중" (추가 정보 요청)
+            - "또한" / "아울러" (부가 정보 추가)
+
+            [잘못된 예시 - 복합 질의]:
+            ❌ "영업이익은 얼마이며, 이는 시장 기대치에 부합하였는지 설명해 주십시오."
+            ❌ "투자의견과 목표주가를 각각 얼마로 유지하고 있는지 알려 주십시오."
+            ❌ "수주잔고는 얼마이며, 그중 수출이 차지하는 비중은 몇 퍼센트인지 설명해 주십시오."
+
+            [올바른 예시 - 단일 질의]:
+            ✅ "3분기 영업이익은 얼마인지 알려 주십시오."
+            ✅ "투자의견을 어떻게 유지하고 있는지 알려 주십시오."
+            ✅ "수주잔고는 얼마인지 알려 주십시오."
+          </rule>
           {% if reference_text %}
           <rule>DEDUPLICATION_CONSTRAINT: 다음 [참조 텍스트]에 이미 포함된 정보에 대한 질의는 절대 생성하지 않는다. 참조 텍스트에 없는 새로운 정보나, 더 구체적인 세부 사항만을
             물어야 한다.
