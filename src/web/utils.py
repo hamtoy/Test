@@ -356,11 +356,11 @@ def _get_fallback_conclusion(intro: str, normalized_qtype: str) -> str:
 def render_structured_answer_if_present(answer: str, qtype: str) -> str:
     """JSON 구조화 답변이 있으면 마크다운 형태로 렌더링한다.
 
-    - reasoning/explanation 계열에서만 적용
+    - reasoning/explanation/target 계열에서 적용
     - 실패 시 원문(answer) 그대로 반환
     """
     normalized = QTYPE_MAP.get(qtype, qtype)
-    if normalized not in {"explanation", "reasoning"}:
+    if normalized not in {"explanation", "reasoning", "target"}:
         return answer
 
     structured_any = _parse_structured_answer(answer)
@@ -372,6 +372,14 @@ def render_structured_answer_if_present(answer: str, qtype: str) -> str:
             answer[:200] if answer else "(empty)",
         )
         return answer
+
+    # target은 intro만 출력 (결론 포함 시 추가)
+    if normalized == "target":
+        intro = _sanitize_structured_text(structured_any.get("intro", ""))
+        conclusion = _sanitize_structured_text(structured_any.get("conclusion", ""))
+        if intro and conclusion:
+            return f"{intro}\n\n{conclusion}"
+        return intro or conclusion or answer
 
     rendered = _render_structured_answer(structured_any, normalized)
     if rendered is not None:
@@ -764,6 +772,14 @@ def postprocess_answer(
         "",
         answer,
         flags=re.MULTILINE,
+    )
+
+    # 3.7. 결론 접두어 앞에 빈 줄 추가 (본론과 결론 분리)
+    # 패턴: 결론 접두어(요약하면, 종합하면, 결론적으로)가 바로 이전 내용에 붙어있는 경우
+    answer = re.sub(
+        r"([.?!다요음임])\s*(요약하면|종합하면|결론적으로|정리하면)",
+        r"\1\n\n\2",
+        answer,
     )
 
     # 4. 기본 정리
