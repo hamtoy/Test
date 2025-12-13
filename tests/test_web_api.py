@@ -87,7 +87,8 @@ def mock_web_dependencies(
     mock_agent.evaluate_candidates = AsyncMock(return_value={"best_index": 0})
 
     # Mock evaluate_answers for external evaluation
-    async def mock_evaluate(*args, **kwargs):
+    # Mock evaluate_answers for external evaluation
+    async def mock_evaluate(*args: object, **kwargs: object) -> list[dict[str, object]]:
         return [
             {"candidate_id": "A", "score": 0.9, "reasoning": "좋은 답변"},
             {"candidate_id": "B", "score": 0.7, "reasoning": "괜찮은 답변"},
@@ -97,10 +98,12 @@ def mock_web_dependencies(
     mock_agent.evaluate_answers = AsyncMock(side_effect=mock_evaluate)
 
     # Mock workspace functions
-    async def mock_inspect(answer, *args, **kwargs):
+    async def mock_inspect(answer: str, *args: object, **kwargs: object) -> str:
         return f"[검수됨] {answer}"
 
-    async def mock_edit(answer, edit_request, *args, **kwargs):
+    async def mock_edit(
+        answer: str, edit_request: str, *args: object, **kwargs: object
+    ) -> str:
         return f"[수정: {edit_request}] {answer}"
 
     mock_agent.inspect_answer = AsyncMock(side_effect=mock_inspect)
@@ -124,7 +127,7 @@ def mock_web_dependencies(
 
 
 @pytest.fixture(scope="function")
-def client(mock_web_dependencies: tuple) -> TestClient:
+def client(mock_web_dependencies: tuple[MagicMock, MagicMock, MagicMock]) -> TestClient:
     """Create a test client with mocked dependencies.
 
     Note: init_resources is called once per test to ensure fresh state.
@@ -214,7 +217,9 @@ class TestQAGeneration:
     """Test QA generation endpoints."""
 
     def test_generate_single_valid(
-        self, client: TestClient, mock_web_dependencies: tuple
+        self,
+        client: TestClient,
+        mock_web_dependencies: tuple[MagicMock, MagicMock, MagicMock],
     ) -> None:
         """Test single QA generation with valid type.
 
@@ -240,7 +245,9 @@ class TestQAGeneration:
         assert response.status_code == 422
 
     def test_generate_batch(
-        self, client: TestClient, mock_web_dependencies: tuple
+        self,
+        client: TestClient,
+        mock_web_dependencies: tuple[MagicMock, MagicMock, MagicMock],
     ) -> None:
         """Test batch QA generation.
 
@@ -274,7 +281,9 @@ class TestEvaluation:
     """Test evaluation endpoints."""
 
     def test_evaluate_external_valid(
-        self, client: TestClient, mock_web_dependencies: tuple
+        self,
+        client: TestClient,
+        mock_web_dependencies: tuple[MagicMock, MagicMock, MagicMock],
     ) -> None:
         """Test external evaluation with valid inputs (requires 3 answers).
 
@@ -324,7 +333,9 @@ class TestWorkspace:
     """Test workspace endpoints."""
 
     def test_workspace_inspect(
-        self, client: TestClient, mock_web_dependencies: tuple
+        self,
+        client: TestClient,
+        mock_web_dependencies: tuple[MagicMock, MagicMock, MagicMock],
     ) -> None:
         """Test workspace inspect mode.
 
@@ -349,7 +360,9 @@ class TestWorkspace:
             assert mock_inspect.called
 
     def test_workspace_edit(
-        self, client: TestClient, mock_web_dependencies: tuple
+        self,
+        client: TestClient,
+        mock_web_dependencies: tuple[MagicMock, MagicMock, MagicMock],
     ) -> None:
         """Test workspace edit mode.
 
@@ -379,7 +392,9 @@ class TestWorkspace:
             assert mock_edit.called
 
     def test_workspace_edit_missing_request(
-        self, client: TestClient, mock_web_dependencies: tuple
+        self,
+        client: TestClient,
+        mock_web_dependencies: tuple[MagicMock, MagicMock, MagicMock],
     ) -> None:
         """Test workspace edit mode without edit request.
 
