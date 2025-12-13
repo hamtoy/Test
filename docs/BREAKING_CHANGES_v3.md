@@ -47,7 +47,7 @@ Before upgrading to v3.0, follow these steps:
 Run the readiness verification script:
 
 ```bash
-python scripts/verify_v3_readiness.py
+python scripts/validation/verify_v3_readiness.py
 ```
 
 If any deprecated imports are found, you'll see a detailed report.

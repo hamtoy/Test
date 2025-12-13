@@ -290,10 +290,10 @@ mypy src/agent/ src/core/ src/config/ --config-file pyproject.toml
 mypy src/agent/ src/core/ src/config/ --show-error-codes
 
 # Generate HTML report
-python scripts/check_mypy_baseline.py --html
+python scripts/validation/check_mypy_baseline.py --html
 
 # Track progress
-python scripts/track_mypy_progress.py
+python scripts/dev/track_mypy_progress.py
 ```
 
 ---

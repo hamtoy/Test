@@ -197,7 +197,7 @@ pip install -e ".[dev]"
 대표 쿼리/벡터 검색 latency를 빠르게 점검하려면:
 
 ```bash
-python scripts/neo4j_benchmark_stub.py
+python scripts/neo4j/neo4j_benchmark_stub.py
 ```
 
 > `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`가 설정되어 있을 때만 실행되며, 미설정 시 안전하게 스킵됩니다.
@@ -368,7 +368,7 @@ uv run python scripts/render_prompt.py --template system/qa/explanation.j2 --con
 # 세션 빌드 및 검증
 uv run python scripts/build_session.py --context examples/session_input.json
 uv run python checks/validate_session.py --context examples/session_input.json
-uv run python scripts/run_pipeline.py --context examples/session_input.json
+uv run python scripts/dev/run_pipeline.py --context examples/session_input.json
 ```
 
 ### 환경 설정

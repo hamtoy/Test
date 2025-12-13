@@ -54,7 +54,7 @@ Before removing shims, identify all deprecated import usages in your codebase.
 **Run the verification script:**
 
 ```bash
-python scripts/verify_v3_readiness.py
+python scripts/validation/verify_v3_readiness.py
 ```
 
 **Example Output:**
@@ -160,7 +160,7 @@ After migrating imports, verify that no deprecated imports remain.
 **Run verification again:**
 
 ```bash
-python scripts/verify_v3_readiness.py
+python scripts/validation/verify_v3_readiness.py
 ```
 
 **Expected successful output:**
@@ -215,29 +215,29 @@ Remove shims in phases based on usage priority:
 
 ```bash
 # Preview P0 (high usage) files to remove
-python scripts/remove_shims_v3.py --priority P0 --dry-run
+python scripts/migration/remove_shims_v3.py --priority P0 --dry-run
 
 # Remove P0 files with backup
-python scripts/remove_shims_v3.py --priority P0 --execute
+python scripts/migration/remove_shims_v3.py --priority P0 --execute
 
 # Preview P1 (mid usage) files
-python scripts/remove_shims_v3.py --priority P1 --dry-run
+python scripts/migration/remove_shims_v3.py --priority P1 --dry-run
 
 # Remove P1 files
-python scripts/remove_shims_v3.py --priority P1 --execute
+python scripts/migration/remove_shims_v3.py --priority P1 --execute
 
 # Finally, remove P2 (low usage) files
-python scripts/remove_shims_v3.py --priority P2 --execute
+python scripts/migration/remove_shims_v3.py --priority P2 --execute
 ```
 
 **Option B: Remove all at once**
 
 ```bash
 # Preview all shim files to be removed
-python scripts/remove_shims_v3.py --dry-run
+python scripts/migration/remove_shims_v3.py --dry-run
 
 # Remove all shim files (creates backup first)
-python scripts/remove_shims_v3.py --execute
+python scripts/migration/remove_shims_v3.py --execute
 ```
 
 **Example output:**
@@ -547,7 +547,7 @@ jobs:
           python-version: '3.10'
       
       - name: Check for deprecated imports
-        run: python scripts/verify_v3_readiness.py --strict
+        run: python scripts/validation/verify_v3_readiness.py --strict
 ```
 
 ---
@@ -576,7 +576,7 @@ jobs:
 If you encounter issues during migration:
 
 1. Check existing [Issues](https://github.com/hamtoy/Test/issues) for similar problems
-2. Run `python scripts/verify_v3_readiness.py --json` for detailed diagnostics
+2. Run `python scripts/validation/verify_v3_readiness.py --json` for detailed diagnostics
 3. Open a new issue with the verification output
 
 ---
