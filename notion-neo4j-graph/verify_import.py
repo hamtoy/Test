@@ -7,7 +7,7 @@ load_dotenv()
 
 
 def verify_import():
-    """Neo4j 데이터 임포트 결과 검증"""
+    """Neo4j 데이터 임포트 결과 검증."""
     uri = os.environ["NEO4J_URI"]
     user = os.environ["NEO4J_USER"]
     password = os.environ["NEO4J_PASSWORD"]

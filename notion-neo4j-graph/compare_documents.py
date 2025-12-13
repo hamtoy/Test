@@ -18,10 +18,10 @@ load_dotenv()
 
 
 class DocumentComparator:
-    """문서 간 유사성 및 공통점 분석"""
+    """문서 간 유사성 및 공통점 분석."""
 
     def __init__(self):
-        """초기화: 환경 변수 검증 및 Neo4j 드라이버 설정"""
+        """초기화: 환경 변수 검증 및 Neo4j 드라이버 설정."""
         self._validate_env()
         self.driver = GraphDatabase.driver(
             os.environ["NEO4J_URI"],
@@ -29,7 +29,7 @@ class DocumentComparator:
         )
 
     def _validate_env(self):
-        """환경 변수 검증"""
+        """환경 변수 검증."""
         required = ["NEO4J_URI", "NEO4J_PASSWORD"]
         missing = [key for key in required if not os.environ.get(key)]
         if missing:
@@ -37,12 +37,12 @@ class DocumentComparator:
             sys.exit(1)
 
     def close(self):
-        """Neo4j 드라이버 종료"""
+        """Neo4j 드라이버 종료."""
         self.driver.close()
 
     @contextmanager
     def session_context(self):
-        """Neo4j 세션 관리를 위한 컨텍스트 매니저"""
+        """Neo4j 세션 관리를 위한 컨텍스트 매니저."""
         session = self.driver.session()
         try:
             yield session
@@ -50,7 +50,7 @@ class DocumentComparator:
             session.close()
 
     def find_common_content(self):
-        """문서 간 공통적으로 등장하는 콘텐츠 탐색"""
+        """문서 간 공통적으로 등장하는 콘텐츠 탐색."""
         logger.info("🔍 문서 간 공통 콘텐츠 분석 시작...")
 
         query = """
@@ -98,7 +98,7 @@ class DocumentComparator:
             raise
 
     def compare_pages_by_topics(self):
-        """페이지 간 공유하는 토픽 분석"""
+        """페이지 간 공유하는 토픽 분석."""
         logger.info("🔍 페이지 간 토픽 유사도 분석 시작...")
 
         query = """
@@ -138,7 +138,7 @@ class DocumentComparator:
 
 
 def main():
-    """문서 비교 메인 실행 함수"""
+    """문서 비교 메인 실행 함수."""
     comparator = DocumentComparator()
     try:
         comparator.find_common_content()

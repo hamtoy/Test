@@ -16,7 +16,7 @@ load_dotenv()
     reason="Neo4j 환경 변수가 설정되지 않아 연결 테스트를 건너뜁니다.",
 )
 def test_neo4j_connection():
-    """Neo4j Aura 연결 테스트"""
+    """Neo4j Aura 연결 테스트."""
     uri = os.environ["NEO4J_URI"]
     user = os.environ["NEO4J_USER"]
     password = os.environ["NEO4J_PASSWORD"]

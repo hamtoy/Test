@@ -20,25 +20,25 @@ load_dotenv()
 
 
 class DataValidator:
-    """데이터 유효성 검증 헬퍼"""
+    """데이터 유효성 검증 헬퍼."""
 
     @staticmethod
     def validate_block(block: Dict[str, Any]) -> bool:
-        """블록 데이터 유효성 검증"""
+        """블록 데이터 유효성 검증."""
         if not isinstance(block, dict):
             return False
         return not ("id" not in block or "type" not in block)
 
 
 class NotionExtractor:
-    """Notion 데이터 추출 클래스"""
+    """Notion 데이터 추출 클래스."""
 
     def __init__(self, token: str):
-        """Notion 클라이언트 초기화"""
+        """Notion 클라이언트 초기화."""
         self.client = Client(auth=token)
 
     def get_page(self, page_id: str) -> Dict[str, Any]:
-        """페이지 메타데이터 조회"""
+        """페이지 메타데이터 조회."""
         try:
             return self.client.pages.retrieve(page_id)
         except Exception as e:
@@ -46,7 +46,7 @@ class NotionExtractor:
             return {}
 
     def get_blocks(self, block_id: str) -> List[Dict[str, Any]]:
-        """블록의 자식 블록들을 재귀적으로 조회 (전체 트리)"""
+        """블록의 자식 블록들을 재귀적으로 조회 (전체 트리)."""
         blocks = []
         cursor = None
 
@@ -75,7 +75,7 @@ class NotionExtractor:
 
 
 class Neo4jAuraImporter:
-    """Neo4j Aura 최적화 임포터"""
+    """Neo4j Aura 최적화 임포터."""
 
     # 하이픈 + 대문자 허용 Notion URL 패턴
     NOTION_URL_PATTERN = (
@@ -87,16 +87,16 @@ class Neo4jAuraImporter:
     REFERENCE_BATCH_SIZE = 500
 
     def __init__(self, uri: str, auth: tuple):
-        """Neo4j 드라이버 초기화 및 연결 확인"""
+        """Neo4j 드라이버 초기화 및 연결 확인."""
         self.driver = GraphDatabase.driver(uri, auth=auth)
         self.verify_connection()
 
     def close(self):
-        """Neo4j 드라이버 연결 종료"""
+        """Neo4j 드라이버 연결 종료."""
         self.driver.close()
 
     def verify_connection(self):
-        """Neo4j 서버 연결 상태 확인"""
+        """Neo4j 서버 연결 상태 확인."""
         try:
             self.driver.verify_connectivity()
             logger.info("✅ Neo4j 연결 확인됨")
@@ -106,7 +106,7 @@ class Neo4jAuraImporter:
 
     @contextmanager
     def session_context(self):
-        """Neo4j 세션 컨텍스트 매니저"""
+        """Neo4j 세션 컨텍스트 매니저."""
         session = self.driver.session()
         try:
             yield session
@@ -114,14 +114,14 @@ class Neo4jAuraImporter:
             session.close()
 
     def clear_database(self):
-        """데이터베이스 초기화 (주의: 모든 데이터 삭제)"""
+        """데이터베이스 초기화 (주의: 모든 데이터 삭제)."""
         logger.warning("⚠️ 데이터베이스 초기화 중...")
         with self.session_context() as session:
             session.run("MATCH (n) DETACH DELETE n")
         logger.info("✅ 데이터베이스 초기화 완료")
 
     def create_constraints(self):
-        """인덱스 및 제약조건 생성"""
+        """인덱스 및 제약조건 생성."""
         queries = [
             "CREATE CONSTRAINT page_id IF NOT EXISTS FOR (p:Page) REQUIRE p.id IS UNIQUE",
             "CREATE CONSTRAINT block_id IF NOT EXISTS FOR (b:Block) REQUIRE b.id IS UNIQUE",
@@ -133,7 +133,7 @@ class Neo4jAuraImporter:
         logger.info("✅ 제약조건 및 인덱스 생성 완료")
 
     def import_page(self, page_data: Dict[str, Any], blocks: List[Dict[str, Any]]):
-        """페이지와 블록 전체 임포트"""
+        """페이지와 블록 전체 임포트."""
         page_id = page_data["id"].replace("-", "")
         title = "Untitled"
 
@@ -232,7 +232,7 @@ class Neo4jAuraImporter:
             self._batch_create_blocks(session, processed_blocks)
 
     def _batch_create_blocks(self, session: Session, blocks_data: List[Dict]):
-        """블록 배치 생성 및 관계 설정"""
+        """블록 배치 생성 및 관계 설정."""
         query = """
         UNWIND $blocks AS block_data
         MERGE (b:Block {id: block_data.id})
@@ -272,7 +272,7 @@ class Neo4jAuraImporter:
         session.run(query, blocks=blocks_data)
 
     def create_cross_references(self):
-        """페이지 간 교차 참조(멘션) 관계 생성"""
+        """페이지 간 교차 참조(멘션) 관계 생성."""
         pattern = re.compile(self.NOTION_URL_PATTERN)
 
         with self.session_context() as session:
@@ -331,7 +331,7 @@ class Neo4jAuraImporter:
 
 
 def main():
-    """Notion 데이터 가져오기 및 Neo4j 저장 메인 함수"""
+    """Notion 데이터 가져오기 및 Neo4j 저장 메인 함수."""
     # 환경 변수 확인
     notion_token = os.environ.get("NOTION_TOKEN")
     page_ids_str = os.environ.get("NOTION_PAGE_IDS")

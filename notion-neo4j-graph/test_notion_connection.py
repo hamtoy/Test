@@ -17,7 +17,7 @@ notion = Client(auth=NOTION_TOKEN) if NOTION_TOKEN else None
     reason="Notion 환경 변수가 설정되지 않아 연결 테스트를 건너뜁니다.",
 )
 def test_connection():
-    """Notion API 연결 테스트"""
+    """Notion API 연결 테스트."""
     assert notion is not None
 
     page1_id = os.environ["PAGE_ID_1"]

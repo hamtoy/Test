@@ -1,4 +1,4 @@
-"""웹 서버 실행 스크립트"""
+"""웹 서버 실행 스크립트."""
 
 import webbrowser
 from threading import Timer
@@ -7,7 +7,7 @@ import uvicorn
 
 
 def open_browser() -> None:
-    """1초 후 브라우저 자동 오픈"""
+    """1초 후 브라우저 자동 오픈."""
     webbrowser.open("http://localhost:8000/qa")
 
 

@@ -20,7 +20,7 @@ load_dotenv()
 
 
 class TextProcessor:
-    """텍스트 전처리 및 키워드 추출"""
+    """텍스트 전처리 및 키워드 추출."""
 
     # 불용어 목록 (한국어/영어)
     STOPWORDS = {
@@ -128,7 +128,7 @@ class TextProcessor:
 
     @staticmethod
     def normalize(text: str) -> str:
-        """텍스트 정규화: 소문자 변환, 특수문자 제거"""
+        """텍스트 정규화: 소문자 변환, 특수문자 제거."""
         # URL 제거
         text = re.sub(r"https?://\S+|www\.\S+", "", text)
         # 특수문자 및 숫자 제거 (한글, 영문, 공백만 유지)
@@ -137,7 +137,7 @@ class TextProcessor:
 
     @classmethod
     def extract_keywords(cls, text: str, top_n: int = 5) -> List[str]:
-        """텍스트에서 상위 키워드 추출"""
+        """텍스트에서 상위 키워드 추출."""
         normalized = cls.normalize(text)
         words = normalized.split()
 
@@ -150,12 +150,12 @@ class TextProcessor:
 
 
 class SemanticAnalyzer:
-    """Neo4j 데이터 의미 분석기"""
+    """Neo4j 데이터 의미 분석기."""
 
     BATCH_SIZE = 500
 
     def __init__(self):
-        """초기화: 환경 변수 검증 및 Neo4j 드라이버 설정"""
+        """초기화: 환경 변수 검증 및 Neo4j 드라이버 설정."""
         self._validate_env()
         self.driver = GraphDatabase.driver(
             os.environ["NEO4J_URI"],
@@ -163,7 +163,7 @@ class SemanticAnalyzer:
         )
 
     def _validate_env(self):
-        """환경 변수 검증"""
+        """환경 변수 검증."""
         required = ["NEO4J_URI", "NEO4J_PASSWORD"]
         missing = [key for key in required if not os.environ.get(key)]
         if missing:
@@ -171,11 +171,11 @@ class SemanticAnalyzer:
             sys.exit(1)
 
     def close(self):
-        """Neo4j 드라이버 종료"""
+        """Neo4j 드라이버 종료."""
         self.driver.close()
 
     def analyze_blocks(self):
-        """블록 데이터를 가져와 키워드 분석 후 Topic 연결"""
+        """블록 데이터를 가져와 키워드 분석 후 Topic 연결."""
         logger.info("🔍 블록 데이터 분석 시작...")
 
         try:
@@ -224,7 +224,7 @@ class SemanticAnalyzer:
             raise
 
     def _batch_update_topics(self, session, mappings: List[Dict]):
-        """배치 단위로 Topic 노드 생성 및 연결"""
+        """배치 단위로 Topic 노드 생성 및 연결."""
         total = len(mappings)
         for i in range(0, total, self.BATCH_SIZE):
             batch = mappings[i : i + self.BATCH_SIZE]
@@ -247,7 +247,7 @@ class SemanticAnalyzer:
 
 
 def main():
-    """의미 분석 메인 실행 함수"""
+    """의미 분석 메인 실행 함수."""
     analyzer = SemanticAnalyzer()
     try:
         analyzer.analyze_blocks()
