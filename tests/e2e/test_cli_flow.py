@@ -186,7 +186,7 @@ class TestCLIOutputFormat:
         """Verify JSON output formatting."""
         from src.cli import format_output
 
-        result = {"query": "test", "answer": "response"}
+        result: dict[str, object] = {"query": "test", "answer": "response"}
         output = format_output(result, "json")
         assert '"query"' in output
         assert '"answer"' in output
@@ -195,7 +195,7 @@ class TestCLIOutputFormat:
         """Verify text output formatting."""
         from src.cli import format_output
 
-        result = {"query": "test", "answer": "response"}
+        result: dict[str, object] = {"query": "test", "answer": "response"}
         output = format_output(result, "text")
         assert "query:" in output
         assert "answer:" in output
@@ -204,7 +204,7 @@ class TestCLIOutputFormat:
         """Verify nested dict formatting in text mode."""
         from src.cli import format_output
 
-        result = {"metadata": {"version": "1.0", "author": "test"}}
+        result: dict[str, object] = {"metadata": {"version": "1.0", "author": "test"}}
         output = format_output(result, "text")
         assert "metadata:" in output
         assert "version:" in output
@@ -213,7 +213,7 @@ class TestCLIOutputFormat:
         """Verify list formatting in text mode."""
         from src.cli import format_output
 
-        result = {"items": ["a", "b", "c"]}
+        result: dict[str, object] = {"items": ["a", "b", "c"]}
         output = format_output(result, "text")
         assert "items:" in output
         assert "- a" in output
