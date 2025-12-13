@@ -7,10 +7,11 @@ race conditions when multiple processes write to the same file.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import time
 from pathlib import Path
-from typing import Any
+from typing import IO, Any
 
 # Try to use platform-specific locking
 try:
@@ -58,7 +59,62 @@ class FileLock:
         self.lock_path = self.path.with_suffix(self.path.suffix + ".lock")
         self.timeout = timeout
         self.poll_interval = poll_interval
-        self._lock_file: Any = None
+        self._lock_file: IO[str] | None = None
+
+    def _try_create_lock_file(self) -> bool:
+        """Try to create and acquire the lock file.
+
+        Returns:
+            True if lock was successfully created and acquired.
+
+        Raises:
+            FileExistsError: If lock file already exists.
+            OSError: If other file operation fails.
+        """
+        # Open file exclusively - will raise FileExistsError if exists
+        self._lock_file = open(  # noqa: SIM115
+            self.lock_path, "x", encoding="utf-8"
+        )
+        # Write PID for debugging
+        self._lock_file.write(str(os.getpid()))
+        self._lock_file.flush()
+
+        # Apply OS-level lock if available
+        if _WINDOWS:
+            msvcrt.locking(
+                self._lock_file.fileno(),
+                msvcrt.LK_NBLCK,
+                1,
+            )
+        elif _UNIX:
+            fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+        return True
+
+    def _cleanup_failed_lock(self) -> None:
+        """Clean up after a failed lock attempt."""
+        if self._lock_file:
+            self._lock_file.close()
+            self._lock_file = None
+        with contextlib.suppress(OSError):
+            self.lock_path.unlink()
+
+    def _attempt_lock(self) -> tuple[bool, Exception | None]:
+        """Attempt to acquire the lock once.
+
+        Returns:
+            Tuple of (success, error). If success is True, lock was acquired.
+            If success is False and error is None, lock file exists (retry).
+            If success is False and error is set, a fatal error occurred.
+        """
+        try:
+            self._try_create_lock_file()
+            return (True, None)
+        except FileExistsError:
+            return (False, None)  # Retry
+        except (OSError, IOError) as e:
+            self._cleanup_failed_lock()
+            return (False, e)
 
     def acquire(self) -> bool:
         """Acquire the file lock.
@@ -72,50 +128,21 @@ class FileLock:
         start_time = time.monotonic()
 
         while True:
-            try:
-                # Try to create lock file exclusively
-                self._lock_file = open(self.lock_path, "x", encoding="utf-8")
-                # Write PID for debugging
-                self._lock_file.write(str(os.getpid()))
-                self._lock_file.flush()
+            success, error = self._attempt_lock()
 
-                # Apply OS-level lock if available
-                if _WINDOWS:
-                    msvcrt.locking(
-                        self._lock_file.fileno(),
-                        msvcrt.LK_NBLCK,
-                        1,
-                    )
-                elif _UNIX:
-                    fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-
+            if success:
                 return True
 
-            except FileExistsError:
-                # Lock file exists, check timeout
-                elapsed = time.monotonic() - start_time
-                if elapsed >= self.timeout:
-                    raise FileLockError(
-                        f"Could not acquire lock on {self.path} "
-                        f"within {self.timeout}s timeout"
-                    )
-                time.sleep(self.poll_interval)
+            elapsed = time.monotonic() - start_time
+            if elapsed >= self.timeout:
+                if error:
+                    raise FileLockError(f"Lock acquisition failed: {error}") from error
+                raise FileLockError(
+                    f"Could not acquire lock on {self.path} "
+                    f"within {self.timeout}s timeout"
+                )
 
-            except (OSError, IOError) as e:
-                # Clean up partial lock file
-                if self._lock_file:
-                    self._lock_file.close()
-                    self._lock_file = None
-                if self.lock_path.exists():
-                    try:
-                        self.lock_path.unlink()
-                    except OSError:
-                        pass
-
-                elapsed = time.monotonic() - start_time
-                if elapsed >= self.timeout:
-                    raise FileLockError(f"Lock acquisition failed: {e}")
-                time.sleep(self.poll_interval)
+            time.sleep(self.poll_interval)
 
     def release(self) -> None:
         """Release the file lock."""
@@ -123,29 +150,23 @@ class FileLock:
             try:
                 # Release OS-level lock
                 if _WINDOWS:
-                    try:
+                    with contextlib.suppress(OSError):
                         msvcrt.locking(
                             self._lock_file.fileno(),
                             msvcrt.LK_UNLCK,
                             1,
                         )
-                    except OSError:
-                        pass
                 elif _UNIX:
-                    try:
+                    with contextlib.suppress(OSError):
                         fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_UN)
-                    except OSError:
-                        pass
 
                 self._lock_file.close()
             finally:
                 self._lock_file = None
 
             # Remove lock file
-            try:
+            with contextlib.suppress(OSError):
                 self.lock_path.unlink()
-            except OSError:
-                pass
 
     def __enter__(self) -> "FileLock":
         """Enter context manager."""
