@@ -3,10 +3,10 @@
     Zip project artifacts for a quick personal backup.
 
 .EXAMPLE
-    pwsh scripts/backup.ps1
+    pwsh scripts/dev/backup.ps1
 
 .EXAMPLE
-    pwsh scripts/backup.ps1 -DestinationDir "D:\backups" -SkipEnv
+    pwsh scripts/dev/backup.ps1 -DestinationDir "D:\backups" -SkipEnv
 #>
 
 param (

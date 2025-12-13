@@ -175,7 +175,7 @@ python scripts/latency_baseline.py --log-file run1.log --log-file run2.log
 
 ### 데이터 관리
 
-- **백업**: `pwsh scripts/backup.ps1`
+- **백업**: `pwsh scripts/dev/backup.ps1`
   - 데이터·로그를 날짜별 ZIP으로 압축
   - 기본값: `.env` 포함
   - 민감정보 제외: `-SkipEnv` 옵션 사용

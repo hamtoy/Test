@@ -187,12 +187,12 @@ python scripts/analysis/compare_runs.py --sort-by cost
 
 ### 4.2 자동 백업 스크립트 ✅ 구현됨
 
-**위치**: `scripts/backup.ps1`
+**위치**: `scripts/dev/backup.ps1`
 
 ```bash
 # 실행 예시
-pwsh scripts/backup.ps1          # .env 포함
-pwsh scripts/backup.ps1 -SkipEnv # 민감정보 제외
+pwsh scripts/dev/backup.ps1          # .env 포함
+pwsh scripts/dev/backup.ps1 -SkipEnv # 민감정보 제외
 ```
 
 **기능**:
