@@ -518,7 +518,9 @@ class TestLogReviewSession:
         assert "timestamp" in log_entry
 
     @pytest.mark.asyncio
-    async def test_log_review_session_appends_multiple_entries(self, tmp_path: Path) -> None:
+    async def test_log_review_session_appends_multiple_entries(
+        self, tmp_path: Path
+    ) -> None:
         """Test that log_review_session appends multiple entries to the same file."""
         # Log first entry
         await log_review_session(
@@ -558,7 +560,9 @@ class TestLogReviewSession:
         assert entry2["edit_request_used"] == "수정 요청"
 
     @pytest.mark.asyncio
-    async def test_log_review_session_handles_empty_strings(self, tmp_path: Path) -> None:
+    async def test_log_review_session_handles_empty_strings(
+        self, tmp_path: Path
+    ) -> None:
         """Test that log_review_session accepts empty strings for all fields."""
         await log_review_session(
             mode="inspect",
@@ -584,7 +588,9 @@ class TestLogReviewSession:
         assert log_entry["inspector_comment"] == ""
 
     @pytest.mark.asyncio
-    async def test_log_review_session_failure_does_not_raise(self, tmp_path: Path) -> None:
+    async def test_log_review_session_failure_does_not_raise(
+        self, tmp_path: Path
+    ) -> None:
         """Test that log_review_session failure doesn't raise an exception."""
         # Patch REPO_ROOT to an invalid path (read-only or non-existent)
         # Should not raise even though it can't write

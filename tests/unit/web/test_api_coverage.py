@@ -460,7 +460,9 @@ class TestUtilityWrappers:
 
         from unittest.mock import AsyncMock, patch
 
-        with patch("src.web.api._load_ocr_text", new=AsyncMock(return_value="OCR content")):
+        with patch(
+            "src.web.api._load_ocr_text", new=AsyncMock(return_value="OCR content")
+        ):
             result = await load_ocr_text()
 
             assert result == "OCR content"
