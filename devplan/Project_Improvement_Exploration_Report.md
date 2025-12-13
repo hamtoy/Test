@@ -28,27 +28,22 @@
 
 | 우선순위 | 남은 개수 |
 |:---:|:---:|
-| 🔴 P1 | 1 |
-| 🟡 P2 | 4 |
-| 🟢 P3 | 2 |
+| 🔴 P1 | 0 |
+| 🟡 P2 | 2 |
+| 🟢 P3 | 1 |
 | 🚀 OPT | 1 |
-| **합계** | **8** |
+| **합계** | **4** |
 
 | # | 항목명 | 우선순위 | 카테고리 |
 |:---:|:---|:---:|:---|
-| 1 | 기본 설치 경로의 선택 의존성(Neo4j) 결합 해소 | P1 | 📦 배포/의존성 |
-| 2 | 최소 설치 CI 게이트 추가(옵션 미포함) | P2 | 📦 배포/CI |
-| 3 | Web API 스킵 테스트 제거(더미/목 LLM 주입) | P2 | 🧪 테스트 |
-| 4 | README/문서의 스크립트·실행 방법 최신화 | P2 | 📝 문서 |
-| 5 | Web CORS/운영 보안 설정의 환경변수화 | P2 | 🔒 보안/배포 |
-| 6 | OpenTelemetry 초기화 연결(옵션) | P3 | 📈 관측성 |
-| 7 | Web에서 캐시 통계 요약 조회 엔드포인트 제공 | P3 | ✨ 기능 추가 |
-| 8 | 캐시 통계(JSONL) 분석의 스트리밍 처리로 메모리 최적화 | OPT | 🚀 최적화 |
+| 1 | Web API 스킵 테스트 제거(더미/목 LLM 주입) | P2 | 🧪 테스트 |
+| 2 | README/문서의 스크립트·실행 방법 최신화 | P2 | 📝 문서 |
+| 3 | 설정 파일(`settings.py`) 분리 및 모듈화 | P3 | 🧹 코드 품질 |
+| 4 | 동기식 파일 I/O(`open`, `read_text`)의 비동기 전환 | OPT | 🚀 최적화 |
 
-- P1: 기본 설치/실행 경로가 옵션 의존성에 의해 깨질 수 있는 리스크를 우선 제거합니다.
-- P2: CI/테스트/문서/운영 설정을 정리하여 회귀 위험과 운영 비용을 낮춥니다.
-- P3: 관측성과 운영 편의 기능을 확장합니다.
-- OPT: 대용량 로그/통계 처리의 성능·메모리 효율을 개선합니다.
+- **P1 (Critical):** 현재 크리티컬한 배포/실행 차단 요인은 **모두 해소**되었습니다.
+- **P2 (High):** 테스트 신뢰성 확보와 문서 정확도 개선이 주요 과제입니다.
+- **P3/OPT:** 코드 유지보수성과 고부하 상황에서의 I/O 안정성을 확보합니다.
 <!-- AUTO-SUMMARY-END -->
 
 ---
@@ -56,173 +51,85 @@
 <!-- AUTO-IMPROVEMENT-LIST-START -->
 ## 📝 개선 항목 목록 (기존 기능 개선 / 미적용)
 
-### 🔴 중요 (P1)
+<!-- AUTO-P1-P2-START -->
+## 🔧 P1 (Critical) & P2 (High) 개선 과제
 
-#### [P1-1] 기본 설치 경로의 선택 의존성(Neo4j) 결합 해소
+### 1-1. Web API 스킵 테스트 제거 (`test-webapi-no-key-001`)
 
-| 항목 | 내용 |
-|------|------|
-| **ID** | `deps-optional-neo4j-001` |
-| **카테고리** | 📦 배포/의존성 |
-| **복잡도** | Medium |
-| **대상 파일** | `src/cli.py`, `src/infra/neo4j_optimizer.py`, `pyproject.toml` |
-| **Origin** | static-analysis |
-| **리스크 레벨** | critical |
-| **관련 평가 카테고리** | productionReadiness, codeQuality |
+- **분류:** 🧪 테스트 / **난이도:** 중 / **리스크:** Medium
+- **대상 파일:** `tests/test_web_api.py`, `tests/conftest.py`
+- **발견 경로:** `coverage` 분석 및 `pytest` 실행 결과 (`s` 마킹 확인)
+- **현재 상태:**
+  - `TestQAGeneration`, `TestWorkspace` 등 핵심 기능 테스트가 LLM 키/복잡한 모킹 문제로 `@pytest.mark.skip` 처리됨.
+- **문제점:**
+  - Web API의 핵심 로직(검증/파이프라인 연결)이 변경되어도 CI가 통과해버림(False Positive).
+- **해결 방안:**
+  - `MockAgent`, `MockPipeline`을 정교하게 구성하여 LLM 없이도 라우터의 요청/응답 스키마와 데이터 흐름을 검증하도록 개선.
+- **기대 효과:**
+  - Web API 테스트 커버리지 100% 신뢰성 확보, CI 안정망 강화.
+- **Definition of Done:**
+  - [ ] `pytest tests/test_web_api.py` 실행 시 스킵되는 테스트가 0건이어야 함.
+  - [ ] 모킹된 응답으로 정상적인 JSON 구조가 반환되는지 검증.
 
-- **현재 상태:** 핵심 실행 경로에서 참조되는 CLI 모듈이 모듈 로드시 Neo4j 드라이버에 결합될 수 있는 구조가 관찰됩니다.
-- **문제점 (Problem):** 기본 설치(옵션 미포함) 시 ImportError로 실행/임포트가 실패할 가능성이 있습니다.
-- **영향 (Impact):** 신규 사용자 온보딩 실패, 배포 이미지 최소화 어려움, “옵션 기능”의 경계가 붕괴되어 회귀 위험이 증가합니다.
-- **원인 (Cause):** 선택 의존성(Neo4j)을 사용하는 코드가 top-level import로 로드되며, 최소 설치 검증이 CI에 존재하지 않습니다.
-- **개선 내용 (Proposed Solution):** Neo4j 관련 import/로직을 플래그(`--optimize-neo4j`) 실행 시점으로 지연시키고, 미설치 시 명확한 안내(필요 extras)로 폴백합니다.
-- **기대 효과:** 기본 설치 안정성 확보, 옵션 기능의 경계 명확화, 배포/운영 구성 단순화.
+### 1-2. 문서/스크립트 동기화 (`docs-scripts-sync-001`)
 
-**Definition of Done**
-- [ ] 선택 의존성 import 지연/가드 구현
-- [ ] 관련 테스트 추가 및 통과
-- [ ] 기본 설치 경로에서 ImportError 없음
-- [ ] 사용자 안내 메시지/문서 보완(필요시)
-
-### 🟡 중요 (P2)
-
-#### [P2-1] 최소 설치 CI 게이트 추가(옵션 미포함)
-
-| 항목 | 내용 |
-|------|------|
-| **ID** | `ci-minimal-install-001` |
-| **카테고리** | 📦 배포/CI |
-| **복잡도** | Low |
-| **대상 파일** | `.github/workflows/ci.yaml` |
-| **Origin** | manual-idea |
-| **리스크 레벨** | high |
-| **관련 평가 카테고리** | productionReadiness, testCoverage |
-
-- **현재 상태:** CI는 주로 dev(extra) 기반 설치를 전제하며, “기본 설치(옵션 미포함)”의 동작을 보증하는 잡이 명시적으로 존재하지 않습니다.
-- **문제점 (Problem):** 선택 의존성 결합, 조건부 import 누락 등 최소 설치에서만 드러나는 결함이 누락될 수 있습니다.
-- **영향 (Impact):** 릴리즈 후 사용자 환경에서만 장애가 발생하는 “환경 의존 버그” 가능성이 커집니다.
-- **원인 (Cause):** 테스트/린트/타입체크가 dev 설치를 전제로 구성됨.
-- **개선 내용 (Proposed Solution):** CI에 최소 설치 잡을 추가하여 base 의존성만 설치 후 핵심 모듈 임포트/헬스 체크를 수행합니다.
-- **기대 효과:** 배포 품질 향상, 설치 옵션 경계 명확화, 회귀 조기 탐지.
-
-**Definition of Done**
-- [ ] 최소 설치 CI 잡 추가 및 green
-- [ ] 최소 설치에서 핵심 임포트/엔트리포인트 검증
-- [ ] 기존 dev 기반 잡과 충돌 없이 유지
-- [ ] 문서에 최소 설치 검증 범위 명시(필요시)
-
-#### [P2-2] Web API 스킵 테스트 제거(더미/목 LLM 주입)
-
-| 항목 | 내용 |
-|------|------|
-| **ID** | `test-webapi-no-key-001` |
-| **카테고리** | 🧪 테스트 |
-| **복잡도** | Medium |
-| **대상 파일** | `tests/test_web_api.py`, `tests/conftest.py`, `src/web/api.py` |
-| **Origin** | static-analysis |
-| **리스크 레벨** | medium |
-| **관련 평가 카테고리** | testCoverage, productionReadiness |
-
-- **현재 상태:** Web API 관련 테스트 중 일부가 실제 API 키/외부 호출 의존을 이유로 스킵 처리되어 있습니다.
-- **문제점 (Problem):** 핵심 엔드포인트의 정상 동작(200 응답/스키마)이 CI에서 지속적으로 검증되지 못합니다.
-- **영향 (Impact):** 라우터/의존성 초기화 변경 시 회귀가 늦게 발견되며, 배포 안정성이 저하됩니다.
-- **원인 (Cause):** 테스트에서 LLM 호출 경로를 완전히 격리하지 못하거나, 목 주입이 일관되지 않습니다.
-- **개선 내용 (Proposed Solution):** 테스트에서 `google.generativeai`/LLM 호출을 autouse 목으로 격리하고, 라우터 의존성 주입을 더미 Agent로 대체하여 스킵을 제거합니다.
-- **기대 효과:** Web API 회귀 방어선 강화, 커버리지/신뢰성 개선.
-
-**Definition of Done**
-- [ ] 스킵된 Web API 테스트를 실행 가능 상태로 전환
-- [ ] 외부 네트워크 호출 없이 테스트 통과
-- [ ] 관련 픽스처/목의 일관성 확보
-- [ ] CI에서 안정적으로 재현 가능
-
-#### [P2-3] README/문서의 스크립트·실행 방법 최신화
-
-| 항목 | 내용 |
-|------|------|
-| **ID** | `docs-scripts-sync-001` |
-| **카테고리** | 📝 문서 |
-| **복잡도** | Low |
-| **대상 파일** | `README.md`, `docs/README_FULL.md`, `docs/CACHING.md`, `docs/ADVANCED_FEATURES.md`, `docs/MONITORING.md`, `docs/IMPROVEMENT_PROPOSAL.md` |
-| **Origin** | static-analysis |
-| **리스크 레벨** | medium |
-| **관련 평가 카테고리** | documentation, productionReadiness |
-
-- **현재 상태:** 문서에서 더 이상 존재하지 않는 스크립트(예: 프로파일링/캐시 워밍/비교 스크립트)를 참조하는 구간이 확인됩니다.
-- **문제점 (Problem):** 문서의 실행 절차를 그대로 따라가면 실패하며, 사용자 신뢰도와 온보딩 속도가 저하됩니다.
-- **영향 (Impact):** 지원 비용 증가, 잘못된 운영 방법 확산, 개선/실험 기능 활용 저하.
-- **원인 (Cause):** 코드/스크립트 변경 후 문서 동기화 체계 부족.
-- **개선 내용 (Proposed Solution):** 존재하는 스크립트/명령으로 문서를 재정렬하고, 삭제된 항목은 대체 경로를 제시합니다(필요 시 “현행 미지원” 명시).
-- **기대 효과:** 온보딩 성공률 상승, 운영 절차의 일관성 확보.
-
-**Definition of Done**
-- [ ] 문서 내 존재하지 않는 스크립트 참조 제거/대체
-- [ ] 최신 실행 명령 검증(로컬/CI 기준)
-- [ ] 주요 문서 간 중복/불일치 최소화
-- [ ] 변경 사항 요약 업데이트
-
-#### [P2-4] Web CORS/운영 보안 설정의 환경변수화
-
-| 항목 | 내용 |
-|------|------|
-| **ID** | `web-cors-config-001` |
-| **카테고리** | 🔒 보안/배포 |
-| **복잡도** | Low |
-| **대상 파일** | `src/web/api.py`, `src/config/settings.py`, `docs/MONITORING.md` |
-| **Origin** | static-analysis |
-| **리스크 레벨** | medium |
-| **관련 평가 카테고리** | security, productionReadiness |
-
-- **현재 상태:** Web API의 CORS 허용 Origin이 코드에 고정되어 있어 환경별 설정 유연성이 제한됩니다.
-- **문제점 (Problem):** 배포 환경(스테이징/프로덕션)에서 올바른 Origin 정책을 적용하기 어렵고, 변경 시 코드 수정이 필요합니다.
-- **영향 (Impact):** 보안 정책 적용 지연, 잘못된 CORS 설정으로 인한 접근 제어 이슈 가능성.
-- **원인 (Cause):** 운영 설정이 설정 계층(AppConfig)로 승격되지 않음.
-- **개선 내용 (Proposed Solution):** `CORS_ALLOW_ORIGINS`(CSV) 등 환경변수 기반 설정으로 전환하고 기본값은 로컬로 유지하며 문서에 운영 예시를 추가합니다.
-- **기대 효과:** 배포 유연성/보안성 향상, 환경 분리 명확화.
-
-**Definition of Done**
-- [ ] CORS 설정의 환경변수화 및 기본값 유지
-- [ ] 관련 테스트/검증 로직 추가(필요시)
-- [ ] 운영 문서에 설정 예시 추가
-- [ ] CI/로컬 실행에서 동작 확인
-<!-- AUTO-IMPROVEMENT-LIST-END -->
+- **분류:** 📝 문서 / **난이도:** 하 / **리스크:** Low
+- **대상 파일:** `README.md`, `docs/*.md`, `scripts/`
+- **발견 경로:** `scripts/` 디렉토리 내용과 문서 간 불일치
+- **현재 상태:**
+  - `auto_profile.py`, `compare_runs.py` 등이 리팩토링 과정에서 제거/이동되었으나 문서에는 잔재가 남음.
+- **문제점:**
+  - 신규 개발자나 운영자가 문서대로 실행했다가 `FileNotFoundError` 등으로 혼란을 겪음.
+- **해결 방안:**
+  - `scripts/`의 현행 스크립트 전수 조사 및 용도 파악.
+  - `README.md`의 "Troubleshooting" 및 "Scripts" 섹션 최신화.
+- **기대 효과:**
+  - 온보딩 경험 개선 및 문서 신뢰도 회복.
+- **Definition of Done:**
+  - [ ] `README.md` 내의 모든 `python scripts/...` 명령어가 실제 작동하거나 경로가 수정됨.
+  - [ ] 존재하지 않는 스크립트에 대한 언급 삭제.
+<!-- AUTO-P1-P2-END -->
 
 ---
 
-<!-- AUTO-FEATURE-LIST-START -->
-## ✨ 기능 추가 항목 (신규 기능 / 미적용)
+<!-- AUTO-P3-OPT-START -->
+## ✨ P3 (Medium) & OPT (Optimization) 과제
 
-### 🟢 개선 (P3)
+### 2-1. 설정 파일 분리 및 모듈화 (`refactor-settings-split-001`)
 
-#### [P3-1] OpenTelemetry 초기화 연결(옵션)
+- **분류:** 🧹 코드 품질 / **난이도:** 중 / **리스크:** Low
+- **대상 파일:** `src/config/settings.py`
+- **발견 경로:** 정적 분석(복잡도) 및 코드 리뷰
+- **현재 상태:**
+  - `AppConfig` 하나의 클래스에 LLM, DB(Neo4j/Redis), Web(CORS), Path, CI 등 모든 설정이 집중됨 (500+ lines).
+- **문제점:**
+  - 설정 추가/변경 시 영향 범위 파악이 어렵고, 테스트(`test_config.py`) 작성 시 과도한 환경변수 모킹이 필요.
+- **해결 방안:**
+  - `LLMSettings`, `DatabaseSettings`, `WebSettings` 등으로 Pydantic 모델 분리.
+  - `AppConfig`는 이들을 조합(Composition)하는 형태로 리팩토링.
+- **기대 효과:**
+  - 설정 그룹별 명확한 책임 분리 및 유닛 테스트 용이성 증대.
+- **Definition of Done:**
+  - [ ] `src/config/settings.py`의 라인 수가 200라인 이하로 감소.
+  - [ ] 기존 환경변수(`NEO4J_URI` 등)가 그대로 호환됨을 검증.
 
-| 항목 | 내용 |
-|------|------|
-| **ID** | `feat-otel-wiring-001` |
-| **카테고리** | 📈 관측성 |
-| **복잡도** | Medium |
-| **대상 파일** | `src/infra/telemetry.py`, `src/web/api.py`, `src/infra/worker.py` |
-| **Origin** | manual-idea |
-| **리스크 레벨** | low |
-| **관련 평가 카테고리** | productionReadiness, errorHandling |
+### 2-2. Web API 동기식 파일 I/O 제거 (`opt-async-file-io-001`)
 
-- **현재 상태:** OpenTelemetry 헬퍼(`init_telemetry`)는 존재하지만, 기본 실행 경로에서 초기화가 연결되지 않습니다.
-- **문제점 (Problem):** 운영 환경에서 트레이싱/메트릭 상관관계가 부족하여 장애 분석 시간이 증가할 수 있습니다.
-- **영향 (Impact):** 성능 병목/외부 의존 오류 진단이 늦어지고, SLA 대응 비용이 상승합니다.
-- **원인 (Cause):** 옵션 기능(OTLP 엔드포인트 설정)과 런타임 초기화 지점의 결합이 누락됨.
-- **개선 내용 (Proposed Solution):** `OTEL_EXPORTER_OTLP_ENDPOINT` 등 환경변수 존재 시 Web/Worker 시작 시점에 `init_telemetry`를 호출하고, 미설정/미설치 시는 조용히 비활성화합니다.
-- **기대 효과:** 운영 관측성 강화, 장애 분석 시간 단축, 성능/에러 원인 추적 용이.
+- **분류:** 🚀 최적화 / **난이도:** 중 / **리스크:** Low
+- **대상 파일:** `src/web/utils.py`, `src/web/routers/ocr.py`
+- **발견 경로:** 코드 리뷰 (Async 핸들러 내 Blocking Call)
+- **현재 상태:**
+  - `api_save_ocr` 등 비동기 핸들러에서 `path.write_text` 등 블로킹 I/O를 직접 호출하거나 `open(..., 'w')`를 사용.
+- **문제점:**
+  - 동시 접속량이 늘어나거나 디스크 I/O가 지연될 경우, FastAPI의 이벤트 루프 전체가 멈춰 처리량(Throughput) 급감.
+- **해결 방안:**
+  - `aiofiles` 라이브러리를 도입하거나, `asyncio.to_thread` / `loop.run_in_executor`로 블로킹 구간 격리.
+- **기대 효과:**
+  - 고부하 상황에서도 안정적인 응답 속도 유지.
+- **Definition of Done:**
+  - [ ] `src/web/routers/ocr.py` 및 `utils.py` 내 파일 조작 로직이 비동기(`await`)로 전환됨.
+  - [ ] 부하 테스트(간이) 시 에러 없이 동작 확인.
 
-**Definition of Done**
-- [ ] Web/Worker 시작 시점 텔레메트리 초기화 연결
-- [ ] 옵션 미설치/미설정 시 graceful degradation 확인
-- [ ] 최소 단위 테스트/스모크 테스트 추가
-- [ ] 운영 설정 예시 문서화(필요시)
-
-#### [P3-2] Web에서 캐시 통계 요약 조회 엔드포인트 제공
-
-| 항목 | 내용 |
-|------|------|
-| **ID** | `feat-web-cache-analytics-001` |
 | **카테고리** | ✨ 기능 추가 |
 | **복잡도** | Medium |
 | **대상 파일** | `src/caching/analytics.py`, `src/web/routers/*`, `src/web/api.py` |
@@ -237,6 +144,7 @@
 - **평가 지표 연계:** 운영 편의/관측성 향상 → 프로덕션 준비도 및 성능 분석 역량 개선.
 
 **Definition of Done**
+
 - [ ] 캐시 요약 API 라우터 추가 및 응답 스키마 고정
 - [ ] 파일 미존재/빈 파일/잘못된 JSONL 케이스 테스트
 - [ ] 기존 기능(CLI 분석)과 결과 일관성 확인
