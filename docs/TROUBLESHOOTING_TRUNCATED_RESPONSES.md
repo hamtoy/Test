@@ -64,7 +64,7 @@ Added enhanced logging system to **diagnose the root cause** of this issue.
 
 ```bash
 export GEMINI_API_KEY='your-api-key-here'
-python scripts/debug_api_response.py
+python scripts/dev/debug_api_response.py
 ```
 
 #### 3. Unit Tests (`tests/unit/agent/test_client_logging.py`)
@@ -109,7 +109,7 @@ tail -200 app.log | grep "⚠️"
 export GEMINI_API_KEY='your-api-key'
 export GEMINI_TIMEOUT=120  # 또는 더 큰 값으로 테스트
 
-python scripts/debug_api_response.py
+python scripts/dev/debug_api_response.py
 ```
 
 **출력 결과 확인 (Check output):**

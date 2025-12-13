@@ -35,7 +35,7 @@ A new pre-commit hook detects deprecated imports at commit time:
   hooks:
     - id: check-deprecated-imports
       name: Deprecated Import Scanner
-      entry: python scripts/check_deprecated_imports.py
+      entry: python scripts/validation/check_deprecated_imports.py
       language: system
       types: [python]
       pass_filenames: true

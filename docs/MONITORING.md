@@ -232,7 +232,7 @@ groups:
 2. **Neo4j 연결 상태 확인**
 
    ```bash
-   python scripts/neo4j_benchmark_stub.py
+   python scripts/neo4j/neo4j_benchmark_stub.py
    ```
 
 3. **Gemini API 상태 페이지 확인**

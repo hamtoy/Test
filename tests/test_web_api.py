@@ -1,7 +1,7 @@
 """Tests for the Web API module."""
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,6 +10,12 @@ from src.web.api import app
 
 # Apply mock_genai fixture to all tests in this module
 pytestmark = pytest.mark.usefixtures("mock_genai")
+
+# Patch paths for mocking external dependencies
+PATCH_GENERATE_BATCH = "src.web.routers.qa_generation.generate_single_qa_with_retry"
+PATCH_EVALUATE_EXTERNAL = "src.workflow.external_eval.evaluate_external_answers"
+PATCH_INSPECT_ANSWER = "src.web.routers.workspace_review.inspect_answer"
+PATCH_EDIT_CONTENT = "src.web.routers.workspace_review.edit_content"
 
 
 def _create_mock_agent() -> MagicMock:
@@ -45,8 +51,90 @@ def _create_mock_agent() -> MagicMock:
 
 
 @pytest.fixture
-def client() -> TestClient:
-    """Create a test client."""
+def mock_web_dependencies(tmp_path: Path, isolate_registry: None) -> tuple[MagicMock, MagicMock, MagicMock]:
+    """Mock all web service dependencies including config, agent, and pipeline.
+    
+    This fixture must run after isolate_registry to ensure the registry is clean.
+    
+    Returns:
+        Tuple of (mock_config, mock_agent, mock_pipeline)
+    """
+    from src.config import AppConfig
+    from src.web.service_registry import get_registry
+    
+    # Create mock config with proper paths
+    mock_config = MagicMock(spec=AppConfig)
+    mock_config.input_dir = tmp_path / "inputs"
+    mock_config.input_dir.mkdir(parents=True, exist_ok=True)
+    mock_config.qa_single_timeout = 120
+    mock_config.qa_batch_timeout = 300
+    mock_config.workspace_timeout = 120
+    mock_config.workspace_unified_timeout = 180
+    mock_config.enable_standard_response = False
+    
+    # Create sample OCR file
+    (mock_config.input_dir / "input_ocr.txt").write_text(
+        "샘플 OCR 텍스트", encoding="utf-8"
+    )
+    
+    # Create mock agent with comprehensive async methods
+    mock_agent = MagicMock()
+    mock_agent.generate_query = AsyncMock(return_value="샘플 질의")
+    mock_agent.generate_answer = AsyncMock(return_value="샘플 답변")
+    mock_agent.rewrite_best_answer = AsyncMock(return_value="재작성된 답변")
+    mock_agent.evaluate_candidates = AsyncMock(return_value={"best_index": 0})
+    
+    # Mock evaluate_answers for external evaluation
+    async def mock_evaluate(*args, **kwargs):
+        return [
+            {"candidate_id": "A", "score": 0.9, "reasoning": "좋은 답변"},
+            {"candidate_id": "B", "score": 0.7, "reasoning": "괜찮은 답변"},
+            {"candidate_id": "C", "score": 0.5, "reasoning": "보통 답변"},
+        ]
+    mock_agent.evaluate_answers = AsyncMock(side_effect=mock_evaluate)
+    
+    # Mock workspace functions
+    async def mock_inspect(answer, *args, **kwargs):
+        return f"[검수됨] {answer}"
+    
+    async def mock_edit(answer, edit_request, *args, **kwargs):
+        return f"[수정: {edit_request}] {answer}"
+    
+    mock_agent.inspect_answer = AsyncMock(side_effect=mock_inspect)
+    mock_agent.edit_answer = AsyncMock(side_effect=mock_edit)
+    
+    # Create mock pipeline
+    mock_pipeline = MagicMock()
+    mock_pipeline.generate_qa_pair = AsyncMock(
+        return_value={"query": "샘플 질의", "answer": "샘플 답변"}
+    )
+    
+    # Register mocks in the service registry (after it's been reset by isolate_registry)
+    registry = get_registry()
+    registry.register_config(mock_config)
+    registry.register_agent(mock_agent)
+    registry.register_pipeline(mock_pipeline)
+    registry.register_kg(None)  # Optional dependency
+    registry.register_validator(None)  # Optional dependency
+    
+    return mock_config, mock_agent, mock_pipeline
+
+
+@pytest.fixture(scope="function")
+def client(mock_web_dependencies: tuple) -> TestClient:
+    """Create a test client with mocked dependencies.
+    
+    Note: init_resources is called once per test to ensure fresh state.
+    This is acceptable for test isolation but could be optimized to session
+    scope if tests don't modify global state.
+    """
+    # Force initialization to use the mocked registry
+    import asyncio
+    from src.web.api import init_resources
+    
+    # Run init_resources to sync registry with module-level variables
+    asyncio.run(init_resources())
+    
     return TestClient(app)
 
 
@@ -121,15 +209,24 @@ class TestOCREndpoint:
 class TestQAGeneration:
     """Test QA generation endpoints."""
 
-    def test_generate_single_valid(self, client: TestClient) -> None:
+    def test_generate_single_valid(
+        self, client: TestClient, mock_web_dependencies: tuple
+    ) -> None:
         """Test single QA generation with valid type.
 
         Note: This test validates the endpoint responds properly.
         Full agent logic is tested separately in unit tests.
         """
-        # Skipping for now as it requires full agent mock setup
-        # The endpoint structure validation is covered by invalid type test
-        pytest.skip("Requires complex async agent mock - covered by other tests")
+        payload = {"mode": "single", "qtype": "target_short"}
+        
+        response = client.post("/api/qa/generate", json=payload)
+        
+        # Should return 200 with valid JSON structure
+        assert response.status_code == 200, f"Error: {response.json()}"
+        data = response.json()
+        
+        # Check response structure (may vary based on enable_standard_response)
+        assert "pair" in data or "data" in data
 
     def test_generate_single_invalid_type(self, client: TestClient) -> None:
         """Test single QA generation with invalid type returns 422 (Pydantic validation)."""
@@ -138,26 +235,74 @@ class TestQAGeneration:
         # Pydantic returns 422 for validation errors
         assert response.status_code == 422
 
-    def test_generate_batch(self, client: TestClient) -> None:
+    def test_generate_batch(
+        self, client: TestClient, mock_web_dependencies: tuple
+    ) -> None:
         """Test batch QA generation.
 
         Note: This test validates the endpoint responds properly.
         Full agent logic is tested separately in unit tests.
         """
-        # Skipping for now as it requires full agent mock setup
-        pytest.skip("Requires complex async agent mock - covered by other tests")
+        payload = {
+            "mode": "batch",
+            "batch_types": ["target_short", "target_long"]
+        }
+        
+        # Patch the generate_single_qa_with_retry function
+        with patch(PATCH_GENERATE_BATCH) as mock_gen:
+            mock_gen.return_value = {
+                "type": "target_short",
+                "query": "샘플 질의",
+                "answer": "샘플 답변"
+            }
+            
+            response = client.post("/api/qa/generate", json=payload)
+            
+            # Should return 200 with valid JSON structure
+            assert response.status_code == 200
+            data = response.json()
+            
+            # Check response has results (structure may vary)
+            assert "pairs" in data or "data" in data
+            
+            # Verify the mock was called
+            assert mock_gen.called
 
 
 class TestEvaluation:
     """Test evaluation endpoints."""
 
-    def test_evaluate_external_valid(self, client: TestClient) -> None:
+    def test_evaluate_external_valid(
+        self, client: TestClient, mock_web_dependencies: tuple
+    ) -> None:
         """Test external evaluation with valid inputs (requires 3 answers).
 
         Note: This test validates the endpoint responds properly.
         """
-        # Skipping for now as it requires full agent mock setup
-        pytest.skip("Requires complex async agent mock - covered by validation tests")
+        payload = {
+            "query": "테스트 질문",
+            "answers": ["답변 A", "답변 B", "답변 C"]
+        }
+        
+        # Patch the evaluate_external_answers function from workflow module
+        with patch(PATCH_EVALUATE_EXTERNAL) as mock_eval:
+            mock_eval.return_value = [
+                {"candidate_id": "A", "score": 0.9, "reasoning": "최고"},
+                {"candidate_id": "B", "score": 0.7, "reasoning": "좋음"},
+                {"candidate_id": "C", "score": 0.5, "reasoning": "보통"},
+            ]
+            
+            response = client.post("/api/eval/external", json=payload)
+            
+            # Should return 200 with evaluation results
+            assert response.status_code == 200
+            data = response.json()
+            
+            # Check response structure
+            assert "results" in data or "data" in data or "best" in data
+            
+            # Verify the evaluation function was called
+            assert mock_eval.called
 
     def test_evaluate_external_no_answers(self, client: TestClient) -> None:
         """Test external evaluation with no answers returns 422 (Pydantic validation)."""
@@ -180,29 +325,95 @@ class TestEvaluation:
 class TestWorkspace:
     """Test workspace endpoints."""
 
-    def test_workspace_inspect(self, client: TestClient) -> None:
+    def test_workspace_inspect(
+        self, client: TestClient, mock_web_dependencies: tuple
+    ) -> None:
         """Test workspace inspect mode.
 
         Note: This test validates the endpoint responds properly.
         """
-        # Skipping for now as it requires full agent mock setup
-        pytest.skip("Requires complex async agent mock - covered by validation tests")
+        payload = {
+            "mode": "inspect",
+            "answer": "원본 텍스트",
+            "query": "테스트 질문"
+        }
+        
+        # Patch the inspect_answer function
+        with patch(PATCH_INSPECT_ANSWER) as mock_inspect:
+            mock_inspect.return_value = "[검수됨] 원본 텍스트"
+            
+            response = client.post("/api/workspace", json=payload)
+            
+            # Should return 200 with inspection result
+            assert response.status_code == 200
+            data = response.json()
+            
+            # Check response structure
+            assert "mode" in data or "data" in data
+            
+            # Verify the inspect function was called
+            assert mock_inspect.called
 
-    def test_workspace_edit(self, client: TestClient) -> None:
+    def test_workspace_edit(
+        self, client: TestClient, mock_web_dependencies: tuple
+    ) -> None:
         """Test workspace edit mode.
 
         Note: This test validates the endpoint responds properly.
         """
-        # Skipping for now as it requires full agent mock setup
-        pytest.skip("Requires complex async agent mock - covered by validation tests")
+        payload = {
+            "mode": "edit",
+            "answer": "원본 텍스트",
+            "query": "테스트 질문",
+            "edit_request": "더 짧게 수정해주세요"
+        }
+        
+        # Patch the edit_content function
+        with patch(PATCH_EDIT_CONTENT) as mock_edit:
+            mock_edit.return_value = "수정된 텍스트"
+            
+            response = client.post("/api/workspace", json=payload)
+            
+            # Should return 200 with edit result
+            assert response.status_code == 200
+            data = response.json()
+            
+            # Check response structure
+            assert "mode" in data or "data" in data
+            
+            # Verify the edit function was called
+            assert mock_edit.called
 
-    def test_workspace_edit_missing_request(self, client: TestClient) -> None:
+    def test_workspace_edit_missing_request(
+        self, client: TestClient, mock_web_dependencies: tuple
+    ) -> None:
         """Test workspace edit mode without edit request.
 
         Note: Validation of empty edit_request happens at endpoint level.
         """
-        # Skipping - requires agent initialization for validation
-        pytest.skip("Requires complex async agent mock - covered by validation tests")
+        payload = {
+            "mode": "edit",
+            "answer": "원본 텍스트",
+            "query": "테스트 질문"
+            # edit_request is missing
+        }
+        
+        # Patch functions to avoid actual execution
+        with patch(PATCH_EDIT_CONTENT) as mock_edit:
+            with patch(PATCH_INSPECT_ANSWER) as mock_inspect:
+                mock_edit.return_value = "수정됨"
+                mock_inspect.return_value = "검수됨"
+                
+                response = client.post("/api/workspace", json=payload)
+                
+                # Should return 400, 422, or 500 (depending on where validation happens)
+                # The endpoint raises HTTPException with 400 if edit_request is missing
+                assert response.status_code in [400, 422, 500]
+                
+                # If it's 500, check it's due to the validation error
+                if response.status_code == 500:
+                    error_detail = response.json().get("detail", "")
+                    assert "edit_request" in error_detail.lower() or "작업 실패" in error_detail
 
     def test_workspace_invalid_mode(self, client: TestClient) -> None:
         """Test workspace with invalid mode returns 422 (Pydantic validation)."""

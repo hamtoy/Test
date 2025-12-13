@@ -88,8 +88,8 @@ mypy_path = [".", "stubs"]      # 🆕 Custom stub support
 
 ## Helper Scripts Created
 
-1. **scripts/check_missing_stubs.py** - Checks PyPI for available type stubs
-2. **scripts/measure_strict_baseline.py** - Measures baseline errors before migration
+1. **scripts/validation/check_missing_stubs.py** - Checks PyPI for available type stubs
+2. **scripts/dev/measure_strict_baseline.py** - Measures baseline errors before migration
 
 ## Validation
 

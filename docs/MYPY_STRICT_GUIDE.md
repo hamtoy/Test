@@ -168,7 +168,7 @@ When adding new dependencies:
 
 1. Check for available type stubs:
    ```bash
-   python scripts/check_missing_stubs.py
+   python scripts/validation/check_missing_stubs.py
    ```
 
 2. If stubs are available, add them to `pyproject.toml`:
