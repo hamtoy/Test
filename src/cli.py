@@ -13,6 +13,7 @@ from dataclasses import dataclass
 class CLIArgs:
     """Command-line arguments container."""
 
+    config: str | None = None
     mode: str = "AUTO"
     interactive: bool = False
     non_interactive: bool = False
@@ -64,6 +65,12 @@ Examples:
         """,
     )
 
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Path to an env-style config file (defaults to .env when omitted)",
+    )
     parser.add_argument(
         "--mode",
         type=str,
@@ -189,6 +196,7 @@ Examples:
     parsed = parser.parse_args(args)
 
     return CLIArgs(
+        config=parsed.config,
         mode=parsed.mode,
         interactive=parsed.interactive,
         non_interactive=parsed.non_interactive,

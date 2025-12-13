@@ -38,7 +38,9 @@ from src.qa.rag_system import QAKnowledgeGraph
 from src.qa.rule_loader import set_global_kg
 from src.web.routers import (
     cache_stats_router,
+    config_api_router,
     health_router,
+    logs_api_router,
     metrics_router,
     ocr_router,
     pages_router,
@@ -430,6 +432,8 @@ app.include_router(ocr_router)
 app.include_router(session_router)
 app.include_router(metrics_router)
 app.include_router(cache_stats_router)
+app.include_router(config_api_router)
+app.include_router(logs_api_router)
 
 __all__ = [
     "DEFAULT_ANSWER_RULES",

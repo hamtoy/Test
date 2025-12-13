@@ -108,11 +108,14 @@ async def get_cache_stats_summary() -> dict[str, Any]:
     Raises:
         HTTPException: 404 if stats file not found.
     """
+    import asyncio
+
     config = _get_config()
     stats_path = config.cache_stats_path
 
     try:
-        summary = _parse_cache_stats(stats_path)
+        loop = asyncio.get_running_loop()
+        summary = await loop.run_in_executor(None, _parse_cache_stats, stats_path)
         return {"status": "ok", "data": summary}
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e

@@ -1,186 +1,196 @@
-# 🤖 Project Auto-Improvement Prompts
+# AI Agent Improvement Prompts
 
-> **Usage Guide:**
-> These prompts should be executed **sequentially** by an AI agent.
-> Execute all prompts from start to finish. Do **NOT** skip any steps.
+> **MANDATORY RULES:**
 >
-> ⚠️ **IMPORTANT:** Before starting, read `devplan/Project_Improvement_Exploration_Report.md`.
+> 1. Execute all prompts sequentially. Do not skip any prompt.
+> 2. Use file modification tools (`replace_string_in_file`, `write_to_file`) to apply changes.
+> 3. Do not simply output code in chat; you must physically modify the files.
+> 4. If a file does not exist, create it.
+> 5. **Everything in this file must be in English.**
 
-## 📋 Execution Checklist
+## ✅ Execution Checklist
 
 | # | Prompt ID | Title | Priority | Status |
 |:---:|:---|:---|:---:|:---:|
-| 1 | PROMPT-001 | LATS Module Documentation Guide | P2 | ✅ Done |
-| 2 | PROMPT-002 | Frontend-Backend Integration Guide | P2 | ✅ Done |
-| 3 | PROMPT-003 | Frontend Vitest Test Coverage | P3 | ✅ Done |
-| 4 | OPT-1 | Frontend Bundle Optimization | OPT | ✅ Done |
-| 5 | FINISH | Final Verification and Cleanup | - | ✅ Done |
+| 1 | **PROMPT-001** | Implement End-to-End Workflow Tests | P2 | ✅ Done |
+| 2 | **PROMPT-002** | Enhance Dashboard UI Features | P3 | ✅ Done |
+| 3 | **OPT-1** | Optimize Web API for Async I/O | OPT | ✅ Done |
+| 4 | **OPT-2** | Optimize LATS Workflow Performance | OPT | ✅ Done |
 
-Total: 4 prompts | Completed: 4 | Remaining: 0
-
----
-
-## 🟡 [PROMPT-001] LATS Module Documentation Guide
-
-**Title:** Create comprehensive LATS/Self-Correction module documentation
-**Target:** `docs/LATS_GUIDE.md`, `README.md`
-
-**Context:**
-The LATS (Language Agent Tree Search) and self-correction modules exist in `src/lats/` but lack operational documentation. Users cannot easily understand how to enable, configure, or tune these features.
-
-**Task:**
-
-1. Create `docs/LATS_GUIDE.md` with the following sections:
-   - Overview of LATS functionality
-   - Configuration options (`ENABLE_LATS`, search depth, etc.)
-   - Usage examples (CLI and programmatic)
-   - Performance tuning recommendations
-2. Add a link to this guide in `README.md` under the "Advanced Features" section.
-3. Include at least one complete usage example with code snippets.
-
-**Verification:**
-
-```bash
-# Check file exists
-test -f docs/LATS_GUIDE.md && echo "OK"
-# Verify README link
-grep -q "LATS_GUIDE" README.md && echo "OK"
-```
-
-After completing this prompt, proceed to **[PROMPT-002]**.
+**Status Summary:** Total: 4 prompts | Completed: 4 | Remaining: 0
 
 ---
 
-## 🟡 [PROMPT-002] Frontend-Backend Integration Guide
+## 🔧 P1 & P2 Prompts (Critical/High)
 
-**Title:** Create frontend-backend integration documentation
-**Target:** `docs/FRONTEND_INTEGRATION.md`, `packages/frontend/`
+### [PROMPT-001] Implement End-to-End Workflow Tests
 
-**Context:**
-A Vite/Vitest-based frontend exists in `packages/frontend/`, but there is no documentation on how to connect it to the FastAPI backend. Frontend developers lack clarity on API endpoints, authentication, and CORS configuration.
+**Directive:** Execute this prompt now, then proceed to [PROMPT-002].
 
 **Task:**
+Create a comprehensive End-to-End (E2E) test suite that verifies the full `src.main` execution flow, from CLI invocation to output generation.
 
-1. Create `docs/FRONTEND_INTEGRATION.md` with:
-   - List of available API endpoints (from `src/web/routers/`)
-   - Environment variable setup for frontend (API base URL, etc.)
-   - CORS configuration guide
-   - Development workflow (running both frontend and backend)
-2. Document the following key endpoints:
-   - `GET /api/ocr` - OCR text retrieval
-   - `POST /api/ocr` - OCR text save
-   - `GET /api/cache/summary` - Cache statistics
-   - Health check endpoints
-3. Include example fetch/axios calls for frontend usage.
+**Target Files:**
 
-**Verification:**
+- `tests/e2e/test_cli_flow.py` (NEW)
+- `tests/e2e/conftest.py` (NEW)
 
-```bash
-# Check file exists
-test -f docs/FRONTEND_INTEGRATION.md && echo "OK"
-```
+**Steps:**
 
-After completing this prompt, proceed to **[PROMPT-003]**.
-
----
-
-## 🟢 [PROMPT-003] Frontend Vitest Test Coverage
-
-**Title:** Expand Vitest test coverage for frontend components
-**Target:** `packages/frontend/src/`, `packages/frontend/tests/`
-
-**Context:**
-The Vitest testing environment is set up in `packages/frontend/`, but component test coverage is low. Frontend changes may introduce regression bugs that go undetected.
-
-**Task:**
-
-1. Analyze existing components in `packages/frontend/src/` to identify untested components.
-2. Create unit tests for at least 3 major components:
-   - Test component rendering
-   - Test user interactions (clicks, input)
-   - Test prop variations
-3. Update `packages/frontend/package.json` if needed to ensure test scripts work.
-4. Verify tests pass locally.
-
-**Verification:**
-
-```bash
-cd packages/frontend
-pnpm run test
-# EXPECTED: All tests passing
-```
-
-After completing this prompt, proceed to **[OPT-1]**.
-
----
-
-## 🚀 [OPT-1] Frontend Bundle Optimization
-
-**Title:** Optimize frontend bundle size and loading performance
-**Target:** `packages/frontend/vite.config.ts`, `packages/frontend/src/`
-
-**Context:**
-The frontend bundle may not be optimized for production, leading to longer initial load times. Code splitting and tree-shaking improvements can enhance user experience.
-
-**Task:**
-
-1. Analyze current bundle size using `vite-bundle-analyzer` or similar tool.
-2. Implement optimizations in `vite.config.ts`:
-   - Enable code splitting for routes
-   - Configure tree-shaking for unused exports
-   - Add chunk naming for better caching
-3. Document bundle size before and after optimization.
-4. Verify production build works correctly.
+1. Create a new directory `tests/e2e`.
+2. Create `tests/e2e/conftest.py` to handle any necessary fixtures (e.g., temporary output directories).
+3. Create `tests/e2e/test_cli_flow.py` using `pytest` and `subprocess` to:
+   - Run the application in non-interactive mode: `python -m src.main --non-interactive --config test_config.yaml`.
+   - Mock necessary external calls (LLM) if possible, or use a "dry-run" mode if available. If neither, implement utilizing `unittest.mock` to patch `src.agent.gemini.GeminiAgent.generate`.
+   - Verify that the process exits with code 0.
+   - Verify that output files (e.g., reports in `output/`) are actually created.
+4. Ensure these tests are excluded from normal unit tests if they allow external network calls, or mark them clearly.
 
 **Implementation Details:**
 
-```typescript
-// vite.config.ts optimizations
-export default defineConfig({
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          // Add other chunks as needed
-        },
-      },
-    },
-  },
-});
-```
+- Use `subprocess.run` to trigger the actual entry point.
+- Implement a robust mock for the LLM response to ensure deterministic tests and avoid API costs.
+- Check for common error cases (missing config, invalid args).
 
 **Verification:**
 
-```bash
-cd packages/frontend
-pnpm run build
-# Check bundle size in dist/
-```
+- Run `pytest tests/e2e` and confirm the test passes.
+- Ensure `pytest tests/unit` still passes without interference.
 
-After completing this prompt, proceed to **[FINISH]**.
+**Transition:**
+After completing this prompt, proceed to [PROMPT-002].
+
+---
+
+## ✨ P3 Prompts (Medium)
+
+### [PROMPT-002] Enhance Dashboard UI Features
+
+**Directive:** Execute this prompt now, then proceed to [OPT-1].
+
+**Task:**
+Implement advanced controls in the Web Dashboard, specifically a Configuration Editor and a Real-time Log Viewer.
+
+**Target Files:**
+
+- `src/web/routers/config_api.py` (NEW)
+- `src/web/routers/logs_api.py` (NEW)
+- `static/src/pages/ConfigEditor.tsx` (NEW)
+- `static/src/pages/LogViewer.tsx` (NEW)
+
+**Steps:**
+
+1. **Backend Implementation**:
+   - Create `src/web/routers/config_api.py`: Implement `GET /api/config` (read settings) and `POST /api/config` (update `config/settings.yaml` or `.env`, ensuring validation).
+   - Create `src/web/routers/logs_api.py`: Implement a WebSocket endpoint `/api/ws/logs` that tails the application log file and streams lines to the client.
+   - Register these routers in `src/web/app.py`.
+
+2. **Frontend Implementation** (Vite/React):
+   - Create `ConfigEditor.tsx`: A form to edit key settings (LLM Model, Temperatures, Paths). Use a secure approach (password fields for implementation of API keys).
+   - Create `LogViewer.tsx`: A terminal-like view that connects to the WebSocket and displays logs.
+   - Update `App.tsx` or Sidebar to include links to these new pages.
+
+**Implementation Details:**
+
+- Ensure robust error handling for file writes (Configuration).
+- Use `pydantic` models to validate incoming configuration updates.
+- For the log viewer, keep a limited buffer (e.g., last 1000 lines) in the frontend to avoid browser crashes.
+
+**Verification:**
+
+- Start the server (`python -m src.main --web`).
+- Visit the dashboard and verify you can read/write config (check file change on disk).
+- Verify logs appear in real-time when actions are performed.
+
+**Transition:**
+After completing this prompt, proceed to [OPT-1].
+
+---
+
+## 🚀 Optimization Prompts (OPT)
+
+### [OPT-1] Optimize Web API for Async I/O
+
+**Directive:** Execute this prompt now, then proceed to [OPT-2].
+
+**Task:**
+Refactor synchronous file I/O operations within `src/web` routers to use improved asynchronous patterns, preventing event loop blocking.
+
+**Target Files:**
+
+- `src/web/routers/` (All relevant router files)
+- `src/utils/file_io.py` (Helper if exists)
+
+**Steps:**
+
+1. Identify all occurrences of `open()`, `Path.read_text()`, or `Path.write_text()` inside `async def` route handlers.
+2. Refactor them to use `aiofiles` (if installed) or `loop.run_in_executor`.
+3. Example pattern:
+
+   ```python
+   # Before
+   content = path.read_text()
+
+   # After
+   import asyncio
+   loop = asyncio.get_running_loop()
+   content = await loop.run_in_executor(None, path.read_text)
+   ```
+
+4. Update `requirements.txt` if adding `aiofiles`.
+
+**Verification:**
+
+- Run load tests (using `locust` or simple `ab`) to confirm that high concurrency does not block requests (e.g., `/health` should remain responsive while a large file is being read).
+
+**Transition:**
+After completing this prompt, proceed to [OPT-2].
+
+---
+
+### [OPT-2] Optimize LATS Workflow Performance
+
+**Directive:** Execute this prompt now, then proceed to the Final Completion step.
+
+**Task:**
+Optimize the LATS (Language Agent Tree Search) engine by parallelizing node expansion steps.
+
+**Target Files:**
+
+- `src/lats/search.py`
+- `src/agent/gemini.py`
+
+**Steps:**
+
+1. Analyze `src/lats/search.py` for loops where child nodes are expanded or evaluated sequentially.
+   - Look for: `for child in nodes: await evaluate(child)`
+2. Refactor to use `asyncio.gather`.
+   - Change to: `await asyncio.gather(*[evaluate(child) for child in nodes])`
+3. Ensure that rate limits or concurrency semaphores are respected (add a `asyncio.Semaphore` if necessary to prevent API rate limit errors).
+
+**Verification:**
+
+- Run the LATS performance benchmark or a sample LATS workflow.
+- Measure execution time before and after for the same depth/width settings.
+- Ensure no "Rate Limit Exceeded" errors occur (mock API if needed).
+
+**Transition:**
+Proceed to Final Completion.
 
 ---
 
 ## 🏁 Final Completion
 
-**Task:**
+**Directive:** Execute the final verification and print the completion message.
 
-1. Run the full test suite to ensure no regressions:
+**Actions:**
 
-   ```bash
-   uv run python -m pytest
-   cd packages/frontend && pnpm run test
-   ```
+1. Run a full project verify command: `pnpm run verify` (or `pytest` + `npm run build`).
+2. Ensure all prompts from the checklist are marked as Done.
+3. Print the following message:
 
-2. Verify all documentation files were created:
+> **ALL PROMPTS COMPLETED.**
+> All pending improvement and optimization items from the latest report have been applied.
+> The `shining-quasar` project is now optimized, tested, and feature-complete according to the plan.
 
-   ```bash
-   test -f docs/LATS_GUIDE.md && echo "LATS Guide OK"
-   test -f docs/FRONTEND_INTEGRATION.md && echo "Frontend Guide OK"
-   ```
-
-3. Print the following success message:
-   > "🎉 ALL PROMPTS COMPLETED. All pending improvement and optimization items from the latest report have been applied."
-
----
+<!-- END_OF_FILE -->

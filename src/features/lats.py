@@ -115,6 +115,7 @@ class LATSSearcher:
         exploration_constant: float = math.sqrt(2),
         token_budget: int = 10000,
         cost_budget: float = 1.0,
+        concurrency_limit: int = 5,
     ):
         """Initialize the LATS searcher.
 
@@ -129,6 +130,7 @@ class LATSSearcher:
             exploration_constant: UCB1 exploration constant.
             token_budget: Maximum token budget.
             cost_budget: Maximum cost budget.
+            concurrency_limit: Maximum concurrent LLM API calls (for rate limiting).
         """
         self.llm_provider = llm_provider
         self.graph_validator = graph_validator
@@ -140,6 +142,8 @@ class LATSSearcher:
         self.exploration_constant = exploration_constant
         self.token_budget = token_budget
         self.cost_budget = cost_budget
+        self.concurrency_limit = concurrency_limit
+        self._semaphore: asyncio.Semaphore | None = None
         self.total_visits = 0
 
     def should_terminate(self, node: SearchNode) -> bool:
@@ -160,6 +164,8 @@ class LATSSearcher:
         Returns:
             The best node found during search.
         """
+        # Initialize semaphore for rate limiting
+        self._semaphore = asyncio.Semaphore(self.concurrency_limit)
         root = SearchNode(state=initial_state or SearchState())
         best = root
 
@@ -231,12 +237,23 @@ class LATSSearcher:
     ) -> list[tuple[str, ValidationResult]]:
         if not self.graph_validator:
             return []
-        validations = await asyncio.gather(
-            *[self.graph_validator(node.state, action) for action in actions],
-            return_exceptions=True,
+
+        async def validate_with_semaphore(
+            action: str,
+        ) -> tuple[str, ValidationResult | BaseException]:
+            """Validate action with semaphore for rate limiting."""
+            async with self._semaphore or asyncio.Semaphore(self.concurrency_limit):
+                try:
+                    result = await self.graph_validator(node.state, action)  # type: ignore[misc]
+                    return (action, result)
+                except Exception as e:  # noqa: BLE001
+                    return (action, e)
+
+        results = await asyncio.gather(
+            *[validate_with_semaphore(action) for action in actions],
         )
         pairs: list[tuple[str, ValidationResult]] = []
-        for action, validation in zip(actions, validations):
+        for action, validation in results:
             if isinstance(validation, BaseException):
                 continue
             if validation.allowed:
