@@ -68,10 +68,13 @@ async def _tail_log_file(
             current_size = log_path.stat().st_size
             if current_size > last_size:
                 # Read new content
+                # Capture loop variables as default params to avoid closure issues
                 loop = asyncio.get_running_loop()
                 new_content = await loop.run_in_executor(
                     None,
-                    lambda: _read_new_content(log_path, last_size, current_size),
+                    lambda p=log_path, s=last_size, e=current_size: _read_new_content(
+                        p, s, e
+                    ),
                 )
                 if new_content:
                     new_lines = new_content.splitlines()

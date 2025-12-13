@@ -78,6 +78,23 @@ def _read_env_file() -> dict[str, str]:
     return result
 
 
+def _process_existing_line(
+    line: str,
+    updates: dict[str, str],
+    updated_keys: set[str],
+) -> str:
+    """Process a single line from existing env file."""
+    stripped = line.strip()
+    if not stripped or stripped.startswith("#") or "=" not in stripped:
+        return line
+
+    key = stripped.split("=", 1)[0].strip()
+    if key in updates:
+        updated_keys.add(key)
+        return f"{key}={updates[key]}"
+    return line
+
+
 def _write_env_file(updates: dict[str, str]) -> None:
     """Update values in the .env file."""
     env_path = _get_env_file_path()
@@ -87,16 +104,8 @@ def _write_env_file(updates: dict[str, str]) -> None:
     if env_path.exists():
         content = env_path.read_text(encoding="utf-8")
         for line in content.splitlines():
-            stripped = line.strip()
-            if stripped and not stripped.startswith("#") and "=" in stripped:
-                key = stripped.split("=", 1)[0].strip()
-                if key in updates:
-                    lines.append(f"{key}={updates[key]}")
-                    updated_keys.add(key)
-                else:
-                    lines.append(line)
-            else:
-                lines.append(line)
+            processed = _process_existing_line(line, updates, updated_keys)
+            lines.append(processed)
 
     # Add new keys that weren't in the file
     for key, value in updates.items():
