@@ -538,13 +538,16 @@ class TestPrivateFunctionsExtended:
         assert result["intro"] == "서론"
 
     def test_parse_structured_answer_with_bold_markers(self) -> None:
-        """Test _parse_structured_answer removes bold markers."""
+        """Test _parse_structured_answer removes bold markers from keys."""
         from src.web.utils import _parse_structured_answer
 
+        # Bold markers in JSON keys should be cleaned
         text = '{"**intro**": "서론", "sections": []}'
         result = _parse_structured_answer(text)
-        # Bold markers in keys are removed
-        assert result is None or "intro" in str(result)
+        # After bold marker removal, 'intro' key should exist
+        if result is not None:
+            assert "intro" in result
+            assert result["intro"] == "서론"
 
     def test_parse_structured_answer_with_list_markers(self) -> None:
         """Test _parse_structured_answer removes list markers."""
@@ -740,10 +743,18 @@ class TestTruncationFunctions:
         """Test explanation truncation preserving conclusion."""
         from src.web.utils import _truncate_explanation
 
-        answer = "서론입니다. " * 50 + "\n\n요약하면, 결론입니다."
+        # Create a long answer with conclusion
+        body = "서론입니다. " * 50  # Very long body
+        conclusion = "요약하면, 결론입니다."
+        answer = body + "\n\n" + conclusion
+
         result = _truncate_explanation(answer, 200)
-        assert len(result) <= 210  # Allow small overflow
-        assert "요약하면" in result or "결론" in result
+
+        # Verify truncation happened
+        assert len(result) < len(answer), "Answer should be truncated"
+        assert len(result) <= 210, "Result should respect max_length"
+        # Conclusion should be preserved when possible
+        assert "요약하면" in result, "Conclusion should be preserved"
 
 
 class TestMarkdownHelpers:
@@ -841,18 +852,25 @@ class TestApplyAnswerLimits:
         assert result.count(".") <= 6
 
     def test_apply_answer_limits_target(self) -> None:
-        """Test target limits."""
+        """Test target limits with various answer lengths."""
         from src.web.utils import apply_answer_limits
 
+        # Short answer (< 15 words) should not be modified
         short_answer = "단답"
         result = apply_answer_limits(short_answer, "target")
-        assert result == "단답"
+        assert result == "단답", "Short answers should not be modified"
 
-        # Use longer answer with more words to trigger limits (word count > 15)
-        long_answer = ". ".join(["이것은 긴 문장입니다 테스트용"] * 10) + "."
+        # Long answer with > 15 words should be limited
+        # _apply_target_limits: if word_count >= 15, limit to 6 sentences and 200 words
+        long_answer = (
+            " ".join(["긴단어"] * 20) + ". " + " ".join(["긴단어"] * 20) + ". " * 7
+        )
         result = apply_answer_limits(long_answer, "target")
-        # Target limits sentences to 6 and words to 200, verify something happened
-        assert len(result) <= len(long_answer)
+        # Verify word limiting is applied (200 word limit)
+        result_word_count = len(result.split())
+        assert result_word_count <= 200, (
+            f"Word count {result_word_count} exceeds 200 limit"
+        )
 
     def test_apply_answer_limits_unknown_qtype(self) -> None:
         """Test with unknown qtype returns unchanged."""

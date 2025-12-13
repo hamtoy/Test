@@ -173,14 +173,14 @@ class TestParseExtractionResponse:
         assert result.persons[0]["name"] == "김철수"
 
     def test_parse_extraction_response_with_markdown_bold(self) -> None:
-        """Test parsing JSON with markdown bold markers - may fail to parse."""
+        """Test parsing JSON with markdown bold markers - should fail to parse."""
         config = Mock()
         del config.data2neo_confidence
         del config.data2neo_batch_size
         del config.data2neo_temperature
         extractor = Data2NeoExtractor(config=config)
 
-        # Markdown bold markers make JSON invalid, so it should return empty
+        # Markdown bold markers make JSON invalid
         response = """{
             **"persons"**: [{"id": "p1", "name": "홍길동"}],
             "organizations": [],
@@ -190,19 +190,20 @@ class TestParseExtractionResponse:
 
         result = extractor._parse_extraction_response(response)
 
-        # The parser may not be able to handle bold markers - this is expected
-        # It will return empty on parse failure
-        assert len(result.persons) >= 0  # Either parses or returns empty
+        # Bold markers break JSON syntax, so parse should fail and return empty
+        assert len(result.persons) == 0, (
+            "Invalid JSON with bold markers should return empty"
+        )
 
     def test_parse_extraction_response_with_list_markers(self) -> None:
-        """Test parsing JSON with markdown list markers - may fail to parse."""
+        """Test parsing JSON with markdown list markers - should fail to parse."""
         config = Mock()
         del config.data2neo_confidence
         del config.data2neo_batch_size
         del config.data2neo_temperature
         extractor = Data2NeoExtractor(config=config)
 
-        # List markers make JSON invalid
+        # List markers make JSON invalid (dash at start of object property)
         response = """{
             - "persons": [{"id": "p1", "name": "김철수"}],
             - "organizations": [],
@@ -212,8 +213,10 @@ class TestParseExtractionResponse:
 
         result = extractor._parse_extraction_response(response)
 
-        # May return empty on parse failure - this is expected
-        assert len(result.persons) >= 0
+        # List markers break JSON syntax, so parse should fail and return empty
+        assert len(result.persons) == 0, (
+            "Invalid JSON with list markers should return empty"
+        )
 
     def test_parse_extraction_response_invalid_json(self) -> None:
         """Test parsing invalid JSON returns empty result."""
