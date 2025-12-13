@@ -313,7 +313,7 @@ class AppConfig(BaseSettings):
     @classmethod
     def validate_max_output_tokens(cls, v: int | None) -> int | None:
         if v is None:
-            return v
+            return None  # Explicitly return None instead of v
         if v < 1:
             raise ValueError("max_output_tokens must be >= 1")
         return v
