@@ -70,7 +70,7 @@ async def execute_workspace_workflow_example(
     pipeline = registry.pipeline
 
     # OCR 텍스트 로드
-    final_ocr_text = ocr_text or load_ocr_text(config)
+    final_ocr_text = ocr_text or await load_ocr_text(config)
 
     # 워크플로우 감지
     workflow_str = detect_workflow(query or "", answer or "", edit_request or "")
