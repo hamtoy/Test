@@ -122,7 +122,9 @@ class TestReviewSessionLogging:
 
         # Check log file exists
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        log_file = tmp_path / "data" / "outputs" / "review_logs" / f"review_{today}.jsonl"
+        log_file = (
+            tmp_path / "data" / "outputs" / "review_logs" / f"review_{today}.jsonl"
+        )
         assert log_file.exists()
 
         # Verify log content
@@ -162,7 +164,9 @@ class TestReviewSessionLogging:
         )
 
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        log_file = tmp_path / "data" / "outputs" / "review_logs" / f"review_{today}.jsonl"
+        log_file = (
+            tmp_path / "data" / "outputs" / "review_logs" / f"review_{today}.jsonl"
+        )
 
         lines = log_file.read_text(encoding="utf-8").strip().split("\n")
         assert len(lines) == 2
@@ -231,9 +235,7 @@ class TestTextProcessing:
 
     def test_detect_workflow_edit_both(self) -> None:
         """Test workflow detection: edit both."""
-        assert (
-            detect_workflow("질문", "답변", "수정 요청") == "edit_both"
-        )
+        assert detect_workflow("질문", "답변", "수정 요청") == "edit_both"
 
     def test_detect_workflow_rewrite(self) -> None:
         """Test workflow detection: rewrite."""

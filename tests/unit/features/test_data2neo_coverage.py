@@ -136,12 +136,14 @@ class TestParseExtractionResponse:
         config = Mock()
         extractor = Data2NeoExtractor(config=config)
 
-        response = json.dumps({
-            "persons": [{"id": "p1", "name": "홍길동", "role": "CEO"}],
-            "organizations": [{"id": "o1", "name": "삼성전자"}],
-            "rules": [],
-            "relationships": [],
-        })
+        response = json.dumps(
+            {
+                "persons": [{"id": "p1", "name": "홍길동", "role": "CEO"}],
+                "organizations": [{"id": "o1", "name": "삼성전자"}],
+                "rules": [],
+                "relationships": [],
+            }
+        )
 
         result = extractor._parse_extraction_response(response)
 
@@ -235,9 +237,7 @@ class TestConvertToEntities:
         from src.features.data2neo_extractor import ExtractedEntitiesSchema
 
         schema = ExtractedEntitiesSchema(
-            persons=[
-                {"id": "p1", "name": "홍길동", "role": "CEO", "confidence": 0.9}
-            ],
+            persons=[{"id": "p1", "name": "홍길동", "role": "CEO", "confidence": 0.9}],
             organizations=[],
             rules=[],
             relationships=[],
@@ -405,12 +405,16 @@ class TestExtractEntities:
         mock_llm = Mock()
         mock_llm.generate_content_async = AsyncMock()
         mock_llm.generate_content_async.return_value = Mock(
-            content=json.dumps({
-                "persons": [{"id": "p1", "name": "홍길동", "role": "CEO"}],
-                "organizations": [{"id": "o1", "name": "테스트회사"}],
-                "rules": [],
-                "relationships": [{"from_id": "p1", "to_id": "o1", "type": "WORKS_AT"}],
-            })
+            content=json.dumps(
+                {
+                    "persons": [{"id": "p1", "name": "홍길동", "role": "CEO"}],
+                    "organizations": [{"id": "o1", "name": "테스트회사"}],
+                    "rules": [],
+                    "relationships": [
+                        {"from_id": "p1", "to_id": "o1", "type": "WORKS_AT"}
+                    ],
+                }
+            )
         )
 
         extractor = Data2NeoExtractor(config=config, llm_provider=mock_llm)
@@ -427,12 +431,14 @@ class TestExtractEntities:
         mock_llm = Mock()
         mock_llm.generate_content_async = AsyncMock()
         mock_llm.generate_content_async.return_value = Mock(
-            content=json.dumps({
-                "persons": [{"id": "p1", "name": "김철수"}],
-                "organizations": [],
-                "rules": [],
-                "relationships": [],
-            })
+            content=json.dumps(
+                {
+                    "persons": [{"id": "p1", "name": "김철수"}],
+                    "organizations": [],
+                    "rules": [],
+                    "relationships": [],
+                }
+            )
         )
 
         extractor = Data2NeoExtractor(config=config, llm_provider=mock_llm)
@@ -457,20 +463,24 @@ class TestExtractEntities:
         mock_llm.generate_content_async = AsyncMock()
         mock_llm.generate_content_async.side_effect = [
             Mock(
-                content=json.dumps({
-                    "persons": [{"id": "p1", "name": "홍길동"}],
-                    "organizations": [],
-                    "rules": [],
-                    "relationships": [],
-                })
+                content=json.dumps(
+                    {
+                        "persons": [{"id": "p1", "name": "홍길동"}],
+                        "organizations": [],
+                        "rules": [],
+                        "relationships": [],
+                    }
+                )
             ),
             Mock(
-                content=json.dumps({
-                    "persons": [{"id": "p1", "name": "홍길동"}],
-                    "organizations": [],
-                    "rules": [],
-                    "relationships": [],
-                })
+                content=json.dumps(
+                    {
+                        "persons": [{"id": "p1", "name": "홍길동"}],
+                        "organizations": [],
+                        "rules": [],
+                        "relationships": [],
+                    }
+                )
             ),
         ]
 
@@ -549,9 +559,7 @@ class TestImportToGraph:
                     properties={"name": "회사"},
                 ),
             ],
-            relationships=[
-                Relationship(from_id="p1", to_id="o1", type="WORKS_AT")
-            ],
+            relationships=[Relationship(from_id="p1", to_id="o1", type="WORKS_AT")],
             document_id="doc1",
         )
 
