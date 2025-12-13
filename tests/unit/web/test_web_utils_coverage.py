@@ -669,6 +669,7 @@ class TestRenderStructuredAnswer:
             "conclusion": "결론",
         }
         result = _render_structured_answer(structured, "explanation")
+        assert result is not None
         assert "- 불릿1" in result
         assert "- 불릿2" in result
 
