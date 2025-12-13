@@ -252,7 +252,7 @@ await _generate_lats_answer("A와 B 비교는?", ocr_text, "comparison")
 4. **`_generate_lats_answer()` 자동화**
 5. **테스트**:
 ```bash
-uv run pytest tests/unit/web/test_lats_quality.py -v
+uv run python -m pytest tests/unit/web/test_lats_quality.py -v
 ```
 
 ***

@@ -227,7 +227,7 @@ pytest tests/ --cov=src --cov-report=html
 
 # 빠른 피드백 루프
 uv run pytest-watcher .
-uv run pytest -n auto --ff tests/
+uv run python -m pytest -n auto --ff tests/
 ```
 
 ## 개발 가이드
