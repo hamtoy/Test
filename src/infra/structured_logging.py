@@ -11,6 +11,7 @@ class JsonFormatter(logging.Formatter):
     """Simple JSON formatter for logs."""
 
     def format(self, record: logging.LogRecord) -> str:
+        """Format the log record as a JSON string."""
         payload: dict[str, Any] = {
             "level": record.levelname,
             "logger": record.name,

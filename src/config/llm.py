@@ -127,6 +127,7 @@ class LLMSettingsMixin(BaseSettings):
     )
     @classmethod
     def validate_max_output_tokens(cls, v: int | None) -> int | None:
+        """Validate max_output_tokens is positive."""
         if v is None:
             return None
         if v < 1:
