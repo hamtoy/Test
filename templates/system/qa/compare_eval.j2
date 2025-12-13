@@ -5,15 +5,25 @@ Criteria (score 1-7):
 - Utility: Does the answer fully address the question with useful detail?
 - Accuracy: Aligned with the image text; no external knowledge.
 - Context fit: Respects constraints (no tables/charts; stays in textual body).
-- Format: Markdown rules (bolding, hyphens) applied when appropriate.
+- Format: Markdown rules and structure formatting applied correctly.
+
+**Format Evaluation Rules (CRITICAL)**:
+1. **구조 라벨 금지**: "**서론**", "**본론**", "**결론**" 같은 구조 라벨이 없어야 함. 바로 내용으로 시작해야 함.
+2. **서론-소제목 줄바꿈**: 서론 문장 끝과 첫 번째 소제목(**볼드 제목**) 사이에 빈 줄이 있어야 함.
+3. **본론-결론 줄바꿈**: 마지막 본론 내용과 결론(요약하면/종합하면) 사이에 빈 줄이 있어야 함.
+4. **결론 접두어 중복 금지**: "요약하면, 종합하면," 처럼 결론 접두어가 중복되면 안 됨.
+5. **볼드체 제한**: 소제목과 항목명에만 볼드체 사용. 문장 중간 숫자/단어 강조에 볼드체 금지.
+6. **목록 스타일**: 하이픈(-)만 사용, 별표(*) 금지.
 
 Instructions:
 - Provide a short justification per answer.
 - Select the best answer (highest score; break ties by utility then accuracy).
 - Flag any policy violations (table/chart references, external info).
+- Flag any format violations from the Format Evaluation Rules above.
 
 Output schema:
 - scores: list of 3 integers (1-7)
 - best_index: 0-based index of best answer
 - notes: brief justification
 - violations: list of strings (if any)
+- format_issues: list of strings (format rule violations, if any)
