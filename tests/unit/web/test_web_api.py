@@ -199,9 +199,11 @@ class TestQAGenerateApi:
         mock_agent.generate_query = AsyncMock(return_value=["생성된 질문입니다"])
         mock_agent.generate_answer = AsyncMock(return_value="생성된 답변입니다")
 
-        with patch("src.web.routers.qa._get_config", return_value=mock_config):
-            with patch("src.web.routers.qa._get_agent", return_value=mock_agent):
-                response = client.post("/api/qa/generate", json={"mode": "batch"})
+        with (
+            patch("src.web.routers.qa._get_config", return_value=mock_config),
+            patch("src.web.routers.qa._get_agent", return_value=mock_agent),
+        ):
+            response = client.post("/api/qa/generate", json={"mode": "batch"})
 
         # Batch mode triggers streaming, so we expect 200 or stream response
         assert response.status_code in (200, 500)  # 500 if agent not fully mocked
