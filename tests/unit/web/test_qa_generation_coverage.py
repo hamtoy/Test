@@ -263,11 +263,8 @@ class TestAPIGenerateQA:
                     with patch(
                         "src.web.routers.qa_generation._process_batch_request"
                     ) as mock_batch:
-                        # Simulate timeout with a short delay
-                        async def slow_process(*args: Any, **kwargs: Any) -> None:
-                            await asyncio.sleep(2)  # Slightly longer than timeout
-
-                        mock_batch.side_effect = slow_process
+                        # Simulate timeout with asyncio.TimeoutError
+                        mock_batch.side_effect = asyncio.TimeoutError()
 
                         with pytest.raises(HTTPException) as exc_info:
                             await api_generate_qa(body)

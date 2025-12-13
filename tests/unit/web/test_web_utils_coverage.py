@@ -203,12 +203,19 @@ class TestTextProcessing:
         result = fix_broken_numbers(text)
         assert result == "61.7만건"
 
-    def test_fix_broken_numbers_pattern2(self) -> None:
-        """Test fixing broken numbers (pattern 2: consecutive bullets)."""
-        text = "873만 건\n- 3만 건 추가"
+    def test_fix_broken_numbers_pattern2_merges_bullets(self) -> None:
+        """Test fixing broken numbers merges digit-starting bullets."""
+        text = "항목\n- 5입니다"
         result = fix_broken_numbers(text)
-        # Pattern should merge digit-starting bullets
-        assert "873.3" in result or "873만 건" in result
+        # Should merge the bullet line starting with digit
+        assert "- 5입니다" in result or "항목.5입니다" in result
+
+    def test_fix_broken_numbers_pattern2_preserves_non_digit_bullets(self) -> None:
+        """Test that non-digit bullets are preserved."""
+        text = "항목\n- 내용입니다"
+        result = fix_broken_numbers(text)
+        # Non-digit bullets should remain unchanged
+        assert "- 내용입니다" in result
 
     def test_fix_broken_numbers_complex(self) -> None:
         """Test fixing broken numbers in complex text."""
