@@ -322,13 +322,7 @@ def _render_structured_answer(
     intro = _sanitize_structured_text(structured.get("intro", ""))
     conclusion = _sanitize_structured_text(structured.get("conclusion", ""))
     if not conclusion:
-        if intro:
-            sentences = _split_sentences_safe(intro)
-            conclusion = sentences[0] if sentences else intro
-        elif normalized_qtype == "explanation":
-            conclusion = "핵심 내용은 위와 같습니다"
-        elif normalized_qtype == "reasoning":
-            conclusion = "위 근거를 바탕으로 같은 결론입니다"
+        conclusion = _get_fallback_conclusion(intro, normalized_qtype)
 
     lines: list[str] = []
     if intro:
@@ -345,6 +339,18 @@ def _render_structured_answer(
 
     rendered = "\n".join(lines).strip()
     return rendered or None
+
+
+def _get_fallback_conclusion(intro: str, normalized_qtype: str) -> str:
+    """결론이 없을 때 폴백 결론 생성."""
+    if intro:
+        sentences = _split_sentences_safe(intro)
+        return sentences[0] if sentences else intro
+    if normalized_qtype == "explanation":
+        return "핵심 내용은 위와 같습니다"
+    if normalized_qtype == "reasoning":
+        return "위 근거를 바탕으로 같은 결론입니다"
+    return ""
 
 
 def render_structured_answer_if_present(answer: str, qtype: str) -> str:

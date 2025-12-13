@@ -199,33 +199,13 @@ async def _emit_remaining_type_events(
     if not remaining_types and reasoning_task is None:
         return
 
-    if reasoning_task is not None and reasoning_task.done():
-        try:
-            reasoning_result = reasoning_task.result()
-        except Exception as exc:  # noqa: BLE001
-            logger.error("reasoning 실패: %s", exc)
-            yield _sse("error", type="reasoning", error=str(exc))
-        else:
-            if reasoning_result:
-                yield _sse("progress", type="reasoning", data=reasoning_result)
-                query = reasoning_result.get("query")
-                if query:
-                    state.completed_queries.append(str(query))
-                state.success_count += 1
+    # Handle completed reasoning task first
+    async for event in _yield_completed_reasoning_task(reasoning_task, state):
+        yield event
         reasoning_task = None
 
-    task_map: dict[asyncio.Task[dict[str, Any]], str] = {}
-    if remaining_types:
-        task_map = _create_stream_tasks(
-            remaining_types,
-            agent,
-            ocr_text,
-            state.completed_queries,
-            state.first_answer,
-        )
-    if reasoning_task is not None:
-        task_map[reasoning_task] = "reasoning"
-
+    # Create task map for remaining types
+    task_map = _build_task_map(remaining_types, agent, ocr_text, state, reasoning_task)
     if not task_map:
         return
 
@@ -243,6 +223,51 @@ async def _emit_remaining_type_events(
         if query:
             state.completed_queries.append(str(query))
         state.success_count += 1
+
+
+async def _yield_completed_reasoning_task(
+    reasoning_task: asyncio.Task[dict[str, Any]] | None,
+    state: _StreamBatchState,
+) -> AsyncIterator[str]:
+    """완료된 reasoning 태스크 결과를 yield하고 상태 업데이트."""
+    if reasoning_task is None or not reasoning_task.done():
+        return
+
+    try:
+        reasoning_result = reasoning_task.result()
+    except Exception as exc:  # noqa: BLE001
+        logger.error("reasoning 실패: %s", exc)
+        yield _sse("error", type="reasoning", error=str(exc))
+        return
+
+    if reasoning_result:
+        yield _sse("progress", type="reasoning", data=reasoning_result)
+        query = reasoning_result.get("query")
+        if query:
+            state.completed_queries.append(str(query))
+        state.success_count += 1
+
+
+def _build_task_map(
+    remaining_types: list[str],
+    agent: Any,
+    ocr_text: str,
+    state: _StreamBatchState,
+    reasoning_task: asyncio.Task[dict[str, Any]] | None,
+) -> dict[asyncio.Task[dict[str, Any]], str]:
+    """태스크 맵 생성."""
+    task_map: dict[asyncio.Task[dict[str, Any]], str] = {}
+    if remaining_types:
+        task_map = _create_stream_tasks(
+            remaining_types,
+            agent,
+            ocr_text,
+            state.completed_queries,
+            state.first_answer,
+        )
+    if reasoning_task is not None:
+        task_map[reasoning_task] = "reasoning"
+    return task_map
 
 
 async def _stream_batch_events(

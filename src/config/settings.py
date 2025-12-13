@@ -140,63 +140,54 @@ class AppConfig(BaseSettings):
         super().__init__(**data)
 
     def resolve_max_output_tokens(self, query_type: str | None = None) -> int:
-        """qtype에 맞는 max_output_tokens를 반환한다.
-
-        - 환경 변수 override가 있으면 최우선 적용
-        - 없으면 GEMINI_MAX_OUTPUT_TOKENS를 기준으로 보수적인 기본값을 적용해
-          짧은 타입(target/reasoning) 응답 속도를 개선한다.
-        """
-        base_max_output_tokens = self.max_output_tokens
-        if base_max_output_tokens <= 0:
-            logger.warning(
-                "Invalid GEMINI_MAX_OUTPUT_TOKENS=%s; falling back to 4096",
-                base_max_output_tokens,
-            )
-            base_max_output_tokens = 4096
+        """qtype에 맞는 max_output_tokens를 반환한다."""
+        base = self._get_base_max_output_tokens()
 
         if not query_type:
-            return base_max_output_tokens
+            return base
 
-        normalized = query_type
-        if normalized in {"global_explanation", "globalexplanation"}:
-            normalized = "explanation"
-        if normalized in {"target_short", "target_long"}:
-            normalized = "target"
+        normalized = self._normalize_query_type(query_type)
+        return self._get_tokens_for_type(normalized, base)
 
-        if normalized == "explanation":
-            override = self.max_output_tokens_explanation
-            if override is not None and override > 0:
-                return override
-            if override is not None and override <= 0:
-                logger.warning(
-                    "Invalid GEMINI_MAX_OUTPUT_TOKENS_EXPLANATION=%s; ignoring",
-                    override,
-                )
-            return base_max_output_tokens
+    def _get_base_max_output_tokens(self) -> int:
+        """기본 max_output_tokens 반환 (검증 포함)."""
+        if self.max_output_tokens <= 0:
+            logger.warning(
+                "Invalid GEMINI_MAX_OUTPUT_TOKENS=%s; falling back to 4096",
+                self.max_output_tokens,
+            )
+            return 4096
+        return self.max_output_tokens
 
-        if normalized == "reasoning":
-            override = self.max_output_tokens_reasoning
-            if override is not None and override > 0:
-                return override
-            if override is not None and override <= 0:
-                logger.warning(
-                    "Invalid GEMINI_MAX_OUTPUT_TOKENS_REASONING=%s; ignoring",
-                    override,
-                )
-            return min(base_max_output_tokens, 2048)
+    def _normalize_query_type(self, query_type: str) -> str:
+        """query_type을 정규화된 형태로 변환."""
+        if query_type in {"global_explanation", "globalexplanation"}:
+            return "explanation"
+        if query_type in {"target_short", "target_long"}:
+            return "target"
+        return query_type
 
-        if normalized == "target":
-            override = self.max_output_tokens_target
-            if override is not None and override > 0:
-                return override
-            if override is not None and override <= 0:
-                logger.warning(
-                    "Invalid GEMINI_MAX_OUTPUT_TOKENS_TARGET=%s; ignoring",
-                    override,
-                )
-            return min(base_max_output_tokens, 512)
+    def _get_tokens_for_type(self, normalized: str, base: int) -> int:
+        """타입별 토큰 설정 반환."""
+        config_map = {
+            "explanation": (self.max_output_tokens_explanation, base),
+            "reasoning": (self.max_output_tokens_reasoning, min(base, 2048)),
+            "target": (self.max_output_tokens_target, min(base, 512)),
+        }
 
-        return base_max_output_tokens
+        if normalized not in config_map:
+            return base
+
+        override, default = config_map[normalized]
+        if override is not None and override > 0:
+            return override
+        if override is not None and override <= 0:
+            logger.warning(
+                "Invalid GEMINI_MAX_OUTPUT_TOKENS_%s=%s; ignoring",
+                normalized.upper(),
+                override,
+            )
+        return default
 
     @model_validator(mode="after")
     def check_timeout_consistency(self) -> "AppConfig":
