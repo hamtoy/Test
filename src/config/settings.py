@@ -53,7 +53,7 @@ class AppConfig(BaseSettings):
     # Per-query-type token overrides (optional). If unset, fall back to
     # GEMINI_MAX_OUTPUT_TOKENS with conservative defaults for faster responses.
     max_output_tokens_explanation: int | None = Field(
-        2560,
+        3072,
         alias="GEMINI_MAX_OUTPUT_TOKENS_EXPLANATION",
     )
     max_output_tokens_reasoning: int | None = Field(
