@@ -1,5 +1,5 @@
 import { apiCall, showToast, showProgressWithEstimate, withRetry } from "./utils.js";
-import { loadOCR, saveOCR } from "./ocr.js";
+import { loadOCR, saveOCR, initImageDropZone } from "./ocr.js";
 import { validateRequest, ValidationError } from "./validation.js";
 
 declare global {
@@ -468,6 +468,7 @@ function setupModeKeyboardNavigation(): void {
 
 export function initQA(): void {
     loadOCR();
+    initImageDropZone();  // 이미지 드래그앤드롭 OCR 활성화
     document.getElementById("save-ocr-btn")?.addEventListener("click", () => saveOCR());
 
     document.querySelectorAll("input[name=\"mode\"]").forEach((radio) => {

@@ -5,7 +5,18 @@
     <!-- 왼쪽: OCR 영역 -->
     <div class="left-panel">
         <h2>📄 OCR 텍스트</h2>
-        <textarea id="ocr-input" class="ocr-box" rows="20" placeholder="OCR 텍스트를 직접 입력하세요..."></textarea>
+
+        <!-- 이미지 업로드 영역 -->
+        <div id="image-drop-zone" class="image-drop-zone">
+            <div class="drop-content">
+                <span class="drop-icon">🖼️</span>
+                <span class="drop-text">이미지를 드래그하거나 클릭하여 업로드</span>
+                <span class="drop-hint">PNG, JPG, GIF, WebP 지원</span>
+            </div>
+        </div>
+        <input type="file" id="image-file-input" accept="image/*" style="display: none;">
+
+        <textarea id="ocr-input" class="ocr-box" rows="16" placeholder="OCR 텍스트를 직접 입력하거나 이미지를 업로드하세요..."></textarea>
         <div class="btn-row">
             <button id="save-ocr-btn" class="btn-primary" style="width: 100%;">💾 저장</button>
         </div>
@@ -27,7 +38,7 @@
                     <input type="radio" id="mode-batch-three" name="mode" value="batch_three">
                     3타입 일괄 생성 (전체/추론/타겟 장답)
                 </label>
-                
+
                 <label for="mode-single">
                     <input type="radio" id="mode-single" name="mode" value="single">
                     타입별 생성
@@ -94,6 +105,77 @@
     .qa-content {
         line-height: 1.6;
         color: var(--text-primary, #1f2121);
+    }
+
+    /* 이미지 드롭존 스타일 */
+    .image-drop-zone {
+        border: 2px dashed var(--border, #ccc);
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 12px;
+        background: var(--bg-secondary, #f9f9f9);
+    }
+
+    .image-drop-zone:hover {
+        border-color: var(--primary, #21808d);
+        background: rgba(33, 128, 141, 0.05);
+    }
+
+    .image-drop-zone.drag-over {
+        border-color: var(--primary, #21808d);
+        background: rgba(33, 128, 141, 0.1);
+        transform: scale(1.02);
+    }
+
+    .image-drop-zone.processing {
+        pointer-events: none;
+        opacity: 0.8;
+    }
+
+    .drop-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .drop-icon {
+        font-size: 2em;
+    }
+
+    .drop-text {
+        font-weight: 500;
+        color: var(--text-primary, #333);
+    }
+
+    .drop-hint {
+        font-size: 0.85em;
+        color: var(--text-secondary, #666);
+    }
+
+    .ocr-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    .spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid var(--border, #ccc);
+        border-top-color: var(--primary, #21808d);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
     }
 </style>
 {% endblock %}
