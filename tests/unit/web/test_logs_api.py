@@ -6,6 +6,7 @@ This module tests the WebSocket-based log streaming functionality.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
@@ -130,10 +131,8 @@ class TestTailLogFile:
             task = asyncio.create_task(_tail_log_file(mock_websocket, test_file))
             await asyncio.sleep(0.1)  # Allow initial content to be sent
             task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await task
-            except asyncio.CancelledError:
-                pass
 
         await run_with_timeout()
 
@@ -162,10 +161,8 @@ class TestTailLogFile:
             )
             await asyncio.sleep(0.1)
             task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await task
-            except asyncio.CancelledError:
-                pass
 
         await run_with_timeout()
 
@@ -220,10 +217,8 @@ class TestTailLogFile:
 
             call_count = mock_websocket.send_json.call_count
             task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await task
-            except asyncio.CancelledError:
-                pass
 
         await controlled_test()
 
@@ -249,10 +244,8 @@ class TestTailLogFile:
 
             await asyncio.sleep(1.5)
             task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await task
-            except asyncio.CancelledError:
-                pass
 
         await truncation_test()
         # Should not raise, truncation is handled
@@ -273,9 +266,7 @@ class TestWebsocketLogsEndpoint:
                 "src.web.routers.logs_api._get_log_file_path",
                 return_value=Path("/nonexistent/app.log"),
             ),
-            patch(
-                "src.web.routers.logs_api._tail_log_file", new_callable=AsyncMock
-            ) as mock_tail,
+            patch("src.web.routers.logs_api._tail_log_file", new_callable=AsyncMock),
         ):
             await websocket_logs(mock_websocket)
 

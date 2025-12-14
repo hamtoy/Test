@@ -392,9 +392,11 @@ class TestGetConfigEndpoint:
         """Test get_config returns default values."""
         from src.web.routers.config_api import get_config
 
-        with patch("src.web.routers.config_api._read_env_file", return_value={}):
-            with patch.dict(os.environ, {}, clear=False):
-                result = await get_config()
+        with (
+            patch("src.web.routers.config_api._read_env_file", return_value={}),
+            patch.dict(os.environ, {}, clear=False),
+        ):
+            result = await get_config()
 
         assert result.temperature == 0.7
         assert result.max_tokens == 4096
@@ -506,12 +508,14 @@ class TestUpdateConfigEndpoint:
 
         request = ConfigUpdateRequest(temperature=0.8, max_tokens=2048)
 
-        with patch("src.web.routers.config_api._write_env_file") as mock_write:
-            with patch(
+        with (
+            patch("src.web.routers.config_api._write_env_file") as mock_write,
+            patch(
                 "src.web.routers.config_api._read_env_file",
                 return_value={"LLM_TEMPERATURE": "0.8", "LLM_MAX_TOKENS": "2048"},
-            ):
-                result = await update_config(request)
+            ),
+        ):
+            await update_config(request)
 
         mock_write.assert_called_once()
         call_args = mock_write.call_args[0][0]
@@ -538,12 +542,14 @@ class TestUpdateConfigEndpoint:
 
         request = ConfigUpdateRequest(enable_cache=True)
 
-        with patch("src.web.routers.config_api._write_env_file") as mock_write:
-            with patch(
+        with (
+            patch("src.web.routers.config_api._write_env_file") as mock_write,
+            patch(
                 "src.web.routers.config_api._read_env_file",
                 return_value={"ENABLE_CACHE": "true"},
-            ):
-                await update_config(request)
+            ),
+        ):
+            await update_config(request)
 
         call_args = mock_write.call_args[0][0]
         assert call_args["ENABLE_CACHE"] == "true"
@@ -551,12 +557,14 @@ class TestUpdateConfigEndpoint:
         # Test False
         request = ConfigUpdateRequest(enable_cache=False)
 
-        with patch("src.web.routers.config_api._write_env_file") as mock_write:
-            with patch(
+        with (
+            patch("src.web.routers.config_api._write_env_file") as mock_write,
+            patch(
                 "src.web.routers.config_api._read_env_file",
                 return_value={"ENABLE_CACHE": "false"},
-            ):
-                await update_config(request)
+            ),
+        ):
+            await update_config(request)
 
         call_args = mock_write.call_args[0][0]
         assert call_args["ENABLE_CACHE"] == "false"
