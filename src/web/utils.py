@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
-import asyncio
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal, TypeAlias, TypedDict, cast
@@ -149,6 +149,7 @@ def _extract_json_object(text: str) -> str | None:
 def _parse_structured_answer(text: str) -> dict[str, Any] | None:
     candidate = _extract_json_object(text)
     if not candidate:
+        logger.debug("JSON 추출 실패: { } 를 찾을 수 없음")
         return None
 
     # LLM이 JSON 키에 **를 적용하는 경우 제거 (예: **"intro"** → "intro")
@@ -172,14 +173,23 @@ def _parse_structured_answer(text: str) -> dict[str, Any] | None:
     candidate = "\n".join(cleaned_lines)
 
     if '"intro"' not in candidate and '"sections"' not in candidate:
+        logger.debug(
+            "JSON 키 조건 불충족: intro/sections 없음. 샘플: %s", candidate[:300]
+        )
         return None
 
     try:
         loaded: Any = json.loads(candidate)
-    except json.JSONDecodeError:
+        logger.debug(
+            "JSON 파싱 성공: keys=%s",
+            list(loaded.keys()) if isinstance(loaded, dict) else type(loaded),
+        )
+    except json.JSONDecodeError as e:
+        logger.warning("JSON 파싱 오류: %s. 샘플: %s", e, candidate[:300])
         return None
 
     if not isinstance(loaded, dict):
+        logger.debug("JSON이 dict가 아님: %s", type(loaded))
         return None
 
     # JSON object keys are always strings, but json.loads returns Any.
