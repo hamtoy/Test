@@ -5,8 +5,9 @@ Provides endpoints for triggering self-improvement analysis and retrieving sugge
 
 from __future__ import annotations
 
+import json
 import logging
-from typing import Any
+from typing import Any, cast
 
 from fastapi import APIRouter, HTTPException
 
@@ -36,10 +37,8 @@ async def get_suggestions() -> dict[str, Any]:
         if not system.suggestions_file.exists():
             return {"suggestions": [], "timestamp": None}
 
-        import json
-
         content = system.suggestions_file.read_text(encoding="utf-8")
-        return json.loads(content)
+        return cast(dict[str, Any], json.loads(content))
     except Exception as exc:
         logger.error("Failed to load suggestions", exc_info=True)
         raise HTTPException(
