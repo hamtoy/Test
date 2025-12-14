@@ -31,7 +31,10 @@ class TestIntegratedQualitySystem:
         mock_validator_class = MagicMock()
         mock_selector_class = MagicMock()
         mock_multimodal_class = MagicMock()
+        mock_multimodal_class = MagicMock()
         mock_llm_class = MagicMock()
+        mock_self_corrector_class = MagicMock()
+        mock_autocomplete_class = MagicMock()
 
         # Import the module first to ensure it's loaded
         import src.qa.quality
@@ -53,6 +56,10 @@ class TestIntegratedQualitySystem:
                 src.qa.quality, "MultimodalUnderstanding", mock_multimodal_class
             ),
             patch.object(src.qa.quality, "GeminiModelClient", mock_llm_class),
+            patch.object(
+                src.qa.quality, "SelfCorrectingQAChain", mock_self_corrector_class
+            ),
+            patch.object(src.qa.quality, "SmartAutocomplete", mock_autocomplete_class),
         ):
             from src.qa.quality import IntegratedQualitySystem
 
@@ -73,7 +80,10 @@ class TestIntegratedQualitySystem:
             mock_validator_class.assert_called_once()
             mock_selector_class.assert_called_once()
             mock_multimodal_class.assert_called_once()
+
             mock_llm_class.assert_called_once()
+            mock_self_corrector_class.assert_called_once()
+            mock_autocomplete_class.assert_called_once()
 
             # Verify attributes are set
             assert system.kg is not None
@@ -83,7 +93,10 @@ class TestIntegratedQualitySystem:
             assert system.validator is not None
             assert system.example_selector is not None
             assert system.multimodal is not None
+            assert system.multimodal is not None
             assert system.llm is not None
+            assert system.self_corrector is not None
+            assert system.autocomplete is not None
 
     def test_init_without_gemini_key(self, mock_pytesseract: None) -> None:
         """Test __init__ with optional gemini_key as None."""
@@ -129,6 +142,7 @@ class TestIntegratedQualitySystem:
             # Verify augmenter was called with None as gemini_key (4th positional arg)
             mock_augmenter_class.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_generate_qa_with_all_enhancements(
         self, mock_pytesseract: None
     ) -> None:
@@ -141,6 +155,13 @@ class TestIntegratedQualitySystem:
         mock_augmented_prompt = "Enhanced prompt with context"
         mock_generated_output = "Generated QA output text"
         mock_validation: Dict[str, Any] = {"is_valid": True, "score": 0.9}
+        mock_self_correction_result: Dict[str, Any] = {
+            "output": mock_generated_output,
+            "iterations": 1,
+            "validation": "yes",
+        }
+        mock_constraint_check: Dict[str, Any] = {"violations": [], "suggestions": []}
+        mock_enforced_result: Dict[str, Any] = {"output": mock_generated_output}
 
         # Create mock instances
         mock_kg_instance = MagicMock()
@@ -162,6 +183,19 @@ class TestIntegratedQualitySystem:
         mock_validator_instance = MagicMock()
         mock_validator_instance.cross_validate_qa_pair.return_value = mock_validation
         mock_enforcer_instance = MagicMock()
+        mock_enforcer_instance.validate_complete_output.return_value = (
+            mock_enforced_result
+        )
+
+        mock_self_corrector_instance = MagicMock()
+        mock_self_corrector_instance.generate_with_self_correction.return_value = (
+            mock_self_correction_result
+        )
+
+        mock_autocomplete_instance = MagicMock()
+        mock_autocomplete_instance.suggest_constraint_compliance.return_value = (
+            mock_constraint_check
+        )
 
         # Create mock classes
         mock_kg_class = MagicMock(return_value=mock_kg_instance)
@@ -172,6 +206,8 @@ class TestIntegratedQualitySystem:
         mock_selector_class = MagicMock(return_value=mock_selector_instance)
         mock_multimodal_class = MagicMock(return_value=mock_multimodal_instance)
         mock_llm_class = MagicMock(return_value=mock_llm_instance)
+        mock_self_corrector_class = MagicMock(return_value=mock_self_corrector_instance)
+        mock_autocomplete_class = MagicMock(return_value=mock_autocomplete_instance)
 
         # Import the module first to ensure it's loaded
         import src.qa.quality
@@ -193,6 +229,10 @@ class TestIntegratedQualitySystem:
                 src.qa.quality, "MultimodalUnderstanding", mock_multimodal_class
             ),
             patch.object(src.qa.quality, "GeminiModelClient", mock_llm_class),
+            patch.object(
+                src.qa.quality, "SelfCorrectingQAChain", mock_self_corrector_class
+            ),
+            patch.object(src.qa.quality, "SmartAutocomplete", mock_autocomplete_class),
         ):
             from src.qa.quality import IntegratedQualitySystem
 
@@ -235,6 +275,7 @@ class TestIntegratedQualitySystem:
             assert result["metadata"]["adjustments"] == mock_adjustments
             assert result["metadata"]["examples_used"] == mock_examples
 
+    @pytest.mark.asyncio
     async def test_generate_qa_with_summary_query_type(
         self, mock_pytesseract: None
     ) -> None:

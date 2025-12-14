@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 
 
+@pytest.mark.asyncio
 async def test_generate_qa_with_all_enhancements(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

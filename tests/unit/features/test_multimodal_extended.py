@@ -37,7 +37,10 @@ def _stub_external_modules() -> Iterator[None]:
     mp.undo()
 
 
-def test_multimodal_understanding_no_ocr(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.asyncio
+async def test_multimodal_understanding_no_ocr(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
     """Test multimodal analysis without OCR (OCR removed - user input only)."""
     from src.features import multimodal as features_multimodal
 
@@ -64,6 +67,7 @@ def test_multimodal_understanding_no_ocr(monkeypatch: pytest.MonkeyPatch) -> Non
     class _FakeImg:
         width = 10
         height = 20
+        size = (10, 20)
 
         def __enter__(self) -> "_FakeImg":
             return self
@@ -77,16 +81,24 @@ def test_multimodal_understanding_no_ocr(monkeypatch: pytest.MonkeyPatch) -> Non
         types.SimpleNamespace(open=lambda path: _FakeImg()),
     )
 
+    # Create dummy file
+    dummy_img = tmp_path / "fake.png"
+    dummy_img.touch()
+    dummy_path = str(dummy_img)
+
     analyzer = mmu.MultimodalUnderstanding(_KG())
-    meta = analyzer.analyze_image_deep("fake.png")
+    meta = await analyzer.analyze_image_deep(dummy_path)
 
     assert meta["has_table_chart"] is False
     assert meta["topics"] == []  # No OCR, so no topics
     assert meta["extracted_text"] == ""  # No OCR extraction
-    assert fake_saved.get("path") == "fake.png"
+    assert fake_saved.get("path") == dummy_path
 
 
-def test_multimodal_with_graph_session(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.asyncio
+async def test_multimodal_with_graph_session(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
     """Test multimodal analysis with graph_session attribute."""
     from src.features import multimodal as features_multimodal
 
@@ -109,6 +121,7 @@ def test_multimodal_with_graph_session(monkeypatch: pytest.MonkeyPatch) -> None:
     class _FakeImg:
         width = 100
         height = 200
+        size = (100, 200)
 
         def __enter__(self) -> "_FakeImg":
             return self
@@ -122,14 +135,21 @@ def test_multimodal_with_graph_session(monkeypatch: pytest.MonkeyPatch) -> None:
         types.SimpleNamespace(open=lambda path: _FakeImg()),
     )
 
+    dummy_img = tmp_path / "test.png"
+    dummy_img.touch()
+    dummy_path = str(dummy_img)
+
     analyzer = mmu.MultimodalUnderstanding(_KG())
-    meta = analyzer.analyze_image_deep("test.png")
+    meta = await analyzer.analyze_image_deep(dummy_path)
 
     assert "path" in meta
-    assert meta["path"] == "test.png"
+    assert meta["path"] == dummy_path
 
 
-def test_multimodal_no_graph(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.asyncio
+async def test_multimodal_no_graph(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
     """Test multimodal analysis when no graph is available."""
     from src.features import multimodal as features_multimodal
 
@@ -139,6 +159,7 @@ def test_multimodal_no_graph(monkeypatch: pytest.MonkeyPatch) -> None:
     class _FakeImg:
         width = 50
         height = 50
+        size = (50, 50)
 
         def __enter__(self) -> "_FakeImg":
             return self
@@ -152,16 +173,23 @@ def test_multimodal_no_graph(monkeypatch: pytest.MonkeyPatch) -> None:
         types.SimpleNamespace(open=lambda path: _FakeImg()),
     )
 
+    dummy_img = tmp_path / "test.png"
+    dummy_img.touch()
+    dummy_path = str(dummy_img)
+
     analyzer = mmu.MultimodalUnderstanding(_KG())
-    meta = analyzer.analyze_image_deep("test.png")
+    meta = await analyzer.analyze_image_deep(dummy_path)
 
     # Should still return metadata even without graph
     assert "path" in meta
-    assert meta["path"] == "test.png"
+    assert meta["path"] == dummy_path
     assert meta["topics"] == []
 
 
-def test_multimodal_session_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.asyncio
+async def test_multimodal_session_returns_none(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
     """Test multimodal analysis when session context returns None."""
     from src.features import multimodal as features_multimodal
 
@@ -183,6 +211,7 @@ def test_multimodal_session_returns_none(monkeypatch: pytest.MonkeyPatch) -> Non
     class _FakeImg:
         width = 50
         height = 50
+        size = (50, 50)
 
         def __enter__(self) -> "_FakeImg":
             return self
@@ -196,14 +225,21 @@ def test_multimodal_session_returns_none(monkeypatch: pytest.MonkeyPatch) -> Non
         types.SimpleNamespace(open=lambda path: _FakeImg()),
     )
 
+    dummy_img = tmp_path / "test.png"
+    dummy_img.touch()
+    dummy_path = str(dummy_img)
+
     analyzer = mmu.MultimodalUnderstanding(_KG())
-    meta = analyzer.analyze_image_deep("test.png")
+    meta = await analyzer.analyze_image_deep(dummy_path)
 
     # Should still return metadata even when session is None
     assert "path" in meta
 
 
-def test_multimodal_exception_handling(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.asyncio
+async def test_multimodal_exception_handling(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
     """Test multimodal analysis handles exceptions in graph operations."""
     from src.features import multimodal as features_multimodal
 
@@ -228,6 +264,7 @@ def test_multimodal_exception_handling(monkeypatch: pytest.MonkeyPatch) -> None:
     class _FakeImg:
         width = 50
         height = 50
+        size = (50, 50)
 
         def __enter__(self) -> "_FakeImg":
             return self
@@ -241,41 +278,30 @@ def test_multimodal_exception_handling(monkeypatch: pytest.MonkeyPatch) -> None:
         types.SimpleNamespace(open=lambda path: _FakeImg()),
     )
 
+    dummy_img = tmp_path / "test.png"
+    dummy_img.touch()
+    dummy_path = str(dummy_img)
+
     analyzer = mmu.MultimodalUnderstanding(_KG())
-    meta = analyzer.analyze_image_deep("test.png")
+    meta = await analyzer.analyze_image_deep(dummy_path)
 
     # Should still return metadata even with exception
     assert "path" in meta
-    assert meta["path"] == "test.png"
+    assert meta["path"] == dummy_path
 
 
-def test_detect_table(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test table detection method."""
-
-    class _KG:
-        pass
-
-    class _FakeImg:
-        pass
-
-    analyzer = mmu.MultimodalUnderstanding(_KG())
-    result = analyzer._detect_table(_FakeImg())
-
-    # Placeholder always returns False
-    assert result is False
-
-
-def test_detect_chart(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test chart detection method."""
+def test_detect_table_chart() -> None:
+    """Test table/chart detection method."""
 
     class _KG:
         pass
 
-    class _FakeImg:
-        pass
-
     analyzer = mmu.MultimodalUnderstanding(_KG())
-    result = analyzer._detect_chart(_FakeImg())
 
-    # Placeholder always returns False
-    assert result is False
+    # Test with table-like text
+    assert analyzer._detect_table_chart("구분: 매출액 100억") is True
+    assert analyzer._detect_table_chart("합계 1000 2000 3000") is True
+
+    # Test with no table
+    assert analyzer._detect_table_chart("일반적인 텍스트입니다") is False
+    assert analyzer._detect_table_chart("") is False
