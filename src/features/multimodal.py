@@ -1,3 +1,9 @@
+"""Multimodal Image Understanding module.
+
+Analyzes image structure (tables, charts) and metadata without performing OCR.
+Stores analysis results in Neo4j for downstream processing.
+"""
+
 from __future__ import annotations
 
 from typing import Any

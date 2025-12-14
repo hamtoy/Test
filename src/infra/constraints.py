@@ -1,3 +1,10 @@
+"""Real-time Constraint Enforcement module.
+
+Provides stream-based validation during LLM generation, checking outputs against
+Neo4j-defined constraints (prohibitions, markdown rules, similarity thresholds)
+and returning violations or corrections in real-time.
+"""
+
 from __future__ import annotations
 
 import re

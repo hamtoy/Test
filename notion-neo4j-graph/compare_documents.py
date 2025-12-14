@@ -1,3 +1,4 @@
+"""Compare Documents module."""
 import logging
 import os
 import sys

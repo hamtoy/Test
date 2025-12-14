@@ -1,4 +1,10 @@
 # mypy: disable-error-code=attr-defined
+"""System Health Check Infrastructure module.
+
+Provides async/sync health checks for Redis, Neo4j, Gemini API, disk, and memory.
+Includes Kubernetes-compatible liveness/readiness probes and structured health reporting.
+"""
+
 from __future__ import annotations
 
 import asyncio
@@ -8,9 +14,9 @@ import logging
 import os
 import sys
 import time
-from pathlib import Path
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 try:

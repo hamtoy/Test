@@ -1,3 +1,9 @@
+"""Redis Caching Layer for Graph Rules module.
+
+Provides a transparent caching layer for Neo4j rule queries.
+Falls back to direct graph access when Redis is unavailable.
+"""
+
 from __future__ import annotations
 
 import json

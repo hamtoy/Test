@@ -1,3 +1,9 @@
+"""Graph-Based Smart Autocomplete module.
+
+Provides intelligent suggestions for next query types based on session history
+and validates draft outputs against constraints from the knowledge graph.
+"""
+
 from __future__ import annotations
 
 import logging

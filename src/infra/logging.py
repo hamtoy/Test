@@ -1,3 +1,13 @@
+"""Advanced Logging Infrastructure module.
+
+Implements a non-blocking logging system using QueueHandler/QueueListener patterns.
+Features include:
+- Sensitive data masking (API Keys).
+- Environment-specific formatting (JSON for Prod, Rich for Dev).
+- Dynamic log level adjustment.
+- Structured logging for metrics and workflows.
+"""
+
 import logging
 import logging.handlers
 import os

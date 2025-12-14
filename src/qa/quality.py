@@ -1,3 +1,10 @@
+"""Integrated Quality Enhancement System module.
+
+Orchestrates all quality improvement features in a single pipeline:
+image analysis, complexity adjustment, example selection, context augmentation,
+LLM generation, and cross-validation.
+"""
+
 from __future__ import annotations
 
 from typing import Any

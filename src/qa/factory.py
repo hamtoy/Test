@@ -1,3 +1,10 @@
+"""QA System Component Factory module.
+
+Centralized factory for instantiating QA components:
+- KnowledgeGraph, MemorySystem, MultiAgentSystem, Router, LCELChain.
+Provides context manager support for automatic resource cleanup.
+"""
+
 from __future__ import annotations
 
 from contextlib import suppress

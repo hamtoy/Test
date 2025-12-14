@@ -1,3 +1,10 @@
+"""Language Agent Tree Search (LATS) implementation.
+
+This module provides the LATS reasoning engine, which uses Monte Carlo Tree Search (MCTS)
+to enable the agent to explore multiple reasoning paths, perform self-reflection,
+and backtrack from dead ends. It supports parallel child node evaluation for performance.
+"""
+
 from __future__ import annotations
 
 import asyncio

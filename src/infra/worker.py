@@ -1,3 +1,10 @@
+"""FastStream Redis Worker module.
+
+Background task processor for OCR/LLM workloads using FastStream and Redis.
+Supports LATS-based tree search, Data2Neo entity extraction, rate limiting,
+and dead-letter queue handling.
+"""
+
 import json
 import logging
 import os

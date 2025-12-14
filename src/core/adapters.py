@@ -1,4 +1,10 @@
 # mypy: disable-error-code=attr-defined
+"""Provider Adapters module.
+
+Concrete implementations of LLMProvider (GeminiProvider) and GraphProvider (Neo4jProvider).
+Handles API-specific error mapping, token counting, and batch operations.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -7,7 +13,6 @@ from typing import Any
 import google.generativeai as genai
 from google.api_core import exceptions as google_exceptions
 from google.generativeai.types import GenerationConfigDict
-from src.infra.neo4j import Neo4jGraphProvider
 
 from src.core.interfaces import (
     ContextWindowExceededError,
@@ -19,6 +24,7 @@ from src.core.interfaces import (
     SafetyBlockedError,
     TimeoutError,
 )
+from src.infra.neo4j import Neo4jGraphProvider
 
 logger = logging.getLogger(__name__)
 

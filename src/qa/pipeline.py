@@ -1,3 +1,12 @@
+"""Integrated QA Pipeline module.
+
+Orchestrates the end-to-end Question Answering workflow, including:
+- Session context building from metadata.
+- Dynamic prompt generation using Neo4j templates.
+- Validation of generated turns and prompts against forbidden patterns.
+- Graph-backed knowledge retrieval.
+"""
+
 from __future__ import annotations
 
 import json

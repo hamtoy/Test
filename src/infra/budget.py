@@ -1,3 +1,9 @@
+"""LLM Cost Tracking and Budget Management module.
+
+Tracks token usage and calculates costs based on Gemini Flash pricing tiers.
+Provides budget enforcement, usage statistics, and cost alerts.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

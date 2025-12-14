@@ -1,3 +1,11 @@
+"""Custom Exception Classes module.
+
+Defines domain-specific exceptions with actionable troubleshooting guidance:
+APIRateLimitError, ValidationFailedError, BudgetExceededError,
+Neo4jConnectionError, RedisConnectionError, etc.
+"""
+
+
 class APIRateLimitError(Exception):
     """API 요청 한도가 초과되었습니다.
 

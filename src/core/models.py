@@ -1,3 +1,11 @@
+"""Core Data Models module.
+
+Defines Pydantic schemas for workflow DTOs including:
+- EvaluationResultSchema: LLM candidate evaluation with hallucination detection.
+- StructuredAnswerSchema: Structured intro/sections/conclusion format.
+- WorkflowResult: Complete turn result with cost and success status.
+"""
+
 import logging
 from typing import Literal
 

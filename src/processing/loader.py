@@ -1,3 +1,9 @@
+"""Input Data Loader module.
+
+Provides robust loading mechanisms for OCR text and candidate answer files.
+Supports multiple formats (JSON, Raw Text) with failover strategies (`Hybrid Parsing`)
+and performs validation on the loaded data structure.
+"""
 # src/processing/loader.py
 
 import json

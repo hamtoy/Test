@@ -1,3 +1,9 @@
+"""LangChain Callback Handler for Neo4j Logging module.
+
+Implements a LangChain BaseCallbackHandler that records LLM call lifecycle events
+(start, end, error) directly to a Neo4j graph database for audit and debugging.
+"""
+
 from __future__ import annotations
 
 import logging

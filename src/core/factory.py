@@ -1,3 +1,9 @@
+"""Provider Factory module.
+
+Factory functions to create LLM and Graph providers based on AppConfig.
+Supports pluggable provider architecture for Gemini, Neo4j, and future extensibility.
+"""
+
 from __future__ import annotations
 
 from src.config import AppConfig

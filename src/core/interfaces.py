@@ -1,3 +1,11 @@
+"""Core Interface Definitions module.
+
+Defines abstract base classes (ABCs) for pluggable providers:
+- LLMProvider: Standard interface for LLM generation (Gemini, OpenAI, etc.).
+- GraphProvider: Standard interface for graph databases (Neo4j).
+- Exception hierarchy for provider errors (RateLimitError, SafetyBlockedError, etc.).
+"""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

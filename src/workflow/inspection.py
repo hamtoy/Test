@@ -1,3 +1,11 @@
+"""Inspection and Self-Correction module.
+
+Provides logic for inspecting and correcting queries and answers using:
+- Static constraints from Knowledge Graph.
+- Self-Correcting Chains (Refinement).
+- Optional LATS-based deep reasoning for complex queries.
+"""
+
 from __future__ import annotations
 
 import logging

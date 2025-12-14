@@ -1,3 +1,10 @@
+"""MCTS Workflow Optimizer module.
+
+Implements Monte Carlo Tree Search (MCTS) to optimize prompt templates and workflow parameters
+by exploring the search space of possible configurations and selecting the most promising ones
+based on simulated or actual rewards (e.g., latency, quality score).
+"""
+
 import asyncio
 import logging
 import math

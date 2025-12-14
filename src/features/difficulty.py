@@ -1,3 +1,9 @@
+"""Adaptive Difficulty Adjustment module.
+
+Analyzes text/image complexity (density, structure, word count) and adjusts
+query requirements (length, depth, reasoning possibility) accordingly.
+"""
+
 from __future__ import annotations
 
 import logging

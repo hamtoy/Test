@@ -1,3 +1,12 @@
+"""Infrastructure Utility Functions module.
+
+Common async/sync utilities including:
+- Safe async-to-sync execution bridge.
+- Async file I/O with aiofiles.
+- JSON parsing with markdown cleanup.
+- Checkpoint save/load for workflow resilience.
+"""
+
 import asyncio
 import concurrent.futures
 import json
