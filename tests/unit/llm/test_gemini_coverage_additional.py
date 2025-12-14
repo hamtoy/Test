@@ -20,7 +20,10 @@ def _fake_genai(monkeypatch: pytest.MonkeyPatch) -> None:
             self.name = name
 
         def generate_content(
-            self, prompt: str, generation_config: Any = None
+            self,
+            prompt: str,
+            generation_config: Any = None,
+            safety_settings: Any = None,
         ) -> types.SimpleNamespace:
             return types.SimpleNamespace(text="dummy", usage_metadata=None)
 
@@ -82,15 +85,21 @@ class TestGeminiModelClientGenerate:
     def test_generate_generic_exception(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Test generate handles generic exceptions."""
         monkeypatch.setenv("GEMINI_API_KEY", "test_key")
-        _fake_genai(monkeypatch)
+
+        # Create a mock model that raises RuntimeError
+        mock_model = MagicMock()
+        mock_model.generate_content.side_effect = RuntimeError("unexpected error")
+
+        # Create fake genai with GenerativeModel returning the mock
+        fake = types.SimpleNamespace(
+            configure=lambda api_key: None,
+            GenerativeModel=lambda name: mock_model,
+            types=types.SimpleNamespace(GenerationConfig=lambda **_: None),
+            _logging=None,
+        )
+        monkeypatch.setattr(gmc, "genai", fake)
 
         client = gmc.GeminiModelClient()
-
-        # Make generate raise a generic exception
-        client.model.generate_content = MagicMock(  # type: ignore[method-assign]
-            side_effect=RuntimeError("unexpected error")
-        )
-
         result = client.generate("test prompt")
         assert "생성 실패(알 수 없음)" in result
 
