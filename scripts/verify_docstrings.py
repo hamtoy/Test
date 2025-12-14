@@ -33,7 +33,7 @@ def analyze_docstring_quality(
     docstring: str, definitions: list[str], filename: str
 ) -> dict:
     """Analyze if docstring is meaningful vs generic."""
-    is_init = filename == "__init__.py"
+    _ = filename  # Reserved for future __init__.py handling
 
     # Check for generic patterns
     generic_patterns = [
