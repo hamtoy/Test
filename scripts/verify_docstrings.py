@@ -51,7 +51,7 @@ def analyze_docstring_quality(
         name = defn.split(":")[1].lower()
         # Convert CamelCase to words
         words = []
-        current = []
+        current: list[str] = []
         for c in name:
             if c.isupper() and current:
                 words.append("".join(current).lower())
