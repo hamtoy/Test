@@ -103,7 +103,7 @@ class GeminiModelClient:
         models_to_try = [self.model_name] + self.fallback_models
         last_error: Exception | None = None
 
-        for model_name in models_to_try:
+        for model_name in models_to_try:  # noqa: PERF203
             try:
                 model = genai.GenerativeModel(model_name)
                 start = time.perf_counter()
@@ -126,7 +126,7 @@ class GeminiModelClient:
                     )
                 return str(response.text)
 
-            except google_exceptions.ResourceExhausted as e:
+            except google_exceptions.ResourceExhausted as e:  # noqa: PERF203
                 # Rate limit hit - log warning and try next model
                 self.logger.warning(
                     "Rate limit hit for model '%s', switching to fallback... (%s)",
