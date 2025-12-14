@@ -60,7 +60,7 @@ class TestQAGraphBuilder:
             assert mock_session.run.call_count == 7
 
     def test_extract_query_types(self) -> None:
-        """Test extract_query_types creates QueryType nodes."""
+        """Test extract_query_types creates QueryType nodes using batch processing."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
@@ -70,15 +70,15 @@ class TestQAGraphBuilder:
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
-            from src.graph.builder import QAGraphBuilder, QUERY_TYPES  # type: ignore[attr-defined]
+            from src.graph.builder import QAGraphBuilder
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
             with patch("builtins.print"):
                 builder.extract_query_types()
 
-            # Should run one query per query type
-            assert mock_session.run.call_count == len(QUERY_TYPES)
+            # With batch processing, should run single UNWIND query
+            assert mock_session.run.call_count == 1
 
     def test_extract_constraints(self) -> None:
         """Test extract_constraints creates Constraint nodes and relationships."""
@@ -91,7 +91,11 @@ class TestQAGraphBuilder:
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
-            from src.graph.builder import QAGraphBuilder, CONSTRAINTS, TEMPLATES  # type: ignore[attr-defined]
+            from src.graph.builder import (  # type: ignore[attr-defined]
+                CONSTRAINTS,
+                TEMPLATES,
+                QAGraphBuilder,
+            )
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
@@ -135,7 +139,10 @@ class TestQAGraphBuilder:
             mock_result.single.return_value = {"links": 5}
             mock_session.run.return_value = mock_result
 
-            from src.graph.builder import QAGraphBuilder, CONSTRAINT_KEYWORDS  # type: ignore[attr-defined]
+            from src.graph.builder import (  # type: ignore[attr-defined]
+                CONSTRAINT_KEYWORDS,
+                QAGraphBuilder,
+            )
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
@@ -216,7 +223,10 @@ class TestQAGraphBuilder:
             mock_result.single.return_value = {"links": 10}
             mock_session.run.return_value = mock_result
 
-            from src.graph.builder import QAGraphBuilder, EXAMPLE_RULE_MAPPINGS  # type: ignore[attr-defined]
+            from src.graph.builder import (  # type: ignore[attr-defined]
+                EXAMPLE_RULE_MAPPINGS,
+                QAGraphBuilder,
+            )
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
@@ -273,7 +283,7 @@ class TestQAGraphBuilder:
             assert mock_session.run.call_count > 0
 
     def test_create_error_patterns(self) -> None:
-        """Test create_error_patterns creates ErrorPattern nodes."""
+        """Test create_error_patterns creates ErrorPattern nodes using batch processing."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
@@ -283,17 +293,18 @@ class TestQAGraphBuilder:
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
-            from src.graph.builder import QAGraphBuilder, ERROR_PATTERNS  # type: ignore[attr-defined]
+            from src.graph.builder import QAGraphBuilder
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
             with patch("builtins.print"):
                 builder.create_error_patterns()
 
-            assert mock_session.run.call_count == len(ERROR_PATTERNS)
+            # With batch processing, should run single UNWIND query
+            assert mock_session.run.call_count == 1
 
     def test_create_best_practices(self) -> None:
-        """Test create_best_practices creates BestPractice nodes."""
+        """Test create_best_practices creates BestPractice nodes using batch processing."""
         with patch("src.graph.builder.GraphDatabase") as mock_gd:
             mock_driver = MagicMock()
             mock_session = MagicMock()
@@ -303,15 +314,15 @@ class TestQAGraphBuilder:
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
-            from src.graph.builder import QAGraphBuilder, BEST_PRACTICES  # type: ignore[attr-defined]
+            from src.graph.builder import QAGraphBuilder
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
             with patch("builtins.print"):
                 builder.create_best_practices()
 
-            # Should run 2 queries per best practice (CREATE + LINK)
-            assert mock_session.run.call_count == len(BEST_PRACTICES) * 2
+            # With batch processing, should run 2 UNWIND queries (nodes + relationships)
+            assert mock_session.run.call_count == 2
 
     def test_link_rules_to_query_types(self) -> None:
         """Test link_rules_to_query_types creates relationships."""
@@ -324,7 +335,10 @@ class TestQAGraphBuilder:
             mock_driver.session.return_value.__exit__ = MagicMock(return_value=False)
             mock_gd.driver.return_value = mock_driver
 
-            from src.graph.builder import QAGraphBuilder, QUERY_TYPE_KEYWORDS  # type: ignore[attr-defined]
+            from src.graph.builder import (  # type: ignore[attr-defined]
+                QUERY_TYPE_KEYWORDS,
+                QAGraphBuilder,
+            )
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
