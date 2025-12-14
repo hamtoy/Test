@@ -27,7 +27,7 @@ jobs:
 
       - name: Run profiling
         run: |
-          python scripts/auto_profile.py src.main \
+          python scripts/dev/auto_profile.py src.main \
             --mode AUTO \
             --ocr-file examples/sample_ocr.txt \
             --output profiling_results/pr_${{ github.event.pull_request.number }}.prof
@@ -35,7 +35,7 @@ jobs:
       - name: Compare with baseline
         run: |
           if [ -f profiling_results/baseline.prof ]; then
-            python scripts/compare_profiles.py \
+            python scripts/analysis/compare_profiles.py \
               profiling_results/baseline.prof \
               profiling_results/pr_${{ github.event.pull_request.number }}.prof
           else
