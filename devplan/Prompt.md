@@ -12,12 +12,12 @@
 
 | # | Prompt ID | Title | Priority | Status |
 |:---:|:---|:---|:---:|:---:|
-| 1 | PROMPT-001 | GitHub Actions CI Automation | P2 | ⬜ Pending |
-| 2 | PROMPT-002 | LLM Rate Limit Fallback Strategy | P3 | ⬜ Pending |
-| 3 | OPT-1 | FileLock Type Safety Improvements | OPT | ⬜ Pending |
-| 4 | OPT-2 | Server Log Rotation Implementation | OPT | ⬜ Pending |
+| 1 | PROMPT-001 | GitHub Actions CI Automation | P2 | ✅ Complete |
+| 2 | PROMPT-002 | LLM Rate Limit Fallback Strategy | P3 | ⏸️ Skipped |
+| 3 | OPT-1 | FileLock Type Safety Improvements | OPT | ✅ Complete |
+| 4 | OPT-2 | Server Log Rotation Implementation | OPT | ✅ Complete |
 
-**Total: 4 prompts | Pending: 4**
+**Total: 4 prompts | Complete: 3 | Skipped: 1**
 
 ---
 
