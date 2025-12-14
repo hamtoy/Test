@@ -1,5 +1,7 @@
+# mypy: disable-error-code=no-untyped-call
 """Unit tests for GeminiModelClient fallback mechanism."""
 
+from collections.abc import Iterator
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,7 +12,7 @@ class TestGeminiModelClientFallback:
     """Tests for the model fallback mechanism on rate limits."""
 
     @pytest.fixture
-    def mock_env(self):
+    def mock_env(self) -> Iterator[None]:
         """Mock environment variables for tests."""
         with patch.dict(
             "os.environ",
@@ -22,13 +24,13 @@ class TestGeminiModelClientFallback:
             yield
 
     @pytest.fixture
-    def mock_genai(self):
+    def mock_genai(self) -> Iterator[MagicMock]:
         """Mock google.generativeai module."""
         with patch("src.llm.gemini.genai") as mock:
             yield mock
 
     @pytest.fixture
-    def mock_init_genai(self):
+    def mock_init_genai(self) -> Iterator[None]:
         """Mock configure_genai function."""
         with patch("src.llm.init_genai.configure_genai"):
             yield
