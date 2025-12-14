@@ -39,7 +39,7 @@ class LLMSettingsMixin(BaseSettings):
         alias="GEMINI_MAX_OUTPUT_TOKENS_EXPLANATION",
     )
     max_output_tokens_reasoning: int | None = Field(
-        1536,
+        2048,
         alias="GEMINI_MAX_OUTPUT_TOKENS_REASONING",
     )
     max_output_tokens_target_short: int | None = Field(
