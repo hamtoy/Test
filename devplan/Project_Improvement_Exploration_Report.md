@@ -1,31 +1,23 @@
-# 🚀 프로젝트 개선 탐구 보고서 (Project Improvement Exploration Report)
+# 🚀 프로젝트 개선 탐구 보고서 (Improvement Exploration Report)
 
-> 이 문서는 `Project_Evaluation_Report.md`의 분석을 바탕으로, 현재 시급히 해결해야 할 과제 도출 및 구체적인 해결 방안을 제시합니다.
-> **주의:** 이 보고서는 현재 **대기 중(Pending)**인 개선 항목만 포함하며, 이미 완료된 작업(Log Rotation, LATS 통합 등)은 포함하지 않습니다.
+> 이 문서는 **현재 미적용된 개선 사항**만을 다룹니다. 이미 완료된 항목은 포함하지 않으며, 향후 진행해야 할 구체적인 작업 계획을 제시합니다.
 
 ---
 
 <!-- AUTO-SUMMARY-START -->
-## 1. 개선 항목 요약 (Improvement Summary)
+## 1. 개선 요약 (Improvement Summary)
 
-### 1-1. 전체 현황
+현재 프로젝트는 핵심 기능이 안정화된 단계이며, 남은 과제는 주로 **타입 안정성 강화**와 **코드 품질 최적화**에 집중되어 있습니다. 발견된 미해결 항목은 총 2건입니다.
 
-현재 프로젝트는 핵심 기능이 대부분 구현되었으나, **API 안정성** 측면에서 하나의 중요한 과제와, 성능 효율성을 높이기 위한 하나의 최적화 과제가 남아있습니다.
+| # | 항목명 | 우선순위 | 카테고리 |
+|:---:|:---|:---:|:---|
+| 1 | RAG 툴 타입 안정성 강화 | **P2** | 🧹 코드 품질 |
+| 2 | 유틸리티 모듈 타입 엄격성 적용 | **OPT** | 🚀 코드 최적화 |
 
-| 우선순위 | 대기 중 항목 수 | 주요 키워드 |
-|:---:|:---:|:---|
-| 👑 **P1 (Critical)** | 0 | (없음 - 핵심 기능 안정적) |
-| 🟡 **P2 (High)** | 1 | LLM API Fallback |
-| 🟢 **P3 (Medium)** | 0 | (없음) |
-| 🚀 **OPT (Optimization)** | 1 | 설정 로드 캐싱(Performance) |
+### 우선순위 분포
 
-### 1-2. 개선 항목 리스트 (Pending Items Only)
-
-| # | 항목명 | 우선순위 | 카테고리 | ID |
-|:---:|:---|:---:|:---|:---|
-| 1 | **LLM Rate Limit 폴백 구현** | **P2** | 🔒 안정성 | `feat-model-fallback-001` |
-| 2 | **설정 로드 최적화 (LRU Cache)** | **OPT** | ⚙️ 성능 | `opt-config-cache-001` |
-
+- **P2 (중요):** `qa_tools.py`의 `type: ignore` 제거 및 의존성 주입 구조 개선.
+- **OPT (최적화):** `rule_parser.py` 등의 `no-any-return` 경고 해결.
 <!-- AUTO-SUMMARY-END -->
 
 ---
@@ -35,81 +27,83 @@
 
 ### 🟡 중요 (P2)
 
-#### [P2-1] LLM Rate Limit 폴백(Fallback) 구현
+#### [P2-1] RAG 툴 타입 안정성 강화
 
 | 항목 | 내용 |
 |------|------|
-| **ID** | `feat-model-fallback-001` |
-| **카테고리** | 🔒 안정성 / ⚙️ 인프라 |
+| **ID** | `fix-type-safety-001` |
+| **카테고리** | 🧹 코드 품질 |
 | **복잡도** | Medium |
-| **대상 파일** | `src/llm/gemini.py` |
-| **Origin** | manual-idea |
-| **리스크 레벨** | Medium |
-| **관련 평가 카테고리** | stability, productionReadiness |
+| **대상 파일** | `src/web/routers/qa_tools.py`, `src/qa/rag_system.py` |
+| **Origin** | static-analysis |
+| **리스크 레벨** | medium |
+| **관련 평가 카테고리** | codeQuality |
 
-- **현재 상태:**
-  - `GeminiModelClient`는 단일 모델(`gemini-pro` 등) 설정에 의존합니다.
-  - API 호출 시 `ResourceExhausted` (HTTP 429) 에러가 발생하면 즉시 실패하며, 재시도(Retry) 로직만 존재하고 모델 변경 로직은 없습니다.
-  - 이로 인해 트래픽 급증 시 서비스 전체가 중단될 위험이 있습니다.
-
-- **문제점 (Problem):**
-  - "The service failed due to rate limiting" 에러 발생 시 대안이 없음.
-  - 상용 서비스 수준의 SLA(가용성)를 보장하기 어려움.
-
+- **현재 상태:** `qa_tools.py`에서 `CrossValidationSystem`, `GraphEnhancedRouter` 등의 클래스 초기화 시 `kg` 객체를 전달할 때 `type: ignore[arg-type]`이 다수 사용되고 있습니다.
+- **문제점 (Problem):** `QAKnowledgeGraph` 클래스와 이를 받는 모듈의 타입 힌트가 일치하지 않아 타입 시스템을 우회하고 있으며, 이는 실제 데이터 불일치 시 런타임 에러로 이어질 수 있습니다.
+- **영향 (Impact):** 코드의 유지보수성을 저해하고 미래의 리팩토링 시 사이드 이펙트를 예측하기 어렵게 만듭니다.
+- **원인 (Cause):** `QAKnowledgeGraph` 클래스의 인터페이스나, 이를 사용하는 쪽의 타입 정의(`Optional` 처리 등)가 명확하지 않음.
 - **개선 내용 (Proposed Solution):**
-  1. `GeminiModelClient` 초기화 시 기본 모델 외에 `fallback_models` 리스트(예: `gemini-flash-lite-latest`)를 주입받도록 수정.
-  2. `429 ResourceExhausted` 에러 발생 시, `logger.warning`을 기록하고 즉시 다음 순위 모델로 요청을 재시도.
-  3. 모든 모델이 실패했을 때만 최종 예외를 발생시키도록 `generate` 메서드 래핑.
+  - `QAKnowledgeGraph`와의 엄격한 타입 호환성 확보.
+  - `type: ignore` 제거 및 올바른 타입 어노테이션 적용.
+- **기대 효과:** 코드 품질 점수(A+) 달성 및 잠재적 런타임 오류 예방.
 
-- **기대 효과:**
-  - API 한도 초과 시에도 저렴/대용량 모델로 자동 전환되어 서비스 연속성 보장.
-  - 시스템 신뢰성(Stability) 점수 상승.
+**Definition of Done:**
 
-- **Definition of Done:**
-  - [ ] `GeminiModelClient`에 fallback 로직 구현 (`src/llm/gemini.py`)
-  - [ ] `ResourceExhausted` 에러 시 모델 전환 테스트 케이스 작성 (`tests/unit/llm/test_gemini_fallback.py`)
-  - [ ] 로깅 확인 (모델 전환 시 경고 로그 출력)
+- [ ] `src/web/routers/qa_tools.py` 내 `type: ignore[arg-type]` 제거
+- [ ] `mypy` 검사 통과
+- [ ] 관련 기능 정상 동작 확인
 
 <!-- AUTO-IMPROVEMENT-LIST-END -->
 
 ---
 
 <!-- AUTO-FEATURE-LIST-START -->
-## 3. 신규 기능 추가 (New Feature Ideas)
+## 3. 신규 기능 제안 (New Features)
 
-> 현재 P3(Medium) 레벨의 신규 기능 추가 항목은 없습니다. 핵심 기능 안정화에 집중합시다.
+### ✨ 기능 추가 (P3)
+
+현재 주요 P3 항목은 발견되지 않았으나, 향후 확장을 위해 다음 기능을 고려할 수 있습니다.
+
+#### [P3-1] 텔레메트리 대시보드 연동
+
+| 항목 | 내용 |
+|------|------|
+| **ID** | `feat-telemetry-001` |
+| **카테고리** | ⚙️ 운영/관제 |
+| **복잡도** | High |
+| **대상 파일** | `src/monitoring/metrics.py`, `src/infra/telemetry.py` |
+
+- **제안 배경:** 현재 로그 기반 모니터링은 존재하나, 시계열 데이터(Prometheus 등) 수집 기능이 기초적인 수준임.
+- **기능 내용:** 메트릭 수집기(`metrics.py`)를 고도화하여 Grafana 등과 연동 가능한 엔드포인트 제공.
 
 <!-- AUTO-FEATURE-LIST-END -->
 
 ---
 
 <!-- AUTO-OPTIMIZATION-START -->
-## 4. 코드 품질 및 성능 최적화 (Optimization)
+## 4. 코드 최적화 (Optimization)
 
 ### 🚀 코드 최적화 (OPT-1)
 
-#### [OPT-1] 설정 로드 최적화 (LRU Cache)
+#### [OPT-1] 유틸리티 모듈 타입 엄격성 적용
 
 | 항목 | 내용 |
 |------|------|
-| **ID** | `opt-config-cache-001` |
-| **카테고리** | ⚙️ 성능 / 🧹 유지보수 |
-| **영향 범위** | 초기화 속도 및 중복 IO 제거 |
-| **대상 파일** | `src/config/app_config.py` (또는 설정 로드 모듈) |
+| **ID** | `opt-type-strict-001` |
+| **카테고리** | 🚀 코드 최적화 / 🧹 코드 품질 |
+| **영향 범위** | 품질 (타입 안정성) |
+| **대상 파일** | `src/validation/rule_parser.py`, `src/monitoring/metrics.py` |
 
-- **현재 상태:**
-  - `load_config()` 함수가 호출될 때마다 `os.getenv` 및 `.env` 파일 파싱 로직이 반복 수행될 가능성이 있습니다.
-  - 설정값은 런타임 중에 변경되지 않으므로, 매번 새로 읽어오는 것은 불필요한 비용입니다.
+- **분석:**
+  - `src/validation/rule_parser.py`: 딕셔너리 반환 시 `no-any-return` 경고를 무시(`type: ignore`)하고 있어, 반환 타입 추론이 불가능합니다.
+  - `src/monitoring/metrics.py`: 클래스 재정의(`no-redef`) 경고를 무시하고 있어 코드 가독성을 해칩니다.
 
 - **최적화 내용:**
-  - `functools.lru_cache`를 사용하여 설정 객체를 메모리에 캐싱합니다.
-  - 싱글톤 패턴과 유사한 효과를 내어, 전체 애플리케이션 수명 주기 동안 `config` 로딩을 1회로 제한합니다.
+  - `rule_parser.py`: 명시적인 `TypedDict` 또는 Pydantic 모델을 도입하여 반환 타입 명시.
+  - `metrics.py`: 클래스 구조 리팩토링으로 재정의 패턴 제거.
 
-- **예상 효과:**
-  - 애플리케이션 시작 시간 단축 (미세하지만 잦은 호출 시 유의미).
-  - 불필요한 환경 변수 조회 오버헤드 제거.
-
-- **측정 지표:**
-  - `load_config` 1000회 반복 호출 시 소요 시간 비교 (Before vs After).
+- **예상 효과:** 전체 프로젝트의 `mypy` 검사 시간 단축 및 타입 관련 버그 원천 차단.
+- **측정 지표:** `uv run mypy .` 실행 시 해당 파일에서의 에러 및 경고 0건 달성.
 
 <!-- AUTO-OPTIMIZATION-END -->

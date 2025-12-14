@@ -5,6 +5,34 @@
 
 from __future__ import annotations
 
+from typing import Protocol
+
+# Type stubs for when prometheus_client is not available
+# These protocols define the interface we expect
+
+
+class _CounterProtocol(Protocol):
+    """Protocol for Counter-like objects."""
+
+    def labels(self, *args: str, **kwargs: str) -> "_CounterProtocol": ...
+    def inc(self, amount: float = 1) -> None: ...
+
+
+class _HistogramProtocol(Protocol):
+    """Protocol for Histogram-like objects."""
+
+    def labels(self, *args: str, **kwargs: str) -> "_HistogramProtocol": ...
+    def observe(self, amount: float) -> None: ...
+
+
+class _GaugeProtocol(Protocol):
+    """Protocol for Gauge-like objects."""
+
+    def set(self, value: float) -> None: ...
+    def inc(self, amount: float = 1) -> None: ...
+    def dec(self, amount: float = 1) -> None: ...
+
+
 # prometheus_client가 없을 경우 스텁 구현 사용
 try:
     from prometheus_client import Counter, Gauge, Histogram, generate_latest
@@ -13,40 +41,46 @@ try:
 except ImportError:
     PROMETHEUS_AVAILABLE = False
 
-    # 스텁 구현
-    class Counter:  # type: ignore[no-redef]
+    # 스텁 구현 (프로토콜과 호환되는 클래스들)
+    class _StubCounter:
         """Stub Counter implementation when Prometheus is not available."""
 
-        def __init__(self, name: str, doc: str, _labelnames: list[str] | None = None):
+        def __init__(
+            self, name: str, doc: str, labelnames: list[str] | None = None
+        ) -> None:
             """Initialize the stub counter."""
             self._name = name
             self._values: dict[tuple[str, ...], float] = {}
 
-        def labels(self, *args: str) -> Counter:
+        def labels(self, *args: str, **kwargs: str) -> "_StubCounter":
             """Return self for method chaining."""
             return self
 
         def inc(self, amount: float = 1) -> None:
             """Increment the counter (no-op in stub)."""
 
-    class Histogram:  # type: ignore[no-redef]
+    class _StubHistogram:
         """Stub Histogram implementation when Prometheus is not available."""
 
-        def __init__(self, name: str, doc: str, _labelnames: list[str] | None = None):
+        def __init__(
+            self, name: str, doc: str, labelnames: list[str] | None = None
+        ) -> None:
             """Initialize the stub histogram."""
             self._name = name
 
-        def labels(self, *args: str) -> Histogram:
+        def labels(self, *args: str, **kwargs: str) -> "_StubHistogram":
             """Return self for method chaining."""
             return self
 
         def observe(self, amount: float) -> None:
             """Observe a value (no-op in stub)."""
 
-    class Gauge:  # type: ignore[no-redef]
+    class _StubGauge:
         """Stub Gauge implementation when Prometheus is not available."""
 
-        def __init__(self, name: str, doc: str, _labelnames: list[str] | None = None):
+        def __init__(
+            self, name: str, doc: str, labelnames: list[str] | None = None
+        ) -> None:
             """Initialize the stub gauge."""
             self._name = name
             self._value = 0.0
@@ -62,6 +96,11 @@ except ImportError:
         def dec(self, amount: float = 1) -> None:
             """Decrement the gauge (no-op in stub)."""
             self._value -= amount
+
+    # Assign stub classes to the same names for consistent usage
+    Counter = _StubCounter
+    Histogram = _StubHistogram
+    Gauge = _StubGauge
 
     def generate_latest() -> bytes:
         """Generate Prometheus metrics output (stub returns placeholder)."""

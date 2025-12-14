@@ -1,109 +1,96 @@
 # AI Agent Improvement Prompts
 
-> [!IMPORTANT]
-> **Execution Rules**
+> **EXECUTION RULES:**
 >
-> 1. **No Chat-Only Responses**: You must always modify files using the provided tools. Do not just explain how to do it.
-> 2. **Sequential Execution**: Execute the prompts in the order listed below. Do not skip prompts.
-> 3. **Validation**: After each step, verify the changes (e.g., run tests or build scripts) as instructed.
-> 4. **English Only**: This file and all your thought processes while executing it must be in English.
+> 1. **No Talk:** Do not respond with text-only explanations.
+> 2. **Action Only:** Always modify files using the provided tools.
+> 3. **Sequential:** Execute all prompts strictly in order (PROMPT-001 → OPT-001).
+> 4. **Verification:** You must verify every step with `uv run mypy` or `uv run pytest`.
 
-## 📋 Execution Checklist
+---
+
+## Execution Checklist
 
 | # | Prompt ID | Title | Priority | Status |
 |:---:|:---|:---|:---:|:---:|
-| 1 | PROMPT-001 | LLM Rate Limit Fallback Strategy | P2 | ✅ Complete |
-| 2 | OPT-1 | Optimize Config Loading (LRU Cache) | OPT | ✅ Complete |
+| 1 | PROMPT-001 | Enhance Type Safety in QA Tools | P2 | ✅ Complete |
+| 2 | OPT-1 | Enforce Strict Types in Utilities | OPT | ✅ Complete |
 
-**Total: 2 prompts | Completed: 2 | Skipped: 0**
-
----
-
-## 🟡 Priority 2 (High)
-
-### [PROMPT-001] LLM Rate Limit Fallback Strategy
-
-**Directive**: Execute this prompt now, then proceed to OPT-1.
-
-**Task**: Implement a model fallback mechanism in `GeminiModelClient` to automatically switch to a secondary model (e.g., `gemini-1.5-flash`) when the primary model hits a rate limit (HTTP 429).
-
-**Target Files**:
-
-- [MODIFY] `src/llm/gemini.py`
-- [NEW] `tests/unit/llm/test_gemini_fallback.py`
-
-**Steps**:
-
-1. Modify `GeminiModelClient.__init__` in `src/llm/gemini.py`:
-   - Accept a new optional argument `fallback_models: list[str] | None`.
-   - Store it as an instance variable.
-2. Refactor `GeminiModelClient.generate` and `generate_content_async`:
-   - Wrap the API call in a loop that iterates through `[self.model_name] + (self.fallback_models or [])`.
-   - Catch `google.api_core.exceptions.ResourceExhausted` (429).
-   - If caught, log a warning with `logger.warning(f"Rate limit hit for {model}, switching to fallback...")` and continue to the next model.
-   - If all models fail, re-raise the last exception.
-3. Create a unit test `tests/unit/llm/test_gemini_fallback.py`:
-   - Mock `genai.GenerativeModel.generate_content`.
-   - Simulate a scenario where the first call raises `ResourceExhausted` and the second call succeeds.
-   - Verify that the fallback mechanism worked as expected.
-
-**Verification**:
-
-- Run the new test: `uv run pytest tests/unit/llm/test_gemini_fallback.py`
-- Ensure the test passes and covers the fallback scenario.
-
-**Next**: After completing this prompt, proceed to [OPT-1].
+**Total: 2 prompts | Completed: 2 | Remaining: 0**
 
 ---
 
-## 🚀 Optimization (OPT)
+## 1. High Priority Improvements (P2)
 
-### [OPT-1] Optimize Config Loading (LRU Cache)
+### [PROMPT-001] Enhance Type Safety in QA Tools
 
-**Directive**: Execute this prompt now, then proceed to FINISH.
+**Directive:** Execute this prompt now, then proceed to [OPT-1].
 
-**Task**: Apply `functools.lru_cache` to the configuration loading logic to prevent redundant environment variable parsing and file I/O during runtime.
+**Task:**
+Refactor `src/web/routers/qa_tools.py` and `src/qa/rag_system.py` to eliminate `type: ignore[arg-type]` usage by ensuring correct type compatibility between `QAKnowledgeGraph` and consumers.
 
-**Target Files**:
+**Target Files:**
 
-- [MODIFY] `src/config/app_config.py` (or the file containing `load_config` or equivalent)
+- `src/web/routers/qa_tools.py`
+- `src/qa/rag_system.py`
 
-**Steps**:
+**Steps:**
 
-1. Identify the configuration loading function (e.g., `load_config`, `get_settings`, or `AppConfig` instantiation).
-2. Decorate the function with `@functools.lru_cache(maxsize=1)`.
-   - Ensure that the function signature allows caching (i.e., arguments are hashable, or use no arguments if possible).
-3. If the function takes mutable arguments or non-hashable types, refactor it to use hashable configuration identifiers or remove arguments if they are not needed for the singleton behavior.
-4. Verify that `os.getenv` or `.env` file reading happens only once even when the function is called multiple times.
+1. **Analyze**: Check `src/web/routers/qa_tools.py` to see where `kg` is passed with `type: ignore`.
+2. **Refactor Interface**: Update `CrossValidationSystem`, `GraphEnhancedRouter`, and `SmartAutocomplete` `__init__` methods to accept `QAKnowledgeGraph` (or a protocol) explicitly, instead of `Any` or mismatched types.
+3. **Refactor Injection**: Ensure `src/qa/rag_system.py` defines `QAKnowledgeGraph` in a way that is compatible with these tools.
+4. **Cleanup**: Remove the `type: ignore[arg-type]` comments.
 
-**Verification**:
+**Implementation Constraint:**
 
-- Create a temporary test script `scripts/verify_config_cache.py`:
-  - Call `load_config()` twice.
-  - Assert that the returned objects are identical (`is` operator).
-  - Print "Config caching works!" if successful.
-- Run the script: `python scripts/verify_config_cache.py`
+- Do not use `Any` if possible. Use `from src.qa.rag_system import QAKnowledgeGraph`.
 
-**Next**: After completing this prompt, proceed to the final step.
+**Verification:**
+
+- Run `uv run mypy src/web/routers/qa_tools.py` and ensure no errors.
+- Run `uv run pytest tests/` to ensure no regression.
 
 ---
 
-## ✅ Final Completion
+## 2. Code Optimization (OPT)
 
-**Directive**: Execute this step after completing all prompts.
+### [OPT-1] Enforce Strict Types in Utilities
 
-**Task**: Confirm completion and run final checks.
+**Directive:** Execute this prompt now, then proceed to Final Verification.
 
-**Steps**:
+**Task:**
+Refactor `src/validation/rule_parser.py` and `src/monitoring/metrics.py` to fix specific type errors (`no-any-return`, `no-redef`) and improve type strictness.
 
-1. Run all unit tests: `uv run pytest tests/unit`
-2. Run build script (if applicable): `python scripts/build_release.py` or `uv run build`
-3. Verify that all pending items in `Project_Improvement_Exploration_Report.md` have been addressed.
+**Target Files:**
 
-**Final Output**:
-Print the following message:
+- `src/validation/rule_parser.py`
+- `src/monitoring/metrics.py`
 
-```
-ALL PROMPTS COMPLETED. All pending improvement and optimization items from the latest report have been applied.
-Ready for final review.
-```
+**Steps:**
+
+1. **Analyze `rule_parser.py`**: Identify the `no-any-return` supression. The issue is likely that `_cache` is `dict[str, Any]` but methods return concrete types.
+2. **Fix `rule_parser.py`**: Define a `TypedDict` or correct the type signatures to return explicit types (e.g. `dict[str, str]`) instead of opaque Any, removing the `type: ignore`.
+3. **Analyze `metrics.py`**: Identify `no-redef`. This usually happens when conditional imports or branches define the same class name.
+4. **Fix `metrics.py`**: Refactor using an `if TYPE_CHECKING:` block or unified class definition to satisfy mypy without `type: ignore`.
+
+**Verification:**
+
+- Run `uv run mypy src/validation/rule_parser.py src/monitoring/metrics.py` and ensure 0 errors.
+
+---
+
+## Final Verification & Completion
+
+**Directive:** Run this step after completing all prompts.
+
+**Task:**
+Verify the integrity of the entire project after all changes.
+
+**Steps:**
+
+1. Run `uv run mypy .` to check project-wide type safety.
+2. Run `uv run pytest tests/` to ensure no regressions.
+3. If all checks pass, output the final completion message.
+
+**Completion Message:**
+"ALL PROMPTS COMPLETED. All pending improvement and optimization items from the latest report have been applied."

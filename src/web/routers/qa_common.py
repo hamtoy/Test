@@ -56,15 +56,27 @@ _kg_cache_timestamp: datetime | None = None
 _CACHE_TTL = timedelta(minutes=5)
 
 
-class _CachedKG:
-    """Lightweight KG wrapper with memoization."""
+class _CachedKG(QAKnowledgeGraph):
+    """Lightweight KG wrapper with memoization.
+
+    Inherits from QAKnowledgeGraph to satisfy type checkers while
+    delegating all attribute access to the underlying base instance.
+    """
+
+    _base: QAKnowledgeGraph
+    _constraints: dict[str, list[dict[str, Any]]]
+    _formatting_text: dict[str, str]
+    _formatting_rules: dict[str, list[dict[str, Any]]]
+    _rules: dict[tuple[str, int], list[str]]
 
     def __init__(self, base: QAKnowledgeGraph) -> None:
-        self._base = base
-        self._constraints: dict[str, list[dict[str, Any]]] = {}
-        self._formatting_text: dict[str, str] = {}
-        self._formatting_rules: dict[str, list[dict[str, Any]]] = {}
-        self._rules: dict[tuple[str, int], list[str]] = {}
+        # Skip QAKnowledgeGraph.__init__ to avoid re-initializing connections
+        # We just wrap the existing instance
+        object.__setattr__(self, "_base", base)
+        object.__setattr__(self, "_constraints", {})
+        object.__setattr__(self, "_formatting_text", {})
+        object.__setattr__(self, "_formatting_rules", {})
+        object.__setattr__(self, "_rules", {})
 
     def get_constraints_for_query_type(self, query_type: str) -> list[dict[str, Any]]:
         if query_type in self._constraints:
@@ -79,7 +91,7 @@ class _CachedKG:
             self._constraints[query_type] = []
             return []
         self._constraints[query_type] = data
-        return data
+        return cast(list[dict[str, Any]], data)
 
     def get_formatting_rules(self, template_type: str) -> str:
         if template_type in self._formatting_text:
@@ -90,7 +102,7 @@ class _CachedKG:
 
     def get_formatting_rules_for_query_type(
         self,
-        query_type: str,
+        query_type: str = "all",
     ) -> list[dict[str, Any]]:
         if query_type in self._formatting_rules:
             return self._formatting_rules[query_type]
@@ -104,13 +116,13 @@ class _CachedKG:
             self._formatting_rules[query_type] = []
             return []
         self._formatting_rules[query_type] = rules
-        return rules
+        return cast(list[dict[str, Any]], rules)
 
     def find_relevant_rules(self, query: str, k: int = 10) -> list[str]:
         key = (query[:500], k)
         if key in self._rules:
             return self._rules[key]
-        data = self._base.find_relevant_rules(query, k=k)
+        data: list[str] = self._base.find_relevant_rules(query, k=k)
         self._rules[key] = data
         return data
 
@@ -223,7 +235,7 @@ def _difficulty_hint(ocr_text: str) -> str:
     return "필요 이상의 부연 없이 핵심 숫자·근거 1문장을 포함해 간결히 답하세요."
 
 
-def get_cached_kg() -> _CachedKG | None:
+def get_cached_kg() -> QAKnowledgeGraph | None:
     """Return a cached KG wrapper valid for 5 minutes."""
     global _kg_cache, _kg_cache_timestamp
     current_kg = _get_kg()

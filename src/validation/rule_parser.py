@@ -10,7 +10,7 @@ from __future__ import annotations
 import csv
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
@@ -49,7 +49,7 @@ class RuleCSVParser:
             }
         """
         if "guide" in self._cache:
-            return self._cache["guide"]  # type: ignore[no-any-return]
+            return cast("dict[str, Any]", self._cache["guide"])
 
         rules: dict[str, Any] = {
             "temporal_expressions": [],
@@ -121,7 +121,7 @@ class RuleCSVParser:
             }
         """
         if "qna" in self._cache:
-            return self._cache["qna"]  # type: ignore[no-any-return]
+            return cast("dict[str, list[dict[str, str]]]", self._cache["qna"])
 
         checklist: dict[str, list[dict[str, str]]] = {
             "question_checklist": [],
@@ -175,7 +175,7 @@ class RuleCSVParser:
             }
         """
         if "patterns" in self._cache:
-            return self._cache["patterns"]  # type: ignore[no-any-return]
+            return cast("dict[str, dict[str, Any]]", self._cache["patterns"])
 
         patterns: dict[str, dict[str, Any]] = {
             "forbidden_patterns": {},

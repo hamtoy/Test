@@ -51,7 +51,7 @@ async def validate_qa_pair(
                 "message": _NEO4J_REQUIRED_MESSAGE,
             }
 
-        validator = CrossValidationSystem(kg)  # type: ignore[arg-type]
+        validator = CrossValidationSystem(kg)
         result = validator.cross_validate_qa_pair(
             question=question,
             answer=answer,
@@ -103,7 +103,7 @@ async def route_query(user_input: str) -> dict[str, Any]:
                 "message": _NEO4J_REQUIRED_MESSAGE,
             }
 
-        graph_router = GraphEnhancedRouter(kg=kg)  # type: ignore[arg-type]
+        graph_router = GraphEnhancedRouter(kg=kg)
 
         # 간단 핸들러: 선택만 반환 (실제 생성은 별도 API에서)
         handlers: dict[str, Any] = {}
@@ -155,7 +155,7 @@ async def suggest_next_query_type(session: str = "[]") -> dict[str, Any]:
                 "message": _NEO4J_REQUIRED_MESSAGE,
             }
 
-        autocomplete = SmartAutocomplete(kg)  # type: ignore[arg-type]
+        autocomplete = SmartAutocomplete(kg)
         suggestions = autocomplete.suggest_next_query_type(current_session)
 
         logger.info(
