@@ -71,35 +71,43 @@ class QAGraphBuilder:
         self.logger.info("스키마 고유 제약 생성/확인 완료")
 
     def extract_rules_from_notion(self) -> None:
-        """Notion 문서에서 규칙 추출 및 그래프화 (중복 방지 MERGE)."""
+        """Notion 문서에서 규칙 추출 및 그래프화 (UNWIND 배치 처리)."""
         with self.driver.session() as session:
             # 1. Find headings
             headings = self._fetch_rule_headings(session)
 
-            created = 0
+            # 2. Collect all rules into batch
+            rules_batch: list[dict[str, Any]] = []
             for h in headings:
                 current_rules = self._collect_rules_for_heading(session, h)
 
-                # 3. Create Rule nodes
                 for rule_text in current_rules:
                     if not rule_text or len(rule_text) <= 10:
                         continue
 
                     # 접두사를 포함한 해시 기반 ID로 중복 방지
                     rid = f"rule_{hashlib.sha256(rule_text.encode('utf-8')).hexdigest()[:16]}"
-                    session.run(
-                        """
-                        MERGE (r:Rule {id: $id})
-                        SET r.text = $text,
-                            r.section = $section,
-                            r.priority = 'high'
-                        """,
-                        id=rid,
-                        text=rule_text,
-                        section=h["section"],
+                    rules_batch.append(
+                        {
+                            "id": rid,
+                            "text": rule_text,
+                            "section": h["section"],
+                        }
                     )
-                    created += 1
-            print(f"✅ 규칙 {created}개 추출/병합 완료")
+
+            # 3. Batch insert using UNWIND
+            if rules_batch:
+                session.run(
+                    """
+                    UNWIND $batch AS item
+                    MERGE (r:Rule {id: item.id})
+                    SET r.text = item.text,
+                        r.section = item.section,
+                        r.priority = 'high'
+                    """,
+                    batch=rules_batch,
+                )
+            print(f"✅ 규칙 {len(rules_batch)}개 추출/병합 완료 (배치 처리)")
 
     def _fetch_rule_headings(self, session: Any) -> list[dict[str, Any]]:
         headings: list[dict[str, Any]] = session.run(
@@ -154,22 +162,29 @@ class QAGraphBuilder:
         return current_rules
 
     def extract_query_types(self) -> None:
-        """질의 유형 정의 추출."""
+        """질의 유형 정의 추출 (UNWIND 배치 처리)."""
         with self.driver.session() as session:
-            for qt in QUERY_TYPES:
-                session.run(
-                    """
-                    MERGE (q:QueryType {name: $name})
-                    SET q.korean = $korean,
-                        q.session_limit = $limit,
-                        q.requires_reconstruction = $reconstruction
-                    """,
-                    name=qt["name"],
-                    korean=qt["korean"],
-                    limit=qt["limit"],
-                    reconstruction=qt["requires_reconstruction"],
-                )
-        print(f"✅ 질의 유형 {len(QUERY_TYPES)}개 생성/병합")
+            # Batch insert using UNWIND
+            batch = [
+                {
+                    "name": qt["name"],
+                    "korean": qt["korean"],
+                    "limit": qt["limit"],
+                    "reconstruction": qt["requires_reconstruction"],
+                }
+                for qt in QUERY_TYPES
+            ]
+            session.run(
+                """
+                UNWIND $batch AS item
+                MERGE (q:QueryType {name: item.name})
+                SET q.korean = item.korean,
+                    q.session_limit = item.limit,
+                    q.requires_reconstruction = item.reconstruction
+                """,
+                batch=batch,
+            )
+        print(f"✅ 질의 유형 {len(QUERY_TYPES)}개 생성/병합 (배치 처리)")
 
     def extract_constraints(self) -> None:
         """제약 조건 추출 및 query_type 자동 설정.
@@ -387,42 +402,49 @@ class QAGraphBuilder:
         print(f"✅ 템플릿 {len(TEMPLATES)}개 생성/연결")
 
     def create_error_patterns(self) -> None:
-        """금지 패턴 노드 생성."""
+        """금지 패턴 노드 생성 (UNWIND 배치 처리)."""
         with self.driver.session() as session:
-            for p in ERROR_PATTERNS:
-                session.run(
-                    """
-                    MERGE (e:ErrorPattern {id: $id})
-                    SET e.pattern = $pattern,
-                        e.description = $desc
-                    """,
-                    id=p["id"],
-                    pattern=p["pattern"],
-                    desc=p["description"],
-                )
-        print(f"✅ 금지 패턴 {len(ERROR_PATTERNS)}개 생성/병합")
+            batch = [
+                {"id": p["id"], "pattern": p["pattern"], "desc": p["description"]}
+                for p in ERROR_PATTERNS
+            ]
+            session.run(
+                """
+                UNWIND $batch AS item
+                MERGE (e:ErrorPattern {id: item.id})
+                SET e.pattern = item.pattern,
+                    e.description = item.desc
+                """,
+                batch=batch,
+            )
+        print(f"✅ 금지 패턴 {len(ERROR_PATTERNS)}개 생성/병합 (배치 처리)")
 
     def create_best_practices(self) -> None:
-        """모범 사례 노드 생성."""
+        """모범 사례 노드 생성 (UNWIND 배치 처리)."""
         with self.driver.session() as session:
-            for bp in BEST_PRACTICES:
-                session.run(
-                    """
-                    MERGE (b:BestPractice {id: $id})
-                    SET b.text = $text
-                    """,
-                    id=bp["id"],
-                    text=bp["text"],
-                )
-                session.run(
-                    """
-                    MATCH (b:BestPractice {id: $id}), (q:QueryType {name: $qt})
-                    MERGE (b)-[:APPLIES_TO]->(q)
-                    """,
-                    id=bp["id"],
-                    qt=bp["applies_to"],
-                )
-        print(f"✅ 모범 사례 {len(BEST_PRACTICES)}개 생성/연결")
+            # 1. Create BestPractice nodes in batch
+            node_batch = [{"id": bp["id"], "text": bp["text"]} for bp in BEST_PRACTICES]
+            session.run(
+                """
+                UNWIND $batch AS item
+                MERGE (b:BestPractice {id: item.id})
+                SET b.text = item.text
+                """,
+                batch=node_batch,
+            )
+            # 2. Create APPLIES_TO relationships in batch
+            rel_batch = [
+                {"id": bp["id"], "qt": bp["applies_to"]} for bp in BEST_PRACTICES
+            ]
+            session.run(
+                """
+                UNWIND $batch AS item
+                MATCH (b:BestPractice {id: item.id}), (q:QueryType {name: item.qt})
+                MERGE (b)-[:APPLIES_TO]->(q)
+                """,
+                batch=rel_batch,
+            )
+        print(f"✅ 모범 사례 {len(BEST_PRACTICES)}개 생성/연결 (배치 처리)")
 
     def link_rules_to_query_types(self) -> None:
         """Rule을 QueryType과 연계 (키워드 기반 간단 매핑)."""

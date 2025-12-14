@@ -109,3 +109,64 @@ class RedisEvalCache:
             "memory_entries": len(self.memory_cache),
             "using_redis": int(self.use_redis),
         }
+
+    async def get_many(self, keys: list[str]) -> list[float | None]:
+        """Retrieve multiple cached evaluation scores using pipelining.
+
+        Args:
+            keys: List of cache keys to retrieve
+
+        Returns:
+            List of cached scores (None for missing keys)
+        """
+        if not keys:
+            return []
+
+        try:
+            if self.use_redis and self.redis:
+                # Use pipeline for batch retrieval
+                async with self.redis.pipeline() as pipe:
+                    for key in keys:
+                        pipe.get(f"{self.prefix}{key}")
+                    values = await pipe.execute()
+
+                results: list[float | None] = []
+                for val in values:
+                    if val is not None:
+                        results.append(float(val))
+                    else:
+                        results.append(None)
+                return results
+            else:
+                # Fallback to memory cache
+                return [self.memory_cache.get(key) for key in keys]
+        except Exception as e:
+            logger.warning(
+                f"Redis pipeline get_many failed: {e}, falling back to memory"
+            )
+            return [self.memory_cache.get(key) for key in keys]
+
+    async def set_many(self, items: dict[str, float]) -> None:
+        """Store multiple evaluation scores using pipelining.
+
+        Args:
+            items: Dictionary of key-score pairs to cache
+        """
+        if not items:
+            return
+
+        try:
+            if self.use_redis and self.redis:
+                # Use pipeline for batch storage
+                async with self.redis.pipeline() as pipe:
+                    for key, score in items.items():
+                        pipe.setex(f"{self.prefix}{key}", self.ttl, str(score))
+                    await pipe.execute()
+
+            # Always store in memory as backup
+            self.memory_cache.update(items)
+        except Exception as e:
+            logger.warning(
+                f"Redis pipeline set_many failed: {e}, stored in memory only"
+            )
+            self.memory_cache.update(items)
