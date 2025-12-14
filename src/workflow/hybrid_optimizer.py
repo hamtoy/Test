@@ -1,4 +1,9 @@
-"""Hybrid Optimizer module."""
+"""Hybrid Workflow Optimizer module.
+
+Orchestrates between LATS (deep reasoning tree search) and MCTS (fast template
+selection) based on query complexity. Uses keyword and length heuristics
+for automatic mode selection.
+"""
 
 import logging
 from typing import Any, Literal, cast

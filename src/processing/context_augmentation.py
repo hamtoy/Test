@@ -1,4 +1,9 @@
-"""Context Augmentation module."""
+"""Advanced Context Augmentation module.
+
+Enriches prompts with similar cases, rules, and examples from Neo4j.
+Uses vector search when GEMINI_API_KEY is available, otherwise falls back
+to graph-based QueryType relationship traversal.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +15,6 @@ from langchain_community.vectorstores import Neo4jVector
 from langchain_core.prompts import PromptTemplate
 
 from src.qa.rag_system import CustomGeminiEmbeddings
-
 
 _NONE_PLACEHOLDER = "(none)"
 

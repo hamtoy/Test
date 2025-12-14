@@ -1,4 +1,9 @@
-"""Memory Augmented module."""
+"""Memory-Augmented QA System module.
+
+Maintains conversation history across sessions and uses vector search
+to retrieve relevant context before Gemini generation. Logs interactions
+to Neo4j for audit and learning.
+"""
 
 from __future__ import annotations
 

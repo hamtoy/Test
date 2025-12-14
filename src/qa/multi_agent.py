@@ -1,4 +1,11 @@
-"""Multi Agent module."""
+"""Multi-Agent Collaborative QA System module.
+
+Implements a multi-step quality pipeline:
+1. Rule and constraint collection from Neo4j.
+2. Dynamic example selection.
+3. Gemini generation with unified prompt.
+4. Cross-validation of output.
+"""
 
 from __future__ import annotations
 

@@ -1,4 +1,8 @@
-"""Redis Cache module."""
+"""Redis-Backed Evaluation Cache module.
+
+Provides a persistent cache for LATS evaluation scores with TTL support.
+Falls back to in-memory dictionary when Redis is unavailable.
+"""
 
 from __future__ import annotations
 

@@ -1,4 +1,8 @@
-"""Action Executor module."""
+"""LATS Action Executor module.
+
+Executes text processing actions (clean, summarize, validate) for LATS workflow.
+Uses LLM when available, otherwise returns deterministic placeholder outputs.
+"""
 
 from __future__ import annotations
 

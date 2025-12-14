@@ -1,4 +1,8 @@
-"""Self Correcting module."""
+"""Self-Correcting QA Chain module.
+
+Implements an iterative draft → critique → correct → validate loop using Gemini.
+Automatically retrieves rules from the knowledge graph and retries until validation passes.
+"""
 
 from __future__ import annotations
 

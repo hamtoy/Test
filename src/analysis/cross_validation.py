@@ -1,4 +1,11 @@
-"""Cross Validation module."""
+"""QA Pair Cross-Validation module.
+
+Validates generated question-answer pairs across multiple dimensions:
+- Consistency: keyword overlap between Q and A.
+- Groundedness: answer references to source content via Neo4j.
+- Rule compliance: adherence to constraints and error pattern detection.
+- Novelty: avoidance of duplicate questions via vector similarity.
+"""
 
 from __future__ import annotations
 

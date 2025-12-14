@@ -1,4 +1,11 @@
-"""Langchain System module."""
+"""Ultimate LangChain QA System module.
+
+Unified orchestrator combining all QA components:
+- Router for query type selection.
+- Multi-agent collaboration.
+- Self-correction chain.
+- Memory logging for session persistence.
+"""
 
 from __future__ import annotations
 

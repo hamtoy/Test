@@ -1,4 +1,8 @@
-"""Lcel Chain module."""
+"""LCEL (LangChain Expression Language) Optimized Chain module.
+
+Implements a parallel retrieval chain using RunnableParallel to concurrently
+fetch rules, examples, and constraints from Neo4j before Gemini generation.
+"""
 
 from __future__ import annotations
 

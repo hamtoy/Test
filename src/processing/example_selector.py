@@ -1,4 +1,9 @@
-"""Example Selector module."""
+"""Dynamic Example Selection module.
+
+Selects the best-matching positive examples from Neo4j based on query type,
+context (table/chart presence, text density), and success rate.
+Tracks usage counts to ensure example diversity.
+"""
 
 from __future__ import annotations
 

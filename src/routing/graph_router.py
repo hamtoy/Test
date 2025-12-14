@@ -1,4 +1,8 @@
-"""Graph Router module."""
+"""Graph-Enhanced Query Router module.
+
+Routes user queries to appropriate handlers based on Neo4j QueryType metadata.
+Uses Gemini to classify query intent and logs routing decisions for analysis.
+"""
 
 from __future__ import annotations
 

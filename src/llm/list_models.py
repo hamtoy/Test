@@ -1,5 +1,9 @@
 # mypy: disable-error-code=attr-defined
-"""List Models module."""
+"""Gemini Model Listing Utility module.
+
+CLI script to list available Gemini models that support generateContent.
+Useful for verifying API key validity and discovering model names.
+"""
 
 import logging
 import os
