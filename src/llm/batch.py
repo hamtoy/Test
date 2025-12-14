@@ -68,8 +68,8 @@ class GeminiBatchClient:
     Example:
         >>> client = GeminiBatchClient()
         >>> requests = [BatchRequest(prompt="Q1"), BatchRequest(prompt="Q2")]
-        >>> job = await client.submit_batch(requests)
-        >>> status = await client.get_status(job.job_id)
+        >>> job = client.submit_batch(requests)
+        >>> status = client.get_status(job.job_id)
     """
 
     def __init__(
@@ -85,7 +85,7 @@ class GeminiBatchClient:
         self._jobs: dict[str, BatchJob] = {}
         logger.info(f"GeminiBatchClient initialized with model: {model_name}")
 
-    async def submit_batch(
+    def submit_batch(
         self,
         requests: list[BatchRequest],
         model_name: str | None = None,
@@ -123,7 +123,7 @@ class GeminiBatchClient:
 
         return job
 
-    async def get_status(self, job_id: str) -> BatchJob | None:
+    def get_status(self, job_id: str) -> BatchJob | None:
         """Get the current status of a batch job.
 
         Args:
@@ -134,7 +134,7 @@ class GeminiBatchClient:
         """
         return self._jobs.get(job_id)
 
-    async def get_results(self, job_id: str) -> list[BatchResult]:
+    def get_results(self, job_id: str) -> list[BatchResult]:
         """Get results for a completed batch job.
 
         Args:
@@ -155,7 +155,7 @@ class GeminiBatchClient:
 
         return job.results
 
-    async def cancel(self, job_id: str) -> bool:
+    def cancel(self, job_id: str) -> bool:
         """Cancel a pending or running batch job.
 
         Args:
