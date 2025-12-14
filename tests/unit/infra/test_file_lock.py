@@ -245,7 +245,7 @@ class TestFileLockCleanup:
         lock._cleanup_failed_lock()
 
         assert lock._lock_file is None
-        mock_file.close.assert_called_once()
+        mock_file.close.assert_called_once()  # type: ignore[unreachable]
 
     def test_cleanup_failed_lock_handles_oserror(self, tmp_path: Path) -> None:
         """Test _cleanup_failed_lock handles OSError gracefully."""
