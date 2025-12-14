@@ -13,10 +13,9 @@
 | # | Prompt ID | Title | Priority | Status |
 |:---:|:---|:---|:---:|:---:|
 | 1 | PROMPT-001 | LLM Rate Limit Fallback Strategy | P2 | ⏸️ Skipped |
-| 2 | PROMPT-002 | LATS Agent Verification Optimization | P3 | ✅ Complete |
-| 3 | OPT-1 | FileLock Type Safety Improvements | OPT | ✅ Complete |
+| 2 | OPT-1 | Optimize Config Loading (LRU Cache) | OPT | ✅ Complete |
 
-**Total: 3 prompts | Completed: 2 | Skipped: 1**
+**Total: 2 prompts | Completed: 1 | Skipped: 1**
 
 ---
 
@@ -24,9 +23,9 @@
 
 ### [PROMPT-001] LLM Rate Limit Fallback Strategy
 
-**Directive**: Execute this prompt now, then proceed to PROMPT-002.
+**Directive**: Execute this prompt now, then proceed to OPT-1.
 
-**Task**: Implement a model fallback mechanism in `GeminiModelClient` to automatically switch to a secondary model (e.g., `gemini-flash`) when the primary model hits a rate limit (HTTP 429).
+**Task**: Implement a model fallback mechanism in `GeminiModelClient` to automatically switch to a secondary model (e.g., `gemini-1.5-flash`) when the primary model hits a rate limit (HTTP 429).
 
 **Target Files**:
 
@@ -35,48 +34,23 @@
 
 **Steps**:
 
-1. Modify `src/llm/gemini.py`:
-   - Update `GeminiModelClient` constructor to accept a list of `fallback_models`.
-   - Update `generate` method to wrap the API call in a loop.
-   - If `google_exceptions.ResourceExhausted` (429) occurs, log a warning and retry with the next model in the list.
-   - If all models fail, raise the exception or return an error message.
-2. Create `tests/unit/llm/test_gemini_fallback.py`:
-   - Use `unittest.mock` to simulate a 429 error on the first call and success on the second.
-   - Verify that the fallback model is actually used.
+1. Modify `GeminiModelClient.__init__` in `src/llm/gemini.py`:
+   - Accept a new optional argument `fallback_models: list[str] | None`.
+   - Store it as an instance variable.
+2. Refactor `GeminiModelClient.generate` and `generate_content_async`:
+   - Wrap the API call in a loop that iterates through `[self.model_name] + (self.fallback_models or [])`.
+   - Catch `google.api_core.exceptions.ResourceExhausted` (429).
+   - If caught, log a warning with `logger.warning(f"Rate limit hit for {model}, switching to fallback...")` and continue to the next model.
+   - If all models fail, re-raise the last exception.
+3. Create a unit test `tests/unit/llm/test_gemini_fallback.py`:
+   - Mock `genai.GenerativeModel.generate_content`.
+   - Simulate a scenario where the first call raises `ResourceExhausted` and the second call succeeds.
+   - Verify that the fallback mechanism worked as expected.
 
 **Verification**:
 
 - Run the new test: `uv run pytest tests/unit/llm/test_gemini_fallback.py`
-- Ensure 2 passing tests (one for fallback success, one for exhaustion failure).
-
-**Next**: After completing this prompt, proceed to [PROMPT-002].
-
----
-
-## 🟢 Priority 3 (Medium)
-
-### [PROMPT-002] LATS Agent Verification Optimization
-
-**Directive**: Execute this prompt now, then proceed to OPT-1.
-
-**Task**: Enhance the validation logic in the LATS (Language Agent Tree Search) module to improve reasoning accuracy by integrating `ActionExecutor` feedback.
-
-**Target Files**:
-
-- [MODIFY] `src/features/lats/lats.py` (or main LATS implementation file)
-- [MODIFY] `src/features/action_executor.py`
-
-**Steps**:
-
-1. Locate the LATS evaluation/validation step in `src/features/lats`.
-2. Integrate `ActionExecutor` to run a concrete validation check (e.g., checking if the generated answer satisfies constraints) at each leaf node expansion.
-3. Improve the heuristic value function to penalize nodes that fail the concrete validation.
-4. Add debug logging to trace tree pruning decisions.
-
-**Verification**:
-
-- Verify that the LATS agent can solve a complex query that requires validation.
-- Run `uv run pytest tests/e2e/test_lats.py` (if available, or create a simple script `scripts/test_lats_manual.py`).
+- Ensure the test passes and covers the fallback scenario.
 
 **Next**: After completing this prompt, proceed to [OPT-1].
 
@@ -84,28 +58,31 @@
 
 ## 🚀 Optimization (OPT)
 
-### [OPT-1] FileLock Type Safety Improvements
+### [OPT-1] Optimize Config Loading (LRU Cache)
 
 **Directive**: Execute this prompt now, then proceed to FINISH.
 
-**Task**: Strict type enforcement for `src/infra/file_lock.py` to remove `type: ignore` usage for platform-specific imports.
+**Task**: Apply `functools.lru_cache` to the configuration loading logic to prevent redundant environment variable parsing and file I/O during runtime.
 
 **Target Files**:
 
-- [MODIFY] `src/infra/file_lock.py`
+- [MODIFY] `src/config/app_config.py` (or the file containing `load_config` or equivalent)
 
 **Steps**:
 
-1. Remove `warn_unused_ignores = false` from `pyproject.toml` (if present) to enforce strict checks.
-2. Refactor `src/infra/file_lock.py`:
-   - Use `sys.platform` checks to conditionally define types or imports.
-   - For `msvcrt` and `fcntl`, consider using `if TYPE_CHECKING:` blocks or stub files if available.
-   - Eliminate `type: ignore` comments by satisfying the type checker.
-3. Run `uv run mypy src/infra/file_lock.py` to confirm zero errors.
+1. Identify the configuration loading function (e.g., `load_config`, `get_settings`, or `AppConfig` instantiation).
+2. Decorate the function with `@functools.lru_cache(maxsize=1)`.
+   - Ensure that the function signature allows caching (i.e., arguments are hashable, or use no arguments if possible).
+3. If the function takes mutable arguments or non-hashable types, refactor it to use hashable configuration identifiers or remove arguments if they are not needed for the singleton behavior.
+4. Verify that `os.getenv` or `.env` file reading happens only once even when the function is called multiple times.
 
 **Verification**:
 
-- `uv run mypy src/infra/file_lock.py` must pass without any ignore overrides.
+- Create a temporary test script `scripts/verify_config_cache.py`:
+  - Call `load_config()` twice.
+  - Assert that the returned objects are identical (`is` operator).
+  - Print "Config caching works!" if successful.
+- Run the script: `python scripts/verify_config_cache.py`
 
 **Next**: After completing this prompt, proceed to the final step.
 
@@ -120,7 +97,7 @@
 **Steps**:
 
 1. Run all unit tests: `uv run pytest tests/unit`
-2. Run build script (if applicable): `python scripts/build_release.py`
+2. Run build script (if applicable): `python scripts/build_release.py` or `uv run build`
 3. Verify that all pending items in `Project_Improvement_Exploration_Report.md` have been addressed.
 
 **Final Output**:

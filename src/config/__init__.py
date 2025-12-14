@@ -1,5 +1,7 @@
 """Configuration package - centralized settings management."""
 
+from functools import lru_cache
+
 from src.config.constants import (
     BUDGET_WARNING_THRESHOLDS,
     COST_PANEL_TEMPLATE,
@@ -40,6 +42,21 @@ from src.config.settings import AppConfig
 from src.config.utils import require_env
 from src.config.web import WebSettingsMixin
 
+
+@lru_cache(maxsize=1)
+def get_settings() -> AppConfig:
+    """Return a cached singleton instance of AppConfig.
+
+    This function ensures that environment variable parsing and .env file
+    loading happens only once per application lifecycle, improving startup
+    performance and reducing redundant I/O operations.
+
+    Returns:
+        AppConfig: The cached application configuration instance.
+    """
+    return AppConfig()
+
+
 __all__ = [
     "BUDGET_WARNING_THRESHOLDS",
     "COST_PANEL_TEMPLATE",
@@ -75,5 +92,6 @@ __all__ = [
     "SafetyFilterError",
     "ValidationFailedError",
     "WebSettingsMixin",
+    "get_settings",
     "require_env",
 ]
