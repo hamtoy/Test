@@ -7,7 +7,9 @@ from typing import Any
 import pytest
 
 
-def test_generate_qa_with_all_enhancements(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_generate_qa_with_all_enhancements(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Mocked end-to-end path of IntegratedQualitySystem without external services."""
 
     # Provide dummy modules to satisfy imports in multimodal_understanding
@@ -91,7 +93,7 @@ def test_generate_qa_with_all_enhancements(monkeypatch: pytest.MonkeyPatch) -> N
         def __init__(self, *_: Any, **__: Any) -> None:
             pass
 
-        def analyze_image_deep(self, image_path: str) -> dict[str, Any]:
+        async def analyze_image_deep(self, image_path: str) -> dict[str, Any]:
             return {"text_density": 0.5, "has_table_chart": False, "path": image_path}
 
     class FakeLLM:
@@ -124,7 +126,7 @@ def test_generate_qa_with_all_enhancements(monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setattr(quality, "GeminiModelClient", FakeLLM, raising=True)
 
     system = quality.IntegratedQualitySystem("bolt://fake", "user", "pass")
-    result = system.generate_qa_with_all_enhancements("fake.jpg", "explanation")
+    result = await system.generate_qa_with_all_enhancements("fake.jpg", "explanation")
 
     assert result["output"] == "fake-llm-output"
     assert result["validation"]["valid"] is True

@@ -1,9 +1,10 @@
 """Tests for src/qa/quality.py - IntegratedQualitySystem coverage."""
 
-from typing import Any, Dict
-from unittest.mock import MagicMock, patch
 import sys
 import types
+from typing import Any, Dict
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
 
@@ -128,7 +129,9 @@ class TestIntegratedQualitySystem:
             # Verify augmenter was called with None as gemini_key (4th positional arg)
             mock_augmenter_class.assert_called_once()
 
-    def test_generate_qa_with_all_enhancements(self, mock_pytesseract: None) -> None:
+    async def test_generate_qa_with_all_enhancements(
+        self, mock_pytesseract: None
+    ) -> None:
         """Test generate_qa_with_all_enhancements method."""
         # Setup mock returns
         mock_image_meta: Dict[str, Any] = {"format": "png", "size": 1024}
@@ -142,7 +145,9 @@ class TestIntegratedQualitySystem:
         # Create mock instances
         mock_kg_instance = MagicMock()
         mock_multimodal_instance = MagicMock()
-        mock_multimodal_instance.analyze_image_deep.return_value = mock_image_meta
+        mock_multimodal_instance.analyze_image_deep = AsyncMock(
+            return_value=mock_image_meta
+        )
         mock_adjuster_instance = MagicMock()
         mock_adjuster_instance.analyze_image_complexity.return_value = mock_complexity
         mock_adjuster_instance.adjust_query_requirements.return_value = mock_adjustments
@@ -197,7 +202,7 @@ class TestIntegratedQualitySystem:
                 password="password",
             )
 
-            result = system.generate_qa_with_all_enhancements(
+            result = await system.generate_qa_with_all_enhancements(
                 image_path="/path/to/image.png", query_type="explanation"
             )
 
@@ -230,12 +235,14 @@ class TestIntegratedQualitySystem:
             assert result["metadata"]["adjustments"] == mock_adjustments
             assert result["metadata"]["examples_used"] == mock_examples
 
-    def test_generate_qa_with_summary_query_type(self, mock_pytesseract: None) -> None:
+    async def test_generate_qa_with_summary_query_type(
+        self, mock_pytesseract: None
+    ) -> None:
         """Test generate_qa_with_all_enhancements with summary query type."""
         # Create mock instances
         mock_kg_instance = MagicMock()
         mock_multimodal_instance = MagicMock()
-        mock_multimodal_instance.analyze_image_deep.return_value = {}
+        mock_multimodal_instance.analyze_image_deep = AsyncMock(return_value={})
         mock_adjuster_instance = MagicMock()
         mock_adjuster_instance.analyze_image_complexity.return_value = {}
         mock_adjuster_instance.adjust_query_requirements.return_value = {}
@@ -288,7 +295,7 @@ class TestIntegratedQualitySystem:
                 password="password",
             )
 
-            result = system.generate_qa_with_all_enhancements(
+            result = await system.generate_qa_with_all_enhancements(
                 image_path="/path/to/image.jpg", query_type="summary"
             )
 
