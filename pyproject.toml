@@ -254,11 +254,6 @@ ignore_missing_imports = true
 disallow_untyped_calls = false
 disallow_any_generics = false
 
-# File lock uses platform-specific modules (msvcrt on Windows, fcntl on Unix)
-[[tool.mypy.overrides]]
-module = ["src.infra.file_lock"]
-warn_unused_ignores = false
-
 [tool.uv.workspace]
 members = ["notion-neo4j-graph"]
 

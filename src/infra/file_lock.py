@@ -1,4 +1,3 @@
-# mypy: allow-untyped-defs
 """Simple cross-platform file locking utility.
 
 Provides a context manager for exclusive file locking to prevent
@@ -9,26 +8,23 @@ from __future__ import annotations
 
 import contextlib
 import os
+import sys
 import time
 from pathlib import Path
 from typing import IO, Any
 
-# Try to use platform-specific locking
-try:
-    import msvcrt  # type: ignore  # Windows
+# Platform detection
+_WINDOWS = sys.platform == "win32"
+_UNIX = sys.platform != "win32"
 
-    _WINDOWS = True
-except ImportError:
-    msvcrt = None  # type: ignore
-    _WINDOWS = False
+# Platform-specific module references (set at runtime)
+_msvcrt: Any = None
+_fcntl: Any = None
 
-try:
-    import fcntl  # type: ignore  # Unix/Linux/Mac
-
-    _UNIX = True
-except ImportError:
-    fcntl = None  # type: ignore
-    _UNIX = False
+if _WINDOWS:
+    import msvcrt as _msvcrt  # Windows-only
+elif _UNIX:
+    import fcntl as _fcntl  # Unix/Linux/Mac
 
 
 class FileLockError(Exception):
@@ -82,14 +78,14 @@ class FileLock:
         self._lock_file.flush()
 
         # Apply OS-level lock if available
-        if _WINDOWS:
-            msvcrt.locking(  # type: ignore
+        if _WINDOWS and _msvcrt is not None:
+            _msvcrt.locking(
                 self._lock_file.fileno(),
-                msvcrt.LK_NBLCK,  # type: ignore
+                _msvcrt.LK_NBLCK,
                 1,
             )
-        elif _UNIX:
-            fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)  # type: ignore
+        elif _UNIX and _fcntl is not None:
+            _fcntl.flock(self._lock_file.fileno(), _fcntl.LOCK_EX | _fcntl.LOCK_NB)
 
         return True
 
@@ -151,16 +147,16 @@ class FileLock:
         if self._lock_file:
             try:
                 # Release OS-level lock
-                if _WINDOWS:
+                if _WINDOWS and _msvcrt is not None:
                     with contextlib.suppress(OSError):
-                        msvcrt.locking(  # type: ignore
+                        _msvcrt.locking(
                             self._lock_file.fileno(),
-                            msvcrt.LK_UNLCK,  # type: ignore
+                            _msvcrt.LK_UNLCK,
                             1,
                         )
-                elif _UNIX:
+                elif _UNIX and _fcntl is not None:
                     with contextlib.suppress(OSError):
-                        fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_UN)  # type: ignore
+                        _fcntl.flock(self._lock_file.fileno(), _fcntl.LOCK_UN)
 
                 self._lock_file.close()
             finally:
@@ -170,12 +166,17 @@ class FileLock:
             with contextlib.suppress(OSError):
                 self.lock_path.unlink()
 
-    def __enter__(self) -> "FileLock":
+    def __enter__(self) -> FileLock:
         """Enter context manager."""
         self.acquire()
         return self
 
-    def __exit__(self, _exc_type: Any, _exc_val: Any, _exc_tb: Any) -> None:
+    def __exit__(
+        self,
+        _exc_type: type[BaseException] | None,
+        _exc_val: BaseException | None,
+        _exc_tb: Any,
+    ) -> None:
         """Exit context manager."""
         self.release()
 

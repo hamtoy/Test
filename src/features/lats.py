@@ -8,15 +8,21 @@ and backtrack from dead ends. It supports parallel child node evaluation for per
 from __future__ import annotations
 
 import asyncio
+import logging
 import math
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
 from src.config.constants import LATS_EXPANSION_MAX_OUTPUT_TOKENS
 from src.core.interfaces import GenerationResult, LLMProvider
+
+if TYPE_CHECKING:
+    from src.features.action_executor import ActionExecutor
+
+logger = logging.getLogger(__name__)
 
 
 class SearchState(BaseModel):
@@ -117,12 +123,14 @@ class LATSSearcher:
         propose_actions: ActionProposer | None = None,
         evaluate_action: ActionEvaluator | None = None,
         budget_tracker: Any | None = None,  # BudgetTracker instance
+        action_executor: ActionExecutor | None = None,
         max_visits: int = 10,
         max_depth: int = 3,
         exploration_constant: float = math.sqrt(2),
         token_budget: int = 10000,
         cost_budget: float = 1.0,
         concurrency_limit: int = 5,
+        validation_penalty: float = 0.3,
     ):
         """Initialize the LATS searcher.
 
@@ -132,24 +140,28 @@ class LATSSearcher:
             propose_actions: Optional action proposer function.
             evaluate_action: Optional action evaluator function.
             budget_tracker: Optional budget tracking instance.
+            action_executor: Optional ActionExecutor for concrete validation.
             max_visits: Maximum number of node visits.
             max_depth: Maximum search depth.
             exploration_constant: UCB1 exploration constant.
             token_budget: Maximum token budget.
             cost_budget: Maximum cost budget.
             concurrency_limit: Maximum concurrent LLM API calls (for rate limiting).
+            validation_penalty: Penalty applied to nodes that fail concrete validation.
         """
         self.llm_provider = llm_provider
         self.graph_validator = graph_validator
         self.propose_actions = propose_actions
         self.evaluate_action = evaluate_action
         self.budget_tracker = budget_tracker
+        self.action_executor = action_executor
         self.max_visits = max_visits
         self.max_depth = max_depth
         self.exploration_constant = exploration_constant
         self.token_budget = token_budget
         self.cost_budget = cost_budget
         self.concurrency_limit = concurrency_limit
+        self.validation_penalty = validation_penalty
         self._semaphore: asyncio.Semaphore | None = None
         self.total_visits = 0
 
@@ -328,6 +340,7 @@ class LATSSearcher:
         return new_children
 
     async def _evaluate(self, node: SearchNode) -> float:
+        """Evaluate a node's score, integrating ActionExecutor for concrete validation."""
         try:
             if self.evaluate_action:
                 score = await self.evaluate_action(node)
@@ -345,6 +358,17 @@ class LATSSearcher:
                     node.state = node.state.update_budget(tokens=tokens)
             else:
                 score = 0.0
+
+            # Concrete validation using ActionExecutor (if available)
+            validation_passed = await self._run_concrete_validation(node)
+            if not validation_passed:
+                score -= self.validation_penalty
+                logger.debug(
+                    "Node %s failed concrete validation, applying penalty %.2f",
+                    node.action,
+                    self.validation_penalty,
+                )
+
         except Exception as exc:  # noqa: BLE001
             node.reflection = await self.reflect_on_error(str(exc), node.action or "")
             score = -1.0
@@ -354,7 +378,53 @@ class LATSSearcher:
             node.reward = effective
         else:
             node.reward = max(node.reward, effective)
+
+        logger.debug(
+            "Node depth=%d action=%s evaluated score=%.3f effective=%.3f",
+            node.depth,
+            node.action,
+            score,
+            effective,
+        )
         return effective
+
+    async def _run_concrete_validation(self, node: SearchNode) -> bool:
+        """Run concrete validation using ActionExecutor.
+
+        Args:
+            node: The node to validate.
+
+        Returns:
+            True if validation passes (or no executor available), False otherwise.
+        """
+        if not self.action_executor:
+            return True  # No executor, skip validation
+
+        if not node.action:
+            return True  # No action to validate
+
+        try:
+            # Use ActionExecutor to validate the current state/action
+            result = await self.action_executor.execute_action(
+                action="validate",
+                text=node.action,
+                use_llm=False,  # Use deterministic validation for speed
+            )
+            # Check quality_score from validation result
+            if isinstance(result, dict):
+                quality_score = float(result.get("quality_score", 1.0))
+                passed = quality_score >= 0.5
+                if not passed:
+                    logger.debug(
+                        "Concrete validation failed for action=%s quality=%.2f",
+                        node.action,
+                        quality_score,
+                    )
+                return passed
+            return True
+        except Exception as e:  # noqa: BLE001
+            logger.warning("ActionExecutor validation error: %s", e)
+            return True  # Don't penalize on executor errors
 
     def _backpropagate(self, node: SearchNode, reward: float) -> None:
         cur: SearchNode | None = node

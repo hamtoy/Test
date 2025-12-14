@@ -12,52 +12,42 @@
 
 | # | Prompt ID | Title | Priority | Status |
 |:---:|:---|:---|:---:|:---:|
-| 1 | PROMPT-001 | GitHub Actions CI Automation | P2 | ✅ Complete |
-| 2 | PROMPT-002 | LLM Rate Limit Fallback Strategy | P3 | ⏸️ Skipped |
+| 1 | PROMPT-001 | LLM Rate Limit Fallback Strategy | P2 | ⏸️ Skipped |
+| 2 | PROMPT-002 | LATS Agent Verification Optimization | P3 | ✅ Complete |
 | 3 | OPT-1 | FileLock Type Safety Improvements | OPT | ✅ Complete |
-| 4 | OPT-2 | Server Log Rotation Implementation | OPT | ✅ Complete |
 
-**Total: 4 prompts | Complete: 3 | Skipped: 1**
+**Total: 3 prompts | Completed: 2 | Skipped: 1**
 
 ---
 
 ## 🟡 Priority 2 (High)
 
-### [PROMPT-001] GitHub Actions CI Automation
+### [PROMPT-001] LLM Rate Limit Fallback Strategy
 
 **Directive**: Execute this prompt now, then proceed to PROMPT-002.
 
-**Task**: Create a GitHub Actions workflow to automate testing and build verification on every push and pull request.
+**Task**: Implement a model fallback mechanism in `GeminiModelClient` to automatically switch to a secondary model (e.g., `gemini-flash`) when the primary model hits a rate limit (HTTP 429).
 
 **Target Files**:
 
-- [NEW] `.github/workflows/ci.yml`
+- [MODIFY] `src/llm/gemini.py`
+- [NEW] `tests/unit/llm/test_gemini_fallback.py`
 
 **Steps**:
 
-1. Create the directory `.github/workflows` if it does not exist.
-2. Create `.github/workflows/ci.yml` with the following jobs:
-    - **Backend Test**: Run on `ubuntu-latest`.
-        - Checkout code.
-        - Set up Python 3.10.
-        - Install dependencies (`pip install -e ".[dev]"`).
-        - Run pytest (`pytest tests/unit`).
-    - **Frontend Build**: Run on `ubuntu-latest`.
-        - Checkout code.
-        - Set up Node.js 18.
-        - Install dependencies (`npm ci` or `pnpm install`).
-        - Run build (`npm run build`).
-
-**Implementation Details**:
-
-- Ensure the workflow triggers on `push` to `main` and `pull_request`.
-- Use `actions/checkout@v4`, `actions/setup-python@v5`, `actions/setup-node@v4`.
-- For Python dependency installation, check `pyproject.toml` to confirm optional dependencies.
+1. Modify `src/llm/gemini.py`:
+   - Update `GeminiModelClient` constructor to accept a list of `fallback_models`.
+   - Update `generate` method to wrap the API call in a loop.
+   - If `google_exceptions.ResourceExhausted` (429) occurs, log a warning and retry with the next model in the list.
+   - If all models fail, raise the exception or return an error message.
+2. Create `tests/unit/llm/test_gemini_fallback.py`:
+   - Use `unittest.mock` to simulate a 429 error on the first call and success on the second.
+   - Verify that the fallback model is actually used.
 
 **Verification**:
 
-- Since this is a CI file, you cannot run it locally without `act`. Instead, verify the file syntax by reading it back.
-- Run `python -m py_compile scripts/build_release.py` to ensure no syntax errors in the build script referenced in the workflow (if applicable).
+- Run the new test: `uv run pytest tests/unit/llm/test_gemini_fallback.py`
+- Ensure 2 passing tests (one for fallback success, one for exhaustion failure).
 
 **Next**: After completing this prompt, proceed to [PROMPT-002].
 
@@ -65,32 +55,28 @@
 
 ## 🟢 Priority 3 (Medium)
 
-### [PROMPT-002] LLM Rate Limit Fallback Strategy
+### [PROMPT-002] LATS Agent Verification Optimization
 
 **Directive**: Execute this prompt now, then proceed to OPT-1.
 
-**Task**: Implement a model fallback mechanism in `GeminiClient` to switch to a cheaper/faster model (e.g., `gemini-flash`) when the primary model (`gemini-pro`) hits rate limits (HTTP 429).
+**Task**: Enhance the validation logic in the LATS (Language Agent Tree Search) module to improve reasoning accuracy by integrating `ActionExecutor` feedback.
 
 **Target Files**:
 
-- [MODIFY] `src/llm/gemini_client.py`
+- [MODIFY] `src/features/lats/lats.py` (or main LATS implementation file)
+- [MODIFY] `src/features/action_executor.py`
 
 **Steps**:
 
-1. Modify `GeminiClient` to accept a list of model names or a fallback configuration.
-2. In the `generate_content` (or equivalent) method, wrap the API call in a retry loop that catches `429 Too Many Requests`.
-3. If a 429 error occurs, switch the current model to the next available fallback model and retry immediately.
-4. Log a warning when fallback occurs.
-
-**Implementation Details**:
-
-- Define a `FallbackStrategy` or simply extend the existing retry logic.
-- Ensure the fallback persists for a short duration or resets for the next request depending on optimal strategy (simple fallback per request is fine).
+1. Locate the LATS evaluation/validation step in `src/features/lats`.
+2. Integrate `ActionExecutor` to run a concrete validation check (e.g., checking if the generated answer satisfies constraints) at each leaf node expansion.
+3. Improve the heuristic value function to penalize nodes that fail the concrete validation.
+4. Add debug logging to trace tree pruning decisions.
 
 **Verification**:
 
-- Verify the changes by creating a test case in `tests/unit/test_gemini_client.py` (or similar) that mocks a 429 response from the first model and verifies the second model is called.
-- Run `pytest tests/unit/test_gemini_client.py` (create this test file if it doesn't exist).
+- Verify that the LATS agent can solve a complex query that requires validation.
+- Run `uv run pytest tests/e2e/test_lats.py` (if available, or create a simple script `scripts/test_lats_manual.py`).
 
 **Next**: After completing this prompt, proceed to [OPT-1].
 
@@ -100,51 +86,26 @@
 
 ### [OPT-1] FileLock Type Safety Improvements
 
-**Directive**: Execute this prompt now, then proceed to OPT-2.
+**Directive**: Execute this prompt now, then proceed to FINISH.
 
-**Task**: Improve type safety in `src/infra/file_lock.py` by removing `Any` types and properly handling platform-specific imports (`msvcrt`, `fcntl`) using `sys.platform` checks or protocol definitions, to satisfy strict `mypy` checks.
+**Task**: Strict type enforcement for `src/infra/file_lock.py` to remove `type: ignore` usage for platform-specific imports.
 
 **Target Files**:
 
 - [MODIFY] `src/infra/file_lock.py`
-- [MODIFY] `pyproject.toml`
 
 **Steps**:
 
-1. Remove the `warn_unused_ignores = false` override for `src.infra.file_lock` in `pyproject.toml`.
-2. Refactor `src/infra/file_lock.py` to use `if sys.platform == "win32":` blocks for imports to better guide type checkers, or define a `LockProtocol` that both implementations satisfy.
-3. Replace `type: ignore` with specific error codes if absolutely necessary, but aim to remove them.
-4. Ensure `mypy` passes with strict settings.
+1. Remove `warn_unused_ignores = false` from `pyproject.toml` (if present) to enforce strict checks.
+2. Refactor `src/infra/file_lock.py`:
+   - Use `sys.platform` checks to conditionally define types or imports.
+   - For `msvcrt` and `fcntl`, consider using `if TYPE_CHECKING:` blocks or stub files if available.
+   - Eliminate `type: ignore` comments by satisfying the type checker.
+3. Run `uv run mypy src/infra/file_lock.py` to confirm zero errors.
 
 **Verification**:
 
-- Run `python -m mypy src/infra/file_lock.py` and ensure zero errors.
-
-**Next**: After completing this prompt, proceed to [OPT-2].
-
----
-
-### [OPT-2] Server Log Rotation Implementation
-
-**Directive**: Execute this prompt now, then proceed to FINISH.
-
-**Task**: Implement log rotation for the backend server to prevent `app.log` from growing indefinitely.
-
-**Target Files**:
-
-- [MODIFY] `src/infra/logging.py` (or where `setup_logging` is defined)
-
-**Steps**:
-
-1. Locate the logging configuration (likely in `src/infra/logging.py` or `src/main.py`).
-2. Replace `FileHandler` with `logging.handlers.RotatingFileHandler`.
-3. Configure it to rotate after 10MB (`maxBytes=10*1024*1024`) and keep 5 backup files (`backupCount=5`).
-4. Ensure the log encoding is set to `utf-8`.
-
-**Verification**:
-
-- Run `python -m src.main --help` (or similar quick command) to verify the application starts and creates/writes to the log file without errors.
-- Inspect the created log file to ensure content is written.
+- `uv run mypy src/infra/file_lock.py` must pass without any ignore overrides.
 
 **Next**: After completing this prompt, proceed to the final step.
 
@@ -158,9 +119,9 @@
 
 **Steps**:
 
-1. Run all unit tests: `python -m pytest tests/unit`.
-2. Run the build script: `python scripts/build_release.py --skip-frontend` (to save time) or full build if environment allows.
-3. Verify that all pending items in `Project_Improvement_Exploration_Report.md` have been addressed by the executed prompts.
+1. Run all unit tests: `uv run pytest tests/unit`
+2. Run build script (if applicable): `python scripts/build_release.py`
+3. Verify that all pending items in `Project_Improvement_Exploration_Report.md` have been addressed.
 
 **Final Output**:
 Print the following message:

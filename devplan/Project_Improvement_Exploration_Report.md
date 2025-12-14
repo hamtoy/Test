@@ -29,21 +29,20 @@
 | 우선순위 | 남은 개수 |
 |:---:|:---:|
 | 🔴 P1 | 0 |
-| 🟡 P2 | 0 |
+| 🟡 P2 | 1 |
 | 🟢 P3 | 1 |
-| 🚀 OPT | 0 |
-| **합계** | **1** |
+| 🚀 OPT | 1 |
+| **합계** | **3** |
 
-| # | 항목명 | 우선순위 | 카테고리 | 상태 |
-|:---:|:---|:---:|:---|:---:|
-| 1 | ~~GitHub Actions 기반 CI 자동화~~ | P2 | 📦 배포/DevOps | ✅ 완료 |
-| 2 | LLM Rate Limit 모델 폴백(Fallback) | P3 | ✨ 기능 추가 | ⏸️ 보류 |
-| 3 | ~~FileLock 모듈 타입 안정성 강화~~ | OPT | 🧹 코드 품질 | ✅ 완료 |
-| 4 | ~~서버 로그 로테이션(Rotation) 적용~~ | OPT | ⚙️ 성능/운영 | ✅ 완료 |
+| # | 항목명 | 우선순위 | 카테고리 |
+|:---:|:---|:---:|:---|
+| 1 | `GeminiModelClient` 모델 폴백 구현 | P2 | ✨ 기능 추가 |
+| 2 | LATS 에이전트 검증 최적화 | P3 | ⚙️ 성능 |
+| 3 | `FileLock` 모듈 타입 안정성 강화 | OPT | 🧹 코드 품질 |
 
-- **P1 (Critical):** 현재 긴급한 장애 요인은 없습니다.
-- **P2 (High):** ✅ CI 자동화 완료 (`ci.yaml` 워크플로우 구성됨).
-- **OPT:** ✅ 로그 로테이션 구현 완료 (`RotatingFileHandler` 적용).
+- **P1 (Critical):** 긴급 장애 요인은 발견되지 않았습니다.
+- **P2 (High):** 외부 API 장애에 대비한 **회복 탄력성(Resiliency)** 확보가 시급합니다.
+- **OPT:** 코드베이스의 엄격한 타입 안정성을 위해 `type: ignore` 제거가 권장됩니다.
 <!-- AUTO-SUMMARY-END -->
 
 ---
@@ -51,66 +50,64 @@
 <!-- AUTO-IMPROVEMENT-LIST-START -->
 ## 🔧 P1 (Critical) & P2 (High) 개선 과제
 
-> **Note:** 이전 P1/P2 과제들은 모두 완료되었습니다. P1 과제는 현재 없습니다.
-
 ### 🟡 중요 (P2)
 
-#### [P2-1] GitHub Actions 기반 CI 자동화
+#### [P2-1] `GeminiModelClient` 모델 폴백(Fallback) 구현
 
 | 항목 | 내용 |
 |------|------|
-| **ID** | `feat-ci-workflow-001` |
-| **카테고리** | 📦 배포/DevOps |
+| **ID** | `feat-model-fallback-001` |
+| **카테고리** | ✨ 기능 추가 / 🔒 안정성 |
 | **복잡도** | Medium |
-| **대상 파일** | `.github/workflows/ci.yml` |
+| **대상 파일** | `src/llm/gemini.py` |
 | **Origin** | manual-idea |
-| **리스크 레벨** | medium |
-| **관련 평가 카테고리** | productionReadiness |
+| **리스크 레벨** | high |
+| **관련 평가 카테고리** | stability, productionReadiness |
 
 - **현재 상태:**
-  - `python -m pytest` 및 `npm run build` 등의 검증 과정이 로컬 개발자 환경에 의존적입니다.
-  - `build_release.py`가 추가되었으나 이를 자동 실행하는 파이프라인이 없습니다.
+  - `generate` 메서드는 `google_exceptions.GoogleAPIError` 발생 시 단순히 에러 메시지를 반환합니다.
+  - Rate Limit(429) 에러 발생 시 재시도 로직이 없으며, 즉시 실패 처리됩니다.
 - **문제점 (Problem):**
-  - PR 병합 시 테스트가 누락되거나, 환경 차이로 인한 빌드 오류 발생 가능성.
+  - 운영 환경에서 트래픽 급증 시 서비스 가용성이 급격히 저하될 수 있습니다.
 - **영향 (Impact):**
-  - 메인 브랜치의 안정성 저하 및 배포 프로세스의 인적 오류 위험.
+  - 중요한 사용자 질의에 대한 응답 실패로 신뢰도 하락.
 - **원인 (Cause):**
-  - 자동화된 CI/CD 워크플로우(`yaml`) 부재.
+  - 단일 모델(`gemini-pro`)에 대한 강한 의존성 및 장애 복구 로직 부재.
 - **개선 내용 (Proposed Solution):**
-  - GitHub Actions 워크플로우(`.github/workflows/ci.yml`) 작성.
-  - Push 및 PR 이벤트 발생 시 백엔드 테스트(`pytest`)와 프론트엔드 빌드 검증 수행.
+  - `GeminiModelClient`에 `fallback_models` 리스트 지원 추가 (예: `["gemini-flash", "gemini-1.5-flash-8b"]`).
+  - 429 에러 감지 시 다음 가용 모델로 자동 전환하여 재시도하는 로직 구현.
 - **기대 효과:**
-  - 코드 변경에 대한 즉각적인 피드백 루프 확보 및 배포 신뢰도 상승.
+  - 일시적인 API 장애 상황에서도 중단 없는 서비스 제공 가능.
 - **Definition of Done:**
-  - [ ] `.github/workflows/ci.yml` 파일 생성
-  - [ ] Python 3.10+ 환경 설정 및 의존성 설치 스텝 구현
-  - [ ] `pytest` 및 `npm run build` (또는 `build_release.py`) 실행 성공 단계 추가
+  - [ ] `GeminiModelClient`에 Fallback 로직 구현
+  - [ ] 429 에러 시 모델 전환 테스트 코드 작성 (`test_gemini_fallback.py`)
+  - [ ] Fallback 발생 시 `logger.warning`으로 기록 확인
 
 <!-- AUTO-IMPROVEMENT-LIST-END -->
 
 ---
 
-<!-- AUTO-P3-OPT-START -->
+<!-- AUTO-FEATURE-LIST-START -->
 ## ✨ P3 (Medium) & OPT (Optimization) 과제
 
 ### 🟢 P3 (Feature Additions)
 
-#### [P3-1] LLM Rate Limit 모델 폴백(Fallback) (`feat-model-fallback-001`)
+#### [P3-1] LATS 에이전트 검증 최적화 (`feat-lats-optimization`)
 
 | 항목 | 내용 |
 |------|------|
-| **ID** | `feat-model-fallback-001` |
+| **ID** | `feat-lats-optimization` |
 | **카테고리** | ✨ 기능 추가 |
-| **대상 파일** | `src/llm/gemini_client.py` |
-| **리스크 레벨** | Low |
+| **대상 파일** | `src/features/lats/lats.py` |
+| **리스크 레벨** | Medium |
 
 - **현재 상태:**
-  - `429 Too Many Requests` 발생 시 단순 Retry만 수행하며, 할당량이 소진된 경우 실패합니다.
+  - LATS(Language Agent Tree Search)의 기본 골격은 구현되었으나, 추론 단계에서의 검증(Validation) 로직이 단순합니다.
 - **개선 내용:**
-  - `gemini-pro` 사용 불가 시 `gemini-flash` 등 하위 모델로 자동 전환하는 로직 구현.
-  - `FallbackStrategy` 클래스 설계.
+  - `ActionExecutor`와 연동하여 검색 → 실행 → 검증의 루프를 강화.
+  - 트리 탐색 시 가지치기(Pruning) 효율성을 높이기 위해 휴리스틱 평가 함수 개선.
 - **기대 효과:**
-  - API 제한 상황에서도 서비스 연속성 보장.
+  - 복잡한 추론 문제 해결 능력 향상.
 
 <!-- AUTO-FEATURE-LIST-END -->
 
@@ -126,33 +123,17 @@
 | **ID** | `opt-type-strictness-001` |
 | **카테고리** | 🧹 코드 품질 |
 | **영향 범위** | 품질 |
-| **대상 파일** | `src/infra/file_lock.py`, `pyproject.toml` |
+| **대상 파일** | `src/infra/file_lock.py` |
 
 - **현재 상태:**
-  - `msvcrt`(Windows) 및 `fcntl`(Unix) 모듈이 특정 OS에만 존재하여 `mypy` 검사 시 `import-error`가 발생.
-  - 현재는 `type: ignore`와 `pyproject.toml`의 `warn_unused_ignores = false` 옵션으로 경고를 억제 중입니다.
+  - OS별 모듈(`msvcrt`, `fcntl`) 로드 시 `type: ignore`를 사용하여 타입 체크를 우회하고 있습니다.
+  - 이로 인해 향후 `mypy` 설정 강화 시 잠재적인 오류 원인이 될 수 있습니다.
 - **최적화 내용:**
-  - `sys.platform` 분기에 따라 조건부 타입 정의(`Protocol` 또는 `stub` 파일)를 적용.
-  - `Any` 타입 사용을 줄이고 명시적인 타입 힌트 적용.
+  - `sys.platform` 체크를 포함한 조건부 임포트와 타입 스텁(Stub) 또는 프로토콜 정의를 통해 `type: ignore` 제거.
+  - `types-pywin32` 등의 라이브러리 활용 고려.
 - **예상 효과:**
-  - 타입 시스템의 엄격함 회복 및 잠재적 타입 오류 사전 방지.
+  - 타입 시스템의 완전성 확보 및 `strict` 모드에서의 린트 패스.
 - **측정 지표:**
-  - `mypy` 실행 시 `warn_unused_ignores = true` 상태에서 에러 0건 달성.
-
-### 3-2. 서버 로그 로테이션(Rotation) 적용 (`opt-log-rotation-001`)
-
-| 항목 | 내용 |
-|------|------|
-| **ID** | `opt-log-rotation-001` |
-| **카테고리** | ⚙️ 성능/운영 |
-| **대상 파일** | `src/infra/logging.py` |
-
-- **현재 상태:**
-  - 로그 파일이 단일 파일(`app.log`)에 계속 누적되어, 장기 운영 시 디스크 용량 문제 및 분석 어려움 발생 가능.
-- **최적화 내용:**
-  - `RotatingFileHandler` 또는 `TimedRotatingFileHandler`를 도입하여, 파일 크기(예: 10MB) 또는 날짜 기준으로 로그 분할.
-  - 오래된 로그 자동 삭제 정책 적용.
-- **예상 효과:**
-  - 디스크 공간 고갈 방지 및 로그 파일 접근 속도 유지.
+  - `src/infra/file_lock.py` 내 `type: ignore` 개수 0개 달성.
 
 <!-- AUTO-OPTIMIZATION-END -->
