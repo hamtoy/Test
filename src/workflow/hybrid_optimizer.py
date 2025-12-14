@@ -1,4 +1,5 @@
 """Hybrid Optimizer module."""
+
 import logging
 from typing import Any, Literal, cast
 

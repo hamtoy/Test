@@ -1,4 +1,5 @@
 """Conf module."""
+
 # Configuration file for the Sphinx documentation builder.
 import os
 import sys

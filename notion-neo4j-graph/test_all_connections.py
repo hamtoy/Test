@@ -1,4 +1,5 @@
 """Test All Connections module."""
+
 import os
 
 import pytest

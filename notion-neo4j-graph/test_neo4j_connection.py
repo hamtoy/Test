@@ -1,4 +1,5 @@
 """Test Neo4J Connection module."""
+
 import os
 
 import pytest

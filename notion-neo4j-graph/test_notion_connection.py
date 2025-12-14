@@ -1,4 +1,5 @@
 """Test Notion Connection module."""
+
 import os
 
 import pytest

@@ -1,5 +1,6 @@
 # mypy: disable-error-code=attr-defined
 """List Models module."""
+
 import logging
 import os
 import sys
