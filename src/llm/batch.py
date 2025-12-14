@@ -118,8 +118,9 @@ class GeminiBatchClient:
             f"model: {job.model_name}"
         )
 
-        # TODO: Integrate with actual Gemini Batch API when available
-        # For now, this stores the job metadata for future processing
+        # NOTE: This is a stub implementation. Actual Gemini Batch API
+        # integration will be added when the API becomes available.
+        # See: https://ai.google.dev/gemini-api/docs/batch
 
         return job
 
