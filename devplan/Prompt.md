@@ -1,96 +1,131 @@
 # AI Agent Improvement Prompts
 
-> **EXECUTION RULES:**
->
-> 1. **No Talk:** Do not respond with text-only explanations.
-> 2. **Action Only:** Always modify files using the provided tools.
-> 3. **Sequential:** Execute all prompts strictly in order (PROMPT-001 → OPT-001).
-> 4. **Verification:** You must verify every step with `uv run mypy` or `uv run pytest`.
+## 1. Execution Rules (Mandatory)
 
----
+1. **No Text-Only Responses:** Do not output long explanations. Use file-edit tools immediately.
+2. **Sequential Execution:** Follow the checklist order strictly. Do not skip prompts.
+3. **Use File Tools:** All code changes must be applied using `write_to_file`, `replace_file_content`, or `run_command`.
+4. **Verification:** Run the specified verification commands after each prompt.
 
-## Execution Checklist
+## 2. Execution Checklist
 
 | # | Prompt ID | Title | Priority | Status |
 |:---:|:---|:---|:---:|:---:|
-| 1 | PROMPT-001 | Enhance Type Safety in QA Tools | P2 | ✅ Complete |
-| 2 | OPT-1 | Enforce Strict Types in Utilities | OPT | ✅ Complete |
+| 1 | **PROMPT-001** | Implement Telemetry Dashboard | P2 | ✅ Completed |
+| 2 | **PROMPT-002** | Create User Documentation | P3 | ✅ Completed |
+| 3 | **OPT-1** | Optimize Neo4j Queries | OPT | ✅ Completed |
 
-**Total: 2 prompts | Completed: 2 | Remaining: 0**
+**Total: 3 prompts | Completed: 3 | Remaining: 0**
 
 ---
 
-## 1. High Priority Improvements (P2)
+## 3. Improvement Prompts (P2)
 
-### [PROMPT-001] Enhance Type Safety in QA Tools
+### [PROMPT-001] Implement Telemetry Dashboard
 
-**Directive:** Execute this prompt now, then proceed to [OPT-1].
+**Directive:** Execute this prompt now, then proceed to PROMPT-002.
 
 **Task:**
-Refactor `src/web/routers/qa_tools.py` and `src/qa/rag_system.py` to eliminate `type: ignore[arg-type]` usage by ensuring correct type compatibility between `QAKnowledgeGraph` and consumers.
+Create a telemetry setup to monitor system metrics, using a new Docker Compose service for Prometheus/Grafana and updating the application to expose metrics.
 
 **Target Files:**
 
-- `src/web/routers/qa_tools.py`
-- `src/qa/rag_system.py`
+- `docker-compose.monitoring.yml` (NEW)
+- `src/monitoring/metrics.py` (UPDATE)
+- `src/monitoring/exporter.py` (NEW)
+- `src/config/settings.py` (UPDATE)
 
 **Steps:**
 
-1. **Analyze**: Check `src/web/routers/qa_tools.py` to see where `kg` is passed with `type: ignore`.
-2. **Refactor Interface**: Update `CrossValidationSystem`, `GraphEnhancedRouter`, and `SmartAutocomplete` `__init__` methods to accept `QAKnowledgeGraph` (or a protocol) explicitly, instead of `Any` or mismatched types.
-3. **Refactor Injection**: Ensure `src/qa/rag_system.py` defines `QAKnowledgeGraph` in a way that is compatible with these tools.
-4. **Cleanup**: Remove the `type: ignore[arg-type]` comments.
-
-**Implementation Constraint:**
-
-- Do not use `Any` if possible. Use `from src.qa.rag_system import QAKnowledgeGraph`.
+1. Create `docker-compose.monitoring.yml` defining `prometheus` and `grafana` services.
+2. Create `src/monitoring/exporter.py` to expose a `/metrics` endpoint (if not already handled by FastAPI middleware).
+3. Update `src/config/settings.py` to add `ENABLE_METRICS` boolean flag (default: `True`).
+4. Ensure `src/monitoring/metrics.py` defines `REQUEST_COUNT`, `REQUEST_LATENCY` (Histogram), and `SYSTEM_CPU_USAGE` (Gauge).
 
 **Verification:**
 
-- Run `uv run mypy src/web/routers/qa_tools.py` and ensure no errors.
-- Run `uv run pytest tests/` to ensure no regression.
+```bash
+# Verify syntax
+uv run python -m mypy src/monitoring
+# (Optional) Check if docker-compose file is valid
+docker-compose -f docker-compose.monitoring.yml config
+```
 
 ---
 
-## 2. Code Optimization (OPT)
+## 4. Improvement Prompts (P3)
 
-### [OPT-1] Enforce Strict Types in Utilities
+### [PROMPT-002] Create User Documentation
+
+**Directive:** Execute this prompt now, then proceed to OPT-1.
+
+**Task:**
+Create a comprehensive `user_manual.md` to guide end-users on how to install, configure, and use the system.
+
+**Target Files:**
+
+- `docs/user_manual.md` (NEW)
+- `README.md` (UPDATE)
+
+**Steps:**
+
+1. Create `docs/user_manual.md`.
+2. Document the "Installation" process (Prerequisites, Docker setup).
+3. Document "Configuration" (Environment variables in `.env`).
+4. Document "Basic Usage" (How to run queries via API or CLI).
+5. Add a "Troubleshooting" section for common errors (e.g., 429 Rate Limit, Neo4j connection failure).
+6. Update `README.md` to link to the new user manual.
+
+**Verification:**
+
+```bash
+# Verify the file creation
+ls -l docs/user_manual.md
+```
+
+---
+
+## 5. Optimization Prompts (OPT)
+
+### [OPT-1] Optimize Neo4j Queries
 
 **Directive:** Execute this prompt now, then proceed to Final Verification.
 
 **Task:**
-Refactor `src/validation/rule_parser.py` and `src/monitoring/metrics.py` to fix specific type errors (`no-any-return`, `no-redef`) and improve type strictness.
+Analyze and optimize Cypher query generation to improve Graph RAG retrieval performance, specifically focusing on index usage.
 
 **Target Files:**
 
-- `src/validation/rule_parser.py`
-- `src/monitoring/metrics.py`
+- `src/graph/query_builder.py` (UPDATE)
+- `scripts/setup_indexes.cypher` (NEW)
 
 **Steps:**
 
-1. **Analyze `rule_parser.py`**: Identify the `no-any-return` supression. The issue is likely that `_cache` is `dict[str, Any]` but methods return concrete types.
-2. **Fix `rule_parser.py`**: Define a `TypedDict` or correct the type signatures to return explicit types (e.g. `dict[str, str]`) instead of opaque Any, removing the `type: ignore`.
-3. **Analyze `metrics.py`**: Identify `no-redef`. This usually happens when conditional imports or branches define the same class name.
-4. **Fix `metrics.py`**: Refactor using an `if TYPE_CHECKING:` block or unified class definition to satisfy mypy without `type: ignore`.
+1. Create `scripts/setup_indexes.cypher` containing commands to create indexes for frequently queried node labels and properties (e.g., `CREATE INDEX FOR (n:Entity) ON (n.name);`).
+2. Update `src/graph/query_builder.py` to optionally include `USING INDEX` hints if heuristics suggest it would improve performance for large datasets.
+3. Review `src/graph/query_builder.py` to ensure `OPTIONAL MATCH` is used only when necessary, minimizing Cartesian products.
 
 **Verification:**
 
-- Run `uv run mypy src/validation/rule_parser.py src/monitoring/metrics.py` and ensure 0 errors.
+```bash
+# Verify the cypher script syntax (visual check or dry-run if possible)
+cat scripts/setup_indexes.cypher
+```
+
+After completing this prompt, proceed to **Final Verification**.
 
 ---
 
-## Final Verification & Completion
+## 6. Final Steps
 
-**Directive:** Run this step after completing all prompts.
+**Directive:** Run the final verification.
 
-**Task:**
-Verify the integrity of the entire project after all changes.
+**Actions:**
 
-**Steps:**
+1. Check that all files (`docker-compose.monitoring.yml`, `docs/user_manual.md`, `setup_indexes.cypher`) were created.
+2. Run `uv run pytest` (if applicable) to ensure no regressions.
+3. Print the following completion message:
 
-1. Run `uv run mypy .` to check project-wide type safety.
-2. Run `uv run pytest tests/` to ensure no regressions.
-3. If all checks pass, output the final completion message.
-
-**Completion Message:**
-"ALL PROMPTS COMPLETED. All pending improvement and optimization items from the latest report have been applied."
+```text
+ALL PROMPTS COMPLETED. All pending improvement and optimization items from the latest report have been applied.
+```

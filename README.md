@@ -377,6 +377,7 @@ results = await asyncio.gather(*[
 - **[DEPLOYMENT_VERIFIED.md](DEPLOYMENT_VERIFIED.md)**: 배포 검증 내역
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**: 시스템 아키텍처
 - **[API.md](docs/API.md)**: API 레퍼런스
+- **[user_manual.md](docs/user_manual.md)**: 사용자 매뉴얼 (설치, 설정, 트러블슈팅)
 - **[DEPRECATION.md](DEPRECATION.md)**: Deprecation 정책 및 일정
 - **[MIGRATION.md](MIGRATION.md)**: v3.0 마이그레이션 가이드
 - **[BREAKING_CHANGES_v3.md](docs/BREAKING_CHANGES_v3.md)**: v3.0 주요 변경 사항

@@ -1,109 +1,101 @@
-# 🚀 프로젝트 개선 탐구 보고서 (Improvement Exploration Report)
+# shining-quasar 프로젝트 개선 탐색 보고서
 
-> 이 문서는 **현재 미적용된 개선 사항**만을 다룹니다. 이미 완료된 항목은 포함하지 않으며, 향후 진행해야 할 구체적인 작업 계획을 제시합니다.
-
----
+본 문서는 프로젝트 평가 결과를 바탕으로, 향후 수행해야 할 **미결(Pending) 개선 항목**을 정의합니다. 이미 완료된 항목은 제외하고, 안정성, 확장성, 문서화 관점에서 우선순위를 재조정하였습니다.
 
 <!-- AUTO-SUMMARY-START -->
-## 1. 개선 요약 (Improvement Summary)
+## 1. 전체 개선 요약
 
-현재 프로젝트는 핵심 기능이 안정화된 단계이며, 남은 과제는 주로 **타입 안정성 강화**와 **코드 품질 최적화**에 집중되어 있습니다. 발견된 미해결 항목은 총 2건입니다.
+현재 프로젝트는 핵심 기능이 완성단계에 도달했으나, 운영 관점의 모니터링 수단과 사용자 문서가 부족합니다. 또한, 그래프 쿼리 성능을 장기적으로 확보하기 위한 최적화가 필요합니다.
 
-| # | 항목명 | 우선순위 | 카테고리 |
-|:---:|:---|:---:|:---|
-| 1 | RAG 툴 타입 안정성 강화 | **P2** | 🧹 코드 품질 |
-| 2 | 유틸리티 모듈 타입 엄격성 적용 | **OPT** | 🚀 코드 최적화 |
+### 1.1 미결 개선 항목 현황 (Pending Items)
 
-### 우선순위 분포
+| # | 항목명 | 우선순위 | 카테고리 | 상태 |
+|:---:|:---|:---:|:---:|:---:|
+| 1 | 텔레메트리 대시보드 구축 | **P2** (중요) | ⚙️ Ops | ⬜ Pending |
+| 2 | Neo4j 쿼리 성능 최적화 | **OPT** | ⚙️ 성능 | ⬜ Pending |
+| 3 | 사용자 매뉴얼 작성 | **P3** (권장) | 📚 문서 | ⬜ Pending |
 
-- **P2 (중요):** `qa_tools.py`의 `type: ignore` 제거 및 의존성 주입 구조 개선.
-- **OPT (최적화):** `rule_parser.py` 등의 `no-any-return` 경고 해결.
+### 1.2 우선순위 분포
+
+- **P1 (Critical):** 없음 (현재 크리티컬한 장애 요소는 해소됨)
+- **P2 (High):** 1건 (텔레메트리 연동)
+- **P3 (Normal):** 1건 (문서화)
+- **OPT (Optimization):** 1건 (쿼리 최적화)
 <!-- AUTO-SUMMARY-END -->
 
----
-
 <!-- AUTO-IMPROVEMENT-LIST-START -->
-## 2. 기능 개선 항목 (Functional Improvements)
-
 ### 🟡 중요 (P2)
 
-#### [P2-1] RAG 툴 타입 안정성 강화
+#### [P2-1] 텔레메트리 대시보드 구축 (Telemetry Integration)
 
 | 항목 | 내용 |
-|------|------|
-| **ID** | `fix-type-safety-001` |
-| **카테고리** | 🧹 코드 품질 |
+|:---:|:---|
+| **ID** | `feat-telemetry-001` |
+| **카테고리** | ⚙️ Ops / 📊 모니터링 |
 | **복잡도** | Medium |
-| **대상 파일** | `src/web/routers/qa_tools.py`, `src/qa/rag_system.py` |
-| **Origin** | static-analysis |
+| **대상 파일** | `src/monitoring` (new), `src/config/settings.py` |
+| **Origin** | manual-idea |
 | **리스크 레벨** | medium |
-| **관련 평가 카테고리** | codeQuality |
+| **관련 평가 카테고리** | 운영/안정성 (Stability) |
 
-- **현재 상태:** `qa_tools.py`에서 `CrossValidationSystem`, `GraphEnhancedRouter` 등의 클래스 초기화 시 `kg` 객체를 전달할 때 `type: ignore[arg-type]`이 다수 사용되고 있습니다.
-- **문제점 (Problem):** `QAKnowledgeGraph` 클래스와 이를 받는 모듈의 타입 힌트가 일치하지 않아 타입 시스템을 우회하고 있으며, 이는 실제 데이터 불일치 시 런타임 에러로 이어질 수 있습니다.
-- **영향 (Impact):** 코드의 유지보수성을 저해하고 미래의 리팩토링 시 사이드 이펙트를 예측하기 어렵게 만듭니다.
-- **원인 (Cause):** `QAKnowledgeGraph` 클래스의 인터페이스나, 이를 사용하는 쪽의 타입 정의(`Optional` 처리 등)가 명확하지 않음.
+- **현재 상태:** `metrics.py`를 통해 Prometheus 포맷의 메트릭은 생성하고 있으나, 이를 시각화하거나 중앙에서 수집하는 대시보드 설정이 부재합니다.
+- **문제점 (Problem):** 운영 중 실시간 API 호출량, 에러율, 레이턴시 등을 한눈에 파악하기 어렵습니다. 문제 발생 시 로그 파일(`server.log`)을 직접 열어봐야 하는 비효율이 존재합니다.
+- **영향 (Impact):** 장애 인지 속도 저하 및 성능 병목 구간 식별 곤란.
+- **원인 (Cause):** 초기 개발 단계에서 기능 구현에 집중하느라 모니터링 스택(Grafana/Prometheus 등) 통합이 지연되었습니다.
 - **개선 내용 (Proposed Solution):**
-  - `QAKnowledgeGraph`와의 엄격한 타입 호환성 확보.
-  - `type: ignore` 제거 및 올바른 타입 어노테이션 적용.
-- **기대 효과:** 코드 품질 점수(A+) 달성 및 잠재적 런타임 오류 예방.
+  1. `docker-compose.yml`에 Prometheus 및 Grafana 컨테이너 추가.
+  2. `src/monitoring` 모듈에 시스템 메트릭(CPU/Memory) 수집 로직 추가.
+  3. Grafana 기본 대시보드 템플릿(JSON) 생성.
+- **기대 효과:** 실시간 장애 감지 가능, 데이터 기반의 성능 튜닝 가능.
 
 **Definition of Done:**
 
-- [ ] `src/web/routers/qa_tools.py` 내 `type: ignore[arg-type]` 제거
-- [ ] `mypy` 검사 통과
-- [ ] 관련 기능 정상 동작 확인
-
+- [ ] `docker-compose.yml`에 모니터링 스택 정의
+- [ ] Grafana 대시보드 프로비저닝 설정 완료
+- [ ] 애플리케이션 실행 시 메트릭 수집 정상 확인
 <!-- AUTO-IMPROVEMENT-LIST-END -->
 
----
-
 <!-- AUTO-FEATURE-LIST-START -->
-## 3. 신규 기능 제안 (New Features)
+### 🟢 권장 (P3)
 
-### ✨ 기능 추가 (P3)
-
-현재 주요 P3 항목은 발견되지 않았으나, 향후 확장을 위해 다음 기능을 고려할 수 있습니다.
-
-#### [P3-1] 텔레메트리 대시보드 연동
+#### [P3-1] 사용자 매뉴얼 작성 (User Documentation)
 
 | 항목 | 내용 |
-|------|------|
-| **ID** | `feat-telemetry-001` |
-| **카테고리** | ⚙️ 운영/관제 |
-| **복잡도** | High |
-| **대상 파일** | `src/monitoring/metrics.py`, `src/infra/telemetry.py` |
+|:---:|:---|
+| **ID** | `doc-user-manual-001` |
+| **카테고리** | 📚 문서 / 🧑‍💻 DX |
+| **복잡도** | Low |
+| **대상 파일** | `docs/user_manual.md` (new), `README.md` |
+| **Origin** | manual-idea |
+| **리스크 레벨** | low |
+| **관련 평가 카테고리** | 문서화 (Documentation) |
 
-- **제안 배경:** 현재 로그 기반 모니터링은 존재하나, 시계열 데이터(Prometheus 등) 수집 기능이 기초적인 수준임.
-- **기능 내용:** 메트릭 수집기(`metrics.py`)를 고도화하여 Grafana 등과 연동 가능한 엔드포인트 제공.
-
+- **현재 상태:** 개발자 대상의 기술 문서는 존재하나, 최종 사용자가 시스템을 어떻게 활용해야 하는지에 대한 가이드는 부족합니다.
+- **개선 내용:**
+  1. `docs/user_manual.md` 생성.
+  2. 설치, 설정, 기본 질의 예제, 에러 트러블슈팅 가이드 포함.
+- **기대 효과:** 사용자 온보딩 시간 단축 및 운영 문의 감소.
 <!-- AUTO-FEATURE-LIST-END -->
 
----
-
 <!-- AUTO-OPTIMIZATION-START -->
-## 4. 코드 최적화 (Optimization)
+## 3. 코드 품질 및 성능 최적화 (OPT)
 
 ### 🚀 코드 최적화 (OPT-1)
 
-#### [OPT-1] 유틸리티 모듈 타입 엄격성 적용
+#### [OPT-1] Neo4j 쿼리 성능 최적화 (Query Optimization)
 
 | 항목 | 내용 |
-|------|------|
-| **ID** | `opt-type-strict-001` |
-| **카테고리** | 🚀 코드 최적화 / 🧹 코드 품질 |
-| **영향 범위** | 품질 (타입 안정성) |
-| **대상 파일** | `src/validation/rule_parser.py`, `src/monitoring/metrics.py` |
+|:---:|:---|
+| **ID** | `opt-query-perf-001` |
+| **카테고리** | ⚙️ 성능 튜닝 / 🚀 최적화 |
+| **영향 범위** | 성능 (Graph RAG 속도) |
+| **대상 파일** | `src/graph/query_builder.py` |
 
-- **분석:**
-  - `src/validation/rule_parser.py`: 딕셔너리 반환 시 `no-any-return` 경고를 무시(`type: ignore`)하고 있어, 반환 타입 추론이 불가능합니다.
-  - `src/monitoring/metrics.py`: 클래스 재정의(`no-redef`) 경고를 무시하고 있어 코드 가독성을 해칩니다.
-
+- **현재 상태:** 현재 구현된 Cypher 쿼리 생성 로직은 단순 매칭 위주이며, 인덱스를 효율적으로 활용하지 못하는 경우가 있습니다.
 - **최적화 내용:**
-  - `rule_parser.py`: 명시적인 `TypedDict` 또는 Pydantic 모델을 도입하여 반환 타입 명시.
-  - `metrics.py`: 클래스 구조 리팩토링으로 재정의 패턴 제거.
-
-- **예상 효과:** 전체 프로젝트의 `mypy` 검사 시간 단축 및 타입 관련 버그 원천 차단.
-- **측정 지표:** `uv run mypy .` 실행 시 해당 파일에서의 에러 및 경고 0건 달성.
-
+  1. `query_builder.py`에서 생성하는 Cypher 쿼리에 `USING INDEX` 힌트 추가 검토.
+  2. 자주 조회되는 노드 속성에 대한 인덱스 생성 스크립트(`scripts/setup_indexes.cypher`) 추가.
+  3. 불필요한 `OPTIONAL MATCH` 줄이기.
+- **예상 효과:** 복잡한 그래프 질의 시 응답 속도 20~30% 향상 예상.
+- **측정 지표:** `metrics.py`에 기록되는 `rag_query_latency` 평균값.
 <!-- AUTO-OPTIMIZATION-END -->

@@ -16,6 +16,7 @@ class FeatureSettingsMixin(BaseSettings):
     enable_rag: bool = Field(False, alias="ENABLE_RAG")
     enable_lats: bool = Field(False, alias="ENABLE_LATS")
     enable_data2neo: bool = Field(False, alias="ENABLE_DATA2NEO")
+    enable_metrics: bool = Field(True, alias="ENABLE_METRICS")
     llm_provider_type: str = Field(
         "gemini",
         description="LLM provider type (gemini, etc.)",
