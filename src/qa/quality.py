@@ -18,6 +18,7 @@ from src.infra.constraints import RealTimeConstraintEnforcer
 from src.llm.gemini import GeminiModelClient
 from src.processing.context_augmentation import AdvancedContextAugmentation
 from src.processing.example_selector import DynamicExampleSelector
+from src.processing.template_generator import DynamicTemplateGenerator
 from src.qa.rag_system import QAKnowledgeGraph
 
 
@@ -55,6 +56,7 @@ class IntegratedQualitySystem:
         self.adjuster = AdaptiveDifficultyAdjuster(self.kg)
         self.validator = CrossValidationSystem(self.kg)
         self.example_selector = DynamicExampleSelector(self.kg)
+        self.template_generator = DynamicTemplateGenerator(neo4j_uri, user, password)
         self.multimodal = MultimodalUnderstanding(self.kg)
         self.llm = GeminiModelClient()
         # 새로 추가된 컴포넌트
@@ -98,9 +100,18 @@ class IntegratedQualitySystem:
             k=3,
         )
 
-        # 4. 컨텍스트 증강
+        # 4. 동적 템플릿 생성 및 컨텍스트 증강
+        prompt_text = self.template_generator.generate_prompt_for_query_type(
+            query_type=query_type,
+            context={
+                "image_meta": image_meta,
+                "complexity": complexity,
+                "requirements": adjustments.get("requirements", []),
+            },
+        )
+
         augmented_prompt = self.augmenter.generate_with_augmentation(
-            user_query=f"Generate {query_type} for image",
+            user_query=prompt_text,  # Use generated prompt as base query
             query_type=query_type,
             base_context={
                 "image_meta": image_meta,

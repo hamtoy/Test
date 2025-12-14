@@ -43,6 +43,7 @@ from src.web.routers import (
     logs_api_router,
     metrics_router,
     ocr_router,
+    optimization_router,
     pages_router,
     qa_router,
     session_router,
@@ -447,6 +448,7 @@ app.include_router(metrics_router)
 app.include_router(cache_stats_router)
 app.include_router(config_api_router)
 app.include_router(logs_api_router)
+app.include_router(optimization_router)
 
 __all__ = [
     "DEFAULT_ANSWER_RULES",

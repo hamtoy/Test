@@ -35,6 +35,7 @@ class TestIntegratedQualitySystem:
         mock_llm_class = MagicMock()
         mock_self_corrector_class = MagicMock()
         mock_autocomplete_class = MagicMock()
+        mock_template_gen_class = MagicMock()
 
         # Import the module first to ensure it's loaded
         import src.qa.quality
@@ -60,6 +61,9 @@ class TestIntegratedQualitySystem:
                 src.qa.quality, "SelfCorrectingQAChain", mock_self_corrector_class
             ),
             patch.object(src.qa.quality, "SmartAutocomplete", mock_autocomplete_class),
+            patch.object(
+                src.qa.quality, "DynamicTemplateGenerator", mock_template_gen_class
+            ),
         ):
             from src.qa.quality import IntegratedQualitySystem
 
@@ -84,6 +88,7 @@ class TestIntegratedQualitySystem:
             mock_llm_class.assert_called_once()
             mock_self_corrector_class.assert_called_once()
             mock_autocomplete_class.assert_called_once()
+            mock_template_gen_class.assert_called_once()
 
             # Verify attributes are set
             assert system.kg is not None
@@ -129,6 +134,9 @@ class TestIntegratedQualitySystem:
                 src.qa.quality, "MultimodalUnderstanding", mock_multimodal_class
             ),
             patch.object(src.qa.quality, "GeminiModelClient", mock_llm_class),
+            patch.object(src.qa.quality, "SelfCorrectingQAChain"),
+            patch.object(src.qa.quality, "SmartAutocomplete"),
+            patch.object(src.qa.quality, "DynamicTemplateGenerator"),
         ):
             from src.qa.quality import IntegratedQualitySystem
 
@@ -197,6 +205,11 @@ class TestIntegratedQualitySystem:
             mock_constraint_check
         )
 
+        mock_template_gen_instance = MagicMock()
+        mock_template_gen_instance.generate_prompt_for_query_type.return_value = (
+            "Generated prompt text"
+        )
+
         # Create mock classes
         mock_kg_class = MagicMock(return_value=mock_kg_instance)
         mock_augmenter_class = MagicMock(return_value=mock_augmenter_instance)
@@ -208,6 +221,7 @@ class TestIntegratedQualitySystem:
         mock_llm_class = MagicMock(return_value=mock_llm_instance)
         mock_self_corrector_class = MagicMock(return_value=mock_self_corrector_instance)
         mock_autocomplete_class = MagicMock(return_value=mock_autocomplete_instance)
+        mock_template_gen_class = MagicMock(return_value=mock_template_gen_instance)
 
         # Import the module first to ensure it's loaded
         import src.qa.quality
@@ -233,6 +247,9 @@ class TestIntegratedQualitySystem:
                 src.qa.quality, "SelfCorrectingQAChain", mock_self_corrector_class
             ),
             patch.object(src.qa.quality, "SmartAutocomplete", mock_autocomplete_class),
+            patch.object(
+                src.qa.quality, "DynamicTemplateGenerator", mock_template_gen_class
+            ),
         ):
             from src.qa.quality import IntegratedQualitySystem
 
@@ -264,6 +281,7 @@ class TestIntegratedQualitySystem:
                 mock_augmented_prompt, role="generator"
             )
             mock_validator_instance.cross_validate_qa_pair.assert_called_once()
+            mock_template_gen_instance.generate_prompt_for_query_type.assert_called_once()
 
             # Verify result structure
             assert "output" in result
@@ -296,6 +314,24 @@ class TestIntegratedQualitySystem:
         mock_validator_instance = MagicMock()
         mock_validator_instance.cross_validate_qa_pair.return_value = {}
         mock_enforcer_instance = MagicMock()
+        mock_enforcer_instance.validate_complete_output.return_value = {
+            "output": "summary output"
+        }
+
+        mock_template_gen_instance = MagicMock()
+        mock_template_gen_instance.generate_prompt_for_query_type.return_value = (
+            "prompt"
+        )
+
+        mock_self_corrector_instance = MagicMock()
+        mock_self_corrector_instance.generate_with_self_correction.return_value = {
+            "output": "summary output",
+            "iterations": 0,
+        }
+
+        mock_self_corrector_class = MagicMock(return_value=mock_self_corrector_instance)
+        mock_autocomplete_class = MagicMock()
+        mock_template_gen_class = MagicMock(return_value=mock_template_gen_instance)
 
         # Create mock classes
         mock_kg_class = MagicMock(return_value=mock_kg_instance)
@@ -327,6 +363,13 @@ class TestIntegratedQualitySystem:
                 src.qa.quality, "MultimodalUnderstanding", mock_multimodal_class
             ),
             patch.object(src.qa.quality, "GeminiModelClient", mock_llm_class),
+            patch.object(
+                src.qa.quality, "SelfCorrectingQAChain", mock_self_corrector_class
+            ),
+            patch.object(src.qa.quality, "SmartAutocomplete", mock_autocomplete_class),
+            patch.object(
+                src.qa.quality, "DynamicTemplateGenerator", mock_template_gen_class
+            ),
         ):
             from src.qa.quality import IntegratedQualitySystem
 

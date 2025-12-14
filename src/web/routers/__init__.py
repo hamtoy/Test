@@ -6,6 +6,7 @@ from src.web.routers.health import router as health_router
 from src.web.routers.logs_api import router as logs_api_router
 from src.web.routers.metrics import router as metrics_router
 from src.web.routers.ocr import router as ocr_router
+from src.web.routers.optimization import router as optimization_router
 from src.web.routers.pages import router as pages_router
 from src.web.routers.qa import router as qa_router
 from src.web.routers.session import router as session_router
@@ -19,6 +20,7 @@ __all__ = [
     "logs_api_router",
     "metrics_router",
     "ocr_router",
+    "optimization_router",
     "pages_router",
     "qa_router",
     "session_router",
