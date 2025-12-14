@@ -53,6 +53,11 @@ async def test_generate_qa_with_all_enhancements(
         def __init__(self, *_: Any, **__: Any) -> None:
             pass
 
+        def validate_complete_output(
+            self, output: str, query_type: str
+        ) -> dict[str, Any]:
+            return {"valid": True, "issues": []}
+
     class FakeAdjuster:
         def __init__(self, *_: Any, **__: Any) -> None:
             pass
@@ -103,6 +108,24 @@ async def test_generate_qa_with_all_enhancements(
         def generate(self, prompt: str, role: str = "generator") -> str:
             return "fake-llm-output"
 
+    class FakeSelfCorrector:
+        def __init__(self, *_: Any, **__: Any) -> None:
+            pass
+
+        def generate_with_self_correction(
+            self, query_type: str, context: dict[str, Any]
+        ) -> dict[str, Any]:
+            return {"output": "fake-llm-output", "iterations": 1, "validation": "yes"}
+
+    class FakeAutocomplete:
+        def __init__(self, *_: Any, **__: Any) -> None:
+            pass
+
+        def suggest_constraint_compliance(
+            self, draft_output: str, query_type: str
+        ) -> dict[str, list[str]]:
+            return {"violations": [], "suggestions": []}
+
     # Patch the actual modules where the classes are defined/imported
     from src.qa import quality
 
@@ -124,6 +147,10 @@ async def test_generate_qa_with_all_enhancements(
         quality, "MultimodalUnderstanding", FakeMultimodal, raising=True
     )
     monkeypatch.setattr(quality, "GeminiModelClient", FakeLLM, raising=True)
+    monkeypatch.setattr(
+        quality, "SelfCorrectingQAChain", FakeSelfCorrector, raising=True
+    )
+    monkeypatch.setattr(quality, "SmartAutocomplete", FakeAutocomplete, raising=True)
 
     system = quality.IntegratedQualitySystem("bolt://fake", "user", "pass")
     result = await system.generate_qa_with_all_enhancements("fake.jpg", "explanation")
@@ -131,3 +158,5 @@ async def test_generate_qa_with_all_enhancements(
     assert result["output"] == "fake-llm-output"
     assert result["validation"]["valid"] is True
     assert result["metadata"]["examples_used"] == [{"example": "ex1"}]
+    assert result["constraint_check"]["violations"] == []
+    assert result["self_correction"]["iterations"] == 1

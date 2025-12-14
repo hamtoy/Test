@@ -2,7 +2,7 @@
 
 Orchestrates all quality improvement features in a single pipeline:
 image analysis, complexity adjustment, example selection, context augmentation,
-LLM generation, and cross-validation.
+LLM generation, self-correction, constraint compliance, and cross-validation.
 """
 
 from __future__ import annotations
@@ -10,8 +10,10 @@ from __future__ import annotations
 from typing import Any
 
 from src.analysis.cross_validation import CrossValidationSystem
+from src.features.autocomplete import SmartAutocomplete
 from src.features.difficulty import AdaptiveDifficultyAdjuster
 from src.features.multimodal import MultimodalUnderstanding
+from src.features.self_correcting import SelfCorrectingQAChain
 from src.infra.constraints import RealTimeConstraintEnforcer
 from src.llm.gemini import GeminiModelClient
 from src.processing.context_augmentation import AdvancedContextAugmentation
@@ -20,7 +22,12 @@ from src.qa.rag_system import QAKnowledgeGraph
 
 
 class IntegratedQualitySystem:
-    """모든 품질 향상 기능을 통합한 파이프라인."""
+    """모든 품질 향상 기능을 통합한 파이프라인.
+
+    확장된 파이프라인:
+    이미지분석 → 복잡도분석 → 예시선택 → 컨텍스트증강 → LLM생성
+    → 자기교정 → 제약준수검사 → 실시간제약적용 → 크로스검증
+    """
 
     def __init__(
         self,
@@ -50,28 +57,32 @@ class IntegratedQualitySystem:
         self.example_selector = DynamicExampleSelector(self.kg)
         self.multimodal = MultimodalUnderstanding(self.kg)
         self.llm = GeminiModelClient()
+        # 새로 추가된 컴포넌트
+        self.self_corrector = SelfCorrectingQAChain(self.kg, self.llm)
+        self.autocomplete = SmartAutocomplete(self.kg)
 
     async def generate_qa_with_all_enhancements(
         self,
         image_path: str,
         query_type: str,
+        enable_self_correction: bool = True,
     ) -> dict[str, Any]:
         """모든 품질 보강 기능을 적용한 QA 생성 플로우.
 
-        GeminiModelClient를 통해 실제 LLM을 호출하여 답변을 생성합니다.
+        확장된 파이프라인으로 자기교정, 제약 준수 검사, 실시간 제약 적용을 포함합니다.
 
         Args:
             image_path: 분석할 이미지 파일 경로
             query_type: 질의 유형 (예: "explanation", "summary")
+            enable_self_correction: 자기 교정 기능 활성화 여부 (기본값: True)
 
         Returns:
             다음 키를 포함하는 딕셔너리:
             - output (str): 생성된 QA 답변 텍스트
             - validation (Dict): 크로스 검증 결과
-            - metadata (Dict): 메타데이터, 다음 포함:
-                - complexity (Dict): 이미지 복잡도 분석 결과
-                - adjustments (Dict): 난이도 조정 정보
-                - examples_used (List): 사용된 예시 리스트
+            - metadata (Dict): 메타데이터
+            - constraint_check (Dict): 제약 준수 검사 결과
+            - self_correction (Dict | None): 자기 교정 결과 (활성화된 경우)
         """
         # 1. 이미지 분석
         image_meta = await self.multimodal.analyze_image_deep(image_path)
@@ -101,22 +112,52 @@ class IntegratedQualitySystem:
         # 5. Gemini LLM 생성
         generated_output = self.llm.generate(augmented_prompt, role="generator")
 
-        # 6. 크로스 검증
+        # 6. 자기 교정 (선택적)
+        self_correction_result: dict[str, Any] | None = None
+        if enable_self_correction:
+            self_correction_result = self.self_corrector.generate_with_self_correction(
+                query_type=query_type,
+                context={
+                    "image_meta": image_meta,
+                    "initial_draft": generated_output,
+                },
+            )
+            # 교정된 출력으로 대체
+            generated_output = self_correction_result.get("output", generated_output)
+
+        # 7. 제약 준수 검사 (SmartAutocomplete)
+        constraint_check = self.autocomplete.suggest_constraint_compliance(
+            draft_output=generated_output,
+            query_type=query_type,
+        )
+
+        # 8. 실시간 제약 검증 (RealTimeConstraintEnforcer)
+        enforcement_result = self.enforcer.validate_complete_output(
+            output=generated_output,
+            query_type=query_type,
+        )
+        # 제약 위반이 없으면 그대로 사용
+        final_output = generated_output
+
+        # 9. 크로스 검증
         validation = self.validator.cross_validate_qa_pair(
-            question="(auto-generated)",  # 실제 질문을 여기에 넣어야 함
-            answer=generated_output,
+            question="(auto-generated)",
+            answer=final_output,
             query_type=query_type,
             image_meta=image_meta,
         )
 
         return {
-            "output": generated_output,
+            "output": final_output,
             "validation": validation,
             "metadata": {
                 "complexity": complexity,
                 "adjustments": adjustments,
                 "examples_used": examples,
             },
+            "constraint_check": constraint_check,
+            "self_correction": self_correction_result,
+            "enforcement": enforcement_result,
         }
 
 
@@ -130,4 +171,6 @@ __all__ = [
     "MultimodalUnderstanding",
     "QAKnowledgeGraph",
     "RealTimeConstraintEnforcer",
+    "SelfCorrectingQAChain",
+    "SmartAutocomplete",
 ]
