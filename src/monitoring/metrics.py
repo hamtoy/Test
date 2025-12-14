@@ -5,34 +5,6 @@
 
 from __future__ import annotations
 
-from typing import Protocol
-
-# Type stubs for when prometheus_client is not available
-# These protocols define the interface we expect
-
-
-class _CounterProtocol(Protocol):
-    """Protocol for Counter-like objects."""
-
-    def labels(self, *args: str, **kwargs: str) -> "_CounterProtocol": ...
-    def inc(self, amount: float = 1) -> None: ...
-
-
-class _HistogramProtocol(Protocol):
-    """Protocol for Histogram-like objects."""
-
-    def labels(self, *args: str, **kwargs: str) -> "_HistogramProtocol": ...
-    def observe(self, amount: float) -> None: ...
-
-
-class _GaugeProtocol(Protocol):
-    """Protocol for Gauge-like objects."""
-
-    def set(self, value: float) -> None: ...
-    def inc(self, amount: float = 1) -> None: ...
-    def dec(self, amount: float = 1) -> None: ...
-
-
 # prometheus_client가 없을 경우 스텁 구현 사용
 try:
     from prometheus_client import Counter, Gauge, Histogram, generate_latest
@@ -46,13 +18,13 @@ except ImportError:
         """Stub Counter implementation when Prometheus is not available."""
 
         def __init__(
-            self, name: str, doc: str, labelnames: list[str] | None = None
+            self, name: str, _doc: str, _labelnames: list[str] | None = None
         ) -> None:
             """Initialize the stub counter."""
             self._name = name
             self._values: dict[tuple[str, ...], float] = {}
 
-        def labels(self, *args: str, **kwargs: str) -> "_StubCounter":
+        def labels(self, *_args: str, **_kwargs: str) -> "_StubCounter":
             """Return self for method chaining."""
             return self
 
@@ -63,12 +35,12 @@ except ImportError:
         """Stub Histogram implementation when Prometheus is not available."""
 
         def __init__(
-            self, name: str, doc: str, labelnames: list[str] | None = None
+            self, name: str, _doc: str, _labelnames: list[str] | None = None
         ) -> None:
             """Initialize the stub histogram."""
             self._name = name
 
-        def labels(self, *args: str, **kwargs: str) -> "_StubHistogram":
+        def labels(self, *_args: str, **_kwargs: str) -> "_StubHistogram":
             """Return self for method chaining."""
             return self
 
@@ -79,7 +51,7 @@ except ImportError:
         """Stub Gauge implementation when Prometheus is not available."""
 
         def __init__(
-            self, name: str, doc: str, labelnames: list[str] | None = None
+            self, name: str, _doc: str, _labelnames: list[str] | None = None
         ) -> None:
             """Initialize the stub gauge."""
             self._name = name
