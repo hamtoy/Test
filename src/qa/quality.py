@@ -51,7 +51,7 @@ class IntegratedQualitySystem:
         self.multimodal = MultimodalUnderstanding(self.kg)
         self.llm = GeminiModelClient()
 
-    def generate_qa_with_all_enhancements(
+    async def generate_qa_with_all_enhancements(
         self,
         image_path: str,
         query_type: str,
@@ -74,7 +74,7 @@ class IntegratedQualitySystem:
                 - examples_used (List): 사용된 예시 리스트
         """
         # 1. 이미지 분석
-        image_meta = self.multimodal.analyze_image_deep(image_path)
+        image_meta = await self.multimodal.analyze_image_deep(image_path)
 
         # 2. 복잡도 분석 및 조정
         complexity = self.adjuster.analyze_image_complexity(image_meta)
