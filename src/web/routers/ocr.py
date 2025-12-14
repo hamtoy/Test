@@ -9,11 +9,14 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import tempfile
+import uuid
 from pathlib import Path
 from typing import Any
 
+import aiofiles
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from starlette.requests import Request
 
@@ -137,18 +140,19 @@ async def api_ocr_image(
         )
 
     try:
-        # 임시 파일로 저장
-        with tempfile.NamedTemporaryFile(
-            delete=False,
-            suffix=Path(file.filename or "image.png").suffix,
-        ) as tmp:
+        # 임시 파일 경로 생성 (비동기 처리 호환)
+        suffix = Path(file.filename or "image.png").suffix
+        tmp_filename = f"{uuid.uuid4()}{suffix}"
+        tmp_path = Path(tempfile.gettempdir()) / tmp_filename
+
+        # 비동기 파일 쓰기
+        async with aiofiles.open(tmp_path, "wb") as out_file:
             content = await file.read()
-            tmp.write(content)
-            tmp_path = tmp.name
+            await out_file.write(content)
 
         # Multimodal OCR 실행
         multimodal = MultimodalUnderstanding(llm_provider=_llm_provider)
-        result = await multimodal.analyze_image_deep(tmp_path)
+        result = await multimodal.analyze_image_deep(str(tmp_path))
 
         # OCR 텍스트 저장
         extracted_text = result.get("extracted_text", "")
@@ -192,8 +196,6 @@ async def api_ocr_image(
         ) from exc
     finally:
         # 임시 파일 삭제
-        import contextlib
-
         with contextlib.suppress(Exception):
             Path(tmp_path).unlink(missing_ok=True)
 

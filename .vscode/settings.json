@@ -50,6 +50,6 @@
   "vibereport.language": "ko",
   "vibereport.projectVisionMode": "auto",
   "vibereport.defaultProjectType": "auto-detect",
-  "vibereport.defaultQualityFocus": "maintenance",
+  "vibereport.defaultQualityFocus": "production",
   "vibereport.previewBackgroundColor": "ide"
 }
