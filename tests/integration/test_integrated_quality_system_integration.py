@@ -127,6 +127,15 @@ async def test_generate_qa_with_all_enhancements(
         ) -> dict[str, list[str]]:
             return {"violations": [], "suggestions": []}
 
+    class FakeTemplateGenerator:
+        def __init__(self, *_: Any, **__: Any) -> None:
+            pass
+
+        def generate_prompt_for_query_type(
+            self, query_type: str, context: dict[str, Any]
+        ) -> str:
+            return "dynamic-template-prompt"
+
     # Patch the actual modules where the classes are defined/imported
     from src.qa import quality
 
@@ -152,6 +161,9 @@ async def test_generate_qa_with_all_enhancements(
         quality, "SelfCorrectingQAChain", FakeSelfCorrector, raising=True
     )
     monkeypatch.setattr(quality, "SmartAutocomplete", FakeAutocomplete, raising=True)
+    monkeypatch.setattr(
+        quality, "DynamicTemplateGenerator", FakeTemplateGenerator, raising=True
+    )
 
     system = quality.IntegratedQualitySystem("bolt://fake", "user", "pass")
     result = await system.generate_qa_with_all_enhancements("fake.jpg", "explanation")
