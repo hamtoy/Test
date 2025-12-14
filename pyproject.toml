@@ -120,9 +120,6 @@ exclude = ["vulture_whitelist.py"]
 
 [tool.ruff.lint]
 extend-select = ["PERF", "FURB", "SIM", "D"]
-ignore = [
-    "D100",   # Missing docstring in public module (36 violations)
-]
 
 
 
