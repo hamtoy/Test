@@ -27,7 +27,7 @@
     "**/node_modules": true,
     "**/.venv": true
   },
-  "chatgpt.openOnStartup": true,
+  "chatgpt.openOnStartup": false,
   "vibereport.reportDirectory": "devplan",
   "vibereport.snapshotFile": ".vscode/vibereport-state.json",
   "vibereport.maxFilesToScan": 5000,

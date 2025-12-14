@@ -7,10 +7,11 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
-  test-normal-mode:
-    name: Test (Normal Mode)
+  check-normal:
+    name: Check (Normal Mode)
     runs-on: ubuntu-latest
     env:
       DEPRECATION_LEVEL: normal
@@ -35,15 +36,12 @@ jobs:
       - name: Run deprecation check
         run: uv run python scripts/migrate_imports.py --check --path .
 
-      - name: Run deprecation stats
-        run: uv run python scripts/deprecation_stats.py --path . --exclude .venv --exclude __pycache__
-
       - name: Run tests (warnings allowed)
         run: uv run python -m pytest tests/ -v -W default::DeprecationWarning
         continue-on-error: true
 
-  test-strict-mode:
-    name: Test (Strict Mode)
+  check-strict:
+    name: Check (Strict Mode)
     runs-on: ubuntu-latest
     env:
       DEPRECATION_LEVEL: strict
@@ -73,17 +71,16 @@ jobs:
 
       - name: Verify no deprecated imports in src/
         run: |
-          # This job should pass only if there are no deprecated imports
-          # The migrate_imports.py --check will show findings but not fail
-          # We check the actual usage stats for a more actionable result
           uv run python scripts/deprecation_stats.py --path src/ --exclude __pycache__ --json /tmp/stats.json
           cat /tmp/stats.json
 
-  migration-report:
-    name: Migration Report
+  generate-report:
+    name: Generate Weekly Report
     runs-on: ubuntu-latest
-    needs: [test-normal-mode]
+    needs: [check-normal]
     if: always()
+    outputs:
+      total_calls: ${{ steps.analyze.outputs.total_calls }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -102,18 +99,73 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev
 
-      - name: Generate HTML Report
+      - name: Analyze deprecation usage
+        id: analyze
         run: |
           uv run python scripts/deprecation_stats.py \
             --path . \
             --exclude .venv \
             --exclude __pycache__ \
             --exclude .git \
-            --html deprecation_report.html
+            --html deprecation_report.html \
+            --json deprecation_stats.json
 
-      - name: Upload Report
+          TOTAL_CALLS=$(python -c "import json; print(json.load(open('deprecation_stats.json'))['stats']['total_calls'])")
+          echo "total_calls=${TOTAL_CALLS}" >> $GITHUB_OUTPUT
+          echo "📊 Total deprecated calls: ${TOTAL_CALLS}"
+
+      - name: Upload HTML Report
         uses: actions/upload-artifact@v5
         with:
           name: deprecation-report
           path: deprecation_report.html
-          retention-days: 30
+          retention-days: 90
+
+      - name: Upload JSON Stats
+        uses: actions/upload-artifact@v5
+        with:
+          name: deprecation-stats-json
+          path: deprecation_stats.json
+          retention-days: 90
+
+  create-issue:
+    name: Create Issue (High Usage)
+    runs-on: ubuntu-latest
+    needs: generate-report
+    if: needs.generate-report.outputs.total_calls > 100
+    steps:
+      - name: Create Issue
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const totalCalls = ${{ needs.generate-report.outputs.total_calls }};
+            const date = new Date().toISOString().split('T')[0];
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `⚠️ High Deprecated Import Usage Detected (${date})`,
+              body: `## Deprecation Report Summary
+
+            **Date**: ${date}
+            **Total Deprecated Calls**: ${totalCalls}
+
+            ### Action Required
+
+            The number of deprecated import usages exceeds the threshold of 100.
+            Please review the weekly report artifact and prioritize migration.
+
+            ### Migration Steps
+
+            1. Download the HTML report from the workflow artifacts
+            2. Review the affected files
+            3. Run the migration tool:
+               \`\`\`bash
+               python scripts/migrate_imports.py --check --path src/
+               python scripts/migrate_imports.py --fix --path src/
+               \`\`\`
+
+            ---
+            *This issue was automatically created by the Deprecation workflow.*`,
+              labels: ['deprecation', 'maintenance', 'automated']
+            });

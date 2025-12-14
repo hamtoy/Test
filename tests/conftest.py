@@ -1,13 +1,16 @@
 import json
 import os
-from pathlib import Path
-
-import pytest
-import warnings
 import sys
 import types
+import warnings
+from pathlib import Path
 from typing import Any, List, Optional, cast
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
+# Register fixtures from tests.fixtures package
+pytest_plugins = ["tests.fixtures"]
 
 # Mock API key for testing: AIza + 35 zeros = 39 characters total (valid format)
 MOCK_GEMINI_API_KEY = "AIza" + "0" * 35
