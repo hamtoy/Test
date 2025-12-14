@@ -172,6 +172,39 @@ class GeminiProvider(LLMProvider):
             # Fallback or re-raise? For now, re-raise as ProviderError
             raise ProviderError(f"Token counting failed: {e}", original_error=e) from e
 
+    async def generate_vision_content_async(
+        self,
+        image_data: bytes,
+        mime_type: str = "image/png",
+        prompt: str = "이 이미지의 모든 텍스트를 정확히 추출해주세요.",
+    ) -> str:
+        """이미지에서 텍스트를 추출합니다 (Gemini Vision OCR).
+
+        Args:
+            image_data: 이미지 바이너리 데이터.
+            mime_type: 이미지 MIME 타입.
+            prompt: OCR 프롬프트.
+
+        Returns:
+            추출된 텍스트.
+        """
+        import base64
+
+        try:
+            response = await self._model.generate_content_async(
+                [
+                    {
+                        "mime_type": mime_type,
+                        "data": base64.b64encode(image_data).decode("utf-8"),
+                    },
+                    prompt,
+                ]
+            )
+            return getattr(response, "text", "") or ""
+        except Exception as exc:
+            logger.error(f"Vision content generation failed: {exc}")
+            raise self._convert_google_exception(exc) from exc
+
 
 class Neo4jProvider(GraphProvider):
     """Neo4j implementation of GraphProvider delegating to infra layer."""

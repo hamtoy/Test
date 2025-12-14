@@ -350,7 +350,20 @@ async def init_resources() -> None:
         kg=kg,
         pipeline=pipeline,
     )
-    ocr_router_module.set_dependencies(app_config)
+    # OCR 라우터에 GeminiProvider 주입 (Vision OCR 지원)
+    try:
+        from src.core.adapters import GeminiProvider
+
+        llm_provider = GeminiProvider(
+            api_key=app_config.api_key,
+            model_name="gemini-2.0-flash",
+        )
+        ocr_router_module.set_dependencies(app_config, llm_provider)
+        logger.info("OCR router initialized with Gemini Vision support")
+    except Exception as e:
+        logger.warning("Failed to initialize Gemini Vision OCR: %s", e)
+        ocr_router_module.set_dependencies(app_config)
+
     session_router_module.set_dependencies(session_manager)
     # 전역 KG 설정 (이미 초기화된 경우에도 동기화)
     set_global_kg(kg)

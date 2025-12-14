@@ -93,6 +93,27 @@ class LLMProvider(ABC):
             Number of tokens.
         """
 
+    async def generate_vision_content_async(
+        self,
+        image_data: bytes,
+        mime_type: str = "image/png",
+        prompt: str = "이 이미지의 모든 텍스트를 정확히 추출해주세요.",
+    ) -> str:
+        """이미지에서 텍스트를 추출합니다 (OCR).
+
+        Args:
+            image_data: 이미지 바이너리 데이터.
+            mime_type: 이미지 MIME 타입 (image/png, image/jpeg 등).
+            prompt: OCR 프롬프트.
+
+        Returns:
+            추출된 텍스트.
+
+        Raises:
+            ProviderError: 이미지 처리 실패 시.
+        """
+        raise NotImplementedError("Vision content generation not supported")
+
 
 class GraphProvider(ABC):
     """Abstract base class for Graph Database providers."""
