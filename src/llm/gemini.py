@@ -29,16 +29,29 @@ load_dotenv()
 
 
 class GeminiModelClient:
-    """Real Gemini API client for generation, evaluation, and rewrite."""
+    """Real Gemini API client for generation, evaluation, and rewrite.
 
-    def __init__(self) -> None:
-        """Initialize the Gemini model client."""
+    Supports automatic fallback to secondary models when rate limits are hit.
+    """
+
+    def __init__(
+        self,
+        fallback_models: list[str] | None = None,
+    ) -> None:
+        """Initialize the Gemini model client.
+
+        Args:
+            fallback_models: Optional list of fallback model names to use
+                when the primary model hits rate limits (HTTP 429).
+                Example: ["gemini-flash-lite-latest"]
+        """
         api_key = require_env("GEMINI_API_KEY")
         # 전역 초기화 모듈 사용 (중복 호출 방지)
         from src.llm.init_genai import configure_genai
 
         configure_genai(api_key)
         self.model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-flash-latest")
+        self.fallback_models = fallback_models or []
         self.model = genai.GenerativeModel(self.model_name)
         genai_logger = getattr(genai, "_logging", None)
         if genai_logger and getattr(genai_logger, "logger", None):
@@ -74,40 +87,66 @@ class GeminiModelClient:
         temperature: float = 0.2,
         role: str | None = None,
     ) -> str:
-        """Generate text for a given prompt.
+        """Generate text for a given prompt with automatic fallback on rate limits.
 
         Args:
             prompt: 입력 프롬프트.
             temperature: 생성 온도.
             role: 호출 의도(호환성용, 현재 로직에서는 사용하지 않음).
+
+        Returns:
+            Generated text string, or error message if all models fail.
         """
         _ = role  # kept for compatibility; not used in current generation flow
-        try:
-            start = time.perf_counter()
-            response = self.model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=temperature,
-                    max_output_tokens=DEFAULT_MAX_OUTPUT_TOKENS,
-                ),
-                safety_settings=self.safety_settings,
-            )
-            latency_ms = (time.perf_counter() - start) * 1000
-            if hasattr(response, "usage_metadata") and response.usage_metadata:
-                usage = response.usage_metadata
-                log_metrics(
-                    self.logger,
-                    latency_ms=latency_ms,
-                    prompt_tokens=usage.prompt_token_count,
-                    completion_tokens=usage.candidates_token_count,
+
+        # Build list of models to try: primary + fallbacks
+        models_to_try = [self.model_name] + self.fallback_models
+        last_error: Exception | None = None
+
+        for model_name in models_to_try:
+            try:
+                model = genai.GenerativeModel(model_name)
+                start = time.perf_counter()
+                response = model.generate_content(
+                    prompt,
+                    generation_config=genai.types.GenerationConfig(
+                        temperature=temperature,
+                        max_output_tokens=DEFAULT_MAX_OUTPUT_TOKENS,
+                    ),
+                    safety_settings=self.safety_settings,
                 )
-            return str(response.text)
-        except google_exceptions.GoogleAPIError as e:
-            return f"[생성 실패: {e}]"
-        except (ValueError, TypeError) as e:
-            return f"[생성 실패(입력 오류): {e}]"
-        except Exception as e:  # noqa: BLE001
-            return f"[생성 실패(알 수 없음): {e}]"
+                latency_ms = (time.perf_counter() - start) * 1000
+                if hasattr(response, "usage_metadata") and response.usage_metadata:
+                    usage = response.usage_metadata
+                    log_metrics(
+                        self.logger,
+                        latency_ms=latency_ms,
+                        prompt_tokens=usage.prompt_token_count,
+                        completion_tokens=usage.candidates_token_count,
+                    )
+                return str(response.text)
+
+            except google_exceptions.ResourceExhausted as e:
+                # Rate limit hit - log warning and try next model
+                self.logger.warning(
+                    "Rate limit hit for model '%s', switching to fallback... (%s)",
+                    model_name,
+                    str(e)[:100],
+                )
+                last_error = e
+                continue
+
+            except google_exceptions.GoogleAPIError as e:
+                return f"[생성 실패: {e}]"
+            except (ValueError, TypeError) as e:
+                return f"[생성 실패(입력 오류): {e}]"
+            except Exception as e:  # noqa: BLE001
+                return f"[생성 실패(알 수 없음): {e}]"
+
+        # All models exhausted due to rate limits
+        if last_error:
+            return f"[생성 실패: 모든 모델 Rate Limit 초과 - {last_error}]"  # noqa: E501
+        return "[생성 실패: 알 수 없는 오류]"
 
     def evaluate(self, question: str, answers: list[str]) -> dict[str, Any]:
         """Evaluate answers; parse 점수/최고 형식, otherwise length fallback."""

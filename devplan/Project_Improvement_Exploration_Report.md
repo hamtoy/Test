@@ -57,7 +57,7 @@
   - 상용 서비스 수준의 SLA(가용성)를 보장하기 어려움.
 
 - **개선 내용 (Proposed Solution):**
-  1. `GeminiModelClient` 초기화 시 기본 모델 외에 `fallback_models` 리스트(예: `gemini-1.5-flash`)를 주입받도록 수정.
+  1. `GeminiModelClient` 초기화 시 기본 모델 외에 `fallback_models` 리스트(예: `gemini-flash-lite-latest`)를 주입받도록 수정.
   2. `429 ResourceExhausted` 에러 발생 시, `logger.warning`을 기록하고 즉시 다음 순위 모델로 요청을 재시도.
   3. 모든 모델이 실패했을 때만 최종 예외를 발생시키도록 `generate` 메서드 래핑.
 
