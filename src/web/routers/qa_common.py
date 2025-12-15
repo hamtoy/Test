@@ -67,7 +67,7 @@ class _CachedKG(QAKnowledgeGraph):
     _constraints: dict[str, list[dict[str, Any]]]
     _formatting_text: dict[str, str]
     _formatting_rules: dict[str, list[dict[str, Any]]]
-    _rules: dict[tuple[str, int], list[str]]
+    _rules: dict[tuple[str, int, str | None], list[str]]
 
     def __init__(self, base: QAKnowledgeGraph) -> None:
         # Skip QAKnowledgeGraph.__init__ to avoid re-initializing connections
@@ -118,11 +118,18 @@ class _CachedKG(QAKnowledgeGraph):
         self._formatting_rules[query_type] = rules
         return cast(list[dict[str, Any]], rules)
 
-    def find_relevant_rules(self, query: str, k: int = 10) -> list[str]:
-        key = (query[:500], k)
+    def find_relevant_rules(
+        self,
+        query: str,
+        k: int = 10,
+        query_type: str | None = None,
+    ) -> list[str]:
+        key = (query[:500], k, query_type)
         if key in self._rules:
             return self._rules[key]
-        data: list[str] = self._base.find_relevant_rules(query, k=k)
+        data: list[str] = self._base.find_relevant_rules(
+            query, k=k, query_type=query_type
+        )
         self._rules[key] = data
         return data
 

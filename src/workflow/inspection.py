@@ -70,7 +70,9 @@ def _build_rules_context(
         return _default_rules_context()
     try:
         constraints = kg.get_constraints_for_query_type(query_type)
-        rules = kg.find_relevant_rules(query, k=5) if query else []
+        rules = (
+            kg.find_relevant_rules(query, k=5, query_type=query_type) if query else []
+        )
         return _format_rules_context(constraints, rules)
     except Exception as exc:  # noqa: BLE001
         logger.debug("규칙 컨텍스트 조회 실패: %s", exc)

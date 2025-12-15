@@ -133,12 +133,17 @@ class QueryGeneratorService:
         self,
         kg_obj: QAKnowledgeGraph | None,
         ocr_text: str,
+        query_type: str | None = None,
     ) -> list[str]:
         agent = self.agent
         if kg_obj is None:
             return []
         try:
-            return kg_obj.find_relevant_rules(ocr_text[:500], k=10)
+            return kg_obj.find_relevant_rules(
+                ocr_text[:500],
+                k=10,
+                query_type=query_type,
+            )
         except Exception as exc:  # noqa: BLE001
             agent.logger.debug("Neo4j 규칙 조회 실패: %s", exc)
             return []
@@ -266,7 +271,7 @@ class QueryGeneratorService:
             constraints,
             kg,
         )
-        rules = self._load_rules(kg_obj, ocr_text)
+        rules = self._load_rules(kg_obj, ocr_text, query_type)
         formatting_rules = self._load_formatting_rules(kg_obj)
         guide_rules, common_mistakes = self._load_guide_context(query_type)
         system_prompt = self._render_system_prompt(
@@ -327,7 +332,9 @@ class ResponseEvaluatorService:
             constraints = [
                 desc for c in constraint_list if (desc := c.get("description"))
             ]
-            rules = kg_obj.find_relevant_rules(ocr_text[:500], k=10)
+            rules = kg_obj.find_relevant_rules(
+                ocr_text[:500], k=10, query_type=query_type
+            )
         except Exception as exc:  # noqa: BLE001
             agent.logger.debug("Neo4j 규칙 조회 실패: %s", exc)
 
@@ -457,7 +464,9 @@ class RewriterService:
 
             kg_obj = get_or_create_kg()
             constraint_list = kg_obj.get_constraints_for_query_type(query_type)
-            rules = kg_obj.find_relevant_rules(user_query[:500], k=10)
+            rules = kg_obj.find_relevant_rules(
+                user_query[:500], k=10, query_type=query_type
+            )
         except Exception as exc:  # noqa: BLE001
             agent.logger.debug("Neo4j 조회 실패 (선택사항): %s", exc)
         return constraint_list, rules, kg_obj

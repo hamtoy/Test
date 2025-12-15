@@ -218,15 +218,57 @@ class QAKnowledgeGraph:
             duration_ms=elapsed_ms,
         ),
     )
-    def find_relevant_rules(self, query: str, k: int = 5) -> list[str]:
-        """Return vector-search-based rules when available."""
+    def find_relevant_rules(
+        self,
+        query: str,
+        k: int = 5,
+        query_type: str | None = None,
+    ) -> list[str]:
+        """Return vector-search-based rules when available.
+
+        Args:
+            query: Search query text
+            k: Number of results to return
+            query_type: Optional query type for metadata filtering (Hybrid Search)
+
+        Returns:
+            List of relevant rule texts
+        """
         if not self._vector_store:
             self.cache_metrics.record_skip("vector_store_unavailable")
             logger.warning("Vector store unavailable; skipping vector search")
             return []
 
-        results = self._vector_store.similarity_search(query, k=k)
-        return [doc.page_content for doc in results]
+        # Hybrid Search: Pre-filter by query_type metadata
+        filter_dict: dict[str, str] = {}
+        if query_type:
+            # Filter rules that apply to this query_type or 'all'
+            # Note: Neo4jVector filter uses exact match, so we search for query_type
+            # Rules with applies_to='all' should be retrieved separately if needed
+            filter_dict["applies_to"] = query_type
+            logger.debug(
+                "Hybrid search: filtering by query_type=%s",
+                query_type,
+            )
+
+        try:
+            if filter_dict:
+                results = self._vector_store.similarity_search(
+                    query,
+                    k=k,
+                    filter=filter_dict,
+                )
+            else:
+                results = self._vector_store.similarity_search(query, k=k)
+            return [doc.page_content for doc in results]
+        except Exception as e:
+            # Fallback to unfiltered search if filter fails
+            logger.warning(
+                "Filtered vector search failed, falling back to unfiltered: %s",
+                e,
+            )
+            results = self._vector_store.similarity_search(query, k=k)
+            return [doc.page_content for doc in results]
 
     @measure_latency(
         "get_constraints",
