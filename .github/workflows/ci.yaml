@@ -243,7 +243,7 @@ jobs:
           NEO4J_PASSWORD: ""
 
       - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@v2
+        uses: sonarsource/sonarcloud-github-action@v5
         with:
           projectBaseDir: .
           args: >
