@@ -1,5 +1,6 @@
 """Web API routers package."""
 
+from src.web.routers.analysis import router as analysis_router
 from src.web.routers.cache_stats import router as cache_stats_router
 from src.web.routers.config_api import router as config_api_router
 from src.web.routers.health import router as health_router
@@ -14,6 +15,7 @@ from src.web.routers.stream import router as stream_router
 from src.web.routers.workspace import router as workspace_router
 
 __all__ = [
+    "analysis_router",
     "cache_stats_router",
     "config_api_router",
     "health_router",
