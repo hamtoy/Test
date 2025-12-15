@@ -181,6 +181,12 @@ async def api_ocr_image(
     except HTTPException:
         raise
     except Exception as exc:
+        # DEBUG: Print actual exception for CI debugging
+        import traceback
+
+        print(f"DEBUG OCR ERROR: {exc.__class__.__name__}: {exc}")
+        traceback.print_exc()
+
         logger.error(
             "Image OCR failed",
             extra={
