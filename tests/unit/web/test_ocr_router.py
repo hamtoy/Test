@@ -14,7 +14,8 @@ def client() -> TestClient:
     """Create test client."""
     from src.web.api import app
 
-    return TestClient(app)
+    # raise_server_exceptions=True to see actual exceptions in tests
+    return TestClient(app, raise_server_exceptions=True)
 
 
 @pytest.fixture
