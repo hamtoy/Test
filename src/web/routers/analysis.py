@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 @router.post("/semantic")
 async def run_semantic_analysis(
     top_k: int = 30,
-    min_freq: int = 5,
 ) -> dict[str, Any]:
     """Run semantic topic extraction and Neo4j linking.
 
@@ -28,7 +27,6 @@ async def run_semantic_analysis(
 
     Args:
         top_k: Number of top keywords to extract
-        min_freq: Minimum frequency threshold
     """
     import os
 
