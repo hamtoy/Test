@@ -120,6 +120,12 @@ jobs:
             echo '{"timestamp": "'$(date -Iseconds)'", "stats": {"total_calls": 0, "unique_callers": 0, "by_module": {}, "files_with_deprecations": []}}' > deprecation_stats.json
             TOTAL_CALLS=0
           fi
+
+          # Create empty HTML report if not generated
+          if [ ! -f deprecation_report.html ]; then
+            echo '<!DOCTYPE html><html><head><title>Deprecation Report</title></head><body><h1>No Deprecations Found</h1><p>No deprecated imports detected.</p></body></html>' > deprecation_report.html
+          fi
+
           echo "total_calls=${TOTAL_CALLS}" >> $GITHUB_OUTPUT
           echo "📊 Total deprecated calls: ${TOTAL_CALLS}"
 
