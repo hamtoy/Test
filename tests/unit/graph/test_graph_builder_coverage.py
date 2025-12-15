@@ -201,9 +201,7 @@ class TestQAGraphBuilder:
             mock_result.single.return_value = {"links": 10}
             mock_session.run.return_value = mock_result
 
-            from src.graph.builder import (  # type: ignore[attr-defined]
-                QAGraphBuilder,
-            )
+            from src.graph.builder import QAGraphBuilder
 
             builder = QAGraphBuilder("bolt://localhost:7687", "neo4j", "password")
 
