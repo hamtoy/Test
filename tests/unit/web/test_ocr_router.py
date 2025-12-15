@@ -208,16 +208,9 @@ class TestOcrImageEndpoint:
         mock_multimodal = MagicMock()
         mock_multimodal.analyze_image_deep = AsyncMock(return_value=mock_result)
 
-        # Create mock aiofiles async context manager
-        mock_file = MagicMock()
-        mock_file.write = AsyncMock()
-
-        mock_aiofiles_open = MagicMock()
-        mock_aiofiles_open.return_value.__aenter__ = AsyncMock(return_value=mock_file)
-        mock_aiofiles_open.return_value.__aexit__ = AsyncMock(return_value=None)
-
+        # Don't mock aiofiles - let real file operations work
+        # Only mock MultimodalUnderstanding and _save_ocr_text
         with (
-            patch("src.web.routers.ocr.aiofiles.open", mock_aiofiles_open),
             patch(
                 "src.web.routers.ocr.MultimodalUnderstanding",
                 return_value=mock_multimodal,
@@ -226,7 +219,7 @@ class TestOcrImageEndpoint:
         ):
             response = client.post(
                 "/api/ocr/image",
-                files={"file": ("test.png", b"PNG image data", "image/png")},
+                files={"file": ("test.png", b"fake PNG image data", "image/png")},
             )
 
             # Debug: print error details if not 200
@@ -287,16 +280,8 @@ class TestOcrImageEndpoint:
         mock_multimodal = MagicMock()
         mock_multimodal.analyze_image_deep = AsyncMock(return_value=mock_result)
 
-        # Create mock aiofiles async context manager
-        mock_file = MagicMock()
-        mock_file.write = AsyncMock()
-
-        mock_aiofiles_open = MagicMock()
-        mock_aiofiles_open.return_value.__aenter__ = AsyncMock(return_value=mock_file)
-        mock_aiofiles_open.return_value.__aexit__ = AsyncMock(return_value=None)
-
+        # Don't mock aiofiles - let real file operations work
         with (
-            patch("src.web.routers.ocr.aiofiles.open", mock_aiofiles_open),
             patch(
                 "src.web.routers.ocr.MultimodalUnderstanding",
                 return_value=mock_multimodal,
@@ -307,7 +292,7 @@ class TestOcrImageEndpoint:
         ):
             response = client.post(
                 "/api/ocr/image",
-                files={"file": ("test.gif", b"GIF data", "image/gif")},
+                files={"file": ("test.gif", b"fake GIF data", "image/gif")},
             )
 
             # Debug: print error details if not 200
