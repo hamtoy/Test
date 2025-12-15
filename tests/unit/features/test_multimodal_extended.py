@@ -305,3 +305,130 @@ def test_detect_table_chart() -> None:
     # Test with no table
     assert analyzer._detect_table_chart("일반적인 텍스트입니다") is False
     assert analyzer._detect_table_chart("") is False
+
+
+def test_get_mime_type() -> None:
+    """Test MIME type detection by file extension."""
+    from pathlib import Path
+
+    analyzer = mmu.MultimodalUnderstanding()
+
+    assert analyzer._get_mime_type(Path("test.png")) == "image/png"
+    assert analyzer._get_mime_type(Path("test.jpg")) == "image/jpeg"
+    assert analyzer._get_mime_type(Path("test.jpeg")) == "image/jpeg"
+    assert analyzer._get_mime_type(Path("test.gif")) == "image/gif"
+    assert analyzer._get_mime_type(Path("test.webp")) == "image/webp"
+    assert analyzer._get_mime_type(Path("test.bmp")) == "image/bmp"
+    assert analyzer._get_mime_type(Path("test.unknown")) == "image/png"  # default
+
+
+def test_extract_topics() -> None:
+    """Test topic extraction from Korean financial text."""
+    analyzer = mmu.MultimodalUnderstanding()
+
+    # Test with financial keywords
+    text = "2024년 1분기 매출액 증가, 영업이익 개선. 목표주가 Buy"
+    topics = analyzer._extract_topics(text)
+    assert len(topics) > 0
+    assert any("매출액" in t or "영업이익" in t for t in topics)
+
+    # Test with empty text
+    assert analyzer._extract_topics("") == []
+
+    # Test with no financial keywords
+    assert analyzer._extract_topics("일반적인 문장입니다") == []
+
+
+@pytest.mark.asyncio
+async def test_analyze_image_file_not_found() -> None:
+    """Test analyze_image_deep raises error for missing file."""
+    analyzer = mmu.MultimodalUnderstanding()
+
+    with pytest.raises(FileNotFoundError):
+        await analyzer.analyze_image_deep("/nonexistent/path/image.png")
+
+
+@pytest.mark.asyncio
+async def test_multimodal_with_llm_provider_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
+    """Test multimodal analysis handles LLM provider errors."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    from src.features import multimodal as features_multimodal
+
+    class _FakeImg:
+        width = 100
+        height = 100
+        size = (100, 100)
+
+        def __enter__(self) -> "_FakeImg":
+            return self
+
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
+
+    monkeypatch.setattr(
+        features_multimodal,
+        "Image",
+        types.SimpleNamespace(open=lambda path: _FakeImg()),
+    )
+
+    # Mock LLM provider that raises exception
+    mock_provider = MagicMock()
+    mock_provider.generate_vision_content_async = AsyncMock(
+        side_effect=Exception("LLM error")
+    )
+
+    dummy_img = tmp_path / "test.png"
+    dummy_img.write_bytes(b"fake image data")
+
+    analyzer = mmu.MultimodalUnderstanding(llm_provider=mock_provider)
+    meta = await analyzer.analyze_image_deep(str(dummy_img))
+
+    # Should still return metadata even with LLM error
+    assert "path" in meta
+    assert meta["extracted_text"] == ""  # Empty due to error
+
+
+@pytest.mark.asyncio
+async def test_multimodal_with_llm_provider_success(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
+    """Test multimodal analysis with successful LLM OCR."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    from src.features import multimodal as features_multimodal
+
+    class _FakeImg:
+        width = 100
+        height = 100
+        size = (100, 100)
+
+        def __enter__(self) -> "_FakeImg":
+            return self
+
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            pass
+
+    monkeypatch.setattr(
+        features_multimodal,
+        "Image",
+        types.SimpleNamespace(open=lambda path: _FakeImg()),
+    )
+
+    # Mock successful LLM provider
+    mock_provider = MagicMock()
+    mock_provider.generate_vision_content_async = AsyncMock(
+        return_value="매출액 100억, 영업이익 20억"
+    )
+
+    dummy_img = tmp_path / "report.png"
+    dummy_img.write_bytes(b"fake image data")
+
+    analyzer = mmu.MultimodalUnderstanding(llm_provider=mock_provider)
+    meta = await analyzer.analyze_image_deep(str(dummy_img))
+
+    assert meta["extracted_text"] == "매출액 100억, 영업이익 20억"
+    assert meta["text_density"] > 0
+    assert len(meta["topics"]) > 0
