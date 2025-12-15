@@ -130,14 +130,14 @@ jobs:
           echo "📊 Total deprecated calls: ${TOTAL_CALLS}"
 
       - name: Upload HTML Report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: deprecation-report
           path: deprecation_report.html
           retention-days: 90
 
       - name: Upload JSON Stats
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: deprecation-stats-json
           path: deprecation_stats.json
