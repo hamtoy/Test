@@ -226,8 +226,9 @@ class QAGraphBuilder:
                 }
             )
 
-            for q_type in linked_types:
-                rel_batch.append({"qt": q_type, "cid": constraint_id})
+            rel_batch.extend(
+                {"qt": q_type, "cid": constraint_id} for q_type in linked_types
+            )
 
             qt_display = primary_query_type or f"전역({len(linked_types)}개)"
             self.logger.debug(
