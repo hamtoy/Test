@@ -10,6 +10,15 @@ from typing import Any
 
 from src.processing.example_selector import DynamicExampleSelector
 
+__all__ = [
+    "DynamicExampleSelector",
+    "build_answer_prompt",
+    "build_extra_instructions",
+    "build_formatting_text",
+    "build_length_constraint",
+    "build_priority_hierarchy",
+]
+
 logger = logging.getLogger(__name__)
 
 _FEWSHOT_LOADING_FAILED = "Few-shot loading failed: %s"
