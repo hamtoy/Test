@@ -202,24 +202,31 @@ class TestOcrImageEndpoint:
             "has_table_chart": False,
         }
 
-        with patch(
-            "src.web.routers.ocr.MultimodalUnderstanding"
-        ) as mock_multimodal_cls:
+        # Mock aiofiles to avoid actual file writes
+        mock_file = AsyncMock()
+        mock_file.__aenter__ = AsyncMock(return_value=mock_file)
+        mock_file.__aexit__ = AsyncMock(return_value=None)
+        mock_file.write = AsyncMock()
+
+        with (
+            patch("src.web.routers.ocr.MultimodalUnderstanding") as mock_multimodal_cls,
+            patch("src.web.routers.ocr._save_ocr_text", new_callable=AsyncMock),
+            patch("src.web.routers.ocr.aiofiles.open", return_value=mock_file),
+        ):
             mock_instance = MagicMock()
             mock_instance.analyze_image_deep = AsyncMock(return_value=mock_result)
             mock_multimodal_cls.return_value = mock_instance
 
-            with patch("src.web.routers.ocr._save_ocr_text", new_callable=AsyncMock):
-                response = client.post(
-                    "/api/ocr/image",
-                    files={"file": ("test.png", b"PNG image data", "image/png")},
-                )
+            response = client.post(
+                "/api/ocr/image",
+                files={"file": ("test.png", b"PNG image data", "image/png")},
+            )
 
-                assert response.status_code == 200
-                data = response.json()
-                assert data["status"] == "success"
-                assert data["ocr"] == "OCR result text"
-                assert data["metadata"]["text_density"] == 0.8
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "success"
+            assert data["ocr"] == "OCR result text"
+            assert data["metadata"]["text_density"] == 0.8
 
     def test_ocr_image_exception(
         self, client: TestClient, mock_config: MagicMock
@@ -260,21 +267,28 @@ class TestOcrImageEndpoint:
             "text_density": 0.0,
         }
 
-        with patch(
-            "src.web.routers.ocr.MultimodalUnderstanding"
-        ) as mock_multimodal_cls:
+        # Mock aiofiles to avoid actual file writes
+        mock_file = AsyncMock()
+        mock_file.__aenter__ = AsyncMock(return_value=mock_file)
+        mock_file.__aexit__ = AsyncMock(return_value=None)
+        mock_file.write = AsyncMock()
+
+        with (
+            patch("src.web.routers.ocr.MultimodalUnderstanding") as mock_multimodal_cls,
+            patch(
+                "src.web.routers.ocr._save_ocr_text", new_callable=AsyncMock
+            ) as mock_save,
+            patch("src.web.routers.ocr.aiofiles.open", return_value=mock_file),
+        ):
             mock_instance = MagicMock()
             mock_instance.analyze_image_deep = AsyncMock(return_value=mock_result)
             mock_multimodal_cls.return_value = mock_instance
 
-            with patch(
-                "src.web.routers.ocr._save_ocr_text", new_callable=AsyncMock
-            ) as mock_save:
-                response = client.post(
-                    "/api/ocr/image",
-                    files={"file": ("test.gif", b"GIF data", "image/gif")},
-                )
+            response = client.post(
+                "/api/ocr/image",
+                files={"file": ("test.gif", b"GIF data", "image/gif")},
+            )
 
-                assert response.status_code == 200
-                # Should not save empty text
-                mock_save.assert_not_called()
+            assert response.status_code == 200
+            # Should not save empty text
+            mock_save.assert_not_called()
