@@ -5,7 +5,6 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
-
 from src.config import AppConfig
 from src.web.routers.qa_common import (
     _CachedKG,
@@ -101,8 +100,8 @@ class TestCachedKG:
         result = cached_kg.find_relevant_rules(long_query, k=10)
 
         assert result == ["rule1"]
-        # Check that cache key uses truncated query (first 500 chars)
-        assert (long_query[:500], 10) in cached_kg._rules
+        # Check that cache key uses truncated query (first 500 chars) + k + query_type
+        assert (long_query[:500], 10, None) in cached_kg._rules
 
     def test_get_constraints_for_query_type_handles_invalid_string(self) -> None:
         """Test that get_constraints_for_query_type handles string return gracefully."""
@@ -287,10 +286,10 @@ class TestGetterFunctions:
 
     def test_get_validator_class_exception_fallback(self) -> None:
         """Test _get_validator_class falls back to default when import fails."""
-        from src.analysis.cross_validation import CrossValidationSystem
-
         # Mock the api module import to fail
         import sys
+
+        from src.analysis.cross_validation import CrossValidationSystem
 
         original_modules = sys.modules.copy()
         try:
