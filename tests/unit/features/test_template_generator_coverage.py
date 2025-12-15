@@ -4,6 +4,7 @@ from typing import Any
 
 import pytest
 from jinja2 import DictLoader, Environment
+
 from src.processing import template_generator as dtg
 from tests.conftest import MockDriver
 
@@ -16,8 +17,8 @@ def test_dynamic_template_generator_fallback_and_checklist(
     monkeypatch.setenv("NEO4J_USER", "neo4j")
     monkeypatch.setenv("NEO4J_PASSWORD", "password")
 
-    # Import the actual template_generator module to patch the right namespace
-    from src.processing import template_generator
+    # Import the actual module where GraphDatabase is used
+    from src.qa.prompts import template_manager
 
     driver = MockDriver(
         [
@@ -39,7 +40,8 @@ def test_dynamic_template_generator_fallback_and_checklist(
         def driver(*_args: Any, **_kwargs: Any) -> MockDriver:
             return driver
 
-    monkeypatch.setattr(template_generator, "GraphDatabase", _GraphDB)
+    # Patch at the actual implementation module
+    monkeypatch.setattr(template_manager, "GraphDatabase", _GraphDB)
 
     env = Environment(
         loader=DictLoader({"system/base.j2": "{{query_type_korean}}|{{rules|length}}"})
