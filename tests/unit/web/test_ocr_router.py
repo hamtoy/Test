@@ -193,8 +193,6 @@ class TestOcrImageEndpoint:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Test successful image OCR."""
-        import aiofiles
-
         from src.web.routers import ocr
 
         mock_provider = MagicMock()
@@ -226,8 +224,8 @@ class TestOcrImageEndpoint:
         def mock_aiofiles_open(*args: object, **kwargs: object) -> MagicMock:
             return mock_open_cm
 
-        # Monkeypatch at module level
-        monkeypatch.setattr(aiofiles, "open", mock_aiofiles_open)
+        # Patch aiofiles.open where it's USED, not where it's DEFINED
+        monkeypatch.setattr("src.web.routers.ocr.aiofiles.open", mock_aiofiles_open)
 
         mock_multimodal = MagicMock()
         mock_multimodal.analyze_image_deep = AsyncMock(return_value=mock_result)
@@ -282,8 +280,6 @@ class TestOcrImageEndpoint:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Test OCR image handles empty extracted text."""
-        import aiofiles
-
         from src.web.routers import ocr
 
         mock_provider = MagicMock()
@@ -313,8 +309,8 @@ class TestOcrImageEndpoint:
         def mock_aiofiles_open(*args: object, **kwargs: object) -> MagicMock:
             return mock_open_cm
 
-        # Monkeypatch at module level
-        monkeypatch.setattr(aiofiles, "open", mock_aiofiles_open)
+        # Patch aiofiles.open where it's USED, not where it's DEFINED
+        monkeypatch.setattr("src.web.routers.ocr.aiofiles.open", mock_aiofiles_open)
 
         mock_multimodal = MagicMock()
         mock_multimodal.analyze_image_deep = AsyncMock(return_value=mock_result)
