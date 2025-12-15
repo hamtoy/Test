@@ -33,46 +33,6 @@ __all__ = [
 
 # Forward __main__ execution to the actual implementation
 if __name__ == "__main__":
-    from contextlib import suppress
+    from src.qa.prompts.template_manager import main
 
-    from src.config.utils import require_env
-
-    generator: DynamicTemplateGenerator | None = None
-    try:
-        generator = DynamicTemplateGenerator(
-            neo4j_uri=require_env("NEO4J_URI"),
-            neo4j_user=require_env("NEO4J_USER"),
-            neo4j_password=require_env("NEO4J_PASSWORD"),
-        )
-
-        context = {
-            "image_path": "sample.png",
-            "has_table_chart": True,
-            "session_turns": 4,
-            "language_hint": "ko",
-            "text_density": "high",
-        }
-
-        prompt = generator.generate_prompt_for_query_type("explanation", context)
-        print("🎯 생성된 프롬프트 (앞부분):")
-        print(prompt[:500], "...\n")
-
-        test_session = {
-            "turns": [
-                {"type": "explanation"},
-                {"type": "reasoning"},
-                {"type": "target"},
-                {"type": "target"},
-            ],
-        }
-        checklist = generator.generate_validation_checklist(test_session)
-        print("📝 검증 체크리스트:")
-        for item in checklist:
-            print(f"  [{item['query_type']}] {item['item']}")
-
-    except Exception as e:
-        print(f"❌ 실행 실패: {e}")
-    finally:
-        if generator is not None:
-            with suppress(Exception):
-                generator.close()
+    main()

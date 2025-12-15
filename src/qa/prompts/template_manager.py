@@ -222,7 +222,8 @@ class DynamicTemplateGenerator:
         return checklist
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """CLI 진입점: 템플릿 생성기 데모 실행."""
     generator: DynamicTemplateGenerator | None = None
     try:
         generator = DynamicTemplateGenerator(
@@ -262,3 +263,7 @@ if __name__ == "__main__":
         if generator is not None:
             with suppress(Exception):
                 generator.close()
+
+
+if __name__ == "__main__":
+    main()
