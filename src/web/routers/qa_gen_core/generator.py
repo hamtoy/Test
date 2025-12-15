@@ -167,7 +167,7 @@ async def generate_single_qa(
         normalized_query = query.lower()
         normalized_query = " ".join(normalized_query.split())
         normalized_query = normalized_query.rstrip("?.!。？！")
-        ocr_hash = hashlib.md5(cache_ocr_key.encode()).hexdigest()[:16]
+        ocr_hash = hashlib.sha256(cache_ocr_key.encode()).hexdigest()[:16]
         cache_key_hash = hashlib.sha256(
             f"{normalized_query}|{ocr_hash}|{qtype}".encode(),
         ).hexdigest()[:16]

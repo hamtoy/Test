@@ -96,7 +96,7 @@ class AnswerCache:
             SHA-256 hash as cache key (secure and collision-resistant)
         """
         normalized_query = _normalize_query_for_cache(query)
-        ocr_hash = hashlib.md5(ocr_text.encode()).hexdigest()[:16]
+        ocr_hash = hashlib.sha256(ocr_text.encode()).hexdigest()[:16]
         combined = f"{normalized_query}|{ocr_hash}|{query_type}"
         return hashlib.sha256(combined.encode()).hexdigest()
 
