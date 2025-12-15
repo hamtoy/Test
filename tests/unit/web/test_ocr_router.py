@@ -242,7 +242,14 @@ class TestOcrImageEndpoint:
                 files={"file": ("test.png", b"PNG image data", "image/png")},
             )
 
-            assert response.status_code == 200
+            # Debug: print error details if not 200
+            if response.status_code != 200:
+                print(f"DEBUG: Response status: {response.status_code}")
+                print(f"DEBUG: Response body: {response.text}")
+
+            assert response.status_code == 200, (
+                f"Expected 200, got {response.status_code}: {response.text}"
+            )
             data = response.json()
             assert data["status"] == "success"
             assert data["ocr"] == "OCR result text"
@@ -329,6 +336,13 @@ class TestOcrImageEndpoint:
                 files={"file": ("test.gif", b"GIF data", "image/gif")},
             )
 
-            assert response.status_code == 200
+            # Debug: print error details if not 200
+            if response.status_code != 200:
+                print(f"DEBUG: Response status: {response.status_code}")
+                print(f"DEBUG: Response body: {response.text}")
+
+            assert response.status_code == 200, (
+                f"Expected 200, got {response.status_code}: {response.text}"
+            )
             # Should not save empty text
             mock_save.assert_not_called()
