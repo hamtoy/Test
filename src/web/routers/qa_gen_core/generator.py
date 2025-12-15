@@ -163,14 +163,18 @@ async def generate_single_qa(
         # Rule: 모든 질의에서 괄호() 사용 금지
         query = _remove_parentheses_from_query(query)
 
-        # PHASE 2B: Cache key logging
+        # PHASE 2B: Cache key logging (normalized for hit rate improvement)
+        normalized_query = query.lower()
+        normalized_query = " ".join(normalized_query.split())
+        normalized_query = normalized_query.rstrip("?.!。？！")
+        ocr_hash = hashlib.md5(cache_ocr_key.encode()).hexdigest()[:16]
         cache_key_hash = hashlib.sha256(
-            f"{query}|{cache_ocr_key}|{qtype}".encode(),
+            f"{normalized_query}|{ocr_hash}|{qtype}".encode(),
         ).hexdigest()[:16]
         logger.info(
-            "Cache Key Generated - Query length: %d | OCR: %d | Type: %s | Key hash: %s",
-            len(query),
-            len(cache_ocr_key),
+            "Cache Key Generated - Query: %s... | OCR hash: %s | Type: %s | Key: %s",
+            normalized_query[:30],
+            ocr_hash,
             qtype,
             cache_key_hash,
         )

@@ -18,6 +18,27 @@ from src.config.constants import DEFAULT_CACHE_TTL_SECONDS
 logger = logging.getLogger(__name__)
 
 
+def _normalize_query_for_cache(query: str) -> str:
+    """Normalize query for better cache hit rate.
+
+    Applies conservative normalization to increase cache hits
+    for semantically similar queries:
+    - Lowercase conversion
+    - Whitespace collapse
+    - Trailing punctuation removal
+
+    Args:
+        query: Original query string
+
+    Returns:
+        Normalized query string
+    """
+    q = query.lower()
+    q = " ".join(q.split())  # Collapse multiple whitespace
+    q = q.rstrip("?.!。？！")  # Remove trailing punctuation
+    return q
+
+
 class AnswerCache:
     """Cache for generated QA answers with optional Redis backend.
 
@@ -61,6 +82,11 @@ class AnswerCache:
     def _make_key(self, query: str, ocr_text: str, query_type: str) -> str:
         """Generate cache key from inputs.
 
+        Uses normalized query and OCR hash for better hit rate:
+        - Query: normalized (lowercase, collapsed whitespace, no trailing punct)
+        - OCR: MD5 hash (first 16 chars) instead of full text
+        - Query type: as-is
+
         Args:
             query: The query string
             ocr_text: OCR text content
@@ -69,7 +95,9 @@ class AnswerCache:
         Returns:
             SHA-256 hash as cache key (secure and collision-resistant)
         """
-        combined = f"{query}|{ocr_text}|{query_type}"
+        normalized_query = _normalize_query_for_cache(query)
+        ocr_hash = hashlib.md5(ocr_text.encode()).hexdigest()[:16]
+        combined = f"{normalized_query}|{ocr_hash}|{query_type}"
         return hashlib.sha256(combined.encode()).hexdigest()
 
     async def get(self, query: str, ocr_text: str, query_type: str) -> Any | None:

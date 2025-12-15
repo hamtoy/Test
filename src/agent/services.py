@@ -109,9 +109,9 @@ class QueryGeneratorService:
         kg_obj = kg
         try:
             if not constraint_list and kg_obj is None:
-                from src.qa.rag_system import QAKnowledgeGraph
+                from src.qa.kg_provider import get_or_create_kg
 
-                kg_obj = QAKnowledgeGraph()
+                kg_obj = get_or_create_kg()
             if not constraint_list and kg_obj is not None:
                 all_constraints = kg_obj.get_constraints_for_query_type(query_type)
                 constraint_list = [
@@ -320,9 +320,9 @@ class ResponseEvaluatorService:
         kg_obj = kg
         try:
             if kg_obj is None:
-                from src.qa.rag_system import QAKnowledgeGraph
+                from src.qa.kg_provider import get_or_create_kg
 
-                kg_obj = QAKnowledgeGraph()
+                kg_obj = get_or_create_kg()
             constraint_list = kg_obj.get_constraints_for_query_type(query_type)
             constraints = [
                 desc for c in constraint_list if (desc := c.get("description"))
@@ -453,9 +453,9 @@ class RewriterService:
         rules: list[str] = []
         kg_obj: QAKnowledgeGraph | None = None
         try:
-            from src.qa.rag_system import QAKnowledgeGraph
+            from src.qa.kg_provider import get_or_create_kg
 
-            kg_obj = QAKnowledgeGraph()
+            kg_obj = get_or_create_kg()
             constraint_list = kg_obj.get_constraints_for_query_type(query_type)
             rules = kg_obj.find_relevant_rules(user_query[:500], k=10)
         except Exception as exc:  # noqa: BLE001
