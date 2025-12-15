@@ -81,10 +81,6 @@ class TestSuggestionsEndpoint:
     def test_suggestions_with_file(self, client: TestClient, tmp_path: Path) -> None:
         """Test suggestions when file exists."""
         suggestions_file = tmp_path / "suggestions.json"
-        suggestions_data = {
-            "suggestions": [{"id": 1, "text": "Improve prompt"}],
-            "timestamp": "2024-01-01T00:00:00",
-        }
         suggestions_file.write_text(
             '{"suggestions": [{"id": 1, "text": "Improve prompt"}], "timestamp": "2024-01-01T00:00:00"}',
             encoding="utf-8",

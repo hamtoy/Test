@@ -47,20 +47,18 @@ class TestSemanticAnalysisEndpoint:
         mock_counter = MagicMock()
         mock_counter.most_common.return_value = [("keyword", 3), ("test", 2)]
 
-        with patch("neo4j.GraphDatabase.driver", return_value=mock_driver):
-            with patch("src.analysis.semantic.fetch_blocks", return_value=mock_blocks):
-                with patch(
-                    "src.analysis.semantic.count_keywords", return_value=mock_counter
-                ):
-                    with patch("src.analysis.semantic.create_topics"):
-                        with patch("src.analysis.semantic.link_blocks_to_topics"):
-                            response = client.post(
-                                "/api/analysis/semantic", params={"top_k": 10}
-                            )
+        with (
+            patch("neo4j.GraphDatabase.driver", return_value=mock_driver),
+            patch("src.analysis.semantic.fetch_blocks", return_value=mock_blocks),
+            patch("src.analysis.semantic.count_keywords", return_value=mock_counter),
+            patch("src.analysis.semantic.create_topics"),
+            patch("src.analysis.semantic.link_blocks_to_topics"),
+        ):
+            response = client.post("/api/analysis/semantic", params={"top_k": 10})
 
-                            assert response.status_code == 200
-                            data = response.json()
-                            assert data["status"] == "success"
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "success"
 
     def test_semantic_no_blocks(
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
@@ -72,13 +70,15 @@ class TestSemanticAnalysisEndpoint:
 
         mock_driver = MagicMock()
 
-        with patch("neo4j.GraphDatabase.driver", return_value=mock_driver):
-            with patch("src.analysis.semantic.fetch_blocks", return_value=[]):
-                response = client.post("/api/analysis/semantic")
+        with (
+            patch("neo4j.GraphDatabase.driver", return_value=mock_driver),
+            patch("src.analysis.semantic.fetch_blocks", return_value=[]),
+        ):
+            response = client.post("/api/analysis/semantic")
 
-                assert response.status_code == 200
-                data = response.json()
-                assert data["status"] == "no_data"
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "no_data"
 
     def test_semantic_exception(
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
@@ -121,20 +121,22 @@ class TestDocumentCompareEndpoint:
         mock_structures = [{"title": "Page 1", "total": 5, "types": ["paragraph"]}]
         mock_commons = [("Common content", ["Page 1", "Page 2"])]
 
-        with patch("neo4j.GraphDatabase.driver", return_value=mock_driver):
-            with patch(
+        with (
+            patch("neo4j.GraphDatabase.driver", return_value=mock_driver),
+            patch(
                 "src.analysis.document_compare.compare_structure",
                 return_value=mock_structures,
-            ):
-                with patch(
-                    "src.analysis.document_compare.find_common_content",
-                    return_value=mock_commons,
-                ):
-                    response = client.get("/api/analysis/document-compare")
+            ),
+            patch(
+                "src.analysis.document_compare.find_common_content",
+                return_value=mock_commons,
+            ),
+        ):
+            response = client.get("/api/analysis/document-compare")
 
-                    assert response.status_code == 200
-                    data = response.json()
-                    assert data["status"] == "success"
+            assert response.status_code == 200
+            data = response.json()
+            assert data["status"] == "success"
 
     def test_document_compare_exception(
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
