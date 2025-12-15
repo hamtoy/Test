@@ -18,7 +18,7 @@ from src.infra.constraints import RealTimeConstraintEnforcer
 from src.llm.gemini import GeminiModelClient
 from src.processing.context_augmentation import AdvancedContextAugmentation
 from src.processing.example_selector import DynamicExampleSelector
-from src.processing.template_generator import DynamicTemplateGenerator
+from src.qa.prompts import DynamicTemplateGenerator
 from src.qa.rag_system import QAKnowledgeGraph
 
 

@@ -21,7 +21,7 @@ from checks.detect_forbidden_patterns import find_violations
 from checks.validate_session import validate_turns
 from scripts.build_session import SessionContext, build_session
 from src.config.utils import require_env
-from src.processing.template_generator import DynamicTemplateGenerator
+from src.qa.prompts import DynamicTemplateGenerator
 from src.qa.rag_system import QAKnowledgeGraph
 
 load_dotenv()

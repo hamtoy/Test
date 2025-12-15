@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-
 import pytest
 
 from src.web.routers.qa_gen_core import prompts
@@ -43,7 +42,10 @@ def test_build_length_constraint_branches() -> None:
 def test_build_extra_instructions_inserts_fewshot(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(prompts, "DynamicExampleSelector", _FakeSelector)
+    # Patch at the actual module where DynamicExampleSelector is used
+    from src.qa.prompts import builders
+
+    monkeypatch.setattr(builders, "DynamicExampleSelector", _FakeSelector)
     txt = prompts.build_extra_instructions("reasoning", "reasoning", kg=object())
     assert "example-reasoning" in txt
 

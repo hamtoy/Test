@@ -1,37 +1,31 @@
-"""프롬프트 템플릿 및 빌더 함수.
+"""통합 프롬프트 패키지.
 
-하위 호환성을 위해 이 모듈을 유지합니다.
-실제 구현은 src.qa.prompts.builders로 이동했습니다.
+프롬프트 빌더 함수와 동적 템플릿 생성기를 한 곳에서 관리합니다.
 
-Usage (기존 방식 계속 지원):
-    from src.web.routers.qa_gen_core.prompts import (
-        build_answer_prompt,
-        build_length_constraint,
-        ...
-    )
-
-권장 사용:
+Usage:
     from src.qa.prompts import (
         build_answer_prompt,
         build_length_constraint,
-        ...
+        build_extra_instructions,
+        build_formatting_text,
+        build_priority_hierarchy,
+        DynamicTemplateGenerator,
     )
 """
 
 from __future__ import annotations
 
-# Re-export from new location for backward compatibility
 from src.qa.prompts.builders import (
-    DynamicExampleSelector,
     build_answer_prompt,
     build_extra_instructions,
     build_formatting_text,
     build_length_constraint,
     build_priority_hierarchy,
 )
+from src.qa.prompts.template_manager import DynamicTemplateGenerator
 
 __all__ = [
-    "DynamicExampleSelector",
+    "DynamicTemplateGenerator",
     "build_answer_prompt",
     "build_extra_instructions",
     "build_formatting_text",
