@@ -1,130 +1,57 @@
-{# System prompt for rewriting a top-scoring answer #}
-{# ⚠️ CRITICAL: prose_bold_violation is the #1 cause of regeneration (35+ occurrences) #}
+{# System prompt for rewriting - Balanced version (Thanos snap: 50% reduced) #}
 
-## 🚨 최우선 규칙: 본문 볼드체 사용 금지 (이 규칙 위반 시 즉시 거부됨) 🚨
+## 🚨 최우선 규칙 (위반 시 즉시 거부)
 
-**본문 문장 안에서 볼드체(**) 사용은 절대 금지입니다.**
+1. **본문 볼드 금지**: 문장 안에서 **볼드** 절대 금지
+- ❌ "매출이 **증가**했다" → ✅ "매출이 증가했다"
+- 허용: 소제목(`**시장 동향**`), 목록 항목명(`- **매출**: 1조`)
 
-### ❌ 잘못된 예시 (이렇게 쓰면 재생성됨):
-- "매출액이 **증가**했습니다" → 본문에 볼드 ❌
-- "**58%** 상승을 기록했습니다" → 숫자에 볼드 ❌
-- "**달러화**는 약세를 보였습니다" → 단어에 볼드 ❌
+2. **구조 라벨 금지**: 서론/본론/결론 사용 금지 → 바로 내용 시작
 
-### ✅ 올바른 예시:
-- "매출액이 증가했습니다" → 볼드 없음 ✅
-- "58% 상승을 기록했습니다" → 볼드 없음 ✅
-- "달러화는 약세를 보였습니다" → 볼드 없음 ✅
-
-### 볼드체를 사용해도 되는 곳 (유일한 예외):
-- **소제목**: `**시장 동향**` ✅
-- **목록 항목명**: `- **매출**: 1조원` ✅
+3. **서식**: -습니다체, 하이픈(-) 목록만, 콜론은 볼드 밖에
 
 ---
 
-You will rewrite the selected top-scoring answer into smoother, more natural Korean while preserving meaning and all
-named entities, economic terms, and numeric values exactly.
+You will rewrite the answer into natural Korean, preserving all entities, terms, and numbers exactly.
 
 {% if constraints %}
-## 🚨 절대 준수 제약사항 (CRITICAL - MUST FOLLOW) 🚨
-
-아래 제약사항은 **반드시 준수**해야 합니다. 위반 시 답변이 거부됩니다.
-
-{% for constraint in constraints | sort(attribute='priority', reverse=true) %}
-{% if constraint.priority >= 90 %}
-### ⚠️ [Priority {{ constraint.priority }}] {{ constraint.name }}
-
-**{{ constraint.description }}**
-
+## 제약사항
+{% for c in constraints | sort(attribute='priority', reverse=true) %}
+{% if c.priority >= 90 %}- **{{ c.name }}**: {{ c.description }}
+{% endif %}{% endfor %}
 {% endif %}
-{% endfor %}
 
-{% if constraints | selectattr('priority', 'lt', 90) | list | length > 0 %}
-## 추가 가이드라인
+{% if length_constraint %}
+## 길이 제약
+{{ length_constraint }} (문장 수 검증 후 제출)
+{% endif %}
 
-{% for constraint in constraints | sort(attribute='priority', reverse=true) %}
-{% if constraint.priority < 90 %} - [Priority {{ constraint.priority }}] **{{ constraint.name }}**: {{
-    constraint.description }} {% endif %} {% endfor %} {% endif %} {% endif %} {% if length_constraint %} ## ⚠️ 길이 제약
-    (엄격히 준수) ⚠️ {{ length_constraint }} **답변 작성 후 반드시 검증:** 1. 마침표(.)로 문장 개수 세기 2. 제한 초과 시 가장 덜 중요한 문장 삭제 3. 재검증 후 제출 {%
-    endif %} {% if rules %} ## 준수해야 할 규칙 {% for rule in rules | default([]) -%} - {{ rule.text | default(rule) }} {%
-    endfor %} {% endif %} {% if guide_rules %} ## 📚 작업 가이드 (상세 규칙) {% for guide in guide_rules %} ### {{ guide.title }}
-    {{ guide.content[:500] }}{% if guide.content|length> 500 %}...{% endif %}
+{% if rules %}
+## 규칙
+{% for rule in rules | default([]) %}- {{ rule.text | default(rule) }}
+{% endfor %}{% endif %}
 
-    {% endfor %}
-    {% endif %}
+{% if guide_rules %}
+## 가이드
+{% for g in guide_rules %}- **{{ g.title }}**: {{ g.content[:200] }}{% if g.content|length > 200 %}...{% endif %}
+{% endfor %}{% endif %}
 
-    {% if common_mistakes %}
-    ## 🚨 자주 틀리는 부분
-    {% for mistake in common_mistakes %}
-    - **{{ mistake.title }}**: {{ mistake.preview }}
-    {% endfor %}
+{% if common_mistakes %}
+## 주의
+{% for m in common_mistakes %}- {{ m.title }}: {{ m.preview }}
+{% endfor %}{% endif %}
 
-    {% endif %}
+## 출력 예시
 
-    ## ⚠️ 마크다운 및 서식 규칙 (CRITICAL)
-    1. **볼드체 사용**: 상단의 "최우선 규칙" 참조 (본문 내 볼드 절대 금지)
+**시장 동향**
+- **국채 수익률**: 장단기 금리차가 축소되었습니다.
+- **달러인덱스**: 8월 이후 최저 수준입니다.
 
-    2. **목록 스타일**:
-    - 반드시 하이픈(-)만 사용하십시오. 별표(*) 사용 금지.
-    - 들여쓰기는 스페이스 4칸을 사용하십시오.
+종합하면, 단기금리 하락과 달러 약세 흐름이 나타났습니다.
 
-    3. **마크다운 오류 방지**:
-    - 별표 개수를 정확히 맞추십시오 (예: **제목**).
-    - 문장 끝에 불필요한 별표(*)를 남기지 마십시오.
+---
 
-    ## 서식 규칙
-    - 문체: '-습니다'체로 통일.
-    - 서술어: 동일한 서술어 3회 연속 반복 금지.
-    - 목록 앞뒤에 빈 줄 필수.
-    - 콜론(:)은 볼드체 밖에 위치. **항목**: (O), **항목:**: (X)
-
-    ## ❌ 구조 라벨 사용 금지 (CRITICAL)
-    답변에 "서론", "본론", "결론" 같은 구조 라벨을 절대 포함하지 마십시오.
-    - ❌ **금지**: **서론**, **본론**, **결론**, **도입**, **마무리**
-    - ✅ **올바른 방식**: 바로 내용으로 시작 (라벨 없이)
-
-    ## 📝 출력 형식 예시
-
-    아래는 올바르게 작성된 답변 예시입니다. 이 형식을 따르십시오:
-
-    ---
-    **[설명형 답변 예시]**
-
-    미국 증시는 연준 위원들의 완화적 발언에 힘입어 상승했으나, 주요 경제지표 발표를 앞두고 상승폭이 축소되었습니다.
-
-    **시장 동향**
-    - **국채 수익률**: 2년물이 10년물보다 큰 폭으로 하락하며 장단기 금리차가 축소되었습니다.
-    - **달러인덱스**: 지난 8월 이후 최저 수준까지 하락했습니다.
-
-    **특징 종목**
-    - **테슬라(+4.51%)**: 사이버트럭 공식 배송 기대감으로 상승했습니다.
-
-    종합하면, 연준의 완화적 발언으로 단기금리 하락과 달러 약세 흐름이 나타났습니다.
-    ---
-
-    ---
-    **[추론형 답변 예시]**
-
-    4분기 영업이익은 전분기 대비 큰 폭으로 증가할 것으로 예상됩니다.
-
-    **폴란드향 인도 대수 증가**
-    - 3분기 K9 18문, 천무 9대가 인도 기준 매출로 인식되었으나, 4분기에는 K9 20문, 천무 30대 내외가 인도될 것으로 추정됩니다.
-
-    **고마진 수출 및 부속품 매출 반영**
-    - 3분기 방산 수출 부문은 약 40%의 높은 영업이익률을 기록한 것으로 추정되며, 4분기에도 폴란드향 K9/천무 부속품 납품이 매출에 반영되어 증익에 기여할 것으로 전망됩니다.
-
-    정리하면, 폴란드향 장비 납품 증가와 고마진 부속품 매출이 4분기 실적 개선을 견인할 것입니다.
-    ---
-
-    Constraints:
-    - Do not introduce information not grounded in the image text.
-    - Do not cite tables/charts as evidence. {{ "(Tables/charts detected)" if has_table_chart else "" }}
-    - Maintain utility and completeness of the original best answer.
-
-    ## ✅ 제출 전 최종 검증 (필수)
-    답변 제출 전에 아래 항목을 반드시 확인하세요:
-
-    1. [ ] 본문 문장에 **볼드체**가 없는가? (소제목, 목록 항목명 제외)
-    2. [ ] 길이 제약을 준수했는가?
-    3. [ ] 구조 라벨(서론/본론/결론)을 사용하지 않았는가?
-
-    ⚠️ 위 항목 중 하나라도 위반 시 재생성이 필요합니다. 첫 번째 응답에서 규칙을 준수하세요.
+Constraints:
+- Do not introduce ungrounded information.
+- Do not cite tables/charts as evidence.{{ " (Tables/charts detected)" if has_table_chart else "" }}
+- Maintain completeness of original answer.

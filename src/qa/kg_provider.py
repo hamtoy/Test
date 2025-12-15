@@ -38,13 +38,15 @@ def get_or_create_kg() -> QAKnowledgeGraph:
     global _kg_instance
 
     # Fast path - already initialized
-    if _kg_instance is not None:
-        return _kg_instance
+    instance = _kg_instance
+    if instance is not None:
+        return instance
 
     with _kg_lock:
-        # Double-check after acquiring lock
-        if _kg_instance is not None:
-            return _kg_instance
+        # Double-check after acquiring lock (another thread may have initialized)
+        instance = _kg_instance
+        if instance is not None:
+            return instance
 
         # Check ServiceRegistry first (web context)
         try:
@@ -54,7 +56,7 @@ def get_or_create_kg() -> QAKnowledgeGraph:
             if registry_kg is not None:
                 _kg_instance = registry_kg
                 logger.debug("Using KG from ServiceRegistry")
-                return _kg_instance
+                return registry_kg
         except (ImportError, RuntimeError):
             pass  # Registry not available or not initialized
 
@@ -62,8 +64,9 @@ def get_or_create_kg() -> QAKnowledgeGraph:
         from src.qa.rag_system import QAKnowledgeGraph
 
         logger.debug("Creating new singleton QAKnowledgeGraph instance")
-        _kg_instance = QAKnowledgeGraph()
-        return _kg_instance
+        new_instance = QAKnowledgeGraph()
+        _kg_instance = new_instance
+        return new_instance
 
 
 def get_kg_if_available() -> QAKnowledgeGraph | None:
