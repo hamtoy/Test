@@ -51,5 +51,13 @@
   "vibereport.projectVisionMode": "auto",
   "vibereport.defaultProjectType": "auto-detect",
   "vibereport.defaultQualityFocus": "production",
-  "vibereport.previewBackgroundColor": "ide"
+  "vibereport.previewBackgroundColor": "ide",
+  // Antigravity Agent Settings
+  "antigravity.agent.gitignoreAccess": true,
+  "antigravity.agent.nonWorkspaceFileAccess": true,
+  "antigravity.agent.autoOpenEditedFiles": true,
+  "antigravity.agent.autoFixLints": true,
+  "antigravity.agent.autoContinue": true,
+  "antigravity.agent.enableWebTools": true,
+  "antigravity.agent.openOnReload": true
 }
