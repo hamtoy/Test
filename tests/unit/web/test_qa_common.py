@@ -76,7 +76,7 @@ class TestCachedKG:
         """Test that different k values create different cache keys."""
         mock_kg = MagicMock()
         mock_kg.find_relevant_rules = MagicMock(
-            side_effect=lambda q, k: [f"rule_{i}" for i in range(k)]
+            side_effect=lambda q, k, query_type=None: [f"rule_{i}" for i in range(k)]
         )
 
         cached_kg = _CachedKG(mock_kg)
