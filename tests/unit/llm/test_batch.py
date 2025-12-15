@@ -169,7 +169,9 @@ class TestGeminiBatchClient:
         result = client.cancel(job.job_id)
 
         assert result is True
-        assert client.get_status(job.job_id).status == BatchJobStatus.CANCELLED
+        status = client.get_status(job.job_id)
+        assert status is not None
+        assert status.status == BatchJobStatus.CANCELLED
 
     def test_cancel_running_job(self) -> None:
         """Test cancelling a running job."""
