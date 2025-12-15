@@ -328,6 +328,10 @@ async def init_resources() -> None:
             kg = None
         # RuleLoader 전역 캐시를 위한 KG 설정
         set_global_kg(kg)
+        # kg_provider 싱글톤 동기화 (services.py 등에서 사용)
+        from src.qa.kg_provider import set_kg_instance
+
+        set_kg_instance(kg)
 
         try:
             qa_pipeline = IntegratedQAPipeline()

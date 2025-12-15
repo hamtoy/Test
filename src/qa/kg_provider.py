@@ -24,6 +24,21 @@ _kg_lock = threading.Lock()
 _kg_instance: QAKnowledgeGraph | None = None
 
 
+def set_kg_instance(kg: QAKnowledgeGraph | None) -> None:
+    """Set the KG singleton instance (called from init_resources).
+
+    This ensures kg_provider and ServiceRegistry use the same instance.
+
+    Args:
+        kg: QAKnowledgeGraph instance or None
+    """
+    global _kg_instance
+    with _kg_lock:
+        _kg_instance = kg
+        if kg is not None:
+            logger.debug("KG singleton set from external source")
+
+
 def get_or_create_kg() -> QAKnowledgeGraph:
     """Get or create a shared QAKnowledgeGraph instance.
 
