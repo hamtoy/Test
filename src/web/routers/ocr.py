@@ -163,7 +163,7 @@ async def api_ocr_image(
             "Image OCR completed",
             extra={
                 "request_id": _get_request_id(request),
-                "filename": file.filename,
+                "upload_filename": file.filename,
                 "text_length": len(extracted_text),
             },
         )
@@ -181,17 +181,11 @@ async def api_ocr_image(
     except HTTPException:
         raise
     except Exception as exc:
-        # DEBUG: Print actual exception for CI debugging
-        import traceback
-
-        print(f"DEBUG OCR ERROR: {exc.__class__.__name__}: {exc}")
-        traceback.print_exc()
-
         logger.error(
             "Image OCR failed",
             extra={
                 "request_id": _get_request_id(request),
-                "filename": file.filename,
+                "upload_filename": file.filename,
                 "error_type": exc.__class__.__name__,
             },
             exc_info=True,
