@@ -190,7 +190,6 @@ class TestOcrImageEndpoint:
         self,
         client: TestClient,
         mock_config: MagicMock,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Test successful image OCR."""
         from src.web.routers import ocr
@@ -205,32 +204,20 @@ class TestOcrImageEndpoint:
             "has_table_chart": False,
         }
 
-        # Create proper async context manager
-        mock_file_handle = MagicMock()
-        mock_file_handle.write = AsyncMock()
-
-        async def mock_aenter(self: MagicMock) -> MagicMock:
-            return mock_file_handle
-
-        async def mock_aexit(
-            self: MagicMock, exc_type: type, exc: Exception, tb: object
-        ) -> None:
-            pass
-
-        mock_open_cm = MagicMock()
-        mock_open_cm.__aenter__ = mock_aenter
-        mock_open_cm.__aexit__ = mock_aexit
-
-        def mock_aiofiles_open(*args: object, **kwargs: object) -> MagicMock:
-            return mock_open_cm
-
-        # Patch aiofiles.open where it's USED, not where it's DEFINED
-        monkeypatch.setattr("src.web.routers.ocr.aiofiles.open", mock_aiofiles_open)
-
+        # Create mock for MultimodalUnderstanding
         mock_multimodal = MagicMock()
         mock_multimodal.analyze_image_deep = AsyncMock(return_value=mock_result)
 
+        # Create mock aiofiles async context manager
+        mock_file = MagicMock()
+        mock_file.write = AsyncMock()
+
+        mock_aiofiles_open = MagicMock()
+        mock_aiofiles_open.return_value.__aenter__ = AsyncMock(return_value=mock_file)
+        mock_aiofiles_open.return_value.__aexit__ = AsyncMock(return_value=None)
+
         with (
+            patch("src.web.routers.ocr.aiofiles.open", mock_aiofiles_open),
             patch(
                 "src.web.routers.ocr.MultimodalUnderstanding",
                 return_value=mock_multimodal,
@@ -284,7 +271,6 @@ class TestOcrImageEndpoint:
         self,
         client: TestClient,
         mock_config: MagicMock,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Test OCR image handles empty extracted text."""
         from src.web.routers import ocr
@@ -297,32 +283,20 @@ class TestOcrImageEndpoint:
             "text_density": 0.0,
         }
 
-        # Create proper async context manager
-        mock_file_handle = MagicMock()
-        mock_file_handle.write = AsyncMock()
-
-        async def mock_aenter(self: MagicMock) -> MagicMock:
-            return mock_file_handle
-
-        async def mock_aexit(
-            self: MagicMock, exc_type: type, exc: Exception, tb: object
-        ) -> None:
-            pass
-
-        mock_open_cm = MagicMock()
-        mock_open_cm.__aenter__ = mock_aenter
-        mock_open_cm.__aexit__ = mock_aexit
-
-        def mock_aiofiles_open(*args: object, **kwargs: object) -> MagicMock:
-            return mock_open_cm
-
-        # Patch aiofiles.open where it's USED, not where it's DEFINED
-        monkeypatch.setattr("src.web.routers.ocr.aiofiles.open", mock_aiofiles_open)
-
+        # Create mock for MultimodalUnderstanding
         mock_multimodal = MagicMock()
         mock_multimodal.analyze_image_deep = AsyncMock(return_value=mock_result)
 
+        # Create mock aiofiles async context manager
+        mock_file = MagicMock()
+        mock_file.write = AsyncMock()
+
+        mock_aiofiles_open = MagicMock()
+        mock_aiofiles_open.return_value.__aenter__ = AsyncMock(return_value=mock_file)
+        mock_aiofiles_open.return_value.__aexit__ = AsyncMock(return_value=None)
+
         with (
+            patch("src.web.routers.ocr.aiofiles.open", mock_aiofiles_open),
             patch(
                 "src.web.routers.ocr.MultimodalUnderstanding",
                 return_value=mock_multimodal,
