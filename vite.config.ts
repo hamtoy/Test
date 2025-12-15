@@ -18,7 +18,7 @@ export default defineConfig({
         rollupOptions: {
             input: resolve(__dirname, "static/app.ts"),
             output: {
-                entryFileNames: "[name].[hash].js",
+                entryFileNames: "app.js",
                 chunkFileNames: "chunks/[name].[hash].js",
                 assetFileNames: "assets/[name].[hash][extname]",
                 // Manual chunks for better caching
