@@ -14,8 +14,7 @@ def client() -> TestClient:
     """Create test client."""
     from src.web.api import app
 
-    # raise_server_exceptions=True to see actual exceptions in tests
-    return TestClient(app, raise_server_exceptions=True)
+    return TestClient(app)
 
 
 @pytest.fixture
@@ -223,14 +222,7 @@ class TestOcrImageEndpoint:
                 files={"file": ("test.png", b"fake PNG image data", "image/png")},
             )
 
-            # Debug: print error details if not 200
-            if response.status_code != 200:
-                print(f"DEBUG: Response status: {response.status_code}")
-                print(f"DEBUG: Response body: {response.text}")
-
-            assert response.status_code == 200, (
-                f"Expected 200, got {response.status_code}: {response.text}"
-            )
+            assert response.status_code == 200
             data = response.json()
             assert data["status"] == "success"
             assert data["ocr"] == "OCR result text"
@@ -296,13 +288,6 @@ class TestOcrImageEndpoint:
                 files={"file": ("test.gif", b"fake GIF data", "image/gif")},
             )
 
-            # Debug: print error details if not 200
-            if response.status_code != 200:
-                print(f"DEBUG: Response status: {response.status_code}")
-                print(f"DEBUG: Response body: {response.text}")
-
-            assert response.status_code == 200, (
-                f"Expected 200, got {response.status_code}: {response.text}"
-            )
+            assert response.status_code == 200
             # Should not save empty text
             mock_save.assert_not_called()
