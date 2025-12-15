@@ -202,16 +202,18 @@ class TestOcrImageEndpoint:
             "has_table_chart": False,
         }
 
-        # Mock aiofiles to avoid actual file writes
-        mock_file = AsyncMock()
-        mock_file.__aenter__ = AsyncMock(return_value=mock_file)
-        mock_file.__aexit__ = AsyncMock(return_value=None)
-        mock_file.write = AsyncMock()
+        # Proper async context manager mock for aiofiles
+        mock_file_handle = MagicMock()
+        mock_file_handle.write = AsyncMock()
+
+        mock_open_cm = MagicMock()
+        mock_open_cm.__aenter__ = AsyncMock(return_value=mock_file_handle)
+        mock_open_cm.__aexit__ = AsyncMock(return_value=None)
 
         with (
+            patch("src.web.routers.ocr.aiofiles.open", return_value=mock_open_cm),
             patch("src.web.routers.ocr.MultimodalUnderstanding") as mock_multimodal_cls,
             patch("src.web.routers.ocr._save_ocr_text", new_callable=AsyncMock),
-            patch("src.web.routers.ocr.aiofiles.open", return_value=mock_file),
         ):
             mock_instance = MagicMock()
             mock_instance.analyze_image_deep = AsyncMock(return_value=mock_result)
@@ -267,18 +269,20 @@ class TestOcrImageEndpoint:
             "text_density": 0.0,
         }
 
-        # Mock aiofiles to avoid actual file writes
-        mock_file = AsyncMock()
-        mock_file.__aenter__ = AsyncMock(return_value=mock_file)
-        mock_file.__aexit__ = AsyncMock(return_value=None)
-        mock_file.write = AsyncMock()
+        # Proper async context manager mock for aiofiles
+        mock_file_handle = MagicMock()
+        mock_file_handle.write = AsyncMock()
+
+        mock_open_cm = MagicMock()
+        mock_open_cm.__aenter__ = AsyncMock(return_value=mock_file_handle)
+        mock_open_cm.__aexit__ = AsyncMock(return_value=None)
 
         with (
+            patch("src.web.routers.ocr.aiofiles.open", return_value=mock_open_cm),
             patch("src.web.routers.ocr.MultimodalUnderstanding") as mock_multimodal_cls,
             patch(
                 "src.web.routers.ocr._save_ocr_text", new_callable=AsyncMock
             ) as mock_save,
-            patch("src.web.routers.ocr.aiofiles.open", return_value=mock_file),
         ):
             mock_instance = MagicMock()
             mock_instance.analyze_image_deep = AsyncMock(return_value=mock_result)
