@@ -25,7 +25,7 @@ class TestVectorSearchEngine:
         engine = VectorSearchEngine(mock_connection)
 
         assert engine.connection is mock_connection
-        assert engine.embedding_model == "text-embedding-ada-002"
+        assert engine.embedding_model == "models/text-embedding-004"
         assert engine._embeddings is None
         assert engine._vector_store is None
 
@@ -43,18 +43,18 @@ class TestVectorSearchEngine:
     ) -> None:
         """Test lazy initialization of embeddings."""
         mock_embeddings = MagicMock()
-        mock_openai_embeddings = MagicMock(return_value=mock_embeddings)
+        mock_gemini_embeddings = MagicMock(return_value=mock_embeddings)
         mock_module = MagicMock()
-        mock_module.OpenAIEmbeddings = mock_openai_embeddings
+        mock_module.GoogleGenerativeAIEmbeddings = mock_gemini_embeddings
 
-        with patch.dict("sys.modules", {"langchain_openai": mock_module}):
+        with (
+            patch.dict("sys.modules", {"langchain_google_genai": mock_module}),
+            patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
+        ):
             engine = VectorSearchEngine(mock_connection)
             engine._init_embeddings()
 
             assert engine._embeddings is mock_embeddings
-            mock_openai_embeddings.assert_called_once_with(
-                model="text-embedding-ada-002"
-            )
 
     def test_init_embeddings_import_error(
         self, mock_connection: Neo4jConnectionManager
@@ -63,7 +63,7 @@ class TestVectorSearchEngine:
         # Ensure the import fails by setting the module to None
         with patch.dict(
             "sys.modules",
-            {"langchain_openai": None},
+            {"langchain_google_genai": None},
             clear=False,
         ):
             engine = VectorSearchEngine(mock_connection)

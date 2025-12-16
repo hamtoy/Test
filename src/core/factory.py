@@ -26,10 +26,6 @@ def get_llm_provider(config: AppConfig) -> LLMProvider:
             model_name=config.model_name,
         )
 
-    # Future extension:
-    # elif provider_type == "openai":
-    #     return OpenAIProvider(...)
-
     raise ValueError(f"Unsupported LLM provider type: {provider_type}")
 
 

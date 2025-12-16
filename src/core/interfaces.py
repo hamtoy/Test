@@ -1,7 +1,7 @@
 """Core Interface Definitions module.
 
 Defines abstract base classes (ABCs) for pluggable providers:
-- LLMProvider: Standard interface for LLM generation (Gemini, OpenAI, etc.).
+- LLMProvider: Standard interface for LLM generation (Gemini, etc.).
 - GraphProvider: Standard interface for graph databases (Neo4j).
 - Exception hierarchy for provider errors (RateLimitError, SafetyBlockedError, etc.).
 """
