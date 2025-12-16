@@ -8,9 +8,9 @@ from typing import Any
 import pytest
 from fastapi import HTTPException
 
-from src.web.cache import answer_cache
 from src.web.models import GenerateQARequest
 from src.web.routers import qa_generation as qg
+from src.web.semantic_cache import semantic_answer_cache
 
 
 @pytest.mark.asyncio
@@ -124,7 +124,7 @@ async def test_api_generate_single_success(
 @pytest.mark.asyncio
 async def test_get_cache_stats_and_clear_cache(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        answer_cache,
+        semantic_answer_cache,
         "get_stats",
         lambda: {"hits": 2, "misses": 0, "hit_rate_percent": 100.0, "cache_size": 1},
     )
@@ -135,6 +135,6 @@ async def test_get_cache_stats_and_clear_cache(monkeypatch: pytest.MonkeyPatch) 
     async def _fake_clear() -> None:
         return None
 
-    monkeypatch.setattr(answer_cache, "clear", _fake_clear)
+    monkeypatch.setattr(semantic_answer_cache, "clear", _fake_clear)
     cleared = await qg.clear_cache()
     assert cleared["success"] is True

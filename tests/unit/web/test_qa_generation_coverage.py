@@ -37,7 +37,7 @@ class TestCacheEndpoints:
     @pytest.mark.asyncio
     async def test_get_cache_stats_returns_metrics(self) -> None:
         """Test cache stats endpoint returns proper metrics."""
-        with patch("src.web.routers.qa_generation.answer_cache") as mock_cache:
+        with patch("src.web.routers.qa_generation.semantic_answer_cache") as mock_cache:
             mock_cache.get_stats.return_value = {
                 "hits": 10,
                 "misses": 5,
@@ -57,7 +57,7 @@ class TestCacheEndpoints:
     @pytest.mark.asyncio
     async def test_clear_cache_returns_cleared_count(self) -> None:
         """Test cache clear endpoint returns number of cleared entries."""
-        with patch("src.web.routers.qa_generation.answer_cache") as mock_cache:
+        with patch("src.web.routers.qa_generation.semantic_answer_cache") as mock_cache:
             mock_cache.get_stats.return_value = {"cache_size": 42}
             mock_cache.clear = AsyncMock()
 

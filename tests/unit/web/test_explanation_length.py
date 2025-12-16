@@ -47,10 +47,10 @@ class TestExplanationAnswerLength:
                 "src.web.routers.qa_gen_core.generator._get_pipeline", return_value=None
             ),
             patch(
-                "src.web.routers.qa_gen_core.generator.answer_cache.get",
+                "src.web.routers.qa_gen_core.generator.semantic_answer_cache.get",
                 return_value=None,
             ),
-            patch("src.web.routers.qa_gen_core.generator.answer_cache.set"),
+            patch("src.web.routers.qa_gen_core.generator.semantic_answer_cache.set"),
             patch(
                 "src.web.routers.qa_gen_core.generator.postprocess_answer",
                 return_value=SAMPLE_COMPREHENSIVE_ANSWER,
@@ -99,10 +99,10 @@ class TestExplanationAnswerLength:
                 "src.web.routers.qa_gen_core.generator._get_pipeline", return_value=None
             ),
             patch(
-                "src.web.routers.qa_gen_core.generator.answer_cache.get",
+                "src.web.routers.qa_gen_core.generator.semantic_answer_cache.get",
                 return_value=None,
             ),
-            patch("src.web.routers.qa_gen_core.generator.answer_cache.set"),
+            patch("src.web.routers.qa_gen_core.generator.semantic_answer_cache.set"),
             patch(
                 "src.web.routers.qa_gen_core.generator.postprocess_answer",
                 return_value=short_answer,
@@ -144,10 +144,10 @@ class TestExplanationAnswerLength:
                 "src.web.routers.qa_gen_core.generator._get_pipeline", return_value=None
             ),
             patch(
-                "src.web.routers.qa_gen_core.generator.answer_cache.get",
+                "src.web.routers.qa_gen_core.generator.semantic_answer_cache.get",
                 return_value=None,
             ),
-            patch("src.web.routers.qa_gen_core.generator.answer_cache.set"),
+            patch("src.web.routers.qa_gen_core.generator.semantic_answer_cache.set"),
             patch(
                 "src.web.routers.qa_gen_core.generator.postprocess_answer",
                 return_value=short_answer,

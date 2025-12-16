@@ -84,7 +84,7 @@ class TestGenerateSingleQAWithRules:
             patch("src.web.api.kg", None),
             patch("src.web.api.agent") as mock_agent,
             patch(
-                "src.web.routers.qa_gen_core.generator.answer_cache.get",
+                "src.web.routers.qa_gen_core.generator.semantic_answer_cache.get",
                 return_value=None,
             ),
         ):
@@ -110,7 +110,7 @@ class TestGenerateSingleQAWithRules:
             patch("src.web.api.kg", None),
             patch("src.web.api.agent") as mock_agent,
             patch(
-                "src.web.routers.qa_gen_core.generator.answer_cache.get",
+                "src.web.routers.qa_gen_core.generator.semantic_answer_cache.get",
                 return_value=None,
             ),
         ):
@@ -165,7 +165,7 @@ class TestGenerateSingleQAWithRules:
                 return_value=mock_validator_class,
             ),
             patch(
-                "src.web.routers.qa_gen_core.generator.answer_cache.get",
+                "src.web.routers.qa_gen_core.generator.semantic_answer_cache.get",
                 return_value=None,
             ),
         ):
