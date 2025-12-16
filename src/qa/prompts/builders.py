@@ -185,7 +185,8 @@ def build_extra_instructions(
         )
         return f"""설명형 답변입니다.
 
-⚠️ 중요: 답변은 **마크다운/불릿 없이** 먼저 생성하고, 후처리에서 형식을 적용합니다.
+⚠️ **[필수]** 답변은 반드시 JSON 형식으로만 출력하세요!
+❌ 평문/마크다운으로 직접 작성하면 **실패**입니다.
 
 [출력 형식 - JSON ONLY]
 - 반드시 **JSON 객체 1개만** 출력 (코드펜스/추가 설명/머리말/꼬리말 금지)
@@ -205,9 +206,13 @@ def build_extra_instructions(
 }}
 
 [구조/개수 규칙]
+- sections: 2개 이상 (서로 다른 주제별로 구분)
 - items(전체 합): **최소 5개 이상**
 - conclusion은 반드시 포함
 - title/label/text에 '서론/본론/결론' 같은 라벨 사용 금지
+
+❌ 절대 금지: JSON이 아닌 평문/마크다운 형태로 출력
+✅ 반드시: {{ "intro": "...", "sections": [...], "conclusion": "..." }} 형태로만 출력
 
 {fewshot_text}"""
 

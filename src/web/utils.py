@@ -868,10 +868,29 @@ def _find_next_content_line(lines: list[str], start: int) -> int | None:
 def _is_between_bullets(
     cleaned_lines: list[str], lines: list[str], next_idx: int | None
 ) -> bool:
-    """이전 줄과 다음 줄이 모두 불릿인지 확인."""
+    """이전 줄과 다음 줄이 모두 불릿인지 확인.
+
+    단, 다음 줄이 소제목(**제목**)이거나 결론 접두어로 시작하면
+    빈줄을 유지해야 하므로 False를 반환함.
+    """
     prev_stripped = cleaned_lines[-1].strip()
     prev_is_bullet = prev_stripped.startswith("- ")
-    next_is_bullet = next_idx is not None and lines[next_idx].strip().startswith("- ")
+
+    if next_idx is None:
+        return False
+
+    next_stripped = lines[next_idx].strip()
+
+    # 다음 줄이 소제목(**제목**)이면 빈줄 유지 필요
+    if next_stripped.startswith("**") and next_stripped.endswith("**"):
+        return False
+
+    # 다음 줄이 결론 접두어로 시작하면 빈줄 유지 필요
+    conclusion_prefixes = ("요약하면", "종합하면", "결론적으로", "정리하면")
+    if next_stripped.startswith(conclusion_prefixes):
+        return False
+
+    next_is_bullet = next_stripped.startswith("- ")
     return prev_is_bullet and next_is_bullet
 
 
@@ -951,6 +970,13 @@ def postprocess_answer(
         answer,
     )
 
+    # 3.7.0.1. 줄 시작이 결론 접두어인데 바로 앞 줄이 빈줄이 아니면 빈줄 추가
+    answer = re.sub(
+        r"([^\n])\n(요약하면|종합하면|결론적으로|정리하면)",
+        r"\1\n\n\2",
+        answer,
+    )
+
     # 3.7.1. 결론 접두어 중복 제거 (요약하면, 종합하면 등이 연속으로 나오면 첫 번째만 유지)
     answer = re.sub(
         r"(요약하면|종합하면|결론적으로|정리하면)[,\s]*(요약하면|종합하면|결론적으로|정리하면)",
@@ -963,6 +989,19 @@ def postprocess_answer(
 
     # 5. 불필요한 줄바꿈 정리 (마크다운 유지하면서)
     answer = _normalize_blank_lines(answer)
+
+    # 5.1. 소제목/결론 앞 빈줄 최종 보장 (폴백)
+    # _normalize_blank_lines 이후에도 빈줄이 누락된 경우를 최종 보정
+    answer = re.sub(
+        r"([^\n])\n(\*\*[^*]+\*\*(?:\n|$))",
+        r"\1\n\n\2",
+        answer,
+    )
+    answer = re.sub(
+        r"([^\n])\n(요약하면|종합하면|결론적으로|정리하면)",
+        r"\1\n\n\2",
+        answer,
+    )
 
     # 6. 마크다운 구조 자동 추가 (소제목, 불릿 항목에 볼드)
     answer = _add_markdown_structure(answer, qtype)
