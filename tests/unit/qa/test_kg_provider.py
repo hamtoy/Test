@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
 from unittest.mock import MagicMock
 
 import pytest
 
 
 @pytest.fixture(autouse=True)
-def reset_kg_singleton() -> None:
+def reset_kg_singleton() -> Generator[None, None, None]:
     """Reset KG singleton before and after each test."""
     from src.qa.kg_provider import reset_kg_for_test
 
