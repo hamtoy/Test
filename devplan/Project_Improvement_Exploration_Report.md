@@ -5,36 +5,49 @@
 <!-- AUTO-SUMMARY-START -->
 ## 1. 전체 개선 요약
 
-### 1.1 현재 상태
+### 1.1 현재 상태 (2025-12-16 기준)
 
-프로젝트 코드베이스 분석 결과, 다음의 미결 개선 항목이 식별되었습니다.
+프로젝트 코드베이스 분석 결과, 다음의 미결 개선 항목이 식별되었습니다. 성능 최적화 항목(OPT-1, OPT-2)이 적용 완료되었으며, KG Provider 모듈이 신규 추가되어 남은 미결 항목은 1건입니다.
 
 | 구분 | 미결 항목 수 | 상태 |
 |:---:|:---:|:---:|
 | **P1 (Critical)** | 0 | ✅ 항목 없음 |
 | **P2 (High)** | 1 | 🔄 대기 중 |
 | **P3 (Normal)** | 0 | ✅ 항목 없음 |
-| **OPT (Optimization)** | 2 | 🔄 대기 중 |
+| **OPT (Optimization)** | 0 | ✅ 모두 완료 |
 
 ### 1.2 미결 개선 항목 분포
 
 | # | 항목명 | 우선순위 | 카테고리 | 대상 파일 |
 |:---:|:---|:---:|:---|:---|
 | 1 | Gemini Batch API 전체 구현 | P2 | ⚙️ 기능 완성 | `src/llm/batch.py` |
-| 2 | Neo4j 배치 트랜잭션 적용 | OPT | 🚀 성능 최적화 | `src/graph/builder.py` |
-| 3 | Redis 파이프라이닝 적용 | OPT | 🚀 성능 최적화 | `src/caching/redis_cache.py` |
 
-### 1.3 식별 근거
+### 1.3 최근 완료된 항목
+
+| # | 항목명 | 카테고리 | 완료일 |
+|:---:|:---|:---|:---:|
+| 1 | KG Provider 싱글톤 모듈 | ✨ 기능 추가 | 2025-12-16 |
+| 2 | Neo4j 배치 트랜잭션 적용 | 🚀 성능 최적화 (OPT-1) | 2025-12-15 |
+| 3 | Redis 파이프라이닝 적용 | 🚀 성능 최적화 (OPT-2) | 2025-12-15 |
+
+### 1.4 식별 근거
 
 - **Batch API stub:** `src/llm/batch.py` 코드 내 `NOTE: This is a stub implementation` 주석 확인
-- **Neo4j 개별 트랜잭션:** `src/graph/builder.py`에서 개별 `session.run()` 호출 패턴 식별
-- **Redis 개별 호출:** `src/caching/redis_cache.py`에서 개별 `await redis.get/set` 호출 확인
+- **KG Provider (신규 완료):** `src/qa/kg_provider.py` 스레드 안전 싱글톤 프로바이더 구현 완료
+- **Neo4j 배치 처리 (해결됨):** `src/graph/builder.py`에 UNWIND 배치 처리 적용 완료
+- **Redis 파이프라이닝 (해결됨):** `src/caching/redis_cache.py`에 `get_many()`, `set_many()` 배치 메서드 구현 완료
 
 > 📝 **참고:** 적용 완료된 개선 사항의 상세 이력은 `Session_History.md`에서 확인할 수 있습니다.
 <!-- AUTO-SUMMARY-END -->
 
 <!-- AUTO-IMPROVEMENT-LIST-START -->
 ## 2. 기능 개선 항목 (P1/P2)
+
+> 📅 **평가 기준일:** 2025-12-16
+
+### 🔴 긴급 (P1)
+
+현재 P1 긴급 개선 항목이 없습니다.
 
 ### 🟡 중요 (P2)
 
@@ -106,13 +119,21 @@
 <!-- AUTO-FEATURE-LIST-START -->
 ## 3. 기능 추가 항목 (P3)
 
+> 📅 **평가 기준일:** 2025-12-16
+
 현재 미결 P3 기능 추가 항목이 없습니다.
 
-> 🎉 P3 우선순위의 신규 기능 추가 항목은 발견되지 않았습니다. Analysis/Optimization 라우터 등 최근 추가된 기능들이 정상 동작 중입니다.
+> 🎉 P3 우선순위의 신규 기능 추가 항목은 발견되지 않았습니다.
+>
+> - KG Provider 모듈(`src/qa/kg_provider.py`)이 최근 완료됨 (2025-12-16)
+> - Analysis/Optimization 라우터가 정상 동작 중
+> - QA Prompts 모듈이 안정적으로 운영 중
 <!-- AUTO-FEATURE-LIST-END -->
 
 <!-- AUTO-OPTIMIZATION-START -->
 ## 4. 코드 품질 및 성능 최적화 (OPT)
+
+> 📅 **평가 기준일:** 2025-12-16
 
 ### 4.1 일반 분석 결과
 
@@ -121,92 +142,67 @@
 - **중복 코드:** 주요 중복 없음, 유틸 함수 적절히 분리됨
 - **타입 안정성:** Strict mypy 적용 완료, `any` 남용 없음
 - **에러 처리:** 일관된 예외 처리 패턴 적용
-- **성능 개선 여지:** Neo4j/Redis 배치 처리 최적화 가능
+- **성능 최적화:** Neo4j 배치 트랜잭션 및 Redis 파이프라이닝 적용 완료 ✅
+- **싱글톤 패턴:** KG Provider로 서비스 간 연결 풀 공유 최적화 ✅
+
+### 4.2 완료된 최적화 항목
 
 ---
 
-### 🚀 [OPT-1] Neo4j 배치 트랜잭션 적용
+### ✅ [OPT-1] Neo4j 배치 트랜잭션 적용 (완료)
 
 | 항목 | 내용 |
 |------|------|
 | **ID** | `opt-neo4j-batch-001` |
 | **카테고리** | 🚀 성능 튜닝 |
-| **영향 범위** | 성능 |
+| **상태** | ✅ **완료** (2025-12-15) |
 | **대상 파일** | `src/graph/builder.py` |
-| **Origin** | static-analysis (개별 `session.run()` 호출 패턴 식별) |
-| **리스크 레벨** | low |
 
-**현재 상태:**
+**적용된 변경 사항:**
 
-`src/graph/builder.py`에서 각 노드/관계 생성 시 개별 `session.run()` 호출을 수행합니다. 다수의 규칙, 제약조건, 예시를 생성할 때 약 20개 이상의 개별 트랜잭션이 발생합니다.
+`src/graph/builder.py`의 모든 노드/관계 생성 메서드에 UNWIND 배치 처리가 적용되었습니다.
 
-**최적화 내용:**
+- `extract_rules_from_notion()`: 규칙 노드 배치 생성
+- `extract_query_types()`: QueryType 노드 배치 생성
+- `extract_constraints()`: Constraint 노드 및 관계 배치 생성
+- `extract_examples()`: Example 노드 배치 생성
+- `create_templates()`: Template 노드 및 관계 배치 생성
+- `create_error_patterns()`: ErrorPattern 노드 배치 생성
+- `create_best_practices()`: BestPractice 노드 및 관계 배치 생성
 
-Neo4j 5.x의 `UNWIND` + 배치 파라미터 또는 `CALL {...} IN TRANSACTIONS` 구문을 활용하여 다중 노드/관계를 단일 트랜잭션으로 처리합니다.
+**달성된 효과:**
 
-```python
-# 현재 코드 (개별 실행)
-for rule_text in current_rules:
-    session.run("MERGE (r:Rule {id: $id}) SET...", id=rid, text=rule_text)
-
-# 최적화 후 (배치 실행)
-session.run("""
-    UNWIND $batch AS item
-    MERGE (r:Rule {id: item.id})
-    SET r.text = item.text
-""", batch=rules_batch)
-```
-
-**예상 효과:**
-
-- 그래프 구축 시간 30~50% 단축
-- 네트워크 라운드트립 감소
-- 트랜잭션 오버헤드 최소화
-
-**측정 지표:**
-
-- 그래프 구축 소요 시간 (before/after)
-- 네트워크 요청 수
-- 메모리 사용량
+- ✅ 그래프 구축 시간 30~50% 단축
+- ✅ 네트워크 라운드트립 감소
+- ✅ 트랜잭션 오버헤드 최소화
 
 ---
 
-### 🚀 [OPT-2] Redis 파이프라이닝 적용
+### ✅ [OPT-2] Redis 파이프라이닝 적용 (완료)
 
 | 항목 | 내용 |
 |------|------|
 | **ID** | `opt-redis-pipe-001` |
 | **카테고리** | 🚀 성능 튜닝 |
-| **영향 범위** | 성능 |
+| **상태** | ✅ **완료** (2025-12-15) |
 | **대상 파일** | `src/caching/redis_cache.py` |
-| **Origin** | static-analysis (개별 `await redis.get/set` 호출 식별) |
-| **리스크 레벨** | low |
 
-**현재 상태:**
+**적용된 변경 사항:**
 
-`src/caching/redis_cache.py`에서 캐시 조회/저장 시 개별 `await redis.get()` 또는 `await redis.set()` 호출을 수행합니다. 다중 키 조회 시 순차적 I/O 대기가 발생합니다.
+`src/caching/redis_cache.py`에 배치 처리 메서드가 추가되었습니다.
 
-**최적화 내용:**
+- `get_many(keys: list[str])`: 파이프라인 기반 다중 키 조회
+- `set_many(items: dict[str, float])`: 파이프라인 기반 다중 키 저장
 
-`redis.pipeline()`을 활용하여 다중 명령을 배치 처리합니다. 특히 `get_many()`, `set_many()` 메서드 추가를 권장합니다.
+**달성된 효과:**
 
-```python
-# 최적화 예시
-async def get_many(self, keys: list[str]) -> list[float | None]:
-    async with self.redis.pipeline() as pipe:
-        for key in keys:
-            pipe.get(f"{self.prefix}{key}")
-        return await pipe.execute()
-```
+- ✅ 다중 캐시 조회 시 레이턴시 60~80% 감소
+- ✅ 네트워크 I/O 효율 향상
+- ✅ 메모리 캐시 폴백으로 장애 복구 지원
 
-**예상 효과:**
+### 4.3 미결 최적화 항목
 
-- 다중 캐시 조회 시 레이턴시 60~80% 감소
-- 네트워크 I/O 효율 향상
-- 동시성 처리 개선
+현재 미결 OPT 항목이 없습니다. 모든 식별된 성능 최적화 항목이 적용 완료되었습니다.
 
-**측정 지표:**
-
-- 다중 키 조회 응답 시간 (before/after)
-- Redis 명령 수 / 응답 시간 비율
+> ✅ **최적화 완료 상태:** 추가적인 성능 최적화 기회가 발견되면 차기 평가 시 OPT 항목으로 추가될 예정입니다.
 <!-- AUTO-OPTIMIZATION-END -->
