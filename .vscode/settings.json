@@ -50,7 +50,7 @@
   "vibereport.language": "ko",
   "vibereport.projectVisionMode": "auto",
   "vibereport.defaultProjectType": "auto-detect",
-  "vibereport.defaultQualityFocus": "maintenance",
+  "vibereport.defaultQualityFocus": "stabilization",
   "vibereport.previewBackgroundColor": "ide",
   // Antigravity Agent Settings
   "antigravity.agent.gitignoreAccess": true,
