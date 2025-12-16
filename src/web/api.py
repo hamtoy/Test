@@ -380,12 +380,15 @@ async def init_resources() -> None:
         try:
             import redis.asyncio as aioredis
 
-            from src.web.cache import answer_cache
+            from src.web.semantic_cache import semantic_answer_cache
 
             redis_client = aioredis.from_url(redis_url)  # type: ignore[no-untyped-call,unused-ignore]
-            answer_cache.redis = redis_client
-            answer_cache.use_redis = True
-            logger.info("Redis connected to AnswerCache (TTL: %ds)", answer_cache.ttl)
+            semantic_answer_cache.redis = redis_client
+            semantic_answer_cache.use_redis = True
+            logger.info(
+                "Redis connected to SemanticAnswerCache (TTL: %ds)",
+                semantic_answer_cache.ttl,
+            )
         except ImportError:
             logger.warning("redis.asyncio not installed, using memory-only cache")
         except Exception as e:

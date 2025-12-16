@@ -16,7 +16,7 @@ from src.config.constants import (
 from src.config.exceptions import SafetyFilterError
 from src.qa.rule_loader import RuleLoader
 from src.qa.validator import UnifiedValidator
-from src.web.cache import answer_cache
+from src.web.semantic_cache import semantic_answer_cache
 from src.web.utils import postprocess_answer, render_structured_answer_if_present
 
 from ..qa_common import (
@@ -180,9 +180,9 @@ async def generate_single_qa(
         )
 
         # Check cache after query generation
-        cached_result = await answer_cache.get(query, cache_ocr_key, qtype)
+        cached_result = await semantic_answer_cache.get(query, cache_ocr_key, qtype)
         if cached_result is not None:
-            cache_stats = answer_cache.get_stats()
+            cache_stats = semantic_answer_cache.get_stats()
             logger.info(
                 "✅ CACHE HIT! Saved ~%d seconds. Query: %s... | Cache size: %d | Hit rate: %.1f%%",
                 ESTIMATED_CACHE_HIT_TIME_SAVINGS,
@@ -192,7 +192,7 @@ async def generate_single_qa(
             )
             return cast("dict[str, Any]", cached_result)
 
-        cache_stats = answer_cache.get_stats()
+        cache_stats = semantic_answer_cache.get_stats()
         logger.info(
             "❌ CACHE MISS - Will generate new answer. Cache size: %d | Hit rate: %.1f%%",
             cache_stats["cache_size"],
@@ -283,7 +283,7 @@ async def generate_single_qa(
 
         # Phase 10: Cache result
         result = {"type": qtype, "query": query, "answer": final_answer}
-        await answer_cache.set(query, cache_ocr_key, qtype, result)
+        await semantic_answer_cache.set(query, cache_ocr_key, qtype, result)
         logger.debug("Cached answer for query_type=%s", qtype)
 
         return result

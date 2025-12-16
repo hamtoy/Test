@@ -25,9 +25,9 @@ from src.config.constants import (
     QA_BATCH_TYPES,
     QA_BATCH_TYPES_THREE,
 )
-from src.web.cache import answer_cache
 from src.web.models import GenerateQARequest
 from src.web.response import APIMetadata, build_response
+from src.web.semantic_cache import semantic_answer_cache
 from src.web.utils import load_ocr_text
 
 from .qa_common import (
@@ -52,7 +52,7 @@ async def get_cache_stats() -> dict[str, Any]:
     Returns:
         Cache metrics including hit rate, size, and performance impact
     """
-    stats = answer_cache.get_stats()
+    stats = semantic_answer_cache.get_stats()
     # Add estimated time saved (use ESTIMATED_CACHE_HIT_TIME_SAVINGS constant)
     time_saved_seconds = stats["hits"] * ESTIMATED_CACHE_HIT_TIME_SAVINGS
     stats["estimated_time_saved_seconds"] = time_saved_seconds
@@ -72,8 +72,8 @@ async def clear_cache() -> dict[str, Any]:
     Returns:
         Success message with number of entries cleared
     """
-    size_before = answer_cache.get_stats()["cache_size"]
-    await answer_cache.clear()
+    size_before = semantic_answer_cache.get_stats()["cache_size"]
+    await semantic_answer_cache.clear()
 
     return {
         "success": True,
