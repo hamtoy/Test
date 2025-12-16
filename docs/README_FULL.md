@@ -108,6 +108,7 @@ project_root/
 │   │   ├── logging.py      # 로깅 설정
 │   │   ├── budget.py       # 예산 추적
 │   │   ├── neo4j.py        # Neo4j 유틸리티
+│   │   ├── lats_worker.py  # LATS 로직 (분리됨)
 │   │   ├── worker.py       # LATS 워커
 │   │   ├── health.py       # 헬스체크
 │   │   ├── callbacks.py    # 콜백
