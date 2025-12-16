@@ -261,7 +261,7 @@ class TestResponseEvaluatorService:
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
         mock_agent.retry_handler.call = AsyncMock(
-            return_value='{"best_choice": "A", "score": 0.95}'
+            return_value='{"best_candidate": "A", "evaluations": [{"candidate_id": "A", "score": 95, "reason": "Best answer"}]}'
         )
         mock_agent._is_rate_limit_error = Mock(return_value=False)
 
@@ -273,9 +273,9 @@ class TestResponseEvaluatorService:
 
         candidates = {"A": "Answer A", "B": "Answer B"}
 
-        with patch("src.agent.services.EvaluationResultSchema") as mock_eval:
+        with patch("src.agent.services.response_evaluator.EvaluationResultSchema") as mock_eval:
             mock_result = Mock()
-            mock_result.best_choice = "A"
+            mock_result.best_candidate = "A"
             mock_eval.model_validate_json = Mock(return_value=mock_result)
             mock_eval.model_json_schema = Mock(return_value={})
 
@@ -302,7 +302,7 @@ class TestResponseEvaluatorService:
         mock_agent._create_generative_model = Mock()
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
-        mock_agent.retry_handler.call = AsyncMock(return_value='{"best_choice": "A"}')
+        mock_agent.retry_handler.call = AsyncMock(return_value='{"best_candidate": "A", "evaluations": [{"candidate_id": "A", "score": 90, "reason": "Good answer"}]}')
         mock_agent._is_rate_limit_error = Mock(return_value=False)
 
         mock_template = Mock()
@@ -315,7 +315,7 @@ class TestResponseEvaluatorService:
 
         service = ResponseEvaluatorService(mock_agent)
 
-        with patch("src.agent.services.EvaluationResultSchema") as mock_eval:
+        with patch("src.agent.services.response_evaluator.EvaluationResultSchema") as mock_eval:
             mock_result = Mock()
             mock_eval.model_validate_json = Mock(return_value=mock_result)
             mock_eval.model_json_schema = Mock(return_value={})
