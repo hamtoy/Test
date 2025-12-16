@@ -35,7 +35,7 @@ QTYPE_MAP = {
     "explanation": "explanation",
     "reasoning": "reasoning",
     "target_short": "target",
-    "target_long": "target",
+    "target_long": "target_long",
     "target": "target",
     "summary": "summary",
     "factual": "target",
@@ -377,13 +377,25 @@ def _render_structured_answer(
 
 def _get_fallback_conclusion(intro: str, normalized_qtype: str) -> str:
     """결론이 없을 때 폴백 결론 생성."""
-    if intro:
-        sentences = _split_sentences_safe(intro)
-        return sentences[0] if sentences else intro
-    if normalized_qtype == "explanation":
-        return "핵심 내용은 위와 같습니다"
     if normalized_qtype == "reasoning":
-        return "위 근거를 바탕으로 같은 결론입니다"
+        # 추론 유형: 첫 문장 기반으로 결론 생성
+        if intro:
+            sentences = _split_sentences_safe(intro)
+            if sentences:
+                first_sentence = sentences[0].strip()
+                # 이미 결론 접두어로 시작하면 그대로 반환
+                if first_sentence.startswith(("결론적으로", "따라서", "종합하면")):
+                    return first_sentence
+                return f"결론적으로, {first_sentence}"
+        return "결론적으로, 위 근거를 바탕으로 같은 판단입니다."
+
+    if normalized_qtype == "explanation":
+        if intro:
+            sentences = _split_sentences_safe(intro)
+            if sentences:
+                return f"요약하면, {sentences[0].strip()}"
+        return "요약하면, 핵심 내용은 위와 같습니다."
+
     return ""
 
 
@@ -525,14 +537,33 @@ def _apply_sentence_word_limits(answer: str, limits: dict[str, int]) -> str:
 
 
 def _apply_reasoning_limits(answer: str) -> str:
-    sentences = _split_sentences_safe(answer)
+    """추론형: 결론 필수, 포맷 보존."""
+    # 본문/결론 분리
+    split_result = _split_conclusion_block(answer, "reasoning")
+    if split_result is None:
+        body, conclusion = answer, ""
+    else:
+        body, conclusion = split_result
+
+    # 결론이 없거나 너무 짧으면 폴백 추가
+    if not conclusion or len(conclusion.strip()) < 20:
+        conclusion = _get_fallback_conclusion(body, "reasoning")
+
+    # 결론 앞 빈줄 보장
+    if conclusion and body and not body.rstrip().endswith("\n\n"):
+        body = body.rstrip() + "\n\n"
+
+    result = (body + conclusion).strip()
+
+    # 기존 길이 제한 로직
+    sentences = _split_sentences_safe(result)
     if sentences and len(sentences) > 5:
         sentences = sentences[:5]
-        answer = ". ".join(sentences)
-        if answer and not answer.endswith("."):
-            answer += "."
-    answer = _limit_words(answer, 200)
-    return _normalize_ending_punctuation(answer)
+        result = ". ".join(sentences)
+        if result and not result.endswith("."):
+            result += "."
+    result = _limit_words(result, 200)
+    return _normalize_ending_punctuation(result)
 
 
 def _truncate_explanation(answer: str, max_length: int | None) -> str:
@@ -581,6 +612,36 @@ def _apply_target_limits(answer: str) -> str:
     return _limit_words(answer, 200)
 
 
+def _apply_target_long_limits(answer: str) -> str:
+    """타겟 장답형: 200-400자, 3-4문장.
+
+    타겟 단답(1-2문장)보다 길게 유지하여 구분을 명확히 함.
+    """
+    sentences = _split_sentences_safe(answer)
+    if not sentences:
+        return answer
+
+    # 3-4문장 유지 (단답은 1-2문장)
+    if len(sentences) > 4:
+        sentences = sentences[:4]
+
+    result = ". ".join(sentences)
+    if result and not result.endswith("."):
+        result += "."
+
+    # 200-400자 목표 (단답보다 길게)
+    if len(result) > 400:
+        # 400자 넘으면 마지막 문장 잘라서 맞춤
+        truncated = result[:397]
+        last_period = truncated.rfind(".")
+        if last_period > 200:
+            result = truncated[: last_period + 1]
+        else:
+            result = truncated + "..."
+
+    return result
+
+
 def apply_answer_limits(
     answer: str,
     qtype: str,
@@ -610,7 +671,10 @@ def apply_answer_limits(
         answer = _ensure_period_preserve_ellipsis(answer)
         return _truncate_explanation(answer, max_length)
 
-    if normalized_qtype == "target":
+    if normalized_qtype == "target_long":
+        return _apply_target_long_limits(answer)
+
+    if normalized_qtype == "target":  # target_short만 해당
         return _apply_target_limits(answer)
 
     return answer
@@ -836,6 +900,13 @@ def postprocess_answer(
     answer = re.sub(
         r"([.?!])(\s*)(\*\*[^*]+\*\*)",
         r"\1\n\n\3",
+        answer,
+    )
+
+    # 3.5.2. 줄 시작이 소제목인데 바로 앞 줄이 빈줄이 아니면 빈줄 추가
+    answer = re.sub(
+        r"([^\n])\n(\*\*[^*]+\*\*)",
+        r"\1\n\n\2",
         answer,
     )
 
