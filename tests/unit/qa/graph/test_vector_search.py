@@ -43,12 +43,12 @@ class TestVectorSearchEngine:
     ) -> None:
         """Test lazy initialization of embeddings."""
         mock_embeddings = MagicMock()
-        mock_gemini_embeddings = MagicMock(return_value=mock_embeddings)
-        mock_module = MagicMock()
-        mock_module.GoogleGenerativeAIEmbeddings = mock_gemini_embeddings
+        mock_embeddings_class = MagicMock(return_value=mock_embeddings)
+        mock_utils_module = MagicMock()
+        mock_utils_module.CustomGeminiEmbeddings = mock_embeddings_class
 
         with (
-            patch.dict("sys.modules", {"langchain_google_genai": mock_module}),
+            patch.dict("sys.modules", {"src.qa.graph.utils": mock_utils_module}),
             patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"}),
         ):
             engine = VectorSearchEngine(mock_connection)
@@ -56,16 +56,11 @@ class TestVectorSearchEngine:
 
             assert engine._embeddings is mock_embeddings
 
-    def test_init_embeddings_import_error(
+    def test_init_embeddings_no_api_key(
         self, mock_connection: Neo4jConnectionManager
     ) -> None:
-        """Test embeddings initialization handles import error gracefully."""
-        # Ensure the import fails by setting the module to None
-        with patch.dict(
-            "sys.modules",
-            {"langchain_google_genai": None},
-            clear=False,
-        ):
+        """Test embeddings initialization handles missing API key gracefully."""
+        with patch.dict("os.environ", {}, clear=True):
             engine = VectorSearchEngine(mock_connection)
             engine._init_embeddings()
 

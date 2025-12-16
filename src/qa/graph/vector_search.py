@@ -1,12 +1,13 @@
 """Vector similarity search module for RAG system.
 
 Provides vector embedding and similarity search capabilities
-using LangChain and Neo4j vector indexes.
+using Neo4j vector indexes and Gemini embeddings.
 """
 
 from __future__ import annotations
 
 import logging
+import os
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -38,22 +39,23 @@ class VectorSearchEngine:
         self._vector_store: Any = None
 
     def _init_embeddings(self) -> None:
-        """Initialize the embedding model lazily."""
+        """Initialize the embedding model lazily using CustomGeminiEmbeddings."""
         if self._embeddings is None:
+            api_key = os.getenv("GEMINI_API_KEY")
+            if not api_key:
+                logger.warning("GEMINI_API_KEY not set, vector search disabled")
+                return
+
             try:
-                import os
+                from src.qa.graph.utils import CustomGeminiEmbeddings
 
-                from langchain_google_genai import GoogleGenerativeAIEmbeddings
-
-                self._embeddings = GoogleGenerativeAIEmbeddings(
+                self._embeddings = CustomGeminiEmbeddings(
+                    api_key=api_key,
                     model=self.embedding_model,
-                    google_api_key=os.getenv("GEMINI_API_KEY"),
                 )
                 logger.info("Gemini embeddings initialized: %s", self.embedding_model)
-            except ImportError:
-                logger.warning(
-                    "langchain_google_genai not available, vector search disabled"
-                )
+            except Exception as e:
+                logger.warning("Failed to initialize embeddings: %s", e)
 
     def search_similar(
         self,

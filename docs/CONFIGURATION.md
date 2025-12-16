@@ -25,7 +25,7 @@ pip install -e .
 
 | 설치 명령 | 포함 패키지 | 용도 |
 |-----------|-------------|------|
-| `pip install -e ".[rag]"` | langchain, langchain-neo4j, langchain-google-genai | Neo4j RAG 시스템 |
+| `pip install -e ".[rag]"` | langchain, langchain-neo4j | Neo4j RAG 시스템 |
 | `pip install -e ".[web]"` | fastapi, uvicorn, python-multipart | 웹 UI 서버 |
 | `pip install -e ".[worker]"` | faststream[redis] | Redis 기반 LATS 워커 |
 | `pip install -e ".[multimodal]"` | pillow | 이미지 처리 |
