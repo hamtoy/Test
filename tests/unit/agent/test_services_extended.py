@@ -258,7 +258,7 @@ class TestResponseEvaluatorServiceExtended:
         mock_agent.context_manager = Mock()
         mock_agent.retry_handler = Mock()
         mock_agent.retry_handler.call = AsyncMock(
-            return_value='{"best_answer": "a", "score": 0.9}'
+            return_value='{"best_candidate": "A", "evaluations": [{"candidate_id": "A", "score": 90, "reason": "Best answer"}]}'
         )
         mock_agent._is_rate_limit_error = Mock(return_value=False)
 
@@ -273,7 +273,9 @@ class TestResponseEvaluatorServiceExtended:
         mock_kg.find_relevant_rules = Mock(return_value=["rule1"])
         mock_kg.get_formatting_rules = Mock(return_value="formatting")
 
-        with patch("src.agent.services.EvaluationResultSchema") as mock_eval:
+        with patch(
+            "src.agent.services.response_evaluator.EvaluationResultSchema"
+        ) as mock_eval:
             mock_result = Mock()
             mock_eval.model_validate_json = Mock(return_value=mock_result)
 
