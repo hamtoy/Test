@@ -9,6 +9,7 @@ from checks.detect_forbidden_patterns import (
     find_formatting_violations,
     find_violations,
 )
+from src.web.utils import strip_prose_bold
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,7 @@ def _collect_pattern_violations(draft_answer: str) -> list[str]:
 
 
 def _collect_formatting_violations(draft_answer: str) -> list[str]:
+    """서식 위반 수집. prose_bold_violation은 별도 처리 필요."""
     formatting_violations = find_formatting_violations(draft_answer)
     collected: list[str] = []
     for fv in formatting_violations:
@@ -192,7 +194,20 @@ async def validate_and_regenerate(
     Returns:
         검증/수정된 최종 답변
     """
-    # 통합 검증으로 수집할 위반/경고 (질의 포함하여 금지 패턴 검증 강화)
+    # 1. 먼저 prose_bold_violation 빠르게 검사 및 즉시 수정 (API 호출 없이)
+    formatting_viols = _collect_formatting_violations(draft_answer)
+    has_prose_bold = any("prose_bold" in v for v in formatting_viols)
+
+    if has_prose_bold:
+        logger.info("prose_bold_violation 감지 - strip_prose_bold로 즉시 수정")
+        draft_answer = strip_prose_bold(draft_answer)
+        # 수정 후 formatting 위반만 다시 검사
+        formatting_viols = _collect_formatting_violations(draft_answer)
+        has_prose_bold = any("prose_bold" in v for v in formatting_viols)
+        if not has_prose_bold:
+            logger.info("prose_bold_violation 수정 완료")
+
+    # 2. 통합 검증으로 수집할 위반/경고 (질의 포함하여 금지 패턴 검증 강화)
     val_result = unified_validator.validate_all(
         draft_answer,
         normalized_qtype,
@@ -214,7 +229,8 @@ async def validate_and_regenerate(
         ),
     )
     all_violations.extend(_collect_pattern_violations(draft_answer))
-    all_violations.extend(_collect_formatting_violations(draft_answer))
+    # prose_bold가 이미 수정됐으면 formatting_viols에서 제외됨
+    all_violations.extend(formatting_viols)
     all_violations.extend(
         _collect_pipeline_violations(pipeline, normalized_qtype, draft_answer),
     )

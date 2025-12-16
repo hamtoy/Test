@@ -638,8 +638,44 @@ def _remove_unauthorized_markdown(text: str) -> str:
     bold_placeholder = "##BOLD_PLACEHOLDER_8A3F2E1C##"
     text = text.replace("**", bold_placeholder)
     text = re.sub(r"\*([^*]+?)\*", r"\1", text)
-    text = text.replace("*", "")
+    text = re.sub(r"\*", "", text)
     return text.replace(bold_placeholder, "**")
+
+
+def strip_prose_bold(text: str) -> str:
+    """줄글 본문 내 볼드체를 강제 제거한다.
+
+    prose_bold_violation 교정용: 목록/소제목 컨텍스트가 아닌 곳의 볼드체만 제거.
+
+    허용되는 볼드체 (유지):
+    - 목록 항목 시작: "- **항목**: 설명"
+    - 숫자 목록: "1. **항목**: 설명"
+    - 단독 소제목: "**제목**" (줄 전체가 볼드)
+
+    제거 대상:
+    - 줄글 내 볼드: "이것은 **강조** 단어입니다" → "이것은 강조 단어입니다"
+    """
+    lines = text.split("\n")
+    result_lines: list[str] = []
+
+    for line in lines:
+        stripped = line.strip()
+
+        # 허용 패턴 1: 목록 항목 시작 (- ** 또는 숫자. **)
+        if re.match(r"^-\s+\*\*", stripped) or re.match(r"^\d+\.\s+\*\*", stripped):
+            result_lines.append(line)
+            continue
+
+        # 허용 패턴 2: 줄 전체가 볼드 소제목
+        if re.match(r"^\*\*[^*]+\*\*\s*$", stripped):
+            result_lines.append(line)
+            continue
+
+        # 그 외: 줄글 내 볼드체 모두 제거
+        cleaned_line = re.sub(r"\*\*([^*]+)\*\*", r"\1", line)
+        result_lines.append(cleaned_line)
+
+    return "\n".join(result_lines)
 
 
 def _is_existing_markdown_line(stripped: str) -> bool:
@@ -864,4 +900,5 @@ __all__ = [
     "render_structured_answer_if_present",
     "save_ocr_text",
     "strip_output_tags",
+    "strip_prose_bold",
 ]
