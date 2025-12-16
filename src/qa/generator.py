@@ -74,8 +74,9 @@ class QAGenerator:
 
     def _build_model(self) -> Any:
         """생성자에서 주입되지 않은 경우 Gemini 모델 생성."""
-        genai.configure(api_key=self.config.api_key)
-        return genai.GenerativeModel(self.config.model_name)
+        genai_any = cast("Any", genai)
+        genai_any.configure(api_key=self.config.api_key)
+        return genai_any.GenerativeModel(self.config.model_name)
 
     def _load_prompt(self, path: Path) -> str:
         if not path.exists():
