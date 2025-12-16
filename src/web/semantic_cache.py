@@ -169,12 +169,12 @@ class SemanticAnswerCache:
 
         return best_entry, best_similarity
 
-    async def get(self, query: str, ocr_text: str, query_type: str) -> Any | None:
+    async def get(self, query: str, _ocr_text: str, query_type: str) -> Any | None:  # noqa: ARG002
         """Retrieve cached answer if a similar query exists.
 
         Args:
             query: The query string
-            ocr_text: OCR text (ignored in semantic cache)
+            _ocr_text: OCR text (intentionally ignored in semantic cache, kept for API compatibility)
             query_type: Type of query
 
         Returns:
@@ -207,10 +207,10 @@ class SemanticAnswerCache:
         )
         return None
 
-    async def set(
+    async def set(  # noqa: ARG002
         self,
         query: str,
-        ocr_text: str,
+        _ocr_text: str,
         query_type: str,
         result: Any,
     ) -> None:
@@ -218,7 +218,7 @@ class SemanticAnswerCache:
 
         Args:
             query: The query string
-            ocr_text: OCR text (ignored in semantic cache)
+            _ocr_text: OCR text (intentionally ignored, kept for API compatibility)
             query_type: Type of query
             result: The result to cache
         """

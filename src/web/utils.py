@@ -46,6 +46,8 @@ QTYPE_MAP = {
 _CONCLUSION_PREFIX = "결론적으로"
 _REASONING_PREFIXES = (_CONCLUSION_PREFIX, "따라서", "종합하면", "요약하면")
 _EXPLANATION_PREFIXES = ("요약하면", "이처럼")
+# S1192: 중복 리터럴 방지 - regex 치환 패턴
+_BLANK_LINE_SEPARATOR = r"\1\n\n\2"
 
 
 async def load_ocr_text(config: AppConfig) -> str:
@@ -939,7 +941,7 @@ def postprocess_answer(
     # 3.5.2. 줄 시작이 소제목인데 바로 앞 줄이 빈줄이 아니면 빈줄 추가
     answer = re.sub(
         r"([^\n])\n(\*\*[^*]+\*\*)",
-        r"\1\n\n\2",
+        _BLANK_LINE_SEPARATOR,
         answer,
     )
 
@@ -966,14 +968,14 @@ def postprocess_answer(
     # 패턴: 결론 접두어(요약하면, 종합하면, 결론적으로)가 바로 이전 내용에 붙어있는 경우
     answer = re.sub(
         r"([.?!다요음임])\s*(요약하면|종합하면|결론적으로|정리하면)",
-        r"\1\n\n\2",
+        _BLANK_LINE_SEPARATOR,
         answer,
     )
 
     # 3.7.0.1. 줄 시작이 결론 접두어인데 바로 앞 줄이 빈줄이 아니면 빈줄 추가
     answer = re.sub(
         r"([^\n])\n(요약하면|종합하면|결론적으로|정리하면)",
-        r"\1\n\n\2",
+        _BLANK_LINE_SEPARATOR,
         answer,
     )
 
@@ -994,12 +996,12 @@ def postprocess_answer(
     # _normalize_blank_lines 이후에도 빈줄이 누락된 경우를 최종 보정
     answer = re.sub(
         r"([^\n])\n(\*\*[^*]+\*\*(?:\n|$))",
-        r"\1\n\n\2",
+        _BLANK_LINE_SEPARATOR,
         answer,
     )
     answer = re.sub(
         r"([^\n])\n(요약하면|종합하면|결론적으로|정리하면)",
-        r"\1\n\n\2",
+        _BLANK_LINE_SEPARATOR,
         answer,
     )
 
