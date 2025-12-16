@@ -12,6 +12,7 @@ def test_qa_generator_class(monkeypatch: pytest.MonkeyPatch) -> None:
     # Set environment variable with valid format (AIza + 35 chars)
     fake_api_key = "AIza" + "x" * 35
     monkeypatch.setenv("GEMINI_API_KEY", fake_api_key)
+    monkeypatch.setenv("ENABLE_RAG", "false")
 
     # Import after setting env
     from src.config.settings import AppConfig
