@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import types
-import sys
-import importlib
 import builtins
+import importlib
 import io
+import sys
+import types
 from typing import Any
 
 import pytest
@@ -49,31 +49,26 @@ def test_list_models_script(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_qa_generator_script(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "key")
 
-    class _FakeCompletions:
-        def create(
-            self, model: str, messages: list[Any], temperature: int = 0
-        ) -> types.SimpleNamespace:
-            content = (
+    class _FakeResponse:
+        def __init__(self) -> None:
+            self.text = (
                 "1. 첫 번째 질문\n2. 두 번째 질문\n3. 세 번째 질문\n4. 네 번째 질문"
             )
-            return types.SimpleNamespace(
-                choices=[
-                    types.SimpleNamespace(
-                        message=types.SimpleNamespace(content=content)
-                    )
-                ]
-            )
 
-    class _FakeChat:
-        def __init__(self) -> None:
-            self.completions = _FakeCompletions()
+    class _FakeModel:
+        def __init__(self, model_name: str) -> None:
+            self.model_name = model_name
 
-    class _FakeOpenAI:
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
-            self.chat = _FakeChat()
+        def generate_content(
+            self, prompt: str, generation_config: dict[str, Any] | None = None
+        ) -> _FakeResponse:
+            return _FakeResponse()
 
-    fake_openai_module = types.SimpleNamespace(OpenAI=_FakeOpenAI)
-    monkeypatch.setitem(sys.modules, "openai", fake_openai_module)
+    fake_genai = types.SimpleNamespace(
+        configure=lambda api_key: None,
+        GenerativeModel=_FakeModel,
+    )
+    monkeypatch.setitem(sys.modules, "google.generativeai", fake_genai)
 
     files: dict[str, Any] = {}
 

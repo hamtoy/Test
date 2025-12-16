@@ -63,7 +63,7 @@ mypy_path = [".", "stubs"]      # 🆕 Custom stub support
    - Workaround: Type ignore comments for attribute access
    - Future: Monitor for official stub release
 
-2. **langchain / langchain-community / langchain-neo4j / langchain-openai**
+2. **langchain / langchain-community / langchain-neo4j / langchain-google-genai**
    - Workaround: Custom partial stubs + relaxed rules
    - Configuration: `disallow_untyped_calls = false`
 

@@ -208,8 +208,6 @@ module = [
     "psutil.*",
     "neo4j",
     "neo4j.*",
-    "openai",
-    "openai.*",
     "faststream",
     "faststream.*",
     "dotenv",

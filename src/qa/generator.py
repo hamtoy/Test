@@ -14,18 +14,20 @@ import re
 import sys
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
-from openai import OpenAI
+import google.generativeai as genai
 
 from src.config.settings import AppConfig
+
+if TYPE_CHECKING:
+    from google.generativeai.types import GenerateContentResponse
 
 LOGGER = logging.getLogger(__name__)
 
 DEFAULT_PROMPT_DIR = Path(__file__).resolve().parents[2] / "templates" / "prompts"
 DEFAULT_QUERY_PROMPT = DEFAULT_PROMPT_DIR / "query_generation.txt"
 DEFAULT_ANSWER_PROMPT = DEFAULT_PROMPT_DIR / "answer_generation.txt"
-DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 
 
 class QAGenerator:
@@ -39,7 +41,7 @@ class QAGenerator:
         self,
         config: AppConfig,
         *,
-        client: OpenAI | None = None,
+        model: Any | None = None,
         query_prompt_path: Path | str | None = None,
         answer_prompt_path: Path | str | None = None,
         logger: logging.Logger | None = None,
@@ -48,7 +50,7 @@ class QAGenerator:
 
         Args:
             config: Application configuration containing API key and model settings
-            client: Optional pre-configured OpenAI client (creates default if None)
+            model: Optional pre-configured Gemini model (creates default if None)
             query_prompt_path: Custom path to query generation prompt template
             answer_prompt_path: Custom path to answer generation prompt template
             logger: Optional logger instance (uses module logger if None)
@@ -68,11 +70,12 @@ class QAGenerator:
         self.query_system_prompt = self._load_prompt(self.query_prompt_path)
         self.answer_system_prompt = self._load_prompt(self.answer_prompt_path)
 
-        self.client = client or self._build_client()
+        self.model = model or self._build_model()
 
-    def _build_client(self) -> OpenAI:
-        """생성자에서 주입되지 않은 경우 OpenAI 호환 Gemini 클라이언트 생성."""
-        return OpenAI(api_key=self.config.api_key, base_url=DEFAULT_BASE_URL)
+    def _build_model(self) -> Any:
+        """생성자에서 주입되지 않은 경우 Gemini 모델 생성."""
+        genai.configure(api_key=self.config.api_key)
+        return genai.GenerativeModel(self.config.model_name)
 
     def _load_prompt(self, path: Path) -> str:
         if not path.exists():
@@ -80,15 +83,16 @@ class QAGenerator:
         return path.read_text(encoding="utf-8").strip()
 
     def _call_llm(self, system_prompt: str, user_prompt: str) -> str:
-        response = self.client.chat.completions.create(
-            model=self.config.model_name,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=self.config.temperature,
+        """Gemini API를 호출하여 응답을 생성."""
+        combined_prompt = f"{system_prompt}\n\n{user_prompt}"
+        response: GenerateContentResponse = self.model.generate_content(
+            combined_prompt,
+            generation_config={
+                "temperature": self.config.temperature,
+                "max_output_tokens": self.config.max_output_tokens,
+            },
         )
-        return response.choices[0].message.content or ""
+        return cast(str, response.text) if response.text else ""
 
     def generate_questions(self, ocr_text: str, query_count: int = 4) -> list[str]:
         """OCR 텍스트로부터 다채로운 질의 목록 생성."""
