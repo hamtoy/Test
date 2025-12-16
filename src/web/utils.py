@@ -42,6 +42,11 @@ QTYPE_MAP = {
     "general": "explanation",  # Phase 2-1: Use explanation rules
 }
 
+# 결론 접두어 상수 (S1192: 문자열 중복 방지)
+_CONCLUSION_PREFIX = "결론적으로"
+_REASONING_PREFIXES = (_CONCLUSION_PREFIX, "따라서", "종합하면", "요약하면")
+_EXPLANATION_PREFIXES = ("요약하면", "이처럼")
+
 
 async def load_ocr_text(config: AppConfig) -> str:
     """data/inputs/input_ocr.txt 로드 (mtime 기반 thread-safe 캐시 포함)."""
@@ -269,13 +274,13 @@ def _format_conclusion(conclusion: str, normalized_qtype: str) -> str:
     if normalized_qtype == "explanation":
         return _ensure_starts_with(
             conclusion,
-            prefixes=("요약하면", "이처럼"),
+            prefixes=_EXPLANATION_PREFIXES,
             default_prefix="요약하면, ",
         )
     if normalized_qtype == "reasoning":
         return _ensure_starts_with(
             conclusion,
-            prefixes=("결론적으로", "따라서", "종합하면", "요약하면"),
+            prefixes=_REASONING_PREFIXES,
             default_prefix="종합하면, ",
         )
     return conclusion
@@ -299,9 +304,9 @@ def _split_conclusion_block(
 
     prefixes: tuple[str, ...]
     if normalized_qtype == "explanation":
-        prefixes = ("요약하면", "이처럼")
+        prefixes = _EXPLANATION_PREFIXES
     elif normalized_qtype == "reasoning":
-        prefixes = ("결론적으로", "따라서", "종합하면", "요약하면")
+        prefixes = _REASONING_PREFIXES
     else:
         prefixes = ()
 
@@ -375,27 +380,37 @@ def _render_structured_answer(
     return rendered or None
 
 
+def _get_reasoning_fallback(intro: str) -> str:
+    """추론 유형 폴백 결론 생성 (S3776: 복잡도 분리)."""
+    if not intro:
+        return f"{_CONCLUSION_PREFIX}, 위 근거를 바탕으로 같은 판단입니다."
+    sentences = _split_sentences_safe(intro)
+    if not sentences:
+        return f"{_CONCLUSION_PREFIX}, 위 근거를 바탕으로 같은 판단입니다."
+    first_sentence = sentences[0].strip()
+    # 이미 결론 접두어로 시작하면 그대로 반환
+    if first_sentence.startswith(
+        _REASONING_PREFIXES[:3]
+    ):  # 결론적으로, 따라서, 종합하면
+        return first_sentence
+    return f"{_CONCLUSION_PREFIX}, {first_sentence}"
+
+
+def _get_explanation_fallback(intro: str) -> str:
+    """설명 유형 폴백 결론 생성 (S3776: 복잡도 분리)."""
+    if intro:
+        sentences = _split_sentences_safe(intro)
+        if sentences:
+            return f"요약하면, {sentences[0].strip()}"
+    return "요약하면, 핵심 내용은 위와 같습니다."
+
+
 def _get_fallback_conclusion(intro: str, normalized_qtype: str) -> str:
     """결론이 없을 때 폴백 결론 생성."""
     if normalized_qtype == "reasoning":
-        # 추론 유형: 첫 문장 기반으로 결론 생성
-        if intro:
-            sentences = _split_sentences_safe(intro)
-            if sentences:
-                first_sentence = sentences[0].strip()
-                # 이미 결론 접두어로 시작하면 그대로 반환
-                if first_sentence.startswith(("결론적으로", "따라서", "종합하면")):
-                    return first_sentence
-                return f"결론적으로, {first_sentence}"
-        return "결론적으로, 위 근거를 바탕으로 같은 판단입니다."
-
+        return _get_reasoning_fallback(intro)
     if normalized_qtype == "explanation":
-        if intro:
-            sentences = _split_sentences_safe(intro)
-            if sentences:
-                return f"요약하면, {sentences[0].strip()}"
-        return "요약하면, 핵심 내용은 위와 같습니다."
-
+        return _get_explanation_fallback(intro)
     return ""
 
 
