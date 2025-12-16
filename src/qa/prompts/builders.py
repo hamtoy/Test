@@ -164,7 +164,7 @@ def build_extra_instructions(
       ]
     }}
   ],
-  "conclusion": "마지막 1-2문장. '종합하면,' 또는 '요약하면,'로 시작"
+  "conclusion": "마지막 1-2문장. '결론적으로' 또는 '종합하면'으로 시작"
 }}
 
 [구조/개수 규칙]
