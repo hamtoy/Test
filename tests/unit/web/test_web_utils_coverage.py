@@ -287,7 +287,7 @@ class TestQTypeMapping:
             "explanation": "explanation",
             "reasoning": "reasoning",
             "target_short": "target",
-            "target_long": "target",
+            "target_long": "target_long",  # target_long은 target_long으로 매핑됨
             "target": "target",
             "summary": "summary",
             "factual": "target",
@@ -513,8 +513,12 @@ class TestComplexScenarios:
 
         answer_rea = '{"intro":"내용","sections":[],"conclusion":"결과입니다"}'
         result_rea = postprocess_answer(answer_rea, "reasoning")
-        # Should use reasoning conclusion prefix
-        assert "종합하면" in result_rea or "결과입니다" in result_rea
+        # reasoning 타입은 결론 접두어 추가됨 (종합하면, 결론적으로 등)
+        assert (
+            "결과입니다" in result_rea
+            or "종합하면" in result_rea
+            or "결론적으로" in result_rea
+        )
 
 
 class TestPrivateFunctionsExtended:

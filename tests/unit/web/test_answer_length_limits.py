@@ -6,7 +6,6 @@ import pytest
 
 from src.web.utils import apply_answer_limits, postprocess_answer
 
-
 # Test data constants
 COMPREHENSIVE_EXPLANATION_BASE = """전일 한국 증시는 여러 복합적인 요인으로 하락 마감했습니다.
 
@@ -52,10 +51,11 @@ class TestAnswerLengthLimits:
         )
 
     def test_reasoning_no_word_limit(self) -> None:
-        """Test that reasoning type does NOT have word limit applied.
+        """Test that reasoning type does NOT truncate content.
 
         Fix for answer truncation issue: reasoning answers should use the full
         response from Gemini without truncation to prevent 28-50% content loss.
+        Note: Reasoning type may add conclusion prefix, so word count can INCREASE.
         """
         # Create a long answer with many words (simulating Gemini's full response)
         long_answer = " ".join(["테스트"] * 150) + "."
@@ -64,9 +64,10 @@ class TestAnswerLengthLimits:
         # Apply limits for reasoning
         result = apply_answer_limits(long_answer, "reasoning")
 
-        # Should NOT be limited - should preserve original content
+        # Should NOT truncate - word count should be equal or greater
+        # (결론 접두어 추가로 인해 증가할 수 있음)
         result_word_count = len(result.split())
-        assert result_word_count == original_word_count, (
+        assert result_word_count >= original_word_count, (
             f"reasoning should NOT truncate. "
             f"Original: {original_word_count}, Result: {result_word_count}"
         )

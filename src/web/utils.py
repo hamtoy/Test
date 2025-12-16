@@ -634,10 +634,9 @@ def _apply_target_long_limits(answer: str) -> str:
         # 400자 넘으면 마지막 문장 잘라서 맞춤
         truncated = result[:397]
         last_period = truncated.rfind(".")
-        if last_period > 200:
-            result = truncated[: last_period + 1]
-        else:
-            result = truncated + "..."
+        result = (
+            truncated[: last_period + 1] if last_period > 200 else truncated + "..."
+        )
 
     return result
 
