@@ -101,6 +101,21 @@ RULES_CACHE_TTL_SECONDS: Final[int] = 3600
 BATCH_MAX_WAIT_SECONDS: Final[float] = 3600.0
 
 
+# ===== Text Truncation Limits =====
+
+# Maximum characters to display for query preview in UI
+QUERY_PREVIEW_MAX_LENGTH: Final[int] = 50
+
+# Characters to show in truncated query display (QUERY_PREVIEW_MAX_LENGTH - 3 for "...")
+QUERY_PREVIEW_TRUNCATE_LENGTH: Final[int] = 47
+
+# Maximum characters for OCR text snippet in rule lookup
+RULE_LOOKUP_OCR_SNIPPET_LENGTH: Final[int] = 500
+
+# Log message truncation length
+LOG_TRUNCATE_LENGTH: Final[int] = 200
+
+
 class CacheConfig:
     """Context Caching 설정.
 

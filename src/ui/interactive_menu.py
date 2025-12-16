@@ -17,6 +17,10 @@ from src.analysis.cross_validation import CrossValidationSystem
 from src.caching.analytics import analyze_cache_stats, print_cache_report
 from src.caching.redis_cache import RedisEvalCache
 from src.config import AppConfig
+from src.config.constants import (
+    QUERY_PREVIEW_MAX_LENGTH,
+    QUERY_PREVIEW_TRUNCATE_LENGTH,
+)
 from src.core.models import WorkflowResult
 from src.features.difficulty import AdaptiveDifficultyAdjuster
 from src.features.lats import LATSSearcher
@@ -325,7 +329,7 @@ async def _execute_queries_with_progress(
         for idx, query in enumerate(queries):
             turn_id = idx + 1
             task = progress.add_task(
-                f"[cyan]질의 {turn_id}/{len(queries)}: {query[:50]}...[/cyan]",
+                f"[cyan]질의 {turn_id}/{len(queries)}: {query[:QUERY_PREVIEW_MAX_LENGTH]}...[/cyan]",
                 total=None,
             )
             try:
@@ -626,7 +630,11 @@ def _display_workflow_summary(
             status = "[red]✗ 실패[/red]"
 
         # 질의 텍스트 잘라내기
-        query_display = query[:47] + "..." if len(query) > 50 else query
+        query_display = (
+            query[:QUERY_PREVIEW_TRUNCATE_LENGTH] + "..."
+            if len(query) > QUERY_PREVIEW_MAX_LENGTH
+            else query
+        )
         table.add_row(str(i), query_display, status, output_file)
 
     console.print(table)
