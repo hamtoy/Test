@@ -273,7 +273,9 @@ class TestResponseEvaluatorServiceExtended:
         mock_kg.find_relevant_rules = Mock(return_value=["rule1"])
         mock_kg.get_formatting_rules = Mock(return_value="formatting")
 
-        with patch("src.agent.services.response_evaluator.EvaluationResultSchema") as mock_eval:
+        with patch(
+            "src.agent.services.response_evaluator.EvaluationResultSchema"
+        ) as mock_eval:
             mock_result = Mock()
             mock_eval.model_validate_json = Mock(return_value=mock_result)
 
