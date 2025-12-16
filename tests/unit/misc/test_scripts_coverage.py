@@ -1,17 +1,60 @@
+"""Tests for script coverage - QA generator and list models."""
+
 from __future__ import annotations
 
-import builtins
-import importlib
-import io
-import sys
-import types
-from typing import Any
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 
+def test_qa_generator_class(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test QAGenerator class with mocked Gemini model."""
+    # Set environment variable with valid format (AIza + 35 chars)
+    fake_api_key = "AIza" + "x" * 35
+    monkeypatch.setenv("GEMINI_API_KEY", fake_api_key)
+
+    # Import after setting env
+    from src.config.settings import AppConfig
+    from src.qa.generator import QAGenerator
+
+    # Create mock response
+    mock_response = MagicMock()
+    mock_response.text = (
+        "1. 첫 번째 질문\n2. 두 번째 질문\n3. 세 번째 질문\n4. 네 번째 질문"
+    )
+
+    # Create mock model
+    mock_model = MagicMock()
+    mock_model.generate_content.return_value = mock_response
+
+    # Create config (api_key is read from GEMINI_API_KEY env)
+    config = AppConfig(
+        enable_rag=False,
+        neo4j_uri=None,
+        neo4j_user=None,
+        neo4j_password=None,
+        _env_file=None,
+    )
+
+    # Create generator with mocked model
+    generator = QAGenerator(config, model=mock_model)
+
+    # Test generate_questions
+    questions = generator.generate_questions("테스트 OCR 텍스트", query_count=4)
+
+    # Verify
+    assert mock_model.generate_content.called
+    assert len(questions) == 4
+    assert "첫 번째 질문" in questions[0]
+
+
 def test_list_models_script(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("GEMINI_API_KEY", "key")
+    """Test list_models script with mocked Gemini API."""
+    import types
+
+    # Set valid API key format
+    fake_api_key = "AIza" + "x" * 35
+    monkeypatch.setenv("GEMINI_API_KEY", fake_api_key)
 
     class _FakeModel:
         def __init__(self, name: str, methods: list[str] | None = None) -> None:
@@ -22,85 +65,9 @@ def test_list_models_script(monkeypatch: pytest.MonkeyPatch) -> None:
         configure=lambda api_key: None,
         list_models=lambda: [_FakeModel("m1"), _FakeModel("m2", ["other"])],
     )
-    monkeypatch.setitem(sys.modules, "google.generativeai", fake_genai)
 
-    # Clear module cache to ensure fresh import
-    sys.modules.pop("src.llm.list_models", None)
-    sys.modules.pop("src.list_models", None)
+    with patch("src.llm.list_models.genai", fake_genai):
+        from src.llm import list_models
 
-    # Capture log output
-    import logging
-
-    log_output = io.StringIO()
-    handler = logging.StreamHandler(log_output)
-    handler.setLevel(logging.INFO)
-
-    import src.llm.list_models as lm
-
-    lm.logger.addHandler(handler)
-    importlib.reload(lm)
-    lm.logger.removeHandler(handler)
-
-    # Module executed successfully - log output may or may not contain model names
-    # depending on mock setup, but module should complete without error
-    _ = log_output.getvalue()
-
-
-def test_qa_generator_script(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("GEMINI_API_KEY", "key")
-
-    class _FakeResponse:
-        def __init__(self) -> None:
-            self.text = (
-                "1. 첫 번째 질문\n2. 두 번째 질문\n3. 세 번째 질문\n4. 네 번째 질문"
-            )
-
-    class _FakeModel:
-        def __init__(self, model_name: str) -> None:
-            self.model_name = model_name
-
-        def generate_content(
-            self, prompt: str, generation_config: dict[str, Any] | None = None
-        ) -> _FakeResponse:
-            return _FakeResponse()
-
-    fake_genai = types.SimpleNamespace(
-        configure=lambda api_key: None,
-        GenerativeModel=_FakeModel,
-    )
-    monkeypatch.setitem(sys.modules, "google.generativeai", fake_genai)
-
-    files: dict[str, Any] = {}
-
-    class _MemoBuffer(io.StringIO):
-        def close(self) -> None:
-            # Keep buffer accessible for assertions
-            self.seek(0)
-            return None
-
-    def _fake_open(
-        path: str, mode: str = "r", encoding: str | None = None
-    ) -> io.StringIO:
-        if "r" in mode:
-            return io.StringIO("prompt")
-        buf = _MemoBuffer()
-        files[path] = buf
-        return buf
-
-    monkeypatch.setattr(builtins, "open", _fake_open)
-    monkeypatch.setattr(builtins, "exit", lambda code=0: None)
-    captured: list[str] = []
-    monkeypatch.setattr(
-        builtins,
-        "print",
-        lambda *args, **kwargs: captured.append(" ".join(str(a) for a in args)),
-    )
-
-    # Clear module cache to ensure fresh import
-    sys.modules.pop("src.qa.generator", None)
-    sys.modules.pop("src.qa_generator", None)
-
-    import src.qa.generator as qg
-
-    importlib.reload(qg)
-    assert "QA Results" in files.get("qa_result_4pairs.md", io.StringIO()).getvalue()
+        # Module should complete without error
+        assert hasattr(list_models, "logger")

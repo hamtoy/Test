@@ -11,7 +11,6 @@ import json
 import logging
 import os
 import re
-import sys
 from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -238,11 +237,7 @@ def _run_example() -> None:
 
 def _should_autorun() -> bool:
     """Determine whether to run the example flow automatically."""
-    return (
-        __name__ == "__main__"
-        or "PYTEST_CURRENT_TEST" in os.environ
-        or "pytest" in sys.modules
-    )
+    return __name__ == "__main__"
 
 
 if _should_autorun():
