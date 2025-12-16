@@ -29,7 +29,7 @@ class VectorSearchEngine:
     def __init__(
         self,
         connection_manager: Neo4jConnectionManager,
-        embedding_model: str = "text-embedding-ada-002",
+        embedding_model: str = "models/text-embedding-004",
     ) -> None:
         """Initialize vector search engine."""
         self.connection = connection_manager
@@ -41,12 +41,19 @@ class VectorSearchEngine:
         """Initialize the embedding model lazily."""
         if self._embeddings is None:
             try:
-                from langchain_openai import OpenAIEmbeddings
+                import os
 
-                self._embeddings = OpenAIEmbeddings(model=self.embedding_model)
-                logger.info("Embeddings initialized: %s", self.embedding_model)
+                from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
+                self._embeddings = GoogleGenerativeAIEmbeddings(
+                    model=self.embedding_model,
+                    google_api_key=os.getenv("GEMINI_API_KEY"),
+                )
+                logger.info("Gemini embeddings initialized: %s", self.embedding_model)
             except ImportError:
-                logger.warning("langchain_openai not available, vector search disabled")
+                logger.warning(
+                    "langchain_google_genai not available, vector search disabled"
+                )
 
     def search_similar(
         self,

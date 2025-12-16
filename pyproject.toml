@@ -25,6 +25,7 @@ rag = [
     "langchain>=1.0.8,<2.0.0",
     "langchain-community>=0.4.1,<1.0.0",
     "langchain-neo4j>=0.6.0,<1.0.0",
+    "langchain-google-genai>=2.0.0,<3.0.0",
 ]
 
 # Web UI with FastAPI
@@ -51,6 +52,7 @@ all = [
     "langchain>=1.0.8,<2.0.0",
     "langchain-community>=0.4.1,<1.0.0",
     "langchain-neo4j>=0.6.0,<1.0.0",
+    "langchain-google-genai>=2.0.0,<3.0.0",
     # Web
     "fastapi>=0.115.0",
     "uvicorn>=0.32.0",
@@ -93,6 +95,7 @@ dev = [
     "langchain>=1.0.8,<2.0.0",
     "langchain-community>=0.4.1,<1.0.0",
     "langchain-neo4j>=0.6.0,<1.0.0",
+    "langchain-google-genai>=2.0.0,<3.0.0",
     "fastapi>=0.115.0",
     "uvicorn>=0.32.0",
     "python-multipart>=0.0.12",
@@ -245,6 +248,7 @@ module = [
     "langchain.*",
     "langchain_community.*",
     "langchain_neo4j.*",
+    "langchain_google_genai.*",
 ]
 ignore_missing_imports = true
 disallow_untyped_calls = false
