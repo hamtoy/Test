@@ -638,7 +638,7 @@ def _remove_unauthorized_markdown(text: str) -> str:
     bold_placeholder = "##BOLD_PLACEHOLDER_8A3F2E1C##"
     text = text.replace("**", bold_placeholder)
     text = re.sub(r"\*([^*]+?)\*", r"\1", text)
-    text = re.sub(r"\*", "", text)
+    text = text.replace("*", "")
     return text.replace(bold_placeholder, "**")
 
 

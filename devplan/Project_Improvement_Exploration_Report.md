@@ -5,39 +5,27 @@
 <!-- AUTO-SUMMARY-START -->
 ## 1. 전체 개선 요약
 
-### 1.1 현재 상태 (2025-12-16 기준)
+### 1.1 미결(Pending) 개선 항목 현황
 
-프로젝트 코드베이스 분석 결과, 다음의 미결 개선 항목이 식별되었습니다. 성능 최적화 항목(OPT-1, OPT-2)이 적용 완료되었으며, KG Provider 모듈이 신규 추가되어 남은 미결 항목은 1건입니다.
+프로젝트 코드베이스 분석 결과, 현재 보류 중인 개선 항목은 총 **1건**입니다.
+대부분의 핵심 성능 최적화(OPT) 및 기능 구현이 완료되었으며, Gemini Batch API 연동 작업만이 유일한 미결 항목으로 남아 있습니다.
 
-| 구분 | 미결 항목 수 | 상태 |
-|:---:|:---:|:---:|
-| **P1 (Critical)** | 0 | ✅ 항목 없음 |
-| **P2 (High)** | 1 | 🔄 대기 중 |
-| **P3 (Normal)** | 0 | ✅ 항목 없음 |
-| **OPT (Optimization)** | 0 | ✅ 모두 완료 |
+| 우선순위 | 미결 항목 수 | 상태 | 비고 |
+|:---:|:---:|:---:|:---|
+| **P1 (Critical)** | 0 | ✅ 완료 | 긴급한 문제는 발견되지 않음 |
+| **P2 (High)** | 1 | 🔄 대기 중 | Batch API 연동 (`llm-batch-001`) |
+| **P3 (Normal)** | 0 | ✅ 완료 | 추가 기능 요청 없음 |
+| **OPT (Optimization)** | 0 | ✅ 완료 | Neo4j 및 Redis 최적화 적용됨 |
 
-### 1.2 미결 개선 항목 분포
+### 1.2 미결 개선 항목 목록
+
+현재 진행이 필요한 작업 목록입니다.
 
 | # | 항목명 | 우선순위 | 카테고리 | 대상 파일 |
 |:---:|:---|:---:|:---|:---|
-| 1 | Gemini Batch API 전체 구현 | P2 | ⚙️ 기능 완성 | `src/llm/batch.py` |
+| 1 | Gemini Batch API 완전 구현 | **P2** | ⚙️ 기능 완성 | `src/llm/batch.py` |
 
-### 1.3 최근 완료된 항목
-
-| # | 항목명 | 카테고리 | 완료일 |
-|:---:|:---|:---|:---:|
-| 1 | KG Provider 싱글톤 모듈 | ✨ 기능 추가 | 2025-12-16 |
-| 2 | Neo4j 배치 트랜잭션 적용 | 🚀 성능 최적화 (OPT-1) | 2025-12-15 |
-| 3 | Redis 파이프라이닝 적용 | 🚀 성능 최적화 (OPT-2) | 2025-12-15 |
-
-### 1.4 식별 근거
-
-- **Batch API stub:** `src/llm/batch.py` 코드 내 `NOTE: This is a stub implementation` 주석 확인
-- **KG Provider (신규 완료):** `src/qa/kg_provider.py` 스레드 안전 싱글톤 프로바이더 구현 완료
-- **Neo4j 배치 처리 (해결됨):** `src/graph/builder.py`에 UNWIND 배치 처리 적용 완료
-- **Redis 파이프라이닝 (해결됨):** `src/caching/redis_cache.py`에 `get_many()`, `set_many()` 배치 메서드 구현 완료
-
-> 📝 **참고:** 적용 완료된 개선 사항의 상세 이력은 `Session_History.md`에서 확인할 수 있습니다.
+> 📝 **참고:** 완료된 작업 이력은 `Session_History.md`에서 별도로 관리됩니다.
 <!-- AUTO-SUMMARY-END -->
 
 <!-- AUTO-IMPROVEMENT-LIST-START -->
@@ -47,73 +35,52 @@
 
 ### 🔴 긴급 (P1)
 
-현재 P1 긴급 개선 항목이 없습니다.
+현재 식별된 치명적인(Critical) 오류나 긴급 수정이 필요한 항목은 없습니다.
 
 ### 🟡 중요 (P2)
 
-#### [P2-1] Gemini Batch API 전체 구현
+유일한 P2 항목으로 Gemini Batch API 연동 작업이 남아 있습니다.
+
+#### [P2-1] Gemini Batch API 완전 구현
 
 | 항목 | 내용 |
-|------|------|
+|:---:|:---|
 | **ID** | `llm-batch-001` |
 | **카테고리** | ⚙️ 기능 완성 |
 | **복잡도** | Medium |
 | **대상 파일** | `src/llm/batch.py` |
-| **Origin** | static-analysis (코드 내 stub 주석 발견) |
-| **리스크 레벨** | medium |
-| **관련 평가 카테고리** | 기능 완성도, 성능/최적화 |
+| **Origin** | Static Analysis (Stub 주석 미해결) |
+| **리스크 레벨** | Medium |
+| **관련 평가** | 기능 완성도, 비용 효율성 |
 
-**현재 상태:**
+**1. 현재 상태 및 문제점 (Problem):**
 
-`src/llm/batch.py`에 Gemini Batch API 클라이언트가 인터페이스 수준으로 구현되어 있습니다. `GeminiBatchClient` 클래스가 `submit_batch()`, `get_status()`, `get_results()`, `cancel()`, `list_jobs()` 메서드를 제공하지만, 실제 Gemini Batch API 연동은 구현되지 않았습니다.
+- `src/llm/batch.py` 파일 내 `GeminiBatchClient` 클래스가 존재하나, 실제 API 호출부는 **Stub(빈 껍데기)** 상태입니다.
+- 배치 작업 상태를 로컬 메모리(`self._jobs`)에만 임시 저장하므로, 서버 재시작 시 작업 상태가 유실됩니다.
+- 현재 구조로는 Gemini Batch API가 제공하는 **50% 비용 절감** 혜택을 전혀 누릴 수 없습니다.
 
-```python
-# submit_batch 메서드 내 주석
-# NOTE: This is a stub implementation. Actual Gemini Batch API
-# integration will be added when the API becomes available.
-# See: https://ai.google.dev/gemini-api/docs/batch
-```
+**2. 영향 (Impact):**
 
-**문제점 (Problem):**
+- 대량의 문서 처리나 평가 작업을 수행할 때 불필요하게 높은 비용(Standard API 요금)이 발생합니다.
+- 비동기 대량 처리가 불가능하여 시스템 리소스 활용도가 떨어집니다.
 
-- 현재 stub 구현으로 실제 배치 처리 불가
-- 로컬 메모리(`self._jobs`) 기반 상태 관리로 프로덕션 환경 부적합
-- 대량 데이터 처리 시 비용 최적화 기회 상실 (50% 비용 절감 불가)
+**3. 개선 내용 (Proposed Solution):**
 
-**영향 (Impact):**
+- **실제 API 연동:** Google AI SDK를 사용하여 `submit_batch` 및 결과 조회 기능을 실제로 구현합니다.
+- **영구 저장소 연동:** 배치 작업 상태(Job Status)를 Redis에 저장하여 서버 재시작 후에도 추적 가능하도록 개선합니다.
+- **비용 추적 통합:** `CostTracker` 모듈과 연동하여 배치 처리 시 할인된 비용(50%)이 정확히 기록되도록 합니다.
 
-- 대량 평가, 데이터 전처리 워크로드에서 비용 효율성 저하
-- 비동기 배치 작업 지원 불가로 운영 유연성 제한
-- 실시간이 아닌 작업에서 불필요한 API 비용 발생
+**4. 기대 효과:**
 
-**원인 (Cause):**
+- 대용량 데이터 처리 워크로드의 **비용 50% 절감**.
+- 서버 재시작 등 장애 상황에서도 배치 작업의 연속성 보장.
 
-- Gemini Batch API가 최근 출시되어 통합 작업 대기 상태
-- 우선순위 높은 다른 기능 구현에 리소스 집중
+**5. Definition of Done (완료 조건):**
 
-**개선 내용 (Proposed Solution):**
-
-1. Google AI SDK의 Batch API 클라이언트 연동
-2. 배치 작업 상태 영구 저장 (Redis/DB 연동)
-3. 배치 완료 시 콜백/웹훅 알림 구현
-4. 비용 추적 메트릭 통합 (`cost_tracker.py` 연동)
-
-**기대 효과:**
-
-- 대량 처리 워크로드 비용 50% 절감
-- 비동기 배치 작업 지원으로 운영 효율성 향상
-- 프로덕션 수준의 상태 관리 및 장애 복구 지원
-
-**Definition of Done:**
-
-- [ ] Gemini Batch API 클라이언트 실제 연동
-- [ ] 배치 작업 상태 영구 저장 구현 (Redis)
-- [ ] 배치 완료 알림 메커니즘 구현
-- [ ] 단위 테스트 추가 (`tests/unit/llm/test_batch.py` 확장)
-- [ ] 통합 테스트 추가
-- [ ] 비용 추적 메트릭 통합
-- [ ] 문서 업데이트
-
+- [ ] `submit_batch()` 메서드가 실제 Gemini API를 호출해야 함
+- [ ] 작업 상태가 Redis에 저장되고 조회되어야 함 (`get_status()`)
+- [ ] 관련 단위 테스트(`test_batch.py`)가 모킹(Mocking)된 환경에서 통과해야 함
+- [ ] 타입 에러(Mypy) 및 린트 에러(Ruff)가 없어야 함
 <!-- AUTO-IMPROVEMENT-LIST-END -->
 
 <!-- AUTO-FEATURE-LIST-START -->
@@ -121,13 +88,11 @@
 
 > 📅 **평가 기준일:** 2025-12-16
 
-현재 미결 P3 기능 추가 항목이 없습니다.
+### 🟢 일반 (P3)
 
-> 🎉 P3 우선순위의 신규 기능 추가 항목은 발견되지 않았습니다.
->
-> - KG Provider 모듈(`src/qa/kg_provider.py`)이 최근 완료됨 (2025-12-16)
-> - Analysis/Optimization 라우터가 정상 동작 중
-> - QA Prompts 모듈이 안정적으로 운영 중
+현재 식별된 P3(Normal) 수준의 기능 추가 제안은 없습니다.
+
+> 🎉 **참고:** 최근 `KG Provider` 모듈 추가 및 `Analysis` 엔진 기능 확장이 완료되어, 당분간은 시스템 안정화 및 P2 항목(Batch API) 해결에 집중하는 것이 권장됩니다.
 <!-- AUTO-FEATURE-LIST-END -->
 
 <!-- AUTO-OPTIMIZATION-START -->
@@ -137,72 +102,53 @@
 
 ### 4.1 일반 분석 결과
 
-코드베이스 정적 분석 결과:
+코드베이스에 대한 정적/동적 분석 결과는 다음과 같습니다:
 
-- **중복 코드:** 주요 중복 없음, 유틸 함수 적절히 분리됨
-- **타입 안정성:** Strict mypy 적용 완료, `any` 남용 없음
-- **에러 처리:** 일관된 예외 처리 패턴 적용
-- **성능 최적화:** Neo4j 배치 트랜잭션 및 Redis 파이프라이닝 적용 완료 ✅
-- **싱글톤 패턴:** KG Provider로 서비스 간 연결 풀 공유 최적화 ✅
+- **데이터베이스 인덱싱:** 그래프 규모가 커짐에 따라 노드 속성 검색 속도 저하 우려가 있음. 명시적인 인덱스(Index) 생성 로직 보강 필요.
+- **메모리 관리:** 대량 데이터 배치 처리 시 메모리 사용량에 대한 모니터링이 필요하나, 현재는 기본적인 메트릭만 수집 중.
+- **코드 중복:** 주요 중복 없음. 유틸리티 함수 분리가 잘 되어 있음.
 
-### 4.2 완료된 최적화 항목
+### 4.2 완료된 최적화 (참고)
 
----
+- ✅ **[OPT-1] Neo4j 배치 트랜잭션:** `UNWIND` 구문 적용 완료.
+- ✅ **[OPT-2] Redis 파이프라이닝:** `pipeline()` 적용 완료.
 
-### ✅ [OPT-1] Neo4j 배치 트랜잭션 적용 (완료)
+### 4.3 미결(Pending) 최적화 항목
+
+반드시 수행해야 할 성능 최적화 항목이 1건 식별되었습니다.
+
+#### [OPT-3] Neo4j 인덱스 및 쿼리 최적화
 
 | 항목 | 내용 |
-|------|------|
-| **ID** | `opt-neo4j-batch-001` |
+|:---:|:---|
+| **ID** | `opt-cypher-index-001` |
 | **카테고리** | 🚀 성능 튜닝 |
-| **상태** | ✅ **완료** (2025-12-15) |
+| **영향 범위** | 성능 (Graph Query Latency) |
 | **대상 파일** | `src/graph/builder.py` |
 
-**적용된 변경 사항:**
+**1. 현재 상태:**
 
-`src/graph/builder.py`의 모든 노드/관계 생성 메서드에 UNWIND 배치 처리가 적용되었습니다.
+- 노드 생성 시 `MERGE` 구문을 사용하고 있으나, 이를 뒷받침하는 인덱스(Index)나 유니크 제약조건(Constraint) 생성이 코드 레벨에서 명시적으로 관리되지 않고 있음.
+- 데이터가 10만 건 이상으로 증가할 경우 `MERGE` 성능이 급격히 저하될 위험이 있음.
 
-- `extract_rules_from_notion()`: 규칙 노드 배치 생성
-- `extract_query_types()`: QueryType 노드 배치 생성
-- `extract_constraints()`: Constraint 노드 및 관계 배치 생성
-- `extract_examples()`: Example 노드 배치 생성
-- `create_templates()`: Template 노드 및 관계 배치 생성
-- `create_error_patterns()`: ErrorPattern 노드 배치 생성
-- `create_best_practices()`: BestPractice 노드 및 관계 배치 생성
+**2. 최적화 내용:**
 
-**달성된 효과:**
+- **인덱스 자동 생성:** 그래프 초기화 시(`GraphBuilder.__init__` 등) 주요 레이블(Rule, Topic, Document 등)의 핵심 속성에 대한 인덱스/제약조건 생성 쿼리 추가.
+- **쿼리 튜닝:** 빈번하게 사용되는 검색 패턴에 대해 `PROFILE` 분석 후 최적화된 Cypher 구문 적용.
 
-- ✅ 그래프 구축 시간 30~50% 단축
-- ✅ 네트워크 라운드트립 감소
-- ✅ 트랜잭션 오버헤드 최소화
+**3. 예상 효과:**
 
----
+- 대규모 그래프 구축 및 검색 속도 **30% 이상 향상**.
+- 중복 데이터 생성 방지 (데이터 무결성 확보).
 
-### ✅ [OPT-2] Redis 파이프라이닝 적용 (완료)
+**4. 측정 지표:**
 
-| 항목 | 내용 |
-|------|------|
-| **ID** | `opt-redis-pipe-001` |
-| **카테고리** | 🚀 성능 튜닝 |
-| **상태** | ✅ **완료** (2025-12-15) |
-| **대상 파일** | `src/caching/redis_cache.py` |
+- `Graph RAG` 질의 평균 응답 시간(Latency).
+- 노드 삽입(Ingestion) 처리량(Throughput).
 
-**적용된 변경 사항:**
+**5. Definition of Done:**
 
-`src/caching/redis_cache.py`에 배치 처리 메서드가 추가되었습니다.
-
-- `get_many(keys: list[str])`: 파이프라인 기반 다중 키 조회
-- `set_many(items: dict[str, float])`: 파이프라인 기반 다중 키 저장
-
-**달성된 효과:**
-
-- ✅ 다중 캐시 조회 시 레이턴시 60~80% 감소
-- ✅ 네트워크 I/O 효율 향상
-- ✅ 메모리 캐시 폴백으로 장애 복구 지원
-
-### 4.3 미결 최적화 항목
-
-현재 미결 OPT 항목이 없습니다. 모든 식별된 성능 최적화 항목이 적용 완료되었습니다.
-
-> ✅ **최적화 완료 상태:** 추가적인 성능 최적화 기회가 발견되면 차기 평가 시 OPT 항목으로 추가될 예정입니다.
+- [ ] `create_indices()` 메서드 구현 및 초기화 시 호출
+- [ ] 주요 엔티티(Title, ID 등)에 대한 Index/Constraint 적용 확인
+- [ ] 대량 데이터 삽입 테스트 시 성능 저하 없는지 검증
 <!-- AUTO-OPTIMIZATION-END -->

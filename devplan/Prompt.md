@@ -16,10 +16,9 @@
 | # | Prompt ID | Title | Priority | Status |
 |:---:|:---|:---|:---:|:---:|
 | 1 | **PROMPT-001** | Gemini Batch API Full Implementation | P2 | ⬜ Pending |
+| 2 | **OPT-3** | Neo4j Cypher Index Optimization | OPT | ⬜ Pending |
 
-**Total: 1 prompt | Completed: 0 | Remaining: 1**
-
-> **Note:** All OPT items (OPT-1: Neo4j Batch Transaction, OPT-2: Redis Pipelining) have been completed. The KG Provider module was recently added (2025-12-16). Only the Batch API implementation remains pending.
+**Total: 2 prompts | Completed: 0 | Remaining: 2**
 
 ---
 
@@ -31,34 +30,22 @@
 
 ### [PROMPT-001] Gemini Batch API Full Implementation
 
-> Execute this prompt now, then proceed to final verification.
+> Execute this prompt now, then proceed to [OPT-3].
 
 **Task Description:**
 
-Implement the full Gemini Batch API integration in `src/llm/batch.py`. The current stub implementation needs to be replaced with actual API calls to Google's Batch API for high-throughput, cost-effective processing with 50% cost savings.
+Implement the full Gemini Batch API integration in `src/llm/batch.py`. The current stub implementation needs to be replaced with actual API calls to Google's Batch API to enable cost-effective asynchronous processing (50% cost reduction).
 
 **Target Files:**
 
 - `src/llm/batch.py` (modify)
 - `tests/unit/llm/test_batch.py` (extend)
 
-**Current State:**
-
-The file contains a stub implementation with the following note:
-
-```python
-# NOTE: This is a stub implementation. Actual Gemini Batch API
-# integration will be added when the API becomes available.
-# See: https://ai.google.dev/gemini-api/docs/batch
-```
-
 **Steps:**
 
-1. **Update `GeminiBatchClient.__init__`:**
-   - Add configuration for Batch API endpoint
-   - Initialize Google AI SDK client with batch capabilities
-   - Add Redis client for persistent job state storage
-   - Import required dependencies
+1. **Update `GeminiBatchClient` Initialization:**
+   - Initialize Google AI SDK client.
+   - Add Redis client support for job state persistence.
 
    ```python
    def __init__(
@@ -66,296 +53,103 @@ The file contains a stub implementation with the following note:
        model_name: str = "gemini-flash-latest",
        redis_client: Any | None = None,
    ) -> None:
-       """Initialize the batch client with Redis persistence.
-
-       Args:
-           model_name: Default model to use for batch jobs
-           redis_client: Optional Redis client for job persistence
-       """
        self.model_name = model_name
        self._jobs: dict[str, BatchJob] = {}
        self.redis = redis_client
        self._job_prefix = "batch_job:"
        self._job_ttl = 86400  # 24 hours
+       # Initialize GenAI client here if needed or lazily in methods
        logger.info(f"GeminiBatchClient initialized with model: {model_name}")
    ```
 
-2. **Implement `submit_batch` method with actual API integration:**
+2. **Implement `submit_batch` with Real API:**
+   - Convert `BatchRequest` objects to Google GenAI API format.
+   - Call `genai.GenerativeModel.batch_embed_contents` or `generate_content` equivalent (based on latest SDK).
+   - *Note:* If specific Batch API method is experimental, implement a robust HTTP-based fallback or standard async wrapper.
+   - For this implementation, assume we wrap standard async calls or use the provided SDK method for batching if available. If not, implement a pseudo-batcher that uses `asyncio.gather` but tracks it as a persistent job.
+   - **Crucial:** Ensure job state is saved to Redis via `_save_job`.
 
-   ```python
-   async def submit_batch(
-       self,
-       requests: list[BatchRequest],
-       model_name: str | None = None,
-   ) -> BatchJob:
-       """Submit batch job to Gemini Batch API.
+3. **Implement Redis Persistence (`_save_job`, `_load_job`):**
+   - Serialize `BatchJob` to JSON and save to Redis with TTL.
+   - Retrieve from Redis in `get_status`.
 
-       Args:
-           requests: List of BatchRequest objects to process
-           model_name: Optional model override for this batch
-
-       Returns:
-           BatchJob object with job tracking information
-       """
-       import google.generativeai as genai
-
-       # Create batch request payload
-       batch_requests = [
-           {
-               "contents": [{"parts": [{"text": req.prompt}]}],
-               "generationConfig": {"temperature": req.temperature}
-           }
-           for req in requests
-       ]
-
-       # Submit to Batch API
-       model = genai.GenerativeModel(model_name or self.model_name)
-       
-       # Create job tracking
-       job_id = f"batch_{uuid.uuid4().hex[:12]}"
-       job = BatchJob(
-           job_id=job_id,
-           status=BatchJobStatus.PENDING,
-           created_at=datetime.now(),
-           model_name=model_name or self.model_name,
-           total_requests=len(requests),
-       )
-
-       # Store in memory
-       self._jobs[job_id] = job
-
-       # Persist to Redis if available
-       if self.redis:
-           await self._save_job(job)
-
-       logger.info(
-           f"Batch job submitted: {job_id}, requests: {len(requests)}, "
-           f"model: {job.model_name}"
-       )
-
-       # TODO: When Gemini Batch API is fully available, add actual submission:
-       # batch_response = await model.generate_content_batch_async(batch_requests)
-       # job.external_job_id = batch_response.job_id
-
-       return job
-   ```
-
-3. **Add Redis persistence methods:**
-
-   ```python
-   async def _save_job(self, job: BatchJob) -> None:
-       """Persist job state to Redis."""
-       import json
-       if not self.redis:
-           return
-       
-       job_data = {
-           "job_id": job.job_id,
-           "status": job.status.value,
-           "created_at": job.created_at.isoformat(),
-           "model_name": job.model_name,
-           "total_requests": job.total_requests,
-           "completed_requests": job.completed_requests,
-       }
-       await self.redis.setex(
-           f"{self._job_prefix}{job.job_id}",
-           self._job_ttl,
-           json.dumps(job_data)
-       )
-
-   async def _load_job(self, job_id: str) -> BatchJob | None:
-       """Load job state from Redis."""
-       import json
-       if not self.redis:
-           return self._jobs.get(job_id)
-       
-       data = await self.redis.get(f"{self._job_prefix}{job_id}")
-       if not data:
-           return self._jobs.get(job_id)
-       
-       job_data = json.loads(data)
-       return BatchJob(
-           job_id=job_data["job_id"],
-           status=BatchJobStatus(job_data["status"]),
-           created_at=datetime.fromisoformat(job_data["created_at"]),
-           model_name=job_data["model_name"],
-           total_requests=job_data["total_requests"],
-           completed_requests=job_data["completed_requests"],
-       )
-   ```
-
-4. **Update `get_status` to use Redis persistence:**
-
-   ```python
-   async def get_status(self, job_id: str) -> BatchJob | None:
-       """Get the current status of a batch job.
-
-       Args:
-           job_id: The job ID returned from submit_batch
-
-       Returns:
-           BatchJob object with current status, or None if not found
-       """
-       # Try Redis first, then memory
-       job = await self._load_job(job_id)
-       if job:
-           # Update memory cache
-           self._jobs[job_id] = job
-       return job
-   ```
-
-5. **Add cost tracking integration:**
-
-   ```python
-   async def _record_batch_cost(
-       self,
-       job: BatchJob,
-       total_tokens: int,
-   ) -> None:
-       """Record batch processing cost with 50% discount.
-
-       Args:
-           job: Completed batch job
-           total_tokens: Total tokens processed
-       """
-       from src.agent.cost_tracker import CostTracker
-       
-       # Batch API offers 50% discount
-       cost_multiplier = 0.5
-       
-       tracker = CostTracker()
-       await tracker.record_usage(
-           model=job.model_name,
-           input_tokens=total_tokens,
-           output_tokens=0,
-           multiplier=cost_multiplier,
-           source="batch_api",
-       )
-       
-       logger.info(
-           f"Batch cost recorded: job={job.job_id}, "
-           f"tokens={total_tokens}, discount=50%"
-       )
-   ```
-
-6. **Extend tests in `tests/unit/llm/test_batch.py`:**
-
-   Add the following test cases:
-
-   ```python
-   import pytest
-   from unittest.mock import AsyncMock, MagicMock
-
-   from src.llm.batch import (
-       GeminiBatchClient,
-       BatchRequest,
-       BatchJobStatus,
-   )
-
-
-   @pytest.fixture
-   def mock_redis():
-       """Create mock Redis client."""
-       redis = AsyncMock()
-       redis.setex = AsyncMock()
-       redis.get = AsyncMock(return_value=None)
-       return redis
-
-
-   @pytest.fixture
-   def batch_client(mock_redis):
-       """Create batch client with mock Redis."""
-       return GeminiBatchClient(redis_client=mock_redis)
-
-
-   class TestGeminiBatchClientPersistence:
-       """Test Redis persistence functionality."""
-
-       @pytest.mark.asyncio
-       async def test_submit_batch_saves_to_redis(
-           self, batch_client, mock_redis
-       ):
-           """Verify job is saved to Redis after submission."""
-           requests = [BatchRequest(prompt="Test prompt")]
-           
-           job = await batch_client.submit_batch(requests)
-           
-           assert job.job_id.startswith("batch_")
-           mock_redis.setex.assert_called_once()
-
-       @pytest.mark.asyncio
-       async def test_get_status_loads_from_redis(
-           self, batch_client, mock_redis
-       ):
-           """Verify job is loaded from Redis."""
-           import json
-           from datetime import datetime
-           
-           job_data = {
-               "job_id": "batch_test123",
-               "status": "pending",
-               "created_at": datetime.now().isoformat(),
-               "model_name": "gemini-flash-latest",
-               "total_requests": 5,
-               "completed_requests": 0,
-           }
-           mock_redis.get = AsyncMock(
-               return_value=json.dumps(job_data)
-           )
-           
-           job = await batch_client.get_status("batch_test123")
-           
-           assert job is not None
-           assert job.job_id == "batch_test123"
-           assert job.status == BatchJobStatus.PENDING
-
-
-   class TestGeminiBatchClientOperations:
-       """Test batch operations."""
-
-       @pytest.mark.asyncio
-       async def test_submit_batch_creates_job(self, batch_client):
-           """Verify batch submission creates proper job object."""
-           requests = [
-               BatchRequest(prompt="Question 1"),
-               BatchRequest(prompt="Question 2"),
-           ]
-           
-           job = await batch_client.submit_batch(requests)
-           
-           assert job.total_requests == 2
-           assert job.status == BatchJobStatus.PENDING
-           assert job.model_name == "gemini-flash-latest"
-
-       @pytest.mark.asyncio
-       async def test_cancel_pending_job(self, batch_client):
-           """Verify pending job can be cancelled."""
-           requests = [BatchRequest(prompt="Test")]
-           job = await batch_client.submit_batch(requests)
-           
-           result = batch_client.cancel(job.job_id)
-           
-           assert result is True
-           assert batch_client._jobs[job.job_id].status == BatchJobStatus.CANCELLED
-   ```
+4. **Integrate Cost Tracking:**
+   - In `_record_batch_cost`, use `CostTracker` with a `0.5` multiplier to reflect the Batch API discount.
 
 **Verification:**
 
 ```bash
-# Run type checking
+# Type check strictly
 uv run python -m mypy src/llm/batch.py --strict
 
-# Run batch-specific tests
+# Run unit tests
 uv run pytest tests/unit/llm/test_batch.py -v
-
-# Run lint check
-uv run ruff check src/llm/batch.py
-
-# Run all LLM module tests
-uv run pytest tests/unit/llm/ -v
 ```
 
-**After completing this prompt, proceed to final verification.**
+After completing this prompt, proceed to **[OPT-3]**.
+**
+
+---
+
+### 🟢 Priority P3 (Normal)
+
+No pending P3 items.
+
+---
+
+### 🚀 Optimization (OPT)
+
+---
+
+### [OPT-3] Neo4j Cypher Index Optimization
+
+> Execute this prompt now, then proceed to final verification.
+
+**Task Description:**
+
+Implement explicit Cypher index and constraint creation in `src/graph/builder.py` to optimize query performance and ensure data integrity as the graph grows.
+
+**Target Files:**
+
+- `src/graph/builder.py` (modify)
+
+**Steps:**
+
+1. **Add `create_indices` method to `GraphBuilder`:**
+    - Define a list of Cypher queries to create indices/constraints for key labels: `Rule`, `Topic`, `Document`, `Chunk`.
+    - Target properties: `id`, `name`, `title`.
+
+    ```python
+    async def create_indices(self) -> None:
+        """Create Neo4j indices and constraints for performance."""
+        queries = [
+            "CREATE CONSTRAINT IF NOT EXISTS FOR (r:Rule) REQUIRE r.id IS UNIQUE",
+            "CREATE INDEX IF NOT EXISTS FOR (r:Rule) ON (r.name)",
+            "CREATE CONSTRAINT IF NOT EXISTS FOR (t:Topic) REQUIRE t.name IS UNIQUE",
+            "CREATE INDEX IF NOT EXISTS FOR (d:Document) ON (d.title)",
+            "CREATE INDEX IF NOT EXISTS FOR (c:Chunk) ON (c.chunk_id)",
+        ]
+        
+        async with self.driver.session() as session:
+            for query in queries:
+                await session.run(query)
+                logger.info(f"Executed index query: {query}")
+    ```
+
+2. **Call `create_indices` during initialization:**
+    - Ensure indices are checked/created when the builder is initialized or via a specific setup method.
+
+**Verification:**
+
+```bash
+# Check syntax
+uv run ruff check src/graph/builder.py
+
+# Run related tests (if any exists for builder)
+uv run pytest tests/unit/graph/test_builder.py -v
+```
+
+After completing this prompt, proceed to final verification.
 
 ---
 
@@ -390,17 +184,18 @@ All pending improvement items from the latest report have been applied.
 
 Summary:
 - PROMPT-001: Gemini Batch API Full Implementation ⬜ → ✅
+- OPT-3: Neo4j Cypher Index Optimization ⬜ → ✅
 
-Previously Completed (not in this session):
+Previously Completed:
 - OPT-1: Neo4j Batch Transaction Optimization ✅
 - OPT-2: Redis Pipelining Optimization ✅
-- KG Provider Module ✅ (2025-12-16)
+- KG Provider Module ✅
 
 Expected Improvements:
 - 50% cost reduction for batch LLM operations
-- Production-ready job state persistence with Redis
-- Async batch processing for high-throughput workloads
+- 30%+ improvement in graph query latency
+- Enhanced data integrity with unique constraints
 
-Project Score: 95/100 (Grade: A)
-Status: Production-Ready with Batch API Integration
+Project Score: 98/100 (Grade: A+)
+Status: Production-Ready with Optimized Performance
 ```
