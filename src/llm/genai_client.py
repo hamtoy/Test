@@ -9,8 +9,8 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING, Any, AsyncIterator
 
-from google import genai
-from google.genai import types
+from google import genai  # type: ignore[import-untyped]
+from google.genai import types  # type: ignore[import-untyped]
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
