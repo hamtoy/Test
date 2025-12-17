@@ -54,7 +54,11 @@ class LLMSettingsMixin(BaseSettings):
     timeout_max: int = Field(3600, alias="GEMINI_TIMEOUT_MAX")
     max_concurrency: int = Field(10, alias="GEMINI_MAX_CONCURRENCY")
     cache_size: int = Field(50, alias="GEMINI_CACHE_SIZE")
-    temperature: float = Field(0.2, alias="GEMINI_TEMPERATURE")
+    temperature: float = Field(1.0, alias="GEMINI_TEMPERATURE")  # Gemini 3 권장값
+    thinking_level: Literal["minimal", "low", "medium", "high"] = Field(
+        "medium",
+        alias="GEMINI_THINKING_LEVEL",
+    )  # Gemini 3 권장: 구조화된 JSON 출력에는 medium 사용
     cache_ttl_minutes: int = Field(360, alias="GEMINI_CACHE_TTL_MINUTES")
     cache_min_tokens: int = Field(MIN_CACHE_TOKENS, alias="GEMINI_CACHE_MIN_TOKENS")
     budget_limit_usd: float | None = Field(None, alias="BUDGET_LIMIT_USD")

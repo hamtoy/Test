@@ -389,6 +389,12 @@ class GeminiAgent:
             "temperature": self.config.temperature,
             "max_output_tokens": resolved_max_output_tokens,
         }
+        # Gemini 3 모델의 경우 thinking_level 적용
+        if (
+            hasattr(self.config, "thinking_level")
+            and "gemini-3" in self.config.model_name
+        ):
+            generation_config["thinking_level"] = self.config.thinking_level
 
         if response_schema:
             generation_config["response_mime_type"] = "application/json"
