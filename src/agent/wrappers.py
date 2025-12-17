@@ -6,6 +6,7 @@ from typing import Any
 
 from google import genai
 from google.genai import types
+from pydantic import BaseModel
 
 
 class GenAIModelAdapter:
@@ -21,12 +22,25 @@ class GenAIModelAdapter:
         model_name: str,
         system_instruction: str | None = None,
         generation_config: dict[str, Any] | None = None,
-        safety_settings: list[types.SafetySetting] | None = None,
+        safety_settings: list[genai.types.SafetySetting] | None = None,
         cached_content: str | None = None,
         agent_system_instruction: str | None = None,
-        agent_response_schema: Any | None = None,
+        agent_response_schema: type[BaseModel] | None = None,
         agent_max_output_tokens: int | None = None,
-    ):
+    ) -> None:
+        """Initialize the GenAIModelAdapter.
+
+        Args:
+            client: The google-genai Client instance.
+            model_name: The name of the model to use.
+            system_instruction: Global system instruction.
+            generation_config: Configuration for generation (temp, top_p, etc).
+            safety_settings: Safety settings for the model.
+            cached_content: Name of cached content to reuse.
+            agent_system_instruction: Agent-specific system instruction override.
+            agent_response_schema: Function calling/Structured output schema.
+            agent_max_output_tokens: Max tokens override.
+        """
         self.client = client
         self.model_name = model_name
         self.system_instruction = system_instruction
