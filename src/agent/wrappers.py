@@ -56,7 +56,7 @@ class GenAIModelAdapter:
     async def generate_content_async(
         self,
         contents: str | list[Any],
-        request_options: dict[str, Any] | None = None,
+        _request_options: dict[str, Any] | None = None,
     ) -> Any:
         """Mimics GenerativeModel.generate_content_async."""
         config_kwargs = self.generation_config.copy()
