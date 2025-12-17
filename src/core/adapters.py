@@ -8,10 +8,9 @@ Handles API-specific error mapping, token counting, and batch operations.
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, cast
 
-from google import genai  # type: ignore[import-untyped]
-from google.genai import types  # type: ignore[import-untyped]
+import google.generativeai as genai
 
 from src.core.interfaces import (
     ContextWindowExceededError,
@@ -38,8 +37,9 @@ class GeminiProvider(LLMProvider):
             api_key: The Google AI API key.
             model_name: The Gemini model name to use.
         """
-        self.client = genai.Client(api_key=api_key)
         self.model_name = model_name
+        genai.configure(api_key=api_key)
+        self._model = genai.GenerativeModel(model_name)
 
     async def generate_content_async(
         self,
@@ -70,30 +70,31 @@ class GeminiProvider(LLMProvider):
             TimeoutError: If the request times out.
             ProviderError: For other generation failures.
         """
-        config_kwargs: dict[str, Any] = {}
+        generation_config: dict[str, Any] = {}
         if temperature is not None:
-            config_kwargs["temperature"] = temperature
+            generation_config["temperature"] = temperature
         if max_output_tokens is not None:
-            config_kwargs["max_output_tokens"] = max_output_tokens
+            generation_config["max_output_tokens"] = max_output_tokens
         if response_schema:
-            config_kwargs["response_mime_type"] = "application/json"
-            config_kwargs["response_schema"] = response_schema
-        if system_instruction:
-            config_kwargs["system_instruction"] = system_instruction
+            generation_config["response_mime_type"] = "application/json"
+            generation_config["response_schema"] = response_schema
 
-        # Merge kwargs into config_kwargs if they are valid config options
-        # Note: google-genai handles unknown args gracefully usually, but be careful
-        config_kwargs.update(kwargs)
+        generation_config.update(kwargs)
 
         try:
-            response = await self.client.aio.models.generate_content(
-                model=self.model_name,
-                contents=prompt,
-                config=types.GenerateContentConfig(**config_kwargs),
+            model = self._model
+            if system_instruction:
+                model = genai.GenerativeModel(
+                    self.model_name, system_instruction=system_instruction
+                )
+
+            response = await model.generate_content_async(
+                prompt,
+                generation_config=cast(Any, generation_config),
             )
 
             # Extract usage metadata
-            usage = {}
+            usage: dict[str, int] = {}
             if hasattr(response, "usage_metadata") and response.usage_metadata:
                 usage = {
                     "prompt_tokens": getattr(
@@ -107,31 +108,32 @@ class GeminiProvider(LLMProvider):
                     ),
                 }
 
+            raw_text = getattr(response, "text", "")
+            text = raw_text if isinstance(raw_text, str) else ""
+
             # Extract finish reason and handle safety blocks
             finish_reason = None
-            if getattr(response, "candidates", None):
-                candidate = response.candidates[0]
+            candidates = getattr(response, "candidates", None)
+            if isinstance(candidates, list) and candidates:
+                candidate = candidates[0]
                 finish_reason = getattr(
                     candidate.finish_reason, "name", str(candidate.finish_reason)
                 )
-                if (
-                    finish_reason
-                    and finish_reason.upper()
-                    not in {
-                        "STOP",
-                        "MAX_TOKENS",
-                        "NONE",  # NONE is sometimes returned for success
-                    }
-                    and not getattr(candidate, "content", None)
-                ):
-                    # Try to get safety info
-                    safety_ratings = getattr(candidate, "safety_ratings", [])
-                    raise SafetyBlockedError(
-                        f"Generation blocked: {finish_reason} (Ratings: {safety_ratings})",
-                    )
+                if finish_reason and finish_reason.upper() not in {
+                    "STOP",
+                    "MAX_TOKENS",
+                    "NONE",  # NONE is sometimes returned for success
+                }:
+                    if not text:
+                        safety_ratings = getattr(candidate, "safety_ratings", [])
+                        feedback = getattr(response, "prompt_feedback", None)
+                        raise SafetyBlockedError(
+                            "Generation blocked: "
+                            f"{finish_reason} (Feedback: {feedback}, Ratings: {safety_ratings})",
+                        )
 
             return GenerationResult(
-                content=getattr(response, "text", "") or "",
+                content=text,
                 usage=usage,
                 finish_reason=finish_reason,
                 raw_response=response,
@@ -143,18 +145,25 @@ class GeminiProvider(LLMProvider):
             raise self._convert_google_exception(exc) from exc
 
     def _convert_google_exception(self, exc: Exception) -> ProviderError:
+        try:
+            from google.api_core import exceptions as google_exceptions
+
+            if isinstance(exc, google_exceptions.ResourceExhausted):
+                return RateLimitError("Gemini rate limit exceeded", original_error=exc)
+            if isinstance(exc, google_exceptions.InvalidArgument):
+                if "token" in str(exc).lower():
+                    return ContextWindowExceededError(
+                        "Context window exceeded", original_error=exc
+                    )
+                return ProviderError(f"Invalid argument: {exc}", original_error=exc)
+            if isinstance(exc, google_exceptions.DeadlineExceeded):
+                return TimeoutError("Gemini request timed out", original_error=exc)
+        except Exception:  # noqa: BLE001
+            pass
+
         error_msg = str(exc)
         if "ResourceExhausted" in error_msg or "429" in error_msg:
             return RateLimitError("Gemini rate limit exceeded", original_error=exc)
-        if "InvalidArgument" in error_msg:
-            if "token" in error_msg.lower():
-                return ContextWindowExceededError(
-                    "Context window exceeded", original_error=exc
-                )
-            return ProviderError(f"Invalid argument: {exc}", original_error=exc)
-        if "DeadlineExceeded" in error_msg:
-            return TimeoutError("Gemini request timed out", original_error=exc)
-
         return ProviderError(f"Gemini generation failed: {exc}", original_error=exc)
 
     async def count_tokens(self, text: str) -> int:
@@ -170,13 +179,13 @@ class GeminiProvider(LLMProvider):
             ProviderError: If token counting fails.
         """
         try:
-            resp = await self.client.aio.models.count_tokens(
-                model=self.model_name, contents=text
-            )
+            resp = self._model.count_tokens(text)
             return int(resp.total_tokens)
-        except Exception as e:
-            logger.error(f"Failed to count tokens: {e}")
-            raise ProviderError(f"Token counting failed: {e}", original_error=e) from e
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Failed to count tokens: %s", exc)
+            raise ProviderError(
+                f"Token counting failed: {exc}", original_error=exc
+            ) from exc
 
     async def generate_vision_content_async(
         self,
@@ -195,20 +204,13 @@ class GeminiProvider(LLMProvider):
             추출된 텍스트.
         """
         try:
-            # google-genai supports passing bytes/Part directly usually,
-            # but wrapping in types.Part or just constructing the content list is standard.
-            # Using types.Part with inline_data
-
-            # The SDK supports list of content where an item can be a Part
-            content = [
-                types.Part.from_bytes(data=image_data, mime_type=mime_type),
-                prompt,
-            ]
-
-            response = await self.client.aio.models.generate_content(
-                model=self.model_name, contents=content
+            response = await self._model.generate_content_async(
+                [
+                    {"mime_type": mime_type, "data": image_data},
+                    prompt,
+                ],
             )
-            return getattr(response, "text", "") or ""
+            return str(getattr(response, "text", "") or "")
         except Exception as exc:
             logger.error(f"Vision content generation failed: {exc}")
             raise self._convert_google_exception(exc) from exc

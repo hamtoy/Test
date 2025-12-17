@@ -42,7 +42,7 @@ class _FakeGenAI:
 async def test_generate_stream_yields_chunks(monkeypatch: pytest.MonkeyPatch) -> None:
     agent = GeminiAgent.__new__(GeminiAgent)
     agent.config = cast(AppConfig, _DummyConfig())
-    agent.safety_settings = []
+    agent.safety_settings = {}
     agent.logger = logging.getLogger("test")
 
     monkeypatch.setattr(GeminiAgent, "_genai", property(lambda self: _FakeGenAI()))
@@ -69,7 +69,7 @@ async def test_generate_stream_handles_empty_chunks(
 
     agent = GeminiAgent.__new__(GeminiAgent)
     agent.config = cast(AppConfig, _DummyConfig())
-    agent.safety_settings = []
+    agent.safety_settings = {}
     agent.logger = logging.getLogger("test")
     monkeypatch.setattr(GeminiAgent, "_genai", property(lambda self: _FakeGenAIMixed()))
 

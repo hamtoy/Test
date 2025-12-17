@@ -1,3 +1,4 @@
+# mypy: disable-error-code=attr-defined
 """QA generation module with dependency injection and safe imports.
 
 This refactor removes module-level side effects (sys.exit, env lookups, API calls)
@@ -15,8 +16,7 @@ from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from google import genai  # type: ignore[import-untyped]
-from google.genai import types  # type: ignore[import-untyped]
+import google.generativeai as genai
 
 from src.config.settings import AppConfig
 
@@ -75,7 +75,8 @@ class QAGenerator:
 
     def _build_client(self) -> Any:
         """생성자에서 주입되지 않은 경우 Gemini Client 생성."""
-        return genai.Client(api_key=self.config.api_key)
+        genai.configure(api_key=self.config.api_key)
+        return genai.GenerativeModel(self.config.model_name)
 
     def _load_prompt(self, path: Path) -> str:
         if not path.exists():
@@ -85,10 +86,9 @@ class QAGenerator:
     def _call_llm(self, system_prompt: str, user_prompt: str) -> str:
         """Gemini API를 호출하여 응답을 생성."""
         combined_prompt = f"{system_prompt}\n\n{user_prompt}"
-        response = self.client.models.generate_content(
-            model=self.config.model_name,
-            contents=combined_prompt,
-            config=types.GenerateContentConfig(
+        response = self.client.generate_content(
+            combined_prompt,
+            generation_config=genai.types.GenerationConfig(
                 temperature=self.config.temperature,
                 max_output_tokens=self.config.max_output_tokens,
             ),

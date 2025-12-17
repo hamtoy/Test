@@ -13,7 +13,7 @@ class TestMainImports:
 
     def test_imports_are_accessible(self) -> None:
         """Test that key imports from main.py are accessible."""
-        from src.main import (  # type: ignore[attr-defined]
+        from src.main import (
             parse_args,
             analyze_cache_stats,
             print_cache_report,
@@ -212,13 +212,13 @@ class TestConsoleOutput:
 
     def test_console_import(self) -> None:
         """Test that console is properly imported."""
-        from src.main import console  # type: ignore[attr-defined]
+        from src.main import console
 
         assert console is not None
 
     def test_user_interrupt_message_import(self) -> None:
         """Test that USER_INTERRUPT_MESSAGE is properly imported."""
-        from src.main import USER_INTERRUPT_MESSAGE  # type: ignore[attr-defined]
+        from src.main import USER_INTERRUPT_MESSAGE
 
         # Check it's the constant from config
         from src.config.constants import USER_INTERRUPT_MESSAGE as expected

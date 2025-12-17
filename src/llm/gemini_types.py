@@ -60,14 +60,10 @@ class GenerateContentResponse:
 def configure_genai(api_key: str) -> None:
     """Configure the google-generativeai library with an API key.
 
-    This is a typed wrapper that delegates to init_genai module.
-
     Args:
         api_key: The Gemini API key
     """
-    from src.llm.init_genai import configure_genai as _configure
-
-    _configure(api_key)
+    genai.configure(api_key=api_key)
 
 
 def create_generative_model(

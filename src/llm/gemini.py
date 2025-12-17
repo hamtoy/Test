@@ -1,7 +1,7 @@
 # mypy: disable-error-code=attr-defined
 """Minimal Gemini client used across the QA pipeline.
 
-This wraps google-genai SDK and provides simple generate/evaluate/rewrite
+This wraps google-generativeai SDK and provides simple generate/evaluate/rewrite
 helpers. Defaults to the model name from `GEMINI_MODEL_NAME` or
 `gemini-flash-latest` if unset.
 """
@@ -14,12 +14,13 @@ import time
 from typing import Any
 
 from dotenv import load_dotenv
-from google import genai  # type: ignore[import-untyped]
-from google.genai import types  # type: ignore[import-untyped]
+from google.api_core import exceptions as google_exceptions
+import google.generativeai as genai
 
 from src.config.constants import DEFAULT_MAX_OUTPUT_TOKENS
 from src.config.utils import require_env
 from src.infra.logging import log_metrics
+from src.llm.init_genai import configure_genai
 
 load_dotenv()
 
@@ -42,30 +43,11 @@ class GeminiModelClient:
                 Example: ["gemini-flash-lite-latest"]
         """
         api_key = require_env("GEMINI_API_KEY")
-        self.client = genai.Client(api_key=api_key)
+        configure_genai(api_key=api_key)
         self.model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-flash-latest")
         self.fallback_models = fallback_models or []
-        self.logger = logging.getLogger("GeminiModelClient")
-
-        # 안전 필터 설정 (BLOCK_NONE으로 모든 안전 필터 비활성화)
-        self.safety_settings = [
-            types.SafetySetting(
-                category="HARM_CATEGORY_HARASSMENT",
-                threshold="BLOCK_NONE",
-            ),
-            types.SafetySetting(
-                category="HARM_CATEGORY_HATE_SPEECH",
-                threshold="BLOCK_NONE",
-            ),
-            types.SafetySetting(
-                category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                threshold="BLOCK_NONE",
-            ),
-            types.SafetySetting(
-                category="HARM_CATEGORY_DANGEROUS_CONTENT",
-                threshold="BLOCK_NONE",
-            ),
-        ]
+        genai_logger = getattr(getattr(genai, "_logging", None), "logger", None)
+        self.logger = genai_logger or logging.getLogger("GeminiModelClient")
 
     def generate(
         self,
@@ -92,13 +74,12 @@ class GeminiModelClient:
         for model_name in models_to_try:  # noqa: PERF203
             try:
                 start = time.perf_counter()
-                response = self.client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content(
+                    prompt,
+                    generation_config=genai.types.GenerationConfig(
                         temperature=temperature,
                         max_output_tokens=DEFAULT_MAX_OUTPUT_TOKENS,
-                        safety_settings=self.safety_settings,
                     ),
                 )
                 latency_ms = (time.perf_counter() - start) * 1000
@@ -114,7 +95,7 @@ class GeminiModelClient:
 
             except Exception as e:  # noqa: BLE001, PERF203
                 error_name = e.__class__.__name__
-                if "ResourceExhausted" in error_name or "429" in str(e):
+                if isinstance(e, google_exceptions.ResourceExhausted) or "429" in str(e):
                     # Rate limit hit - log warning and try next model
                     self.logger.warning(
                         "Rate limit hit for model '%s', switching to fallback... (%s)",
@@ -123,7 +104,7 @@ class GeminiModelClient:
                     )
                     last_error = e
                     continue
-                elif "GoogleAPIError" in error_name:
+                elif isinstance(e, google_exceptions.GoogleAPIError):
                     return f"[생성 실패: {e}]"
                 elif isinstance(e, (ValueError, TypeError)):
                     return f"[생성 실패(입력 오류): {e}]"
@@ -253,8 +234,12 @@ class GeminiModelClient:
                 completion_tokens=len(rewritten),
             )
             return rewritten
-        except Exception as e:  # noqa: BLE001
+        except google_exceptions.GoogleAPIError as e:
             return f"[재작성 실패: {e}]"
+        except (ValueError, TypeError) as e:
+            return f"[재작성 실패(입력 오류): {e}]"
+        except Exception as e:  # noqa: BLE001
+            return f"[재작성 실패(알 수 없음): {e}]"
 
 
 if __name__ == "__main__":

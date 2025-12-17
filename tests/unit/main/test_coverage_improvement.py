@@ -520,7 +520,7 @@ class TestMainEntryPoint:
             lambda log_level=None: (MagicMock(), SimpleNamespace(stop=lambda: None)),
         )
         monkeypatch.setattr(main_module, "AppConfig", FakeConfig)
-        monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)  # type: ignore[attr-defined]
+        monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)
 
         with pytest.raises(SystemExit) as exc_info:
             await main_module.main()

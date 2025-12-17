@@ -67,7 +67,7 @@ async def test_main_analyze_cache_quick_path(
     )
     monkeypatch.setattr(main_module, "AppConfig", FakeConfig)
     monkeypatch.setattr(main_module, "GeminiAgent", FakeAgent)
-    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)  # type: ignore[attr-defined]
+    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)
     monkeypatch.setattr(
         main_module,
         "load_input_data",
@@ -162,7 +162,7 @@ async def test_main_keep_progress_flag(
     )
     monkeypatch.setattr(main_module, "AppConfig", FakeConfig)
     monkeypatch.setattr(main_module, "GeminiAgent", FakeAgent)
-    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)  # type: ignore[attr-defined]
+    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)
     monkeypatch.setattr(
         main_module,
         "load_input_data",
@@ -170,7 +170,7 @@ async def test_main_keep_progress_flag(
     )
     monkeypatch.setattr(main_module, "execute_workflow", execute_spy)
     monkeypatch.setattr(main_module, "render_cost_panel", lambda agent: "panel")
-    monkeypatch.setattr(main_module.console, "print", lambda *args, **kwargs: None)  # type: ignore[attr-defined]
+    monkeypatch.setattr(main_module.console, "print", lambda *args, **kwargs: None)
     monkeypatch.setattr(main_module, "write_cache_stats", lambda *args, **kwargs: None)
     monkeypatch.setattr(
         main_module,
@@ -253,7 +253,7 @@ async def test_main_cache_stats_warning(
     )
     monkeypatch.setattr(main_module, "AppConfig", FakeConfig)
     monkeypatch.setattr(main_module, "GeminiAgent", FakeAgent)
-    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)  # type: ignore[attr-defined]
+    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)
     monkeypatch.setattr(
         main_module,
         "load_input_data",
@@ -261,7 +261,7 @@ async def test_main_cache_stats_warning(
     )
     monkeypatch.setattr(main_module, "execute_workflow", AsyncMock(return_value=[]))
     monkeypatch.setattr(main_module, "render_cost_panel", lambda agent: "panel")
-    monkeypatch.setattr(main_module.console, "print", lambda *args, **kwargs: None)  # type: ignore[attr-defined]
+    monkeypatch.setattr(main_module.console, "print", lambda *args, **kwargs: None)
     monkeypatch.setattr(
         main_module,
         "parse_args",
@@ -349,7 +349,7 @@ async def test_main_auto_mode_passes_intent(
     )
     monkeypatch.setattr(main_module, "AppConfig", FakeConfig)
     monkeypatch.setattr(main_module, "GeminiAgent", FakeAgent)
-    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)  # type: ignore[attr-defined]
+    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)
     monkeypatch.setattr(
         main_module,
         "load_input_data",
@@ -357,7 +357,7 @@ async def test_main_auto_mode_passes_intent(
     )
     monkeypatch.setattr(main_module, "execute_workflow", execute_spy)
     monkeypatch.setattr(main_module, "render_cost_panel", lambda agent: "panel")
-    monkeypatch.setattr(main_module.console, "print", lambda *args, **kwargs: None)  # type: ignore[attr-defined]
+    monkeypatch.setattr(main_module.console, "print", lambda *args, **kwargs: None)
     monkeypatch.setattr(main_module, "write_cache_stats", lambda *args, **kwargs: None)
     monkeypatch.setattr(
         main_module,
@@ -431,7 +431,7 @@ async def test_main_missing_templates_exits(
     )
     monkeypatch.setattr(main_module, "AppConfig", FakeConfig)
     monkeypatch.setattr(main_module, "GeminiAgent", MagicMock())
-    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)  # type: ignore[attr-defined]
+    monkeypatch.setattr(main_module.genai, "configure", lambda api_key: None)
     monkeypatch.setattr(
         main_module,
         "parse_args",

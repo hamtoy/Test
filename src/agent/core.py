@@ -69,7 +69,6 @@ from .services import (
     ResponseEvaluatorService,
     RewriterService,
 )
-from .wrappers import GenAIModelAdapter
 
 if TYPE_CHECKING:
     from src.core.interfaces import LLMProvider
@@ -250,23 +249,19 @@ class GeminiAgent:
 
     @property
     def _genai(self) -> Any:
-        from google import genai
+        import google.generativeai as genai
 
         return genai
 
     @property
-    def _genai_client(self) -> Any:
-        """google-genai Client 인스턴스."""
-        if not hasattr(self, "_cached_genai_client"):
-            from google import genai
-
-            self._cached_genai_client = genai.Client(api_key=self.config.api_key)
-        return self._cached_genai_client
-
-    @property
     def _caching(self) -> Any:
-        # 새 SDK에서는 client.caches 사용
-        return self._genai_client.caches
+        cached = globals().get("caching")
+        if cached is not None:
+            return cached
+        from google.generativeai import caching
+
+        globals()["caching"] = caching
+        return caching
 
     @staticmethod
     def _google_exceptions() -> Any:
@@ -292,32 +287,21 @@ class GeminiAgent:
 
     @staticmethod
     def _harm_types() -> Any:
-        # types 모듈이나 관련 상수는 필요 시 개별 import
-        return None
+        from google.generativeai.types import HarmBlockThreshold, HarmCategory
 
-    def _get_safety_settings(self) -> list[Any] | None:
-        # google-genai는 기본적으로 safety settings를 강제하지 않으면 Default가 적용됨
-        # BLOCK_NONE을 원하면 명시적으로 설정
-        from google.genai import types  # type: ignore[import-untyped]
+        return HarmBlockThreshold, HarmCategory
 
-        return [
-            types.SafetySetting(
-                category="HARM_CATEGORY_HARASSMENT",
-                threshold="BLOCK_NONE",
-            ),
-            types.SafetySetting(
-                category="HARM_CATEGORY_HATE_SPEECH",
-                threshold="BLOCK_NONE",
-            ),
-            types.SafetySetting(
-                category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                threshold="BLOCK_NONE",
-            ),
-            types.SafetySetting(
-                category="HARM_CATEGORY_DANGEROUS_CONTENT",
-                threshold="BLOCK_NONE",
-            ),
-        ]
+    def _get_safety_settings(self) -> dict[Any, Any]:
+        harm_block_threshold, harm_category = self._harm_types()
+        return dict.fromkeys(
+            [
+                harm_category.HARM_CATEGORY_HARASSMENT,
+                harm_category.HARM_CATEGORY_HATE_SPEECH,
+                harm_category.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                harm_category.HARM_CATEGORY_DANGEROUS_CONTENT,
+            ],
+            harm_block_threshold.BLOCK_NONE,
+        )
 
     # ==================== 캐시 관련 메서드 ====================
 
@@ -404,34 +388,31 @@ class GeminiAgent:
             "max_output_tokens": resolved_max_output_tokens,
         }
 
-        # Thinking Config 적용
-        if (
-            hasattr(self.config, "thinking_level")
-            and "gemini-3" in self.config.model_name
-        ):
-            from google.genai import types
+        if response_schema:
+            generation_config["response_mime_type"] = "application/json"
+            generation_config["response_schema"] = response_schema
 
-            generation_config["thinking_config"] = types.ThinkingConfig(
-                thinking_budget=self.config.thinking_level
-            )
-
-        cached_content_name = None
+        gen_config_param = cast("Any", generation_config)
         if cached_content:
-            # cached_content 객체가 이미 이름(name) 속성을 가지고 있거나 그 자체가 이름일 수 있음
-            # google-genai 에서는 보통 name string을 사용
-            cached_content_name = getattr(cached_content, "name", str(cached_content))
-
-        return GenAIModelAdapter(
-            client=self._genai_client,
-            model_name=self.config.model_name,
-            system_instruction=system_prompt,
-            generation_config=generation_config,
-            safety_settings=self.safety_settings,
-            cached_content=cached_content_name,
-            agent_system_instruction=system_prompt,
-            agent_response_schema=response_schema,
-            agent_max_output_tokens=resolved_max_output_tokens,
-        )
+            model = self._genai.GenerativeModel.from_cached_content(
+                cached_content=cached_content,
+                generation_config=gen_config_param,
+                safety_settings=self.safety_settings,
+            )
+        else:
+            model = self._genai.GenerativeModel(
+                model_name=self.config.model_name,
+                system_instruction=system_prompt,
+                generation_config=gen_config_param,
+                safety_settings=self.safety_settings,
+            )
+        try:
+            model._agent_system_instruction = system_prompt
+            model._agent_response_schema = response_schema
+            model._agent_max_output_tokens = resolved_max_output_tokens
+        except (TypeError, AttributeError):
+            pass
+        return model
 
     # ==================== Context Cache ====================
 

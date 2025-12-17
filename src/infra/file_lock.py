@@ -7,6 +7,7 @@ race conditions when multiple processes write to the same file.
 from __future__ import annotations
 
 import contextlib
+import errno
 import os
 import sys
 import time
@@ -111,6 +112,15 @@ class FileLock:
         except FileExistsError:
             return (False, None)  # Retry
         except (OSError, IOError) as e:
+            # If OS-level locking failed due to contention, don't delete the lock file.
+            # This can happen on some filesystems where exclusive file creation is not
+            # strictly atomic under concurrency; deleting here would break mutual exclusion.
+            if getattr(e, "errno", None) in {errno.EACCES, errno.EAGAIN, errno.EWOULDBLOCK}:
+                if self._lock_file:
+                    self._lock_file.close()
+                    self._lock_file = None
+                return (False, None)
+
             self._cleanup_failed_lock()
             return (False, e)
 

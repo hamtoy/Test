@@ -187,6 +187,8 @@ disallow_untyped_calls = false
 module = [
     "google.generativeai",
     "google.generativeai.*",
+    "google.genai",
+    "google.genai.*",
     "google.ai.generativelanguage_v1beta.*",
     "tenacity",
     "tenacity.*",
