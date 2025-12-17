@@ -139,7 +139,7 @@ async def _try_rewrite_answer(
     answer_constraints: list[dict[str, Any]],
     length_constraint: str,
 ) -> str | None:
-    combined_request = "; ".join(issues)
+    combined_request = "; ".join(issues[:2])  # 최대 2개 이슈만 처리
     logger.warning("검증 실패, 재생성 시도: %s", combined_request)
     try:
         rewritten = cast(

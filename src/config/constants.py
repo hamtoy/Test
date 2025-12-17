@@ -33,7 +33,7 @@ DEFAULT_RPM_WINDOW_SECONDS: Final[int] = 60
 # ===== Token and Output Configuration =====
 
 # Default max output tokens for LLM generation
-DEFAULT_MAX_OUTPUT_TOKENS: Final[int] = 2048
+DEFAULT_MAX_OUTPUT_TOKENS: Final[int] = 8192
 
 # Max output tokens for settings (GEMINI_MAX_OUTPUT_TOKENS env var default)
 DEFAULT_SETTINGS_MAX_OUTPUT_TOKENS: Final[int] = 8192

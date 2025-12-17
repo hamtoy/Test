@@ -284,7 +284,7 @@ async def api_generate_qa(body: GenerateQARequest) -> dict[str, Any]:
 
 
 @retry(
-    stop=stop_after_attempt(3),
+    stop=stop_after_attempt(1),  # 재시도 비활성화 - gemini-3-flash-preview 호환성
     wait=wait_exponential(multiplier=1, min=2, max=10),
     reraise=True,
 )
