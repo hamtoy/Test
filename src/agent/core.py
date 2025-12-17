@@ -69,6 +69,7 @@ from .services import (
     ResponseEvaluatorService,
     RewriterService,
 )
+from .wrappers import GenAIModelAdapter
 
 if TYPE_CHECKING:
     from src.core.interfaces import LLMProvider
@@ -290,22 +291,33 @@ class GeminiAgent:
         return protos
 
     @staticmethod
-    def _harm_types() -> tuple[Any, Any]:
-        from google.generativeai.types import HarmBlockThreshold, HarmCategory
+    def _harm_types() -> Any:
+        # types 모듈이나 관련 상수는 필요 시 개별 import
+        return None
 
-        return HarmBlockThreshold, HarmCategory
+    def _get_safety_settings(self) -> list[Any] | None:
+        # google-genai는 기본적으로 safety settings를 강제하지 않으면 Default가 적용됨
+        # BLOCK_NONE을 원하면 명시적으로 설정
+        from google.genai import types
 
-    def _get_safety_settings(self) -> dict[Any, Any]:
-        harm_block_threshold, harm_category = self._harm_types()
-        return dict.fromkeys(
-            [
-                harm_category.HARM_CATEGORY_HARASSMENT,
-                harm_category.HARM_CATEGORY_HATE_SPEECH,
-                harm_category.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                harm_category.HARM_CATEGORY_DANGEROUS_CONTENT,
-            ],
-            harm_block_threshold.BLOCK_NONE,
-        )
+        return [
+            types.SafetySetting(
+                category="HARM_CATEGORY_HARASSMENT",
+                threshold="BLOCK_NONE",
+            ),
+            types.SafetySetting(
+                category="HARM_CATEGORY_HATE_SPEECH",
+                threshold="BLOCK_NONE",
+            ),
+            types.SafetySetting(
+                category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                threshold="BLOCK_NONE",
+            ),
+            types.SafetySetting(
+                category="HARM_CATEGORY_DANGEROUS_CONTENT",
+                threshold="BLOCK_NONE",
+            ),
+        ]
 
     # ==================== 캐시 관련 메서드 ====================
 
@@ -354,7 +366,7 @@ class GeminiAgent:
         self,
         system_prompt: str,
         response_schema: type[BaseModel] | None = None,
-        cached_content: caching.CachedContent | None = None,
+        cached_content: Any | None = None,
         *,
         max_output_tokens: int | None = None,
     ) -> Any:
@@ -364,7 +376,7 @@ class GeminiAgent:
             system_prompt (str): 시스템 프롬프트 텍스트.
             response_schema (Optional[type[BaseModel]]): JSON 응답 스키마.
                 None이면 일반 텍스트 응답.
-            cached_content (Optional[caching.CachedContent]): 재사용할 캐시 객체.
+            cached_content (Optional[Any]): 재사용할 캐시 객체.
             max_output_tokens: 요청별 토큰 제한 override (선택).
 
         Returns:
@@ -392,32 +404,34 @@ class GeminiAgent:
             "max_output_tokens": resolved_max_output_tokens,
         }
 
-        if response_schema:
-            generation_config["response_mime_type"] = "application/json"
-            generation_config["response_schema"] = response_schema
+        # Thinking Config 적용
+        if (
+            hasattr(self.config, "thinking_level")
+            and "gemini-3" in self.config.model_name
+        ):
+            from google.genai import types
 
-        gen_config_param = cast("Any", generation_config)
+            generation_config["thinking_config"] = types.ThinkingConfig(
+                thinking_budget=self.config.thinking_level
+            )
 
+        cached_content_name = None
         if cached_content:
-            model = self._genai.GenerativeModel.from_cached_content(
-                cached_content=cached_content,
-                generation_config=gen_config_param,
-                safety_settings=self.safety_settings,
-            )
-        else:
-            model = self._genai.GenerativeModel(
-                model_name=self.config.model_name,
-                system_instruction=system_prompt,
-                generation_config=gen_config_param,
-                safety_settings=self.safety_settings,
-            )
-        try:
-            model._agent_system_instruction = system_prompt
-            model._agent_response_schema = response_schema
-            model._agent_max_output_tokens = resolved_max_output_tokens
-        except (TypeError, AttributeError):
-            pass
-        return model
+            # cached_content 객체가 이미 이름(name) 속성을 가지고 있거나 그 자체가 이름일 수 있음
+            # google-genai 에서는 보통 name string을 사용
+            cached_content_name = getattr(cached_content, "name", str(cached_content))
+
+        return GenAIModelAdapter(
+            client=self._genai_client,
+            model_name=self.config.model_name,
+            system_instruction=system_prompt,
+            generation_config=generation_config,
+            safety_settings=self.safety_settings,
+            cached_content=cached_content_name,
+            agent_system_instruction=system_prompt,
+            agent_response_schema=response_schema,
+            agent_max_output_tokens=resolved_max_output_tokens,
+        )
 
     # ==================== Context Cache ====================
 
@@ -449,7 +463,7 @@ class GeminiAgent:
         self,
         ocr_text: str,
         user_intent: str | None = None,
-        cached_content: caching.CachedContent | None = None,
+        cached_content: Any | None = None,
         template_name: str | None = None,
         query_type: str = "explanation",
         kg: QAKnowledgeGraph | None = None,
@@ -513,7 +527,7 @@ class GeminiAgent:
         ocr_text: str,
         query: str,
         candidates: dict[str, str],
-        cached_content: caching.CachedContent | None = None,
+        cached_content: Any | None = None,
         query_type: str = "explanation",
         kg: QAKnowledgeGraph | None = None,
     ) -> EvaluationResultSchema | None:
@@ -563,7 +577,7 @@ class GeminiAgent:
         ocr_text: str,
         best_answer: str,
         edit_request: str | None = None,
-        cached_content: caching.CachedContent | None = None,
+        cached_content: Any | None = None,
         query_type: str = "explanation",
         kg: QAKnowledgeGraph | None = None,
         constraints: list[dict[str, Any]] | None = None,

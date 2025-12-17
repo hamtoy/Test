@@ -21,7 +21,7 @@ from ._utils import (
 )
 
 if TYPE_CHECKING:
-    from google.generativeai import caching
+    from typing import Any
 
     from src.agent import GeminiAgent
     from src.qa.rag_system import QAKnowledgeGraph
@@ -141,7 +141,7 @@ class ResponseEvaluatorService:
         ocr_text: str,
         query: str,
         candidates: dict[str, str],
-        cached_content: caching.CachedContent | None,
+        cached_content: Any | None,
         query_type: str,
         kg: QAKnowledgeGraph | None,
     ) -> EvaluationResultSchema | None:

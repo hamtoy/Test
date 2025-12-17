@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from google.generativeai import caching
+    from typing import Any
+
     from rich.progress import Progress
 
     from src.agent import GeminiAgent
@@ -24,7 +25,7 @@ class WorkflowContext:
     logger: logging.Logger
     ocr_text: str
     candidates: dict[str, str]
-    cache: caching.CachedContent | None
+    cache: Any | None
     total_turns: int
     checkpoint_path: Path | None
     progress: Progress | None = None

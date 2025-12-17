@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import asyncio
-import datetime
 from typing import TYPE_CHECKING, Any
+
+from google.genai import types
 
 from src.config.constants import MIN_CACHE_TOKENS
 
@@ -40,10 +40,15 @@ class AgentContextManager:
         caching_module: Any,
     ) -> Any:
         """Load cached content manifest if available."""
+        # Note: caching_module argument is kept for compatibility but might need refactoring
+        # In google-genai, we retrieve by name directly from client.caches.get()
+
+        # This delegates to cache_manager which deals with local JSON storage
+        # We might need to slightly adapt cache_manager later if it does strict type checking
         return self.agent._cache_manager.load_local_cache(  # noqa: SLF001
             fingerprint,
             ttl_minutes,
-            caching_module,
+            caching_module,  # This will be client.caches in the new setup
         )
 
     def store_local_cache(
@@ -73,10 +78,11 @@ class AgentContextManager:
             MIN_CACHE_TOKENS,
         )
 
+        # Try to load existing cache from local manifest
         local_cached = self.load_local_cache(
             fingerprint,
             ttl_minutes,
-            self.agent._caching,  # noqa: SLF001
+            self.agent._caching,  # This returns client.caches
         )
         if local_cached:
             self.agent.logger.info(
@@ -85,19 +91,22 @@ class AgentContextManager:
             )
             return local_cached
 
-        loop = asyncio.get_running_loop()
-
-        def _count_tokens() -> int:
-            model = self.agent._genai.GenerativeModel(  # noqa: SLF001
-                self.agent.config.model_name,
+        # Count tokens (async logic)
+        token_count = 0
+        try:
+            # google-genai async count_tokens
+            resp = await self.agent._genai_client.aio.models.count_tokens(
+                model=self.agent.config.model_name, contents=combined_content
             )
-            result: int = model.count_tokens(combined_content).total_tokens
-            return result
+            token_count = resp.total_tokens
+        except Exception as e:
+            self.agent.logger.warning("Failed to count tokens: %s", e)
+            # Proceed anyway or fallback? Let's assume we proceed if we can't count
+            pass
 
-        token_count = await loop.run_in_executor(None, _count_tokens)
         self.agent.logger.info("Total Tokens for Caching: %s", token_count)
 
-        if token_count < token_threshold:
+        if token_count > 0 and token_count < token_threshold:
             self.agent.logger.info(
                 "Skipping cache creation (Tokens < %s)",
                 token_threshold,
@@ -105,17 +114,26 @@ class AgentContextManager:
             return None
 
         try:
+            # Create cache using google-genai SDK
+            # client.caches.create returns a CachedContent object
 
-            def _create_cache() -> Any:
-                return self.agent._caching.CachedContent.create(  # noqa: SLF001
-                    model=self.agent.config.model_name,
-                    display_name="ocr_context_cache",
-                    system_instruction=system_prompt,
-                    contents=[ocr_text],
-                    ttl=datetime.timedelta(minutes=ttl_minutes),
-                )
+            # Note: client.caches.create is synchronous in current SDK wrapper usually?
+            # Or is it async? The SDK documentation says client.aio.caches.create for async.
 
-            cache = await loop.run_in_executor(None, _create_cache)
+            # Let's use the async interface
+            cache_config = types.CreateCachedContentConfig(
+                model=self.agent.config.model_name,
+                display_name="ocr_context_cache",
+                system_instruction=system_prompt,
+                contents=[ocr_text],
+                ttl=f"{ttl_minutes * 60}s",  # TTL in "300s" format
+            )
+
+            # client.aio.caches.create uses config object
+            cache = await self.agent._genai_client.aio.caches.create(
+                config=cache_config
+            )
+
             self.agent.logger.info(
                 "Context Cache Created: %s (Expires in %sm)",
                 cache.name,
@@ -126,9 +144,13 @@ class AgentContextManager:
             except OSError as e:
                 self.agent.logger.debug("Local cache manifest write skipped: %s", e)
             return cache
-        except self.agent._google_exceptions().ResourceExhausted as e:  # noqa: SLF001
-            self.agent.logger.error("Failed to create cache due to rate limit: %s", e)
-            raise
-        except (ValueError, RuntimeError, OSError) as e:
-            self.agent.logger.error("Failed to create cache: %s", e)
+
+        except Exception as e:
+            # Check for Rate Limit or other specific errors if possible
+            if "ResourceExhausted" in str(e) or "429" in str(e):
+                self.agent.logger.error(
+                    "Failed to create cache due to rate limit: %s", e
+                )
+            else:
+                self.agent.logger.error("Failed to create cache: %s", e)
             raise

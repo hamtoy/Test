@@ -177,7 +177,15 @@ class CacheManager:
             return None
         cache_name = entry.get("name")
         if cache_name:
-            return caching_module.CachedContent.get(name=cache_name)
+            # google-genai: caching_module is client.caches
+            # client.caches.get(name=...) returns CachedContent
+            # Old SDK: caching.CachedContent.get(name=...)
+            if hasattr(caching_module, "get"):
+                return caching_module.get(name=cache_name)
+            if hasattr(caching_module, "CachedContent") and hasattr(
+                caching_module.CachedContent, "get"
+            ):
+                return caching_module.CachedContent.get(name=cache_name)
         return None
 
     def store_local_cache(

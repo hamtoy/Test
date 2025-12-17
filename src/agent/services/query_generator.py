@@ -21,8 +21,6 @@ from ._utils import (
 )
 
 if TYPE_CHECKING:
-    from google.generativeai import caching
-
     from src.agent import GeminiAgent
     from src.qa.rag_system import QAKnowledgeGraph
 
@@ -232,7 +230,7 @@ class QueryGeneratorService:
         self,
         ocr_text: str,
         user_intent: str | None,
-        cached_content: caching.CachedContent | None,
+        cached_content: Any | None,
         template_name: str | None,
         query_type: str,
         kg: QAKnowledgeGraph | None,

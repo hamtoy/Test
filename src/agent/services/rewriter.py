@@ -19,7 +19,7 @@ from ._utils import (
 )
 
 if TYPE_CHECKING:
-    from google.generativeai import caching
+    from typing import Any
 
     from src.agent import GeminiAgent
     from src.qa.rag_system import QAKnowledgeGraph
@@ -168,7 +168,7 @@ class RewriterService:
         selected_answer: str,
         edit_request: str | None,
         formatting_rules: str | None,
-        cached_content: caching.CachedContent | None,
+        cached_content: Any | None,
         query_type: str,
     ) -> str:
         """Rewrite a selected answer using constraints and formatting rules.

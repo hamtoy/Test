@@ -40,7 +40,7 @@ from .context import WorkflowContext
 from .processor import process_single_query
 
 if TYPE_CHECKING:
-    from google.generativeai import caching
+    from typing import Any
 
     from src.agent import GeminiAgent
 
@@ -154,7 +154,7 @@ def _schedule_turns(
     logger: logging.Logger,
     ocr_text: str,
     candidates: dict[str, str],
-    cache: caching.CachedContent | None,
+    cache: Any | None,
     checkpoint_records: dict[str, WorkflowResult],
     checkpoint_path: Path,
     progress: Progress,
