@@ -57,6 +57,7 @@ def import_target_short_examples():
                 MERGE (e:Example {id: $id})
                 SET e.question = $question,
                     e.answer = $answer,
+                    e.text = $answer,
                     e.query_type = 'target_short',
                     e.status = 'approved',
                     e.type = 'positive',
