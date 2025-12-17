@@ -389,18 +389,22 @@ class GeminiAgent:
             "temperature": self.config.temperature,
             "max_output_tokens": resolved_max_output_tokens,
         }
-        # Gemini 3 모델의 경우 thinking_level 적용
-        if (
-            hasattr(self.config, "thinking_level")
-            and "gemini-3" in self.config.model_name
-        ):
-            generation_config["thinking_level"] = self.config.thinking_level
 
         if response_schema:
             generation_config["response_mime_type"] = "application/json"
             generation_config["response_schema"] = response_schema
 
         gen_config_param = cast("Any", generation_config)
+
+        # Gemini 3 모델의 경우 thinking_config 적용
+        thinking_config = None
+        if (
+            hasattr(self.config, "thinking_level")
+            and "gemini-3" in self.config.model_name
+        ):
+            from google.generativeai.types import ThinkingConfig
+
+            thinking_config = ThinkingConfig(thinking_budget=self.config.thinking_level)
 
         if cached_content:
             model = self._genai.GenerativeModel.from_cached_content(
@@ -409,12 +413,15 @@ class GeminiAgent:
                 safety_settings=self.safety_settings,
             )
         else:
-            model = self._genai.GenerativeModel(
-                model_name=self.config.model_name,
-                system_instruction=system_prompt,
-                generation_config=gen_config_param,
-                safety_settings=self.safety_settings,
-            )
+            model_kwargs: dict[str, Any] = {
+                "model_name": self.config.model_name,
+                "system_instruction": system_prompt,
+                "generation_config": gen_config_param,
+                "safety_settings": self.safety_settings,
+            }
+            if thinking_config:
+                model_kwargs["thinking_config"] = thinking_config
+            model = self._genai.GenerativeModel(**model_kwargs)
         try:
             model._agent_system_instruction = system_prompt
             model._agent_response_schema = response_schema
