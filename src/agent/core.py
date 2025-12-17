@@ -298,7 +298,7 @@ class GeminiAgent:
     def _get_safety_settings(self) -> list[Any] | None:
         # google-genai는 기본적으로 safety settings를 강제하지 않으면 Default가 적용됨
         # BLOCK_NONE을 원하면 명시적으로 설정
-        from google.genai import types
+        from google.genai import types  # type: ignore[import-untyped]
 
         return [
             types.SafetySetting(

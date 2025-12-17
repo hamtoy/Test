@@ -56,7 +56,7 @@ class TestQAGenerator:
         generator = QAGenerator(mock_config, model=mock_model)
 
         assert generator.config is mock_config
-        assert generator.model is mock_model
+        assert generator.client is mock_model
 
     def test_generate_questions_with_4_questions(
         self, mock_config: Any, mock_model: MagicMock

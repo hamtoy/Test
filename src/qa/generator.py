@@ -15,8 +15,8 @@ from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from google import genai
-from google.genai import types
+from google import genai  # type: ignore[import-untyped]
+from google.genai import types  # type: ignore[import-untyped]
 
 from src.config.settings import AppConfig
 

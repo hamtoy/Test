@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from google.genai import types
+from google.genai import types  # type: ignore[import-untyped]
 
 from src.config.constants import MIN_CACHE_TOKENS
 

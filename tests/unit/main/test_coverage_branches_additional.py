@@ -2,22 +2,22 @@ from __future__ import annotations
 
 import builtins
 import datetime
-import types
-from pathlib import Path
 import json
 import sys
+import types
+from pathlib import Path
 from typing import Any
 
 import pytest
 from jinja2 import DictLoader, Environment
 from neo4j.exceptions import Neo4jError
 
-from src.analysis import cross_validation
-from src.qa import rag_system as qa_rag_system
-from src.qa.graph import connection as qa_connection
 from src.agent import GeminiAgent
+from src.analysis import cross_validation
 from src.config import AppConfig
 from src.config.utils import require_env
+from src.qa import rag_system as qa_rag_system
+from src.qa.graph import connection as qa_connection
 
 VALID_API_KEY = "AIza" + "A" * 35
 
@@ -345,5 +345,5 @@ def test_agent_create_model_with_cached_content(
 
     stub_genai = types.SimpleNamespace(GenerativeModel=_GenModel)
     monkeypatch.setattr(GeminiAgent, "_genai", property(lambda _self: stub_genai))
-    model = agent._create_generative_model("sys", cached_content=sentinel)  # type: ignore[arg-type]
+    model = agent._create_generative_model("sys", cached_content=sentinel)
     assert model is sentinel

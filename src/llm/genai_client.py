@@ -7,10 +7,10 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, AsyncIterator
 
-from google import genai
-from google.genai import types
+from google import genai  # type: ignore[import-untyped]
+from google.genai import types  # type: ignore[import-untyped]
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
@@ -95,7 +95,7 @@ class GenAIClient:
         system_instruction: str | None = None,
         temperature: float = 1.0,
         max_output_tokens: int = 4096,
-    ):
+    ) -> AsyncIterator[types.GenerateContentResponse]:
         """스트리밍 콘텐츠 생성.
 
         Args:

@@ -11,7 +11,7 @@ import hashlib
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from src.config import AppConfig
 from src.config.constants import CacheConfig
@@ -181,11 +181,16 @@ class CacheManager:
             # client.caches.get(name=...) returns CachedContent
             # Old SDK: caching.CachedContent.get(name=...)
             if hasattr(caching_module, "get"):
-                return caching_module.get(name=cache_name)
+                return cast(
+                    CachedContentProtocol | None, caching_module.get(name=cache_name)
+                )
             if hasattr(caching_module, "CachedContent") and hasattr(
                 caching_module.CachedContent, "get"
             ):
-                return caching_module.CachedContent.get(name=cache_name)
+                return cast(
+                    CachedContentProtocol | None,
+                    caching_module.CachedContent.get(name=cache_name),
+                )
         return None
 
     def store_local_cache(
