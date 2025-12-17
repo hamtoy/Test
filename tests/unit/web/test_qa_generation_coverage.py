@@ -320,18 +320,22 @@ class TestGenerateSingleQAWithRetry:
 
     @pytest.mark.asyncio
     async def test_generate_single_qa_with_retry_retries_on_failure(self) -> None:
-        """Test that single failure raises exception (retry disabled)."""
+        """Test retry logic - first failure, second success."""
         mock_agent = Mock()
 
         with patch("src.web.routers.qa_generation.generate_single_qa") as mock_gen:
-            # With stop_after_attempt(1), first failure should raise immediately
-            mock_gen.side_effect = ValueError("일시 오류")
+            # First call fails, second succeeds (stop_after_attempt=2)
+            mock_gen.side_effect = [
+                ValueError("일시 오류"),
+                {"query": "Q", "answer": "A"},
+            ]
 
-            with pytest.raises(ValueError):
-                await generate_single_qa_with_retry(mock_agent, "OCR", "explanation")
+            result = await generate_single_qa_with_retry(
+                mock_agent, "OCR", "explanation"
+            )
 
-            # Should only be called once since retry is disabled
-            assert mock_gen.call_count == 1
+            assert result["query"] == "Q"
+            assert mock_gen.call_count == 2
 
     @pytest.mark.asyncio
     async def test_generate_single_qa_with_retry_exhausts_retries(self) -> None:
