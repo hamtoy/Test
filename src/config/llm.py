@@ -29,8 +29,8 @@ class LLMSettingsMixin(BaseSettings):
     """
 
     api_key: str = Field(..., alias="GEMINI_API_KEY")
-    model_name: Literal["gemini-flash-latest"] = Field(
-        "gemini-flash-latest",
+    model_name: Literal["gemini-flash-latest", "gemini-3-flash-preview"] = Field(
+        "gemini-3-flash-preview",
         alias="GEMINI_MODEL_NAME",
     )
     max_output_tokens: int = Field(4096, alias="GEMINI_MAX_OUTPUT_TOKENS")
@@ -112,9 +112,10 @@ class LLMSettingsMixin(BaseSettings):
     @classmethod
     def enforce_single_model(cls, v: str) -> str:
         """Enforce use of the supported Gemini model only."""
-        if v != "gemini-flash-latest":
+        allowed_models = {"gemini-flash-latest", "gemini-3-flash-preview"}
+        if v not in allowed_models:
             raise ValueError(
-                "Unsupported model. This system only allows 'gemini-flash-latest'.",
+                f"Unsupported model. Allowed models: {allowed_models}",
             )
         return v
 
