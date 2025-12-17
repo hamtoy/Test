@@ -211,9 +211,20 @@ def _load_default_ocr_text() -> str:
 def _run_example() -> None:
     """Run the example QA generation flow (used for script execution and tests)."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    # Ensure .env is loaded
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
     api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key or not api_key.startswith("AIza"):
+    # Only mock if absolutely necessary for CI/tests without secrets
+    if not api_key:
+        LOGGER.warning(
+            "GEMINI_API_KEY not found. Using mock key (will fail real calls)."
+        )
         os.environ["GEMINI_API_KEY"] = "AIza" + ("x" * 35)
+
     # 테스트/로컬 실행 시 RAG 의존성 우회
     os.environ["ENABLE_RAG"] = "false"
     for key in ("NEO4J_URI", "NEO4J_USER", "NEO4J_PASSWORD"):

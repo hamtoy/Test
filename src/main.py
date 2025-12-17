@@ -7,7 +7,6 @@ import os
 import sys
 
 from dotenv import load_dotenv
-import google.generativeai as genai
 
 from src.agent import GeminiAgent
 from src.caching.analytics import (
@@ -34,9 +33,6 @@ async def main() -> None:
     try:
         # Load configuration
         config = AppConfig()
-
-        # Configure Gemini API (전역 1회 초기화)
-        genai.configure(api_key=config.api_key)
 
         # Setup Jinja2 environment
         from jinja2 import Environment, FileSystemLoader
