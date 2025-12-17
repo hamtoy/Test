@@ -14,8 +14,8 @@ import time
 from typing import Any
 
 from dotenv import load_dotenv
-from google import genai  # type: ignore[import-untyped]
-from google.genai import types  # type: ignore[import-untyped]
+from google import genai
+from google.genai import types
 
 from src.config.constants import DEFAULT_MAX_OUTPUT_TOKENS
 from src.config.utils import require_env

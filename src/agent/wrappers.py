@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from google import genai  # type: ignore[import-untyped]
-from google.genai import types  # type: ignore[import-untyped]
+from google import genai
+from google.genai import types
 from pydantic import BaseModel
 
 
