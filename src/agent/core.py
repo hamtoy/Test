@@ -396,16 +396,6 @@ class GeminiAgent:
 
         gen_config_param = cast("Any", generation_config)
 
-        # Gemini 3 모델의 경우 thinking_config 적용
-        thinking_config = None
-        if (
-            hasattr(self.config, "thinking_level")
-            and "gemini-3" in self.config.model_name
-        ):
-            from google.generativeai.types import ThinkingConfig
-
-            thinking_config = ThinkingConfig(thinking_budget=self.config.thinking_level)
-
         if cached_content:
             model = self._genai.GenerativeModel.from_cached_content(
                 cached_content=cached_content,
@@ -413,15 +403,12 @@ class GeminiAgent:
                 safety_settings=self.safety_settings,
             )
         else:
-            model_kwargs: dict[str, Any] = {
-                "model_name": self.config.model_name,
-                "system_instruction": system_prompt,
-                "generation_config": gen_config_param,
-                "safety_settings": self.safety_settings,
-            }
-            if thinking_config:
-                model_kwargs["thinking_config"] = thinking_config
-            model = self._genai.GenerativeModel(**model_kwargs)
+            model = self._genai.GenerativeModel(
+                model_name=self.config.model_name,
+                system_instruction=system_prompt,
+                generation_config=gen_config_param,
+                safety_settings=self.safety_settings,
+            )
         try:
             model._agent_system_instruction = system_prompt
             model._agent_response_schema = response_schema
