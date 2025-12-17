@@ -1,25 +1,21 @@
 # mypy: disable-error-code=attr-defined
 """Minimal Gemini client used across the QA pipeline.
 
-This wraps google.generativeai and provides simple generate/evaluate/rewrite
+This wraps google-genai SDK and provides simple generate/evaluate/rewrite
 helpers. Defaults to the model name from `GEMINI_MODEL_NAME` or
 `gemini-flash-latest` if unset.
 """
 
 from __future__ import annotations
 
+import logging
 import os
 import time
 from typing import Any
 
-import google.generativeai as genai
 from dotenv import load_dotenv
-from google.api_core import exceptions as google_exceptions
-from google.generativeai.types import (
-    HarmBlockThreshold,
-    HarmCategory,
-)
-from google.generativeai.types.safety_types import LooseSafetySettingDict
+from google import genai
+from google.genai import types
 
 from src.config.constants import DEFAULT_MAX_OUTPUT_TOKENS
 from src.config.utils import require_env
@@ -46,39 +42,29 @@ class GeminiModelClient:
                 Example: ["gemini-flash-lite-latest"]
         """
         api_key = require_env("GEMINI_API_KEY")
-        # 전역 초기화 모듈 사용 (중복 호출 방지)
-        from src.llm.init_genai import configure_genai
-
-        configure_genai(api_key)
+        self.client = genai.Client(api_key=api_key)
         self.model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-flash-latest")
         self.fallback_models = fallback_models or []
-        self.model = genai.GenerativeModel(self.model_name)
-        genai_logger = getattr(genai, "_logging", None)
-        if genai_logger and getattr(genai_logger, "logger", None):
-            self.logger = genai_logger.logger
-        else:
-            import logging
-
-            self.logger = logging.getLogger("GeminiModelClient")
+        self.logger = logging.getLogger("GeminiModelClient")
 
         # 안전 필터 설정 (BLOCK_NONE으로 모든 안전 필터 비활성화)
-        self.safety_settings: list[LooseSafetySettingDict] = [
-            {
-                "category": HarmCategory.HARM_CATEGORY_HARASSMENT,
-                "threshold": HarmBlockThreshold.BLOCK_NONE,
-            },
-            {
-                "category": HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                "threshold": HarmBlockThreshold.BLOCK_NONE,
-            },
-            {
-                "category": HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                "threshold": HarmBlockThreshold.BLOCK_NONE,
-            },
-            {
-                "category": HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                "threshold": HarmBlockThreshold.BLOCK_NONE,
-            },
+        self.safety_settings = [
+            types.SafetySetting(
+                category="HARM_CATEGORY_HARASSMENT",
+                threshold="BLOCK_NONE",
+            ),
+            types.SafetySetting(
+                category="HARM_CATEGORY_HATE_SPEECH",
+                threshold="BLOCK_NONE",
+            ),
+            types.SafetySetting(
+                category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                threshold="BLOCK_NONE",
+            ),
+            types.SafetySetting(
+                category="HARM_CATEGORY_DANGEROUS_CONTENT",
+                threshold="BLOCK_NONE",
+            ),
         ]
 
     def generate(
@@ -105,15 +91,15 @@ class GeminiModelClient:
 
         for model_name in models_to_try:  # noqa: PERF203
             try:
-                model = genai.GenerativeModel(model_name)
                 start = time.perf_counter()
-                response = model.generate_content(
-                    prompt,
-                    generation_config=genai.types.GenerationConfig(
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
                         temperature=temperature,
                         max_output_tokens=DEFAULT_MAX_OUTPUT_TOKENS,
+                        safety_settings=self.safety_settings,
                     ),
-                    safety_settings=self.safety_settings,
                 )
                 latency_ms = (time.perf_counter() - start) * 1000
                 if hasattr(response, "usage_metadata") and response.usage_metadata:
@@ -121,31 +107,32 @@ class GeminiModelClient:
                     log_metrics(
                         self.logger,
                         latency_ms=latency_ms,
-                        prompt_tokens=usage.prompt_token_count,
-                        completion_tokens=usage.candidates_token_count,
+                        prompt_tokens=getattr(usage, "prompt_token_count", 0),
+                        completion_tokens=getattr(usage, "candidates_token_count", 0),
                     )
                 return str(response.text)
 
-            except google_exceptions.ResourceExhausted as e:  # noqa: PERF203
-                # Rate limit hit - log warning and try next model
-                self.logger.warning(
-                    "Rate limit hit for model '%s', switching to fallback... (%s)",
-                    model_name,
-                    str(e)[:100],
-                )
-                last_error = e
-                continue
-
-            except google_exceptions.GoogleAPIError as e:
-                return f"[생성 실패: {e}]"
-            except (ValueError, TypeError) as e:
-                return f"[생성 실패(입력 오류): {e}]"
-            except Exception as e:  # noqa: BLE001
-                return f"[생성 실패(알 수 없음): {e}]"
+            except Exception as e:  # noqa: BLE001, PERF203
+                error_name = e.__class__.__name__
+                if "ResourceExhausted" in error_name or "429" in str(e):
+                    # Rate limit hit - log warning and try next model
+                    self.logger.warning(
+                        "Rate limit hit for model '%s', switching to fallback... (%s)",
+                        model_name,
+                        str(e)[:100],
+                    )
+                    last_error = e
+                    continue
+                elif "GoogleAPIError" in error_name:
+                    return f"[생성 실패: {e}]"
+                elif isinstance(e, (ValueError, TypeError)):
+                    return f"[생성 실패(입력 오류): {e}]"
+                else:
+                    return f"[생성 실패(알 수 없음): {e}]"
 
         # All models exhausted due to rate limits
         if last_error:
-            return f"[생성 실패: 모든 모델 Rate Limit 초과 - {last_error}]"  # noqa: E501
+            return f"[생성 실패: 모든 모델 Rate Limit 초과 - {last_error}]"
         return "[생성 실패: 알 수 없는 오류]"
 
     def evaluate(self, question: str, answers: list[str]) -> dict[str, Any]:
@@ -207,8 +194,6 @@ class GeminiModelClient:
             )
             latency_ms = (time.perf_counter() - start) * 1000
             return raw, latency_ms, None
-        except google_exceptions.GoogleAPIError:
-            return None, None, "API 오류로 길이 기반 평가 수행"
         except Exception:  # noqa: BLE001
             return None, None, "예상치 못한 오류로 길이 기반 평가 수행"
 
@@ -268,10 +253,8 @@ class GeminiModelClient:
                 completion_tokens=len(rewritten),
             )
             return rewritten
-        except google_exceptions.GoogleAPIError as e:
-            return f"[재작성 실패: {e}]"
         except Exception as e:  # noqa: BLE001
-            return f"[재작성 실패(알 수 없음): {e}]"
+            return f"[재작성 실패: {e}]"
 
 
 if __name__ == "__main__":

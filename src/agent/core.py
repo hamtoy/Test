@@ -71,8 +71,6 @@ from .services import (
 )
 
 if TYPE_CHECKING:
-    from google.generativeai import caching
-
     from src.core.interfaces import LLMProvider
     from src.qa.rag_system import QAKnowledgeGraph
 
@@ -251,19 +249,23 @@ class GeminiAgent:
 
     @property
     def _genai(self) -> Any:
-        import google.generativeai as genai
+        from google import genai
 
         return genai
 
     @property
-    def _caching(self) -> Any:
-        cached = globals().get("caching")
-        if cached is not None:
-            return cached
-        from google.generativeai import caching
+    def _genai_client(self) -> Any:
+        """google-genai Client 인스턴스."""
+        if not hasattr(self, "_cached_genai_client"):
+            from google import genai
 
-        globals()["caching"] = caching
-        return caching
+            self._cached_genai_client = genai.Client(api_key=self.config.api_key)
+        return self._cached_genai_client
+
+    @property
+    def _caching(self) -> Any:
+        # 새 SDK에서는 client.caches 사용
+        return self._genai_client.caches
 
     @staticmethod
     def _google_exceptions() -> Any:

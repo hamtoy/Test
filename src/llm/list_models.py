@@ -9,10 +9,8 @@ import logging
 import os
 import sys
 
-import google.generativeai as genai
 from dotenv import load_dotenv
-
-from src.llm.init_genai import configure_genai  # noqa: E402
+from google import genai
 
 load_dotenv()
 
@@ -24,12 +22,14 @@ if not api_key:
     logger.error("No API key found in .env (GEMINI_API_KEY)")
     sys.exit(1)
 
-configure_genai(api_key)
+client = genai.Client(api_key=api_key)
 
 logger.info("Listing models for configured Gemini key...")
 try:
-    for m in genai.list_models():
-        if "generateContent" in m.supported_generation_methods:
-            logger.info(m.name)
+    # google-genai SDK 에서는 client.models.list() 사용
+    for m in client.models.list():
+        # supported_generation_methods 속성이 다른 이름이거나 없을 수 있음
+        # 기본적으로 models.list()는 사용 가능한 모델을 반환
+        logger.info(m.name)
 except Exception as e:  # noqa: BLE001
     logger.error("Error listing models: %s", e)

@@ -10,9 +10,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import google.generativeai as genai
-from google.api_core import exceptions as google_exceptions
-from google.generativeai.types import GenerationConfigDict
+from google import genai
+from google.genai import types
 
 from src.core.interfaces import (
     ContextWindowExceededError,
@@ -39,10 +38,8 @@ class GeminiProvider(LLMProvider):
             api_key: The Google AI API key.
             model_name: The Gemini model name to use.
         """
-        # API 초기화 (테스트에서 genai.configure 패치 가능)
-        genai.configure(api_key=api_key)
+        self.client = genai.Client(api_key=api_key)
         self.model_name = model_name
-        self._model = genai.GenerativeModel(model_name)
 
     async def generate_content_async(
         self,
@@ -73,53 +70,62 @@ class GeminiProvider(LLMProvider):
             TimeoutError: If the request times out.
             ProviderError: For other generation failures.
         """
-        generation_config: GenerationConfigDict = {}
+        config_kwargs: dict[str, Any] = {}
         if temperature is not None:
-            generation_config["temperature"] = temperature
+            config_kwargs["temperature"] = temperature
         if max_output_tokens is not None:
-            generation_config["max_output_tokens"] = max_output_tokens
+            config_kwargs["max_output_tokens"] = max_output_tokens
         if response_schema:
-            generation_config["response_mime_type"] = "application/json"
-            generation_config["response_schema"] = response_schema
-
-        # Create a new model instance if system_instruction is provided,
-        # as it's set at initialization time for GenerativeModel.
-        model = self._model
+            config_kwargs["response_mime_type"] = "application/json"
+            config_kwargs["response_schema"] = response_schema
         if system_instruction:
-            model = genai.GenerativeModel(
-                self.model_name,
-                system_instruction=system_instruction,
-            )
+            config_kwargs["system_instruction"] = system_instruction
+
+        # Merge kwargs into config_kwargs if they are valid config options
+        # Note: google-genai handles unknown args gracefully usually, but be careful
+        config_kwargs.update(kwargs)
 
         try:
-            response = await model.generate_content_async(
-                prompt,
-                generation_config=generation_config,
-                **kwargs,
+            response = await self.client.aio.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(**config_kwargs),
             )
 
             # Extract usage metadata
             usage = {}
-            if hasattr(response, "usage_metadata"):
+            if hasattr(response, "usage_metadata") and response.usage_metadata:
                 usage = {
-                    "prompt_tokens": response.usage_metadata.prompt_token_count,
-                    "completion_tokens": response.usage_metadata.candidates_token_count,
-                    "total_tokens": response.usage_metadata.total_token_count,
+                    "prompt_tokens": getattr(
+                        response.usage_metadata, "prompt_token_count", 0
+                    ),
+                    "completion_tokens": getattr(
+                        response.usage_metadata, "candidates_token_count", 0
+                    ),
+                    "total_tokens": getattr(
+                        response.usage_metadata, "total_token_count", 0
+                    ),
                 }
 
             # Extract finish reason and handle safety blocks
             finish_reason = None
             if getattr(response, "candidates", None):
                 candidate = response.candidates[0]
-                finish_reason = getattr(candidate.finish_reason, "name", None)
+                finish_reason = getattr(
+                    candidate.finish_reason, "name", str(candidate.finish_reason)
+                )
                 if finish_reason and finish_reason.upper() not in {
                     "STOP",
                     "MAX_TOKENS",
+                    "NONE",  # NONE is sometimes returned for success
                 }:
-                    safety_info = getattr(response, "prompt_feedback", None)
-                    raise SafetyBlockedError(
-                        f"Generation blocked: {finish_reason} ({safety_info})",
-                    )
+                    # If blocked, there might not be text
+                    if not getattr(candidate, "content", None):
+                        # Try to get safety info
+                        safety_ratings = getattr(candidate, "safety_ratings", [])
+                        raise SafetyBlockedError(
+                            f"Generation blocked: {finish_reason} (Ratings: {safety_ratings})",
+                        )
 
             return GenerationResult(
                 content=getattr(response, "text", "") or "",
@@ -134,24 +140,19 @@ class GeminiProvider(LLMProvider):
             raise self._convert_google_exception(exc) from exc
 
     def _convert_google_exception(self, exc: Exception) -> ProviderError:
-        if isinstance(exc, google_exceptions.ResourceExhausted):
-            return RateLimitError(
-                "Gemini rate limit exceeded",
-                original_error=exc,
-            )
-        if isinstance(exc, google_exceptions.InvalidArgument):
-            if "token" in str(exc).lower():
+        error_msg = str(exc)
+        if "ResourceExhausted" in error_msg or "429" in error_msg:
+            return RateLimitError("Gemini rate limit exceeded", original_error=exc)
+        if "InvalidArgument" in error_msg:
+            if "token" in error_msg.lower():
                 return ContextWindowExceededError(
-                    "Context window exceeded",
-                    original_error=exc,
+                    "Context window exceeded", original_error=exc
                 )
             return ProviderError(f"Invalid argument: {exc}", original_error=exc)
-        if isinstance(exc, google_exceptions.DeadlineExceeded):
+        if "DeadlineExceeded" in error_msg:
             return TimeoutError("Gemini request timed out", original_error=exc)
-        return ProviderError(
-            f"Gemini generation failed: {exc}",
-            original_error=exc,
-        )
+
+        return ProviderError(f"Gemini generation failed: {exc}", original_error=exc)
 
     async def count_tokens(self, text: str) -> int:
         """Count tokens in the given text.
@@ -166,10 +167,12 @@ class GeminiProvider(LLMProvider):
             ProviderError: If token counting fails.
         """
         try:
-            return int(self._model.count_tokens(text).total_tokens)
+            resp = await self.client.aio.models.count_tokens(
+                model=self.model_name, contents=text
+            )
+            return int(resp.total_tokens)
         except Exception as e:
             logger.error(f"Failed to count tokens: {e}")
-            # Fallback or re-raise? For now, re-raise as ProviderError
             raise ProviderError(f"Token counting failed: {e}", original_error=e) from e
 
     async def generate_vision_content_async(
@@ -188,17 +191,19 @@ class GeminiProvider(LLMProvider):
         Returns:
             추출된 텍스트.
         """
-        import base64
-
         try:
-            response = await self._model.generate_content_async(
-                [
-                    {
-                        "mime_type": mime_type,
-                        "data": base64.b64encode(image_data).decode("utf-8"),
-                    },
-                    prompt,
-                ]
+            # google-genai supports passing bytes/Part directly usually,
+            # but wrapping in types.Part or just constructing the content list is standard.
+            # Using types.Part with inline_data
+
+            # The SDK supports list of content where an item can be a Part
+            content = [
+                types.Part.from_bytes(data=image_data, mime_type=mime_type),
+                prompt,
+            ]
+
+            response = await self.client.aio.models.generate_content(
+                model=self.model_name, contents=content
             )
             return getattr(response, "text", "") or ""
         except Exception as exc:

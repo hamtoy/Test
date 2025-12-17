@@ -13,14 +13,15 @@ import os
 import re
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from src.config.settings import AppConfig
 
 if TYPE_CHECKING:
-    from google.generativeai.types import GenerateContentResponse
+    pass
 
 LOGGER = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ class QAGenerator:
 
         Args:
             config: Application configuration containing API key and model settings
-            model: Optional pre-configured Gemini model (creates default if None)
+            model: Optional pre-configured Gemini Client (creates default if None)
             query_prompt_path: Custom path to query generation prompt template
             answer_prompt_path: Custom path to answer generation prompt template
             logger: Optional logger instance (uses module logger if None)
@@ -69,13 +70,12 @@ class QAGenerator:
         self.query_system_prompt = self._load_prompt(self.query_prompt_path)
         self.answer_system_prompt = self._load_prompt(self.answer_prompt_path)
 
-        self.model = model or self._build_model()
+        # model 파라미터는 이제 genai.Client를 의미합니다
+        self.client = model or self._build_client()
 
-    def _build_model(self) -> Any:
-        """생성자에서 주입되지 않은 경우 Gemini 모델 생성."""
-        genai_any = cast("Any", genai)
-        genai_any.configure(api_key=self.config.api_key)
-        return genai_any.GenerativeModel(self.config.model_name)
+    def _build_client(self) -> Any:
+        """생성자에서 주입되지 않은 경우 Gemini Client 생성."""
+        return genai.Client(api_key=self.config.api_key)
 
     def _load_prompt(self, path: Path) -> str:
         if not path.exists():
@@ -85,14 +85,15 @@ class QAGenerator:
     def _call_llm(self, system_prompt: str, user_prompt: str) -> str:
         """Gemini API를 호출하여 응답을 생성."""
         combined_prompt = f"{system_prompt}\n\n{user_prompt}"
-        response: GenerateContentResponse = self.model.generate_content(
-            combined_prompt,
-            generation_config={
-                "temperature": self.config.temperature,
-                "max_output_tokens": self.config.max_output_tokens,
-            },
+        response = self.client.models.generate_content(
+            model=self.config.model_name,
+            contents=combined_prompt,
+            config=types.GenerateContentConfig(
+                temperature=self.config.temperature,
+                max_output_tokens=self.config.max_output_tokens,
+            ),
         )
-        return cast(str, response.text) if response.text else ""
+        return str(response.text) if response.text else ""
 
     def generate_questions(self, ocr_text: str, query_count: int = 4) -> list[str]:
         """OCR 텍스트로부터 다채로운 질의 목록 생성."""
