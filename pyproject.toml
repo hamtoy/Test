@@ -7,6 +7,7 @@ requires-python = ">=3.10, <3.14"
 dependencies = [
     # Core dependencies - always required
     "google-generativeai>=0.8.3,<1.0.0",
+    "google-genai>=1.0.0",  # New google-genai SDK for GenAIClient
     "python-dotenv>=1.0.1",
     "aiofiles>=23.2.1",
     "pydantic>=2.0.0",
