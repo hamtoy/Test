@@ -170,6 +170,8 @@ exclude = [
 [[tool.mypy.overrides]]
 module = ["tests", "tests.*"]
 strict = true
+# Allow mock method assignments in tests without type: ignore comments
+disable_error_code = ["method-assign", "assignment"]
 
 # Scripts, checks, and experiments excluded from strict mode
 [[tool.mypy.overrides]]

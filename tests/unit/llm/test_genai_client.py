@@ -62,7 +62,7 @@ class TestGenAIClientGenerateContent:
     async def test_generate_content_basic(self, mock_client: GenAIClient) -> None:
         """Test basic content generation."""
         mock_response = MagicMock(spec=types.GenerateContentResponse)
-        mock_client.client.aio.models.generate_content = AsyncMock(  # type: ignore[method-assign]
+        mock_client.client.aio.models.generate_content = AsyncMock(
             return_value=mock_response
         )
 
@@ -80,7 +80,7 @@ class TestGenAIClientGenerateContent:
     ) -> None:
         """Test content generation with system instruction."""
         mock_response = MagicMock(spec=types.GenerateContentResponse)
-        mock_client.client.aio.models.generate_content = AsyncMock(  # type: ignore[method-assign]
+        mock_client.client.aio.models.generate_content = AsyncMock(
             return_value=mock_response
         )
 
@@ -100,7 +100,7 @@ class TestGenAIClientGenerateContent:
     ) -> None:
         """Test content generation with response schema."""
         mock_response = MagicMock(spec=types.GenerateContentResponse)
-        mock_client.client.aio.models.generate_content = AsyncMock(  # type: ignore[method-assign]
+        mock_client.client.aio.models.generate_content = AsyncMock(
             return_value=mock_response
         )
 
@@ -121,7 +121,7 @@ class TestGenAIClientGenerateContent:
     ) -> None:
         """Test content generation with thinking config."""
         mock_response = MagicMock(spec=types.GenerateContentResponse)
-        mock_client.client.aio.models.generate_content = AsyncMock(  # type: ignore[method-assign]
+        mock_client.client.aio.models.generate_content = AsyncMock(
             return_value=mock_response
         )
 
@@ -143,7 +143,7 @@ class TestGenAIClientGenerateContent:
     ) -> None:
         """Test content generation with safety settings."""
         mock_response = MagicMock(spec=types.GenerateContentResponse)
-        mock_client.client.aio.models.generate_content = AsyncMock(  # type: ignore[method-assign]
+        mock_client.client.aio.models.generate_content = AsyncMock(
             return_value=mock_response
         )
 
@@ -168,7 +168,7 @@ class TestGenAIClientGenerateContent:
     ) -> None:
         """Test content generation with cached content."""
         mock_response = MagicMock(spec=types.GenerateContentResponse)
-        mock_client.client.aio.models.generate_content = AsyncMock(  # type: ignore[method-assign]
+        mock_client.client.aio.models.generate_content = AsyncMock(
             return_value=mock_response
         )
 
@@ -207,7 +207,7 @@ class TestGenAIClientGenerateContentStream:
             for chunk in mock_chunks:
                 yield chunk
 
-        mock_client.client.aio.models.generate_content_stream = mock_stream  # type: ignore[assignment]
+        mock_client.client.aio.models.generate_content_stream = mock_stream
 
         chunks = [
             chunk
@@ -232,7 +232,7 @@ class TestGenAIClientGenerateContentStream:
             call_kwargs.update(kwargs)
             yield MagicMock()
 
-        mock_client.client.aio.models.generate_content_stream = mock_stream  # type: ignore[assignment]
+        mock_client.client.aio.models.generate_content_stream = mock_stream
 
         async for _ in mock_client.generate_content_stream(
             model="gemini-2.0-flash",
