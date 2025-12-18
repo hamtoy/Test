@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -61,7 +62,7 @@ class TestGenAIClientGenerateContent:
     async def test_generate_content_basic(self, mock_client: GenAIClient) -> None:
         """Test basic content generation."""
         mock_response = MagicMock(spec=types.GenerateContentResponse)
-        mock_client.client.aio.models.generate_content = AsyncMock(
+        mock_client.client.aio.models.generate_content = AsyncMock(  # type: ignore[method-assign]
             return_value=mock_response
         )
 
@@ -79,7 +80,7 @@ class TestGenAIClientGenerateContent:
     ) -> None:
         """Test content generation with system instruction."""
         mock_response = MagicMock(spec=types.GenerateContentResponse)
-        mock_client.client.aio.models.generate_content = AsyncMock(
+        mock_client.client.aio.models.generate_content = AsyncMock(  # type: ignore[method-assign]
             return_value=mock_response
         )
 
@@ -99,7 +100,7 @@ class TestGenAIClientGenerateContent:
     ) -> None:
         """Test content generation with response schema."""
         mock_response = MagicMock(spec=types.GenerateContentResponse)
-        mock_client.client.aio.models.generate_content = AsyncMock(
+        mock_client.client.aio.models.generate_content = AsyncMock(  # type: ignore[method-assign]
             return_value=mock_response
         )
 
@@ -120,7 +121,7 @@ class TestGenAIClientGenerateContent:
     ) -> None:
         """Test content generation with thinking config."""
         mock_response = MagicMock(spec=types.GenerateContentResponse)
-        mock_client.client.aio.models.generate_content = AsyncMock(
+        mock_client.client.aio.models.generate_content = AsyncMock(  # type: ignore[method-assign]
             return_value=mock_response
         )
 
@@ -142,7 +143,7 @@ class TestGenAIClientGenerateContent:
     ) -> None:
         """Test content generation with safety settings."""
         mock_response = MagicMock(spec=types.GenerateContentResponse)
-        mock_client.client.aio.models.generate_content = AsyncMock(
+        mock_client.client.aio.models.generate_content = AsyncMock(  # type: ignore[method-assign]
             return_value=mock_response
         )
 
@@ -167,7 +168,7 @@ class TestGenAIClientGenerateContent:
     ) -> None:
         """Test content generation with cached content."""
         mock_response = MagicMock(spec=types.GenerateContentResponse)
-        mock_client.client.aio.models.generate_content = AsyncMock(
+        mock_client.client.aio.models.generate_content = AsyncMock(  # type: ignore[method-assign]
             return_value=mock_response
         )
 
@@ -200,11 +201,13 @@ class TestGenAIClientGenerateContentStream:
         """Test basic streaming content generation."""
         mock_chunks = [MagicMock(), MagicMock(), MagicMock()]
 
-        async def mock_stream(*args: Any, **kwargs: Any):
+        async def mock_stream(
+            *args: Any, **kwargs: Any
+        ) -> AsyncGenerator[MagicMock, None]:
             for chunk in mock_chunks:
                 yield chunk
 
-        mock_client.client.aio.models.generate_content_stream = mock_stream
+        mock_client.client.aio.models.generate_content_stream = mock_stream  # type: ignore[assignment]
 
         chunks = [
             chunk
@@ -223,11 +226,13 @@ class TestGenAIClientGenerateContentStream:
         """Test streaming with system instruction."""
         call_kwargs: dict[str, Any] = {}
 
-        async def mock_stream(*args: Any, **kwargs: Any):
+        async def mock_stream(
+            *args: Any, **kwargs: Any
+        ) -> AsyncGenerator[MagicMock, None]:
             call_kwargs.update(kwargs)
             yield MagicMock()
 
-        mock_client.client.aio.models.generate_content_stream = mock_stream
+        mock_client.client.aio.models.generate_content_stream = mock_stream  # type: ignore[assignment]
 
         async for _ in mock_client.generate_content_stream(
             model="gemini-2.0-flash",
