@@ -201,11 +201,15 @@ class TestGenAIClientGenerateContentStream:
         """Test basic streaming content generation."""
         mock_chunks = [MagicMock(), MagicMock(), MagicMock()]
 
+        async def async_gen() -> AsyncGenerator[MagicMock, None]:
+            for chunk in mock_chunks:
+                yield chunk
+
         async def mock_stream(
             *args: Any, **kwargs: Any
         ) -> AsyncGenerator[MagicMock, None]:
-            for chunk in mock_chunks:
-                yield chunk
+            # Return the async generator (the await in source code will call this)
+            return async_gen()  # type: ignore[return-value]
 
         mock_client.client.aio.models.generate_content_stream = mock_stream
 
@@ -226,11 +230,14 @@ class TestGenAIClientGenerateContentStream:
         """Test streaming with system instruction."""
         call_kwargs: dict[str, Any] = {}
 
+        async def async_gen() -> AsyncGenerator[MagicMock, None]:
+            yield MagicMock()
+
         async def mock_stream(
             *args: Any, **kwargs: Any
         ) -> AsyncGenerator[MagicMock, None]:
             call_kwargs.update(kwargs)
-            yield MagicMock()
+            return async_gen()  # type: ignore[return-value]
 
         mock_client.client.aio.models.generate_content_stream = mock_stream
 
