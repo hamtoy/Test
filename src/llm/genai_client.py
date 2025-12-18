@@ -125,19 +125,25 @@ class GenAIClient:
 
     def create_thinking_config(
         self,
-        thinking_level: str = "medium",
+        thinking_level: str = "MEDIUM",
     ) -> types.ThinkingConfig:
-        """Gemini 3 용 ThinkingConfig 생성.
+        """Gemini 2.5용 ThinkingConfig 생성.
 
         Args:
-            thinking_level: 생각 레벨 (minimal, low, medium, high)
+            thinking_level: 생각 레벨 (MINIMAL, LOW, MEDIUM, HIGH)
 
         Returns:
             ThinkingConfig 객체
         """
-        # thinking_level을 thinking_budget으로 변환
-        # google-genai SDK에서는 thinking_budget을 사용
-        return types.ThinkingConfig(thinking_budget=thinking_level)
+        # Try to use enum directly if available
+        try:
+            level_enum = getattr(types.ThinkingLevel, thinking_level.upper(), None)
+            if level_enum is None:
+                level_enum = types.ThinkingLevel.THINKING_LEVEL_UNSPECIFIED
+        except AttributeError:
+            level_enum = types.ThinkingLevel.THINKING_LEVEL_UNSPECIFIED
+
+        return types.ThinkingConfig(thinking_level=level_enum)
 
     def create_safety_settings(self) -> list[types.SafetySetting]:
         """기본 안전 설정 생성.

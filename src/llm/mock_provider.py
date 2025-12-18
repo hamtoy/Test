@@ -14,6 +14,8 @@ from src.core.models import EvaluationResultSchema, QueryResult, StructuredAnswe
 class MockLLMProvider(LLMProvider):
     """Deterministic LLM provider for tests and dry-run CLI flows."""
 
+    _MOCK_REASON = "Mock evaluation"
+
     def __init__(
         self,
         *,
@@ -71,9 +73,9 @@ class MockLLMProvider(LLMProvider):
 
         if response_schema is EvaluationResultSchema:
             evaluations = [
-                {"candidate_id": "A", "score": 5, "reason": "Mock evaluation"},
-                {"candidate_id": "B", "score": 4, "reason": "Mock evaluation"},
-                {"candidate_id": "C", "score": 3, "reason": "Mock evaluation"},
+                {"candidate_id": "A", "score": 5, "reason": self._MOCK_REASON},
+                {"candidate_id": "B", "score": 4, "reason": self._MOCK_REASON},
+                {"candidate_id": "C", "score": 3, "reason": self._MOCK_REASON},
             ]
             payload = {
                 "best_candidate": self._best_candidate,

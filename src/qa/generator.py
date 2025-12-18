@@ -14,14 +14,11 @@ import os
 import re
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import google.generativeai as genai
 
 from src.config.settings import AppConfig
-
-if TYPE_CHECKING:
-    pass
 
 LOGGER = logging.getLogger(__name__)
 

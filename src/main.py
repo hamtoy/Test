@@ -13,9 +13,8 @@ from dotenv import load_dotenv
 from src.config import AppConfig
 from src.config.constants import USER_INTERRUPT_MESSAGE
 from src.infra.logging import setup_logging
-from src.ui import console
-
 from src.llm.init_genai import configure_genai as _configure_genai
+from src.ui import console
 
 
 class _GenAIProxy:
@@ -32,6 +31,8 @@ __all__ = [
     "execute_workflow",
     "format_output",
     "genai",
+    "get_gemini_agent",
+    "GeminiAgent",  # Backward compatibility alias
     "interactive_main",
     "load_dotenv",
     "load_input_data",
@@ -43,11 +44,15 @@ __all__ = [
 ]
 
 
-def GeminiAgent(*args: Any, **kwargs: Any) -> Any:  # noqa: D401
+def get_gemini_agent(*args: Any, **kwargs: Any) -> Any:  # noqa: D401
     """Lazily import GeminiAgent."""
     from src.agent import GeminiAgent as _GeminiAgent
 
     return _GeminiAgent(*args, **kwargs)
+
+
+# Backward compatibility alias - keep for existing code that uses GeminiAgent directly
+GeminiAgent = get_gemini_agent
 
 
 async def interactive_main(*args: Any, **kwargs: Any) -> Any:  # noqa: D401
@@ -144,7 +149,7 @@ async def _run_non_interactive(args: Any) -> int:
         )
 
         llm_provider = _maybe_get_mock_llm_provider()
-        agent = GeminiAgent(config, jinja_env=jinja_env, llm_provider=llm_provider)
+        agent = get_gemini_agent(config, jinja_env=jinja_env, llm_provider=llm_provider)
 
         ocr_text, _ = await load_input_data(
             base_dir=config.input_dir,
@@ -214,7 +219,7 @@ async def main() -> None:
         )
 
         # Create agent
-        agent = GeminiAgent(config, jinja_env=jinja_env)
+        agent = get_gemini_agent(config, jinja_env=jinja_env)
 
         # Launch interactive menu
         await interactive_main(agent, config, logger)
@@ -229,10 +234,7 @@ async def main() -> None:
 
 if __name__ == "__main__":
     args: Any | None = None
-    try:
-        args = parse_args()
-    except SystemExit:
-        raise
+    args = parse_args()
 
     if args.config is not None:
         if not Path(args.config).exists():
