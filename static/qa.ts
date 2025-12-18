@@ -63,13 +63,10 @@ function escapeHtml(text: string): string {
 
 function formatAnswer(text: string): string {
     const raw = text || "";
-    // 1) 마크다운을 HTML로 파싱, 2) Sanitize, 3) 파서가 없을 때는 기존 단순 변환
-    const parsed = window.marked?.parse
-        ? window.marked.parse(raw, { breaks: true })
-        : escapeHtml(raw)
-            .replaceAll("\n\n", "<br><br>")
-            .replaceAll("\n", "<br>")
-            .replaceAll(" - ", "<br><br>- ");
+    // Raw text output without markdown rendering (for copy-paste)
+    const parsed = escapeHtml(raw)
+        .replaceAll("\n\n", "<br><br>")
+        .replaceAll("\n", "<br>");
     return window.DOMPurify ? window.DOMPurify.sanitize(parsed) : parsed;
 }
 

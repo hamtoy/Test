@@ -33,3 +33,11 @@ formatting_patterns:
     severity: 'warning'
     example_bad: '첫째, ... 둘째, ...'
     example_good: '먼저... 또한... 이와 함께...'
+
+  reasoning_explain_verb:
+    pattern: '(전망|가능성|예측|추세|예상).*(에 대해|대해서|에 관해|관해서)?\s*(설명해|설명해 주|설명하여|설명 부탁)'
+    description: '추론 질의는 설명해 대신 추론해/전망해/예측해 사용 필수'
+    severity: 'error'
+    example_bad: '한국 증시 전망에 대해 설명해 주십시오.'
+    example_good: '한국 증시 전망에 대해 추론해 주십시오.'
+    applies_to: 'reasoning'

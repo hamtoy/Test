@@ -217,6 +217,11 @@ class RewriterService:
             response_schema = StructuredAnswerSchema
 
         max_output_tokens = agent.config.resolve_max_output_tokens(query_type)
+        agent.logger.info(
+            "Rewrite: query_type=%s, max_output_tokens=%s",
+            query_type,
+            max_output_tokens,
+        )
         model = agent._create_generative_model(  # noqa: SLF001
             system_prompt,
             response_schema=response_schema,

@@ -77,6 +77,18 @@ def apply_reasoning_constraints() -> None:
         })
         MERGE (qt)-[:HAS_CONSTRAINT]->(c)
         """,
+        # 추론 질의 어미 규칙 (query category)
+        """
+        MATCH (qt:QueryType {name: "reasoning"})
+        MERGE (c:Constraint {
+          name: "reasoning_query_verb_required",
+          description: "추론 질의는 반드시 '추론해줘/전망해줘/예측해줘'처럼 미래를 예측하는 형태로 작성해야 한다. '설명해 주십시오', '설명해줘'와 같은 어미를 사용하면 설명문 질의와 혼동될 수 있으므로 금지한다. 예시: '한국 증시 전망에 대해 설명해줘(❌)' → '한국 증시 전망에 대해 추론해줘(⭕)'",
+          priority: 100,
+          category: "query",
+          applies_to: "generation"
+        })
+        MERGE (qt)-[:HAS_CONSTRAINT]->(c)
+        """,
     ]
 
     with driver.session() as session:

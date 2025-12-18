@@ -423,7 +423,7 @@ def render_structured_answer_if_present(answer: str, qtype: str) -> str:
     - 실패 시 원문(answer) 그대로 반환
     """
     normalized = QTYPE_MAP.get(qtype, qtype)
-    if normalized not in {"explanation", "reasoning", "target"}:
+    if normalized not in {"explanation", "reasoning", "target", "target_long"}:
         return answer
 
     structured_any = _parse_structured_answer(answer)
@@ -436,10 +436,20 @@ def render_structured_answer_if_present(answer: str, qtype: str) -> str:
         )
         return answer
 
-    # target은 intro만 출력 (짧은 단답형)
+    # target (short)는 intro만 출력 (짧은 단답형)
     if normalized == "target":
         intro = _sanitize_structured_text(structured_any.get("intro", ""))
         return intro if intro else answer
+
+    # target_long은 intro + conclusion 합쳐서 출력
+    if normalized == "target_long":
+        intro = _sanitize_structured_text(structured_any.get("intro", ""))
+        conclusion = _sanitize_structured_text(structured_any.get("conclusion", ""))
+        if intro and conclusion:
+            return f"{intro} {conclusion}"
+        if intro:
+            return intro
+        return answer
 
     rendered = _render_structured_answer(structured_any, normalized)
     if rendered is not None:

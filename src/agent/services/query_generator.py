@@ -271,7 +271,11 @@ class QueryGeneratorService:
             common_mistakes,
         )
 
-        max_output_tokens = agent.config.resolve_max_output_tokens(query_type)
+        # Query generation needs more tokens than answer generation
+        # (JSON output with multiple queries requires at least 2048 tokens
+        # due to schema validation overhead)
+        resolved_tokens = agent.config.resolve_max_output_tokens(query_type)
+        max_output_tokens = max(resolved_tokens, 2048)
         model = agent._create_generative_model(  # noqa: SLF001
             system_prompt,
             response_schema=QueryResult,
