@@ -14,12 +14,12 @@ class TestMainImports:
     def test_imports_are_accessible(self) -> None:
         """Test that key imports from main.py are accessible."""
         from src.main import (
-            parse_args,
             analyze_cache_stats,
-            print_cache_report,
-            load_input_data,
-            render_cost_panel,
             execute_workflow,
+            load_input_data,
+            parse_args,
+            print_cache_report,
+            render_cost_panel,
             write_cache_stats,
         )
 
@@ -85,6 +85,7 @@ class TestMainFunction:
         mock_config = MagicMock()
         mock_config.api_key = valid_key
         mock_config.template_dir = tmp_path / "nonexistent_templates"
+        mock_config.max_concurrency = 5
 
         with (
             patch(
@@ -122,6 +123,7 @@ class TestMainFunction:
         mock_config = MagicMock()
         mock_config.api_key = valid_key
         mock_config.template_dir = templates_dir
+        mock_config.max_concurrency = 5
 
         mock_agent = MagicMock()
 
@@ -218,10 +220,9 @@ class TestConsoleOutput:
 
     def test_user_interrupt_message_import(self) -> None:
         """Test that USER_INTERRUPT_MESSAGE is properly imported."""
-        from src.main import USER_INTERRUPT_MESSAGE
-
         # Check it's the constant from config
         from src.config.constants import USER_INTERRUPT_MESSAGE as expected
+        from src.main import USER_INTERRUPT_MESSAGE
 
         assert expected == USER_INTERRUPT_MESSAGE
 

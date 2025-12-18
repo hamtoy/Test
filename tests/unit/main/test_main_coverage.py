@@ -23,6 +23,7 @@ class TestMainModule:
         mock_config = MagicMock()
         mock_config.api_key = "AIza" + "0" * 35
         mock_config.template_dir = template_dir
+        mock_config.max_concurrency = 5
 
         mock_logger = MagicMock()
         mock_listener = MagicMock()

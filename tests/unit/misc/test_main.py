@@ -39,6 +39,7 @@ class TestMainFunction:
         mock_config.api_key = "test-api-key"
         mock_config.template_dir = Mock()
         mock_config.template_dir.exists.return_value = True
+        mock_config.max_concurrency = 5
         mock_config_class.return_value = mock_config
 
         mock_env = Mock()
@@ -78,6 +79,7 @@ class TestMainFunction:
         mock_config.api_key = "test-api-key"
         mock_config.template_dir = Mock()
         mock_config.template_dir.exists.return_value = False
+        mock_config.max_concurrency = 5
         mock_config_class.return_value = mock_config
 
         # Execute and expect sys.exit
@@ -153,6 +155,7 @@ class TestMainFunction:
         mock_config.api_key = "test-api-key"
         mock_config.template_dir = Mock()
         mock_config.template_dir.exists.return_value = True
+        mock_config.max_concurrency = 5
         mock_config_class.return_value = mock_config
 
         mock_env = Mock()

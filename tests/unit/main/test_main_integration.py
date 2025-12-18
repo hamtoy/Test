@@ -43,6 +43,7 @@ async def test_main_analyze_cache_quick_path(
             self.model_name = "gemini-flash-latest"
             self.cache_stats_path = tmp_path / "stats.jsonl"
             self.cache_stats_max_entries = 3
+            self.max_concurrency = 5
 
     class FakeAgent:
         def __init__(self, config: Any, jinja_env: Any) -> None:
@@ -134,6 +135,7 @@ async def test_main_keep_progress_flag(
             self.model_name = "gemini-flash-latest"
             self.cache_stats_path = tmp_path / "stats.jsonl"
             self.cache_stats_max_entries = 3
+            self.max_concurrency = 5
 
     class FakeAgent:
         def __init__(self, config: Any, jinja_env: Any) -> None:
@@ -226,6 +228,7 @@ async def test_main_cache_stats_warning(
             self.model_name = "gemini-flash-latest"
             self.cache_stats_path = tmp_path / "stats.jsonl"
             self.cache_stats_max_entries = 3
+            self.max_concurrency = 5
 
     class FakeAgent:
         def __init__(self, config: Any, jinja_env: Any) -> None:
@@ -321,6 +324,7 @@ async def test_main_auto_mode_passes_intent(
             self.model_name = "gemini-flash-latest"
             self.cache_stats_path = tmp_path / "stats.jsonl"
             self.cache_stats_max_entries = 3
+            self.max_concurrency = 5
 
     class FakeAgent:
         def __init__(self, config: Any, jinja_env: Any) -> None:
@@ -412,6 +416,7 @@ async def test_main_missing_templates_exits(
             self.model_name = "gemini-flash-latest"
             self.cache_stats_path = tmp_path / "stats.jsonl"
             self.cache_stats_max_entries = 3
+            self.max_concurrency = 5
 
     logger = MagicMock()
 
