@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -61,7 +62,7 @@ class TestGenAIModelAdapterInit:
     def test_init_with_safety_settings(self) -> None:
         """Test initialization with safety settings."""
         mock_client = MagicMock()
-        safety = [MagicMock(spec=types.SafetySetting)]
+        safety = cast(list[types.SafetySetting], [MagicMock(spec=types.SafetySetting)])
         adapter = GenAIModelAdapter(
             client=mock_client,
             model_name="gemini-2.0-flash",
@@ -144,7 +145,7 @@ class TestGenAIModelAdapterGenerateContentAsync:
         self, mock_client: MagicMock
     ) -> None:
         """Test generation with safety settings."""
-        safety = [MagicMock(spec=types.SafetySetting)]
+        safety = cast(list[types.SafetySetting], [MagicMock(spec=types.SafetySetting)])
         adapter = GenAIModelAdapter(
             client=mock_client,
             model_name="gemini-2.0-flash",
