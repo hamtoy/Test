@@ -206,12 +206,13 @@ class TestGenAIClientGenerateContentStream:
 
         mock_client.client.aio.models.generate_content_stream = mock_stream
 
-        chunks = []
-        async for chunk in mock_client.generate_content_stream(
-            model="gemini-2.0-flash",
-            contents="Hello, world!",
-        ):
-            chunks.append(chunk)
+        chunks = [
+            chunk
+            async for chunk in mock_client.generate_content_stream(
+                model="gemini-2.0-flash",
+                contents="Hello, world!",
+            )
+        ]
 
         assert len(chunks) == 3
 
