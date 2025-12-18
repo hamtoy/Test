@@ -77,5 +77,6 @@ def test_cli_non_interactive_creates_output(tmp_path: Path) -> None:
 
     output_dir = project_root / "data" / "outputs"
     outputs = list(output_dir.glob("result_turn_*.md"))
-    assert outputs, f"결과 파일이 생성되지 않았습니다.\nstdout:\n{proc.stdout}\n\nstderr:\n{proc.stderr}"
-
+    assert outputs, (
+        f"결과 파일이 생성되지 않았습니다.\nstdout:\n{proc.stdout}\n\nstderr:\n{proc.stderr}"
+    )

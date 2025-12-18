@@ -115,7 +115,11 @@ class FileLock:
             # If OS-level locking failed due to contention, don't delete the lock file.
             # This can happen on some filesystems where exclusive file creation is not
             # strictly atomic under concurrency; deleting here would break mutual exclusion.
-            if getattr(e, "errno", None) in {errno.EACCES, errno.EAGAIN, errno.EWOULDBLOCK}:
+            if getattr(e, "errno", None) in {
+                errno.EACCES,
+                errno.EAGAIN,
+                errno.EWOULDBLOCK,
+            }:
                 if self._lock_file:
                     self._lock_file.close()
                     self._lock_file = None
