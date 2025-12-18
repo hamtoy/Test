@@ -179,10 +179,12 @@ class ResponseEvaluatorService:
             formatting_rules,
         )
 
+        max_output_tokens = agent.config.resolve_max_output_tokens(query_type)
         model = agent._create_generative_model(  # noqa: SLF001
             system_prompt,
             response_schema=EvaluationResultSchema,
             cached_content=cached_content,
+            max_output_tokens=max_output_tokens,
         )
 
         agent.context_manager.track_cache_usage(cached_content is not None)

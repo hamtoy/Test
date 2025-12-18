@@ -1,0 +1,161 @@
+Microsoft Windows [Version 10.0.26200.6899]
+(c) Microsoft Corporation. All rights reserved.
+
+E:\shining-quasar>uvicorn src.web.api:app --reload
+INFO:     Will watch for changes in these directories: ['E:\\shining-quasar']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [7880] using StatReload
+INFO:     Started server process [9476]
+INFO:     Waiting for application startup.
+INFO     File-based logging initialized (app.log, error.log)
+INFO     Config registered to ServiceRegistry
+INFO     Rate limiter enabled: 60 requests/60 seconds
+INFO     GeminiAgent 초기화 완료
+INFO     Neo4j connection pool initialized via provider (max_pool_size=50, max_lifetime=3600s)
+INFO     Vector store initialized successfully
+INFO     Received notification from DBMS server: {severity: INFORMATION} {code:
+         Neo.ClientNotification.Schema.IndexOrConstraintAlreadyExists} {category: SCHEMA} {title: `CREATE CONSTRAINT IF
+         NOT EXISTS FOR (e:FormattingRule) REQUIRE (e.name) IS UNIQUE` has no effect.} {description: `CONSTRAINT
+         constraint_a15204cb FOR (e:FormattingRule) REQUIRE (e.name) IS UNIQUE` already exists.} {position: None} for
+         query: 'CREATE CONSTRAINT IF NOT EXISTS FOR (fr:FormattingRule) REQUIRE fr.name IS UNIQUE'
+INFO     QAKnowledgeGraph 초기화 완료
+INFO     Global KG set for RuleLoader cache: True
+INFO     Neo4j connection pool initialized via provider (max_pool_size=50, max_lifetime=3600s)
+INFO     Vector store initialized successfully
+INFO     Received notification from DBMS server: {severity: INFORMATION} {code:
+         Neo.ClientNotification.Schema.IndexOrConstraintAlreadyExists} {category: SCHEMA} {title: `CREATE CONSTRAINT IF
+         NOT EXISTS FOR (e:FormattingRule) REQUIRE (e.name) IS UNIQUE` has no effect.} {description: `CONSTRAINT
+         constraint_a15204cb FOR (e:FormattingRule) REQUIRE (e.name) IS UNIQUE` already exists.} {position: None} for
+         query: 'CREATE CONSTRAINT IF NOT EXISTS FOR (fr:FormattingRule) REQUIRE fr.name IS UNIQUE'
+INFO     IntegratedQAPipeline 초기화 완료
+INFO     OCR router initialized with Gemini Vision support
+INFO     Global KG set for RuleLoader cache: True
+INFO:     Application startup complete.
+INFO     Redis connected to SemanticAnswerCache (TTL: 14400s)
+INFO:     127.0.0.1:60716 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49229 - "GET / HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:49229 - "GET /qa HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49229 - "GET /static/style.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54699 - "GET /static/dist/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54699 - "GET /static/dist/chunks/utils.NDa8fJII.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49229 - "GET /static/dist/chunks/ocr.BSf6QOB3.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54699 - "GET /static/dist/chunks/qa.BvSOhSdD.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64101 - "GET /static/dist/chunks/validation.DRcAY0lR.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49229 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54699 - "GET /api/ocr HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54699 - "GET /qa HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54699 - "GET /static/style.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49229 - "GET /static/dist/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49229 - "GET /static/dist/chunks/utils.NDa8fJII.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54699 - "GET /static/dist/chunks/ocr.BSf6QOB3.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64101 - "GET /static/dist/chunks/validation.DRcAY0lR.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49229 - "GET /static/dist/chunks/qa.BvSOhSdD.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49229 - "GET /api/ocr HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49229 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO     Query type 'global_explanation' normalized to 'explanation' for rule loading
+INFO     Operation completed
+INFO     ✅ Constraints loaded: query=3, answer=5
+INFO     Operation completed
+INFO     ✅ Formatting rules loaded: 1
+INFO     explanation 타입: 질의 제약 3개, 답변 제약 5개 조회
+INFO     Operation completed
+INFO     Few-Shot explanation example loaded: 857 chars
+INFO     Successfully parsed guide.csv with 4 rule types
+INFO     Successfully parsed qna.csv with 19 checklist items
+INFO     Successfully parsed patterns.yaml
+INFO     Rules loaded successfully
+INFO     Operation completed
+INFO     Operation completed
+INFO     Query type 'reasoning' normalized to 'reasoning' for rule loading
+INFO     Operation completed
+INFO     ✅ Constraints loaded: query=3, answer=5
+INFO     Operation completed
+INFO     ✅ Formatting rules loaded: 1
+INFO     reasoning 타입: 질의 제약 3개, 답변 제약 5개 조회
+INFO     Operation completed
+INFO     Few-Shot reasoning example loaded: 773 chars
+INFO     Successfully parsed guide.csv with 4 rule types
+INFO     Successfully parsed qna.csv with 19 checklist items
+INFO     Successfully parsed patterns.yaml
+INFO     Rules loaded successfully
+INFO     Operation completed
+INFO:     127.0.0.1:49229 - "POST /api/qa/generate/batch/stream HTTP/1.1" 200 OK
+WARNING  Slow request
+INFO:     127.0.0.1:64108 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64108 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64120 - "GET /metrics HTTP/1.1" 200 OK
+INFO     API latency: 26293.50 ms (26.3 s)
+INFO     Token Usage - Prompt: 3480, Response: 108, Total: 7517
+INFO     metrics
+INFO     API Response - Finish: 1, Len: 203
+INFO     Cache Key Generated - Query: 미 증시의 주요 지수가 하락 마감하게 된 배경을 설명해... | OCR hash:
+         40678b1dd7946b2c | Type: global_explanation | Key: b30623a7dba3c9fa
+INFO     Embeddings model initialized for semantic cache
+INFO     ❌ CACHE MISS - Will generate new answer. Cache size: 0 | Hit rate: 0.0%
+INFO     Operation completed
+INFO     Operation completed
+INFO     Operation completed
+INFO     API latency: 27435.08 ms (27.4 s)
+INFO     Token Usage - Prompt: 3796, Response: 143, Total: 7868
+INFO     metrics
+INFO     API Response - Finish: 1, Len: 269
+INFO     Cache Key Generated - Query: 리오토의 실적 호조를 근거로 향후 글로벌 전기차 업종에... | OCR hash:
+         40678b1dd7946b2c | Type: reasoning | Key: 00aa67f01753d7b4
+INFO     ❌ CACHE MISS - Will generate new answer. Cache size: 0 | Hit rate: 0.0%
+INFO     Operation completed
+INFO     Operation completed
+INFO     Operation completed
+INFO:     127.0.0.1:64124 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57918 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57919 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57924 - "GET /metrics HTTP/1.1" 200 OK
+INFO     API latency: 28592.35 ms (28.6 s)
+INFO     Token Usage - Prompt: 6236, Response: 151, Total: 10317
+INFO     metrics
+INFO     API Response - Finish: 2, Len: 266
+WARNING  ⚠️ Response truncated due to MAX_TOKENS limit. Response length: 266 chars. Consider increasing                 
+         max_output_tokens.
+WARNING  safe_json_parse: JSON decode error - Unterminated string starting at: line 1 column 123 (char 122)
+INFO     Operation completed
+INFO:     127.0.0.1:57930 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65062 - "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:65062 - "GET /static/dist/app.js.map HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59661 - "GET /static/dist/chunks/validation.DRcAY0lR.js.map HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53844 - "GET /static/dist/chunks/utils.NDa8fJII.js.map HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62631 - "GET /static/dist/chunks/ocr.BSf6QOB3.js.map HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51971 - "GET /static/dist/chunks/qa.BvSOhSdD.js.map HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50662 - "GET /metrics HTTP/1.1" 200 OK
+INFO     API latency: 48945.47 ms (48.9 s)
+INFO     Token Usage - Prompt: 6815, Response: 316, Total: 14992
+INFO     metrics
+INFO     API Response - Finish: 2, Len: 747
+WARNING  ⚠️ Response truncated due to MAX_TOKENS limit. Response length: 747 chars. Consider increasing                 
+         max_output_tokens.
+WARNING  safe_json_parse: JSON decode error - Unterminated string starting at: line 1 column 224 (char 223)
+INFO     Operation completed
+WARNING  검증 실패, 재생성 시도: 파이프라인 검증 실패; rule
+INFO     Operation completed
+INFO     Operation completed
+INFO     Operation completed
+INFO:     127.0.0.1:52045 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51990 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64443 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59648 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62587 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61513 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63579 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63582 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63583 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63590 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63708 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63709 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63710 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63711 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63712 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63715 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63716 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63717 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63727 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63730 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63733 - "GET /metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63735 - "GET /metrics HTTP/1.1" 200 OK
