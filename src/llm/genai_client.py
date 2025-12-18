@@ -116,7 +116,7 @@ class GenAIClient:
         if system_instruction:
             config_dict["system_instruction"] = system_instruction
 
-        async for chunk in self.client.aio.models.generate_content_stream(
+        async for chunk in await self.client.aio.models.generate_content_stream(
             model=model,
             contents=contents,
             config=types.GenerateContentConfig(**config_dict),
