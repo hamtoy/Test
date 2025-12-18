@@ -119,18 +119,22 @@ class GeminiProvider(LLMProvider):
                 finish_reason = getattr(
                     candidate.finish_reason, "name", str(candidate.finish_reason)
                 )
-                if finish_reason and finish_reason.upper() not in {
-                    "STOP",
-                    "MAX_TOKENS",
-                    "NONE",  # NONE is sometimes returned for success
-                }:
-                    if not text:
-                        safety_ratings = getattr(candidate, "safety_ratings", [])
-                        feedback = getattr(response, "prompt_feedback", None)
-                        raise SafetyBlockedError(
-                            "Generation blocked: "
-                            f"{finish_reason} (Feedback: {feedback}, Ratings: {safety_ratings})",
-                        )
+                if (
+                    finish_reason
+                    and finish_reason.upper()
+                    not in {
+                        "STOP",
+                        "MAX_TOKENS",
+                        "NONE",  # NONE is sometimes returned for success
+                    }
+                    and not text
+                ):
+                    safety_ratings = getattr(candidate, "safety_ratings", [])
+                    feedback = getattr(response, "prompt_feedback", None)
+                    raise SafetyBlockedError(
+                        "Generation blocked: "
+                        f"{finish_reason} (Feedback: {feedback}, Ratings: {safety_ratings})",
+                    )
 
             return GenerationResult(
                 content=text,

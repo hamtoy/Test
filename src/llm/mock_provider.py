@@ -1,3 +1,5 @@
+"""Mock LLM provider for testing and dry-run CLI flows."""
+
 from __future__ import annotations
 
 import json
@@ -18,8 +20,16 @@ class MockLLMProvider(LLMProvider):
         queries: list[str] | None = None,
         best_candidate: str = "A",
     ) -> None:
+        """Initialize the mock LLM provider.
+
+        Args:
+            queries: Optional list of predefined query strings.
+            best_candidate: The candidate to return as best (A, B, or C).
+        """
         self._queries = queries or ["테스트 질의 1", "테스트 질의 2", "테스트 질의 3"]
-        self._best_candidate = best_candidate if best_candidate in {"A", "B", "C"} else "A"
+        self._best_candidate = (
+            best_candidate if best_candidate in {"A", "B", "C"} else "A"
+        )
 
     async def generate_content_async(
         self,
@@ -30,6 +40,19 @@ class MockLLMProvider(LLMProvider):
         response_schema: Any | None = None,
         **kwargs: Any,
     ) -> GenerationResult:
+        """Generate mock content based on the response schema.
+
+        Args:
+            prompt: The input prompt (ignored in mock).
+            system_instruction: Optional system instruction (ignored in mock).
+            temperature: Sampling temperature (ignored in mock).
+            max_output_tokens: Maximum tokens (ignored in mock).
+            response_schema: Schema determining the mock response type.
+            **kwargs: Additional arguments (ignored in mock).
+
+        Returns:
+            GenerationResult with deterministic mock content.
+        """
         _ = (
             prompt,
             system_instruction,
@@ -97,4 +120,12 @@ class MockLLMProvider(LLMProvider):
         )
 
     async def count_tokens(self, text: str) -> int:
+        """Count tokens as word count for testing purposes.
+
+        Args:
+            text: The text to count tokens for.
+
+        Returns:
+            The number of whitespace-separated words.
+        """
         return len(text.split())

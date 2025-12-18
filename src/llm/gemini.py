@@ -13,9 +13,9 @@ import os
 import time
 from typing import Any
 
+import google.generativeai as genai
 from dotenv import load_dotenv
 from google.api_core import exceptions as google_exceptions
-import google.generativeai as genai
 
 from src.config.constants import DEFAULT_MAX_OUTPUT_TOKENS
 from src.config.utils import require_env
@@ -94,8 +94,9 @@ class GeminiModelClient:
                 return str(response.text)
 
             except Exception as e:  # noqa: BLE001, PERF203
-                error_name = e.__class__.__name__
-                if isinstance(e, google_exceptions.ResourceExhausted) or "429" in str(e):
+                if isinstance(e, google_exceptions.ResourceExhausted) or "429" in str(
+                    e
+                ):
                     # Rate limit hit - log warning and try next model
                     self.logger.warning(
                         "Rate limit hit for model '%s', switching to fallback... (%s)",
