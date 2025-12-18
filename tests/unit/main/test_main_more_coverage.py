@@ -86,6 +86,7 @@ class TestMainFunction:
         mock_config.api_key = valid_key
         mock_config.template_dir = tmp_path / "nonexistent_templates"
         mock_config.max_concurrency = 5
+        mock_config.llm_provider_enabled = False
 
         with (
             patch(
@@ -124,6 +125,7 @@ class TestMainFunction:
         mock_config.api_key = valid_key
         mock_config.template_dir = templates_dir
         mock_config.max_concurrency = 5
+        mock_config.llm_provider_enabled = False
 
         mock_agent = MagicMock()
 
@@ -133,7 +135,7 @@ class TestMainFunction:
             ),
             patch("src.main.AppConfig", return_value=mock_config),
             patch("src.main.genai"),
-            patch("src.main.GeminiAgent", return_value=mock_agent),
+            patch("src.main.get_gemini_agent", return_value=mock_agent),
             patch(
                 "src.main.interactive_main", new_callable=AsyncMock
             ) as mock_interactive,

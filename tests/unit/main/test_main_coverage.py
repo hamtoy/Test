@@ -24,6 +24,7 @@ class TestMainModule:
         mock_config.api_key = "AIza" + "0" * 35
         mock_config.template_dir = template_dir
         mock_config.max_concurrency = 5
+        mock_config.llm_provider_enabled = False
 
         mock_logger = MagicMock()
         mock_listener = MagicMock()
@@ -32,7 +33,7 @@ class TestMainModule:
             patch("src.main.setup_logging") as mock_setup_logging,
             patch("src.main.AppConfig") as mock_app_config,
             patch("src.main.genai") as mock_genai,
-            patch("src.main.GeminiAgent") as mock_agent,
+            patch("src.main.get_gemini_agent") as mock_agent,
             patch("src.main.interactive_main") as mock_interactive,
         ):
             mock_setup_logging.return_value = (mock_logger, mock_listener)

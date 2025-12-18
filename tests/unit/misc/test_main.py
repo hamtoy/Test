@@ -17,7 +17,7 @@ class TestMainFunction:
     @patch("src.main.genai.configure")
     @patch("jinja2.Environment")
     @patch("jinja2.FileSystemLoader")
-    @patch("src.main.GeminiAgent")
+    @patch("src.main.get_gemini_agent")
     @patch("src.main.interactive_main")
     async def test_main_success(
         self,
@@ -40,6 +40,7 @@ class TestMainFunction:
         mock_config.template_dir = Mock()
         mock_config.template_dir.exists.return_value = True
         mock_config.max_concurrency = 5
+        mock_config.llm_provider_enabled = False
         mock_config_class.return_value = mock_config
 
         mock_env = Mock()
@@ -80,6 +81,7 @@ class TestMainFunction:
         mock_config.template_dir = Mock()
         mock_config.template_dir.exists.return_value = False
         mock_config.max_concurrency = 5
+        mock_config.llm_provider_enabled = False
         mock_config_class.return_value = mock_config
 
         # Execute and expect sys.exit
@@ -133,7 +135,7 @@ class TestMainFunction:
     @patch("src.main.genai.configure")
     @patch("jinja2.Environment")
     @patch("jinja2.FileSystemLoader")
-    @patch("src.main.GeminiAgent")
+    @patch("src.main.get_gemini_agent")
     @patch("src.main.interactive_main")
     async def test_main_jinja_env_setup(
         self,
@@ -156,6 +158,7 @@ class TestMainFunction:
         mock_config.template_dir = Mock()
         mock_config.template_dir.exists.return_value = True
         mock_config.max_concurrency = 5
+        mock_config.llm_provider_enabled = False
         mock_config_class.return_value = mock_config
 
         mock_env = Mock()

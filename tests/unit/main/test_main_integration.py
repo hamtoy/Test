@@ -665,6 +665,8 @@ class TestDependencyMocking:
         mock_config = MagicMock()
         mock_config.api_key = "AIza" + "0" * 35
         mock_config.template_dir = template_dir
+        mock_config.max_concurrency = 5
+        mock_config.llm_provider_enabled = False
 
         with patch("src.main.AppConfig", return_value=mock_config) as mock_fn:
             mock_fn.mock_config = mock_config
@@ -686,7 +688,7 @@ class TestDependencyMocking:
         mock_agent.cache_hits = 0
         mock_agent.cache_misses = 0
 
-        with patch("src.main.GeminiAgent", return_value=mock_agent) as mock_fn:
+        with patch("src.main.get_gemini_agent", return_value=mock_agent) as mock_fn:
             mock_fn.mock_agent = mock_agent
             yield mock_fn
 
@@ -802,6 +804,8 @@ class TestFlowControl:
         mock_config = MagicMock()
         mock_config.api_key = "AIza" + "0" * 35
         mock_config.template_dir = template_dir
+        mock_config.max_concurrency = 5
+        mock_config.llm_provider_enabled = False
 
         mock_agent = MagicMock()
 
@@ -811,7 +815,7 @@ class TestFlowControl:
             patch("src.main.setup_logging", return_value=(mock_logger, mock_listener)),
             patch("src.main.AppConfig", return_value=mock_config),
             patch("src.main.genai"),
-            patch("src.main.GeminiAgent", return_value=mock_agent),
+            patch("src.main.get_gemini_agent", return_value=mock_agent),
             patch("src.main.interactive_main", mock_interactive),
         ):
             # Should complete without exception
@@ -858,6 +862,8 @@ class TestFlowControl:
         mock_config = MagicMock()
         mock_config.api_key = "AIza" + "0" * 35
         mock_config.template_dir = tmp_path / "nonexistent"
+        mock_config.max_concurrency = 5
+        mock_config.llm_provider_enabled = False
 
         with (
             patch("src.main.setup_logging", return_value=(mock_logger, mock_listener)),
@@ -1062,6 +1068,8 @@ class TestStrictValidation:
         mock_config = MagicMock()
         mock_config.api_key = expected_api_key
         mock_config.template_dir = template_dir
+        mock_config.max_concurrency = 5
+        mock_config.llm_provider_enabled = False
 
         mock_genai_configure = MagicMock()
 
@@ -1069,7 +1077,7 @@ class TestStrictValidation:
             patch("src.main.setup_logging", return_value=(mock_logger, mock_listener)),
             patch("src.main.AppConfig", return_value=mock_config),
             patch("src.main.genai") as mock_genai,
-            patch("src.main.GeminiAgent"),
+            patch("src.main.get_gemini_agent"),
             patch("src.main.interactive_main", new_callable=AsyncMock),
         ):
             mock_genai.configure = mock_genai_configure
@@ -1095,12 +1103,14 @@ class TestStrictValidation:
         mock_config = MagicMock()
         mock_config.api_key = "AIza" + "0" * 35
         mock_config.template_dir = template_dir
+        mock_config.max_concurrency = 5
+        mock_config.llm_provider_enabled = False
 
         with (
             patch("src.main.setup_logging", mock_setup_logging),
             patch("src.main.AppConfig", return_value=mock_config),
             patch("src.main.genai"),
-            patch("src.main.GeminiAgent"),
+            patch("src.main.get_gemini_agent"),
             patch("src.main.interactive_main", new_callable=AsyncMock),
         ):
             await main()
@@ -1122,12 +1132,14 @@ class TestStrictValidation:
         mock_config = MagicMock()
         mock_config.api_key = "AIza" + "0" * 35
         mock_config.template_dir = template_dir
+        mock_config.max_concurrency = 5
+        mock_config.llm_provider_enabled = False
 
         with (
             patch("src.main.setup_logging", return_value=(mock_logger, mock_listener)),
             patch("src.main.AppConfig", return_value=mock_config),
             patch("src.main.genai"),
-            patch("src.main.GeminiAgent"),
+            patch("src.main.get_gemini_agent"),
             patch("src.main.interactive_main", new_callable=AsyncMock),
         ):
             await main()
