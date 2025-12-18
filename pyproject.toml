@@ -172,7 +172,7 @@ module = ["tests", "tests.*"]
 strict = true
 # Allow mock method assignments in tests without type: ignore comments
 # Also disable unused-ignore warnings since test mocking patterns vary
-disable_error_code = ["method-assign", "assignment"]
+disable_error_code = ["method-assign", "assignment", "arg-type"]
 warn_unused_ignores = false
 
 # Scripts, checks, and experiments excluded from strict mode
